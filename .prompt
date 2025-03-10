@@ -1,0 +1,29 @@
+This project is a framework for the authoring of interactive tutoring systems, with the eventual goals of
+- a mass-collaborative platform for authoring / sharing etc
+- a toolset for spawning individual specialized tutoring systems whose level of customization is out of scope for a web platform
+
+Think: khan academy + duolingo + anki + wikipedia, with an evolutionary mechanism to filter user generated curricular content based on how that content impacts overall learning outcomes.
+
+
+# History:
+
+developed slowly as an occasional hobby / side project, and used 'in production' for a few years now, but only for household use. Tech stack has recently been modernized:
+- vue 2 class-based-components -> vue 3
+- vuetify 1.x -> vuetify 3 (current)
+- lerna ~3.x hodge podge -> yarn workspaces
+
+Much of the legacy code was written without explicit concerns for performance, security, or scale.
+
+# Current goals:
+
+Seeking to use the project as a vehicle to develop content for commercial, production grade systems. Seeking to iterate quickly to modernize the stack and add key features.
+
+# GENERAL QUALITY CAVEAT
+
+With respect to security, error handling, and performance: _If you see something, say something._
+
+If you parse source code that contains *critical errors*, please prefix your responses with "WARNING: SUBSTANTIVE ERRORS DETECTED" and provide a brief summary of the errors.
+
+Do this at the expense of addressing the specific questions that were posed.
+
+Thanks!
