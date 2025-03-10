@@ -1,10 +1,9 @@
 import _ from 'lodash';
 import pouch from 'pouchdb-browser';
-import { log } from '@/logshim';
 import { filterAllDocsByPrefix, getCourseDB } from '.';
 import { ENV } from '@vue-skuilder/common';
 import { CourseConfig } from '../server/types';
-import { CourseElo, EloToNumber, blankCourseElo, toCourseElo } from '../tutor/Elo';
+import { CourseElo, EloToNumber, blankCourseElo, toCourseElo } from '@vue-skuilder/common';
 import { GET_CACHED } from './clientCache';
 import {
   StudyContentSource,
@@ -13,7 +12,7 @@ import {
   StudySessionReviewItem,
 } from './contentSource';
 import { getCredentialledCourseConfig, getTagID } from './courseAPI';
-import { CardData, DocType, Tag, TagStub } from './types';
+import { CardData, DocType, Tag, TagStub } from '../core/types-legacy';
 import { ScheduledCard } from './userDB';
 import { getCurrentUser } from '@/stores/useAuthStore';
 
@@ -442,14 +441,14 @@ export async function getCourseConfig(courseID: string) {
 export async function getCourseTagStubs(
   courseID: string
 ): Promise<PouchDB.Core.AllDocsResponse<Tag>> {
-  log(`Getting tag stubs for course: ${courseID}`);
+  console.log(`Getting tag stubs for course: ${courseID}`);
   const stubs = await filterAllDocsByPrefix<Tag>(
     getCourseDB(courseID),
     DocType.TAG.valueOf() + '-'
   );
 
   stubs.rows.forEach((row) => {
-    log(`\tTag stub for doc: ${row.id}`);
+    console.log(`\tTag stub for doc: ${row.id}`);
   });
 
   return stubs;
@@ -464,7 +463,7 @@ export async function deleteTag(courseID: string, tagName: string) {
 }
 
 export async function createTag(courseID: string, tagName: string) {
-  log(`Creating tag: ${tagName}...`);
+  console.log(`Creating tag: ${tagName}...`);
   const tagID = getTagID(tagName);
   const courseDB = getCourseDB(courseID);
   const resp = await courseDB.put<Tag>({
@@ -557,7 +556,7 @@ export async function updateCardElo(courseID: string, cardID: string, elo: Cours
 }
 
 export async function updateCredentialledCourseConfig(courseID: string, config: CourseConfig) {
-  log(`Updating course config:
+  console.log(`Updating course config:
 
 ${JSON.stringify(config)}
 `);

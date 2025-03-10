@@ -4,7 +4,7 @@ import ENV from '@vue-skuilder/common';
 // import { DataShape } from '../base-course/Interfaces/DataShape';
 import { NameSpacer, ShapeDescriptor } from '../courses/NameSpacer';
 import { CourseConfig, DataShape } from '@vue-skuilder/common';
-import { CourseElo, blankCourseElo, toCourseElo } from '../tutor/Elo';
+import { CourseElo, blankCourseElo, toCourseElo } from '@vue-skuilder/common';
 import { CourseDB, createTag, updateCardElo } from './courseDB';
 import { CardData, DisplayableData, DocType, Tag } from '../core/types-legacy';
 import { prepareNote55 } from '@vue-skuilder/common';

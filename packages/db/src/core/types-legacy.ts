@@ -1,5 +1,5 @@
 import { Answer, Evaluation } from '../base-course/Displayable';
-import { CourseElo } from '../tutor/Elo';
+import { CourseElo } from '@vue-skuilder/common';
 import { Moment } from 'moment';
 
 export enum DocType {

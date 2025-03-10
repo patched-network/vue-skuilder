@@ -2,7 +2,7 @@ import { Status } from '@vue-skuilder/common';
 import { ENV } from '@vue-skuilder/common';
 import { GuestUsername } from '@/constants';
 import { UserConfig } from '../stores/useConfigStore';
-import { CourseElo } from '../tutor/Elo';
+import { CourseElo } from '@vue-skuilder/common';
 import moment, { Moment } from 'moment';
 import pouch from './pouchdb-setup';
 import { log } from '@/logshim';
