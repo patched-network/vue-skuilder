@@ -1,8 +1,7 @@
 import _ from 'lodash';
 import pouch from 'pouchdb-browser';
 import { filterAllDocsByPrefix, getCourseDB } from '.';
-import { ENV } from '@vue-skuilder/common';
-import { CourseConfig } from '../server/types';
+import { ENV, CourseConfig } from '@vue-skuilder/common';
 import { CourseElo, EloToNumber, blankCourseElo, toCourseElo } from '@vue-skuilder/common';
 import { GET_CACHED } from './clientCache';
 import {

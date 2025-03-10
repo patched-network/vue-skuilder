@@ -1,4 +1,4 @@
-import { areQuestionRecords, CardHistory, CardRecord, QuestionRecord } from '../db/types';
+import { areQuestionRecords, CardHistory, CardRecord, QuestionRecord } from '@vue-skuilder/db';
 import moment from 'moment';
 import { getCurrentUser } from '@/stores/useAuthStore';
 
