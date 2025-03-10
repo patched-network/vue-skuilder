@@ -155,7 +155,7 @@ import { CourseDB, getCourseList, getCourseName, updateCardElo, docIsDeleted } f
 import SessionController, { StudySessionRecord } from '@/db/SessionController';
 import { newInterval } from '@/db/SpacedRepetition';
 import { CardData, CardHistory, CardRecord, DisplayableData, isQuestionRecord } from '@/db/types';
-import { adjustCourseScores, CourseElo, toCourseElo, isCourseElo } from '@/tutor/Elo';
+import { adjustCourseScores, CourseElo, toCourseElo, isCourseElo } from '@vue-skuilder/common';
 import confetti from 'canvas-confetti';
 import moment from 'moment';
 import SkldrControlsView from '../components/SkMouseTrap.vue';

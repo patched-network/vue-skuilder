@@ -1,6 +1,6 @@
 import { ValidationResult } from '../../../base-course/Interfaces/ValidationResult';
 import { ValidatingFunction } from '../../../base-course/Interfaces/ValidatingFunction';
-import { CourseElo } from '../../../tutor/Elo';
+import { CourseElo } from '@vue-skuilder/common';
 import { ComponentPublicInstance } from 'vue';
 
 export interface FieldInputInterface {

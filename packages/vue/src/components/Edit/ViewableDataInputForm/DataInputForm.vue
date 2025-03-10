@@ -98,7 +98,7 @@ import MidiInput from './FieldInputs/MidiInput.vue';
 import NumberInput from './FieldInputs/NumberInput.vue';
 import StringInput from './FieldInputs/StringInput.vue';
 import ChessPuzzleInput from './FieldInputs/ChessPuzzleInput.vue';
-import { CourseElo } from '@/tutor/Elo';
+import { CourseElo } from '@vue-skuilder/common';
 import { useDataInputFormStore } from '@/stores/useDataInputFormStore';
 import { ViewData } from '@/base-course/Interfaces/ViewData';
 import { getCurrentUser } from '@/stores/useAuthStore';

@@ -28,9 +28,8 @@
 
 <script lang="ts">
 import CardLoader from '@/components/Study/CardLoader.vue';
-import { CourseElo, adjustCourseScores } from '@/tutor/Elo';
+import { CourseElo, adjustCourseScores, CourseConfig } from '@vue-skuilder/common';
 import { CourseDB, getCourseConfig, updateCardElo } from '@/db/courseDB';
-import { CourseConfig } from '@/server/types';
 import { defineComponent } from 'vue';
 
 export default defineComponent({

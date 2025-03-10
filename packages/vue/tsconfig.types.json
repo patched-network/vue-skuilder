@@ -27,8 +27,7 @@
         "src/base-course/Interfaces/ValidationResult.ts",
         "src/base-course/Interfaces/ViewData.ts",
         "src/base-course/Displayable.ts",
-        "src/courses/NameSpacer.ts",
-        "src/tutor/Elo.ts"
+        "src/courses/NameSpacer.ts"
     ],
     "exclude": ["node_modules", "dist", "tests", "**/*.test.ts", "**/*.spec.ts"]
 }
