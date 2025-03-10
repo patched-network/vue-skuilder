@@ -1,5 +1,5 @@
 import { Status } from '@vue-skuilder/common';
-import ENV from '../ENVIRONMENT_VARS';
+import { ENV } from '@vue-skuilder/common';
 import { GuestUsername } from '@/constants';
 import { UserConfig } from '../stores/useConfigStore';
 import { CourseElo } from '../tutor/Elo';

@@ -2,7 +2,7 @@ import _ from 'lodash';
 import pouch from 'pouchdb-browser';
 import { log } from '@/logshim';
 import { filterAllDocsByPrefix, getCourseDB } from '.';
-import ENV from '../ENVIRONMENT_VARS';
+import { ENV } from '@vue-skuilder/common';
 import { CourseConfig } from '../server/types';
 import { CourseElo, EloToNumber, blankCourseElo, toCourseElo } from '../tutor/Elo';
 import { GET_CACHED } from './clientCache';

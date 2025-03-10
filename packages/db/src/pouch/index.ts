@@ -5,7 +5,7 @@ import {
   getCardHistoryID,
   SkuilderCourseData,
 } from '../db/types';
-import ENV from '../ENVIRONMENT_VARS';
+import { ENV } from '@vue-skuilder/common';
 import { getCurrentUser } from '../stores/useAuthStore';
 import { GuestUsername } from '@/constants';
 import moment, { Moment } from 'moment';

@@ -1,4 +1,4 @@
-import ENV from '../ENVIRONMENT_VARS';
+import { ENV } from '@vue-skuilder/common';
 import { ClassroomConfig } from '../server/types';
 import moment from 'moment';
 import pouch from 'pouchdb-browser';
