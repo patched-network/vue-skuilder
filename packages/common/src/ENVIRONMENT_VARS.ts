@@ -38,18 +38,38 @@ const ENV: Environment = {
   MOCK: false,
 };
 
-ENV.COUCHDB_SERVER_URL = import.meta.env.VITE_COUCHDB_SERVER!;
-ENV.COUCHDB_SERVER_PROTOCOL = import.meta.env.VITE_COUCHDB_PROTOCOL! as ProtocolString;
+// Try to load from Vite environment if available
+try {
+  // Use typeof check to avoid issues in non-Vite environments
+  if (typeof import.meta !== 'undefined' && 'env' in import.meta) {
+    const env = (import.meta as any).env;
 
-ENV.EXPRESS_SERVER_URL = import.meta.env.VITE_EXPRESS_SERVER!;
-ENV.EXPRESS_SERVER_PROTOCOL = import.meta.env.VITE_EXPRESS_PROTOCOL! as ProtocolString;
+    if (env.VITE_COUCHDB_SERVER) {
+      ENV.COUCHDB_SERVER_URL = env.VITE_COUCHDB_SERVER;
+    }
 
-if (import.meta.env.VITE_DEBUG !== undefined) {
-  ENV.DEBUG = import.meta.env.VITE_DEBUG === 'true';
-}
+    if (env.VITE_COUCHDB_PROTOCOL) {
+      ENV.COUCHDB_SERVER_PROTOCOL = env.VITE_COUCHDB_PROTOCOL as ProtocolString;
+    }
 
-if (import.meta.env.VITE_MOCK !== undefined) {
-  ENV.MOCK = import.meta.env.VITE_MOCK === 'true';
+    if (env.VITE_EXPRESS_SERVER) {
+      ENV.EXPRESS_SERVER_URL = env.VITE_EXPRESS_SERVER;
+    }
+
+    if (env.VITE_EXPRESS_PROTOCOL) {
+      ENV.EXPRESS_SERVER_PROTOCOL = env.VITE_EXPRESS_PROTOCOL as ProtocolString;
+    }
+
+    if (env.VITE_DEBUG !== undefined) {
+      ENV.DEBUG = env.VITE_DEBUG === 'true';
+    }
+
+    if (env.VITE_MOCK !== undefined) {
+      ENV.MOCK = env.VITE_MOCK === 'true';
+    }
+  }
+} catch (e) {
+  console.warn('Unable to load environment variables from Vite:', e);
 }
 
 if (ENV.DEBUG) {
