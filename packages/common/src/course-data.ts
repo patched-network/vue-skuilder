@@ -1,26 +1,12 @@
 import { Status } from './wire-format.js';
 import { DisplayableData, DocType } from './db.js';
 import { NameSpacer } from './namespacer.js';
+import { CourseElo } from './elo.js';
 
 export interface DataShape {
   name: DataShapeName;
   fields: FieldDefinition[];
 }
-
-export type CourseElo = {
-  global: EloRank;
-  tags: {
-    [tagID: string]: EloRank;
-  };
-  misc: {
-    [eloID: string]: EloRank;
-  };
-};
-
-type EloRank = {
-  score: number;
-  count: number;
-};
 
 export interface ValidationResult {
   status: Status;
