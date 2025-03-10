@@ -1,7 +1,6 @@
 import { Answer, Evaluation } from '../base-course/Displayable';
 import { CourseElo } from '../tutor/Elo';
 import { Moment } from 'moment';
-import PouchDB from 'pouchdb-browser';
 
 export enum DocType {
   DISPLAYABLE_DATA = 'DISPLAYABLE_DATA',
