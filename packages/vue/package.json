@@ -22,11 +22,11 @@
         "url-parse": "1.5.10"
     },
     "dependencies": {
-        "@vue-skuilder/db": "workspace:*",
         "@highlightjs/vue-plugin": "^2.1.2",
         "@mdi/font": "^7.3.67",
         "@tonaljs/tonal": "^3.6.0",
         "@vojtechlanka/vue-tags-input": "^3",
+        "@vue-skuilder/db": "workspace:*",
         "@vue/compiler-sfc": "^3.5.13",
         "abcjs": "^6.2.2",
         "canvas-confetti": "^1.9.3",
