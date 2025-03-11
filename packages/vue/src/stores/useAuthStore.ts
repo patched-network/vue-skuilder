@@ -1,6 +1,6 @@
 // stores/useAuthStore.ts
 import { defineStore } from 'pinia';
-import { User } from '@/db/userDB';
+import { User } from '@vue-skuilder/db';
 import { ENV } from '@vue-skuilder/common';
 import { GuestUsername } from '@/constants';
 
