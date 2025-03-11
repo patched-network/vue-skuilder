@@ -6,9 +6,9 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/common-ui.es.js",
-      "require": "./dist/common-ui.umd.js",
-      "types": "./dist/index.d.ts"
+      "require": "./dist/common-ui.umd.js"
     },
     "./styles": {
       "import": "./dist/style.css"
@@ -28,6 +28,7 @@
   },
   "dependencies": {
     "@mdi/font": "^7.3.67",
+    "moment": "^2.29.4",
     "vue": "^3.5.13",
     "vuetify": "^3.7.0"
   },
@@ -36,9 +37,9 @@
     "vuetify": "^3.0.0"
   },
   "devDependencies": {
-    "@vitejs/plugin-vue": "^5.2.1",
     "@typescript-eslint/eslint-plugin": "^8.25.0",
     "@typescript-eslint/parser": "^8.25.0",
+    "@vitejs/plugin-vue": "^5.2.1",
     "@vue/eslint-config-typescript": "^14.4.0",
     "eslint": "^9.21.0",
     "eslint-config-prettier": "^10.0.2",

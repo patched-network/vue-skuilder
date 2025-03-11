@@ -6,6 +6,6 @@
         "declarationDir": "dist",
         "emitDeclarationOnly": true
     },
-    "include": ["src/**/*.ts", "src/**/*.vue"],
+    "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.vue"],
     "exclude": ["node_modules", "**/*.spec.ts", "dist"]
 }
