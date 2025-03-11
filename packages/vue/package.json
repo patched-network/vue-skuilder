@@ -24,7 +24,7 @@
     "dependencies": {
         "@highlightjs/vue-plugin": "^2.1.2",
         "@mdi/font": "^7.3.67",
-        "@tonaljs/tonal": "^3.6.0",
+        "@tonaljs/tonal": "^4.10.0",
         "@vojtechlanka/vue-tags-input": "^3",
         "@vue-skuilder/db": "workspace:*",
         "@vue/compiler-sfc": "^3.5.13",
