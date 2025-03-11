@@ -212,7 +212,7 @@ export class StudentClassroomDB extends ClassroomDBBase implements StudyContentS
 /**
  * Interface for managing a classroom.
  */
-export default class TeacherClassroomDB extends ClassroomDBBase {
+export class TeacherClassroomDB extends ClassroomDBBase {
   private _stuDb!: PouchDB.Database;
 
   private constructor(classID: string) {

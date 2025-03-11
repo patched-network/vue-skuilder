@@ -2,11 +2,11 @@ import pouch from 'pouchdb-browser';
 import { ENV } from '@vue-skuilder/common';
 import { pouchDBincludeCredentialsConfig, getStartAndEndKeys } from '.';
 import { getCourseList, removeCourse } from './courseDB';
-import TeacherClassroomDB, { ClassroomLookupDB } from './classroomDB';
-import { PouchError } from '@/types/pouchdb';
+import { TeacherClassroomDB, ClassroomLookupDB } from './classroomDB';
+import { PouchError } from './types';
 
-export default class AdminDB {
-  private usersDB: PouchDB.Database;
+export class AdminDB {
+  private usersDB!: PouchDB.Database;
 
   private constructor() {}
 

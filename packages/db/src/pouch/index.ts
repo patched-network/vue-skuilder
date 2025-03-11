@@ -235,3 +235,4 @@ export * from './courseDB';
 export * from './courseAPI';
 export * from './classroomDB';
 export * from './contentSource';
+export * from './adminDB';
