@@ -59,12 +59,10 @@
 <script lang="ts">
 import { defineComponent, PropType } from 'vue';
 import MidiConfig from '@/courses/piano/utility/MidiConfig.vue';
-import { log } from '@/logshim';
-import { CourseDB, getCourseConfig, getCourseTagStubs } from '@/db/courseDB';
-import { Tag } from '@/db/types';
-import { CourseConfig } from '@/server/types';
 import CourseCardBrowser from './CourseCardBrowser.vue';
-import { User } from '@/db/userDB';
+import { log } from '@/logshim';
+import { CourseDB, getCourseConfig, getCourseTagStubs, Tag, User } from '@vue-skuilder/db';
+import { CourseConfig } from '@vue-skuilder/common';
 import { getCurrentUser } from '@/stores/useAuthStore';
 
 export default defineComponent({

@@ -18,7 +18,7 @@ interface DataInputForm {
   uploading: boolean;
 }
 
-interface DataInputFormState {
+export interface DataInputFormState {
   dataInputForm: DataInputForm;
 }
 

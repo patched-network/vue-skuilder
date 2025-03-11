@@ -81,7 +81,7 @@ import { defineComponent, ref, watch, onMounted } from 'vue';
 import { alertUser } from '@/components/SnackbarService.vue';
 import SkMidi from './midi';
 import { Status } from '@vue-skuilder/common';
-import { User } from '@/db/userDB';
+import { User } from '@vue-skuilder/db';
 import { InputEventNoteon } from 'webmidi';
 import { getCurrentUser } from '@/stores/useAuthStore';
 import PianoRangeVisualizer from './PianoRangeVisualizer.vue';

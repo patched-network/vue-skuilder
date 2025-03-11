@@ -1,4 +1,4 @@
-import { DisplayableData } from '../../db/types';
+import { DisplayableData } from '@vue-skuilder/db';
 
 export interface ViewData {
   [index: string]: string | number | Blob | boolean;

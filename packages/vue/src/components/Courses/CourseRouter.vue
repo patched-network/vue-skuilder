@@ -44,8 +44,8 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import { disambiguateCourse, getCachedCourseList } from '@/db/courseDB';
-import { CourseConfig } from '@/server/types';
+import { disambiguateCourse, getCachedCourseList } from '@vue-skuilder/db';
+import { CourseConfig } from '@vue-skuilder/common';
 import CourseEditor from './CourseEditor.vue';
 import CourseInformation from './CourseInformation.vue';
 

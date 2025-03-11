@@ -30,7 +30,7 @@
 <script lang="ts">
 import confetti from 'canvas-confetti';
 import { defineComponent, PropType } from 'vue';
-import { User } from '@/db/userDB';
+import { User } from '@vue-skuilder/db';
 import { useConfigStore } from '@/stores/useConfigStore';
 import { getCurrentUser } from '@/stores/useAuthStore';
 import { useRoute } from 'vue-router';

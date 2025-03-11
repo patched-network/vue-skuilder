@@ -96,14 +96,17 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
+import { Status, ServerRequestType, JoinClassroom, LeaveClassroom, DeleteClassroom } from '@vue-skuilder/common';
+import {
+  registerUserForClassroom,
+  getUserClassrooms,
+  dropUserFromClassroom,
+  getClassroomConfig,
+  User,
+} from '@vue-skuilder/db';
 import serverRequest from '@/server/index';
-import { ServerRequestType, JoinClassroom, LeaveClassroom, DeleteClassroom } from '@vue-skuilder/common';
 import { alertUser } from '@/components/SnackbarService.vue';
-import { Status } from '@vue-skuilder/common';
 import ClassroomEditor from '@/components/Classrooms/CreateClassroom.vue';
-import { registerUserForClassroom, getUserClassrooms, dropUserFromClassroom } from '../db/userDB';
-import { getClassroomConfig } from '../db/classroomDB';
-import { User } from '../db/userDB';
 import { getCurrentUser } from '@/stores/useAuthStore';
 
 interface CourseReg {

@@ -5,7 +5,7 @@
 // import { ViewData } from '@/base-course/Interfaces/ViewData';
 // import { CourseConfig } from '@/server/types';
 // import { FieldInputInstance } from '@/components/Edit/ViewableDataInputForm/FieldInput.types';
-// import { User } from '@/db/userDB';
+// import { User } from '@vue-skuilder/db';
 
 // export const GuestUsername: string = 'Guest';
 

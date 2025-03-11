@@ -27,16 +27,16 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import { CardHistory, CardRecord } from '@/db/types';
+import { CardHistory, CardRecord } from '@vue-skuilder/db';
 import moment from 'moment';
 import { getCurrentUser } from '@/stores/useAuthStore';
 
-interface DayData {
+export interface DayData {
   date: string;
   count: number;
 }
 
-interface Color {
+export interface Color {
   h: number;
   s: number;
   l: number;

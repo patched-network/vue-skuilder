@@ -86,8 +86,7 @@ import { FieldInputInstance, isFieldInput } from '@/components/Edit/ViewableData
 import { alertUser } from '@/components/SnackbarService.vue';
 import Courses from '@/courses';
 import { NameSpacer, ShapeDescriptor } from '@/courses/NameSpacer';
-import { addNote55 } from '@/db/courseAPI';
-import { getCourseTagStubs } from '@/db/courseDB';
+import { addNote55, getCourseTagStubs } from '@vue-skuilder/db';
 import { FieldType } from '@/enums/FieldType';
 import { Status, CourseConfig } from '@vue-skuilder/common';
 import _ from 'lodash';

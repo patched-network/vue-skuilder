@@ -16,10 +16,10 @@
 import { defineComponent } from 'vue';
 import Courses from '@/courses';
 import { displayableDataToViewData, ViewData } from '@/base-course/Interfaces/ViewData';
-import { CardData, CardRecord, DisplayableData } from '@/db/types';
+import { CardData, CardRecord, DisplayableData } from '@vue-skuilder/db';
 import { log } from '@/logshim';
 import CardViewer from './CardViewer.vue';
-import { getCourseDoc } from '@/db';
+import { getCourseDoc } from '@vue-skuilder/db';
 import { ViewComponent } from '@/base-course/Displayable';
 
 export default defineComponent({

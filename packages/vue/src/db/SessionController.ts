@@ -7,10 +7,11 @@ import {
   StudySessionItem,
   StudySessionNewItem,
   StudySessionReviewItem,
-} from './contentSource';
-import { Loggable } from './Loggable';
-import { CardRecord } from './types';
-import { ScheduledCard, User } from './userDB';
+  Loggable,
+  CardRecord,
+  ScheduledCard,
+  User,
+} from '@vue-skuilder/db';
 
 export interface StudySessionRecord {
   card: {

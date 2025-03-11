@@ -62,7 +62,7 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import { User } from '@/db/userDB';
+import { User } from '@vue-skuilder/db';
 import { log } from '@/logshim';
 import { alertUser } from './SnackbarService.vue';
 import { Status } from '@vue-skuilder/common';

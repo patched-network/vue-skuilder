@@ -22,10 +22,10 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 import { log } from '@/logshim';
-import { getCourseDB } from '@/db';
-import { getCourseConfig } from '@/db/courseDB';
-import { DocType } from '@/db/types';
-import { CourseConfig } from '@/server/types';
+import { getCourseDB } from '@vue-skuilder/db';
+import { getCourseConfig } from '@vue-skuilder/db';
+import { DocType } from '@vue-skuilder/db';
+import { CourseConfig } from '@vue-skuilder/common';
 import { useRouter } from 'vue-router';
 import { getCurrentUser } from '@/stores/useAuthStore';
 
