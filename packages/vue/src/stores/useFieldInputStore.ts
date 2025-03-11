@@ -3,7 +3,7 @@ import { fieldConverters, FieldType } from '@/enums/FieldType';
 import { Status } from '@vue-skuilder/common';
 import { defineStore } from 'pinia';
 
-interface MediaInputs {
+export interface MediaInputs {
   [key: `audio-${number}`]: unknown;
   [key: `image-${number}`]: unknown;
 }

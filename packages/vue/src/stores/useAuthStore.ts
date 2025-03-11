@@ -3,7 +3,7 @@ import { defineStore } from 'pinia';
 import { User, GuestUsername } from '@vue-skuilder/db';
 import { ENV } from '@vue-skuilder/common';
 
-interface AuthState {
+export interface AuthState {
   _user?: User;
   loginAndRegistration: {
     init: boolean;

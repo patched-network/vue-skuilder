@@ -107,7 +107,7 @@ type StringIndexable = { [x: string]: unknown };
 
 type QorNull = null | typeof Question;
 
-interface ComponentData {
+export interface ComponentData {
   tag: string;
   tags: string[];
   autoCompleteSuggestions: string[];

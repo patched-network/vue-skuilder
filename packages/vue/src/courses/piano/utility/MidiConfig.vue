@@ -86,7 +86,7 @@ import { InputEventNoteon } from 'webmidi';
 import { getCurrentUser } from '@/stores/useAuthStore';
 import PianoRangeVisualizer from './PianoRangeVisualizer.vue';
 
-interface MidiDevice {
+export interface MidiDevice {
   text: string;
   value: string;
 }

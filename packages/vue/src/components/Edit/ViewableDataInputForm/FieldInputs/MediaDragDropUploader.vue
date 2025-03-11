@@ -43,7 +43,7 @@ import FieldInput from '../OptionsFieldInput';
 import { Status } from '@vue-skuilder/common';
 import { FieldInputSetupReturn } from '../OptionsFieldInput';
 
-interface MediaItem {
+export interface MediaItem {
   type: 'image' | 'audio';
   file: File;
   url: string;
