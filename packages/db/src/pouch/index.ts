@@ -232,3 +232,6 @@ export function getStartAndEndKeys(key: string) {
 
 export * from './userDB';
 export * from './courseDB';
+export * from './courseAPI';
+export * from './classroomDB';
+export * from './contentSource';

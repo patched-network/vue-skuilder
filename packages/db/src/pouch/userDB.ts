@@ -106,6 +106,11 @@ export interface ScheduledCard {
 export class User {
   private static _instance: User;
   private static _initialized: boolean = false;
+
+  public static Dummy(): User {
+    return new User('DummyUser');
+  }
+
   static readonly DOC_IDS = {
     CONFIG: 'CONFIG',
     COURSE_REGISTRATIONS: 'CourseRegistrations',

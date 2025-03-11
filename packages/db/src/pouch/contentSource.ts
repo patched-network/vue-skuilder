@@ -53,7 +53,7 @@ export async function getStudySource(
   user: User
 ): Promise<StudyContentSource> {
   if (source.type === 'classroom') {
-    return await StudentClassroomDB.factory(source.id);
+    return await StudentClassroomDB.factory(source.id, user);
   } else {
     // if (source.type === 'course') - removed so tsc is certain something returns
     return new CourseDB(source.id, async () => {
