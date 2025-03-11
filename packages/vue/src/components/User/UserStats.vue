@@ -11,7 +11,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { User } from '@/db/userDB';
+import { User } from '@vue-skuilder/db';
 import { getCurrentUser } from '@/stores/useAuthStore';
 
 const user = ref<User | null>(null);

@@ -1,5 +1,5 @@
 import gradeSpellingAttempt from '@/courses/default/questions/fillIn/blanksCorrection';
-import { adjustCourseScores } from '@/tutor/Elo';
+import { adjustCourseScores } from '@vue-skuilder/common';
 
 const testScore = 800;
 

@@ -4,6 +4,7 @@ on:
     paths:
       - 'packages/vue/**'
       - 'packages/common/**'
+      - 'packages/db/**'
       - '.github/workflows/build-vue.yml'
 jobs:
   build-vue-spa:
@@ -30,6 +31,10 @@ jobs:
 
       - name: Build common package
         working-directory: ./packages/common
+        run: yarn build
+
+      - name: Build db package
+        working-directory: ./packages/db
         run: yarn build
 
       - name: Setup Vue environment

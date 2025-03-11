@@ -45,10 +45,9 @@
 import moment from 'moment';
 import Mousetrap from 'mousetrap';
 import { log } from '@/logshim';
-import { registerUserForClassroom } from '../../db/userDB';
-import { Status } from '@vue-skuilder/common';
+import { registerUserForClassroom } from '@vue-skuilder/db';
+import { Status, ClassroomConfig, CreateClassroom, ServerRequestType } from '@vue-skuilder/common';
 import serverRequest from '../../server';
-import { ClassroomConfig, CreateClassroom, ServerRequestType } from '@vue-skuilder/common';
 import { alertUser } from '../SnackbarService.vue';
 import { defineComponent } from 'vue';
 import { getCurrentUser } from '@/stores/useAuthStore';

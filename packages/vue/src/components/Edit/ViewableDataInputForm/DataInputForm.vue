@@ -86,8 +86,7 @@ import { FieldInputInstance, isFieldInput } from '@/components/Edit/ViewableData
 import { alertUser } from '@/components/SnackbarService.vue';
 import Courses from '@/courses';
 import { NameSpacer, ShapeDescriptor } from '@/courses/NameSpacer';
-import { addNote55 } from '@/db/courseAPI';
-import { getCourseTagStubs } from '@/db/courseDB';
+import { addNote55, getCourseTagStubs } from '@vue-skuilder/db';
 import { FieldType } from '@/enums/FieldType';
 import { Status, CourseConfig } from '@vue-skuilder/common';
 import _ from 'lodash';
@@ -98,7 +97,7 @@ import MidiInput from './FieldInputs/MidiInput.vue';
 import NumberInput from './FieldInputs/NumberInput.vue';
 import StringInput from './FieldInputs/StringInput.vue';
 import ChessPuzzleInput from './FieldInputs/ChessPuzzleInput.vue';
-import { CourseElo } from '@/tutor/Elo';
+import { CourseElo } from '@vue-skuilder/common';
 import { useDataInputFormStore } from '@/stores/useDataInputFormStore';
 import { ViewData } from '@/base-course/Interfaces/ViewData';
 import { getCurrentUser } from '@/stores/useAuthStore';
@@ -108,7 +107,7 @@ type StringIndexable = { [x: string]: unknown };
 
 type QorNull = null | typeof Question;
 
-interface ComponentData {
+export interface ComponentData {
   tag: string;
   tags: string[];
   autoCompleteSuggestions: string[];

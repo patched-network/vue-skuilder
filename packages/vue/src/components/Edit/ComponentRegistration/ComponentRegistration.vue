@@ -33,20 +33,19 @@ import { Displayable } from '@/base-course/Displayable';
 import { DataShape } from '@/base-course/Interfaces/DataShape';
 import Courses from '@/courses';
 import { NameSpacer, QuestionDescriptor } from '@/courses/NameSpacer';
-import { addNote55, getCredentialledCourseConfig } from '@/db/courseAPI';
-import { updateCredentialledCourseConfig } from '@/db/courseDB';
+import { addNote55, getCredentialledCourseConfig, updateCredentialledCourseConfig } from '@vue-skuilder/db';
 import { CourseConfig, DataShape55, QuestionType55 } from '@vue-skuilder/common';
 import * as _ from 'lodash';
 import { getCurrentUser } from '@/stores/useAuthStore';
 
-interface DataShapeRegistrationStatus {
+export interface DataShapeRegistrationStatus {
   name: string;
   course: string;
   dataShape: DataShape;
   registered: boolean;
 }
 
-interface QuestionRegistrationStatus {
+export interface QuestionRegistrationStatus {
   name: string;
   course: string;
   question: typeof Displayable;

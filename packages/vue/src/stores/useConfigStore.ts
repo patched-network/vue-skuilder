@@ -1,11 +1,7 @@
 // stores/useConfigStore.ts
 import { defineStore } from 'pinia';
 import { getCurrentUser } from './useAuthStore';
-
-export interface UserConfig {
-  darkMode: boolean;
-  likesConfetti: boolean;
-}
+import { UserConfig } from '@vue-skuilder/db';
 
 export const useConfigStore = defineStore('config', {
   state: () => ({

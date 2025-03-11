@@ -76,10 +76,15 @@
 
 <script lang="ts">
 import moment from 'moment';
-import TeacherClassroomDB, { AssignedContent, AssignedTag } from '@/db/classroomDB';
-import { getCourseList, getCourseTagStubs } from '@/db/courseDB';
-import { Tag } from '@/db/types';
-import { ClassroomConfig, CourseConfig } from '@/server/types';
+import {
+  TeacherClassroomDB,
+  AssignedContent,
+  AssignedTag,
+  getCourseList,
+  getCourseTagStubs,
+  Tag,
+} from '@vue-skuilder/db';
+import { ClassroomConfig, CourseConfig } from '@vue-skuilder/common';
 import { defineComponent } from 'vue';
 import { getCurrentUser } from '@/stores/useAuthStore';
 

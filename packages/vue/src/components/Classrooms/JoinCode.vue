@@ -17,8 +17,8 @@
 
 <script lang="ts">
 import { log } from '@/logshim';
-import TeacherClassroomDB from '../../db/classroomDB';
-import { ClassroomConfig } from '../../server/types';
+import { TeacherClassroomDB } from '@vue-skuilder/db';
+import { ClassroomConfig } from '@vue-skuilder/common';
 import { defineComponent } from 'vue';
 
 export default defineComponent({

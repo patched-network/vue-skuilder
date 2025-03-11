@@ -1,10 +1,9 @@
 // stores/useAuthStore.ts
 import { defineStore } from 'pinia';
-import { User } from '@/db/userDB';
-import ENV from '@/ENVIRONMENT_VARS';
-import { GuestUsername } from '@/constants';
+import { User, GuestUsername } from '@vue-skuilder/db';
+import { ENV } from '@vue-skuilder/common';
 
-interface AuthState {
+export interface AuthState {
   _user?: User;
   loginAndRegistration: {
     init: boolean;

@@ -1,0 +1,40 @@
+{
+    "name": "@vue-skuilder/db",
+    "version": "0.1.0",
+    "description": "Database layer for vue-skuilder",
+    "main": "dist/index.js",
+    "module": "dist/index.mjs",
+    "types": "dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.mjs",
+            "require": "./dist/index.js"
+        },
+        "./core": {
+            "types": "./dist/core/index.d.ts",
+            "import": "./dist/core/index.mjs",
+            "require": "./dist/core/index.js"
+        },
+        "./pouch": {
+            "types": "./dist/pouch/index.d.ts",
+            "import": "./dist/pouch/index.mjs",
+            "require": "./dist/pouch/index.js"
+        }
+    },
+    "scripts": {
+        "build": "tsup",
+        "dev": "tsup --watch"
+    },
+    "dependencies": {
+        "@nilock2/pouchdb-authentication": "^1.0.2",
+        "@vue-skuilder/common": "workspace:*",
+        "moment": "^2.29.4",
+        "pouchdb-browser": "^9.0.0",
+        "pouchdb-find": "^9.0.0"
+    },
+    "devDependencies": {
+        "tsup": "^8.0.2",
+        "typescript": "~5.7.2"
+    }
+}

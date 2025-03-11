@@ -1,7 +1,7 @@
 {
     "name": "vue-skuilder",
     "scripts": {
-        "dev": "yarn workspace @vue-skuilder/common build && node scripts/dev-couchdb.js start && concurrently \"yarn dev:vue\" \"yarn dev:express\"",
+        "dev": "yarn workspace @vue-skuilder/common build && yarn workspace @vue-skuilder/db build && node scripts/dev-couchdb.js start && concurrently \"yarn dev:vue\" \"yarn dev:express\"",
         "dev:vue": "yarn workspace @vue-skuilder/vue dev",
         "dev:express": "yarn workspace @vue-skuilder/express dev",
         "dev:couchdb": "node scripts/dev-couchdb.js start",
@@ -13,7 +13,7 @@
         "test:e2e": "cypress open",
         "test:e2e:headless": "cypress run",
         "ci:e2e": "yarn dev & wait-on http://localhost:5173 && cypress run; kill $(lsof -t -i:8080); yarn couchdb:stop",
-        "build": "yarn workspace @vue-skuilder/common build && yarn workspace @vue-skuilder/vue build && yarn workspace @vue-skuilder/express build"
+        "build": "yarn workspace @vue-skuilder/common build && yarn workspace @vue-skuilder/db build && yarn workspace @vue-skuilder/vue build && yarn workspace @vue-skuilder/express build"
     },
     "private": true,
     "workspaces": [

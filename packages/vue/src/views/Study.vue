@@ -149,20 +149,38 @@ import HeatMap from '@/components/HeatMap.vue';
 import CardViewer from '@/components/Study/CardViewer.vue';
 import SessionConfiguration from '@/components/Study/SessionConfiguration.vue';
 import Courses from '@/courses';
-import { getCourseDoc, putCardRecord, removeScheduledCardReview, scheduleCardReview } from '@/db';
-import { ContentSourceID, getStudySource, isReview, StudyContentSource, StudySessionItem } from '@/db/contentSource';
-import { CourseDB, getCourseList, getCourseName, updateCardElo, docIsDeleted } from '@/db/courseDB';
+import {
+  getCourseDoc,
+  removeScheduledCardReview,
+  scheduleCardReview,
+  ContentSourceID,
+  getStudySource,
+  isReview,
+  StudyContentSource,
+  StudySessionItem,
+  CourseDB,
+  getCourseList,
+  getCourseName,
+  updateCardElo,
+  docIsDeleted,
+  CardData,
+  CardHistory,
+  CardRecord,
+  DisplayableData,
+  isQuestionRecord,
+  CourseRegistrationDoc,
+  updateUserElo,
+  User,
+  StudentClassroomDB,
+} from '@vue-skuilder/db';
 import SessionController, { StudySessionRecord } from '@/db/SessionController';
 import { newInterval } from '@/db/SpacedRepetition';
-import { CardData, CardHistory, CardRecord, DisplayableData, isQuestionRecord } from '@/db/types';
-import { adjustCourseScores, CourseElo, toCourseElo, isCourseElo } from '@/tutor/Elo';
+import { adjustCourseScores, CourseElo, toCourseElo, isCourseElo } from '@vue-skuilder/common';
 import confetti from 'canvas-confetti';
 import moment from 'moment';
 import SkldrControlsView from '../components/SkMouseTrap.vue';
 import { alertUser } from '../components/SnackbarService.vue';
 import { randomInt } from '../courses/math/utility';
-import { StudentClassroomDB } from '../db/classroomDB';
-import { CourseRegistrationDoc, updateUserElo, User } from '../db/userDB';
 import { Status, CourseConfig } from '@vue-skuilder/common';
 import { useConfigStore } from '@/stores/useConfigStore';
 import { useDataInputFormStore } from '@/stores/useDataInputFormStore';
@@ -424,7 +442,7 @@ export default defineComponent({
         await Promise.all(
           sources.map(async (s) => {
             try {
-              return await getStudySource(s);
+              return await getStudySource(s, await getCurrentUser());
             } catch (e) {
               console.error(`Failed to load study source: ${s.type}/${s.id}`, e);
               return null;
@@ -437,7 +455,9 @@ export default defineComponent({
       this.timeRemaining = timeLimit * 60;
 
       const sessionClassroomDBs = await Promise.all(
-        sources.filter((s) => s.type === 'classroom').map(async (c) => StudentClassroomDB.factory(c.id))
+        sources
+          .filter((s) => s.type === 'classroom')
+          .map(async (c) => StudentClassroomDB.factory(c.id, await getCurrentUser()))
       );
 
       sessionClassroomDBs.forEach((db) => {
@@ -580,7 +600,9 @@ export default defineComponent({
       }
       const userElo = toCourseElo(this.userCourseRegDoc!.courses.find((c) => c.courseID === course_id)!.elo);
       const cardElo = (
-        await new CourseDB(this.currentCard.card.course_id).getCardEloData([this.currentCard.card.card_id])
+        await new CourseDB(this.currentCard.card.course_id, () => getCurrentUser()).getCardEloData([
+          this.currentCard.card.card_id,
+        ])
       )[0];
 
       if (cardElo && userElo) {
@@ -620,7 +642,8 @@ export default defineComponent({
     },
 
     async logCardRecord(r: CardRecord): Promise<CardHistory<CardRecord>> {
-      return await putCardRecord(r, this.user!.username);
+      return await this.user!.putCardRecord(r);
+      // return await putCardRecord(r, this.user!.username);
     },
 
     async scheduleReview(history: CardHistory<CardRecord>, item: StudySessionItem) {

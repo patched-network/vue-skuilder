@@ -44,3 +44,6 @@ vue/Caddyfile
 
 # TypeScript incremental build info
 *.tsbuildinfo
+
+# specific pattern to place tmp files that should be ignored
+ignore

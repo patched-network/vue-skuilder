@@ -63,9 +63,7 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import { getCredentialledCourseConfig } from '@/db/courseAPI';
-import { getTag, updateTag } from '@/db/courseDB';
-import { DocType, Tag } from '@/db/types';
+import { getCredentialledCourseConfig, getTag, updateTag, DocType, Tag } from '@vue-skuilder/db';
 import { Status, CourseConfig } from '@vue-skuilder/common';
 import CourseCardBrowser from './CourseCardBrowser.vue';
 import { alertUser } from '../SnackbarService.vue';

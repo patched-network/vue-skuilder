@@ -1,14 +1,14 @@
 import pouch from 'pouchdb-browser';
 import { pouchDBincludeCredentialsConfig } from '.';
-import ENV from '../ENVIRONMENT_VARS';
-import { DataShape } from '../base-course/Interfaces/DataShape';
-import { NameSpacer, ShapeDescriptor } from '../courses/NameSpacer';
-import { CourseConfig } from '../server/types';
-import { CourseElo, blankCourseElo, toCourseElo } from '../tutor/Elo';
+import { ENV } from '@vue-skuilder/common';
+// import { DataShape } from '../base-course/Interfaces/DataShape';
+import { NameSpacer, ShapeDescriptor } from '@vue-skuilder/common';
+import { CourseConfig, DataShape } from '@vue-skuilder/common';
+import { CourseElo, blankCourseElo, toCourseElo } from '@vue-skuilder/common';
 import { CourseDB, createTag, updateCardElo } from './courseDB';
-import { CardData, DisplayableData, DocType, Tag } from './types';
-import { prepareNote55 } from './prepareNote55';
-
+import { CardData, DisplayableData, DocType, Tag } from '../core/types-legacy';
+import { prepareNote55 } from '@vue-skuilder/common';
+import { User } from './userDB';
 /**
  *
  * @param courseID id of the course (quilt) being added to
@@ -162,7 +162,7 @@ export async function addTagToCard(
   // In this case, should be converted to a server-request
   const prefixedTagID = getTagID(tagID);
   const courseDB = getCourseDB(courseID);
-  const courseApi = new CourseDB(courseID);
+  const courseApi = new CourseDB(courseID, async () => User.Dummy());
   try {
     console.log(`Applying tag ${tagID} to card ${courseID + '-' + cardID}...`);
     const tag = await courseDB.get<Tag>(prefixedTagID);

@@ -25,7 +25,7 @@ import UserLogin from './UserLogin.vue';
 import UserRegistration from './UserRegistration.vue';
 import UserChip from './UserChip.vue';
 import { useAuthStore } from '@/stores/useAuthStore';
-import { GuestUsername } from '@/constants';
+import { GuestUsername } from '@vue-skuilder/db';
 
 const route = useRoute();
 const authStore = useAuthStore();

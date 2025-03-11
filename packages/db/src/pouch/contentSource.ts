@@ -1,6 +1,6 @@
 import { StudentClassroomDB } from './classroomDB';
 import { CourseDB } from './courseDB';
-import { ScheduledCard } from './userDB';
+import { ScheduledCard, User } from './userDB';
 
 export type StudySessionFailedItem = StudySessionFailedNewItem | StudySessionFailedReviewItem;
 
@@ -48,11 +48,16 @@ export interface StudyContentSource {
   getNewCards(n?: number): Promise<StudySessionNewItem[]>;
 }
 
-export async function getStudySource(source: ContentSourceID): Promise<StudyContentSource> {
+export async function getStudySource(
+  source: ContentSourceID,
+  user: User
+): Promise<StudyContentSource> {
   if (source.type === 'classroom') {
-    return await StudentClassroomDB.factory(source.id);
+    return await StudentClassroomDB.factory(source.id, user);
   } else {
     // if (source.type === 'course') - removed so tsc is certain something returns
-    return new CourseDB(source.id);
+    return new CourseDB(source.id, async () => {
+      return user;
+    });
   }
 }

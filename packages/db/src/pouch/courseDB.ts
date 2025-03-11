@@ -1,10 +1,8 @@
 import _ from 'lodash';
 import pouch from 'pouchdb-browser';
-import { log } from '@/logshim';
 import { filterAllDocsByPrefix, getCourseDB } from '.';
-import ENV from '../ENVIRONMENT_VARS';
-import { CourseConfig } from '../server/types';
-import { CourseElo, EloToNumber, blankCourseElo, toCourseElo } from '../tutor/Elo';
+import { ENV, CourseConfig } from '@vue-skuilder/common';
+import { CourseElo, EloToNumber, blankCourseElo, toCourseElo } from '@vue-skuilder/common';
 import { GET_CACHED } from './clientCache';
 import {
   StudyContentSource,
@@ -13,9 +11,8 @@ import {
   StudySessionReviewItem,
 } from './contentSource';
 import { getCredentialledCourseConfig, getTagID } from './courseAPI';
-import { CardData, DocType, Tag, TagStub } from './types';
-import { ScheduledCard } from './userDB';
-import { getCurrentUser } from '@/stores/useAuthStore';
+import { CardData, DocType, Tag, TagStub } from '../core/types-legacy';
+import { ScheduledCard, User } from './userDB';
 
 const courseLookupDBTitle = 'coursedb-lookup';
 
@@ -40,21 +37,23 @@ function randIntWeightedTowardZero(n: number) {
 }
 
 export class CourseDB implements StudyContentSource {
-  private log(msg: string): void {
-    log(`CourseLog: ${this.id}\n  ${msg}`);
-  }
+  // private log(msg: string): void {
+  //   log(`CourseLog: ${this.id}\n  ${msg}`);
+  // }
 
   private db: PouchDB.Database;
   private id: string;
+  private _getCurrentUser: () => Promise<User>;
 
-  constructor(id: string) {
+  constructor(id: string, userLookup: () => Promise<User>) {
     this.id = id;
     this.db = getCourseDB(this.id);
+    this._getCurrentUser = userLookup;
   }
 
   public async getStudySession(cardLimit: number = 99) {
     // cardLimit = cardLimit ? cardLimit : 999;
-    const u = await getCurrentUser();
+    const u = await this._getCurrentUser();
     const userCrsdoc = await u.getCourseRegDoc(this.id);
     const activeCards = await u.getActiveCards();
 
@@ -71,7 +70,7 @@ export class CourseDB implements StudyContentSource {
   public async getPendingReviews(): Promise<(StudySessionReviewItem & ScheduledCard)[]> {
     type ratedReview = ScheduledCard & CourseElo;
 
-    const u = await getCurrentUser();
+    const u = await this._getCurrentUser();
     u.getCourseRegDoc(this.id);
 
     const reviews = await u.getPendingReviews(this.id); // todo: this adds a db round trip - should be server side
@@ -96,7 +95,7 @@ export class CourseDB implements StudyContentSource {
         contentSourceID: this.id,
         cardID: r.cardId,
         courseID: r.courseId,
-        qualifiedID: r.courseId + '-' + r.cardId,
+        qualifiedID: `${r.courseId}-${r.cardId}`,
         reviewID: r._id,
         status: 'review',
       };
@@ -151,10 +150,15 @@ export class CourseDB implements StudyContentSource {
     const ret: CourseElo[] = [];
     docs.rows.forEach((r) => {
       // [ ] remove these ts-ignore directives.
-      if (r.doc && r.doc.elo) {
-        ret.push(toCourseElo(r.doc.elo));
+      if (isSuccessRow(r)) {
+        if (r.doc && r.doc.elo) {
+          ret.push(toCourseElo(r.doc.elo));
+        } else {
+          console.warn('no elo data for card: ' + r.id);
+          ret.push(blankCourseElo());
+        }
       } else {
-        console.warn('no elo data for card: ' + r.id);
+        console.warn('no elo data for card: ' + JSON.stringify(r));
         ret.push(blankCourseElo());
       }
     });
@@ -205,13 +209,17 @@ export class CourseDB implements StudyContentSource {
     });
     const ret: { [card: string]: string[] } = {};
     cards.rows.forEach((r) => {
-      ret[r.id] = r.doc!.id_displayable_data;
+      if (isSuccessRow(r)) {
+        ret[r.id] = r.doc!.id_displayable_data;
+      }
     });
 
     await Promise.all(
       cards.rows.map((r) => {
         return async () => {
-          ret[r.id] = r.doc!.id_displayable_data;
+          if (isSuccessRow(r)) {
+            ret[r.id] = r.doc!.id_displayable_data;
+          }
         };
       })
     );
@@ -232,7 +240,7 @@ export class CourseDB implements StudyContentSource {
     let targetElo: number;
 
     if (options.elo === 'user') {
-      const u = await getCurrentUser();
+      const u = await this._getCurrentUser();
 
       targetElo = -1;
       try {
@@ -284,7 +292,7 @@ export class CourseDB implements StudyContentSource {
       return {
         courseID: this.id,
         cardID: split[1],
-        qualifiedID: c,
+        qualifiedID: `${split[0]}-${split[1]}`,
         contentSourceType: 'course',
         contentSourceID: this.id,
         status: 'new',
@@ -292,7 +300,7 @@ export class CourseDB implements StudyContentSource {
     });
   }
   public async getNewCards(limit: number = 99): Promise<StudySessionNewItem[]> {
-    const u = await getCurrentUser();
+    const u = await this._getCurrentUser();
 
     const activeCards = await u.getActiveCards();
     return (
@@ -432,7 +440,14 @@ export async function getCourseQuestionTypes(courseID: string) {
 
 export async function getCourseConfig(courseID: string) {
   const config = await getCourseConfigs([courseID]);
-  return config.rows[0].doc;
+  let first = config.rows[0];
+  if (!first) {
+    throw new Error(`Course config not found for course ID: ${courseID}`);
+  } else if (isSuccessRow(first)) {
+    return first.doc;
+  } else {
+    throw new Error(`Course config not found for course ID: ${courseID}`);
+  }
 }
 
 // todo: this is actually returning full tag docs now.
@@ -442,14 +457,14 @@ export async function getCourseConfig(courseID: string) {
 export async function getCourseTagStubs(
   courseID: string
 ): Promise<PouchDB.Core.AllDocsResponse<Tag>> {
-  log(`Getting tag stubs for course: ${courseID}`);
+  console.log(`Getting tag stubs for course: ${courseID}`);
   const stubs = await filterAllDocsByPrefix<Tag>(
     getCourseDB(courseID),
     DocType.TAG.valueOf() + '-'
   );
 
   stubs.rows.forEach((row) => {
-    log(`\tTag stub for doc: ${row.id}`);
+    console.log(`\tTag stub for doc: ${row.id}`);
   });
 
   return stubs;
@@ -464,7 +479,7 @@ export async function deleteTag(courseID: string, tagName: string) {
 }
 
 export async function createTag(courseID: string, tagName: string) {
-  log(`Creating tag: ${tagName}...`);
+  console.log(`Creating tag: ${tagName}...`);
   const tagID = getTagID(tagName);
   const courseDB = getCourseDB(courseID);
   const resp = await courseDB.put<Tag>({
@@ -557,7 +572,7 @@ export async function updateCardElo(courseID: string, cardID: string, elo: Cours
 }
 
 export async function updateCredentialledCourseConfig(courseID: string, config: CourseConfig) {
-  log(`Updating course config:
+  console.log(`Updating course config:
 
 ${JSON.stringify(config)}
 `);
@@ -576,4 +591,31 @@ export async function getCourseConfigs(ids: string[]) {
     include_docs: true,
     keys: ids,
   });
+}
+
+function isSuccessRow<T>(
+  row:
+    | {
+        key: PouchDB.Core.DocumentKey;
+        error: 'not_found';
+      }
+    | {
+        doc?: PouchDB.Core.ExistingDocument<PouchDB.Core.AllDocsMeta & T> | null | undefined;
+        id: PouchDB.Core.DocumentId;
+        key: PouchDB.Core.DocumentKey;
+        value: {
+          rev: PouchDB.Core.RevisionId;
+          deleted?: boolean | undefined;
+        };
+      }
+): row is {
+  doc?: PouchDB.Core.ExistingDocument<PouchDB.Core.AllDocsMeta & T> | null | undefined;
+  id: PouchDB.Core.DocumentId;
+  key: PouchDB.Core.DocumentKey;
+  value: {
+    rev: PouchDB.Core.RevisionId;
+    deleted?: boolean | undefined;
+  };
+} {
+  return 'doc' in row && row.doc !== null && row.doc !== undefined;
 }

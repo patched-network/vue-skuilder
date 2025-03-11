@@ -24,13 +24,11 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import { addTagToCard } from '@/db/courseAPI';
-import { getAppliedTags, getCourseTagStubs, removeTagFromCard } from '@/db/courseDB';
-import type { Tag } from '@/db/types';
+import { addTagToCard, getAppliedTags, getCourseTagStubs, removeTagFromCard, Tag } from '@vue-skuilder/db';
 // @ts-expect-error - suppress TS error for VueTagsInput - no types available
 import { VueTagsInput } from '@vojtechlanka/vue-tags-input';
 
-interface TagObject {
+export interface TagObject {
   text: string;
   style?: string;
   classes?: string;

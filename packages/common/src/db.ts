@@ -1,4 +1,5 @@
-import { Answer, Evaluation, CourseElo } from './course-data.js';
+import { Answer, Evaluation } from './course-data.js';
+import { CourseElo } from './elo.js';
 import { Moment } from 'moment';
 
 export enum DocType {

@@ -81,8 +81,7 @@ import _ from 'lodash';
 import serverRequest from '../server';
 import { ServerRequestType, CourseConfig } from '@vue-skuilder/common';
 import { alertUser } from '../components/SnackbarService.vue';
-import { getCourseList } from '@/db/courseDB';
-import { User } from '../db/userDB';
+import { getCourseList, User } from '@vue-skuilder/db';
 import { getCurrentUser } from '@/stores/useAuthStore';
 
 type DBCourseConfig = CourseConfig & PouchDB.Core.IdMeta;

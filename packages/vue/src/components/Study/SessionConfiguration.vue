@@ -68,14 +68,11 @@
 
 <script lang="ts">
 import { defineComponent, PropType } from 'vue';
-import { CourseRegistration, User } from '@/db/userDB';
-import { getCourseName } from '@/db/courseDB';
 import SkldrMouseTrap from '@/SkldrMouseTrap';
-import { StudentClassroomDB } from '@/db/classroomDB';
-import { ContentSourceID } from '@/db/contentSource';
+import { CourseRegistration, User, getCourseName, StudentClassroomDB, ContentSourceID } from '@vue-skuilder/db';
 import { getCurrentUser } from '@/stores/useAuthStore';
 
-interface SessionConfigMetaData {
+export interface SessionConfigMetaData {
   selected: boolean;
   name: string;
   reviews: number;

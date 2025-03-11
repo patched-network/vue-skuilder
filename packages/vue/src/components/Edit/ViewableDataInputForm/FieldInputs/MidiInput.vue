@@ -50,6 +50,7 @@ export default defineComponent({
     try {
       this.midi = await SkMidi.instance();
       this.record();
+      // [ ] this wasn't updated when the dataInputFormStore / fieldInputStore components were created ?
       this.store[this.field.name] = this.getTransposedSeqs;
     } catch (e) {
       throw new Error(`MidiInput.created: ${e}`);

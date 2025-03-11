@@ -110,10 +110,18 @@ import TagsInput from '@/components/Edit/TagsInput.vue';
 import PaginatingToolbar from '@/components/PaginatingToolbar.vue';
 import CardLoader from '@/components/Study/CardLoader.vue';
 import Courses from '@/courses';
-import { getCourseDB, getCourseDoc, getCourseDocs } from '@/db';
-import { CourseDB, getTag } from '@/db/courseDB';
-import { removeTagFromCard } from '@/db/courseDB';
-import { CardData, DisplayableData, DocType, Tag } from '@/db/types';
+import {
+  getCourseDB,
+  getCourseDoc,
+  getCourseDocs,
+  CourseDB,
+  getTag,
+  removeTagFromCard,
+  CardData,
+  DisplayableData,
+  DocType,
+  Tag,
+} from '@vue-skuilder/db';
 import { defineComponent } from 'vue';
 import { alertUser } from '../SnackbarService.vue';
 import { Status } from '@vue-skuilder/common';

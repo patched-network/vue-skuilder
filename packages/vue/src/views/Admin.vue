@@ -62,8 +62,8 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import AdminDB from '../db/adminDB';
-import { GuestUsername } from '@/constants';
+import { AdminDB } from '@vue-skuilder/db';
+import { GuestUsername } from '@vue-skuilder/db';
 interface User {
   _id: string;
   name: string;

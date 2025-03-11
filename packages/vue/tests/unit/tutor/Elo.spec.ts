@@ -1,4 +1,5 @@
-import { adjustCourseScores, CourseElo, toCourseElo } from '@/tutor/Elo';
+// [ ] move this file to be closer to its unit-under-test - migrated to common pkg
+import { adjustCourseScores, CourseElo, toCourseElo } from '@vue-skuilder/common';
 
 const testScore = 800;
 
@@ -36,6 +37,6 @@ describe('adjustScores', () => {
 describe('toCourseElo', () => {
   it('throws with invalid inputs', () => {
     const str = 'notanelo';
-    expect(() => toCourseElo((str as unknown) as CourseElo)).toThrow();
+    expect(() => toCourseElo(str as unknown as CourseElo)).toThrow();
   });
 });

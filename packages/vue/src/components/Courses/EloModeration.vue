@@ -28,10 +28,10 @@
 
 <script lang="ts">
 import CardLoader from '@/components/Study/CardLoader.vue';
-import { CourseElo, adjustCourseScores } from '@/tutor/Elo';
-import { CourseDB, getCourseConfig, updateCardElo } from '@/db/courseDB';
-import { CourseConfig } from '@/server/types';
+import { CourseElo, adjustCourseScores, CourseConfig } from '@vue-skuilder/common';
+import { CourseDB, getCourseConfig, updateCardElo } from '@vue-skuilder/db';
 import { defineComponent } from 'vue';
+import { getCurrentUser } from '@/stores/useAuthStore';
 
 export default defineComponent({
   name: 'ELOModerator',
@@ -66,7 +66,7 @@ export default defineComponent({
   },
 
   async created() {
-    this.courseDB = new CourseDB(this._id);
+    this.courseDB = new CourseDB(this._id, getCurrentUser);
 
     this.courseConfig = (await getCourseConfig(this._id))!;
     await this.getNewCards();

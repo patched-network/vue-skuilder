@@ -1,7 +1,11 @@
-import { Answer, Evaluation } from '../base-course/Displayable';
-import { CourseElo } from '../tutor/Elo';
+import { CourseElo, Answer, Evaluation } from '@vue-skuilder/common';
 import { Moment } from 'moment';
-import PouchDB from 'pouchdb-browser';
+
+export const GuestUsername: string = 'Guest';
+
+export const log = (message: string) => {
+  console.log(message);
+};
 
 export enum DocType {
   DISPLAYABLE_DATA = 'DISPLAYABLE_DATA',

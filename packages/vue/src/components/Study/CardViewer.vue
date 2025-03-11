@@ -18,8 +18,8 @@
 import { defineComponent, PropType } from 'vue';
 import { ViewData } from '@/base-course/Interfaces/ViewData';
 import Courses from '@/courses';
-import { CardRecord } from '@/db/types';
-import { CourseElo } from '@/tutor/Elo';
+import { CardRecord } from '@vue-skuilder/db';
+import { CourseElo } from '@vue-skuilder/common';
 import { ViewComponent } from '@/base-course/Displayable';
 
 interface CardViewerRefs {
