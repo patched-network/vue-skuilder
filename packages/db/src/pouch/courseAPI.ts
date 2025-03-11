@@ -2,7 +2,7 @@ import pouch from 'pouchdb-browser';
 import { pouchDBincludeCredentialsConfig } from '.';
 import ENV from '@vue-skuilder/common';
 // import { DataShape } from '../base-course/Interfaces/DataShape';
-import { NameSpacer, ShapeDescriptor } from '../courses/NameSpacer';
+import { NameSpacer, ShapeDescriptor } from '@vue-skuilder/common';
 import { CourseConfig, DataShape } from '@vue-skuilder/common';
 import { CourseElo, blankCourseElo, toCourseElo } from '@vue-skuilder/common';
 import { CourseDB, createTag, updateCardElo } from './courseDB';

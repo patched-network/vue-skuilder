@@ -1,11 +1,15 @@
 import { Status } from '@vue-skuilder/common';
 import { ENV } from '@vue-skuilder/common';
-import { GuestUsername } from '@/constants';
-import { UserConfig } from '../stores/useConfigStore';
+import { getCardHistoryID, GuestUsername } from '../core/types-legacy';
 import { CourseElo } from '@vue-skuilder/common';
 import moment, { Moment } from 'moment';
 import pouch from './pouchdb-setup';
-import { log } from '@/logshim';
+
+export interface UserConfig {
+  darkMode: boolean;
+  likesConfetti: boolean;
+}
+
 import { getCourseConfigs } from './courseDB';
 import {
   filterAllDocsByPrefix,
@@ -17,8 +21,12 @@ import {
   updateGuestAccountExpirationDate,
 } from './index';
 import UpdateQueue, { Update } from './updateQueue';
-import { CardHistory, CardRecord } from './types';
-import { PouchError } from '../types/pouchdb';
+import { CardHistory, CardRecord } from '../core/types-legacy';
+import { PouchError } from './types';
+
+const log = (s: any) => {
+  console.log(s);
+};
 
 const cardHistoryPrefix = 'cardH-';
 const remoteStr: string = ENV.COUCHDB_SERVER_PROTOCOL + '://' + ENV.COUCHDB_SERVER_URL + 'skuilder';
@@ -104,15 +112,15 @@ export class User {
     CLASSROOM_REGISTRATIONS: 'ClassroomRegistrations',
   };
 
-  private email: string;
+  // private email: string;
   private _username: string;
   public get username(): string {
     return this._username;
   }
 
-  private remoteDB: PouchDB.Database;
-  private localDB: PouchDB.Database;
-  private updateQueue: UpdateQueue;
+  private remoteDB!: PouchDB.Database;
+  private localDB!: PouchDB.Database;
+  private updateQueue!: UpdateQueue;
 
   public async createAccount(username: string, password: string) {
     const ret = {
@@ -468,18 +476,10 @@ Currently logged-in as ${this._username}.`
   private constructor(username: string) {
     User._initialized = false;
     this._username = username;
+    this.setDBandQ();
   }
 
-  private async init() {
-    User._initialized = false;
-    // if (this._username === GuestUsername) {
-    //   const acc = accomodateGuest();
-    //   this._username = acc.username;
-    //   if (acc.firstVisit) {
-    //     await this.createAccount(this._username, this._username);
-    //   }
-    //   await console.login(this._username, this._username);
-    // }
+  private setDBandQ() {
     this.localDB = getLocalUserDB(this._username);
     if (this._username === GuestUsername) {
       this.remoteDB = getLocalUserDB(this._username);
@@ -487,6 +487,11 @@ Currently logged-in as ${this._username}.`
       this.remoteDB = getUserDB(this._username);
     }
     this.updateQueue = new UpdateQueue(this.localDB);
+  }
+
+  private async init() {
+    User._initialized = false;
+    this.setDBandQ();
 
     pouch.sync(this.localDB, this.remoteDB, {
       live: true,
@@ -566,6 +571,59 @@ Currently logged-in as ${this._username}.`
         return this.applyDesignDoc(doc, retries - 1);
       }
       throw e;
+    }
+  }
+
+  /**
+   * Logs a record of the user's interaction with the card and returns the card's
+   * up-to-date history
+   *
+   * // [ ] #db-refactor extract to a smaller scope - eg, UserStudySession
+   *
+   * @param record the recent recorded interaction between user and card
+   * @returns The updated state of the card's CardHistory data
+   */
+
+  public async putCardRecord<T extends CardRecord>(record: T): Promise<CardHistory<CardRecord>> {
+    const cardHistoryID = getCardHistoryID(record.courseID, record.cardID);
+    // stringify the current record to make it writable to couchdb
+    record.timeStamp = moment.utc(record.timeStamp).toString() as unknown as Moment;
+
+    try {
+      const cardHistory = await this.update<CardHistory<T>>(
+        cardHistoryID,
+        function (h: CardHistory<T>) {
+          h.records.push(record);
+          h.bestInterval = h.bestInterval || 0;
+          h.lapses = h.lapses || 0;
+          h.streak = h.streak || 0;
+          return h;
+        }
+      );
+
+      momentifyCardHistory<T>(cardHistory);
+      return cardHistory;
+    } catch (e) {
+      const reason = e as Reason;
+      if (reason.status === 404) {
+        const initCardHistory: CardHistory<T> = {
+          _id: cardHistoryID,
+          cardID: record.cardID,
+          courseID: record.courseID,
+          records: [record],
+          lapses: 0,
+          streak: 0,
+          bestInterval: 0,
+        };
+        getUserDB(this.username).put<CardHistory<T>>(initCardHistory);
+        return initCardHistory;
+      } else {
+        throw new Error(`putCardRecord failed because of:
+  name:${reason.name}
+  error: ${reason.error}
+  id: ${reason.id}
+  message: ${reason.message}`);
+      }
     }
   }
 
@@ -942,4 +1000,22 @@ export async function dropUserFromClassroom(user: string, classID: string) {
 
 export async function getUserClassrooms(user: string) {
   return getOrCreateClassroomRegistrationsDoc(user);
+}
+
+function momentifyCardHistory<T extends CardRecord>(cardHistory: CardHistory<T>) {
+  cardHistory.records = cardHistory.records.map<T>((record) => {
+    const ret: T = {
+      ...(record as object),
+    } as T;
+    ret.timeStamp = moment.utc(record.timeStamp);
+    return ret;
+  });
+}
+
+interface Reason {
+  status: number;
+  name: string;
+  error: string;
+  id: string;
+  message: string;
 }

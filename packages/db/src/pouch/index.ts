@@ -1,19 +1,11 @@
-import {
-  CardHistory,
-  CardRecord,
-  DocType,
-  getCardHistoryID,
-  SkuilderCourseData,
-} from '../db/types';
+import { DocType, SkuilderCourseData, GuestUsername, log } from '../core/types-legacy';
 import { ENV } from '@vue-skuilder/common';
-import { getCurrentUser } from '../stores/useAuthStore';
-import { GuestUsername } from '@/constants';
+// import { getCurrentUser } from '../stores/useAuthStore';
 import moment, { Moment } from 'moment';
 import PouchDBAuth from '@nilock2/pouchdb-authentication';
 import pouch from 'pouchdb-browser';
 import PouchDBFind from 'pouchdb-find';
 import process from 'process';
-import { log } from '@/logshim';
 import { getUserDB, ScheduledCard } from './userDB';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -21,14 +13,6 @@ import { getUserDB, ScheduledCard } from './userDB';
 
 pouch.plugin(PouchDBAuth);
 pouch.plugin(PouchDBFind);
-
-interface Reason {
-  status: number;
-  name: string;
-  error: string;
-  id: string;
-  message: string;
-}
 
 if (ENV.DEBUG) {
   // pouch.debug.enable('pouchdb:find');
@@ -176,68 +160,6 @@ export async function getRandomCards(courseIDs: string[]) {
 
     return ret;
   }
-}
-
-/**
- * Logs a record of the user's interaction with the card and returns the card's
- * up-to-date history
- * @param record the recent recorded interaction between user and card
- * @param user the current user
- * @returns The updated state of the card's CardHistory data
- */
-export async function putCardRecord<T extends CardRecord>(
-  record: T,
-  user: string
-): Promise<CardHistory<CardRecord>> {
-  const cardHistoryID = getCardHistoryID(record.courseID, record.cardID);
-  // stringify the current record to make it writable to couchdb
-  record.timeStamp = moment.utc(record.timeStamp).toString() as unknown as Moment;
-
-  try {
-    const u = await getCurrentUser();
-
-    const cardHistory = await u.update<CardHistory<T>>(cardHistoryID, function (h: CardHistory<T>) {
-      h.records.push(record);
-      h.bestInterval = h.bestInterval || 0;
-      h.lapses = h.lapses || 0;
-      h.streak = h.streak || 0;
-      return h;
-    });
-
-    momentifyCardHistory<T>(cardHistory);
-    return cardHistory;
-  } catch (e) {
-    const reason = e as Reason;
-    if (reason.status === 404) {
-      const initCardHistory: CardHistory<T> = {
-        _id: cardHistoryID,
-        cardID: record.cardID,
-        courseID: record.courseID,
-        records: [record],
-        lapses: 0,
-        streak: 0,
-        bestInterval: 0,
-      };
-      getUserDB(user).put<CardHistory<T>>(initCardHistory);
-      return initCardHistory;
-    } else {
-      throw new Error(`putCardRecord failed because of:
-name:${reason.name}
-error: ${reason.error}
-id: ${reason.id}
-message: ${reason.message}`);
-    }
-  }
-}
-
-function momentifyCardHistory<T extends CardRecord>(cardHistory: CardHistory<T>) {
-  cardHistory.records = cardHistory.records.map<T>((record) => {
-    const ret: T = {
-      ...(record as object),
-    } as T;
-    ret.timeStamp = moment.utc(record.timeStamp);
-    return ret;
-  });
 }
 
 export const REVIEW_PREFIX: string = 'card_review_';

@@ -12,8 +12,7 @@ import {
 } from './contentSource';
 import { getCredentialledCourseConfig, getTagID } from './courseAPI';
 import { CardData, DocType, Tag, TagStub } from '../core/types-legacy';
-import { ScheduledCard } from './userDB';
-import { getCurrentUser } from '@/stores/useAuthStore';
+import { ScheduledCard, User } from './userDB';
 
 const courseLookupDBTitle = 'coursedb-lookup';
 
@@ -44,15 +43,17 @@ export class CourseDB implements StudyContentSource {
 
   private db: PouchDB.Database;
   private id: string;
+  private _getCurrentUser: () => Promise<User>;
 
-  constructor(id: string) {
+  constructor(id: string, userLookup: () => Promise<User>) {
     this.id = id;
     this.db = getCourseDB(this.id);
+    this._getCurrentUser = userLookup;
   }
 
   public async getStudySession(cardLimit: number = 99) {
     // cardLimit = cardLimit ? cardLimit : 999;
-    const u = await getCurrentUser();
+    const u = await this._getCurrentUser();
     const userCrsdoc = await u.getCourseRegDoc(this.id);
     const activeCards = await u.getActiveCards();
 
@@ -69,7 +70,7 @@ export class CourseDB implements StudyContentSource {
   public async getPendingReviews(): Promise<(StudySessionReviewItem & ScheduledCard)[]> {
     type ratedReview = ScheduledCard & CourseElo;
 
-    const u = await getCurrentUser();
+    const u = await this._getCurrentUser();
     u.getCourseRegDoc(this.id);
 
     const reviews = await u.getPendingReviews(this.id); // todo: this adds a db round trip - should be server side
@@ -230,7 +231,7 @@ export class CourseDB implements StudyContentSource {
     let targetElo: number;
 
     if (options.elo === 'user') {
-      const u = await getCurrentUser();
+      const u = await this._getCurrentUser();
 
       targetElo = -1;
       try {
@@ -290,7 +291,7 @@ export class CourseDB implements StudyContentSource {
     });
   }
   public async getNewCards(limit: number = 99): Promise<StudySessionNewItem[]> {
-    const u = await getCurrentUser();
+    const u = await this._getCurrentUser();
 
     const activeCards = await u.getActiveCards();
     return (

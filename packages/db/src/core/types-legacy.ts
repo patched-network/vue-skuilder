@@ -1,6 +1,11 @@
-import { Answer, Evaluation } from '../base-course/Displayable';
-import { CourseElo } from '@vue-skuilder/common';
+import { CourseElo, Answer, Evaluation } from '@vue-skuilder/common';
 import { Moment } from 'moment';
+
+export const GuestUsername: string = 'Guest';
+
+export const log = (message: string) => {
+  console.log(message);
+};
 
 export enum DocType {
   DISPLAYABLE_DATA = 'DISPLAYABLE_DATA',
