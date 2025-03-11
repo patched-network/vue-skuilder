@@ -225,3 +225,10 @@ export function getStartAndEndKeys(key: string) {
     endkey: key + '\ufff0',
   };
 }
+
+//////////////////////
+// Package exports
+//////////////////////
+
+export * from './userDB';
+export * from './courseDB';
