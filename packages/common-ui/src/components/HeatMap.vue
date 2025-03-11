@@ -26,36 +26,51 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue';
-import { CardHistory, CardRecord } from '@vue-skuilder/db';
+import { defineComponent, PropType } from 'vue';
 import moment from 'moment';
-import { getCurrentUser } from '@/stores/useAuthStore';
-
-export interface DayData {
-  date: string;
-  count: number;
-}
-
-export interface Color {
-  h: number;
-  s: number;
-  l: number;
-}
+import { DayData, Color, ActivityRecord } from './HeatMap.types';
 
 export default defineComponent({
   name: 'HeatMap',
+
+  props: {
+    // Accept activity records directly as a prop
+    activityRecords: {
+      type: Array as PropType<ActivityRecord[]>,
+      default: () => [],
+    },
+    // Customize colors
+    inactiveColor: {
+      type: Object as PropType<Color>,
+      default: () => ({ h: 0, s: 0, l: 0.9 }),
+    },
+    activeColor: {
+      type: Object as PropType<Color>,
+      default: () => ({ h: 155, s: 1, l: 0.5 }),
+    },
+    // Customize size
+    cellSize: {
+      type: Number,
+      default: 12,
+    },
+    cellMargin: {
+      type: Number,
+      default: 3,
+    },
+    // Enable/disable seasonal colors
+    enableSeasonalColors: {
+      type: Boolean,
+      default: true,
+    },
+  },
 
   data() {
     return {
       heatmapData: {} as { [key: string]: number },
       weeks: [] as DayData[][],
-      cellSize: 12,
-      cellMargin: 3,
       tooltipData: null as DayData | null,
       tooltipStyle: {} as { [key: string]: string },
       maxInRange: 0,
-      inactiveColor: { h: 0, s: 0, l: 0.9 } as Color,
-      activeColor: { h: 155, s: 1, l: 0.5 } as Color,
     };
   },
 
@@ -68,19 +83,14 @@ export default defineComponent({
     },
   },
 
-  async created() {
-    console.log('Heatmap created');
-    const history = await (await getCurrentUser()).getHistory();
-
-    const allHist: CardHistory<CardRecord>[] = [];
-    for (let i = 0; i < history.length; i++) {
-      if (history[i]) {
-        allHist.push(history[i]!);
-      }
-    }
-
-    this.processHistory(allHist);
-    this.createWeeksData();
+  watch: {
+    activityRecords: {
+      handler() {
+        this.processRecords();
+        this.createWeeksData();
+      },
+      immediate: true,
+    },
   },
 
   methods: {
@@ -89,21 +99,23 @@ export default defineComponent({
       return moment.months()[m.month()] + ' ' + m.date();
     },
 
-    processHistory(history: CardHistory<CardRecord>[]) {
-      console.log(`Processing ${history.length} records`);
+    processRecords() {
+      console.log(`Processing ${this.activityRecords.length} records`);
       const data: { [key: string]: number } = {};
-      history.forEach((item) => {
-        if (item && item.records) {
-          item.records.forEach((record: CardRecord) => {
-            const date = moment(record.timeStamp).format('YYYY-MM-DD');
-            data[date] = (data[date] || 0) + 1;
-          });
-        }
+
+      this.activityRecords.forEach((record) => {
+        const date = moment(record.timeStamp).format('YYYY-MM-DD');
+        data[date] = (data[date] || 0) + 1;
       });
+
       this.heatmapData = data;
     },
 
     createWeeksData() {
+      // Reset weeks and max count
+      this.weeks = [];
+      this.maxInRange = 0;
+
       const end = moment();
       const start = end.clone().subtract(52, 'weeks');
       const day = start.clone().startOf('week');
@@ -134,16 +146,20 @@ export default defineComponent({
 
       let seasonalColor: Color = this.activeColor;
 
-      const now = moment();
-      if (now.month() === 11 && now.date() >= 5) {
-        seasonalColor = Math.random() > 0.5 ? { h: 350, s: 0.8, l: 0.5 } : { h: 135, s: 0.8, l: 0.4 };
-      } else if (now.month() === 9 && now.date() >= 25) {
-        seasonalColor =
-          Math.random() > 0.5
-            ? { h: 0, s: 0, l: 0 }
-            : Math.random() > 0.5
-            ? { h: 30, s: 1, l: 0.5 }
-            : { h: 270, s: 1, l: 0.5 };
+      if (this.enableSeasonalColors) {
+        const now = moment();
+        if (now.month() === 11 && now.date() >= 5) {
+          // Christmas colors
+          seasonalColor = Math.random() > 0.5 ? { h: 350, s: 0.8, l: 0.5 } : { h: 135, s: 0.8, l: 0.4 };
+        } else if (now.month() === 9 && now.date() >= 25) {
+          // Halloween colors
+          seasonalColor =
+            Math.random() > 0.5
+              ? { h: 0, s: 0, l: 0 }
+              : Math.random() > 0.5
+              ? { h: 30, s: 1, l: 0.5 }
+              : { h: 270, s: 1, l: 0.5 };
+        }
       }
 
       const h = seasonalColor.h;
@@ -185,9 +201,4 @@ export default defineComponent({
   border-radius: 3px;
   font-size: 12px;
 }
-
-/* div {
-  display: flex;
-  justify-content: center;
-} */
 </style>
