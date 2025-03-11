@@ -104,7 +104,7 @@ export default defineComponent({
   },
 
   async created() {
-    this.courseDB = new CourseDB(this._id);
+    this.courseDB = new CourseDB(this._id, getCurrentUser);
     this.user = await getCurrentUser();
 
     const userCourses = await this.user.getCourseRegistrationsDoc();
