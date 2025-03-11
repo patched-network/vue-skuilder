@@ -1,10 +1,7 @@
 <template>
   <v-dialog v-if="display" max-width="500px" transition="dialog-transition">
     <template #activator="{ props }">
-      <v-btn icon color="primary" v-bind="props">
-        <!-- <v-icon>mdi-question-mark</v-icon> -->
-        ?
-      </v-btn>
+      <v-btn icon color="primary" v-bind="props"> ? </v-btn>
     </template>
 
     <v-card>
@@ -13,9 +10,9 @@
         <v-spacer></v-spacer>
       </v-toolbar>
       <v-list>
-        <v-list-item v-for="hk in commands" :key="hk.hotkey">
+        <v-list-item v-for="hk in commands" :key="Array.isArray(hk.hotkey) ? hk.hotkey.join(',') : hk.hotkey">
           <v-btn variant="outlined" color="black">
-            {{ hk.hotkey }}
+            {{ Array.isArray(hk.hotkey) ? hk.hotkey[0] : hk.hotkey }}
           </v-btn>
           <v-spacer></v-spacer>
           <span class="text-right">
@@ -28,26 +25,40 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue';
-import SkldrMouseTrap, { HotKeyMetaData } from '../SkldrMouseTrap';
+import { defineComponent, PropType } from 'vue';
+import SkldrMouseTrap, { HotKeyMetaData } from '../utils/SkldrMouseTrap';
+import { SkMouseTrapProps } from './SkMouseTrap.types';
 
 export default defineComponent({
-  name: 'SkldrControlsView',
+  name: 'SkMouseTrap',
+
+  props: {
+    refreshInterval: {
+      type: Number as PropType<SkMouseTrapProps['refreshInterval']>,
+      default: 500,
+    },
+  },
 
   data() {
     return {
       commands: [] as HotKeyMetaData[],
       display: false,
+      intervalId: null as number | null,
     };
   },
 
   created() {
-    setInterval(this.refreshState, 500);
+    this.intervalId = window.setInterval(this.refreshState, this.refreshInterval);
+  },
+
+  beforeUnmount() {
+    if (this.intervalId !== null) {
+      clearInterval(this.intervalId);
+    }
   },
 
   methods: {
     refreshState() {
-      // console.log(`this.display: ${this.display}`);
       this.commands = SkldrMouseTrap.commands;
       this.display = this.commands.length > 0;
     },
