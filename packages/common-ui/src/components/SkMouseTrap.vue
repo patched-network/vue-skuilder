@@ -26,7 +26,7 @@
 
 <script lang="ts">
 import { defineComponent, PropType } from 'vue';
-import SkldrMouseTrap, { HotKeyMetaData } from '../utils/SkldrMouseTrap';
+import { SkldrMouseTrap, HotKeyMetaData } from '../utils/SkldrMouseTrap';
 import { SkMouseTrapProps } from './SkMouseTrap.types';
 
 export default defineComponent({

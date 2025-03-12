@@ -5,12 +5,13 @@ import { ExtendedKeyboardEvent, MousetrapInstance } from 'mousetrap';
 export interface HotKey extends HotKeyMetaData {
   callback: (e: ExtendedKeyboardEvent, combo: string) => any;
 }
+
 export interface HotKeyMetaData {
   command: string;
   hotkey: string | string[];
 }
 
-export default class SkldrMouseTrap {
+export class SkldrMouseTrap {
   private static _instance: SkldrMouseTrap;
 
   private mouseTrap: MousetrapInstance;
@@ -36,7 +37,6 @@ export default class SkldrMouseTrap {
 
     hk.forEach((k) => {
       Mousetrap.bindGlobal(k.hotkey, k.callback);
-      // SkldrMouseTrap.instance().mouseTrap.bindGlobal(k.hotkey, k.callback);
     });
   }
 
@@ -48,7 +48,6 @@ export default class SkldrMouseTrap {
 
   private static instance(): SkldrMouseTrap {
     if (SkldrMouseTrap._instance) {
-      // MouseTrap.bind()
       return SkldrMouseTrap._instance;
     } else {
       SkldrMouseTrap._instance = new SkldrMouseTrap();
