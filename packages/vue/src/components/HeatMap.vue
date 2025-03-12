@@ -5,7 +5,7 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 import { HeatMap, ActivityRecord } from '@vue-skuilder/common-ui';
-import { CardHistory, CardRecord } from '@vue-skuilder/db';
+import { CardRecord } from '@vue-skuilder/db';
 import { getCurrentUser } from '@/stores/useAuthStore';
 
 export default defineComponent({
