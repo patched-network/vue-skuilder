@@ -61,7 +61,7 @@
 import { ref, computed, onBeforeMount, onMounted, watch } from 'vue';
 import { useTheme } from 'vuetify';
 import UserLoginAndRegistrationContainer from '@/components/UserLoginAndRegistrationContainer.vue';
-import SnackbarService from '@/components/SnackbarService.vue';
+import { SnackbarService } from '@vue-skuilder/common-ui';
 import { getLatestVersion } from '@vue-skuilder/db';
 import { useConfigStore } from '@/stores/useConfigStore';
 import { useAuthStore } from '@/stores/useAuthStore';

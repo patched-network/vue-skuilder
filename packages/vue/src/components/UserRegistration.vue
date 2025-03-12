@@ -64,7 +64,7 @@
 import { defineComponent } from 'vue';
 import { User } from '@vue-skuilder/db';
 import { log } from '@/logshim';
-import { alertUser } from './SnackbarService.vue';
+import { alertUser } from '@vue-skuilder/common-ui';
 import { Status } from '@vue-skuilder/common';
 import { getCurrentUser, useAuthStore } from '@/stores/useAuthStore';
 

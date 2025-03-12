@@ -105,7 +105,7 @@ import {
   User,
 } from '@vue-skuilder/db';
 import serverRequest from '@/server/index';
-import { alertUser } from '@/components/SnackbarService.vue';
+import { alertUser } from '@vue-skuilder/common-ui';
 import ClassroomEditor from '@/components/Classrooms/CreateClassroom.vue';
 import { getCurrentUser } from '@/stores/useAuthStore';
 

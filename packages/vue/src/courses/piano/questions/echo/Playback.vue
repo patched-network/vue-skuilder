@@ -36,7 +36,7 @@ import { EchoQuestion } from '.';
 import moment from 'moment';
 import SyllableSeqVis from '../../utility/SyllableSeqVis.vue';
 import NoteDisplay from '../../NoteDisplay.vue';
-import { alertUser } from '@/components/SnackbarService.vue';
+import { alertUser } from '@vue-skuilder/common-ui';
 import { Status } from '@vue-skuilder/common';
 import { ViewData } from '@/base-course/Interfaces/ViewData';
 import { SkldrMouseTrap } from '@vue-skuilder/common-ui';

@@ -123,7 +123,7 @@ import {
   Tag,
 } from '@vue-skuilder/db';
 import { defineComponent } from 'vue';
-import { alertUser } from '../SnackbarService.vue';
+import { alertUser } from '@vue-skuilder/common-ui';
 import { Status } from '@vue-skuilder/common';
 
 function isConstructor(obj: unknown) {

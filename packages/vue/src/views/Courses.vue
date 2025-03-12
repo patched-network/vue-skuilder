@@ -80,7 +80,7 @@ import CourseStubCard from '@/components/Courses/CourseStubCard.vue';
 import _ from 'lodash';
 import serverRequest from '../server';
 import { ServerRequestType, CourseConfig } from '@vue-skuilder/common';
-import { alertUser } from '../components/SnackbarService.vue';
+import { alertUser } from '@vue-skuilder/common-ui';
 import { getCourseList, User } from '@vue-skuilder/db';
 import { getCurrentUser } from '@/stores/useAuthStore';
 

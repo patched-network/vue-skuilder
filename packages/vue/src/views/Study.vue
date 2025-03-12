@@ -179,7 +179,7 @@ import { newInterval } from '@/db/SpacedRepetition';
 import { adjustCourseScores, CourseElo, toCourseElo, isCourseElo } from '@vue-skuilder/common';
 import confetti from 'canvas-confetti';
 import moment from 'moment';
-import { alertUser } from '../components/SnackbarService.vue';
+import { alertUser } from '@vue-skuilder/common-ui';
 import { randomInt } from '../courses/math/utility';
 import { Status, CourseConfig } from '@vue-skuilder/common';
 import { useConfigStore } from '@/stores/useConfigStore';

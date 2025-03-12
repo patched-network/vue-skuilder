@@ -66,7 +66,7 @@ import { defineComponent } from 'vue';
 import { getCredentialledCourseConfig, getTag, updateTag, DocType, Tag } from '@vue-skuilder/db';
 import { Status, CourseConfig } from '@vue-skuilder/common';
 import CourseCardBrowser from './CourseCardBrowser.vue';
-import { alertUser } from '../SnackbarService.vue';
+import { alertUser } from '@vue-skuilder/common-ui';
 
 export default defineComponent({
   name: 'TagInformation',

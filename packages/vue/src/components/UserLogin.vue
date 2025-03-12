@@ -46,7 +46,7 @@
 <script lang="ts" setup>
 import { ref, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { alertUser } from '@/components/SnackbarService.vue';
+import { alertUser } from '@vue-skuilder/common-ui';
 import { log } from '@/logshim';
 import { Status } from '@vue-skuilder/common';
 import { User } from '@vue-skuilder/db';

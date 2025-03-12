@@ -83,7 +83,7 @@ import { DataShape } from '@/base-course/Interfaces/DataShape';
 import CardBrowser from '@/components/Edit/CardBrowser.vue';
 import TagsInput, { TagsInputInstance } from '@/components/Edit/TagsInput.vue';
 import { FieldInputInstance, isFieldInput } from '@/components/Edit/ViewableDataInputForm/FieldInput.types';
-import { alertUser } from '@/components/SnackbarService.vue';
+import { alertUser } from '@vue-skuilder/common-ui';
 import Courses from '@/courses';
 import { NameSpacer, ShapeDescriptor } from '@/courses/NameSpacer';
 import { addNote55, getCourseTagStubs } from '@vue-skuilder/db';
