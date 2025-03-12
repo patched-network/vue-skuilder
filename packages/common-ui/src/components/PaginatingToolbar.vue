@@ -1,8 +1,8 @@
 <template>
-  <v-toolbar dense>
+  <v-toolbar density="compact">
     <v-toolbar-title>
       <span>{{ title }}</span>
-      <span class="ms-2 text-subtitle-2">{{ subtitle }}</span>
+      <span v-if="subtitle" class="ms-2 text-subtitle-2">{{ subtitle }}</span>
     </v-toolbar-title>
     <v-spacer></v-spacer>
     <v-btn variant="text" icon color="secondary" :disabled="page == 1" @click="$emit('first')">
@@ -38,6 +38,7 @@
 
 <script lang="ts">
 import { defineComponent, PropType } from 'vue';
+import type { PaginatingToolbarProps, PaginatingToolbarEvents } from './PaginatingToolbar.types';
 
 export default defineComponent({
   name: 'PaginatingToolbar',
@@ -61,7 +62,7 @@ export default defineComponent({
       required: false,
       default: '',
     },
-  },
+  } as const,
 
   emits: ['first', 'prev', 'next', 'last', 'set-page'],
 });
