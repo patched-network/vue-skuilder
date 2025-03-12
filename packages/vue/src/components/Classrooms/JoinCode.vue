@@ -16,7 +16,7 @@
 </template>
 
 <script lang="ts">
-import { log } from '@/logshim';
+import { log } from '@vue-skuilder/common';
 import { TeacherClassroomDB } from '@vue-skuilder/db';
 import { ClassroomConfig } from '@vue-skuilder/common';
 import { defineComponent } from 'vue';
