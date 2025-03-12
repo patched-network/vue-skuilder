@@ -1,17 +1,19 @@
 import { Question } from '../../../../base-course/Displayable';
-import { DataShape } from '../../../../base-course/Interfaces/DataShape';
-import { FieldDefinition } from '../../../../base-course/Interfaces/FieldDefinition';
-import { NonEmptyString } from '../../../../base-course/Validators';
-import { DataShapeName } from '../../../../enums/DataShapeNames';
+import {
+  Answer,
+  DataShapeName,
+  Validators,
+  DataShape,
+  FieldDefinition,
+} from '@vue-skuilder/common';
 import { FieldType } from '../../../../enums/FieldType';
-import { Answer } from '../../../../base-course/Displayable';
 import IdentifyVocab from './identify.vue';
 
 const fields: FieldDefinition[] = [
   {
     name: 'word',
     type: FieldType.STRING,
-    validator: NonEmptyString,
+    validator: Validators.NonEmptyString,
   },
   {
     name: 'image',
