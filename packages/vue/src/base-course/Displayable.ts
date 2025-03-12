@@ -2,6 +2,7 @@ import { DefineComponent, defineComponent } from 'vue';
 import { DataShape } from '../base-course/Interfaces/DataShape';
 import { ViewData } from '../base-course/Interfaces/ViewData';
 import { FieldType } from '../enums/FieldType';
+import { Answer } from '../base-course/Interfaces/AnswerInterfaces';
 
 // [ ] #vue3 - post migration, specify this more precisely (no longer a hodge-podge)
 export type ViewComponent =
@@ -17,9 +18,6 @@ export function isDefineComponent(
 // export function isComponentOptions(v: ViewComponent): v is ComponentOptions<any> {
 //   return (v as ComponentOptions<Vue>).name !== undefined;
 // }
-
-// eslint-disable-next-line
-export interface Answer {}
 
 // tslint:disable-next-line:max-classes-per-file
 export abstract class Displayable {
