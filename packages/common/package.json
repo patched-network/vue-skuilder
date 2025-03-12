@@ -7,7 +7,7 @@
     "module": "dist/index.js",
     "types": "dist/index.d.ts",
     "scripts": {
-        "build": "tsc"
+        "build": "rm -rf dist && tsc"
     },
     "packageManager": "yarn@4.6.0",
     "devDependencies": {

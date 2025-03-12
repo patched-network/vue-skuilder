@@ -1,7 +1,7 @@
 // [ ] remove this file - duplicated in `common` package
 
-import { FieldDefinition } from '../../base-course/Interfaces/FieldDefinition';
-import { DataShapeName } from '../../enums/DataShapeNames';
+import { FieldDefinition } from './FieldDefinition.js';
+import { DataShapeName } from '../course-data.js';
 
 export interface DataShape {
   name: DataShapeName;

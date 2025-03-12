@@ -2,48 +2,10 @@ import { Status } from './wire-format.js';
 import { DisplayableData, DocType } from './db.js';
 import { NameSpacer } from './namespacer.js';
 import { CourseElo } from './elo.js';
+import { DataShape } from './interfaces/DataShape.js';
+import { FieldDefinition } from './interfaces/FieldDefinition.js';
 
-export interface DataShape {
-  name: DataShapeName;
-  fields: FieldDefinition[];
-}
-
-export interface ValidationResult {
-  status: Status;
-  msg: string;
-}
-
-export type ValidatingFunction = (value: string) => ValidationResult;
-
-export interface Validator {
-  instructions?: string;
-  placeholder?: string;
-  test: ValidatingFunction;
-}
-
-export enum FieldType {
-  STRING = 'string',
-  NUMBER = 'number',
-  INT = 'int',
-  IMAGE = 'image',
-  MARKDOWN = 'markdown',
-  AUDIO = 'audio',
-  MIDI = 'midi',
-  MEDIA_UPLOADS = 'uploads',
-  CHESS_PUZZLE = 'chess_puzzle',
-}
-
-export interface Tagger {
-  (x: any): string[];
-}
-
-export interface FieldDefinition {
-  name: string;
-  type: FieldType;
-  validator?: Validator;
-  tagger?: Tagger;
-  generateELO?: (x: any) => CourseElo;
-}
+import { FieldType } from './enums/FieldType.js';
 
 export enum DataShapeName {
   BLANK = '',
@@ -190,8 +152,6 @@ export function prepareNote55(
 /**
  * Question components
  */
-
-export interface Answer {}
 
 export interface Evaluation {
   isCorrect: boolean; // expand / contract the SRS

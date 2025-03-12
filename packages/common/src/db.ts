@@ -1,4 +1,5 @@
-import { Answer, Evaluation } from './course-data.js';
+import { Evaluation } from './course-data.js';
+import { Answer } from './interfaces/AnswerInterfaces.js';
 import { CourseElo } from './elo.js';
 import { Moment } from 'moment';
 

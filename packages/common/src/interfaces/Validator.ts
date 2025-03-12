@@ -1,9 +1,9 @@
-import { Status } from '@vue-skuilder/common';
+import { Status } from '../wire-format.js';
 
 export type ValidatingFunction = (value: string) => ValidationResult;
 export type VuetifyRule = (value: string) => true | string;
 
-interface ValidationResult {
+export interface ValidationResult {
   status: Status;
   msg: string;
 }

@@ -4,3 +4,6 @@ export { default as ENV } from './ENVIRONMENT_VARS.js';
 export * from './elo.js';
 export * from './namespacer.js';
 export * from './logshim.js';
+
+// interfaces
+export * from './interfaces/index.js';

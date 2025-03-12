@@ -1,8 +1,7 @@
-import { Validator } from '../../base-course/Interfaces/Validator';
-import { Tagger } from '../../base-course/Interfaces/Tagger';
-import { FieldType } from '../../enums/FieldType';
-import { CourseElo } from '@vue-skuilder/common';
-
+import { Validator } from './Validator.js';
+import { Tagger } from './Tagger.js';
+import { FieldType } from '../enums/FieldType.js';
+import { CourseElo } from '../elo.js';
 export interface FieldDefinition {
   name: string;
   type: FieldType;
