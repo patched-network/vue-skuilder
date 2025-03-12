@@ -8,10 +8,12 @@
       location="bottom right"
       :color="getColor(snack)"
     >
-      {{ snack.text }}
-      <v-btn icon variant="text" @click="close()">
-        <v-icon>mdi-close</v-icon>
-      </v-btn>
+      <div class="d-flex align-center justify-space-between w-100">
+        <span>{{ snack.text }}</span>
+        <v-btn icon variant="text" @click="close()">
+          <v-icon>mdi-close</v-icon>
+        </v-btn>
+      </div>
     </v-snackbar>
   </div>
 </template>
@@ -19,30 +21,7 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 import { Status } from '@vue-skuilder/common';
-
-interface SnackbarOptions {
-  text: string;
-  status: Status;
-  timeout?: number;
-}
-
-let globalSnackbarInstance: {
-  addSnack: (snack: SnackbarOptions) => void;
-} | null = null;
-
-export function alertUser(msg: SnackbarOptions) {
-  // Try getting the instance through DOM first
-  const element = document.getElementById('SnackbarService');
-  if (element) {
-    // Vue 3 way to access component instance
-    const snackBarService = globalSnackbarInstance;
-    if (snackBarService) {
-      snackBarService.addSnack(msg);
-      return;
-    }
-  }
-  console.error('SnackbarService not found');
-}
+import { SnackbarOptions, setInstance } from './SnackbarService';
 
 const SnackbarService = defineComponent({
   name: 'SnackbarService',
@@ -61,7 +40,7 @@ const SnackbarService = defineComponent({
   },
   mounted() {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
-    globalSnackbarInstance = this;
+    setInstance(this);
   },
 
   methods: {
