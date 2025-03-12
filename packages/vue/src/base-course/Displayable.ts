@@ -1,8 +1,6 @@
 import { DefineComponent, defineComponent } from 'vue';
-import { DataShape } from '../base-course/Interfaces/DataShape';
-import { ViewData } from '../base-course/Interfaces/ViewData';
 import { FieldType } from '../enums/FieldType';
-import { Answer } from '../base-course/Interfaces/AnswerInterfaces';
+import { DataShape, ViewData, Answer, Evaluation } from '@vue-skuilder/common';
 
 // [ ] #vue3 - post migration, specify this more precisely (no longer a hodge-podge)
 export type ViewComponent =
@@ -134,14 +132,3 @@ export abstract class Question extends Displayable {
   with 7 * 4 = 21
   */
 }
-
-export interface Evaluation {
-  isCorrect: boolean; // expand / contract the SRS
-  performance: Performance;
-}
-
-type Performance =
-  | number
-  | {
-      [dimension: string]: Performance;
-    };

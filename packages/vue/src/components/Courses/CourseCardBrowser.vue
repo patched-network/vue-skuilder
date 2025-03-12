@@ -105,7 +105,7 @@
 
 <script lang="ts">
 import { ViewComponent } from '@/base-course/Displayable';
-import { displayableDataToViewData } from '@/base-course/Interfaces/ViewData';
+import { displayableDataToViewData } from '@vue-skuilder/common';
 import TagsInput from '@/components/Edit/TagsInput.vue';
 import { PaginatingToolbar } from '@vue-skuilder/common-ui';
 import CardLoader from '@/components/Study/CardLoader.vue';

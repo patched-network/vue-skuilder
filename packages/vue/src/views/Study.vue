@@ -143,7 +143,6 @@
 import { defineComponent } from 'vue';
 import { SkMouseTrap } from '@vue-skuilder/common-ui';
 import { ViewComponent } from '@/base-course/Displayable';
-import { displayableDataToViewData, ViewData } from '@/base-course/Interfaces/ViewData';
 import { isQuestionView } from '@/base-course/CompositionViewable';
 import SkTagsInput from '@/components/Edit/TagsInput.vue';
 import HeatMap from '@/components/HeatMap.vue';
@@ -176,7 +175,14 @@ import {
 } from '@vue-skuilder/db';
 import SessionController, { StudySessionRecord } from '@/db/SessionController';
 import { newInterval } from '@/db/SpacedRepetition';
-import { adjustCourseScores, CourseElo, toCourseElo, isCourseElo } from '@vue-skuilder/common';
+import {
+  adjustCourseScores,
+  CourseElo,
+  toCourseElo,
+  isCourseElo,
+  displayableDataToViewData,
+  ViewData,
+} from '@vue-skuilder/common';
 import confetti from 'canvas-confetti';
 import moment from 'moment';
 import { alertUser } from '@vue-skuilder/common-ui';

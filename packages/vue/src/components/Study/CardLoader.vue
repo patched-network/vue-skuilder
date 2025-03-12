@@ -15,11 +15,9 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 import Courses from '@/courses';
-import { displayableDataToViewData, ViewData } from '@/base-course/Interfaces/ViewData';
-import { CardData, CardRecord, DisplayableData } from '@vue-skuilder/db';
-import { log } from '@vue-skuilder/common';
+import { getCourseDoc, CardData, CardRecord, DisplayableData } from '@vue-skuilder/db';
+import { log, displayableDataToViewData, ViewData } from '@vue-skuilder/common';
 import CardViewer from './CardViewer.vue';
-import { getCourseDoc } from '@vue-skuilder/db';
 import { ViewComponent } from '@/base-course/Displayable';
 
 export default defineComponent({
