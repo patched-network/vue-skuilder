@@ -18,7 +18,7 @@ import UserInput from '@/base-course/Components/UserInput/OptionsUserInput';
 import MultipleChoiceOption from './MultipleChoiceOption.vue';
 import { Answer } from '../Displayable';
 import { defineComponent, PropType } from 'vue';
-import SkldrMouseTrap from '@/SkldrMouseTrap';
+import { SkldrMouseTrap } from '@vue-skuilder/common-ui';
 
 export interface RadioSelectAnswer extends Answer {
   choiceList: string[];

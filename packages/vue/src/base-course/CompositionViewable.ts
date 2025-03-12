@@ -2,8 +2,8 @@
 
 import moment from 'moment';
 import { computed, ComputedRef, defineComponent, PropType, ref, Ref } from 'vue';
-import { CardRecord, QuestionRecord } from '../db/types';
-import { HotKey } from '../SkldrMouseTrap';
+import { CardRecord, QuestionRecord } from '@vue-skuilder/db';
+import { HotKey } from '@vue-skuilder/common-ui';
 import { Answer, Displayable, Question } from './Displayable';
 import { ViewData } from './Interfaces/ViewData';
 

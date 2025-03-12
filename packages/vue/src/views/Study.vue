@@ -110,7 +110,7 @@
           {{ timeString }}
         </v-tooltip>
 
-        <SkldrControlsView />
+        <SkMouseTrap />
 
         <!-- <v-speed-dial v-if="!sessionFinished" v-model="fab" location="left center" transition="slide-x-transition">
           <template #activator="{ props }">
@@ -141,6 +141,7 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
+import { SkMouseTrap } from '@vue-skuilder/common-ui';
 import { ViewComponent } from '@/base-course/Displayable';
 import { displayableDataToViewData, ViewData } from '@/base-course/Interfaces/ViewData';
 import { isQuestionView } from '@/base-course/CompositionViewable';
@@ -178,7 +179,6 @@ import { newInterval } from '@/db/SpacedRepetition';
 import { adjustCourseScores, CourseElo, toCourseElo, isCourseElo } from '@vue-skuilder/common';
 import confetti from 'canvas-confetti';
 import moment from 'moment';
-import SkldrControlsView from '../components/SkMouseTrap.vue';
 import { alertUser } from '../components/SnackbarService.vue';
 import { randomInt } from '../courses/math/utility';
 import { Status, CourseConfig } from '@vue-skuilder/common';
@@ -203,7 +203,7 @@ export default defineComponent({
 
   components: {
     CardViewer, // [ ] consider: cardloader intermediary?
-    SkldrControlsView,
+    SkMouseTrap,
     SkTagsInput,
     SessionConfiguration,
     HeatMap,

@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 import { ref, onBeforeUnmount, onMounted, getCurrentInstance } from 'vue';
-import SkldrMouseTrap from '../../SkldrMouseTrap';
+import { SkldrMouseTrap } from '@vue-skuilder/common-ui';
 
 const props = defineProps<{
   src: string | string[];

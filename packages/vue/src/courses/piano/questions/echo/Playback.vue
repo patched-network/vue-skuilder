@@ -39,7 +39,7 @@ import NoteDisplay from '../../NoteDisplay.vue';
 import { alertUser } from '@/components/SnackbarService.vue';
 import { Status } from '@vue-skuilder/common';
 import { ViewData } from '@/base-course/Interfaces/ViewData';
-import SkldrMouseTrap from '@/SkldrMouseTrap';
+import { SkldrMouseTrap } from '@vue-skuilder/common-ui';
 
 export default defineComponent({
   // this class name *may* be used as a lookup for dynamic component.
@@ -65,7 +65,7 @@ export default defineComponent({
 
   setup(props, { emit }) {
     const viewableUtils = useViewable(props, emit, 'Playback');
-    const questionUtils = useQuestionView<EchoQuestion>(viewableUtils, props.modifyDifficulty);
+    const questionUtils = useQuestionView<EchoQuestion>(viewableUtils);
 
     // State
     const midi = ref<SkMidi>();
