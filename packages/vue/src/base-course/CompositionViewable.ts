@@ -132,49 +132,6 @@ export function useQuestionView<Q extends Question>(
   };
 }
 
-// Information view composable
-export function useInformationView<D extends Displayable>() {
-  const displayable = ref<D>();
-
-  return {
-    displayable,
-  };
-}
-
-// Base component definitions that can be extended
-export const ViewableComponent = defineComponent({
-  name: 'ViewableComponent',
-  props: {
-    data: {
-      type: Array as PropType<ViewData[]>,
-      required: true,
-    },
-  },
-  setup(props, { emit }) {
-    return useViewable(props, emit, 'ViewableComponent');
-  },
-});
-
-export const QuestionViewComponent = defineComponent({
-  name: 'QuestionViewComponent',
-  props: {
-    data: {
-      type: Array as PropType<ViewData[]>,
-      required: true,
-    },
-    modifyDifficulty: Number,
-  },
-  setup(props, { emit }) {
-    const viewableUtils = useViewable(props, emit, 'QuestionViewComponent');
-    const questionUtils = useQuestionView(viewableUtils, props.modifyDifficulty);
-
-    return {
-      ...viewableUtils,
-      ...questionUtils,
-    };
-  },
-});
-
 // Helper functions
 export function isQuestionView(component: any): component is QuestionViewUtils<Question> {
   return 'submitAnswer' in component && 'priorAttempts' in component;
