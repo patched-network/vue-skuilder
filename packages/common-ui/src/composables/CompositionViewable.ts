@@ -1,10 +1,10 @@
 // src/base-course/CompositionViewable.ts
 
 import moment from 'moment';
-import { computed, ComputedRef, defineComponent, PropType, ref, Ref } from 'vue';
+import { computed, ComputedRef, ref, Ref } from 'vue';
 import { CardRecord, QuestionRecord } from '@vue-skuilder/db';
 import { HotKey } from '@vue-skuilder/common-ui';
-import { Displayable, Question } from './Displayable';
+import { Question } from './Displayable';
 import { ViewData, Answer } from '@vue-skuilder/common';
 
 // Core interfaces to ensure type safety
