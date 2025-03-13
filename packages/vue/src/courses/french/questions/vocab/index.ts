@@ -5,8 +5,8 @@ import {
   Validators,
   DataShape,
   FieldDefinition,
+  FieldType,
 } from '@vue-skuilder/common';
-import { FieldType, ViewData, Answer } from '@vue-skuilder/common';
 import IdentifyVocab from './identify.vue';
 
 const fields: FieldDefinition[] = [
