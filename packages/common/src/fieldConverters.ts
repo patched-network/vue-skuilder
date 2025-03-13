@@ -59,6 +59,12 @@ export const fieldConverters: { [index in FieldType]: FieldConverter } = {
   },
 };
 
+/**
+ * FieldConverter contains functions to process raw user input
+ * from a DataInputForm into
+ *  - database-ready format (databseConverter)
+ *  - render-ready format (previewConverter)
+ */
 interface FieldConverter {
   databaseConverter: Converter;
   previewConverter: Converter;
