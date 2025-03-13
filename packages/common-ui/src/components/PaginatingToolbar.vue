@@ -20,7 +20,7 @@
       hide-details
       :return-object="false"
       variant="outlined"
-      @update:model-value="(val) => $emit('set-page', val)"
+      @update:model-value="(val: unknown) => $emit('set-page', val)"
     >
       <template #selection="{ item }">
         {{ item.value }}
