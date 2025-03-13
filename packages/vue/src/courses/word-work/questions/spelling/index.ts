@@ -1,7 +1,13 @@
 import { Question } from '../../../../base-course/Displayable';
-import { Validators, DataShape, Answer, FieldDefinition, ViewData } from '@vue-skuilder/common';
-import { DataShapeName } from '../../../../enums/DataShapeNames';
-import { FieldType } from '../../../../enums/FieldType';
+import {
+  DataShapeName,
+  FieldType,
+  Validators,
+  DataShape,
+  Answer,
+  FieldDefinition,
+  ViewData,
+} from '@vue-skuilder/common';
 import TextBox from './textBox.vue';
 
 const fields: FieldDefinition[] = [

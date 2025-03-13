@@ -1,8 +1,8 @@
 import { Answer, Question } from '../../../../base-course/Displayable';
 import { FieldDefinition } from '../../../../base-course/Interfaces/FieldDefinition';
-import { ViewData } from '../../../../base-course/Interfaces/ViewData';
-import { DataShapeName } from '../../../../enums/DataShapeNames';
-import { FieldType } from '../../../../enums/FieldType';
+import { ViewData } from '@vue-skuilder/common';
+import { DataShapeName } from '@vue-skuilder/common';
+import { FieldType } from '@vue-skuilder/common';
 import TrueFalse from './trueFalse.vue';
 
 const fields: FieldDefinition[] = [

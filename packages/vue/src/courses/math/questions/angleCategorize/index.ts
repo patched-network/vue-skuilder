@@ -2,10 +2,7 @@ import _ from 'lodash';
 import { Question } from '../../../../base-course/Displayable';
 import { RadioMultipleChoiceAnswer } from '../../../../base-course/Interfaces/AnswerInterfaces';
 import { FieldDefinition } from '../../../../base-course/Interfaces/FieldDefinition';
-import { ViewData } from '../../../../base-course/Interfaces/ViewData';
-import { DataShapeName } from '../../../../enums/DataShapeNames';
-import { FieldType } from '../../../../enums/FieldType';
-import { Status } from '@vue-skuilder/common';
+import { ViewData, DataShapeName, FieldType, Status } from '@vue-skuilder/common';
 import AngleCategorizeV from './angleCategorize.vue';
 
 const validator = {

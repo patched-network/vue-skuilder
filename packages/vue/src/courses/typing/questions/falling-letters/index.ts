@@ -1,10 +1,7 @@
 // vue/src/courses/typing/questions/falling-letters/index.ts
 import { Answer, Question } from '@/base-course/Displayable';
 import { DataShape } from '@/base-course/Interfaces/DataShape';
-import { ViewData } from '@/base-course/Interfaces/ViewData';
-import { DataShapeName } from '@/enums/DataShapeNames';
-import { FieldType } from '@/enums/FieldType';
-import { Status } from '@vue-skuilder/common';
+import { DataShapeName, FieldType, Status, ViewData } from '@vue-skuilder/common';
 import FallingLettersView from './FallingLetters.vue';
 
 const data = function () {

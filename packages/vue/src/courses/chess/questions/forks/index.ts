@@ -4,9 +4,7 @@ import { DataShape } from '@/base-course/Interfaces/DataShape';
 import { ViewData } from '@/base-course/Interfaces/ViewData';
 import { Chess, Piece as cjsPiece, Square, Color, PieceSymbol } from 'chess.js';
 import ForksView from './forksView.vue';
-import { Status } from '@vue-skuilder/common';
-import { FieldType } from '@/enums/FieldType';
-import { DataShapeName } from '@/enums/DataShapeNames';
+import { FieldType, DataShapeName, Status } from '@vue-skuilder/common';
 import ChessUtils from '../../chessUtils';
 import { Key } from '../../chessground/types';
 

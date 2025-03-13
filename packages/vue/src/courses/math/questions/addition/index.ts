@@ -1,8 +1,6 @@
 import { Answer, Question, ViewComponent } from '../../../../base-course/Displayable';
 import { FieldDefinition } from '../../../../base-course/Interfaces/FieldDefinition';
-import { ViewData } from '../../../../base-course/Interfaces/ViewData';
-import { DataShapeName } from '../../../../enums/DataShapeNames';
-import { FieldType } from '../../../../enums/FieldType';
+import { ViewData, DataShapeName, FieldType } from '@vue-skuilder/common';
 import HorizontalAddition from './horizontal.vue';
 import VerbalAddition from './verbal.vue';
 
@@ -17,7 +15,7 @@ const fields: FieldDefinition[] = [
   },
 ];
 
-const data = function() {
+const data = function () {
   const ret: { a: number; b: number }[] = [];
   for (let i = 0; i < 10; i++) {
     for (let j = 0; j < 10; j++) {

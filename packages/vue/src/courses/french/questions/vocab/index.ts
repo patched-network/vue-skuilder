@@ -6,7 +6,7 @@ import {
   DataShape,
   FieldDefinition,
 } from '@vue-skuilder/common';
-import { FieldType } from '../../../../enums/FieldType';
+import { FieldType, ViewData, Answer } from '@vue-skuilder/common';
 import IdentifyVocab from './identify.vue';
 
 const fields: FieldDefinition[] = [

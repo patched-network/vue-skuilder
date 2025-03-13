@@ -1,9 +1,7 @@
 import { ViewData } from '@/base-course/Interfaces/ViewData';
 import { RadioSelectAnswer } from '../../../../base-course/Components/RadioMultipleChoice.vue';
 import { Question } from '../../../../base-course/Displayable';
-import { DataShapeName } from '../../../../enums/DataShapeNames';
-import { FieldType } from '../../../../enums/FieldType';
-import { Status } from '@vue-skuilder/common';
+import { DataShapeName, FieldType, Status } from '@vue-skuilder/common';
 import IdentifyKeyView from './IdentifyKey.vue';
 
 /**

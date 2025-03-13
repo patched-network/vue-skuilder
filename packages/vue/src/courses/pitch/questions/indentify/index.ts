@@ -1,11 +1,7 @@
 import { Question } from '../../../../base-course/Displayable';
 import { DataShape } from '../../../../base-course/Interfaces/DataShape';
 import { FieldDefinition } from '../../../../base-course/Interfaces/FieldDefinition';
-import { ViewData } from '../../../../base-course/Interfaces/ViewData';
-import { DataShapeName } from '../../../../enums/DataShapeNames';
-import { FieldType } from '../../../../enums/FieldType';
-import { Status } from '@vue-skuilder/common';
-import { Answer } from '../../../../base-course/Displayable';
+import { ViewData, DataShapeName, FieldType, Status, Answer } from '@vue-skuilder/common';
 import TextBox from './textBox.vue';
 import _ from 'lodash';
 

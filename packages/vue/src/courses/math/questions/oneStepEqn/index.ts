@@ -1,10 +1,6 @@
 import { Answer, Question } from '../../../../base-course/Displayable';
 import { FieldDefinition } from '../../../../base-course/Interfaces/FieldDefinition';
-import { ViewData } from '../../../../base-course/Interfaces/ViewData';
-import { DataShapeName } from '../../../../enums/DataShapeNames';
-import { FieldType } from '../../../../enums/FieldType';
-import { Status } from '@vue-skuilder/common';
-import { Validator } from '../../../../base-course/Interfaces/Validator';
+import { ViewData, DataShapeName, FieldType, Status, Validator } from '@vue-skuilder/common';
 import Solve from './solve.vue';
 import { log } from '@vue-skuilder/common';
 
