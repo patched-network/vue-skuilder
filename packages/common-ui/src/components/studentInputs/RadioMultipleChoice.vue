@@ -16,7 +16,7 @@
 <script lang="ts">
 import UserInput from '@/base-course/Components/UserInput/OptionsUserInput';
 import MultipleChoiceOption from './MultipleChoiceOption.vue';
-import { Answer } from '../Displayable';
+import { Answer } from '@vue-skuilder/common';
 import { defineComponent, PropType } from 'vue';
 import { SkldrMouseTrap } from '@vue-skuilder/common-ui';
 

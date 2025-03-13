@@ -1,10 +1,11 @@
 import { useCardPreviewModeStore } from '@/stores/useCardPreviewModeStore';
 import { log } from '@vue-skuilder/common';
 import { defineComponent } from 'vue';
-import { Answer, ViewComponent } from '../../../base-course/Displayable';
+import { ViewComponent } from '../../../base-course/Displayable';
+import { Answer } from '@vue-skuilder/common';
 // import { QuestionView } from '../../../base-course/CompositionViewable';
 import { isQuestionView } from '@/base-course/CompositionViewable';
-import { QuestionRecord } from '../../../db/types';
+import { QuestionRecord } from '@vue-skuilder/db';
 
 export default defineComponent({
   name: 'UserInput',
