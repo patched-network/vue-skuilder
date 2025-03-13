@@ -1,6 +1,12 @@
-import { Answer, Question } from '../../../../base-course/Displayable';
-import { FieldDefinition } from '../../../../base-course/Interfaces/FieldDefinition';
-import { ViewData, DataShapeName, FieldType, Status } from '@vue-skuilder/common';
+import { Question } from '../../../../base-course/Displayable';
+import {
+  FieldDefinition,
+  Answer,
+  ViewData,
+  DataShapeName,
+  FieldType,
+  Status,
+} from '@vue-skuilder/common';
 import MultiplicationHorizontal from './blorizontal.vue';
 import VerbalMultiplication from './verbal.vue';
 

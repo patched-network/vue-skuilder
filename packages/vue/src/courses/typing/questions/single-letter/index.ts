@@ -1,7 +1,13 @@
 // index.ts
-import { Answer, Question } from '@/base-course/Displayable';
-import { DataShape } from '@/base-course/Interfaces/DataShape';
-import { ViewData, DataShapeName, FieldType, Status } from '@vue-skuilder/common';
+import { Question } from '@/base-course/Displayable';
+import {
+  Answer,
+  DataShape,
+  ViewData,
+  DataShapeName,
+  FieldType,
+  Status,
+} from '@vue-skuilder/common';
 import LetterQuestionView from './typeSingleLetter.vue';
 
 const data = function () {

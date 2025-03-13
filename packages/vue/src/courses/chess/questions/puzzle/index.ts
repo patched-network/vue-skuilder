@@ -1,6 +1,12 @@
-import { Answer, Question, ViewComponent } from '@/base-course/Displayable';
-import { DataShape } from '@/base-course/Interfaces/DataShape';
-import { ViewData, DataShapeName, Status, FieldType } from '@vue-skuilder/common';
+import { Question, ViewComponent } from '@/base-course/Displayable';
+import {
+  Answer,
+  DataShape,
+  ViewData,
+  DataShapeName,
+  Status,
+  FieldType,
+} from '@vue-skuilder/common';
 import PuzzleView from './puzzle.vue';
 import { Key as cgKey } from '../../chessground/types';
 

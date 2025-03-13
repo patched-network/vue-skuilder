@@ -1,7 +1,6 @@
 import _ from 'lodash';
 import { Question } from '../../../../base-course/Displayable';
-import { RadioMultipleChoiceAnswer } from '../../../../base-course/Interfaces/AnswerInterfaces';
-import { FieldDefinition } from '../../../../base-course/Interfaces/FieldDefinition';
+import { RadioMultipleChoiceAnswer, FieldDefinition } from '@vue-skuilder/common';
 import { ViewData, DataShapeName, FieldType, Status } from '@vue-skuilder/common';
 import AngleCategorizeV from './angleCategorize.vue';
 

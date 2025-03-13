@@ -1,5 +1,5 @@
-import { Answer, Question } from '../../../../base-course/Displayable';
-import { FieldDefinition } from '../../../../base-course/Interfaces/FieldDefinition';
+import { Question } from '../../../../base-course/Displayable';
+import { FieldDefinition, Answer } from '@vue-skuilder/common';
 import { ViewData } from '@vue-skuilder/common';
 import { DataShapeName } from '@vue-skuilder/common';
 import { FieldType } from '@vue-skuilder/common';

@@ -1,6 +1,5 @@
 import { Answer, Question, ViewComponent } from '../../../../base-course/Displayable';
-import { FieldDefinition } from '../../../../base-course/Interfaces/FieldDefinition';
-import { ViewData, DataShapeName, FieldType } from '@vue-skuilder/common';
+import { FieldDefinition, ViewData, DataShapeName, FieldType } from '@vue-skuilder/common';
 import HorizontalAddition from './horizontal.vue';
 import VerbalAddition from './verbal.vue';
 

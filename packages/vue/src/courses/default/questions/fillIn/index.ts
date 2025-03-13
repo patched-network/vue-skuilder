@@ -1,6 +1,5 @@
-import { Answer, Question } from '../../../../base-course/Displayable';
-import { RadioMultipleChoiceAnswer } from '../../../../base-course/Interfaces/AnswerInterfaces';
-import { DataShape } from '../../../../base-course/Interfaces/DataShape';
+import { Question } from '../../../../base-course/Displayable';
+import { Answer, RadioMultipleChoiceAnswer, DataShape } from '@vue-skuilder/common';
 import { Validator } from '../../../../base-course/Interfaces/Validator';
 import { ViewData } from '../../../../base-course/Interfaces/ViewData';
 import { randomInt } from '../../../../courses/math/utility';
