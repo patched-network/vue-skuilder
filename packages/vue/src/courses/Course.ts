@@ -1,4 +1,4 @@
-import { Displayable, ViewComponent } from '../base-course/Displayable';
+import { Displayable, ViewComponent } from '@vue-skuilder/common-ui';
 import { BlanksCard } from '../courses/default/questions/fillIn/';
 
 // tslint:disable-next-line:max-classes-per-file
