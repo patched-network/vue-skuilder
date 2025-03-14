@@ -30,19 +30,26 @@ export * from './composables/Displayable';
   - emit / pass answers to other components in the system
 */
 export * from './components/studentInputs/BaseUserInput';
-export * from './components/studentInputs/MultipleChoiceOption.vue';
-export * from './components/studentInputs/RadioMultipleChoice.vue';
-export * from './components/studentInputs/TrueFalse.vue';
-export * from './components/studentInputs/UserInputNumber.vue';
-export * from './components/studentInputs/UserInputString.vue';
-export * from './components/studentInputs/fillInInput.vue';
+export { default as RadioMultipleChoice } from './components/studentInputs/RadioMultipleChoice.vue';
+export { default as MultipleChoiceOption } from './components/studentInputs/MultipleChoiceOption.vue';
+export { default as TFSelect } from './components/studentInputs/TrueFalse.vue';
+export { default as UserInputNumber } from './components/studentInputs/UserInputNumber.vue';
+export { default as UserInputString } from './components/studentInputs/UserInputString.vue';
+export { default as FillInInput } from './components/studentInputs/fillInInput.vue';
 
 /*
   cardRendering
 
   These components are used to render course content
 */
-export * from './components/cardRendering/AudioAutoPlayer.vue';
-export * from './components/cardRendering/CodeBlockRenderer.vue';
-export * from './components/cardRendering/MdTokenRenderer.vue';
-export * from './components/cardRendering/MarkdownRenderer.vue';
+export * from './components/cardRendering/MarkdownRendererHelpers';
+export { default as AudioAutoPlayer } from './components/cardRendering/AudioAutoPlayer.vue';
+export { default as CodeBlockRenderer } from './components/cardRendering/CodeBlockRenderer.vue';
+export { default as MdTokenRenderer } from './components/cardRendering/MdTokenRenderer.vue';
+export { default as MarkdownRenderer } from './components/cardRendering/MarkdownRenderer.vue';
+
+/*
+  stores
+*/
+
+export * from './stores/useCardPreviewModeStore';
