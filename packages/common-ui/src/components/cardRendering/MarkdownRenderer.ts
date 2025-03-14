@@ -1,4 +1,5 @@
 import { Token, MarkedToken, Tokens } from 'marked';
+import * as marked from 'marked';
 
 /**
  * recursively splits text according to the passed delimiters.

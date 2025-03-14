@@ -116,9 +116,9 @@ import {
   splitParagraphToken as _splitParagraphToken,
   splitTextToken as _splitTextToken,
   TokenOrComponent,
-} from '@/courses/default/questions/fillIn';
+} from './MarkdownRenderer';
 import CodeBlockRenderer from './CodeBlockRenderer.vue';
-import FillInInput from '@/courses/default/questions/fillIn/fillInInput.vue';
+import FillInInput from '@/components/studentInputs/fillInInput.vue';
 import { MarkedToken, Tokens } from 'marked';
 import { markRaw } from 'vue';
 import { PropType } from 'vue';

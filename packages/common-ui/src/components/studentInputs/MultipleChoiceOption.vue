@@ -11,7 +11,7 @@ export default defineComponent({
   name: 'MultipleChoiceOption',
 
   components: {
-    MarkdownRenderer: defineAsyncComponent(() => import('@/base-course/Components/MarkdownRenderer.vue')),
+    MarkdownRenderer: defineAsyncComponent(() => import('@/components/cardRendering/MarkdownRenderer.vue')),
   },
 
   props: {

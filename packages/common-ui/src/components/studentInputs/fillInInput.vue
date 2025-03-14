@@ -7,7 +7,7 @@
 
 <script lang="ts">
 import { defineComponent, ref, computed, onMounted } from 'vue';
-import UserInputString from '@/base-course/Components/UserInput/UserInputString.vue';
+import UserInputString from './UserInputString.vue';
 
 export default defineComponent({
   name: 'FillInInput',
