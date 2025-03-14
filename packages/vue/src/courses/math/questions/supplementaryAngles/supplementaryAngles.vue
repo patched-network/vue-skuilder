@@ -9,7 +9,7 @@
 
 <script lang="ts">
 import { defineComponent, ref, onMounted, onBeforeUnmount, PropType } from 'vue';
-import { useViewable, useQuestionView } from '@/base-course/CompositionViewable';
+import { useViewable, useQuestionView } from '@vue-skuilder/common-ui';
 import { SupplementaryAngles } from './index';
 import UserInputNumber from '@/base-course/Components/UserInput/UserInputNumber.vue';
 import { randomInt, cos, sin } from '../../utility';

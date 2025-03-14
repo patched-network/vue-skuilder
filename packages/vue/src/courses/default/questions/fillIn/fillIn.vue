@@ -20,7 +20,7 @@
 
 <script lang="ts">
 import { defineComponent, defineAsyncComponent, ref, computed, PropType, onMounted, onUnmounted, watch } from 'vue';
-import { useViewable, useQuestionView } from '@/base-course/CompositionViewable';
+import { useViewable, useQuestionView } from '@vue-skuilder/common-ui';
 import AudioAutoPlayer from '@/base-course/Components/AudioAutoPlayer.vue';
 import RadioMultipleChoice from '@/base-course/Components/RadioMultipleChoice.vue';
 import _ from 'lodash';

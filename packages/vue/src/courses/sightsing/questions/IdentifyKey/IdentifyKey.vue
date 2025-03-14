@@ -12,7 +12,7 @@
 import { defineComponent, ref, computed, PropType } from 'vue';
 import RadioSelect from '@/base-course/Components/RadioMultipleChoice.vue';
 import MusicScoreRenderer from '@/courses/components/MusicScoreRender.vue';
-import { useViewable, useQuestionView } from '@/base-course/CompositionViewable';
+import { useViewable, useQuestionView } from '@vue-skuilder/common-ui';
 import { ViewData } from '@/base-course/Interfaces/ViewData';
 import { IdentifyKeyQuestion, keys } from './index';
 

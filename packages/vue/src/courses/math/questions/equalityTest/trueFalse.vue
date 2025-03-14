@@ -8,7 +8,7 @@
 
 <script lang="ts">
 import { defineComponent, computed, PropType } from 'vue';
-import { useViewable, useQuestionView } from '@/base-course/CompositionViewable';
+import { useViewable, useQuestionView } from '@vue-skuilder/common-ui';
 import { EqualityTest } from './index';
 import TFSelect from '@/base-course/Components/TrueFalse.vue';
 import { ViewData } from '@/base-course/Interfaces/ViewData';

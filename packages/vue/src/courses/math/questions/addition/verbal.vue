@@ -10,7 +10,7 @@
 <script lang="ts">
 import { defineComponent, ref, computed, PropType } from 'vue';
 import { SingleDigitAdditionQuestion } from './index';
-import { useViewable, useQuestionView } from '@/base-course/CompositionViewable';
+import { useViewable, useQuestionView } from '@vue-skuilder/common-ui';
 import { ViewData } from '@/base-course/Interfaces/ViewData';
 import UserInputNumber from '@/base-course/Components/UserInput/UserInputNumber.vue';
 

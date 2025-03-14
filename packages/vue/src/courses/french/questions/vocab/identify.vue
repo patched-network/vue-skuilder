@@ -6,7 +6,7 @@
 
 <script lang="ts">
 import { defineComponent, computed, PropType } from 'vue';
-import { useViewable, useQuestionView } from '@/base-course/CompositionViewable';
+import { useViewable, useQuestionView } from '@vue-skuilder/common-ui';
 import { VocabQuestion } from '@/courses/french/questions/vocab';
 import { ViewData } from '@vue-skuilder/common';
 // import AudioAutoPlayer from '@/base-course/Components/AudioAutoPlayer.vue';

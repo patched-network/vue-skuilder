@@ -143,7 +143,7 @@
 import { defineComponent } from 'vue';
 import { SkMouseTrap } from '@vue-skuilder/common-ui';
 import { ViewComponent } from '@/base-course/Displayable';
-import { isQuestionView } from '@/base-course/CompositionViewable';
+import { isQuestionView } from '@vue-skuilder/common-ui';
 import SkTagsInput from '@/components/Edit/TagsInput.vue';
 import HeatMap from '@/components/HeatMap.vue';
 import CardViewer from '@/components/Study/CardViewer.vue';

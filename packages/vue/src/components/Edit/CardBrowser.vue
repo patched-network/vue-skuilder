@@ -18,7 +18,7 @@
 import { ViewData } from '@/base-course/Interfaces/ViewData';
 import CardViewer from '@/components/Study/CardViewer.vue';
 import { defineComponent, PropType } from 'vue';
-import { useCardPreviewModeStore } from '@/stores/useCardPreviewModeStore';
+import { useCardPreviewModeStore } from '@vue-skuilder/common-ui';
 import { ViewComponent } from '@/base-course/Displayable';
 
 export default defineComponent({

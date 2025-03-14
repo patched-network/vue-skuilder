@@ -29,7 +29,7 @@ import { defineComponent, ref, computed, onMounted, onUnmounted, PropType } from
 import { Chessground } from '../../chessground/chessground';
 import { Key } from '../../chessground/types';
 import { Api as cgAPI } from '../../chessground/api';
-import { useViewable, useQuestionView } from '@/base-course/CompositionViewable';
+import { useViewable, useQuestionView } from '@vue-skuilder/common-ui';
 import { ChessPuzzle } from './index';
 import { Chess, SQUARES } from 'chess.js';
 import { ViewData } from '@/base-course/Interfaces/ViewData';

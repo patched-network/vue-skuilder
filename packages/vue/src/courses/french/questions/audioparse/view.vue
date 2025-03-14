@@ -11,7 +11,7 @@
 <script lang="ts">
 import { defineComponent, ref, computed, PropType } from 'vue';
 import { AudioParsingQuestion } from './index';
-import { useViewable, useQuestionView } from '@/base-course/CompositionViewable';
+import { useViewable, useQuestionView } from '@vue-skuilder/common-ui';
 import { ViewData } from '@vue-skuilder/common';
 import AudioAutoPlayer from '@/base-course/Components/AudioAutoPlayer.vue';
 
