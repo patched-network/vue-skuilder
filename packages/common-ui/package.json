@@ -27,9 +27,13 @@
     "test:unit": "vitest run"
   },
   "dependencies": {
+    "@highlightjs/vue-plugin": "^2.1.2",
     "@mdi/font": "^7.3.67",
+    "highlight.js": "^11.0.1",
+    "marked": "^15.0.6",
     "moment": "^2.29.4",
     "mousetrap": "^1.6.5",
+    "pinia": "^2.3.0",
     "vue": "^3.5.13",
     "vuetify": "^3.7.0"
   },
