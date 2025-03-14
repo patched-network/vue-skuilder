@@ -1,17 +1,17 @@
 <template>
   <div data-viewable="TrueFalse">
-    <RadioSelect :choice-list="['True', 'False']" :MouseTrap="MouseTrap" :submit="submit" />
+    <RadioMultipleChoice :choice-list="['True', 'False']" :MouseTrap="MouseTrap" :submit="submit" />
   </div>
 </template>
 
 <script lang="ts">
 import { defineComponent, PropType } from 'vue';
-import RadioSelect from './RadioMultipleChoice.vue';
+import RadioMultipleChoice from './RadioMultipleChoice.vue';
 
 export default defineComponent({
   name: 'TrueFalse',
   components: {
-    RadioSelect,
+    RadioMultipleChoice,
   },
   props: {
     MouseTrap: {

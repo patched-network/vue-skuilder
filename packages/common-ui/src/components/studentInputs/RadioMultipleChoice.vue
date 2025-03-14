@@ -16,17 +16,12 @@
 <script lang="ts">
 import UserInput from './BaseUserInput';
 import MultipleChoiceOption from './MultipleChoiceOption.vue';
-import { Answer } from '@vue-skuilder/common';
 import { defineComponent, PropType } from 'vue';
 import { SkldrMouseTrap } from '@/utils/SkldrMouseTrap';
-
-export interface RadioSelectAnswer extends Answer {
-  choiceList: string[];
-  selection: number;
-}
+import { RadioMultipleChoiceAnswer } from './RadioMultipleChoice.types';
 
 export default defineComponent({
-  name: 'RadioSelect',
+  name: 'RadioMultipleChoice',
   components: {
     MultipleChoiceOption,
   },
@@ -67,7 +62,7 @@ export default defineComponent({
       if (this.choiceIsWrong(this.choiceList[this.currentSelection])) {
         return;
       } else if (this.currentSelection !== -1) {
-        const ans: RadioSelectAnswer = {
+        const ans: RadioMultipleChoiceAnswer = {
           choiceList: this.choiceList,
           selection: this.currentSelection,
         };
