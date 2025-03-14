@@ -100,7 +100,7 @@ import { CourseElo } from '@vue-skuilder/common';
 import { useDataInputFormStore } from '@/stores/useDataInputFormStore';
 import { ViewData } from '@/base-course/Interfaces/ViewData';
 import { getCurrentUser } from '@/stores/useAuthStore';
-import { Question } from '@/base-course/Displayable';
+import { Question } from '@vue-skuilder/common-ui';
 
 type StringIndexable = { [x: string]: unknown };
 

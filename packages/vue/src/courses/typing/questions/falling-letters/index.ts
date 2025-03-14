@@ -1,5 +1,5 @@
 // vue/src/courses/typing/questions/falling-letters/index.ts
-import { Question } from '@/base-course/Displayable';
+import { Question } from '@vue-skuilder/common-ui';
 import {
   Answer,
   DataShape,

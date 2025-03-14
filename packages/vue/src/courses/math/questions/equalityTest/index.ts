@@ -1,4 +1,4 @@
-import { Question } from '../../../../base-course/Displayable';
+import { Question } from '@vue-skuilder/common-ui';
 import { FieldDefinition, Answer } from '@vue-skuilder/common';
 import { ViewData } from '@vue-skuilder/common';
 import { DataShapeName } from '@vue-skuilder/common';

@@ -1,4 +1,4 @@
-import { Question, ViewComponent } from '@/base-course/Displayable';
+import { Question, ViewComponent } from '@vue-skuilder/common-ui';
 import {
   Answer,
   DataShape,

@@ -1,4 +1,4 @@
-import { Question } from '../../../../base-course/Displayable';
+import { Question } from '@vue-skuilder/common-ui';
 import { DataShapeName, Answer, FieldType, ViewData } from '@vue-skuilder/common';
 import AudioParseView from './view.vue';
 import { DataShape, Status } from '@vue-skuilder/common';

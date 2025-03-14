@@ -1,7 +1,6 @@
-import { Question } from '../../../../base-course/Displayable';
+import { Question } from '@vue-skuilder/common-ui';
 import { Answer, RadioMultipleChoiceAnswer, DataShape } from '@vue-skuilder/common';
-import { Validator } from '../../../../base-course/Interfaces/Validator';
-import { ViewData } from '../../../../base-course/Interfaces/ViewData';
+import { Validator, ViewData } from '@vue-skuilder/common';
 import { randomInt } from '../../../../courses/math/utility';
 import { FieldType, DataShapeName, Status } from '@vue-skuilder/common';
 import _ from 'lodash';

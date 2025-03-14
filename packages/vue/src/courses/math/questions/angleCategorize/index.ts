@@ -1,5 +1,5 @@
 import _ from 'lodash';
-import { Question } from '../../../../base-course/Displayable';
+import { Question } from '@vue-skuilder/common-ui';
 import { RadioMultipleChoiceAnswer, FieldDefinition } from '@vue-skuilder/common';
 import { ViewData, DataShapeName, FieldType, Status } from '@vue-skuilder/common';
 import AngleCategorizeV from './angleCategorize.vue';
