@@ -13,7 +13,7 @@
 import { defineComponent, PropType } from 'vue';
 import MdTokenRenderer from './MdTokenRenderer.vue';
 import AudioAutoPlayer from './AudioAutoPlayer.vue';
-import { marked } from 'marked';
+import * as marked from 'marked';
 
 type SkldrToken =
   | marked.Token
