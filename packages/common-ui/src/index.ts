@@ -17,8 +17,14 @@ export { alertUser, type SnackbarOptions } from './components/SnackbarService';
 export { default as PaginatingToolbar } from './components/PaginatingToolbar.vue';
 export * from './components/PaginatingToolbar.types';
 
-// // Export any composables
-// export * from './composables';
+// Export any composables
+export * from './composables';
+
+// student input components
+export * from './components/studentInputs';
+
+// classes for rendering course content
+export * from './components/cardRendering';
 
 // // Export utility functions
 // export * from './utils';
