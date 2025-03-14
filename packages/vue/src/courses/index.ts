@@ -1,6 +1,6 @@
-import { Course } from '../base-course/Course';
-import { Displayable, ViewComponent } from '../base-course/Displayable';
-import { DataShape } from '../base-course/Interfaces/DataShape';
+import { Course } from './Course';
+import { Displayable, ViewComponent } from '@vue-skuilder/common-ui';
+import { DataShape } from '@vue-skuilder/common';
 import chess from './chess';
 import defaultCourse from './default';
 import french from './french';
