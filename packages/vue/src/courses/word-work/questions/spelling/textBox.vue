@@ -18,10 +18,8 @@
 <script lang="ts">
 import { defineComponent, ref, computed, PropType } from 'vue';
 import { SpellingQuestion } from '@/courses/word-work/questions/spelling';
-import { useViewable, useQuestionView } from '@vue-skuilder/common-ui';
-import { ViewData } from '@/base-course/Interfaces/ViewData';
-import AudioAutoPlayer from '@/base-course/Components/AudioAutoPlayer.vue';
-import UserInputString from '@/base-course/Components/UserInput/UserInputString.vue';
+import { AudioAutoPlayer, UserInputString, useViewable, useQuestionView } from '@vue-skuilder/common-ui';
+import { ViewData } from '@vue-skuilder/common';
 
 export default defineComponent({
   name: 'IdentifyVocab',

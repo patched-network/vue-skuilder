@@ -19,20 +19,31 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, defineAsyncComponent, ref, computed, PropType, onMounted, onUnmounted, watch } from 'vue';
-import { useViewable, useQuestionView } from '@vue-skuilder/common-ui';
-import AudioAutoPlayer from '@/base-course/Components/AudioAutoPlayer.vue';
-import RadioMultipleChoice from '@/base-course/Components/RadioMultipleChoice.vue';
+import { defineAsyncComponent, defineComponent, ref, computed, PropType, onMounted, onUnmounted, watch } from 'vue';
+import {
+  useViewable,
+  useQuestionView,
+  AudioAutoPlayer,
+  RadioMultipleChoice,
+  MarkdownRenderer,
+} from '@vue-skuilder/common-ui';
 import _ from 'lodash';
 import { BlanksCard } from './index';
 import gradeSpellingAttempt from './blanksCorrection';
-import { ViewData } from '@/base-course/Interfaces/ViewData';
+import { ViewData } from '@vue-skuilder/common';
 
 export default defineComponent({
   name: 'FillInView',
 
   components: {
-    MarkdownRenderer: defineAsyncComponent(() => import('@/base-course/Components/MarkdownRenderer.vue')),
+    // Previously:
+    // MarkdownRenderer: defineAsyncComponent(() => import('@/base-course/Components/MarkdownRenderer.vue')),
+    //
+    // Another option:
+    MarkdownRenderer: defineAsyncComponent(() =>
+      import('@vue-skuilder/common-ui').then((module) => module.MarkdownRenderer)
+    ),
+    // MarkdownRenderer,
     RadioMultipleChoice,
     AudioAutoPlayer,
   },

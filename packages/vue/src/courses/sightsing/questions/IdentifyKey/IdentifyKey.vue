@@ -3,17 +3,16 @@
     <template v-if="question">
       <MusicScoreRenderer :key-signature="`X:1\nK:${question.key}\n||`" />
       This signature is for the major key: _____
-      <RadioSelect :choice-list="choices" />
+      <RadioMultipleChoice :choice-list="choices" />
     </template>
   </div>
 </template>
 
 <script lang="ts">
 import { defineComponent, ref, computed, PropType } from 'vue';
-import RadioSelect from '@/base-course/Components/RadioMultipleChoice.vue';
 import MusicScoreRenderer from '@/courses/components/MusicScoreRender.vue';
-import { useViewable, useQuestionView } from '@vue-skuilder/common-ui';
-import { ViewData } from '@/base-course/Interfaces/ViewData';
+import { RadioMultipleChoice, useViewable, useQuestionView } from '@vue-skuilder/common-ui';
+import { ViewData } from '@vue-skuilder/common';
 import { IdentifyKeyQuestion, keys } from './index';
 
 function fiveRandomKeys() {
@@ -28,7 +27,7 @@ export default defineComponent({
   name: 'IdentifyKeyView',
 
   components: {
-    RadioSelect,
+    RadioMultipleChoice,
     MusicScoreRenderer,
   },
 

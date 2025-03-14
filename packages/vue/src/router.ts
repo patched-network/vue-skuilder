@@ -1,4 +1,4 @@
-import MarkdownRenderer from './base-course/Components/MarkdownRenderer.vue';
+import { MarkdownRenderer } from '@vue-skuilder/common-ui';
 import { createRouter, createWebHistory } from 'vue-router';
 import ClassroomCtrlPanel from './components/Classrooms/ClassroomCtrlPanel.vue';
 import JoinCode from './components/Classrooms/JoinCode.vue';

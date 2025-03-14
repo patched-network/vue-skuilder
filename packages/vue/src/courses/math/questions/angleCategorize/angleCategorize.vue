@@ -11,9 +11,8 @@
 
 <script lang="ts">
 import { defineComponent, ref, computed, onMounted, PropType } from 'vue';
-import { useViewable, useQuestionView } from '@vue-skuilder/common-ui';
+import { RadioMultipleChoice, useViewable, useQuestionView } from '@vue-skuilder/common-ui';
 import { AngleCategorize, AngleCategories } from './index';
-import RadioMultipleChoice from '@/base-course/Components/RadioMultipleChoice.vue';
 import { ViewData } from '@/base-course/Interfaces/ViewData';
 import { randomInt } from '../../utility';
 

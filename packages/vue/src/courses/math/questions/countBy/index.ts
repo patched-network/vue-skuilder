@@ -1,5 +1,13 @@
-import { Answer, Question } from '../../../../base-course/Displayable';
-import { FieldDefinition, ViewData, DataShapeName, FieldType, Status } from '@vue-skuilder/common';
+import {
+  Answer,
+  FieldDefinition,
+  ViewData,
+  DataShapeName,
+  FieldType,
+  Status,
+} from '@vue-skuilder/common';
+import { Question } from '@vue-skuilder/common-ui';
+
 import defaultView from './default.vue';
 
 interface A extends Answer {

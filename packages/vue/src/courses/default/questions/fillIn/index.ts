@@ -1,4 +1,4 @@
-import { Question } from '@vue-skuilder/common-ui';
+import { Question, splitByDelimiters } from '@vue-skuilder/common-ui';
 import { Answer, RadioMultipleChoiceAnswer, DataShape } from '@vue-skuilder/common';
 import { Validator, ViewData } from '@vue-skuilder/common';
 import { randomInt } from '../../../../courses/math/utility';
