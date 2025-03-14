@@ -24,13 +24,18 @@ export default defineConfig({
           vue: 'Vue',
           vuetify: 'Vuetify',
         },
-        // Ensure a style.css file is created in the dist folder
+        // Prevent code splitting
+        manualChunks: undefined,
+        inlineDynamicImports: true,
+        // Ensure CSS is properly handled
         assetFileNames: (assetInfo) => {
           if (assetInfo.name === 'style.css') return 'style.css';
           return assetInfo.name;
         },
       },
     },
+    // Prevent code splitting
+    cssCodeSplit: false,
   },
   plugins: [vue()],
   resolve: {
