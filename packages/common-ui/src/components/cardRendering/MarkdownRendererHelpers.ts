@@ -13,7 +13,7 @@ import * as marked from 'marked';
  * @param r the right delimiter
  * @returns the split result
  */
-function splitByDelimiters(text: string, l: string, r: string): string[] {
+export function splitByDelimiters(text: string, l: string, r: string): string[] {
   if (text.length === 0) return [];
 
   let ret: string[] = [];
