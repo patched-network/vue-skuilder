@@ -16,7 +16,7 @@
 <script lang="ts">
 // @compositionstart="onCompositionStart"
 // @compositionend="onCompositionEnd"
-import UserInput from './OptionsUserInput';
+import UserInput from './BaseUserInput';
 import { defineComponent } from 'vue';
 
 export default defineComponent({

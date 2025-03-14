@@ -14,11 +14,11 @@
 </template>
 
 <script lang="ts">
-import UserInput from '@/base-course/Components/UserInput/OptionsUserInput';
+import UserInput from './BaseUserInput';
 import MultipleChoiceOption from './MultipleChoiceOption.vue';
 import { Answer } from '@vue-skuilder/common';
 import { defineComponent, PropType } from 'vue';
-import { SkldrMouseTrap } from '@vue-skuilder/common-ui';
+import { SkldrMouseTrap } from '@/utils/SkldrMouseTrap';
 
 export interface RadioSelectAnswer extends Answer {
   choiceList: string[];

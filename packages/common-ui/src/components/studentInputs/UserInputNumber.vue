@@ -15,8 +15,8 @@
 </template>
 
 <script lang="ts">
-import { Answer } from '@/base-course/Displayable';
-import UserInput from './OptionsUserInput';
+import { Answer } from '@vue-skuilder/common';
+import UserInput from './BaseUserInput';
 import { defineComponent } from 'vue';
 
 type InputNumberRefs = {
