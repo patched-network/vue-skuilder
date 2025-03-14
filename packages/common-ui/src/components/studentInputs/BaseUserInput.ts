@@ -1,10 +1,8 @@
-import { useCardPreviewModeStore } from '@/stores/useCardPreviewModeStore';
-import { log } from '@vue-skuilder/common';
 import { defineComponent } from 'vue';
-import { ViewComponent } from '../../../base-course/Displayable';
-import { Answer } from '@vue-skuilder/common';
-// import { QuestionView } from '../../../base-course/CompositionViewable';
-import { isQuestionView } from '@/base-course/CompositionViewable';
+import { Answer, log } from '@vue-skuilder/common';
+import { useCardPreviewModeStore } from '@/stores/useCardPreviewModeStore';
+import { ViewComponent } from '@/composables/Displayable';
+import { isQuestionView } from '@/composables/CompositionViewable';
 import { QuestionRecord } from '@vue-skuilder/db';
 
 export default defineComponent({
