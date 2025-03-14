@@ -17,17 +17,32 @@ export { alertUser, type SnackbarOptions } from './components/SnackbarService';
 export { default as PaginatingToolbar } from './components/PaginatingToolbar.vue';
 export * from './components/PaginatingToolbar.types';
 
-// Export any composables
-export * from './composables';
+// Composables
+export * from './composables/CompositionViewable';
+export * from './composables/Displayable';
 
-// student input components
-export * from './components/studentInputs';
+/*
+  studentInputs
 
-// classes for rendering course content
-export * from './components/cardRendering';
+  These components
+  - embed into cards
+  - accept inputs (answers) from students
+  - emit / pass answers to other components in the system
+*/
+export * from './components/studentInputs/BaseUserInput';
+export * from './components/studentInputs/MultipleChoiceOption.vue';
+export * from './components/studentInputs/RadioMultipleChoice.vue';
+export * from './components/studentInputs/TrueFalse.vue';
+export * from './components/studentInputs/UserInputNumber.vue';
+export * from './components/studentInputs/UserInputString.vue';
+export * from './components/studentInputs/fillInInput.vue';
 
-// // Export utility functions
-// export * from './utils';
+/*
+  cardRendering
 
-// // Export types
-// export * from './types';
+  These components are used to render course content
+*/
+export * from './components/cardRendering/AudioAutoPlayer.vue';
+export * from './components/cardRendering/CodeBlockRenderer.vue';
+export * from './components/cardRendering/MdTokenRenderer.vue';
+export * from './components/cardRendering/MarkdownRenderer.vue';
