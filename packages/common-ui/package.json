@@ -10,9 +10,8 @@
       "import": "./dist/common-ui.es.js",
       "require": "./dist/common-ui.umd.js"
     },
-    "./styles": {
-      "import": "./dist/style.css"
-    }
+    "./style": "./dist/assets/index.css",
+    "./styles": "./dist/assets/index.css"
   },
   "files": [
     "dist",

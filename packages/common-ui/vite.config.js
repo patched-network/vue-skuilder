@@ -24,18 +24,14 @@ export default defineConfig({
           vue: 'Vue',
           vuetify: 'Vuetify',
         },
-        // Prevent code splitting
-        manualChunks: undefined,
-        inlineDynamicImports: true,
-        // Ensure CSS is properly handled
+        // Preserve CSS in the output bundle
         assetFileNames: (assetInfo) => {
-          if (assetInfo.name === 'style.css') return 'style.css';
-          return assetInfo.name;
+          return `assets/[name][extname]`;
         },
       },
     },
-    // Prevent code splitting
-    cssCodeSplit: false,
+    // This is crucial for component libraries - allow CSS to be in chunks
+    cssCodeSplit: true,
   },
   plugins: [vue()],
   resolve: {
