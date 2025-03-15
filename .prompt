@@ -16,7 +16,10 @@ Much of the legacy code was written without explicit concerns for performance, s
 
 # Current Setup:
 
-"packageManager": "yarn@4.6.0", with yarn workspaces
+- "packageManager": "yarn@4.6.0", with yarn workspaces
+- frontend: vue 3, vuetify 3, vite, vue router 4, pinia, pouchdb
+- backend: (thin) express
+- database: couchdb
 
 # Current goals:
 
