@@ -4,18 +4,23 @@ import { useCardPreviewModeStore } from '@/stores/useCardPreviewModeStore';
 import { ViewComponent } from '@/composables/Displayable';
 import { isQuestionView } from '@/composables/CompositionViewable';
 import { QuestionRecord } from '@vue-skuilder/db';
+import { Store } from 'pinia';
 
 export default defineComponent({
   name: 'UserInput',
   data() {
     return {
       answer: '' as Answer,
-      previewModeStore: useCardPreviewModeStore(),
+      previewModeStore: null as ReturnType<typeof useCardPreviewModeStore> | null,
     };
+  },
+  mounted() {
+    // This happens after Pinia is initialized but before the component is used
+    this.previewModeStore = useCardPreviewModeStore();
   },
   computed: {
     autofocus(): boolean {
-      return !this.previewModeStore.previewMode;
+      return !this.previewModeStore?.previewMode;
     },
     autoFocus(): boolean {
       return this.autofocus;

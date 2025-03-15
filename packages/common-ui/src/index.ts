@@ -51,5 +51,9 @@ export { default as MarkdownRenderer } from './components/cardRendering/Markdown
 /*
   stores
 */
-
 export * from './stores/useCardPreviewModeStore';
+
+/*
+  plugins
+*/
+export { piniaPlugin } from './plugins/pinia';
