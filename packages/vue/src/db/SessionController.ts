@@ -200,7 +200,7 @@ export default class SessionController extends Loggable {
     const reviews = await Promise.all(
       this.sources.map((c) =>
         c.getPendingReviews().catch((error) => {
-          this.error(`Failed to get reviews for source ${JSON.stringify(c)}:`, error);
+          this.error(`Failed to get reviews for source ${c}:`, error);
           return [];
         })
       )
