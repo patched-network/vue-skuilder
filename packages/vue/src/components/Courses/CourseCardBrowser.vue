@@ -104,10 +104,9 @@
 </template>
 
 <script lang="ts">
-import { ViewComponent } from '@/base-course/Displayable';
 import { displayableDataToViewData } from '@vue-skuilder/common';
 import TagsInput from '@/components/Edit/TagsInput.vue';
-import { PaginatingToolbar } from '@vue-skuilder/common-ui';
+import { PaginatingToolbar, ViewComponent } from '@vue-skuilder/common-ui';
 import CardLoader from '@/components/Study/CardLoader.vue';
 import Courses from '@/courses';
 import {
@@ -125,6 +124,7 @@ import {
 import { defineComponent } from 'vue';
 import { alertUser } from '@vue-skuilder/common-ui';
 import { Status } from '@vue-skuilder/common';
+import { getCurrentUser } from '@/stores/useAuthStore';
 
 function isConstructor(obj: unknown) {
   try {
@@ -176,7 +176,7 @@ export default defineComponent({
   },
 
   async created() {
-    this.courseDB = new CourseDB(this._id);
+    this.courseDB = new CourseDB(this._id, getCurrentUser);
 
     if (this._tag) {
       this.questionCount = (await getTag(this._id, this._tag)).taggedCards.length;
