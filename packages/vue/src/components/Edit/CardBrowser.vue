@@ -15,11 +15,10 @@
 </template>
 
 <script lang="ts">
-import { ViewData } from '@/base-course/Interfaces/ViewData';
+import { ViewData } from '@vue-skuilder/common';
 import CardViewer from '@/components/Study/CardViewer.vue';
 import { defineComponent, PropType } from 'vue';
-import { useCardPreviewModeStore } from '@vue-skuilder/common-ui';
-import { ViewComponent } from '@/base-course/Displayable';
+import { useCardPreviewModeStore, ViewComponent } from '@vue-skuilder/common-ui';
 
 export default defineComponent({
   name: 'CardBrowser',
