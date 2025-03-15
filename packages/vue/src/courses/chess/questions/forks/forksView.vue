@@ -16,11 +16,11 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue';
-import { useViewable, useQuestionView } from '@/base-course/CompositionViewable';
+import { useViewable, useQuestionView } from '@vue-skuilder/common-ui';
 import ChessBoard from '../../components/ChessBoard.vue';
 import { ForkFinder } from './index';
 import type { ChessPosition } from '../../components/types';
-import type { ViewData } from '@/base-course/Interfaces/ViewData';
+import type { ViewData } from '@vue-skuilder/common';
 import ChessUtils from '../../chessUtils';
 import { Config } from '../../chessground/config';
 import { DrawShape } from '../../chessground/draw';

@@ -1,9 +1,6 @@
-import { Question } from '../../../../base-course/Displayable';
-import { DataShape } from '../../../../base-course/Interfaces/DataShape';
-import { FieldDefinition } from '../../../../base-course/Interfaces/FieldDefinition';
-import { ViewData } from '../../../../base-course/Interfaces/ViewData';
-import { DataShapeName } from '../../../../enums/DataShapeNames';
-import { FieldType } from '../../../../enums/FieldType';
+import { Question } from '@vue-skuilder/common-ui';
+import { DataShape, FieldDefinition } from '@vue-skuilder/common';
+import { ViewData, DataShapeName, FieldType } from '@vue-skuilder/common';
 import { eventsToSyllableSequence, NoteEvent } from '../../utility/midi';
 import Playback from './Playback.vue';
 

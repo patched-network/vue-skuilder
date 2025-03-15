@@ -110,7 +110,7 @@
           {{ timeString }}
         </v-tooltip>
 
-        <SkldrControlsView />
+        <SkMouseTrap />
 
         <!-- <v-speed-dial v-if="!sessionFinished" v-model="fab" location="left center" transition="slide-x-transition">
           <template #activator="{ props }">
@@ -141,9 +141,9 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
+import { SkMouseTrap } from '@vue-skuilder/common-ui';
 import { ViewComponent } from '@/base-course/Displayable';
-import { displayableDataToViewData, ViewData } from '@/base-course/Interfaces/ViewData';
-import { isQuestionView } from '@/base-course/CompositionViewable';
+import { isQuestionView } from '@vue-skuilder/common-ui';
 import SkTagsInput from '@/components/Edit/TagsInput.vue';
 import HeatMap from '@/components/HeatMap.vue';
 import CardViewer from '@/components/Study/CardViewer.vue';
@@ -175,11 +175,17 @@ import {
 } from '@vue-skuilder/db';
 import SessionController, { StudySessionRecord } from '@/db/SessionController';
 import { newInterval } from '@/db/SpacedRepetition';
-import { adjustCourseScores, CourseElo, toCourseElo, isCourseElo } from '@vue-skuilder/common';
+import {
+  adjustCourseScores,
+  CourseElo,
+  toCourseElo,
+  isCourseElo,
+  displayableDataToViewData,
+  ViewData,
+} from '@vue-skuilder/common';
 import confetti from 'canvas-confetti';
 import moment from 'moment';
-import SkldrControlsView from '../components/SkMouseTrap.vue';
-import { alertUser } from '../components/SnackbarService.vue';
+import { alertUser } from '@vue-skuilder/common-ui';
 import { randomInt } from '../courses/math/utility';
 import { Status, CourseConfig } from '@vue-skuilder/common';
 import { useConfigStore } from '@/stores/useConfigStore';
@@ -203,7 +209,7 @@ export default defineComponent({
 
   components: {
     CardViewer, // [ ] consider: cardloader intermediary?
-    SkldrControlsView,
+    SkMouseTrap,
     SkTagsInput,
     SessionConfiguration,
     HeatMap,

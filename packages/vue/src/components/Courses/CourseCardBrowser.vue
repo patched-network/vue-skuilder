@@ -105,9 +105,9 @@
 
 <script lang="ts">
 import { ViewComponent } from '@/base-course/Displayable';
-import { displayableDataToViewData } from '@/base-course/Interfaces/ViewData';
+import { displayableDataToViewData } from '@vue-skuilder/common';
 import TagsInput from '@/components/Edit/TagsInput.vue';
-import PaginatingToolbar from '@/components/PaginatingToolbar.vue';
+import { PaginatingToolbar } from '@vue-skuilder/common-ui';
 import CardLoader from '@/components/Study/CardLoader.vue';
 import Courses from '@/courses';
 import {
@@ -123,7 +123,7 @@ import {
   Tag,
 } from '@vue-skuilder/db';
 import { defineComponent } from 'vue';
-import { alertUser } from '../SnackbarService.vue';
+import { alertUser } from '@vue-skuilder/common-ui';
 import { Status } from '@vue-skuilder/common';
 
 function isConstructor(obj: unknown) {

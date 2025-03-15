@@ -30,16 +30,16 @@
 
 <script lang="ts">
 import { defineComponent, ref, computed, PropType, onMounted, onBeforeUnmount } from 'vue';
-import { useViewable, useQuestionView } from '@/base-course/CompositionViewable';
+import { useViewable, useQuestionView } from '@vue-skuilder/common-ui';
 import SkMidi, { eventsToSyllableSequence, SyllableSequence } from '../../utility/midi';
 import { EchoQuestion } from '.';
 import moment from 'moment';
 import SyllableSeqVis from '../../utility/SyllableSeqVis.vue';
 import NoteDisplay from '../../NoteDisplay.vue';
-import { alertUser } from '@/components/SnackbarService.vue';
+import { alertUser } from '@vue-skuilder/common-ui';
 import { Status } from '@vue-skuilder/common';
 import { ViewData } from '@/base-course/Interfaces/ViewData';
-import SkldrMouseTrap from '@/SkldrMouseTrap';
+import { SkldrMouseTrap } from '@vue-skuilder/common-ui';
 
 export default defineComponent({
   // this class name *may* be used as a lookup for dynamic component.
@@ -65,7 +65,7 @@ export default defineComponent({
 
   setup(props, { emit }) {
     const viewableUtils = useViewable(props, emit, 'Playback');
-    const questionUtils = useQuestionView<EchoQuestion>(viewableUtils, props.modifyDifficulty);
+    const questionUtils = useQuestionView<EchoQuestion>(viewableUtils);
 
     // State
     const midi = ref<SkMidi>();

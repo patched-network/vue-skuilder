@@ -356,7 +356,7 @@
 
 <script lang="ts">
 import { defineComponent, ref, computed, PropType, onMounted } from 'vue';
-import { useViewable, useQuestionView } from '@/base-course/CompositionViewable';
+import { useViewable, useQuestionView } from '@vue-skuilder/common-ui';
 import SkMidi, { eventsToSyllableSequence, SyllableSequence } from '../../utility/midi';
 import { PlayNote } from '.';
 import moment from 'moment';

@@ -10,7 +10,7 @@
 <script lang="ts">
 import { defineComponent, ref, computed, onMounted, onUnmounted, PropType } from 'vue';
 import { TypeLetterQuestion } from './index';
-import { useViewable, useQuestionView } from '@/base-course/CompositionViewable';
+import { useViewable, useQuestionView } from '@vue-skuilder/common-ui';
 import { ViewData } from '@/base-course/Interfaces/ViewData';
 
 export default defineComponent({

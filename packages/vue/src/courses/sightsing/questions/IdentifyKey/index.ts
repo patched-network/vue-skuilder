@@ -1,9 +1,11 @@
-import { ViewData } from '@/base-course/Interfaces/ViewData';
-import { RadioSelectAnswer } from '../../../../base-course/Components/RadioMultipleChoice.vue';
-import { Question } from '../../../../base-course/Displayable';
-import { DataShapeName } from '../../../../enums/DataShapeNames';
-import { FieldType } from '../../../../enums/FieldType';
-import { Status } from '@vue-skuilder/common';
+import { Question } from '@vue-skuilder/common-ui';
+import {
+  ViewData,
+  DataShapeName,
+  FieldType,
+  Status,
+  RadioMultipleChoiceAnswer,
+} from '@vue-skuilder/common';
 import IdentifyKeyView from './IdentifyKey.vue';
 
 /**
@@ -65,7 +67,7 @@ export class IdentifyKeyQuestion extends Question {
     this.key = IdentifyKeyQuestion.getKey(data[0].key as number);
   }
 
-  public isCorrect(answer: RadioSelectAnswer): boolean {
+  public isCorrect(answer: RadioMultipleChoiceAnswer): boolean {
     console.log(`answer: ${JSON.stringify(answer)}, key: ${this.key}`);
     return this.key === answer.choiceList[answer.selection];
   }

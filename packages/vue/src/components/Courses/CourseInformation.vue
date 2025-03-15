@@ -60,7 +60,7 @@
 import { defineComponent, PropType } from 'vue';
 import MidiConfig from '@/courses/piano/utility/MidiConfig.vue';
 import CourseCardBrowser from './CourseCardBrowser.vue';
-import { log } from '@/logshim';
+import { log } from '@vue-skuilder/common';
 import { CourseDB, getCourseConfig, getCourseTagStubs, Tag, User } from '@vue-skuilder/db';
 import { CourseConfig } from '@vue-skuilder/common';
 import { getCurrentUser } from '@/stores/useAuthStore';

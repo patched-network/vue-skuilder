@@ -1,4 +1,4 @@
-import { Course } from '../../base-course/Course';
+import { Course } from '../Course';
 import { IdentifyKeyQuestion } from './questions/IdentifyKey';
 // import { SpellingQuestion } from './questions/spelling';
 

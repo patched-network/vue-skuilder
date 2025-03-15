@@ -11,9 +11,8 @@
 <script lang="ts">
 import { defineComponent, ref, computed, PropType } from 'vue';
 import { AudioParsingQuestion } from './index';
-import { useViewable, useQuestionView } from '@/base-course/CompositionViewable';
-import { ViewData } from '@/base-course/Interfaces/ViewData';
-import AudioAutoPlayer from '@/base-course/Components/AudioAutoPlayer.vue';
+import { AudioAutoPlayer, useViewable, useQuestionView } from '@vue-skuilder/common-ui';
+import { ViewData } from '@vue-skuilder/common';
 
 export default defineComponent({
   name: 'AudioParseView',
@@ -36,7 +35,7 @@ export default defineComponent({
 
   setup(props, { emit }) {
     const viewableUtils = useViewable(props, emit, 'AudioParseView');
-    const questionUtils = useQuestionView<AudioParsingQuestion>(viewableUtils, props.modifyDifficulty);
+    const questionUtils = useQuestionView<AudioParsingQuestion>(viewableUtils);
 
     const answer = ref('');
 

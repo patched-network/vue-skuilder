@@ -14,6 +14,10 @@ developed slowly as an occasional hobby / side project, and used 'in production'
 
 Much of the legacy code was written without explicit concerns for performance, security, or scale.
 
+# Current Setup:
+
+"packageManager": "yarn@4.6.0", with yarn workspaces
+
 # Current goals:
 
 Seeking to use the project as a vehicle to develop content for commercial, production grade systems. Seeking to iterate quickly to modernize the stack and add key features.

@@ -1,4 +1,4 @@
-import { Course } from '../../base-course/Course';
+import { Course } from '../Course';
 import { EchoQuestion } from './questions/echo';
 import { PlayNote } from './questions/playNote';
 

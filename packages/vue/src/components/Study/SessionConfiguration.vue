@@ -68,7 +68,7 @@
 
 <script lang="ts">
 import { defineComponent, PropType } from 'vue';
-import SkldrMouseTrap from '@/SkldrMouseTrap';
+import { SkldrMouseTrap } from '@vue-skuilder/common-ui';
 import { CourseRegistration, User, getCourseName, StudentClassroomDB, ContentSourceID } from '@vue-skuilder/db';
 import { getCurrentUser } from '@/stores/useAuthStore';
 
@@ -191,7 +191,7 @@ export default defineComponent({
       await Promise.all(
         classes.map((c) =>
           (async (classID: string) => {
-            const classDb = await StudentClassroomDB.factory(classID);
+            const classDb = await StudentClassroomDB.factory(classID, await getCurrentUser());
             activeClasses.push({
               classID,
               name: classDb.getConfig().name,

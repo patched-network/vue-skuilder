@@ -78,7 +78,7 @@
 
 <script lang="ts">
 import { defineComponent, ref, watch, onMounted } from 'vue';
-import { alertUser } from '@/components/SnackbarService.vue';
+import { alertUser } from '@vue-skuilder/common-ui';
 import SkMidi from './midi';
 import { Status } from '@vue-skuilder/common';
 import { User } from '@vue-skuilder/db';

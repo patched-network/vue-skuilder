@@ -9,7 +9,7 @@ import webmidi, {
   InputEventNoteon,
 } from 'webmidi';
 import { Note, Interval } from '@tonaljs/tonal';
-import { alertUser } from '../../../components/SnackbarService.vue';
+import { alertUser } from '@vue-skuilder/common-ui';
 import { Status } from '@vue-skuilder/common';
 // import Navigator from '@types/webmidi';
 
