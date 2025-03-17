@@ -1,18 +1,20 @@
-import { Question } from '../../../../base-course/Displayable';
-import { DataShape } from '../../../../base-course/Interfaces/DataShape';
-import { FieldDefinition } from '../../../../base-course/Interfaces/FieldDefinition';
-import { ViewData } from '../../../../base-course/Interfaces/ViewData';
-import { NonEmptyString } from '../../../../base-course/Validators';
-import { DataShapeName } from '../../../../enums/DataShapeNames';
-import { FieldType } from '../../../../enums/FieldType';
-import { Answer } from '../../../../base-course/Displayable';
+import { Question } from '@vue-skuilder/common-ui';
+import {
+  DataShapeName,
+  FieldType,
+  Validators,
+  DataShape,
+  Answer,
+  FieldDefinition,
+  ViewData,
+} from '@vue-skuilder/common';
 import TextBox from './textBox.vue';
 
 const fields: FieldDefinition[] = [
   {
     name: 'Word',
     type: FieldType.STRING,
-    validator: NonEmptyString,
+    validator: Validators.NonEmptyString,
   },
   {
     name: 'ExampleSentence',

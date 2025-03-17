@@ -21,7 +21,7 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import { log } from '@/logshim';
+import { log } from '@vue-skuilder/common';
 import { getCourseDB } from '@vue-skuilder/db';
 import { getCourseConfig } from '@vue-skuilder/db';
 import { DocType } from '@vue-skuilder/db';

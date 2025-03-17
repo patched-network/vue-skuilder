@@ -44,11 +44,11 @@
 <script lang="ts">
 import moment from 'moment';
 import Mousetrap from 'mousetrap';
-import { log } from '@/logshim';
+import { log } from '@vue-skuilder/common';
 import { registerUserForClassroom } from '@vue-skuilder/db';
 import { Status, ClassroomConfig, CreateClassroom, ServerRequestType } from '@vue-skuilder/common';
 import serverRequest from '../../server';
-import { alertUser } from '../SnackbarService.vue';
+import { alertUser } from '@vue-skuilder/common-ui';
 import { defineComponent } from 'vue';
 import { getCurrentUser } from '@/stores/useAuthStore';
 

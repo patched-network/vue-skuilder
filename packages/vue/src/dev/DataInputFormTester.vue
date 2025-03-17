@@ -34,7 +34,7 @@ import { defineComponent } from 'vue';
 import DataInputForm from '../../src/components/Edit/ViewableDataInputForm/DataInputForm.vue';
 import { DataShape } from '../../src/base-course/Interfaces/DataShape';
 import { useRoute } from 'vue-router';
-import { Question } from '@/base-course/Displayable';
+import { Question } from '@vue-skuilder/common-ui';
 
 type CourseShapes = {
   courseID: string;

@@ -1,4 +1,4 @@
-import { Course } from '../../base-course/Course';
+import { Course } from '../Course';
 import { SpellingQuestion } from './questions/spelling';
 
 const wordWork: Course = new Course('wordWork', [SpellingQuestion]);

@@ -8,14 +8,15 @@ import {
   watch,
   WritableComputedRef,
 } from 'vue';
-import { FieldDefinition } from '../../../base-course/Interfaces/FieldDefinition';
 import {
   ValidatingFunction,
+  FieldDefinition,
+  ValidationResult,
   validationFunctionToVuetifyRule,
   VuetifyRule,
-} from '../../../base-course/Interfaces/ValidatingFunction';
-import { ValidationResult } from '../../../base-course/Interfaces/ValidationResult';
-import { Status, CourseElo } from '@vue-skuilder/common';
+  Status,
+  CourseElo,
+} from '@vue-skuilder/common';
 import { useFieldInputStore } from '@/stores/useFieldInputStore';
 
 export interface FieldInputSetupReturn {

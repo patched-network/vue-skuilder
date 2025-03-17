@@ -30,11 +30,16 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 import { Displayable } from '@/base-course/Displayable';
-import { DataShape } from '@/base-course/Interfaces/DataShape';
 import Courses from '@/courses';
-import { NameSpacer, QuestionDescriptor } from '@/courses/NameSpacer';
 import { addNote55, getCredentialledCourseConfig, updateCredentialledCourseConfig } from '@vue-skuilder/db';
-import { CourseConfig, DataShape55, QuestionType55 } from '@vue-skuilder/common';
+import {
+  NameSpacer,
+  QuestionDescriptor,
+  CourseConfig,
+  DataShape55,
+  QuestionType55,
+  DataShape,
+} from '@vue-skuilder/common';
 import * as _ from 'lodash';
 import { getCurrentUser } from '@/stores/useAuthStore';
 

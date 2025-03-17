@@ -1,5 +1,5 @@
 // vue/src/courses/typing/index.ts
-import { Course } from '../../base-course/Course';
+import { Course } from '../Course';
 import { TypeLetterQuestion } from './questions/single-letter';
 import { FallingLettersQuestion } from './questions/falling-letters';
 

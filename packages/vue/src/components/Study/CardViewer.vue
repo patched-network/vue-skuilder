@@ -16,11 +16,10 @@
 
 <script lang="ts">
 import { defineComponent, PropType } from 'vue';
-import { ViewData } from '@/base-course/Interfaces/ViewData';
 import Courses from '@/courses';
 import { CardRecord } from '@vue-skuilder/db';
-import { CourseElo } from '@vue-skuilder/common';
-import { ViewComponent } from '@/base-course/Displayable';
+import { CourseElo, ViewData } from '@vue-skuilder/common';
+import { ViewComponent } from '@vue-skuilder/common-ui';
 
 interface CardViewerRefs {
   activeView: ViewComponent;

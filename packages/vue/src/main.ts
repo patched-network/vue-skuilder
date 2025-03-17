@@ -5,6 +5,9 @@ import './registerServiceWorker';
 import router from './router';
 import { createPinia } from 'pinia';
 import vuetify from './plugins/vuetify';
+// common-ui imports
+import { piniaPlugin } from '@vue-skuilder/common-ui';
+import '@vue-skuilder/common-ui/style';
 
 const pinia = createPinia();
 const app = createApp(App);
@@ -12,4 +15,5 @@ const app = createApp(App);
 app.use(router);
 app.use(vuetify);
 app.use(pinia);
+app.use(piniaPlugin, { pinia });
 app.mount('#app');

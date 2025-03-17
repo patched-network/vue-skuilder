@@ -1,10 +1,13 @@
 // index.ts
-import { Answer, Question } from '@/base-course/Displayable';
-import { DataShape } from '@/base-course/Interfaces/DataShape';
-import { ViewData } from '@/base-course/Interfaces/ViewData';
-import { DataShapeName } from '@/enums/DataShapeNames';
-import { FieldType } from '@/enums/FieldType';
-import { Status } from '@vue-skuilder/common';
+import { Question } from '@vue-skuilder/common-ui';
+import {
+  Answer,
+  DataShape,
+  ViewData,
+  DataShapeName,
+  FieldType,
+  Status,
+} from '@vue-skuilder/common';
 import LetterQuestionView from './typeSingleLetter.vue';
 
 const data = function () {

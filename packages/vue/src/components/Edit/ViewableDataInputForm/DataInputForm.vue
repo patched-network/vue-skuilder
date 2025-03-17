@@ -83,12 +83,10 @@ import { DataShape } from '@/base-course/Interfaces/DataShape';
 import CardBrowser from '@/components/Edit/CardBrowser.vue';
 import TagsInput, { TagsInputInstance } from '@/components/Edit/TagsInput.vue';
 import { FieldInputInstance, isFieldInput } from '@/components/Edit/ViewableDataInputForm/FieldInput.types';
-import { alertUser } from '@/components/SnackbarService.vue';
+import { alertUser } from '@vue-skuilder/common-ui';
 import Courses from '@/courses';
-import { NameSpacer, ShapeDescriptor } from '@/courses/NameSpacer';
 import { addNote55, getCourseTagStubs } from '@vue-skuilder/db';
-import { FieldType } from '@/enums/FieldType';
-import { Status, CourseConfig } from '@vue-skuilder/common';
+import { FieldType, Status, CourseConfig, NameSpacer, ShapeDescriptor } from '@vue-skuilder/common';
 import _ from 'lodash';
 import IntegerInput from './FieldInputs/IntegerInput.vue';
 import MarkdownInput from './FieldInputs/MarkdownInput.vue';
@@ -101,7 +99,7 @@ import { CourseElo } from '@vue-skuilder/common';
 import { useDataInputFormStore } from '@/stores/useDataInputFormStore';
 import { ViewData } from '@/base-course/Interfaces/ViewData';
 import { getCurrentUser } from '@/stores/useAuthStore';
-import { Question } from '@/base-course/Displayable';
+import { Question } from '@vue-skuilder/common-ui';
 
 type StringIndexable = { [x: string]: unknown };
 

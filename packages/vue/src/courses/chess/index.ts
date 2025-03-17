@@ -1,4 +1,4 @@
-import { Course } from '../../base-course/Course';
+import { Course } from '../Course';
 import { ChessPuzzle } from './questions/puzzle';
 
 const chess: Course = new Course('chess', [ChessPuzzle]);

@@ -1,4 +1,4 @@
-import { Course } from '../../base-course/Course';
+import { Course } from '../Course';
 import { SingleDigitAdditionQuestion } from '../../courses/math/questions/addition';
 import { SingleDigitDivisionQuestion } from '../../courses/math/questions/division';
 import { SingleDigitMultiplicationQuestion } from '../../courses/math/questions/multiplication';
