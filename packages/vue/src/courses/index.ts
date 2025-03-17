@@ -5,7 +5,7 @@ import chess from './chess';
 import defaultCourse from './default';
 import french from './french';
 import math from './math';
-import { NameSpacer, ShapeDescriptor, ViewDescriptor } from './NameSpacer';
+import { NameSpacer, ShapeDescriptor, ViewDescriptor } from '@vue-skuilder/common';
 import piano from './piano';
 import pitch from './pitch';
 import sightSing from './sightsing';

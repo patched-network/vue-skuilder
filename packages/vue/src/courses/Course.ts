@@ -1,7 +1,6 @@
 import { Displayable, ViewComponent } from '@vue-skuilder/common-ui';
 import { BlanksCard } from '../courses/default/questions/fillIn/';
 
-// tslint:disable-next-line:max-classes-per-file
 export class Course {
   public get questions(): Array<typeof Displayable> {
     return this.questionList;

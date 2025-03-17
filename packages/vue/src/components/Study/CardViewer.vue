@@ -19,7 +19,7 @@ import { defineComponent, PropType } from 'vue';
 import Courses from '@/courses';
 import { CardRecord } from '@vue-skuilder/db';
 import { CourseElo, ViewData } from '@vue-skuilder/common';
-import { ViewComponent } from '@/base-course/Displayable';
+import { ViewComponent } from '@vue-skuilder/common-ui';
 
 interface CardViewerRefs {
   activeView: ViewComponent;
