@@ -1,5 +1,5 @@
 import { Displayable, ViewComponent } from '@vue-skuilder/common-ui';
-import { BlanksCard } from '../courses/default/questions/fillIn/';
+import { BlanksCard } from './default/questions/fillIn/';
 
 export class Course {
   public get questions(): Array<typeof Displayable> {

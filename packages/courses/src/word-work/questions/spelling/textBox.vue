@@ -17,7 +17,7 @@
 
 <script lang="ts">
 import { defineComponent, ref, computed, PropType } from 'vue';
-import { SpellingQuestion } from '@/courses/word-work/questions/spelling';
+import { SpellingQuestion } from '@/word-work/questions/spelling';
 import { AudioAutoPlayer, UserInputString, useViewable, useQuestionView } from '@vue-skuilder/common-ui';
 import { ViewData } from '@vue-skuilder/common';
 

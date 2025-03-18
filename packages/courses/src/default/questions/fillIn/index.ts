@@ -1,7 +1,7 @@
 import { Question, splitByDelimiters } from '@vue-skuilder/common-ui';
 import { Answer, RadioMultipleChoiceAnswer, DataShape } from '@vue-skuilder/common';
 import { Validator, ViewData } from '@vue-skuilder/common';
-import { randomInt } from '../../../../courses/math/utility';
+import { randomInt } from '@/math/utility';
 import { FieldType, DataShapeName, Status } from '@vue-skuilder/common';
 import _ from 'lodash';
 import { Tokens } from 'marked';

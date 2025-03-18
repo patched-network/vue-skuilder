@@ -1,7 +1,7 @@
 import { Course } from '../Course';
-import { SingleDigitAdditionQuestion } from '../../courses/math/questions/addition';
-import { SingleDigitDivisionQuestion } from '../../courses/math/questions/division';
-import { SingleDigitMultiplicationQuestion } from '../../courses/math/questions/multiplication';
+import { SingleDigitAdditionQuestion } from './questions/addition';
+import { SingleDigitDivisionQuestion } from './questions/division';
+import { SingleDigitMultiplicationQuestion } from './questions/multiplication';
 import { EqualityTest } from './questions/equalityTest';
 import { OneStepEquation } from './questions/oneStepEqn';
 import { AngleCategorize } from './questions/angleCategorize';
