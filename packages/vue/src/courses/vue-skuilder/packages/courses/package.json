@@ -1,0 +1,33 @@
+{
+  "name": "@vue-skuilder/courses",
+  "version": "0.1.0",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@vue-skuilder/common": "workspace:*",
+    "@vue-skuilder/common-ui": "workspace:*",
+    "@vue-skuilder/db": "workspace:*",
+    "lodash": "^4.17.21",
+    "moment": "^2.29.4",
+    "vue": "^3.2.47"
+  },
+  "devDependencies": {
+    "@types/lodash": "^4.14.195",
+    "@vitejs/plugin-vue": "^4.2.3",
+    "typescript": "^5.1.3",
+    "vite": "^4.3.9",
+    "vite-plugin-dts": "^2.3.0"
+  },
+  "peerDependencies": {
+    "vue": "^3.2.0"
+  }
+}
