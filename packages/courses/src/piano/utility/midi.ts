@@ -11,6 +11,7 @@ import webmidi, {
 import { Note, Interval } from '@tonaljs/tonal';
 import { alertUser } from '@vue-skuilder/common-ui';
 import { Status } from '@vue-skuilder/common';
+import { User } from '@vue-skuilder/db';
 // import Navigator from '@types/webmidi';
 
 export interface NoteEvent {
@@ -306,7 +307,11 @@ class SkMidi {
     return this._state;
   }
 
-  private constructor() {}
+  private _userLookup: (() => Promise<User>) | null;
+
+  private constructor(userLookup?: () => Promise<User>) {
+    this._userLookup = userLookup ?? null;
+  }
 
   private async init(): Promise<boolean> {
     if (!this.midiAccess) {
@@ -375,9 +380,12 @@ class SkMidi {
 
   private async loadUserConfiguration(): Promise<void> {
     try {
-      // Import necessary modules
-      const { getCurrentUser } = await import('@/stores/useAuthStore');
-      const user = await getCurrentUser();
+      if (!this._userLookup) {
+        console.log('User lookup function not provided - using default MIDI configuration');
+        return;
+      }
+
+      const user = await this._userLookup();
 
       if (!user) {
         console.log('No user found, using default MIDI configuration');
