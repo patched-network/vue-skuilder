@@ -29,8 +29,8 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import { Displayable } from '@/base-course/Displayable';
-import Courses from '@/courses';
+import { Displayable } from '@vue-skuilder/common-ui';
+import Courses from '@vue-skuilder/courses';
 import { addNote55, getCredentialledCourseConfig, updateCredentialledCourseConfig } from '@vue-skuilder/db';
 import {
   NameSpacer,

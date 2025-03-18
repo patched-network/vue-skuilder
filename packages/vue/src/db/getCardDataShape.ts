@@ -1,6 +1,6 @@
-import Courses from '../courses';
+import Courses from '@vue-skuilder/courses';
 import { log, NameSpacer, CourseConfig, DataShape } from '@vue-skuilder/common';
-import { CardData, DisplayableData } from './types';
+import { CardData, DisplayableData } from '@vue-skuilder/db';
 import { getCourseDB } from './courseAPI';
 
 export async function getCardDataShape(courseID: string, cardID: string) {

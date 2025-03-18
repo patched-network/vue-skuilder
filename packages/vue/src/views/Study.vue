@@ -148,7 +148,7 @@ import SkTagsInput from '@/components/Edit/TagsInput.vue';
 import HeatMap from '@/components/HeatMap.vue';
 import CardViewer from '@/components/Study/CardViewer.vue';
 import SessionConfiguration from '@/components/Study/SessionConfiguration.vue';
-import Courses from '@/courses';
+import Courses from '@vue-skuilder/courses';
 import {
   getCourseDoc,
   removeScheduledCardReview,

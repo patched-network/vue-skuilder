@@ -16,7 +16,7 @@
 
 <script lang="ts">
 import { defineComponent, PropType } from 'vue';
-import Courses from '@/courses';
+import Courses from '@vue-skuilder/courses';
 import { CardRecord } from '@vue-skuilder/db';
 import { CourseElo, ViewData } from '@vue-skuilder/common';
 import { ViewComponent } from '@vue-skuilder/common-ui';

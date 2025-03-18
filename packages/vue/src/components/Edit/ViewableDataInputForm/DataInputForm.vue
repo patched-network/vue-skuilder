@@ -84,7 +84,7 @@ import CardBrowser from '@/components/Edit/CardBrowser.vue';
 import TagsInput, { TagsInputInstance } from '@/components/Edit/TagsInput.vue';
 import { FieldInputInstance, isFieldInput } from '@/components/Edit/ViewableDataInputForm/FieldInput.types';
 import { alertUser } from '@vue-skuilder/common-ui';
-import Courses from '@/courses';
+import Courses from '@vue-skuilder/courses';
 import { addNote55, getCourseTagStubs } from '@vue-skuilder/db';
 import { FieldType, Status, CourseConfig, NameSpacer, ShapeDescriptor } from '@vue-skuilder/common';
 import _ from 'lodash';
