@@ -1,17 +1,18 @@
+import { markRaw } from 'vue';
 import { Course } from './Course';
 import { Displayable, ViewComponent } from '@vue-skuilder/common-ui';
-import { DataShape } from '@vue-skuilder/common';
-import chess from './chess';
+import { DataShape, NameSpacer, ShapeDescriptor, ViewDescriptor } from '@vue-skuilder/common';
+
 import defaultCourse from './default';
+
+import chess from './chess';
 import french from './french';
 import math from './math';
-import { NameSpacer, ShapeDescriptor, ViewDescriptor } from '@vue-skuilder/common';
 import piano from './piano';
 import pitch from './pitch';
 import sightSing from './sightsing';
 import typing from './typing';
 import wordWork from './word-work';
-import { markRaw } from 'vue';
 
 export class CourseList {
   private readonly courseList: Course[];
