@@ -23,7 +23,6 @@
     // Added for better module resolution
     "baseUrl": ".",
     "paths": {
-      "@vue-skuilder/vue": ["../vue/src"],
       "@/*": ["src/*"],
       "*": ["node_modules/*"]
     },
