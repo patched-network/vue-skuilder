@@ -15,7 +15,6 @@ export const getPinia = (): Pinia | null => {
 
 // Create a plugin that the main app can use
 export const piniaPlugin: Plugin = {
-  // @ts-expect-error
   install(app, options) {
     const pinia = options?.pinia;
     if (pinia) {
