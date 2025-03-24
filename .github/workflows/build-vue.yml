@@ -1,14 +1,14 @@
-name: build-vue
+name: build-platform-ui
 on:
   pull_request:
     paths:
-      - 'packages/vue/**'
+      - 'packages/platform-ui/**'
       - 'packages/common/**'
       - 'packages/db/**'
       - 'packages/common-ui/**'
-      - '.github/workflows/build-vue.yml'
+      - '.github/workflows/build-platform-ui.yml'
 jobs:
-  build-vue-spa:
+  build-platform-ui-spa:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -42,15 +42,15 @@ jobs:
         working-directory: ./packages/common-ui
         run: yarn build
 
-      - name: Setup Vue environment
-        run: printf "${{ secrets.VUE_ENV }}" > ./packages/vue/.env.production
+      - name: Setup platform-ui environment
+        run: printf "${{ secrets.VUE_ENV }}" > ./packages/platform-ui/.env.production
 
-      - name: Build Vue package
-        working-directory: ./packages/vue
+      - name: Build platform-ui package
+        working-directory: ./packages/platform-ui
         run: |
           yarn install
           yarn build
 
-      - name: Run Vue tests
-        working-directory: ./packages/vue
+      - name: Run platform-ui tests
+        working-directory: ./packages/platform-ui
         run: yarn test:unit
