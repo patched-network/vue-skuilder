@@ -1,13 +1,13 @@
-name: deploy-vue
+name: deploy-platform-ui
 on:
   workflow_dispatch:
     inputs:
       reason:
-        description: 'Reason for deploying Vue app'
+        description: 'Reason for deploying platform UI app'
         required: true
         default: 'Manual deployment'
 jobs:
-  deploy-vue:
+  deploy-platform-ui:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository code
@@ -33,7 +33,7 @@ jobs:
         run: yarn install
 
       - name: Set production environment
-        run: printf "${{ secrets.VITE_ENV }}" > ./packages/vue/.env.production
+        run: printf "${{ secrets.VITE_ENV }}" > ./packages/platform-ui/.env.production
 
       - name: Build
         run: yarn build
@@ -43,7 +43,7 @@ jobs:
           BUILD_INFO="Build created on $(date) from commit ${{ github.sha }}\n"
           BUILD_INFO+="Triggered by ${{ github.actor }} via ${{ github.event_name }}\n"
           BUILD_INFO+="Reason: ${{ github.event.inputs.reason }}\n"
-          echo -e "$BUILD_INFO" > ./packages/vue/dist/buildinfo.md
+          echo -e "$BUILD_INFO" > ./packages/platform-ui/dist/buildinfo.md
 
       - name: Deploy to server
         run: |
@@ -52,7 +52,7 @@ jobs:
           echo "Creating directory version $newversion..."
           ssh ${{ secrets.DO_USERNAME }}@eduquilt.com mkdir -p /home/skuilder/dist/vue/$newversion
           echo "Syncing files to server..."
-          rsync -rl --delete ./packages/vue/dist/ ${{ secrets.DO_USERNAME }}@eduquilt.com:/home/skuilder/dist/vue/$newversion
+          rsync -rl --delete ./packages/platform-ui/dist/ ${{ secrets.DO_USERNAME }}@eduquilt.com:/home/skuilder/dist/vue/$newversion
           echo "Setting symlink to new version..."
           ssh ${{ secrets.DO_USERNAME }}@eduquilt.com ln -sfn /home/skuilder/dist/vue/$newversion /home/skuilder/www
           echo "Deployment complete to version $newversion"
