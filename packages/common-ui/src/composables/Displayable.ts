@@ -1,4 +1,4 @@
-import { DefineComponent, defineComponent } from 'vue';
+import { type DefineComponent, defineComponent } from 'vue';
 import { FieldType, DataShape, ViewData, Answer, Evaluation } from '@vue-skuilder/common';
 
 // [ ] #vue3 - post migration, specify this more precisely (no longer a hodge-podge)
