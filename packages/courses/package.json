@@ -8,7 +8,8 @@
         "dist"
     ],
     "scripts": {
-        "build": "vite build",
+        "build": "yarn clean && vite build",
+        "clean": "rm -rf dist",
         "dev": "vite build --watch",
         "type-check": "tsc --noEmit"
     },
