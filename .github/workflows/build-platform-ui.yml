@@ -6,6 +6,7 @@ on:
       - 'packages/common/**'
       - 'packages/db/**'
       - 'packages/common-ui/**'
+      - 'packages/courses/**'
       - '.github/workflows/build-platform-ui.yml'
 jobs:
   build-platform-ui-spa:
@@ -30,26 +31,11 @@ jobs:
           yarn --version
           yarn install --immutable
 
-      - name: Build common package
-        working-directory: ./packages/common
-        run: yarn build
-
-      - name: Build db package
-        working-directory: ./packages/db
-        run: yarn build
-
-      - name: Build common-ui package
-        working-directory: ./packages/common-ui
-        run: yarn build
-
       - name: Setup platform-ui environment
         run: printf "${{ secrets.VUE_ENV }}" > ./packages/platform-ui/.env.production
 
-      - name: Build platform-ui package
-        working-directory: ./packages/platform-ui
-        run: |
-          yarn install
-          yarn build
+      - name: Build all packages
+        run: yarn build
 
       - name: Run platform-ui tests
         working-directory: ./packages/platform-ui
