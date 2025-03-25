@@ -29,7 +29,7 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg,json,vue,txt,woff2}'],
         navigateFallback: '/index.html',
         navigateFallbackAllowlist: [/^(?!\/(couch|express)).*$/],
-        maximumFileSizeToCacheInBytes: 2.5 * 1024 * 1024,
+        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024, // [ ] #perf #pre-production bring this down to ... 1MB?
       },
       manifest: {
         name: 'eduQuilt',
