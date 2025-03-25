@@ -11,7 +11,7 @@
 import { defineComponent, ref, computed, PropType } from 'vue';
 import { SingleDigitDivisionQuestion } from './index';
 import { UserInputNumber, useViewable, useQuestionView } from '@vue-skuilder/common-ui';
-import { ViewData } from '@/base-course/Interfaces/ViewData';
+import { ViewData } from '@vue-skuilder/common';
 
 export default defineComponent({
   name: 'DivisionHorizontal',
@@ -34,7 +34,7 @@ export default defineComponent({
 
   setup(props, { emit }) {
     const viewableUtils = useViewable(props, emit, 'DivisionHorizontal');
-    const questionUtils = useQuestionView<SingleDigitDivisionQuestion>(viewableUtils, props.modifyDifficulty);
+    const questionUtils = useQuestionView<SingleDigitDivisionQuestion>(viewableUtils);
 
     const answer = ref('');
 

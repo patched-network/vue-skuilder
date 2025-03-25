@@ -37,7 +37,7 @@ export default defineComponent({
 
   setup(props, { emit }) {
     const viewableUtils = useViewable(props, emit, 'CalculateSupplementaryAngle');
-    const questionUtils = useQuestionView<SupplementaryAngles>(viewableUtils, props.modifyDifficulty);
+    const questionUtils = useQuestionView<SupplementaryAngles>(viewableUtils);
 
     const answer = ref('');
     const canvasRef = ref<HTMLCanvasElement | null>(null);

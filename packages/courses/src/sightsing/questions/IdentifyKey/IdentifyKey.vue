@@ -45,7 +45,7 @@ export default defineComponent({
 
   setup(props, { emit }) {
     const viewableUtils = useViewable(props, emit, 'IdentifyKeyView');
-    const questionUtils = useQuestionView<IdentifyKeyQuestion>(viewableUtils, props.modifyDifficulty);
+    const questionUtils = useQuestionView<IdentifyKeyQuestion>(viewableUtils);
 
     const answer = ref('');
 

@@ -34,7 +34,7 @@ export default defineComponent({
 
   setup(props, { emit }) {
     const viewableUtils = useViewable(props, emit, 'VerbalMultiplication');
-    const questionUtils = useQuestionView<SingleDigitMultiplicationQuestion>(viewableUtils, props.modifyDifficulty);
+    const questionUtils = useQuestionView<SingleDigitMultiplicationQuestion>(viewableUtils);
 
     const answer = ref('');
 

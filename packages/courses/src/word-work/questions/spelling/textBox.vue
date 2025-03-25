@@ -19,6 +19,7 @@
 import { defineComponent, ref, computed, PropType } from 'vue';
 import { SpellingQuestion } from '@/word-work/questions/spelling';
 import { AudioAutoPlayer, UserInputString, useViewable, useQuestionView } from '@vue-skuilder/common-ui';
+
 import { ViewData } from '@vue-skuilder/common';
 
 export default defineComponent({
@@ -43,7 +44,7 @@ export default defineComponent({
 
   setup(props, { emit }) {
     const viewableUtils = useViewable(props, emit, 'IdentifyVocab');
-    const questionUtils = useQuestionView<SpellingQuestion>(viewableUtils, props.modifyDifficulty);
+    const questionUtils = useQuestionView<SpellingQuestion>(viewableUtils);
 
     const answer = ref('');
 

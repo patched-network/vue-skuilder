@@ -360,7 +360,7 @@ import { useViewable, useQuestionView } from '@vue-skuilder/common-ui';
 import SkMidi, { eventsToSyllableSequence, SyllableSequence } from '../../utility/midi';
 import { PlayNote } from '.';
 import moment from 'moment';
-import { ViewData } from '@/base-course/Interfaces/ViewData';
+import { ViewData } from '@vue-skuilder/common';
 
 export default defineComponent({
   name: 'NotePlayback',
@@ -381,7 +381,7 @@ export default defineComponent({
 
   setup(props, { emit }) {
     const viewableUtils = useViewable(props, emit, 'NotePlayback');
-    const questionUtils = useQuestionView<PlayNote>(viewableUtils, props.modifyDifficulty);
+    const questionUtils = useQuestionView<PlayNote>(viewableUtils);
 
     // State
     const midi = ref<SkMidi>();

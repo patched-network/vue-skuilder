@@ -90,7 +90,7 @@ export class FallingLettersQuestion extends Question {
   evaluate(a: Answer, t: number) {
     return {
       isCorrect: this.isCorrect(a as Score),
-      performance: this.displayedSkill(a as Score, t),
+      performance: this.displayedSkill(a as Score),
     };
   }
 

@@ -62,7 +62,7 @@
 import { defineComponent, ref, onMounted, onUnmounted, PropType } from 'vue';
 import { useViewable, useQuestionView } from '@vue-skuilder/common-ui';
 import { FallingLettersQuestion } from './index';
-import { ViewData } from '@/base-course/Interfaces/ViewData';
+import { ViewData } from '@vue-skuilder/common';
 
 // Types
 interface Letter {

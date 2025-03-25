@@ -11,7 +11,7 @@
 import { defineComponent, ref, computed, onMounted, onUnmounted, PropType } from 'vue';
 import { TypeLetterQuestion } from './index';
 import { useViewable, useQuestionView } from '@vue-skuilder/common-ui';
-import { ViewData } from '@/base-course/Interfaces/ViewData';
+import { ViewData } from '@vue-skuilder/common';
 
 export default defineComponent({
   name: 'LetterQuestionView',
@@ -30,7 +30,7 @@ export default defineComponent({
 
   setup(props, { emit }) {
     const viewableUtils = useViewable(props, emit, 'LetterQuestionView');
-    const questionUtils = useQuestionView<TypeLetterQuestion>(viewableUtils, props.modifyDifficulty);
+    const questionUtils = useQuestionView<TypeLetterQuestion>(viewableUtils);
     const letterDisplay = ref<HTMLElement | null>(null);
 
     // Initialize question immediately

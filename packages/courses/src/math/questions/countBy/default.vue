@@ -11,6 +11,7 @@
       <input
         :id="`input${i}`"
         :ref="`input${i}`"
+        :class="`input${a}${i}`"
         v-model="answer[i]"
         type="text"
         :autofocus="i === 0"
@@ -25,7 +26,7 @@
 import { defineComponent, ref, computed, PropType, onMounted } from 'vue';
 import { CountBy } from './index';
 import { useViewable, useQuestionView } from '@vue-skuilder/common-ui';
-import { ViewData } from '@/base-course/Interfaces/ViewData';
+import { ViewData } from '@vue-skuilder/common';
 
 export default defineComponent({
   name: 'VerbalAddition',
@@ -44,7 +45,7 @@ export default defineComponent({
 
   setup(props, { emit }) {
     const viewableUtils = useViewable(props, emit, 'VerbalAddition');
-    const questionUtils = useQuestionView<CountBy>(viewableUtils, props.modifyDifficulty);
+    const questionUtils = useQuestionView<CountBy>(viewableUtils);
 
     const answer = ref<string[]>(['', '', '', '', '']);
 

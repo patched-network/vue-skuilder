@@ -50,7 +50,7 @@ export default defineComponent({
 
   setup(props, { emit }) {
     const viewableUtils = useViewable(props, emit, 'Solve');
-    const questionUtils = useQuestionView<OneStepEquation>(viewableUtils, props.modifyDifficulty);
+    const questionUtils = useQuestionView<OneStepEquation>(viewableUtils);
 
     const answer = ref('');
     const vars = ['a', 'b', 'd', 'A', 'z', 'B', 'd', 'y'];

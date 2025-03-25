@@ -33,7 +33,7 @@ export default defineComponent({
 
   setup(props, { emit }) {
     const viewableUtils = useViewable(props, emit, 'TrueFalse');
-    const questionUtils = useQuestionView<EqualityTest>(viewableUtils, props.modifyDifficulty);
+    const questionUtils = useQuestionView<EqualityTest>(viewableUtils);
 
     // Initialize question
     questionUtils.question.value = new EqualityTest(props.data);

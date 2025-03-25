@@ -34,7 +34,7 @@ export default defineComponent({
 
   setup(props, { emit }) {
     const viewableUtils = useViewable(props, emit, 'IdentifyChroma');
-    const questionUtils = useQuestionView<ChromaQuestion>(viewableUtils, props.modifyDifficulty);
+    const questionUtils = useQuestionView<ChromaQuestion>(viewableUtils);
 
     const answer = ref('');
     const ctx = ref(new AudioContext());
