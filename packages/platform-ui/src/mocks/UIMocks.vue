@@ -64,7 +64,7 @@
 
     <div class="component">
       <h2>DataInputForm</h2>
-      <data-input-form
+      <!-- <data-input-form
         :course-cfg="{
           admins: ['admin'],
           creator: 'admin',
@@ -78,7 +78,7 @@
           questionTypes: [],
         }"
         :data-shape="ChessPuzzleDataShapes[0]"
-      />
+      /> -->
     </div>
 
     <!-- <div class="component">
@@ -135,17 +135,17 @@ import SkTagsInput from '@/components/Edit/TagsInput.vue';
 // import ImageInput from '@/components/Edit/ViewableDataInputForm/FieldInputs/ImageInput.vue';
 // import MediaUploader from '@/components/Edit/ViewableDataInputForm/FieldInputs/MediaUploader.vue';
 import HeatMap from '@/components/HeatMap.vue';
-import PuzzleView from '@/courses/chess/questions/puzzle/puzzle.vue';
-// import ChessPieceMove from '@/courses/chess/questions/piecemove/piece-move.vue';
-import FillInView from '@/courses/default/questions/fillIn/fillIn.vue';
-import { BlanksCardDataShapes } from '@/courses/default/questions/fillIn/index';
-import { ChessPuzzle } from '@/courses/chess/questions/puzzle/index';
+import PuzzleView from '@vue-skuilder/courses';
+// import ChessPieceMove from '@vue-skuilder/courses';
+import FillInView from '@vue-skuilder/courses';
+// import { BlanksCardDataShapes } from '@vue-skuilder/courses';
+// import { ChessPuzzle } from '@vue-skuilder/courses';
 import DataInputForm from '../components/Edit/ViewableDataInputForm/DataInputForm.vue';
-import LetterQuestionView from '@/courses/typing/questions/single-letter/typeSingleLetter.vue';
-import FallingLettersView from '@/courses/typing/questions/falling-letters/FallingLetters.vue';
+import LetterQuestionView from '@vue-skuilder/courses';
+import FallingLettersView from '@vue-skuilder/courses';
 import CardViewer from '@/components/Study/CardViewer.vue';
 import { Status } from '@vue-skuilder/common';
-import { ValidationResult } from '@/base-course/Interfaces/ValidationResult';
+import { ValidationResult } from '@vue-skuilder/common';
 
 export default defineComponent({
   name: 'UIMocks',
@@ -175,8 +175,8 @@ export default defineComponent({
         'v2n1N,5Q1k/2pbq1p1/8/pp1P4/4B1P1/7P/PP6/1K3R2 b - - 4 34,e7f8 f1f8,615,86,73,189,endgame mate mateIn1 oneMove,https://lichess.org/Czh6F7z3/black#68,',
       promotionPuzzle:
         'o2mD7,8/2K5/p4p2/8/1P4k1/8/P7/8 w - - 0 35,c7b7 f6f5 b7a6 f5f4 b4b5 f4f3 b5b6 f3f2 b6b7 f2f1q,846,99,92,589,advancedPawn crushing endgame pawnEndgame promotion quietMove veryLong,https://lichess.org/x0LpCJ7V#69,',
-      BlanksCardDataShapes,
-      ChessPuzzleDataShapes: ChessPuzzle.dataShapes,
+      // BlanksCardDataShapes,
+      // ChessPuzzleDataShapes: ChessPuzzle.dataShapes,
       FillInView,
       validationResult: {
         status: Status.ok,
