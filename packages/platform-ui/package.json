@@ -5,7 +5,6 @@
     "scripts": {
         "dev": "vite",
         "build": "vite build && yarn build-types",
-        "build-types": "tsc --project tsconfig.types.json",
         "serve": "vite preview",
         "lint": "eslint . --fix",
         "lint:check": "eslint .",
