@@ -159,7 +159,7 @@ class Syllable {
     isCorrect: boolean;
     isMissing: boolean;
   })[];
-  isCorrect: boolean;
+  isCorrect: boolean | undefined;
 
   get timestamp(): number {
     let timestamp = 0;
@@ -293,16 +293,16 @@ class SkMidi {
   public recording: NoteEvent[] = [];
 
   private webmidi: WebMidi = webmidi;
-  private input: Input;
-  private output: Output;
+  private input: Input | undefined;
+  private output: Output | undefined;
   private _noteonListeners: ((e: InputEventNoteon) => void)[] = [];
   private _noteoffListeners: ((e: InputEventNoteoff) => void)[] = [];
 
   private static _initializedWithUserConfig = false;
 
-  private midiAccess: WebMidi.MIDIAccess;
+  private midiAccess: WebMidi.MIDIAccess | undefined;
 
-  private _state: 'nodevice' | 'notsupported' | 'ready';
+  private _state: 'nodevice' | 'notsupported' | 'ready' | 'initializing' = 'initializing';
   public get state() {
     return this._state;
   }
@@ -417,8 +417,6 @@ class SkMidi {
     }
   }
 
-  private _stateChangeListener: () => void;
-
   public setStateChangeListener(f: () => void) {
     if (!this.midiAccess) {
       try {
@@ -456,10 +454,10 @@ class SkMidi {
   private attachListeners() {
     if (this.input) {
       this._noteonListeners.forEach((f) => {
-        this.input.on('noteon', 'all', f);
+        this.input?.on('noteon', 'all', f);
       });
       this._noteoffListeners.forEach((f) => {
-        this.input.on('noteoff', 'all', f);
+        this.input?.on('noteoff', 'all', f);
       });
     }
   }
@@ -481,7 +479,7 @@ class SkMidi {
   }
 
   public stopRecording() {
-    this.input.removeListener();
+    this.input?.removeListener();
   }
 
   public record() {
@@ -547,13 +545,13 @@ class SkMidi {
 
     playbackData.forEach((e) => {
       if (e.type === 'noteon') {
-        this.output.playNote(e.note.name + e.note.octave, 1, {
+        this.output?.playNote(e.note.name + e.note.octave, 1, {
           velocity: e.velocity,
           time: `+${e.timestamp}`,
           rawVelocity: false,
         });
       } else {
-        this.output.stopNote(e.note.name + e.note.octave, 1, {
+        this.output?.stopNote(e.note.name + e.note.octave, 1, {
           velocity: e.velocity,
           time: `+${e.timestamp}`,
           rawVelocity: false,
