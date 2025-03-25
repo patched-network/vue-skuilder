@@ -1,4 +1,4 @@
-import gradeSpellingAttempt from '@/courses/default/questions/fillIn/blanksCorrection';
+import gradeSpellingAttempt from '@vue-skuilder/courses';
 import { adjustCourseScores } from '@vue-skuilder/common';
 
 const testScore = 800;

@@ -141,9 +141,7 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import { SkMouseTrap } from '@vue-skuilder/common-ui';
-import { ViewComponent } from '@/base-course/Displayable';
-import { isQuestionView } from '@vue-skuilder/common-ui';
+import { isQuestionView, ViewComponent, SkMouseTrap } from '@vue-skuilder/common-ui';
 import SkTagsInput from '@/components/Edit/TagsInput.vue';
 import HeatMap from '@/components/HeatMap.vue';
 import CardViewer from '@/components/Study/CardViewer.vue';
@@ -186,12 +184,15 @@ import {
 import confetti from 'canvas-confetti';
 import moment from 'moment';
 import { alertUser } from '@vue-skuilder/common-ui';
-import { randomInt } from '../courses/math/utility';
 import { Status, CourseConfig } from '@vue-skuilder/common';
 import { useConfigStore } from '@/stores/useConfigStore';
 import { useDataInputFormStore } from '@/stores/useDataInputFormStore';
 import { Router } from 'vue-router';
 import { getCurrentUser } from '@/stores/useAuthStore';
+
+function randomInt(min: number, max: number): number {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
 
 interface StudyRefs {
   shadowWrapper: HTMLDivElement;

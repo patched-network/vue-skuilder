@@ -16,8 +16,6 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import { SingleDigitMultiplicationQuestion } from '@/courses/math/questions/multiplication';
-import { randomInt } from '@/courses/math/utility';
 
 export default defineComponent({
   name: 'AboutView',
@@ -25,12 +23,6 @@ export default defineComponent({
   data() {
     return {
       type: 'Viewable',
-      problem: new SingleDigitMultiplicationQuestion([
-        {
-          a: randomInt(0, 10),
-          b: randomInt(0, 10),
-        },
-      ]),
     };
   },
 });

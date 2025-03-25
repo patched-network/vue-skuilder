@@ -14,6 +14,18 @@ import sightSing from './sightsing';
 import typing from './typing';
 import wordWork from './word-work';
 
+export { BlanksCard, BlanksCardDataShapes } from './default/questions/fillIn';
+export { default as gradeSpellingAttempt } from './default/questions/fillIn/blanksCorrection';
+
+export {
+  default as SkMidi,
+  eventsToSyllableSequence,
+  SyllableSequence,
+  transposeSyllableSeq,
+} from './piano/utility/midi';
+
+export { default as SyllableSeqVis } from './piano/utility/SyllableSeqVis.vue';
+
 export class CourseList {
   private readonly courseList: Course[];
 

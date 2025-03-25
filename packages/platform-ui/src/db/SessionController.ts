@@ -1,5 +1,4 @@
 import { getCurrentUser } from '@/stores/useAuthStore';
-import { randomInt } from '../courses/math/utility';
 import {
   isReview,
   StudyContentSource,
@@ -12,6 +11,10 @@ import {
   ScheduledCard,
   User,
 } from '@vue-skuilder/db';
+
+function randomInt(min: number, max: number): number {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
 
 export interface StudySessionRecord {
   card: {

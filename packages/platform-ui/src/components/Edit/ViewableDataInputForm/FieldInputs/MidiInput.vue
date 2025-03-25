@@ -22,12 +22,13 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 import FieldInput from '../OptionsFieldInput';
-import SkMidi, {
+import {
+  SkMidi,
   eventsToSyllableSequence,
   SyllableSequence,
   transposeSyllableSeq,
-} from '../../../../courses/piano/utility/midi';
-import SyllableSeqVis from '../../../../courses/piano/utility/SyllableSeqVis.vue';
+  SyllableSeqVis,
+} from '@vue-skuilder/courses';
 
 export default defineComponent({
   name: 'MidiInput',

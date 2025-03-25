@@ -31,7 +31,7 @@
 import { defineComponent } from 'vue';
 import ComponentRegistration from '@/components/Edit/ComponentRegistration/ComponentRegistration.vue';
 import Courses from '@vue-skuilder/courses';
-import { BlanksCard, BlanksCardDataShapes } from '@/courses/default/questions/fillIn';
+import { BlanksCard, BlanksCardDataShapes } from '@vue-skuilder/courses';
 import { CourseConfig, NameSpacer, DataShape } from '@vue-skuilder/common';
 import DataInputForm from './ViewableDataInputForm/DataInputForm.vue';
 import { getCredentialledCourseConfig } from '@vue-skuilder/db';
