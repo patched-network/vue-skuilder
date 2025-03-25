@@ -140,7 +140,7 @@ import PuzzleView from '@vue-skuilder/courses';
 import FillInView from '@vue-skuilder/courses';
 // import { BlanksCardDataShapes } from '@vue-skuilder/courses';
 // import { ChessPuzzle } from '@vue-skuilder/courses';
-import DataInputForm from '../components/Edit/ViewableDataInputForm/DataInputForm.vue';
+// import DataInputForm from '../components/Edit/ViewableDataInputForm/DataInputForm.vue';
 import LetterQuestionView from '@vue-skuilder/courses';
 import FallingLettersView from '@vue-skuilder/courses';
 import CardViewer from '@/components/Study/CardViewer.vue';
@@ -152,7 +152,7 @@ export default defineComponent({
 
   components: {
     SkTagsInput,
-    DataInputForm,
+    // DataInputForm,
     // MediaUploader,
     // ImageInput,
     HeatMap,
