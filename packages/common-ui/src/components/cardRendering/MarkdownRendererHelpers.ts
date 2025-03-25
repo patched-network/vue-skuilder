@@ -35,25 +35,6 @@ export function splitByDelimiters(text: string, l: string, r: string): string[] 
   return ret;
 }
 
-function splitText(
-  text: string,
-  leftBound: string,
-  rightBound: string
-): {
-  left: string;
-  middle: string;
-  right: string;
-} {
-  const leftSplit = text.split(leftBound);
-  const left = leftSplit[0];
-
-  const rightSplit = leftSplit[1].split(rightBound);
-  const middle = rightSplit[0];
-  const right = rightSplit[1];
-
-  return { left, middle, right };
-}
-
 export function splitTextToken(token: Tokens.Text): Tokens.Text[] {
   if (containsComponent(token)) {
     const textChunks = splitByDelimiters(token.text, '{{', '}}');
