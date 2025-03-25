@@ -8,7 +8,9 @@ export default defineConfig({
     vue(),
     dts({
       insertTypesEntry: true,
-      // Make sure dts plugin also picks up your declaration files
+      // Exclude test files from type generation
+      exclude: ['**/*.spec.ts', '**/*.test.ts'],
+      // Include only necessary files
       include: ['src/**/*.ts', 'src/**/*.d.ts', 'src/**/*.vue'],
     }),
   ],
