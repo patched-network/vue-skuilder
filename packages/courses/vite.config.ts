@@ -17,6 +17,10 @@ export default defineConfig({
   },
   build: {
     sourcemap: true,
+    minify: 'terser',
+    terserOptions: {
+      keep_classnames: true, // required for some dynamic component loading mechanisms
+    },
     lib: {
       entry: resolve(__dirname, 'src/index.ts'),
       name: 'VueSkuilderCourses',
