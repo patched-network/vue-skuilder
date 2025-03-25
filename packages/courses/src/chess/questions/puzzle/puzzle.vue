@@ -32,7 +32,7 @@ import { Api as cgAPI } from '../../chessground/api';
 import { useViewable, useQuestionView } from '@vue-skuilder/common-ui';
 import { ChessPuzzle } from './index';
 import { Chess, SQUARES } from 'chess.js';
-import { ViewData } from '@/base-course/Interfaces/ViewData';
+import { ViewData } from '@vue-skuilder/common';
 
 // Types and interfaces
 type PromotionPiece = 'q' | 'r' | 'b' | 'n';
