@@ -4999,6 +4999,7 @@ __metadata:
     jsdom: "npm:^26.0.0"
     lodash: "npm:^4.17.21"
     moment: "npm:^2.29.4"
+    paper: "npm:^0.12.3"
     typescript: "npm:^5.7.2"
     vite: "npm:^6.0.9"
     vite-plugin-dts: "npm:^4.5.3"
@@ -11833,6 +11834,13 @@ __metadata:
   version: 1.0.1
   resolution: "package-json-from-dist@npm:1.0.1"
   checksum: 10c0/62ba2785eb655fec084a257af34dbe24292ab74516d6aecef97ef72d4897310bc6898f6c85b5cd22770eaa1ce60d55a0230e150fb6a966e3ecd6c511e23d164b
+  languageName: node
+  linkType: hard
+
+"paper@npm:^0.12.3":
+  version: 0.12.18
+  resolution: "paper@npm:0.12.18"
+  checksum: 10c0/7731501e1bc74e84b74d2eadf05044644aef437a013d797d7dbda9af248c0896f45a334d55c9f049e1692cfac1c3a06c8b68b95c69ee2bf8f7d06bf1bdaf8805
   languageName: node
   linkType: hard
 
