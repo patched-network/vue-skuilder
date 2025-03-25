@@ -8,6 +8,8 @@ export default defineConfig({
     vue(),
     dts({
       insertTypesEntry: true,
+      // Make sure dts plugin also picks up your declaration files
+      include: ['src/**/*.ts', 'src/**/*.d.ts', 'src/**/*.vue'],
     }),
   ],
   resolve: {
@@ -26,8 +28,7 @@ export default defineConfig({
     lib: {
       entry: resolve(__dirname, 'src/index.ts'),
       name: 'VueSkuilderCourses',
-      formats: ['es', 'cjs'],
-      fileName: (format) => `index.${format === 'es' ? 'mjs' : 'js'}`,
+      fileName: (format) => `index.${format === 'es' ? 'mjs' : 'cjs.js'}`,
     },
     rollupOptions: {
       external: ['vue', '@vue-skuilder/common', '@vue-skuilder/common-ui', '@vue-skuilder/db'],
@@ -38,7 +39,12 @@ export default defineConfig({
           '@vue-skuilder/common-ui': 'VueSkuilderCommonUI',
           '@vue-skuilder/db': 'VueSkuilderDB',
         },
+        exports: 'named',
+        // Ensure assets are handled properly in the build
+        assetFileNames: 'assets/[name].[ext]',
       },
     },
+    // This is crucial for component libraries - allow CSS to be in chunks
+    cssCodeSplit: true,
   },
 });
