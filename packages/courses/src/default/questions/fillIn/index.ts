@@ -1,4 +1,4 @@
-import { Question, splitByDelimiters } from '@vue-skuilder/common-ui';
+import { Question, splitByDelimiters, containsComponent } from '@vue-skuilder/common-ui';
 import { Answer, RadioMultipleChoiceAnswer, DataShape } from '@vue-skuilder/common';
 import { Validator, ViewData } from '@vue-skuilder/common';
 import { randomInt } from '@/math/utility';
@@ -24,6 +24,7 @@ export const BlanksCardDataShapes: DataShape[] = [
 ];
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
+// @ts-expect-error
 const val: Validator = {
   test: (input) => {
     console.log(`Testing md input: ${input}`);
@@ -54,6 +55,25 @@ type fillInSectionType = 'text' | 'blank';
 export interface FillInSection {
   type: fillInSectionType;
   text: string;
+}
+
+function splitText(
+  text: string,
+  leftBound: string,
+  rightBound: string
+): {
+  left: string;
+  middle: string;
+  right: string;
+} {
+  const leftSplit = text.split(leftBound);
+  const left = leftSplit[0];
+
+  const rightSplit = leftSplit[1].split(rightBound);
+  const middle = rightSplit[0];
+  const right = rightSplit[1];
+
+  return { left, middle, right };
 }
 
 export class BlanksCard extends Question {

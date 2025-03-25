@@ -63,21 +63,7 @@ import { defineComponent, ref, onMounted, onUnmounted, PropType } from 'vue';
 import { useViewable, useQuestionView } from '@vue-skuilder/common-ui';
 import { FallingLettersQuestion } from './index';
 import { ViewData } from '@vue-skuilder/common';
-
-// Types
-interface Letter {
-  id: number;
-  char: string;
-  x: number;
-  y: number;
-}
-
-interface TreePosition {
-  id: number;
-  left: number;
-  height: number;
-  scale: number;
-}
+import { Letter, TreePosition } from './types';
 
 // Internal game state type
 interface GameStateInternal {

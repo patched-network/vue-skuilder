@@ -34,7 +34,7 @@ export default defineComponent({
 
   setup(props, { emit }) {
     const viewableUtils = useViewable(props, emit, 'AdditionHorizontal');
-    const questionUtils = useQuestionView<SingleDigitAdditionQuestion>(viewableUtils, props.modifyDifficulty);
+    const questionUtils = useQuestionView<SingleDigitAdditionQuestion>(viewableUtils);
 
     const answer = ref('');
 

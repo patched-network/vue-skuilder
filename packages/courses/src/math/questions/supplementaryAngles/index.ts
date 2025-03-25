@@ -48,7 +48,6 @@ export class SupplementaryAngles extends Question {
   public angles: number[] = [];
   public targetAngleIndex: number;
   public angleCount: number;
-  public answers: string[];
 
   constructor(data: ViewData[]) {
     super(data);

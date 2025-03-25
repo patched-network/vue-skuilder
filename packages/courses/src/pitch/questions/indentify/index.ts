@@ -20,26 +20,19 @@ const fields: FieldDefinition[] = [
     type: FieldType.STRING,
     validator: {
       test: (value) => {
-        const e = new Enumerator(Chroma);
-        e.moveFirst();
-        while (!e.atEnd()) {
-          const c = e.item();
-
-          if (c === value) {
-            return {
-              status: Status.ok,
-              msg: '',
-            };
-          }
-
-          e.moveNext();
+        // Check if the value is a valid Chroma enum value
+        if (Object.values(Chroma).includes(value as Chroma)) {
+          return {
+            status: Status.ok,
+            msg: '',
+          };
         }
         return {
           status: Status.error,
           msg: "That's not a chroma!",
         };
       },
-      instructions: 'Awefjiop',
+      instructions: 'Enter a valid musical note (A-G)',
     },
   },
 ];

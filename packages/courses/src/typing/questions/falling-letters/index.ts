@@ -87,7 +87,7 @@ export class FallingLettersQuestion extends Question {
     this.spawnInterval = data[0].spawnInterval as number;
   }
 
-  evaluate(a: Answer, t: number) {
+  evaluate(a: Answer) {
     return {
       isCorrect: this.isCorrect(a as Score),
       performance: this.displayedSkill(a as Score),

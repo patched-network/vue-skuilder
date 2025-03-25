@@ -145,7 +145,11 @@ export default defineComponent({
       });
     };
 
-    const handlePromotion = (promotionPiece: PromotionPiece) => {
+    const handlePromotion = (promotionPiece: PromotionPiece | string) => {
+      if (promotionPiece !== 'q' && promotionPiece !== 'r' && promotionPiece !== 'b' && promotionPiece !== 'n') {
+        viewableUtils.logger.error(`Invalid promotion piece: ${promotionPiece}`);
+        return;
+      }
       if (!promotionMove.value) return;
 
       viewableUtils.logger.log(`promoting to ${promotionPiece}`);

@@ -1,11 +1,13 @@
 {
     "name": "@vue-skuilder/courses",
     "version": "0.1.0",
+    "type": "module",
     "main": "dist/index.js",
     "module": "dist/index.mjs",
     "types": "dist/index.d.ts",
     "files": [
-        "dist"
+        "dist",
+        "src/assets"
     ],
     "scripts": {
         "build": "yarn clean && vite build",

@@ -1,7 +1,7 @@
 <template>
   <div data-viewable="IdentifyKeyView">
     <template v-if="question">
-      <MusicScoreRenderer :key-signature="`X:1\nK:${question.key}\n||`" />
+      <MusicScoreRenderer :key-signature="`X:1\nK:${question.key}\n||`" abc-string="''" />
       This signature is for the major key: _____
       <RadioMultipleChoice :choice-list="choices" />
     </template>

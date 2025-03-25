@@ -5,9 +5,9 @@
       >s:
     </div>
 
-    <input type="text" disabled class="correct" :value="question?.answer[0] - question?.n" />,
+    <input type="text" disabled class="correct" :value="question.answer[0] - question.n" />,
 
-    <span v-for="(a, i) in question?.answer" :key="i">
+    <span v-for="(a, i) in question.answer" :key="i">
       <input
         :id="`input${i}`"
         :ref="`input${i}`"
@@ -17,7 +17,7 @@
         :autofocus="i === 0"
         @keyup="track(i)"
       />
-      <span v-if="i !== question?.answer.length - 1">, </span>
+      <span v-if="i !== question.answer.length - 1">, </span>
     </span>
   </div>
 </template>
@@ -53,7 +53,9 @@ export default defineComponent({
     questionUtils.question.value = new CountBy(props.data);
 
     // Expose the question directly for template access
-    const question = computed(() => questionUtils.question.value);
+    const question = computed(() =>
+      questionUtils.question.value ? questionUtils.question.value : new CountBy(props.data)
+    );
 
     const track = (n: number): void => {
       console.log(`change in ${n}!

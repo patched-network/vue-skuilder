@@ -4,7 +4,7 @@
       <h2>What kind of angle is this?</h2>
       <canvas ref="canvasRef" width="300" height="300"> </canvas>
 
-      <radio-multiple-choice :choice-list="question.answers" :mouse-trap="mouseTrap" />
+      <radio-multiple-choice :choice-list="question.answers" />
     </template>
   </div>
 </template>
@@ -13,7 +13,7 @@
 import { defineComponent, ref, computed, onMounted, PropType } from 'vue';
 import { RadioMultipleChoice, useViewable, useQuestionView } from '@vue-skuilder/common-ui';
 import { AngleCategorize, AngleCategories } from './index';
-import { ViewData } from '@/base-course/Interfaces/ViewData';
+import { ViewData } from '@vue-skuilder/common';
 import { randomInt } from '../../utility';
 
 export default defineComponent({
@@ -37,7 +37,7 @@ export default defineComponent({
 
   setup(props, { emit }) {
     const viewableUtils = useViewable(props, emit, 'AngleCategorizeV');
-    const questionUtils = useQuestionView<AngleCategorize>(viewableUtils, props.modifyDifficulty);
+    const questionUtils = useQuestionView<AngleCategorize>(viewableUtils);
     const canvasRef = ref<HTMLCanvasElement | null>(null);
 
     // Initialize question immediately

@@ -4,7 +4,7 @@
       <span class="text-h5"> Spell the word: </span>
       <UserInputString v-model="answer" />
       <center>
-        <span v-if="questionUtils.priorAttempts" class="text-h6">
+        <span v-if="priorAttempts" class="text-h6">
           {{ question.word }}
         </span>
       </center>

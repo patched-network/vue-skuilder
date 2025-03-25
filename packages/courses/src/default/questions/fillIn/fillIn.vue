@@ -1,7 +1,9 @@
 <template>
   <div data-viewable="FillInView">
     <audio-auto-player v-if="hasAudio" :src="audioURL" />
-    <img v-if="hasImage" :src="imageURL" />
+    <template v-if="hasImage">
+      <img v-for="(url, index) in imageURLs" :key="index" :src="url" />
+    </template>
     <!-- Add v-if to prevent undefined markdown -->
     <markdown-renderer v-if="markdownText" :md="markdownText" />
     <radio-multiple-choice v-if="question?.options" :choice-list="truncatedOptions" />
@@ -20,13 +22,7 @@
 
 <script lang="ts">
 import { defineAsyncComponent, defineComponent, ref, computed, PropType, onMounted, onUnmounted, watch } from 'vue';
-import {
-  useViewable,
-  useQuestionView,
-  AudioAutoPlayer,
-  RadioMultipleChoice,
-  MarkdownRenderer,
-} from '@vue-skuilder/common-ui';
+import { useViewable, useQuestionView, AudioAutoPlayer, RadioMultipleChoice } from '@vue-skuilder/common-ui';
 import _ from 'lodash';
 import { BlanksCard } from './index';
 import gradeSpellingAttempt from './blanksCorrection';
@@ -100,7 +96,7 @@ export default defineComponent({
 
     const hasImage = computed(() => !!props.data[0]['image-1']);
 
-    const imageURL = computed(() => {
+    const imageURLs = computed(() => {
       if (!hasImage.value) return [''];
 
       const urls: string[] = [];
@@ -236,7 +232,7 @@ export default defineComponent({
       question,
       truncatedOptions,
       hasImage,
-      imageURL,
+      imageURLs,
       hasAudio,
       audioURL,
       obscuredAnswer,

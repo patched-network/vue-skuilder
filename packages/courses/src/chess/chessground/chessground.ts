@@ -45,7 +45,7 @@ export function Chessground(element: HTMLElement, config?: Config): Api {
     state.drawable.prevSvgHash = '';
     updateBounds(state);
     redrawNow(false);
-    events.bindBoard(state, onResize);
+    events.bindBoard(state);
     if (!prevUnbind) state.dom.unbind = events.bindDocument(state, onResize);
     state.events.insert && state.events.insert(elements);
     return state;

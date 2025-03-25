@@ -15,6 +15,8 @@ export default defineConfig({
       '@': resolve(__dirname, 'src'),
     },
   },
+  // Add assetsInclude to explicitly handle SVG assets
+  assetsInclude: ['**/*.svg'],
   build: {
     sourcemap: true,
     minify: 'terser',
