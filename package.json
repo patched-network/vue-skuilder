@@ -1,8 +1,8 @@
 {
     "name": "vue-skuilder",
     "scripts": {
-        "dev": "yarn workspace @vue-skuilder/common build && yarn workspace @vue-skuilder/db build && node scripts/dev-couchdb.js start && concurrently \"yarn dev:vue\" \"yarn dev:express\"",
-        "dev:vue": "yarn workspace @vue-skuilder/vue dev",
+        "dev": "yarn workspace @vue-skuilder/common build && yarn workspace @vue-skuilder/db build && yarn workspace @vue-skuilder/common-ui build && yarn workspace @vue-skuilder/courses build && node scripts/dev-couchdb.js start && concurrently \"yarn dev:platform-ui\" \"yarn dev:express\"",
+        "dev:platform-ui": "yarn workspace @vue-skuilder/platform-ui dev",
         "dev:express": "yarn workspace @vue-skuilder/express dev",
         "dev:couchdb": "node scripts/dev-couchdb.js start",
         "couchdb:start": "node scripts/dev-couchdb.js start",
@@ -13,7 +13,11 @@
         "test:e2e": "cypress open",
         "test:e2e:headless": "cypress run",
         "ci:e2e": "yarn dev & wait-on http://localhost:5173 && cypress run; kill $(lsof -t -i:8080); yarn couchdb:stop",
-        "build": "yarn workspace @vue-skuilder/common build && yarn workspace @vue-skuilder/db build && yarn workspace @vue-skuilder/vue build && yarn workspace @vue-skuilder/express build"
+        "build": "yarn workspace @vue-skuilder/common build && yarn workspace @vue-skuilder/db build && yarn workspace @vue-skuilder/common-ui build && yarn workspace @vue-skuilder/courses build && yarn workspace @vue-skuilder/platform-ui build && yarn workspace @vue-skuilder/express build",
+        "clean": "yarn clean:dist && yarn clean:node_modules",
+        "clean:dist": "find packages -name 'dist' -type d -exec rm -rf {} +",
+        "clean:node_modules": "find . -name 'node_modules' -type d -exec rm -rf {} +",
+        "clean:all": "yarn clean && rm -rf .pnp.* .yarn/cache .yarn/install-state.gz"
     },
     "private": true,
     "workspaces": [

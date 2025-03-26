@@ -15,11 +15,18 @@ Aiming toward effective libraries and a main learner-loop to enable:
 
 ## Project Architecture
 
-This monorepo contains three primary components:
+This monorepo contains three top-level system components:
 
-- **Vue SPA Frontend** (`packages/vue`): Vue 3 + Vuetify 3 progressive web app
+- **Vue SPA Frontend** (`packages/platform-ui`): Vue 3 + Vuetify 3 progressive web app
 - **Express API** (`packages/express`): Node.js backend API
 - **CouchDB Database**: Storage layer with replication protocol support
+
+Which are in turn built from the helper packages:
+
+- `common`: some core logic and interfaces that define communication between project components
+- `common-ui`: UI components useful in both a `platform` and standalone `course` context
+- `courses`: logic and interfaces for both generic and domain specific courses.
+- `db`: interfaces for the application's communication with the data later, and an implementation for CouchDB backend via PouchDB
 
 ## Development Quick Start
 
@@ -34,16 +41,16 @@ This monorepo contains three primary components:
 ```bash
 git clone https://github.com/patched-network/vue-skuilder.git
 cd vue-skuilder
-git submodule update --init --recursive
+git submodule update --init --recursive # a test-time database dump
 yarn install
 yarn dev
 ```
 
-This will:
-- Build the common package
-- Start a local CouchDB instance in Docker with test data
-- Launch the Express backend server
-- Launch the Vue frontend (http://localhost:5173)
+`dev` here:
+- Builds packages
+- Starts a local CouchDB instance in Docker with test data (http://localhost:5984)
+- Launches the Express backend server (http://localhost:3000)
+- Launches the Vue frontend (http://localhost:5173)
 
 ## Production Build
 
@@ -51,11 +58,11 @@ This will:
 yarn build
 ```
 
-This builds all packages and outputs the frontend as a static web app in the `packages/vue/dist` folder and the backend in `packages/express/dist`.
+This builds all packages and outputs the frontend as a static web app in the `packages/platform-ui/dist` folder and the backend in `packages/express/dist`.
 
 ## License
 
 This project is licensed under:
 
 - **AGPL-3.0** for the core platform: [License](https://opensource.org/licenses/AGPL-3.0)
-- **MIT** for materials in base course content: [License](https://opensource.org/licenses/MIT)
+- **MIT** for materials in the `courses` package: [License](https://opensource.org/licenses/MIT)

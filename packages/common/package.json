@@ -7,11 +7,11 @@
     "module": "dist/index.js",
     "types": "dist/index.d.ts",
     "scripts": {
-        "build": "tsc"
+        "build": "rm -rf dist && tsc"
     },
     "packageManager": "yarn@4.6.0",
     "devDependencies": {
-        "typescript": "^4.5.5"
+        "typescript": "~5.7.2"
     },
     "dependencies": {
         "moment": "^2.30.1"

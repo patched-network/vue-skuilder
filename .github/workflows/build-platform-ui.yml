@@ -1,0 +1,42 @@
+name: build-platform-ui
+on:
+  pull_request:
+    paths:
+      - 'packages/platform-ui/**'
+      - 'packages/common/**'
+      - 'packages/db/**'
+      - 'packages/common-ui/**'
+      - 'packages/courses/**'
+      - '.github/workflows/build-platform-ui.yml'
+jobs:
+  build-platform-ui-spa:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'yarn'
+
+      - name: Enable Corepack
+        run: |
+          corepack enable
+          corepack prepare yarn@4.6.0 --activate
+
+      - name: Install dependencies
+        run: |
+          yarn --version
+          yarn install --immutable
+
+      - name: Setup platform-ui environment
+        run: printf "${{ secrets.VUE_ENV }}" > ./packages/platform-ui/.env.production
+
+      - name: Build all packages
+        run: yarn build
+
+      - name: Run platform-ui tests
+        working-directory: ./packages/platform-ui
+        run: yarn test:unit

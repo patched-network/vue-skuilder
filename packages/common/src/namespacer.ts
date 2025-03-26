@@ -1,5 +1,3 @@
-// tslint:disable-next-line:max-classes-per-file
-
 export class NameSpacer {
   public static getDataShapeDescriptor(shapeStr: string): ShapeDescriptor {
     const splitArray = shapeStr.split('.');

@@ -23,7 +23,6 @@
     // Added for better module resolution
     "baseUrl": ".",
     "paths": {
-      "@vue-skuilder/vue": ["../vue/src"],
       "@/*": ["src/*"],
       "*": ["node_modules/*"]
     },
@@ -37,6 +36,5 @@
   },
   // Changed from "files" to "include" for better project structure
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts"],
-  "references": [{ "path": "../vue" }]
+  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts"]
 }

@@ -32,7 +32,7 @@ yarn-error.log*
 vue/Caddyfile
 
 # Cyrpress build artifacts
-/packages/vue/cypress
+/packages/platform-ui/cypress
 
 # yarn 2+ files
 .yarn/*

@@ -1,0 +1,58 @@
+# .github/workflows/courses-test.yml
+name: Courses Package Tests
+
+on:
+  push:
+    paths:
+      - 'packages/courses/**'
+      - '.github/workflows/courses-test.yml'
+  pull_request:
+    paths:
+      - 'packages/courses/**'
+      - '.github/workflows/courses-test.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Build @vue-skuilder/common
+        run: |
+          cd packages/common
+          yarn build
+
+      - name: Build @vue-skuilder/db
+        run: |
+          cd packages/db
+          yarn build
+
+      - name: Build @vue-skuilder/common-ui
+        run: |
+          cd packages/common-ui
+          yarn build
+
+      - name: Build @vue-skuilder/courses
+        run: |
+          cd packages/courses
+          yarn build
+
+      - name: Run tests for @vue-skuilder/courses
+        run: |
+          cd packages/courses
+          yarn test
+
+      - name: Report test results
+        if: always()
+        run: |
+          echo "Courses package tests completed with status: ${{ job.status }}"
