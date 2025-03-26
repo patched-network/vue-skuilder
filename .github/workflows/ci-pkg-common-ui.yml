@@ -1,0 +1,81 @@
+# vue-skuilder/.github/workflows/ci-pkg-common-ui.yml
+name: CI - Common UI Package
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/common-ui/**'
+      - 'packages/common/**'
+      - 'packages/db/**'
+      - '.github/workflows/ci-pkg-common-ui.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'packages/common-ui/**'
+      - 'packages/common/**'
+      - 'packages/db/**'
+      - '.github/workflows/ci-pkg-common-ui.yml'
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      # Build dependencies first
+      - name: Build common package
+        run: |
+          cd packages/common
+          yarn build
+
+      - name: Build db package
+        run: |
+          cd packages/db
+          yarn build
+
+      # Lint common-ui
+      - name: Lint common-ui
+        run: |
+          cd packages/common-ui
+          yarn lint:check
+
+      # Build common-ui
+      - name: Build common-ui
+        run: |
+          cd packages/common-ui
+          yarn build
+
+      # Run unit tests
+      - name: Run unit tests
+        run: |
+          cd packages/common-ui
+          yarn test:unit
+
+      # Run component tests
+      - name: Run Cypress component tests
+        run: |
+          cd packages/common-ui
+          yarn cypress:run --component
+
+      # Archive test artifacts if tests fail
+      - name: Archive Cypress screenshots and videos
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: cypress-artifacts
+          path: |
+            packages/common-ui/cypress/screenshots
+            packages/common-ui/cypress/videos
+          retention-days: 7
