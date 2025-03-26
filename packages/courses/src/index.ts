@@ -24,6 +24,7 @@ export {
   transposeSyllableSeq,
 } from './piano/utility/midi';
 
+export { default as MidiConfig } from './piano/utility/MidiConfig.vue';
 export { default as SyllableSeqVis } from './piano/utility/SyllableSeqVis.vue';
 
 export class CourseList {
