@@ -1,0 +1,19 @@
+/* packages/common-ui/cypress/support/component-styles.css */
+body[data-cy-vuetify] {
+  margin: 0;
+  padding: 16px;
+  height: 100vh;
+}
+
+#app {
+  padding: 24px;
+  height: 100%;
+}
+
+/* Make sure Vuetify elements are visible in the test runner */
+.v-tooltip {
+  position: relative !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: none !important;
+}
