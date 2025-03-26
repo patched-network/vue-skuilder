@@ -58,7 +58,7 @@
 
 <script lang="ts">
 import { defineComponent, PropType } from 'vue';
-import MidiConfig from '@vue-skuilder/courses';
+import { MidiConfig } from '@vue-skuilder/courses';
 import CourseCardBrowser from './CourseCardBrowser.vue';
 import { log } from '@vue-skuilder/common';
 import { CourseDB, getCourseConfig, getCourseTagStubs, Tag, User } from '@vue-skuilder/db';
