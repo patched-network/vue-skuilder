@@ -1,40 +1,34 @@
-<!-- @vue-skuilder/common-ui/src/components/study/StudySessionTimer.vue -->
+<!-- @vue-skuilder/common-ui/src/components/StudySessionTimer.vue -->
 <template>
-  <v-tooltip
-    v-model="showTooltip"
-    location="right"
-    :open-delay="0"
-    :close-delay="200"
-    color="secondary"
-    class="text-subtitle-1"
-  >
+  <v-tooltip location="right" :open-delay="0" :close-delay="200" color="secondary" class="text-subtitle-1">
     <template #activator="{ props }">
-      <v-progress-circular
-        alt="Time remaining in study session"
-        size="64"
-        width="8"
-        rotate="0"
-        :color="timerColor"
-        :model-value="percentageRemaining"
-      >
-        <v-btn
-          v-if="isActive"
-          v-bind="props"
-          icon
-          color="grey-lighten-4"
-          location="bottom left"
-          @click="addSessionTime"
+      <div class="timer-container" v-bind="props" @mouseenter="hovered = true" @mouseleave="hovered = false">
+        <v-progress-circular
+          alt="Time remaining in study session"
+          size="64"
+          width="8"
+          rotate="0"
+          :color="timerColor"
+          :model-value="percentageRemaining"
         >
-          <v-icon v-if="isActive" size="large">mdi-plus</v-icon>
-        </v-btn>
-      </v-progress-circular>
+          <v-btn
+            v-if="timeRemaining > 0 && hovered"
+            icon
+            color="transparent"
+            location="bottom left"
+            @click="addSessionTime"
+          >
+            <v-icon size="large">mdi-plus</v-icon>
+          </v-btn>
+        </v-progress-circular>
+      </div>
     </template>
     {{ formattedTimeRemaining }}
   </v-tooltip>
 </template>
 
 <script lang="ts">
-import { defineComponent, computed, toRefs } from 'vue';
+import { defineComponent, computed, ref } from 'vue';
 
 export default defineComponent({
   name: 'StudySessionTimer',
@@ -55,35 +49,19 @@ export default defineComponent({
       required: true,
       default: 5,
     },
-    /**
-     * Whether the timer is currently active
-     */
-    isActive: {
-      type: Boolean,
-      required: true,
-      default: false,
-    },
-    /**
-     * Whether the tooltip should be shown
-     */
-    showTooltip: {
-      type: Boolean,
-      required: false,
-      default: false,
-    },
   },
 
   emits: ['add-time'],
 
   setup(props, { emit }) {
-    const { timeRemaining, sessionTimeLimit, isActive } = toRefs(props);
+    const hovered = ref(false);
 
     /**
      * Formats the time remaining into a readable string
      */
     const formattedTimeRemaining = computed(() => {
       let timeString = '';
-      const seconds = timeRemaining.value;
+      const seconds = props.timeRemaining;
 
       if (seconds > 60) {
         timeString = Math.floor(seconds / 60).toString() + ':';
@@ -105,31 +83,27 @@ export default defineComponent({
      * Calculates the percentage of time remaining for the progress indicator
      */
     const percentageRemaining = computed(() => {
-      return timeRemaining.value > 60
-        ? 100 * (timeRemaining.value / (60 * sessionTimeLimit.value))
-        : 100 * (timeRemaining.value / 60);
+      return props.timeRemaining > 60
+        ? 100 * (props.timeRemaining / (60 * props.sessionTimeLimit))
+        : 100 * (props.timeRemaining / 60);
     });
 
     /**
      * Determines the color of the timer based on time remaining
      */
     const timerColor = computed(() => {
-      return timeRemaining.value > 60 ? 'primary' : 'orange darken-3';
+      return props.timeRemaining > 60 ? 'primary' : 'orange darken-3';
     });
 
     /**
      * Handles adding time to the session
      */
     const addSessionTime = () => {
-      console.log(`[timer] addSessionTime called`);
-      if (isActive.value) {
-        emit('add-time');
-      } else {
-        console.log(`[timer] addSessionTime called when session is not active`);
-      }
+      emit('add-time');
     };
 
     return {
+      hovered,
       formattedTimeRemaining,
       percentageRemaining,
       timerColor,
@@ -140,5 +114,8 @@ export default defineComponent({
 </script>
 
 <style scoped>
-/* The component inherits styles from parent application */
+.timer-container {
+  display: inline-flex;
+  cursor: pointer;
+}
 </style>

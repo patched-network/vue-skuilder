@@ -78,8 +78,6 @@
           <StudySessionTimer
             :time-remaining="timeRemaining"
             :session-time-limit="sessionTimeLimit"
-            :is-active="timerIsActive"
-            :show-tooltip="false"
             @add-time="incrementSessionClock"
           />
         </v-col>
@@ -231,7 +229,7 @@ export default defineComponent({
       sessionFinished: false,
       sessionRecord: [] as StudySessionRecord[],
       percentageRemaining: 100,
-      timerIsActive: false,
+      timerIsActive: true,
       loading: false,
       userCourseRegDoc: null as CourseRegistrationDoc | null,
       sessionContentSources: [] as StudyContentSource[],
@@ -441,7 +439,7 @@ export default defineComponent({
     async processResponse(this: StudyInstance, r: CardRecord) {
       this.$emit('emitResponse', r);
 
-      this.timerIsActive = false;
+      this.timerIsActive = true;
 
       r.cardID = this.cardID;
       r.courseID = this.courseID;
