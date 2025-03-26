@@ -32,7 +32,7 @@
         </router-link>
       </div>
     </transition>
-    <midi-config v-if="isPianoCourse" :_id="_id" class="my-3" />
+    <midi-config v-if="isPianoCourse" :_id="_id" :user="user" class="my-3" />
 
     <v-card class="my-2">
       <v-toolbar density="compact">

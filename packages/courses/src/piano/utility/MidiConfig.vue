@@ -83,11 +83,10 @@ import SkMidi from './midi';
 import { Status } from '@vue-skuilder/common';
 import { User } from '@vue-skuilder/db';
 import { InputEventNoteon } from 'webmidi';
-import { getCurrentUser } from '@/stores/useAuthStore';
 import PianoRangeVisualizer from './PianoRangeVisualizer.vue';
 
 export interface MidiDevice {
-  text: string;
+  title: string;
   value: string;
 }
 export default defineComponent({
@@ -102,6 +101,10 @@ export default defineComponent({
       type: String,
       required: true,
     },
+    user: {
+      type: Object as () => User,
+      required: true,
+    },
   },
 
   setup(props) {
@@ -112,7 +115,6 @@ export default defineComponent({
     const selectedInput = ref<string>('');
     const selectedOutput = ref<string>('');
     const updatePending = ref(false);
-    const user = ref<User>();
 
     // managing config state updates
     const savedInputId = ref<string>('');
@@ -388,7 +390,7 @@ export default defineComponent({
     });
 
     const retrieveSettings = async () => {
-      const s = await user.value?.getCourseSettings(props._id);
+      const s = await props.user.getCourseSettings(props._id);
 
       if (s?.midiinput) {
         const savedInput = s.midiinput.toString();
@@ -435,7 +437,7 @@ export default defineComponent({
 
     const saveSettings = async () => {
       updatePending.value = true;
-      await user.value?.updateCourseSettings(props._id, [
+      await props.user.updateCourseSettings(props._id, [
         {
           key: 'midiinput',
           value: selectedInput.value,
@@ -475,7 +477,6 @@ export default defineComponent({
     };
 
     onMounted(async () => {
-      user.value = await getCurrentUser();
       initNoteOptions();
       try {
         midi.value = await SkMidi.instance();
