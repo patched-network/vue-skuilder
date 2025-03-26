@@ -38,11 +38,7 @@
 
       <br />
 
-      <div v-if="!checkLoggedIn" class="text-h4">
-        <p>Sign up to get to work!</p>
-      </div>
-
-      <div v-else-if="sessionFinished" class="text-h4">
+      <div v-if="sessionFinished" class="text-h4">
         <p>Study session finished! Great job!</p>
         <p v-if="sessionController">{{ sessionController.report }}</p>
         <p>
@@ -292,11 +288,6 @@ export default defineComponent({
   computed: {
     timerColor(): string {
       return this.timeRemaining > 60 ? 'primary' : 'orange darken-3';
-    },
-
-    checkLoggedIn(): boolean {
-      // [ ] TODO: check if user is logged in
-      return true;
     },
 
     currentCard(): StudySessionRecord {
