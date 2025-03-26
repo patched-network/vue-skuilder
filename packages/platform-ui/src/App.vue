@@ -72,7 +72,7 @@ defineOptions({
 
 // const build = ref('0.0.2');
 const latestBuild = ref('');
-const drawer = ref(false);
+const drawer = ref(true);
 const authStore = useAuthStore();
 const configStore = useConfigStore();
 const theme = useTheme();
