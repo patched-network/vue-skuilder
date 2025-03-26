@@ -75,37 +75,13 @@
 
       <v-row align="center" class="footer-controls pa-5">
         <v-col cols="auto" class="d-flex flex-grow-0 mr-auto">
-          <v-tooltip
-            v-model="timerIsActive"
-            location="right"
-            :open-delay="0"
-            :close-delay="200"
-            color="secondary"
-            class="text-subtitle-1"
-          >
-            <template #activator="{ props }">
-              <v-progress-circular
-                alt="Time remaining in study session"
-                size="64"
-                width="8"
-                rotate="0"
-                :color="timerColor"
-                :model-value="percentageRemaining"
-              >
-                <v-btn
-                  v-if="!sessionFinished"
-                  v-bind="props"
-                  icon
-                  color="grey-lighten-4"
-                  location="bottom left"
-                  @click="if (timerIsActive) incrementSessionClock();"
-                >
-                  <v-icon v-if="timerIsActive" size="large">mdi-plus</v-icon>
-                </v-btn>
-              </v-progress-circular>
-            </template>
-            {{ timeString }}
-          </v-tooltip>
+          <StudySessionTimer
+            :time-remaining="timeRemaining"
+            :session-time-limit="sessionTimeLimit"
+            :is-active="timerIsActive"
+            :show-tooltip="false"
+            @add-time="incrementSessionClock"
+          />
         </v-col>
 
         <v-spacer></v-spacer>
@@ -162,7 +138,7 @@ import {
 } from '@vue-skuilder/common';
 import confetti from 'canvas-confetti';
 import moment from 'moment';
-import { alertUser } from '@vue-skuilder/common-ui';
+import { alertUser, StudySessionTimer } from '@vue-skuilder/common-ui';
 import { Status, CourseConfig } from '@vue-skuilder/common';
 import { useConfigStore } from '@/stores/useConfigStore';
 import { useDataInputFormStore } from '@/stores/useDataInputFormStore';
@@ -189,6 +165,7 @@ export default defineComponent({
 
   components: {
     CardViewer, // [ ] consider: cardloader intermediary?
+    StudySessionTimer,
     SkMouseTrap,
     SkTagsInput,
     SessionConfiguration,
@@ -255,7 +232,6 @@ export default defineComponent({
       sessionRecord: [] as StudySessionRecord[],
       percentageRemaining: 100,
       timerIsActive: false,
-      timeString: '',
       loading: false,
       userCourseRegDoc: null as CourseRegistrationDoc | null,
       sessionContentSources: [] as StudyContentSource[],
@@ -269,10 +245,6 @@ export default defineComponent({
   },
 
   computed: {
-    timerColor(): string {
-      return this.timeRemaining > 60 ? 'primary' : 'orange darken-3';
-    },
-
     currentCard(): StudySessionRecord {
       return this.sessionRecord[this.sessionRecord.length - 1];
     },
@@ -391,7 +363,6 @@ export default defineComponent({
 
     tick() {
       this.timeRemaining = this.sessionController!.secondsRemaining;
-      this.setTimeString();
 
       this.percentageRemaining =
         this.timeRemaining > 60
@@ -401,19 +372,6 @@ export default defineComponent({
       if (this.timeRemaining === 0) {
         clearInterval(this.intervalHandler!);
       }
-    },
-
-    setTimeString() {
-      this.timeString = '';
-      if (this.timeRemaining > 60) {
-        this.timeString = Math.floor(this.timeRemaining / 60).toString() + ':';
-      }
-      const secondsRemaining: number = this.timeRemaining % 60;
-      this.timeString += secondsRemaining >= 10 ? secondsRemaining : '0' + secondsRemaining;
-      if (this.timeRemaining <= 60) {
-        this.timeString += ' seconds';
-      }
-      this.timeString += ' left!';
     },
 
     async initStudySession(sources: ContentSourceID[], timeLimit: number) {

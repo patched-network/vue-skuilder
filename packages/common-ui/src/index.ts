@@ -22,6 +22,13 @@ export * from './composables/CompositionViewable';
 export * from './composables/Displayable';
 
 /*
+  Study Session Components
+
+*/
+
+export { default as StudySessionTimer } from './components/StudySessionTimer.vue';
+
+/*
   studentInputs
 
   These components
