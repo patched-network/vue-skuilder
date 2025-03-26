@@ -107,29 +107,6 @@
         </v-tooltip>
 
         <SkMouseTrap />
-
-        <!-- <v-speed-dial v-if="!sessionFinished" v-model="fab" location="left center" transition="slide-x-transition">
-          <template #activator="{ props }">
-            <v-btn v-bind="props" color="blue-darken-2" icon>
-              <v-icon>{{ fab ? 'mdi-close' : 'mdi-pencil' }}</v-icon>
-            </v-btn>
-          </template>
-          <router-link :to="`/edit/${courseID}`">
-            <v-btn icon size="small" color="indigo" title="Add content to this course">
-              <v-icon>mdi-plus</v-icon>
-            </v-btn>
-          </router-link>
-          <v-btn
-            icon
-            size="small"
-            color="orange-darken-2"
-            title="Edit tags on this card"
-            :loading="editCard"
-            @click="editTags = !editTags"
-          >
-            <v-icon>mdi-bookmark</v-icon>
-          </v-btn>
-        </v-speed-dial> -->
       </v-row>
     </div>
   </div>
