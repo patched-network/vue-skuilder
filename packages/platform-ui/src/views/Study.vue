@@ -84,8 +84,14 @@
             class="text-subtitle-1"
           >
             <template #activator="{ props }">
-              <v-progress-circular alt="Time remaining in study session" <!-- size="64" -->
-                width="8" rotate="0" :color="timerColor" :model-value="percentageRemaining" >
+              <v-progress-circular
+                alt="Time remaining in study session"
+                size="64"
+                width="8"
+                rotate="0"
+                :color="timerColor"
+                :model-value="percentageRemaining"
+              >
                 <v-btn
                   v-if="!sessionFinished"
                   v-bind="props"
