@@ -73,40 +73,40 @@
         <sk-tags-input :course-i-d="courseID" :card-i-d="cardID" />
       </div>
 
-      <v-row align="center" justify="space-between" class="footer-controls pa-5">
-        <v-tooltip
-          v-model="timerIsActive"
-          location="right"
-          :open-delay="0"
-          :close-delay="200"
-          color="secondary"
-          class="text-subtitle-1"
-        >
-          <template #activator="{ props }">
-            <v-progress-circular
-              alt="Time remaining in study session"
-              size="64"
-              width="8"
-              rotate="0"
-              :color="timerColor"
-              :model-value="percentageRemaining"
-            >
-              <v-btn
-                v-if="!sessionFinished"
-                v-bind="props"
-                icon
-                color="transparent"
-                location="bottom left"
-                @click="if (timerIsActive) incrementSessionClock();"
-              >
-                <v-icon v-if="timerIsActive" size="large">mdi-plus</v-icon>
-              </v-btn>
-            </v-progress-circular>
-          </template>
-          {{ timeString }}
-        </v-tooltip>
+      <v-row align="center" class="footer-controls pa-5">
+        <v-col cols="auto" class="d-flex flex-grow-0 mr-auto">
+          <v-tooltip
+            v-model="timerIsActive"
+            location="right"
+            :open-delay="0"
+            :close-delay="200"
+            color="secondary"
+            class="text-subtitle-1"
+          >
+            <template #activator="{ props }">
+              <v-progress-circular alt="Time remaining in study session" <!-- size="64" -->
+                width="8" rotate="0" :color="timerColor" :model-value="percentageRemaining" >
+                <v-btn
+                  v-if="!sessionFinished"
+                  v-bind="props"
+                  icon
+                  color="grey-lighten-4"
+                  location="bottom left"
+                  @click="if (timerIsActive) incrementSessionClock();"
+                >
+                  <v-icon v-if="timerIsActive" size="large">mdi-plus</v-icon>
+                </v-btn>
+              </v-progress-circular>
+            </template>
+            {{ timeString }}
+          </v-tooltip>
+        </v-col>
 
-        <SkMouseTrap />
+        <v-spacer></v-spacer>
+
+        <v-col cols="auto" class="footer-right">
+          <SkMouseTrap />
+        </v-col>
       </v-row>
     </div>
   </div>
@@ -724,7 +724,13 @@ export default defineComponent({
 .footer-controls {
   position: fixed;
   bottom: 0;
-  left: 0;
+  background-color: var(--v-background); /* Match your app's background color */
+  z-index: 100;
+}
+
+.footer-right {
+  position: fixed;
+  bottom: 0;
   right: 0;
   background-color: var(--v-background); /* Match your app's background color */
   z-index: 100;
