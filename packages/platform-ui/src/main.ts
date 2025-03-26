@@ -8,6 +8,7 @@ import vuetify from './plugins/vuetify';
 // common-ui imports
 import { piniaPlugin } from '@vue-skuilder/common-ui';
 import '@vue-skuilder/common-ui/style';
+// `courses` imports
 import '@vue-skuilder/courses/style';
 
 const pinia = createPinia();
