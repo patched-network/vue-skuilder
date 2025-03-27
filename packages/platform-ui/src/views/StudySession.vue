@@ -477,7 +477,7 @@ export default defineComponent({
     },
 
     async scheduleReview(history: CardHistory<CardRecord>, item: StudySessionItem) {
-      const nextInterval = newInterval(history);
+      const nextInterval = newInterval(this.$props.user, history);
       const nextReviewTime = moment.utc().add(nextInterval, 'seconds');
 
       if (isReview(item)) {

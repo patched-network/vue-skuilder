@@ -1,6 +1,11 @@
-import { areQuestionRecords, CardHistory, CardRecord, QuestionRecord } from '@vue-skuilder/db';
+import {
+  areQuestionRecords,
+  CardHistory,
+  CardRecord,
+  QuestionRecord,
+  User,
+} from '@vue-skuilder/db';
 import moment from 'moment';
-import { getCurrentUser } from '@/stores/useAuthStore';
 
 type Moment = moment.Moment;
 const duration = moment.duration;
@@ -11,15 +16,15 @@ const duration = moment.duration;
  *
  * @param cardHistory The user's history working with the given card
  */
-export function newInterval(cardHistory: CardHistory<CardRecord>): number {
+export function newInterval(user: User, cardHistory: CardHistory<CardRecord>): number {
   if (areQuestionRecords(cardHistory)) {
-    return newQuestionInterval(cardHistory);
+    return newQuestionInterval(user, cardHistory);
   } else {
     return 100000; // random - replace
   }
 }
 
-function newQuestionInterval(cardHistory: CardHistory<QuestionRecord>) {
+function newQuestionInterval(user: User, cardHistory: CardHistory<QuestionRecord>) {
   const records = cardHistory.records;
   const currentAttempt = records[records.length - 1];
   const lastInterval: number = lastSuccessfulInterval(records);
@@ -27,10 +32,8 @@ function newQuestionInterval(cardHistory: CardHistory<QuestionRecord>) {
   if (lastInterval > cardHistory.bestInterval) {
     cardHistory.bestInterval = lastInterval;
     // update bestInterval on cardHistory in db
-    getCurrentUser().then((u) => {
-      u.update<CardHistory<QuestionRecord>>(cardHistory._id, {
-        bestInterval: lastInterval,
-      });
+    user.update<CardHistory<QuestionRecord>>(cardHistory._id, {
+      bestInterval: lastInterval,
     });
   }
 
