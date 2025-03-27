@@ -25,7 +25,11 @@
                   <v-card variant="outlined" density="compact" class="pa-2">
                     <div class="d-flex align-center justify-space-between">
                       <div data-cy="registered-course" class="d-flex align-center">
-                        <router-link :to="`/q/${course.name.replace(' ', '_')}`" class="text-subtitle-2">
+                        <router-link
+                          :to="`/q/${course.name.replace(' ', '_')}`"
+                          class="text-subtitle-2"
+                          data-cy="registered-course-title"
+                        >
                           {{ course.name }}
                         </router-link>
                         <v-icon v-if="!course.public" size="x-small" class="ml-1">mdi-eye-off</v-icon>
@@ -34,6 +38,7 @@
                         size="x-small"
                         variant="text"
                         color="error"
+                        data-cy="drop-course-button"
                         :loading="spinnerMap[course._id] !== undefined"
                         @click="dropCourse(course._id)"
                       >
