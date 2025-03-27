@@ -19,7 +19,7 @@
         Start <a @click="$emit('session-finished')">another study session</a>, or try
         <router-link :to="`/edit/${courseID}`">adding some new content</router-link> to challenge yourself and others!
       </p>
-      <heat-map />
+      <heat-map activity-records-getter="user.getActivityRecords" />
     </div>
 
     <div v-else ref="shadowWrapper">
@@ -70,8 +70,14 @@
 
 <script lang="ts">
 import { defineComponent, PropType } from 'vue';
-import { isQuestionView, ViewComponent, SkMouseTrap, alertUser, StudySessionTimer } from '@vue-skuilder/common-ui';
-import HeatMap from '@/components/HeatMap.vue';
+import {
+  isQuestionView,
+  ViewComponent,
+  SkMouseTrap,
+  alertUser,
+  StudySessionTimer,
+  HeatMap,
+} from '@vue-skuilder/common-ui';
 import CardViewer from '@/components/Study/CardViewer.vue';
 import Courses from '@vue-skuilder/courses';
 import {
