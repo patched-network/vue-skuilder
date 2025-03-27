@@ -42,10 +42,13 @@
       <span v-for="i in sessionController.failedCount" :key="i" class="text-h5">•</span>
     </div>
 
+    <!--
+      todo: reinstate tag editing at session-time ?
+
     <div v-if="!sessionFinished && editTags">
       <p>Add tags to this card:</p>
       <sk-tags-input :course-i-d="courseID" :card-i-d="cardID" />
-    </div>
+    </div> -->
 
     <v-row align="center" class="footer-controls pa-5">
       <v-col cols="auto" class="d-flex flex-grow-0 mr-auto">
@@ -68,7 +71,6 @@
 <script lang="ts">
 import { defineComponent, PropType } from 'vue';
 import { isQuestionView, ViewComponent, SkMouseTrap, alertUser, StudySessionTimer } from '@vue-skuilder/common-ui';
-import SkTagsInput from '@/components/Edit/TagsInput.vue';
 import HeatMap from '@/components/HeatMap.vue';
 import CardViewer from '@/components/Study/CardViewer.vue';
 import Courses from '@vue-skuilder/courses';
@@ -131,7 +133,6 @@ export default defineComponent({
     CardViewer,
     StudySessionTimer,
     SkMouseTrap,
-    SkTagsInput,
     HeatMap,
   },
 
@@ -158,7 +159,7 @@ export default defineComponent({
 
   data() {
     return {
-      editTags: false,
+      // editTags: false,
       cardID: '',
       view: null as ViewComponent | null,
       data: [] as ViewData[],
