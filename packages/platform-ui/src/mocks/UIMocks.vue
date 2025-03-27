@@ -137,7 +137,7 @@ import FillInView from '@vue-skuilder/courses';
 // import DataInputForm from '../components/Edit/ViewableDataInputForm/DataInputForm.vue';
 import LetterQuestionView from '@vue-skuilder/courses';
 import FallingLettersView from '@vue-skuilder/courses';
-import CardViewer from '@vue-skuilder/common-ui';
+import { CardViewer } from '@vue-skuilder/common-ui';
 import { Status } from '@vue-skuilder/common';
 import { ValidationResult } from '@vue-skuilder/common';
 
