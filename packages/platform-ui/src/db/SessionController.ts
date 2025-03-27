@@ -1,4 +1,3 @@
-import { getCurrentUser } from '@/stores/useAuthStore';
 import {
   isReview,
   StudyContentSource,
@@ -104,12 +103,10 @@ export default class SessionController extends Loggable {
   /**
    *
    */
-  constructor(sources: StudyContentSource[], time: number) {
+  constructor(user: User, sources: StudyContentSource[], time: number) {
     super();
-    getCurrentUser().then((u) => {
-      this.user = u;
-    });
 
+    this.user = user;
     this.sources = sources;
     this.startTime = new Date();
     this._secondsRemaining = time;

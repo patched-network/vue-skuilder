@@ -301,7 +301,7 @@ export default defineComponent({
         db.setChangeFcn(this.handleClassroomMessage());
       });
 
-      this.sessionController = new SessionController(this.sessionContentSources, 60 * this.sessionTimeLimit);
+      this.sessionController = new SessionController(this.user, this.sessionContentSources, 60 * this.sessionTimeLimit);
       this.sessionController.sessionRecord = this.sessionRecord;
 
       await this.sessionController.prepareSession();
