@@ -31,8 +31,8 @@
         <tr v-for="course in activeCourses" :key="course.courseID">
           <td>
             <v-checkbox
-              data-cy="course-checkbox"
               v-model="course.selected"
+              data-cy="course-checkbox"
               :label="`q/${course.name}`"
               @click.capture="update"
             />
@@ -87,10 +87,6 @@ export default defineComponent({
   name: 'SessionConfiguration',
 
   props: {
-    startFcn: {
-      type: Function as PropType<(sources: ContentSourceID[], timeLimit: number) => void>,
-      required: true,
-    },
     initialTimeLimit: {
       type: Number,
       required: true,
@@ -98,7 +94,7 @@ export default defineComponent({
     },
   },
 
-  emits: ['update:timeLimit'],
+  emits: ['initStudySession'],
 
   data() {
     return {
@@ -117,7 +113,6 @@ export default defineComponent({
         if (this.timeLimit <= 0) {
           this.timeLimit = 1;
         }
-        this.$emit('update:timeLimit', this.timeLimit);
       },
     },
   },
@@ -184,7 +179,7 @@ export default defineComponent({
           id: cl.classID,
         }));
       const allSelectedSources = [...selectedCourses, ...selectedClassrooms];
-      this.startFcn(allSelectedSources, this.timeLimit);
+      this.$emit('initStudySession', allSelectedSources, this.timeLimit);
     },
 
     async getActiveClassrooms() {

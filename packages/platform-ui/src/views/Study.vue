@@ -1,9 +1,8 @@
 <template>
   <div v-if="!inSession">
     <SessionConfiguration
-      :start-fcn="initStudySession"
       :initial-time-limit="sessionTimeLimit"
-      @update:time-limit="(val) => (sessionTimeLimit = val)"
+      @init-study-session="(sources, timeLimit) => initStudySession(sources, timeLimit)"
     />
   </div>
   <div v-else>
