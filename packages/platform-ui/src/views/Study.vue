@@ -34,6 +34,7 @@
       :content-sources="sessionContentSources"
       :session-time-limit="sessionTimeLimit"
       :user="user as User"
+      :session-config="studySessionConfig"
       @session-finished="handleSessionFinished"
     />
   </div>
@@ -42,7 +43,7 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 import SessionConfiguration from '@/components/Study/SessionConfiguration.vue';
-import StudySession from '@/views/StudySession.vue';
+import StudySession, { StudySessionConfig } from '@/views/StudySession.vue';
 import { ContentSourceID, getCourseList, User } from '@vue-skuilder/db';
 import { getCurrentUser } from '@/stores/useAuthStore';
 import { Router } from 'vue-router';
@@ -98,7 +99,7 @@ export default defineComponent({
   data() {
     return {
       user: null as User | null,
-      configStore: null as ReturnType<typeof useConfigStore> | null,
+      studySessionConfig: undefined as StudySessionConfig | undefined,
       previewCourseConfig: undefined as CourseConfig | undefined,
       previewMode: false,
       sessionTimeLimit: 5,
@@ -111,7 +112,9 @@ export default defineComponent({
 
   async created() {
     this.user = await getCurrentUser();
-    this.configStore = useConfigStore();
+    this.studySessionConfig = {
+      likesConfetti: useConfigStore().config.likesConfetti,
+    };
 
     let singletonStudyCourseID = '';
 

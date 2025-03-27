@@ -108,7 +108,6 @@ import {
 } from '@vue-skuilder/common';
 import confetti from 'canvas-confetti';
 import moment from 'moment';
-import { useConfigStore } from '@/stores/useConfigStore';
 
 interface StudyRefs {
   shadowWrapper: HTMLDivElement;
@@ -117,6 +116,10 @@ interface StudyRefs {
 
 type StudyInstance = ReturnType<typeof defineComponent> & {
   $refs: StudyRefs;
+};
+
+export type StudySessionConfig = {
+  likesConfetti: boolean;
 };
 
 export default defineComponent({
@@ -145,13 +148,16 @@ export default defineComponent({
       type: Object as PropType<User>,
       required: true,
     },
+    sessionConfig: {
+      type: Object as PropType<StudySessionConfig>,
+      default: () => ({ likesConfetti: false }),
+    },
   },
 
   emits: ['session-finished', 'session-started', 'card-loaded', 'card-response', 'time-changed'],
 
   data() {
     return {
-      configStore: useConfigStore(),
       editTags: false,
       cardID: '',
       view: null as ViewComponent | null,
@@ -345,7 +351,7 @@ export default defineComponent({
             console.warn(`[StudySession] Error setting shadowWrapper style: ${e}`);
           }
 
-          if (this.configStore?.config.likesConfetti) {
+          if (this.sessionConfig.likesConfetti) {
             confetti({
               origin: {
                 y: 1,
