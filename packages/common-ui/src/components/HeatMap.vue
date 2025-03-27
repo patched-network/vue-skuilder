@@ -39,6 +39,11 @@ export default defineComponent({
       type: Array as PropType<ActivityRecord[]>,
       default: () => [],
     },
+    // Accept a function that can retrieve activity records
+    activityRecordsGetter: {
+      type: Function as PropType<() => Promise<ActivityRecord[]>>,
+      default: null,
+    },
     // Customize colors
     inactiveColor: {
       type: Object as PropType<Color>,
@@ -66,6 +71,8 @@ export default defineComponent({
 
   data() {
     return {
+      isLoading: false,
+      localActivityRecords: [] as ActivityRecord[],
       heatmapData: {} as { [key: string]: number },
       weeks: [] as DayData[][],
       tooltipData: null as DayData | null,
@@ -81,6 +88,9 @@ export default defineComponent({
     height(): number {
       return 7 * (this.cellSize + this.cellMargin);
     },
+    effectiveActivityRecords(): ActivityRecord[] {
+      return this.localActivityRecords.length > 0 ? this.localActivityRecords : this.activityRecords;
+    },
   },
 
   watch: {
@@ -93,6 +103,19 @@ export default defineComponent({
     },
   },
 
+  async created() {
+    if (this.activityRecordsGetter) {
+      try {
+        this.isLoading = true;
+        this.localActivityRecords = await this.activityRecordsGetter();
+      } catch (error) {
+        console.error('Error fetching activity records:', error);
+      } finally {
+        this.isLoading = false;
+      }
+    }
+  },
+
   methods: {
     toDateString(d: string): string {
       const m = moment(d);
@@ -100,10 +123,12 @@ export default defineComponent({
     },
 
     processRecords() {
-      console.log(`Processing ${this.activityRecords.length} records`);
+      const records = this.effectiveActivityRecords;
+      console.log(`Processing ${records.length} records`);
+
       const data: { [key: string]: number } = {};
 
-      this.activityRecords.forEach((record) => {
+      records.forEach((record) => {
         const date = moment(record.timeStamp).format('YYYY-MM-DD');
         data[date] = (data[date] || 0) + 1;
       });
