@@ -75,7 +75,7 @@
         </v-list-item>
 
         <div v-if="c.isOpen" class="px-4 py-2 bg-blue-grey-lighten-5">
-          <card-loader :qualified_id="c.id" class="elevation-1" />
+          <card-loader :qualified_id="c.id" :view-lookup="viewLookup" class="elevation-1" />
 
           <tags-input v-show="editMode === 'tags'" :course-i-d="_id" :card-i-d="c.id.split('-')[1]" class="mt-4" />
 
@@ -171,6 +171,7 @@ export default defineComponent({
       userIsRegistered: false,
       questionCount: 0,
       tags: [] as Tag[],
+      viewLookup: Courses.getView,
     };
   },
 
