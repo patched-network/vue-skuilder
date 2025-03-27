@@ -1,6 +1,6 @@
 <template>
   <div v-if="hasRegistrations">
-    <div class="text-h4">Select your quilts</div>
+    <div data-cy="select-quilts-header" class="text-h4">Select your quilts</div>
     <table width="100%">
       <thead>
         <tr>
@@ -30,7 +30,12 @@
         </tr>
         <tr v-for="course in activeCourses" :key="course.courseID">
           <td>
-            <v-checkbox v-model="course.selected" :label="`q/${course.name}`" @click.capture="update" />
+            <v-checkbox
+              data-cy="course-checkbox"
+              v-model="course.selected"
+              :label="`q/${course.name}`"
+              @click.capture="update"
+            />
           </td>
           <td>{{ course.reviews }}</td>
         </tr>
@@ -58,7 +63,7 @@
       @click:prepend="dec"
       @click:append="inc"
     />
-    <v-btn color="success" @click="startSession">Start Studying!</v-btn>
+    <v-btn data-cy="start-studying-button" color="success" @click="startSession">Start Studying!</v-btn>
   </div>
   <div v-else class="text-h4">
     <p>You don't have anything to study!</p>
