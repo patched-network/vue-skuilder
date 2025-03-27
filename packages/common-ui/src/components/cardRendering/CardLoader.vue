@@ -17,7 +17,7 @@ import { defineComponent } from 'vue';
 import Courses from '@vue-skuilder/courses';
 import { getCourseDoc, CardData, CardRecord, DisplayableData } from '@vue-skuilder/db';
 import { log, displayableDataToViewData, ViewData } from '@vue-skuilder/common';
-import { ViewComponent } from '@vue-skuilder/common-ui';
+import { ViewComponent } from '@/composables';
 import CardViewer from './CardViewer.vue';
 
 export default defineComponent({
