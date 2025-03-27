@@ -49,6 +49,9 @@ export { default as FillInInput } from './components/studentInputs/fillInInput.v
 
   These components are used to render course content
 */
+export { default as CardViewer } from './components/CardViewer.vue';
+export { default as CardLoader } from './components/CardLoader.vue';
+
 export * from './components/cardRendering/MarkdownRendererHelpers';
 export { default as AudioAutoPlayer } from './components/cardRendering/AudioAutoPlayer.vue';
 export { default as CodeBlockRenderer } from './components/cardRendering/CodeBlockRenderer.vue';
