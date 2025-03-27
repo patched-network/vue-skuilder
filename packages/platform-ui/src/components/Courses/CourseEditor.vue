@@ -4,7 +4,7 @@
       <v-card-title class="text-h6 font-weight-regular"> Start a New Quilt </v-card-title>
       <v-spacer></v-spacer>
       <v-btn icon @click="clearFormAndDismiss">
-        <v-icon>close</v-icon>
+        <v-icon icon="mdi-close"></v-icon>
       </v-btn>
     </v-toolbar>
     <v-form>
