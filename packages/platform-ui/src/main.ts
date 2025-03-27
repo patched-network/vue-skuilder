@@ -9,10 +9,17 @@ import vuetify from './plugins/vuetify';
 import { piniaPlugin } from '@vue-skuilder/common-ui';
 import '@vue-skuilder/common-ui/style';
 // `courses` imports
+import Courses from '@vue-skuilder/courses';
 import '@vue-skuilder/courses/style';
 
 const pinia = createPinia();
 const app = createApp(App);
+
+// Register all view components globally
+const viewComponents = Courses.allViewsRaw();
+Object.entries(viewComponents).forEach(([name, component]) => {
+  app.component(name, component);
+});
 
 app.use(router);
 app.use(vuetify);

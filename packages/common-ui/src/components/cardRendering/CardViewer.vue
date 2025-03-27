@@ -16,7 +16,6 @@
 
 <script lang="ts">
 import { defineComponent, PropType } from 'vue';
-import Courses from '@vue-skuilder/courses';
 import { CardRecord } from '@vue-skuilder/db';
 import { CourseElo, ViewData } from '@vue-skuilder/common';
 import { ViewComponent } from '@/composables';
@@ -27,8 +26,6 @@ interface CardViewerRefs {
 
 export default defineComponent({
   name: 'CardViewer',
-
-  components: Courses.allViewsRaw(),
 
   ref: {} as CardViewerRefs,
 
