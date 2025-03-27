@@ -36,3 +36,25 @@ Cypress.Commands.add('registerUser', (username = null, password = 'securePasswor
   // Return the created username so it can be used in tests
   return cy.wrap(finalUsername);
 });
+
+// Updated command in cypress/support/commands.js
+Cypress.Commands.add('registerForCourse', (courseName) => {
+  cy.visit('/quilts');
+
+  if (courseName) {
+    // Find and join a specific course by name
+    cy.contains(courseName)
+      .closest('[data-cy="available-course-card"]')
+      .find('[data-cy="register-course-button"]')
+      .click();
+  } else {
+    // Join the first available course
+    cy.get('[data-cy="available-course-card"]')
+      .first()
+      .find('[data-cy="register-course-button"]')
+      .click();
+  }
+
+  // Wait for registration to complete
+  cy.wait(1000);
+});
