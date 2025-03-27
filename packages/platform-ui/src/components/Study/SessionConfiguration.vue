@@ -72,7 +72,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, PropType } from 'vue';
+import { defineComponent } from 'vue';
 import { SkldrMouseTrap } from '@vue-skuilder/common-ui';
 import { CourseRegistration, User, getCourseName, StudentClassroomDB, ContentSourceID } from '@vue-skuilder/db';
 import { getCurrentUser } from '@/stores/useAuthStore';
