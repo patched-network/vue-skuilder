@@ -71,4 +71,33 @@ describe('Course Registration', () => {
     // Check that the start button is available
     cy.get('[data-cy="start-studying-button"]').should('be.visible');
   });
+
+  it('should allow a user to drop a registered course', () => {
+    // First register for a course
+    cy.registerForCourse();
+
+    // Verify registration completed successfully
+    cy.get('[data-cy="registered-course"]').should('have.length.at.least', 1);
+
+    // Get the name of the registered course for later verification
+    cy.get('[data-cy="registered-course-title"]')
+      .first()
+      .invoke('text')
+      .then((courseName) => {
+        // Click the drop button for this course
+        cy.get('[data-cy="drop-course-button"]').first().click();
+
+        // Wait for the drop operation to complete
+        cy.wait(1000);
+
+        // Verify the course is no longer in registered courses
+        cy.get('[data-cy="registered-course-title"]').should('not.exist');
+
+        // Check that the course appears again in available courses
+        cy.contains('h2', 'Available Quilts')
+          .parent()
+          .find('[data-cy="course-title"]')
+          .should('contain', courseName);
+      });
+  });
 });
