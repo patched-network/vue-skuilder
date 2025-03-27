@@ -8,6 +8,7 @@
       icon="mdi-plus"
       size="large"
       class="mb-4 mr-4"
+      data-cy="create-course-fab"
       v-bind="newCourseAttrs"
       v-on="newCourseAttrs.on"
     />
