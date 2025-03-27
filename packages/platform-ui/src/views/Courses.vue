@@ -65,7 +65,7 @@
 
         <!-- Show More Button -->
         <v-row v-if="hasMoreCourses" justify="center" class="mt-2">
-          <v-btn variant="text" color="primary" @click="toggleShowMore">
+          <v-btn variant="text" color="primary" data-cy="courses-show-more-button" @click="toggleShowMore">
             {{ showAllCourses ? 'Show Less' : 'Show More' }}
           </v-btn>
         </v-row>
