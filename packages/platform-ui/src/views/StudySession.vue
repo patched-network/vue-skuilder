@@ -77,8 +77,8 @@ import {
   alertUser,
   StudySessionTimer,
   HeatMap,
+  CardViewer,
 } from '@vue-skuilder/common-ui';
-import CardViewer from '@/components/Study/CardViewer.vue';
 import Courses from '@vue-skuilder/courses';
 import {
   getCourseDoc,
