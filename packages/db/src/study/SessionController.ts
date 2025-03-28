@@ -66,7 +66,7 @@ class ItemQueue<T extends StudySessionItem> {
   }
 }
 
-export default class SessionController extends Loggable {
+export class SessionController extends Loggable {
   _className = 'SessionController';
   private sources: StudyContentSource[];
   private _sessionRecord: StudySessionRecord[] = [];
