@@ -103,8 +103,8 @@ import {
   User,
   StudentClassroomDB,
 } from '@vue-skuilder/db';
-import SessionController, { StudySessionRecord } from '@/db/SessionController';
-import { newInterval } from '@/db/SpacedRepetition';
+import SessionController, { StudySessionRecord } from '@vue-skuilder/db';
+import { newInterval } from '@vue-skuilder/db';
 import {
   adjustCourseScores,
   CourseElo,
