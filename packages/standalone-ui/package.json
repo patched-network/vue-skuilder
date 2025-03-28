@@ -1,0 +1,25 @@
+{
+    "name": "@vue-skuilder/standalone-ui",
+    "version": "0.1.0",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "dev": "vite",
+        "build": "vue-tsc --noEmit && vite build",
+        "preview": "vite preview"
+    },
+    "dependencies": {
+        "@vue-skuilder/common-ui": "workspace:*",
+        "@vue-skuilder/db": "workspace:*",
+        "pinia": "^2.3.0",
+        "vue": "^3.5.13",
+        "vue-router": "^4.2.0",
+        "vuetify": "^3.7.0"
+    },
+    "devDependencies": {
+        "@vitejs/plugin-vue": "^5.2.1",
+        "typescript": "^5.7.2",
+        "vite": "^6.0.9",
+        "vue-tsc": "^1.8.0"
+    }
+}
