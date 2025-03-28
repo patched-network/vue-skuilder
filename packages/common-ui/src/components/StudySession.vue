@@ -125,10 +125,6 @@ type StudyInstance = ReturnType<typeof defineComponent> & {
   $refs: StudyRefs;
 };
 
-export type StudySessionConfig = {
-  likesConfetti: boolean;
-};
-
 export default defineComponent({
   name: 'StudySession',
 

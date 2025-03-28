@@ -23,10 +23,11 @@ export * from './composables/Displayable';
 
 /*
   Study Session Components
-
 */
 
+export { default as StudySession } from './components/StudySession.vue';
 export { default as StudySessionTimer } from './components/StudySessionTimer.vue';
+export type { StudySessionConfig } from './components/StudySession.types';
 
 /*
   studentInputs
