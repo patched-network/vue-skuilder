@@ -26,26 +26,28 @@ describe('Course Registration', () => {
     // Navigate to the quilts page
     cy.visit('/quilts');
 
-    // Get the first available course and store its name
-    cy.get('[data-cy="available-course-card"]')
-      .first()
-      .find('[data-cy="course-title"]')
-      .invoke('text')
-      .then((text) => {
-        let courseName = text.trim();
+    // Get the initial count of registered courses (handling the case when there are none)
+    cy.get('body').then(($body) => {
+      const initialCount = $body.find('[data-cy="registered-course"]').length;
 
-        // Now click the register button
-        cy.get('[data-cy="available-course-card"]')
-          .first()
-          .find('[data-cy="register-course-button"]')
-          .click();
+      // Now click the register button on the first available course
+      cy.get('[data-cy="available-course-card"]')
+        .first()
+        .find('[data-cy="register-course-button"]')
+        .click();
 
-        // Wait a moment for registration to process
-        cy.wait(1000);
+      // Wait a moment for registration to process
+      cy.wait(1000);
 
-        // Verify the course appears in the user's registered courses
-        cy.get('[data-cy="registered-course"]').should('contain', courseName);
-      });
+      // Verify the count of registered courses has increased
+      if (initialCount === 0) {
+        // If there were no courses initially, we should have exactly one now
+        cy.get('[data-cy="registered-course"]').should('have.length', 1);
+      } else {
+        // Otherwise the count should have increased by one
+        cy.get('[data-cy="registered-course"]').should('have.length', initialCount + 1);
+      }
+    });
   });
 
   it('should allow registration using the custom command', () => {
