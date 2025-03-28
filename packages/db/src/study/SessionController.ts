@@ -5,11 +5,10 @@ import {
   StudySessionItem,
   StudySessionNewItem,
   StudySessionReviewItem,
-  Loggable,
-  CardRecord,
   ScheduledCard,
-  User,
-} from '@vue-skuilder/db';
+} from '@/pouch';
+
+import { CardRecord, Loggable } from '@/core';
 
 function randomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -69,7 +68,6 @@ class ItemQueue<T extends StudySessionItem> {
 
 export default class SessionController extends Loggable {
   _className = 'SessionController';
-  private user: User;
   private sources: StudyContentSource[];
   private _sessionRecord: StudySessionRecord[] = [];
   public set sessionRecord(r: StudySessionRecord[]) {
@@ -79,7 +77,7 @@ export default class SessionController extends Loggable {
   private reviewQ: ItemQueue<StudySessionReviewItem> = new ItemQueue<StudySessionReviewItem>();
   private newQ: ItemQueue<StudySessionNewItem> = new ItemQueue<StudySessionNewItem>();
   private failedQ: ItemQueue<StudySessionFailedItem> = new ItemQueue<StudySessionFailedItem>();
-  private _currentCard: StudySessionItem | null;
+  private _currentCard: StudySessionItem | null = null;
   /**
    * Indicates whether the session has been initialized - eg, the
    * queues have been populated.
@@ -98,15 +96,15 @@ export default class SessionController extends Loggable {
   public get detailedReport(): string {
     return this.newQ.toString + '\n' + this.reviewQ.toString + '\n' + this.failedQ.toString;
   }
+  // @ts-expect-error
   private _intervalHandle: NodeJS.Timeout;
 
   /**
    *
    */
-  constructor(user: User, sources: StudyContentSource[], time: number) {
+  constructor(sources: StudyContentSource[], time: number) {
     super();
 
-    this.user = user;
     this.sources = sources;
     this.startTime = new Date();
     this._secondsRemaining = time;

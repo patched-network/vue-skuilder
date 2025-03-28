@@ -1,10 +1,5 @@
-import {
-  areQuestionRecords,
-  CardHistory,
-  CardRecord,
-  QuestionRecord,
-  User,
-} from '@vue-skuilder/db';
+import { areQuestionRecords, CardHistory, CardRecord, QuestionRecord } from '@/core';
+import { User } from '@/pouch';
 import moment from 'moment';
 
 type Moment = moment.Moment;
