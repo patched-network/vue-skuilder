@@ -3927,10 +3927,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/hashids@npm:^1.0.30":
-  version: 1.0.32
-  resolution: "@types/hashids@npm:1.0.32"
-  checksum: 10c0/aeb5b8f183eac8ec802733bc8a7569dd02f52ad2bea8bcb67082a62ac4a881c0b9acb428890c255337af9b395e42f9dd7c58396214665300d6a9af3fa780c530
+"@types/hashids@npm:^2.0.1":
+  version: 2.0.1
+  resolution: "@types/hashids@npm:2.0.1"
+  dependencies:
+    hashids: "npm:*"
+  checksum: 10c0/5da737db4c9bf40b2d71c2e175d366b76c42a0d12317fb2d5d6339d17e42493a6aa1f501d6ae147bb9c817b1586c2bb9cc14b9ab0ccc3825d0b6c4989b52493a
   languageName: node
   linkType: hard
 
@@ -5108,7 +5110,7 @@ __metadata:
     "@types/dotenv": "npm:^8.2.3"
     "@types/express": "npm:4.17.21"
     "@types/ffmpeg-static": "npm:^2.0.0"
-    "@types/hashids": "npm:^1.0.30"
+    "@types/hashids": "npm:^2.0.1"
     "@types/jest": "npm:^29.5.14"
     "@types/morgan": "npm:^1.9.9"
     "@types/node": "npm:18"
@@ -9304,7 +9306,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"hashids@npm:^2.3.0":
+"hashids@npm:*, hashids@npm:^2.3.0":
   version: 2.3.0
   resolution: "hashids@npm:2.3.0"
   checksum: 10c0/ff9a57b5623253be5ef75457767530d5ca710ad8e93f01c521528b820afa2418e34b4d10dfbe1081858e0090438d11cdf641205b0aa5c6dbe36c4d4b965ec058
