@@ -23,10 +23,11 @@ export * from './composables/Displayable';
 
 /*
   Study Session Components
-
 */
 
+export { default as StudySession } from './components/StudySession.vue';
 export { default as StudySessionTimer } from './components/StudySessionTimer.vue';
+export type { StudySessionConfig } from './components/StudySession.types';
 
 /*
   studentInputs
@@ -49,6 +50,9 @@ export { default as FillInInput } from './components/studentInputs/fillInInput.v
 
   These components are used to render course content
 */
+export { default as CardViewer } from './components/cardRendering/CardViewer.vue';
+export { default as CardLoader } from './components/cardRendering/CardLoader.vue';
+
 export * from './components/cardRendering/MarkdownRendererHelpers';
 export { default as AudioAutoPlayer } from './components/cardRendering/AudioAutoPlayer.vue';
 export { default as CodeBlockRenderer } from './components/cardRendering/CodeBlockRenderer.vue';

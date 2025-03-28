@@ -4,7 +4,7 @@
       <v-card-title class="text-h6 font-weight-regular"> Start a New Quilt </v-card-title>
       <v-spacer></v-spacer>
       <v-btn icon @click="clearFormAndDismiss">
-        <v-icon>close</v-icon>
+        <v-icon icon="mdi-close"></v-icon>
       </v-btn>
     </v-toolbar>
     <v-form>
@@ -17,6 +17,7 @@
             label="Quilt Name"
             required
             hint="Short and descriptive"
+            data-cy="course-name-input"
           ></v-text-field>
         </v-row>
         <v-row class="cols sm md">
@@ -27,6 +28,7 @@
             auto-grow
             label="Quilt Description"
             hint="Describe the course. What subject is covered? Who might be interested?"
+            data-cy="course-description-input"
           >
           </v-textarea>
         </v-row>
@@ -38,13 +40,16 @@
             hint="Private quilts can be shared and collaborated on with other individual users, but will not be accessable without an invitation. A private quilt can be made public later."
             persistent-hint
             inline
+            data-cy="course-visibility-radio"
           >
-            <v-radio label="Public" :value="true"></v-radio>
-            <v-radio label="Private" :value="false"></v-radio>
+            <v-radio label="Public" :value="true" data-cy="public-radio"></v-radio>
+            <v-radio label="Private" :value="false" data-cy="private-radio"></v-radio>
           </v-radio-group>
         </v-row>
         <v-row class="cols sm md">
-          <v-btn :loading="updatePending" color="primary" @click="submit"> Save Course Changes </v-btn>
+          <v-btn :loading="updatePending" color="primary" @click="submit" data-cy="save-course-button">
+            Save Course Changes
+          </v-btn>
         </v-row>
       </v-container>
     </v-form>

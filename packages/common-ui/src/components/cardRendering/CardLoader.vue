@@ -13,12 +13,11 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue';
-import Courses from '@vue-skuilder/courses';
+import { defineComponent, PropType } from 'vue';
 import { getCourseDoc, CardData, CardRecord, DisplayableData } from '@vue-skuilder/db';
-import { log, displayableDataToViewData, ViewData } from '@vue-skuilder/common';
+import { log, displayableDataToViewData, ViewData, ViewDescriptor } from '@vue-skuilder/common';
+import { ViewComponent } from '@/composables';
 import CardViewer from './CardViewer.vue';
-import { ViewComponent } from '@/base-course/Displayable';
 
 export default defineComponent({
   name: 'CardLoader',
@@ -35,6 +34,10 @@ export default defineComponent({
     },
     qualified_id: {
       type: String,
+      required: true,
+    },
+    viewLookup: {
+      type: Function as PropType<(viewDescription: ViewDescriptor | string) => ViewComponent>,
       required: true,
     },
   },
@@ -72,7 +75,7 @@ export default defineComponent({
 
       try {
         const tmpCardData = await getCourseDoc<CardData>(_courseID, _cardID);
-        const tmpView = Courses.getView(tmpCardData.id_view);
+        const tmpView = this.viewLookup(tmpCardData.id_view);
         const tmpDataDocs = tmpCardData.id_displayable_data.map((id) => {
           return getCourseDoc<DisplayableData>(_courseID, id, {
             attachments: true,

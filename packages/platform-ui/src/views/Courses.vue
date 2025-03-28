@@ -8,6 +8,7 @@
       icon="mdi-plus"
       size="large"
       class="mb-4 mr-4"
+      data-cy="create-course-fab"
       v-bind="newCourseAttrs"
       v-on="newCourseAttrs.on"
     />
@@ -18,14 +19,18 @@
       <v-col cols="12">
         <v-expansion-panels v-model="myQuiltsPanel">
           <v-expansion-panel>
-            <v-expansion-panel-title>My Registered Quilts</v-expansion-panel-title>
+            <v-expansion-panel-title data-cy="registered-quilts-panel">My Registered Quilts</v-expansion-panel-title>
             <v-expansion-panel-text>
               <v-row>
                 <v-col v-for="course in registeredCourses" :key="course._id" cols="12" sm="6" md="4" lg="3">
                   <v-card variant="outlined" density="compact" class="pa-2">
                     <div class="d-flex align-center justify-space-between">
-                      <div class="d-flex align-center">
-                        <router-link :to="`/q/${course.name.replace(' ', '_')}`" class="text-subtitle-2">
+                      <div data-cy="registered-course" class="d-flex align-center">
+                        <router-link
+                          :to="`/q/${course.name.replace(' ', '_')}`"
+                          class="text-subtitle-2"
+                          data-cy="registered-course-title"
+                        >
                           {{ course.name }}
                         </router-link>
                         <v-icon v-if="!course.public" size="x-small" class="ml-1">mdi-eye-off</v-icon>
@@ -34,6 +39,7 @@
                         size="x-small"
                         variant="text"
                         color="error"
+                        data-cy="drop-course-button"
                         :loading="spinnerMap[course._id] !== undefined"
                         @click="dropCourse(course._id)"
                       >
@@ -53,13 +59,13 @@
         <h2 class="text-h5 mb-3">Available Quilts</h2>
         <v-row>
           <v-col v-for="course in displayedAvailableCourses" :key="course._id" cols="12" sm="6" md="4" lg="3">
-            <course-stub-card :_id="course._id" @refresh="refreshData" />
+            <course-stub-card data-cy="available-course-card" :_id="course._id" @refresh="refreshData" />
           </v-col>
         </v-row>
 
         <!-- Show More Button -->
         <v-row v-if="hasMoreCourses" justify="center" class="mt-2">
-          <v-btn variant="text" color="primary" @click="toggleShowMore">
+          <v-btn variant="text" color="primary" data-cy="courses-show-more-button" @click="toggleShowMore">
             {{ showAllCourses ? 'Show Less' : 'Show More' }}
           </v-btn>
         </v-row>

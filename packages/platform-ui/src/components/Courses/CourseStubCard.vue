@@ -1,7 +1,7 @@
 <template>
-  <v-card v-if="!updatePending && courseConfig">
+  <v-card v-if="!updatePending && courseConfig" data-cy="available-course-card">
     <v-card-item>
-      <v-card-title @click="routeToCourse">
+      <v-card-title data-cy="course-title" @click="routeToCourse">
         {{ courseConfig.name }}
         <v-icon v-if="isPrivate" icon="mdi-eye-off" class="ml-2"></v-icon>
       </v-card-title>
@@ -14,7 +14,9 @@
 
     <v-card-actions>
       <v-btn color="primary" @click="routeToCourse">More Info</v-btn>
-      <v-btn :loading="addingCourse" color="primary" @click="registerForCourse"> Register </v-btn>
+      <v-btn data-cy="register-course-button" :loading="addingCourse" color="primary" @click="registerForCourse">
+        Register
+      </v-btn>
     </v-card-actions>
   </v-card>
 </template>

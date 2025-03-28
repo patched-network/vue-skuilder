@@ -10,6 +10,11 @@ export interface UserConfig {
   likesConfetti: boolean;
 }
 
+interface ActivityRecord {
+  timeStamp: number | string;
+  [key: string]: any;
+}
+
 import { getCourseConfigs } from './courseDB';
 import {
   filterAllDocsByPrefix,
@@ -263,6 +268,23 @@ Currently logged-in as ${this._username}.`
     });
 
     return reviews.rows.map((r) => `${r.doc!.courseId}-${r.doc!.cardId}`);
+  }
+
+  public async getActivityRecords(): Promise<ActivityRecord[]> {
+    const hist = await this.getHistory();
+
+    const allRecords: ActivityRecord[] = [];
+    for (let i = 0; i < hist.length; i++) {
+      if (hist[i] && hist[i]!.records) {
+        hist[i]!.records.forEach((record: CardRecord) => {
+          allRecords.push({
+            timeStamp: record.timeStamp.toString(),
+          });
+        });
+      }
+    }
+
+    return allRecords;
   }
 
   private async getReviewstoDate(targetDate: Moment, course_id?: string) {

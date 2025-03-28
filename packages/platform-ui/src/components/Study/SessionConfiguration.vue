@@ -1,6 +1,6 @@
 <template>
   <div v-if="hasRegistrations">
-    <div class="text-h4">Select your quilts</div>
+    <div data-cy="select-quilts-header" class="text-h4">Select your quilts</div>
     <table width="100%">
       <thead>
         <tr>
@@ -30,7 +30,12 @@
         </tr>
         <tr v-for="course in activeCourses" :key="course.courseID">
           <td>
-            <v-checkbox v-model="course.selected" :label="`q/${course.name}`" @click.capture="update" />
+            <v-checkbox
+              v-model="course.selected"
+              data-cy="course-checkbox"
+              :label="`q/${course.name}`"
+              @click.capture="update"
+            />
           </td>
           <td>{{ course.reviews }}</td>
         </tr>
@@ -58,7 +63,7 @@
       @click:prepend="dec"
       @click:append="inc"
     />
-    <v-btn color="success" @click="startSession">Start Studying!</v-btn>
+    <v-btn data-cy="start-studying-button" color="success" @click="startSession">Start Studying!</v-btn>
   </div>
   <div v-else class="text-h4">
     <p>You don't have anything to study!</p>
@@ -67,7 +72,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, PropType } from 'vue';
+import { defineComponent } from 'vue';
 import { SkldrMouseTrap } from '@vue-skuilder/common-ui';
 import { CourseRegistration, User, getCourseName, StudentClassroomDB, ContentSourceID } from '@vue-skuilder/db';
 import { getCurrentUser } from '@/stores/useAuthStore';
@@ -82,10 +87,6 @@ export default defineComponent({
   name: 'SessionConfiguration',
 
   props: {
-    startFcn: {
-      type: Function as PropType<(sources: ContentSourceID[], timeLimit: number) => void>,
-      required: true,
-    },
     initialTimeLimit: {
       type: Number,
       required: true,
@@ -93,7 +94,7 @@ export default defineComponent({
     },
   },
 
-  emits: ['update:timeLimit'],
+  emits: ['initStudySession'],
 
   data() {
     return {
@@ -112,7 +113,6 @@ export default defineComponent({
         if (this.timeLimit <= 0) {
           this.timeLimit = 1;
         }
-        this.$emit('update:timeLimit', this.timeLimit);
       },
     },
   },
@@ -179,7 +179,7 @@ export default defineComponent({
           id: cl.classID,
         }));
       const allSelectedSources = [...selectedCourses, ...selectedClassrooms];
-      this.startFcn(allSelectedSources, this.timeLimit);
+      this.$emit('initStudySession', allSelectedSources, this.timeLimit);
     },
 
     async getActiveClassrooms() {

@@ -58,11 +58,6 @@
     </div>
 
     <div class="component">
-      <h2>Heatmap</h2>
-      <HeatMap :data="{}" />
-    </div>
-
-    <div class="component">
       <h2>DataInputForm</h2>
       <!-- <data-input-form
         :course-cfg="{
@@ -134,7 +129,6 @@ import { defineComponent } from 'vue';
 import SkTagsInput from '@/components/Edit/TagsInput.vue';
 // import ImageInput from '@/components/Edit/ViewableDataInputForm/FieldInputs/ImageInput.vue';
 // import MediaUploader from '@/components/Edit/ViewableDataInputForm/FieldInputs/MediaUploader.vue';
-import HeatMap from '@/components/HeatMap.vue';
 import PuzzleView from '@vue-skuilder/courses';
 // import ChessPieceMove from '@vue-skuilder/courses';
 import FillInView from '@vue-skuilder/courses';
@@ -143,7 +137,7 @@ import FillInView from '@vue-skuilder/courses';
 // import DataInputForm from '../components/Edit/ViewableDataInputForm/DataInputForm.vue';
 import LetterQuestionView from '@vue-skuilder/courses';
 import FallingLettersView from '@vue-skuilder/courses';
-import CardViewer from '@/components/Study/CardViewer.vue';
+import { CardViewer } from '@vue-skuilder/common-ui';
 import { Status } from '@vue-skuilder/common';
 import { ValidationResult } from '@vue-skuilder/common';
 
@@ -155,7 +149,6 @@ export default defineComponent({
     // DataInputForm,
     // MediaUploader,
     // ImageInput,
-    HeatMap,
     PuzzleView,
     LetterQuestionView,
     FallingLettersView,

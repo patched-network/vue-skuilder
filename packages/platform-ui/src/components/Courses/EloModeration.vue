@@ -11,7 +11,7 @@
         <v-btn color="success" class="ma-5" @click="vote('a')">
           <v-icon>mdi-check</v-icon>
         </v-btn>
-        <card-loader class="ma-2" :qualified_id="id1" />
+        <card-loader class="ma-2" :qualified_id="id1" :view-lookup="viewLookup" />
       </v-col>
     </v-row>
 
@@ -20,14 +20,15 @@
         <v-btn color="success" class="ma-5" @click="vote('b')">
           <v-icon>mdi-check</v-icon>
         </v-btn>
-        <card-loader class="ma-2" :qualified_id="id2" />
+        <card-loader class="ma-2" :qualified_id="id2" :view-lookup="viewLookup" />
       </v-col>
     </v-row>
   </v-container>
 </template>
 
 <script lang="ts">
-import CardLoader from '@/components/Study/CardLoader.vue';
+import { CardLoader } from '@vue-skuilder/common-ui';
+import Courses from '@vue-skuilder/courses';
 import { CourseElo, adjustCourseScores, CourseConfig } from '@vue-skuilder/common';
 import { CourseDB, getCourseConfig, updateCardElo } from '@vue-skuilder/db';
 import { defineComponent } from 'vue';
@@ -62,6 +63,7 @@ export default defineComponent({
       id2: '',
       elo1: null as CourseElo | null,
       elo2: null as CourseElo | null,
+      viewLookup: Courses.getView,
     };
   },
 
