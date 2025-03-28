@@ -70,15 +70,14 @@
 
 <script lang="ts">
 import { defineComponent, PropType } from 'vue';
-import {
-  isQuestionView,
-  ViewComponent,
-  SkMouseTrap,
-  alertUser,
-  StudySessionTimer,
-  HeatMap,
-  CardViewer,
-} from '@vue-skuilder/common-ui';
+import { isQuestionView } from '../composables/CompositionViewable';
+import { alertUser } from './SnackbarService';
+import ViewComponent from '../composables/Displayable';
+import SkMouseTrap from './SkMouseTrap.vue';
+import StudySessionTimer from './StudySessionTimer.vue';
+import HeatMap from './HeatMap.vue';
+import CardViewer from './cardRendering/CardViewer.vue';
+
 import {
   getCourseDoc,
   removeScheduledCardReview,
@@ -115,6 +114,8 @@ import {
 } from '@vue-skuilder/common';
 import confetti from 'canvas-confetti';
 import moment from 'moment';
+
+import { StudySessionConfig } from './StudySession.types';
 
 interface StudyRefs {
   shadowWrapper: HTMLDivElement;
