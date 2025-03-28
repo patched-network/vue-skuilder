@@ -79,7 +79,6 @@ import {
   HeatMap,
   CardViewer,
 } from '@vue-skuilder/common-ui';
-import Courses from '@vue-skuilder/courses';
 import {
   getCourseDoc,
   removeScheduledCardReview,
@@ -158,6 +157,10 @@ export default defineComponent({
     sessionConfig: {
       type: Object as PropType<StudySessionConfig>,
       default: () => ({ likesConfetti: false }),
+    },
+    getViewComponent: {
+      type: Function as PropType<(viewId: string) => ViewComponent>,
+      required: true,
     },
   },
 
@@ -522,7 +525,7 @@ export default defineComponent({
           tmpCardData.elo = toCourseElo(tmpCardData.elo);
         }
 
-        const tmpView: ViewComponent = Courses.getView(tmpCardData.id_view);
+        const tmpView: ViewComponent = this.getViewComponent(tmpCardData.id_view);
         const tmpDataDocs = tmpCardData.id_displayable_data.map((id) => {
           return getCourseDoc<DisplayableData>(_courseID, id, {
             attachments: true,

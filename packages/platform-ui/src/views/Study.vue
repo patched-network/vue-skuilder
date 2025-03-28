@@ -35,6 +35,7 @@
       :session-time-limit="sessionTimeLimit"
       :user="user as User"
       :session-config="studySessionConfig"
+      :get-view-component="getViewComponent"
       @session-finished="handleSessionFinished"
     />
   </div>
@@ -50,6 +51,7 @@ import { Router } from 'vue-router';
 import { CourseConfig } from '@vue-skuilder/common';
 import { useConfigStore } from '@/stores/useConfigStore';
 import { useDataInputFormStore } from '@/stores/useDataInputFormStore';
+import Courses from '@vue-skuilder/courses';
 
 function randomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -107,6 +109,7 @@ export default defineComponent({
       sessionPrepared: false,
       sessionContentSources: [] as ContentSourceID[],
       dataInputFormStore: useDataInputFormStore(),
+      getViewComponent: (view_id: string) => Courses.getView(view_id),
     };
   },
 
