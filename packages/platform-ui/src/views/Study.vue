@@ -44,7 +44,7 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 import SessionConfiguration from '@/components/Study/SessionConfiguration.vue';
-import StudySession, { StudySessionConfig } from '@/views/StudySession.vue';
+import { StudySession, type StudySessionConfig } from '@vue-skuilder/common-ui';
 import { ContentSourceID, getCourseList, User } from '@vue-skuilder/db';
 import { getCurrentUser } from '@/stores/useAuthStore';
 import { Router } from 'vue-router';
