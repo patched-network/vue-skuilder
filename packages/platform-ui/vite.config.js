@@ -3,7 +3,7 @@ import vue from '@vitejs/plugin-vue';
 import { VitePWA } from 'vite-plugin-pwa';
 import eslint from 'vite-plugin-eslint';
 import { fileURLToPath, URL } from 'node:url';
-import { resolve } from 'path';
+import injectEnvPlugin from './vite-env-plugin';
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -21,6 +21,7 @@ export default defineConfig({
     'process.version': JSON.stringify(process.version),
   },
   plugins: [
+    injectEnvPlugin(),
     vue(),
     VitePWA({
       registerType: 'autoUpdate',
