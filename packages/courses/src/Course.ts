@@ -47,7 +47,19 @@ export class Course {
 
   public getQuestion(name: string): typeof Displayable | undefined {
     return this.questionList.find((question) => {
-      return question.name === name || question.name === `_${name}`;
+      // Extract base name without potential prefix/suffix
+      const questionBaseName = question.name.replace(/^_/, '').replace(/\d+$/, '');
+      const searchBaseName = name.replace(/^_/, '').replace(/\d+$/, '');
+
+      return (
+        // Exact match
+        question.name === name ||
+        // Match with different prefix/suffix combinations
+        questionBaseName === searchBaseName ||
+        // Original fallback for partial matches
+        question.name.includes(searchBaseName) ||
+        name.includes(questionBaseName)
+      );
     });
   }
 
