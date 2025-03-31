@@ -1,6 +1,6 @@
-import { StudentClassroomDB } from './classroomDB';
-import { CourseDB } from './courseDB';
-import { ScheduledCard, User } from './userDB';
+import { StudentClassroomDB } from '../../pouch/classroomDB';
+import { CourseDB } from '../../pouch/courseDB';
+import { ScheduledCard, User } from '../../pouch/userDB';
 
 export type StudySessionFailedItem = StudySessionFailedNewItem | StudySessionFailedReviewItem;
 

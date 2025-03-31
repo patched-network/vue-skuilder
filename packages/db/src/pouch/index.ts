@@ -234,5 +234,5 @@ export * from './userDB';
 export * from './courseDB';
 export * from './courseAPI';
 export * from './classroomDB';
-export * from './contentSource';
+export * from '../core/interfaces/contentSource';
 export * from './adminDB';
