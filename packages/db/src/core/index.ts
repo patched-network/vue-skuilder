@@ -3,4 +3,3 @@
 export * from './types';
 export * from './interfaces';
 export * from './types-legacy';
-export * from './Loggable';

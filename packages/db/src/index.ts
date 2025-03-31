@@ -2,3 +2,5 @@
 export * from './core';
 export * from './pouch';
 export * from './study';
+
+export * from './util';
