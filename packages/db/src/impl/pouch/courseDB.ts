@@ -1,19 +1,25 @@
+import { UserDBInterface } from '@/core';
+import { ScheduledCard } from '@/core/types/user';
+import {
+  CourseConfig,
+  CourseElo,
+  ENV,
+  EloToNumber,
+  blankCourseElo,
+  toCourseElo,
+} from '@vue-skuilder/common';
 import _ from 'lodash';
 import pouch from 'pouchdb-browser';
 import { filterAllDocsByPrefix, getCourseDB } from '.';
-import { ENV, CourseConfig } from '@vue-skuilder/common';
-import { CourseElo, EloToNumber, blankCourseElo, toCourseElo } from '@vue-skuilder/common';
-import { GET_CACHED } from './clientCache';
 import {
   StudyContentSource,
   StudySessionItem,
   StudySessionNewItem,
   StudySessionReviewItem,
 } from '../../core/interfaces/contentSource';
-import { getCredentialledCourseConfig, getTagID } from './courseAPI';
 import { CardData, DocType, Tag, TagStub } from '../../core/types/types-legacy';
-import { User } from './userDB';
-import { ScheduledCard } from '@/core/types/user';
+import { GET_CACHED } from './clientCache';
+import { getCredentialledCourseConfig, getTagID } from './courseAPI';
 
 const courseLookupDBTitle = 'coursedb-lookup';
 
@@ -44,9 +50,9 @@ export class CourseDB implements StudyContentSource {
 
   private db: PouchDB.Database;
   private id: string;
-  private _getCurrentUser: () => Promise<User>;
+  private _getCurrentUser: () => Promise<UserDBInterface>;
 
-  constructor(id: string, userLookup: () => Promise<User>) {
+  constructor(id: string, userLookup: () => Promise<UserDBInterface>) {
     this.id = id;
     this.db = getCourseDB(this.id);
     this._getCurrentUser = userLookup;
