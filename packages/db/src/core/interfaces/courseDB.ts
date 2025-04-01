@@ -33,7 +33,10 @@ export interface CourseDBInterface {
    */
   getCourseConfig(): Promise<CourseConfig>;
 
-  getCourseDoc<T extends SkuilderCourseData>(id: string): Promise<T>;
+  getCourseDoc<T extends SkuilderCourseData>(
+    id: string,
+    options?: PouchDB.Core.GetOptions
+  ): Promise<T>;
   getCourseDocs<T extends SkuilderCourseData>(
     ids: string[]
   ): Promise<PouchDB.Core.AllDocsWithKeysResponse<{} & T>>;

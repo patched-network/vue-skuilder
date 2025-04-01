@@ -432,9 +432,10 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
   }
 
   async getCourseDoc<T extends SkuilderCourseData>(
-    id: string
+    id: string,
+    options?: PouchDB.Core.GetOptions
   ): Promise<PouchDB.Core.GetMeta & PouchDB.Core.Document<T>> {
-    return await getCourseDoc(this.id, id);
+    return await getCourseDoc(this.id, id, options);
   }
 
   async getCourseDocs<T extends SkuilderCourseData>(
