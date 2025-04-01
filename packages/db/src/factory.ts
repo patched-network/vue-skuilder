@@ -1,6 +1,6 @@
 // db/src/factory.ts
 
-import { DataLayerProvider } from './core/interfaces';
+import { DataLayerProvider, UserDBInterface } from './core/interfaces';
 
 // Configuration type for data layer initialization
 export interface DataLayerConfig {
@@ -8,6 +8,7 @@ export interface DataLayerConfig {
   options?: {
     staticContentPath?: string; // Path to static content JSON files
     localStoragePrefix?: string; // Prefix for IndexedDB storage names
+    userGetter?: () => Promise<UserDBInterface>;
   };
 }
 
