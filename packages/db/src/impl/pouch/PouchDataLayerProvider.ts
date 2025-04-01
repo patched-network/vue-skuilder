@@ -43,7 +43,7 @@ export class PouchDataLayerProvider implements DataLayerProvider {
     return new PouchClassroomDB(classId, type);
   }
 
-  async getAdminDB(): Promise<AdminDBInterface> {
-    return AdminDB.factory() as unknown as AdminDBInterface;
+  getAdminDB(): AdminDBInterface {
+    return new AdminDB();
   }
 }
