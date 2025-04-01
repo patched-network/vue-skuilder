@@ -101,7 +101,13 @@ export interface UserDBInterface {
   /**
    * Get user's course registrations
    */
-  getCourseRegistrations(username: string): Promise<CourseRegistrationDoc>;
+  getCourseRegistrationsDoc(): Promise<CourseRegistrationDoc>;
+
+  /**
+   * Get the registration doc for a specific course.
+   * @param courseId
+   */
+  getCourseRegDoc(courseId: string): Promise<CourseRegistration>;
 
   /**
    * Get user's active courses
@@ -111,7 +117,7 @@ export interface UserDBInterface {
   /**
    * Get user's pending reviews
    */
-  getPendingReviews(username: string, courseId?: string): Promise<ScheduledCard[]>;
+  getPendingReviews(courseId?: string): Promise<ScheduledCard[]>;
 
   /**
    * Schedule a card for review
