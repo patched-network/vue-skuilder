@@ -22,7 +22,7 @@ export interface DataLayerProvider {
   /**
    * Get a classroom database interface
    */
-  getClassroomDB(classId: string, type: 'student' | 'teacher'): ClassroomDBInterface;
+  getClassroomDB(classId: string, type: 'student' | 'teacher'): Promise<ClassroomDBInterface>;
 
   /**
    * Get the admin database interface
