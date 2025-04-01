@@ -5,16 +5,6 @@ import { CourseElo } from '@vue-skuilder/common';
 import moment, { Moment } from 'moment';
 import pouch from './pouchdb-setup';
 
-export interface UserConfig {
-  darkMode: boolean;
-  likesConfetti: boolean;
-}
-
-interface ActivityRecord {
-  timeStamp: number | string;
-  [key: string]: any;
-}
-
 import { getCourseConfigs } from './courseDB';
 import {
   filterAllDocsByPrefix,
@@ -28,6 +18,13 @@ import {
 import UpdateQueue, { Update } from './updateQueue';
 import { CardHistory, CardRecord } from '../core/types-legacy';
 import { PouchError } from './types';
+import {
+  ActivityRecord,
+  CourseRegistration,
+  CourseRegistrationDoc,
+  ScheduledCard,
+  UserConfig,
+} from '@/core/types/user';
 
 const log = (s: any) => {
   console.log(s);
@@ -66,43 +63,6 @@ export async function doesUserExist(name: string) {
     log(`User error: ${err}`);
     return false;
   }
-}
-
-export interface ScheduledCard {
-  _id: PouchDB.Core.DocumentId;
-
-  /**
-   * The docID of the card to be reviewed
-   */
-  cardId: PouchDB.Core.DocumentId;
-  /**
-   * The ID of the course
-   */
-  courseId: string;
-  /**
-   * The time at which the card becomes eligible for review.
-   *
-   * (Should probably be UTC adjusted so that performance is
-   * not wonky across time zones)
-   */
-  reviewTime: Moment;
-
-  /**
-   * The time at which this scheduled event was created.
-   */
-  scheduledAt: Moment;
-
-  /**
-   * Classifying whether this card is scheduled on behalf of a
-   * user-registered course or by as assigned content from a
-   * user-registered classroom
-   */
-  scheduledFor: 'course' | 'classroom';
-
-  /**
-   * The ID of the course or classroom that requested this card
-   */
-  schedulingAgentId: string;
 }
 
 /**
@@ -882,27 +842,6 @@ export function getUserDB(username: string): PouchDB.Database {
 const userCoursesDoc = 'CourseRegistrations';
 const userClassroomsDoc = 'ClassroomRegistrations';
 
-export interface CourseRegistration {
-  status?: 'active' | 'dropped' | 'maintenance-mode' | 'preview';
-  courseID: string;
-  admin: boolean;
-  moderator: boolean;
-  user: boolean;
-  settings?: {
-    [setting: string]: string | number | boolean;
-  };
-  elo: number | CourseElo;
-}
-
-interface StudyWeights {
-  [courseID: string]: number;
-}
-
-export interface CourseRegistrationDoc {
-  courses: CourseRegistration[];
-  studyWeight: StudyWeights;
-}
-
 export type ClassroomRegistrationDesignation = 'student' | 'teacher' | 'aide' | 'admin';
 
 interface ClassroomRegistration {
@@ -910,7 +849,7 @@ interface ClassroomRegistration {
   registeredAs: ClassroomRegistrationDesignation;
 }
 
-interface ClassroomRegistrationDoc {
+export interface ClassroomRegistrationDoc {
   registrations: ClassroomRegistration[];
 }
 

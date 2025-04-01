@@ -9,10 +9,11 @@ import {
   StudySessionItem,
   StudySessionNewItem,
   StudySessionReviewItem,
-} from './contentSource';
+} from '../core/interfaces/contentSource';
 import { getCredentialledCourseConfig, getTagID } from './courseAPI';
 import { CardData, DocType, Tag, TagStub } from '../core/types-legacy';
-import { ScheduledCard, User } from './userDB';
+import { User } from './userDB';
+import { ScheduledCard } from '@/core/types/user';
 
 const courseLookupDBTitle = 'coursedb-lookup';
 
