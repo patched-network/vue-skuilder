@@ -9,13 +9,15 @@ export interface ClassroomDBInterface {
   /**
    * Get classroom config
    */
-  getClassroomConfig(): Promise<ClassroomConfig>;
+  getConfig(): ClassroomConfig;
 
   /**
    * Get assigned content
    */
   getAssignedContent(): Promise<AssignedContent[]>;
+}
 
+export interface TeacherClassroomDBInterface extends ClassroomDBInterface {
   /**
    * For teacher interfaces: assign content
    */
@@ -25,7 +27,9 @@ export interface ClassroomDBInterface {
    * For teacher interfaces: remove content
    */
   removeContent?(content: AssignedContent): Promise<void>;
+}
 
+export interface StudentClassroomDBInterface extends ClassroomDBInterface {
   /**
    * For student interfaces: get pending reviews
    */
