@@ -9,9 +9,9 @@ import {
   StudySessionItem,
   StudySessionNewItem,
   StudySessionReviewItem,
-} from '../core/interfaces/contentSource';
+} from '../../core/interfaces/contentSource';
 import { getCredentialledCourseConfig, getTagID } from './courseAPI';
-import { CardData, DocType, Tag, TagStub } from '../core/types/types-legacy';
+import { CardData, DocType, Tag, TagStub } from '../../core/types/types-legacy';
 import { User } from './userDB';
 import { ScheduledCard } from '@/core/types/user';
 

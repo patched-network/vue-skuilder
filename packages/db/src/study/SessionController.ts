@@ -5,7 +5,7 @@ import {
   StudySessionItem,
   StudySessionNewItem,
   StudySessionReviewItem,
-} from '@/pouch';
+} from '@/impl/pouch';
 
 import { CardRecord } from '@/core';
 import { Loggable } from '@/util';

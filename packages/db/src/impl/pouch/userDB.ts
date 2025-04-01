@@ -1,6 +1,6 @@
 import { Status } from '@vue-skuilder/common';
 import { ENV } from '@vue-skuilder/common';
-import { GuestUsername } from '../core/types/types-legacy';
+import { GuestUsername } from '../../core/types/types-legacy';
 import { getCardHistoryID } from '@/core/util';
 import { CourseElo } from '@vue-skuilder/common';
 import moment, { Moment } from 'moment';
@@ -17,7 +17,7 @@ import {
   updateGuestAccountExpirationDate,
 } from './index';
 import UpdateQueue, { Update } from './updateQueue';
-import { CardHistory, CardRecord } from '../core/types/types-legacy';
+import { CardHistory, CardRecord } from '../../core/types/types-legacy';
 import { PouchError } from './types';
 import {
   ActivityRecord,

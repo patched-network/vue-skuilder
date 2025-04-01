@@ -1,6 +1,6 @@
 import { CardHistory, CardRecord, QuestionRecord } from '@/core/types/types-legacy';
 import { areQuestionRecords } from '@/core/util';
-import { User } from '@/pouch';
+import { User } from '@/impl/pouch';
 import moment from 'moment';
 
 type Moment = moment.Moment;

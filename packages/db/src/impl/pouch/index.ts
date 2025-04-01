@@ -1,6 +1,6 @@
-import { DocType, SkuilderCourseData, GuestUsername, log } from '../core/types/types-legacy';
+import { DocType, SkuilderCourseData, GuestUsername, log } from '../../core/types/types-legacy';
 import { ENV } from '@vue-skuilder/common';
-// import { getCurrentUser } from '../stores/useAuthStore';
+// import { getCurrentUser } from '../../stores/useAuthStore';
 import moment, { Moment } from 'moment';
 import PouchDBAuth from '@nilock2/pouchdb-authentication';
 import pouch from 'pouchdb-browser';
@@ -235,5 +235,5 @@ export * from './userDB';
 export * from './courseDB';
 export * from './courseAPI';
 export * from './classroomDB';
-export * from '../core/interfaces/contentSource';
+export * from '../../core/interfaces/contentSource';
 export * from './adminDB';

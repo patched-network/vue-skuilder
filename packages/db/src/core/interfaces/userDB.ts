@@ -3,7 +3,7 @@ import { Moment } from 'moment';
 import { CourseRegistration, CourseRegistrationDoc, ScheduledCard } from '@/core/types/user';
 import { UserInstanceInterface } from './user';
 import { UserConfig } from '../types/user';
-import { ClassroomRegistrationDoc } from '@/pouch/userDB';
+import { ClassroomRegistrationDoc } from '@/impl/pouch/userDB';
 import { CardHistory, CardRecord } from '../types/types-legacy';
 
 /**

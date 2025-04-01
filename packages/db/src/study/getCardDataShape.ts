@@ -1,7 +1,7 @@
 import Courses from '@vue-skuilder/courses';
 import { log, NameSpacer, CourseConfig, DataShape } from '@vue-skuilder/common';
-import { CardData, DisplayableData } from '@vue-skuilder/db';
-import { getCourseDB } from '@/pouch/courseAPI';
+import { CardData, DisplayableData } from '@/core';
+import { getCourseDB } from '@/impl/pouch/courseAPI';
 
 export async function getCardDataShape(courseID: string, cardID: string) {
   const dataShapes: DataShape[] = [];
