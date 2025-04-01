@@ -79,16 +79,11 @@ import HeatMap from './HeatMap.vue';
 import CardViewer from './cardRendering/CardViewer.vue';
 
 import {
-  getCourseDoc,
-  removeScheduledCardReview,
-  scheduleCardReview,
   ContentSourceID,
   getStudySource,
   isReview,
   StudyContentSource,
   StudySessionItem,
-  CourseDB,
-  getCourseName,
   updateCardElo,
   docIsDeleted,
   CardData,
@@ -97,9 +92,9 @@ import {
   DisplayableData,
   isQuestionRecord,
   CourseRegistrationDoc,
-  updateUserElo,
   User,
-  StudentClassroomDB,
+  // StudentClassroomDB,
+  DataLayerProvider,
 } from '@vue-skuilder/db';
 import { SessionController, StudySessionRecord } from '@vue-skuilder/db';
 import { newInterval } from '@vue-skuilder/db';
@@ -149,6 +144,10 @@ export default defineComponent({
     },
     user: {
       type: Object as PropType<User>,
+      required: true,
+    },
+    dataLayer: {
+      type: Object as PropType<DataLayerProvider>,
       required: true,
     },
     sessionConfig: {
@@ -294,7 +293,7 @@ export default defineComponent({
       const sessionClassroomDBs = await Promise.all(
         this.contentSources
           .filter((s) => s.type === 'classroom')
-          .map(async (c) => StudentClassroomDB.factory(c.id, this.user))
+          .map(async (c) => this.dataLayer.getClassroomDB(c.id, this.user))
       );
 
       sessionClassroomDBs.forEach((db) => {
@@ -311,7 +310,7 @@ export default defineComponent({
 
       this.contentSources
         .filter((s) => s.type === 'course')
-        .forEach(async (c) => (this.courseNames[c.id] = await getCourseName(c.id)));
+        .forEach(async (c) => (this.courseNames[c.id] = (await dataLayer.getCourseConfig(c.id)).name));
 
       console.log(`[StudySession] Session created:
         ${this.sessionController.toString()}
@@ -429,20 +428,17 @@ export default defineComponent({
       if (k) {
         console.warn(`k value interpretation not currently implemented`);
       }
+      const courseDB = dayaLayer.getCourseDB(this.currentCard.card.course_id);
       const userElo = toCourseElo(this.userCourseRegDoc!.courses.find((c) => c.courseID === course_id)!.elo);
-      const cardElo = (
-        await new CourseDB(this.currentCard.card.course_id, () => Promise.resolve(this.user)).getCardEloData([
-          this.currentCard.card.card_id,
-        ])
-      )[0];
+      const cardElo = (await courseDB.getCardEloData([this.currentCard.card.card_id]))[0];
 
       if (cardElo && userElo) {
         const eloUpdate = adjustCourseScores(userElo, cardElo, userScore);
         this.userCourseRegDoc!.courses.find((c) => c.courseID === course_id)!.elo = eloUpdate.userElo;
 
         Promise.all([
-          updateUserElo(this.user!.username, course_id, eloUpdate.userElo),
-          updateCardElo(course_id, card_id, eloUpdate.cardElo),
+          this.user!.updateUserElo(course_id, eloUpdate.userElo),
+          courseDB.updateCardElo(card_id, eloUpdate.cardElo),
         ]).then((results) => {
           const user = results[0];
           const card = results[1];
@@ -482,10 +478,10 @@ export default defineComponent({
 
       if (isReview(item)) {
         console.log(`[StudySession] Removing previously scheduled review for: ${item.cardID}`);
-        removeScheduledCardReview(this.user!.username, item.reviewID);
+        this.user!.removeScheduledCardReview(this.user!.username, item.reviewID);
       }
 
-      scheduleCardReview({
+      this.user!.scheduleCardReview({
         user: this.user!.username,
         course_id: history.courseID,
         card_id: history.cardID,
@@ -566,7 +562,7 @@ export default defineComponent({
         const err = e as Error;
         if (docIsDeleted(err) && isReview(item)) {
           console.warn(`Card was deleted: ${qualified_id}`);
-          removeScheduledCardReview(this.user!.username, item.reviewID);
+          this.user!.removeScheduledCardReview(this.user!.username, item.reviewID);
         }
 
         this.loadCard(this.sessionController!.nextCard('dismiss-error'));
