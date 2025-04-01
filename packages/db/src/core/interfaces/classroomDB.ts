@@ -2,6 +2,41 @@ import { ClassroomConfig } from '@vue-skuilder/common';
 import { ScheduledCard } from '../types/user';
 import { StudySessionNewItem, StudySessionReviewItem } from './contentSource';
 
+/**
+ * Classroom management
+ */
+export interface ClassroomDBInterface {
+  /**
+   * Get classroom config
+   */
+  getClassroomConfig(): Promise<ClassroomConfig>;
+
+  /**
+   * Get assigned content
+   */
+  getAssignedContent(): Promise<AssignedContent[]>;
+
+  /**
+   * For teacher interfaces: assign content
+   */
+  assignContent?(content: AssignedContent): Promise<boolean>;
+
+  /**
+   * For teacher interfaces: remove content
+   */
+  removeContent?(content: AssignedContent): Promise<void>;
+
+  /**
+   * For student interfaces: get pending reviews
+   */
+  getPendingReviews?(): Promise<(StudySessionReviewItem & ScheduledCard)[]>;
+
+  /**
+   * For student interfaces: get new cards
+   */
+  getNewCards?(limit?: number): Promise<StudySessionNewItem[]>;
+}
+
 export type AssignedContent = AssignedCourse | AssignedTag | AssignedCard;
 
 export interface AssignedTag extends ContentBase {
