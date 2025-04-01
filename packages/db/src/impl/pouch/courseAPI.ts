@@ -9,7 +9,9 @@ import { CourseDB, createTag, updateCardElo } from './courseDB';
 import { CardData, DisplayableData, DocType, Tag } from '../../core/types/types-legacy';
 import { prepareNote55 } from '@vue-skuilder/common';
 import { User } from './userDB';
+
 /**
+ * @deprecated Use similar functionality from the dataLayerProvider
  *
  * @param courseID id of the course (quilt) being added to
  * @param codeCourse
@@ -46,6 +48,9 @@ export async function addNote55(
   return result;
 }
 
+/**
+ * @deprecated Use similar functionality from the dataLayerProvider
+ */
 export async function createCards(
   courseID: string,
   datashapeID: PouchDB.Core.DocumentId,
@@ -68,6 +73,9 @@ export async function createCards(
   }
 }
 
+/**
+ * @deprecated Use similar functionality from the dataLayerProvider
+ */
 async function createCard(
   questionViewName: string,
   courseID: string,
@@ -101,6 +109,8 @@ async function createCard(
 }
 
 /**
+ * @deprecated Use similar functionality from the dataLayerProvider
+ *
  * Adds a card to the DB. This function is called
  * as a side effect of adding either a View or
  * DisplayableData item.
@@ -143,6 +153,8 @@ export async function getCredentialledCourseConfig(courseID: string) {
 }
 
 /**
+ @deprecated Use similar functionality from the dataLayerProvider
+
  Assciates a tag with a card.
 
  NB: DB stores tags as separate documents, with a list of card IDs.
@@ -201,6 +213,12 @@ class AlreadyTaggedErr extends Error {
   }
 }
 
+/**
+ * @deprecated Use similar functionality from the dataLayerProvider
+ *
+ * @param tagName
+ * @returns
+ */
 export function getTagID(tagName: string): string {
   const tagPrefix = DocType.TAG.valueOf() + '-';
   if (tagName.indexOf(tagPrefix) === 0) {
@@ -209,7 +227,9 @@ export function getTagID(tagName: string): string {
     return tagPrefix + tagName;
   }
 }
-
+/**
+ * @deprecated Use similar functionality from the dataLayerProvider
+ */
 export function getCourseDB(courseID: string): PouchDB.Database {
   const dbName = `coursedb-${courseID}`;
   return new pouch(
