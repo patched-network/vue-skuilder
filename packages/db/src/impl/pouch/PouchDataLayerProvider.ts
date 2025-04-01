@@ -1,26 +1,37 @@
 // db/src/impl/pouch/PouchDataLayerProvider.ts
 
 import {
+  AdminDBInterface,
+  ClassroomDBInterface,
+  CourseDBInterface,
   DataLayerProvider,
   UserDBInterface,
-  CourseDBInterface,
-  ClassroomDBInterface,
-  AdminDBInterface,
 } from '../../core/interfaces';
-import { PouchUserDB } from './PouchUserDB';
-import { PouchCourseDB } from './PouchCourseDB';
 
 import { AdminDB } from './adminDB';
 import { StudentClassroomDB, TeacherClassroomDB } from './classroomDB';
+import { CourseDB } from './courseDB';
 
 export class PouchDataLayerProvider implements DataLayerProvider {
   private initialized: boolean = false;
-  private currentUserName: string = '';
+  private userDB!: UserDBInterface;
+  private userGetter: (() => Promise<UserDBInterface>) | null = null;
 
-  constructor(private options?: any) {}
+  constructor(private options?: any) {
+    if (options && options.userGetter) {
+      this.userGetter = options.userGetter;
+    }
+    this.initialize();
+  }
 
   async initialize(): Promise<void> {
     if (this.initialized) return;
+
+    if (!this.userGetter) {
+      throw new Error('User getter is not provided');
+    } else {
+      this.userDB = await this.userGetter();
+    }
 
     // Any global PouchDB setup that might be needed
     // This could include registering plugins, etc.
@@ -32,12 +43,12 @@ export class PouchDataLayerProvider implements DataLayerProvider {
     this.initialized = false;
   }
 
-  getUserDB(username: string): UserDBInterface {
-    return new PouchUserDB(username);
+  getUserDB(): UserDBInterface {
+    return this.userDB;
   }
 
   getCourseDB(courseId: string): CourseDBInterface {
-    return new PouchCourseDB(courseId);
+    return new CourseDB(courseId, async () => this.getUserDB());
   }
 
   async getClassroomDB(
@@ -45,7 +56,7 @@ export class PouchDataLayerProvider implements DataLayerProvider {
     type: 'student' | 'teacher'
   ): Promise<ClassroomDBInterface> {
     if (type === 'student') {
-      return await StudentClassroomDB.factory(classId, this.getUserDB(this.currentUserName));
+      return await StudentClassroomDB.factory(classId, this.getUserDB());
     } else {
       return await TeacherClassroomDB.factory(classId);
     }
