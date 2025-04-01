@@ -12,8 +12,10 @@ import {
   getStartAndEndKeys,
   hexEncode,
   pouchDBincludeCredentialsConfig,
+  removeScheduledCardReview,
   REVIEW_PREFIX,
   REVIEW_TIME_FORMAT,
+  scheduleCardReview,
   updateGuestAccountExpirationDate,
 } from './index';
 import UpdateQueue, { Update } from './updateQueue';
@@ -26,6 +28,7 @@ import {
   ScheduledCard,
   UserConfig,
 } from '@/core/types/user';
+import { UserDBInterface } from '@/core';
 
 const log = (s: any) => {
   console.log(s);
@@ -69,7 +72,7 @@ export async function doesUserExist(name: string) {
 /**
  * The current logged-in user
  */
-export class User {
+export class User implements UserDBInterface {
   private static _instance: User;
   private static _initialized: boolean = false;
 
@@ -299,7 +302,12 @@ Currently logged-in as ${this._username}.`
 
   public async getCourseRegDoc(courseID: string) {
     const regDocs = await this.getCourseRegistrationsDoc();
-    return regDocs.courses.find((c) => c.courseID === courseID);
+    const ret = regDocs.courses.find((c) => c.courseID === courseID);
+    if (ret) {
+      return ret;
+    } else {
+      throw new Error(`Course registration not found for course ID: ${courseID}`);
+    }
   }
 
   public async registerForCourse(course_id: string, previewMode: boolean = false) {
@@ -758,6 +766,38 @@ Currently logged-in as ${this._username}.`
     return (await this.getOrCreateClassroomRegistrationsDoc()).registrations
       .filter((c) => c.registeredAs === 'student')
       .map((c) => c.classID);
+  }
+
+  public async scheduleCardReview(review: {
+    user: string;
+    course_id: string;
+    card_id: PouchDB.Core.DocumentId;
+    time: Moment;
+    scheduledFor: ScheduledCard['scheduledFor'];
+    schedulingAgentId: ScheduledCard['schedulingAgentId'];
+  }) {
+    return scheduleCardReview(review);
+  }
+  public async removeScheduledCardReview(reviewId: string): Promise<void> {
+    return removeScheduledCardReview(this._username, reviewId);
+  }
+
+  public async registerForClassroom(
+    classId: string,
+    registerAs: 'student' | 'teacher' | 'aide' | 'admin'
+  ): Promise<PouchDB.Core.Response> {
+    return registerUserForClassroom(this._username, classId, registerAs);
+  }
+
+  public async dropFromClassroom(classId: string): Promise<PouchDB.Core.Response> {
+    return dropUserFromClassroom(this._username, classId);
+  }
+  public async getUserClassrooms(): Promise<ClassroomRegistrationDoc> {
+    return getUserClassrooms(this._username);
+  }
+
+  public async updateUserElo(courseId: string, elo: CourseElo): Promise<PouchDB.Core.Response> {
+    return updateUserElo(this._username, courseId, elo);
   }
 }
 
