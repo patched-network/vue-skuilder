@@ -1,20 +1,14 @@
-import { CourseElo } from '@vue-skuilder/common';
-import { Moment } from 'moment';
 import { CourseRegistration, CourseRegistrationDoc, ScheduledCard } from '@/core/types/user';
-import { UserInstanceInterface } from './user';
-import { UserConfig } from '../types/user';
 import { ClassroomRegistrationDoc } from '@/impl/pouch/userDB';
+import { CourseElo, Status } from '@vue-skuilder/common';
+import { Moment } from 'moment';
 import { CardHistory, CardRecord } from '../types/types-legacy';
+import { UserConfig } from '../types/user';
 
 /**
  * User data and authentication
  */
 export interface UserDBInterface {
-  /**
-   * Check if a user exists
-   */
-  doesUserExist(username: string): Promise<boolean>;
-
   /**
    * Create a new user account
    */
@@ -22,7 +16,7 @@ export interface UserDBInterface {
     username: string,
     password: string
   ): Promise<{
-    status: number;
+    status: Status;
     error: string;
   }>;
 
@@ -46,24 +40,14 @@ export interface UserDBInterface {
   }>;
 
   /**
-   * Get the current user
-   */
-  getCurrentUser(): Promise<UserInstanceInterface>;
-
-  /**
    * Get user configuration
    */
-  getUserConfig(username: string): Promise<UserConfig>;
+  getConfig(): Promise<UserConfig>;
 
   /**
    * Update user configuration
    */
-  updateUserConfig(username: string, config: Partial<UserConfig>): Promise<void>;
-
-  /**
-   * Get card history for a specific card
-   */
-  getCardHistory(courseId: string, cardId: string): Promise<CardHistory<CardRecord>>;
+  setConfig(config: Partial<UserConfig>): Promise<void>;
 
   /**
    * Record a user's interaction with a card
@@ -83,20 +67,12 @@ export interface UserDBInterface {
   /**
    * Register user for a course
    */
-  registerForCourse(
-    username: string,
-    courseId: string,
-    previewMode?: boolean
-  ): Promise<PouchDB.Core.Response>;
+  registerForCourse(courseId: string, previewMode?: boolean): Promise<PouchDB.Core.Response>;
 
   /**
    * Drop a course registration
    */
-  dropCourse(
-    username: string,
-    courseId: string,
-    dropStatus?: string
-  ): Promise<PouchDB.Core.Response>;
+  dropCourse(courseId: string, dropStatus?: string): Promise<PouchDB.Core.Response>;
 
   /**
    * Get user's course registrations
@@ -140,7 +116,6 @@ export interface UserDBInterface {
    * Register user for a classroom
    */
   registerForClassroom(
-    username: string,
     classId: string,
     registerAs: 'student' | 'teacher' | 'aide' | 'admin'
   ): Promise<PouchDB.Core.Response>;
@@ -148,20 +123,20 @@ export interface UserDBInterface {
   /**
    * Drop user from classroom
    */
-  dropFromClassroom(username: string, classId: string): Promise<PouchDB.Core.Response>;
+  dropFromClassroom(classId: string): Promise<PouchDB.Core.Response>;
 
   /**
    * Get user's classroom registrations
    */
-  getUserClassrooms(username: string): Promise<ClassroomRegistrationDoc>;
+  getUserClassrooms(): Promise<ClassroomRegistrationDoc>;
 
   /**
    * Get user's active classes
    */
-  getActiveClasses(username: string): Promise<string[]>;
+  getActiveClasses(): Promise<string[]>;
 
   /**
    * Update user's ELO rating for a course
    */
-  updateUserElo(username: string, courseId: string, elo: CourseElo): Promise<PouchDB.Core.Response>;
+  updateUserElo(courseId: string, elo: CourseElo): Promise<PouchDB.Core.Response>;
 }

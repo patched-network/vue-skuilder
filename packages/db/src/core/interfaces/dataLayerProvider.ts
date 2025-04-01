@@ -12,7 +12,7 @@ export interface DataLayerProvider {
   /**
    * Get the user database interface
    */
-  getUserDB(username: string): UserDBInterface;
+  getUserDB(): UserDBInterface;
 
   /**
    * Get a course database interface

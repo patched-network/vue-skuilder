@@ -1,6 +1,6 @@
+import { UserDBInterface } from '..';
 import { StudentClassroomDB } from '../../impl/pouch/classroomDB';
 import { CourseDB } from '../../impl/pouch/courseDB';
-import { User } from '../../impl/pouch/userDB';
 import { ScheduledCard } from '@/core/types/user';
 
 export type StudySessionFailedItem = StudySessionFailedNewItem | StudySessionFailedReviewItem;
@@ -51,7 +51,7 @@ export interface StudyContentSource {
 
 export async function getStudySource(
   source: ContentSourceID,
-  user: User
+  user: UserDBInterface
 ): Promise<StudyContentSource> {
   if (source.type === 'classroom') {
     return await StudentClassroomDB.factory(source.id, user);
