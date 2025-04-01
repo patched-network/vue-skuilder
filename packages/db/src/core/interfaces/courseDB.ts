@@ -2,6 +2,7 @@ import { CourseConfig, CourseElo, DataShape } from '@vue-skuilder/common';
 import { StudySessionNewItem, StudySessionItem } from './contentSource';
 import { TagStub, Tag } from '../types/types-legacy';
 import { UserDBInterface } from '..';
+import { SkuilderCourseData } from '@vue-skuilder/common/dist/db';
 
 /**
  * Course content and management
@@ -31,6 +32,11 @@ export interface CourseDBInterface {
    * Get course config
    */
   getCourseConfig(): Promise<CourseConfig>;
+
+  getCourseDoc<T extends SkuilderCourseData>(id: string): Promise<T>;
+  getCourseDocs<T extends SkuilderCourseData>(
+    ids: string[]
+  ): Promise<PouchDB.Core.AllDocsWithKeysResponse<{} & T>>;
 
   /**
    * Get cards sorted by ELO rating

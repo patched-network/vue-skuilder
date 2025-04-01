@@ -11,27 +11,18 @@ import {
 } from '@vue-skuilder/common';
 import _ from 'lodash';
 import pouch from 'pouchdb-browser';
-import { filterAllDocsByPrefix, getCourseDB } from '.';
+import { filterAllDocsByPrefix, getCourseDB, getCourseDoc, getCourseDocs } from '.';
 import {
   StudyContentSource,
   StudySessionItem,
   StudySessionNewItem,
   StudySessionReviewItem,
 } from '../../core/interfaces/contentSource';
-import { CardData, DocType, Tag, TagStub } from '../../core/types/types-legacy';
+import { CardData, DocType, SkuilderCourseData, Tag, TagStub } from '../../core/types/types-legacy';
 import { GET_CACHED } from './clientCache';
 import { addNote55, addTagToCard, getCredentialledCourseConfig, getTagID } from './courseAPI';
 
 const courseLookupDBTitle = 'coursedb-lookup';
-
-interface PouchDBError extends Error {
-  error?: string;
-  reason?: string;
-}
-
-export function docIsDeleted(e: PouchDBError): boolean {
-  return Boolean(e?.error === 'not_found' && e?.reason === 'deleted');
-}
 
 const courseLookupDB: PouchDB.Database = new pouch(
   ENV.COUCHDB_SERVER_PROTOCOL + '://' + ENV.COUCHDB_SERVER_URL + courseLookupDBTitle,
@@ -438,6 +429,18 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
     elo: CourseElo = blankCourseElo()
   ): Promise<PouchDB.Core.Response> {
     return await addNote55(this.id, codeCourse, shape, data, author, tags, uploads, elo);
+  }
+
+  async getCourseDoc<T extends SkuilderCourseData>(
+    id: string
+  ): Promise<PouchDB.Core.GetMeta & PouchDB.Core.Document<T>> {
+    return await getCourseDoc(this.id, id);
+  }
+
+  async getCourseDocs<T extends SkuilderCourseData>(
+    ids: string[]
+  ): Promise<PouchDB.Core.AllDocsWithKeysResponse<{} & T>> {
+    return await getCourseDocs(this.id, ids);
   }
 }
 
