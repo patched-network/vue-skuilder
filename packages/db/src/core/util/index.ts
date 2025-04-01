@@ -31,3 +31,12 @@ export function parseCardHistoryID(id: string): {
     throw new Error('parseCardHistory Error:' + error);
   }
 }
+
+interface PouchDBError extends Error {
+  error?: string;
+  reason?: string;
+}
+
+export function docIsDeleted(e: PouchDBError): boolean {
+  return Boolean(e?.error === 'not_found' && e?.reason === 'deleted');
+}
