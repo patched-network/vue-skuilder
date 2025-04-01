@@ -11,6 +11,9 @@ import '@vue-skuilder/common-ui/style';
 // `courses` imports
 import Courses from '@vue-skuilder/courses';
 import '@vue-skuilder/courses/style';
+// `db` import and initialization
+import { initializeDataLayer } from '@vue-skuilder/db';
+import { getCurrentUser } from './stores/useAuthStore';
 
 const pinia = createPinia();
 const app = createApp(App);
@@ -26,3 +29,12 @@ app.use(vuetify);
 app.use(pinia);
 app.use(piniaPlugin, { pinia });
 app.mount('#app');
+
+(async function initializeDb() {
+  await initializeDataLayer({
+    type: 'pouch',
+    options: {
+      userGetter: getCurrentUser,
+    },
+  });
+})();
