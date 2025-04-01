@@ -1,8 +1,9 @@
-import { UserDBInterface } from '@/core';
+import { CourseDBInterface, UserDBInterface } from '@/core';
 import { ScheduledCard } from '@/core/types/user';
 import {
   CourseConfig,
   CourseElo,
+  DataShape,
   ENV,
   EloToNumber,
   blankCourseElo,
@@ -19,7 +20,7 @@ import {
 } from '../../core/interfaces/contentSource';
 import { CardData, DocType, Tag, TagStub } from '../../core/types/types-legacy';
 import { GET_CACHED } from './clientCache';
-import { getCredentialledCourseConfig, getTagID } from './courseAPI';
+import { addNote55, addTagToCard, getCredentialledCourseConfig, getTagID } from './courseAPI';
 
 const courseLookupDBTitle = 'coursedb-lookup';
 
@@ -43,7 +44,7 @@ function randIntWeightedTowardZero(n: number) {
   return Math.floor(Math.random() * Math.random() * Math.random() * n);
 }
 
-export class CourseDB implements StudyContentSource {
+export class CourseDB implements StudyContentSource, CourseDBInterface {
   // private log(msg: string): void {
   //   log(`CourseLog: ${this.id}\n  ${msg}`);
   // }
@@ -326,7 +327,7 @@ export class CourseDB implements StudyContentSource {
     });
   }
 
-  private async getCardsByELO(elo: number, cardLimit?: number) {
+  async getCardsByELO(elo: number, cardLimit?: number) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     elo = parseInt(elo as any);
     const limit = cardLimit ? cardLimit : 25;
@@ -366,6 +367,77 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
     console.log(`Getting ${limit} cards centered around elo: ${elo}:\n\n` + str);
 
     return ret;
+  }
+
+  async getCourseConfig(): Promise<CourseConfig> {
+    const ret = await getCourseConfig(this.id);
+    if (ret) {
+      return ret;
+    } else {
+      throw new Error(`Course config not found for course ID: ${this.id}`);
+    }
+  }
+
+  async updateCardElo(cardId: string, elo: CourseElo) {
+    const ret = await updateCardElo(this.id, cardId, elo);
+    if (ret) {
+      return ret;
+    } else {
+      throw new Error(`Failed to update card elo for card ID: ${cardId}`);
+    }
+  }
+
+  async getAppliedTags(cardId: string): Promise<PouchDB.Query.Response<TagStub>> {
+    const ret = getAppliedTags(this.id, cardId);
+    if (ret) {
+      return ret;
+    } else {
+      throw new Error(`Failed to find tags for card ${this.id}-${cardId}`);
+    }
+  }
+
+  async addTagToCard(
+    cardId: string,
+    tagId: string,
+    updateELO?: boolean
+  ): Promise<PouchDB.Core.Response> {
+    return await addTagToCard(this.id, cardId, tagId, updateELO);
+  }
+
+  async removeTagFromCard(cardId: string, tagId: string): Promise<PouchDB.Core.Response> {
+    return await removeTagFromCard(this.id, cardId, tagId);
+  }
+
+  async createTag(name: string): Promise<PouchDB.Core.Response> {
+    return await createTag(this.id, name);
+  }
+
+  async getTag(tagId: string): Promise<PouchDB.Core.GetMeta & PouchDB.Core.Document<Tag>> {
+    return await getTag(this.id, tagId);
+  }
+
+  async updateTag(tag: Tag): Promise<PouchDB.Core.Response> {
+    if (tag.course !== this.id) {
+      throw new Error(`Tag ${JSON.stringify(tag)} does not belong to course ${this.id}`);
+    }
+
+    return await updateTag(tag);
+  }
+
+  async getCourseTagStubs(): Promise<PouchDB.Core.AllDocsResponse<Tag>> {
+    return getCourseTagStubs(this.id);
+  }
+
+  async addNote(
+    codeCourse: string,
+    shape: DataShape,
+    data: unknown,
+    author: string,
+    tags: string[],
+    uploads?: { [key: string]: PouchDB.Core.FullAttachment },
+    elo: CourseElo = blankCourseElo()
+  ): Promise<PouchDB.Core.Response> {
+    return await addNote55(this.id, codeCourse, shape, data, author, tags, uploads, elo);
   }
 }
 
