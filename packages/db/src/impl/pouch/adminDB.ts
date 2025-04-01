@@ -10,7 +10,7 @@ export class AdminDB {
 
   private constructor() {}
 
-  private async init() {
+  private init() {
     this.usersDB = new pouch(
       ENV.COUCHDB_SERVER_PROTOCOL + '://' + ENV.COUCHDB_SERVER_URL + '_users',
       pouchDBincludeCredentialsConfig
@@ -18,9 +18,9 @@ export class AdminDB {
     return;
   }
 
-  public static async factory(): Promise<AdminDB> {
+  public static factory(): AdminDB {
     const ret = new AdminDB();
-    await ret.init();
+    ret.init();
     return ret;
   }
 
