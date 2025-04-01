@@ -84,7 +84,6 @@ import {
   isReview,
   StudyContentSource,
   StudySessionItem,
-  updateCardElo,
   docIsDeleted,
   CardData,
   CardHistory,
@@ -92,9 +91,8 @@ import {
   DisplayableData,
   isQuestionRecord,
   CourseRegistrationDoc,
-  User,
-  // StudentClassroomDB,
   DataLayerProvider,
+  UserDBInterface,
 } from '@vue-skuilder/db';
 import { SessionController, StudySessionRecord } from '@vue-skuilder/db';
 import { newInterval } from '@vue-skuilder/db';
@@ -143,7 +141,7 @@ export default defineComponent({
       required: true,
     },
     user: {
-      type: Object as PropType<User>,
+      type: Object as PropType<UserDBInterface>,
       required: true,
     },
     dataLayer: {
