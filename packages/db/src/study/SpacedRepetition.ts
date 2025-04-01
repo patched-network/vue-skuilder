@@ -1,4 +1,5 @@
-import { areQuestionRecords, CardHistory, CardRecord, QuestionRecord } from '@/core';
+import { CardHistory, CardRecord, QuestionRecord } from '@/core/types/types-legacy';
+import { areQuestionRecords } from '@/core/util';
 import { User } from '@/pouch';
 import moment from 'moment';
 

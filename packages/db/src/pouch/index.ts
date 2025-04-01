@@ -1,4 +1,4 @@
-import { DocType, SkuilderCourseData, GuestUsername, log } from '../core/types-legacy';
+import { DocType, SkuilderCourseData, GuestUsername, log } from '../core/types/types-legacy';
 import { ENV } from '@vue-skuilder/common';
 // import { getCurrentUser } from '../stores/useAuthStore';
 import moment, { Moment } from 'moment';

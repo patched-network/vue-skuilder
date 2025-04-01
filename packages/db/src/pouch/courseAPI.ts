@@ -6,7 +6,7 @@ import { NameSpacer, ShapeDescriptor } from '@vue-skuilder/common';
 import { CourseConfig, DataShape } from '@vue-skuilder/common';
 import { CourseElo, blankCourseElo, toCourseElo } from '@vue-skuilder/common';
 import { CourseDB, createTag, updateCardElo } from './courseDB';
-import { CardData, DisplayableData, DocType, Tag } from '../core/types-legacy';
+import { CardData, DisplayableData, DocType, Tag } from '../core/types/types-legacy';
 import { prepareNote55 } from '@vue-skuilder/common';
 import { User } from './userDB';
 /**
