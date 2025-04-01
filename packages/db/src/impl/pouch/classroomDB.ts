@@ -16,7 +16,14 @@ import {
 import { CourseDB, getTag } from './courseDB';
 import { User } from './userDB';
 import { ScheduledCard } from '@/core/types/user';
-import { AssignedContent, AssignedCourse, AssignedTag } from '@/core/interfaces/classroomDB';
+import {
+  AssignedContent,
+  AssignedCourse,
+  AssignedTag,
+  StudentClassroomDBInterface,
+  TeacherClassroomDBInterface,
+} from '@/core/interfaces/classroomDB';
+import { UserDBInterface } from '@/core';
 
 const classroomLookupDBTitle = 'classdb-lookup';
 export const CLASSROOM_CONFIG = 'ClassroomConfig';
@@ -70,12 +77,15 @@ abstract class ClassroomDBBase {
   }
 }
 
-export class StudentClassroomDB extends ClassroomDBBase implements StudyContentSource {
+export class StudentClassroomDB
+  extends ClassroomDBBase
+  implements StudyContentSource, StudentClassroomDBInterface
+{
   // private readonly _prefix: string = 'content';
   private userMessages!: PouchDB.Core.Changes<object>;
-  private _user: User;
+  private _user: UserDBInterface;
 
-  private constructor(classID: string, user: User) {
+  private constructor(classID: string, user: UserDBInterface) {
     super();
     this._id = classID;
     this._user = user;
@@ -103,7 +113,7 @@ export class StudentClassroomDB extends ClassroomDBBase implements StudyContentS
     }
   }
 
-  public static async factory(classID: string, user: User): Promise<StudentClassroomDB> {
+  public static async factory(classID: string, user: UserDBInterface): Promise<StudentClassroomDB> {
     const ret = new StudentClassroomDB(classID, user);
     await ret.init();
     return ret;
@@ -185,7 +195,7 @@ export class StudentClassroomDB extends ClassroomDBBase implements StudyContentS
 /**
  * Interface for managing a classroom.
  */
-export class TeacherClassroomDB extends ClassroomDBBase {
+export class TeacherClassroomDB extends ClassroomDBBase implements TeacherClassroomDBInterface {
   private _stuDb!: PouchDB.Database;
 
   private constructor(classID: string) {
