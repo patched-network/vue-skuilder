@@ -1,5 +1,9 @@
-import { ENV } from '@vue-skuilder/common';
-import { ClassroomConfig } from '@vue-skuilder/common';
+import {
+  StudyContentSource,
+  StudySessionNewItem,
+  StudySessionReviewItem,
+} from '@/core/interfaces/contentSource';
+import { ClassroomConfig, ENV } from '@vue-skuilder/common';
 import moment from 'moment';
 import pouch from 'pouchdb-browser';
 import {
@@ -8,14 +12,9 @@ import {
   pouchDBincludeCredentialsConfig,
   REVIEW_TIME_FORMAT,
 } from '.';
-import {
-  StudyContentSource,
-  StudySessionNewItem,
-  StudySessionReviewItem,
-} from '@/core/interfaces/contentSource';
 import { CourseDB, getTag } from './courseDB';
-import { User } from './userDB';
-import { ScheduledCard } from '@/core/types/user';
+
+import { UserDBInterface } from '@/core';
 import {
   AssignedContent,
   AssignedCourse,
@@ -23,7 +22,7 @@ import {
   StudentClassroomDBInterface,
   TeacherClassroomDBInterface,
 } from '@/core/interfaces/classroomDB';
-import { UserDBInterface } from '@/core';
+import { ScheduledCard } from '@/core/types/user';
 
 const classroomLookupDBTitle = 'classdb-lookup';
 export const CLASSROOM_CONFIG = 'ClassroomConfig';
