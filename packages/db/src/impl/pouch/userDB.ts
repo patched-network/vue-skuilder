@@ -70,7 +70,10 @@ export async function doesUserExist(name: string) {
 }
 
 /**
- * The current logged-in user
+ * The current logged-in user, with pouch / couch functionality.
+ *
+ * @package This concrete class should not be directly exported from the `db` package,
+ * but should be created at runtime by the exported dataLayerProviderFactory.
  */
 export class User implements UserDBInterface {
   private static _instance: User;
@@ -88,8 +91,12 @@ export class User implements UserDBInterface {
 
   // private email: string;
   private _username: string;
-  public get username(): string {
+  public getUsername(): string {
     return this._username;
+  }
+
+  public isLoggedIn(): boolean {
+    return !this._username.startsWith(GuestUsername);
   }
 
   private remoteDB!: PouchDB.Database;
@@ -112,7 +119,7 @@ Currently logged-in as ${this._username}.`
         const signupRequest = await remoteCouchRootDB.signUp(username, password);
 
         if (signupRequest.ok) {
-          log(`CREATEACCOUNT: logging out of ${this.username}`);
+          log(`CREATEACCOUNT: logging out of ${this.getUsername()}`);
           const logoutResult = await remoteCouchRootDB.logOut();
           log(`CREATEACCOUNT: logged out: ${logoutResult.ok}`);
           const loginResult = await remoteCouchRootDB.logIn(username, password);
@@ -153,7 +160,7 @@ Currently logged-in as ${this._username}.`
   public async login(username: string, password: string) {
     if (!this._username.startsWith(GuestUsername)) {
       throw new Error(`Cannot change accounts while logged in.
-      Log out of account ${this.username} before logging in as ${username}.`);
+      Log out of account ${this.getUsername()} before logging in as ${username}.`);
     }
 
     const loginResult = await remoteCouchRootDB.logIn(username, password);
@@ -184,7 +191,7 @@ Currently logged-in as ${this._username}.`
   public async getCourseRegistrationsDoc(): Promise<
     CourseRegistrationDoc & PouchDB.Core.IdMeta & PouchDB.Core.GetMeta
   > {
-    console.log(`Fetching courseRegistrations for ${this.username}`);
+    console.log(`Fetching courseRegistrations for ${this.getUsername()}`);
 
     let ret;
 
@@ -372,7 +379,7 @@ Currently logged-in as ${this._username}.`
         doc.courses[index].status = dropStatus;
       } else {
         throw new Error(
-          `User ${this.username} is not currently registered for course ${course_id}`
+          `User ${this.getUsername()} is not currently registered for course ${course_id}`
         );
       }
 
@@ -435,14 +442,14 @@ Currently logged-in as ${this._username}.`
   }
 
   /**
-   * @deprecated
-   * @deprecated
-   * This function should be called *only* by the pinia auth store.
+   *
+   * This function should be called *only* by the pouchdb datalayer provider
+   * auth store.
+   *
    *
    * Anyone else seeking the current user should use the auth store's
    * exported `getCurrentUser` method.
-   * @deprecated
-   * @deprecated
+   *
    */
   public static async instance(username?: string): Promise<User> {
     if (username) {
@@ -611,7 +618,7 @@ Currently logged-in as ${this._username}.`
           streak: 0,
           bestInterval: 0,
         };
-        getUserDB(this.username).put<CardHistory<T>>(initCardHistory);
+        getUserDB(this.getUsername()).put<CardHistory<T>>(initCardHistory);
         return initCardHistory;
       } else {
         throw new Error(`putCardRecord failed because of:

@@ -39,6 +39,10 @@ export interface UserDBInterface {
     ok: boolean;
   }>;
 
+  getUsername(): string;
+
+  isLoggedIn(): boolean;
+
   /**
    * Get user configuration
    */
