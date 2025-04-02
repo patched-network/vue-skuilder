@@ -18,18 +18,25 @@ export interface CoursesDBInterface {
   getCourseList(): Promise<PouchDB.Core.AllDocsResponse<CourseConfig>>;
 }
 
+export interface CourseInfo {
+  cardCount: number;
+  registeredUsers: number;
+}
+
 export interface CourseDBInterface {
   /**
    * Get course config
    */
   getCourseConfig(): Promise<CourseConfig>;
+  getCourseInfo(): Promise<CourseInfo>;
 
   getCourseDoc<T extends SkuilderCourseData>(
     id: string,
     options?: PouchDB.Core.GetOptions
   ): Promise<T>;
   getCourseDocs<T extends SkuilderCourseData>(
-    ids: string[]
+    ids: string[],
+    options?: PouchDB.Core.AllDocsOptions
   ): Promise<PouchDB.Core.AllDocsWithKeysResponse<{} & T>>;
 
   /**

@@ -27,7 +27,7 @@ export async function initializeDataLayer(config: DataLayerConfig): Promise<Data
   // Dynamic import to avoid loading both implementations when only one is needed
   if (config.type === 'pouch') {
     const { PouchDataLayerProvider } = await import('./impl/pouch/PouchDataLayerProvider');
-    dataLayerInstance = new PouchDataLayerProvider(config.options);
+    dataLayerInstance = new PouchDataLayerProvider();
   } else {
     throw new Error('static data layer not implemented');
     // const { StaticDataLayerProvider } = await import('./impl/static/StaticDataLayerProvider');

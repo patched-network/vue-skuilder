@@ -1,4 +1,4 @@
-import { CourseDBInterface, CoursesDBInterface, UserDBInterface } from '@/core';
+import { CourseDBInterface, CourseInfo, CoursesDBInterface, UserDBInterface } from '@/core';
 import { ScheduledCard } from '@/core/types/user';
 import {
   CourseConfig,
@@ -68,6 +68,22 @@ export class CourseDB implements StudyContentSource, CourseDBInterface {
     this.id = id;
     this.db = getCourseDB(this.id);
     this._getCurrentUser = userLookup;
+  }
+
+  public async getCourseInfo(): Promise<CourseInfo> {
+    const cardCount = (
+      await this.db.find({
+        selector: {
+          docType: DocType.CARD,
+        },
+        limit: 1000,
+      })
+    ).docs.length;
+
+    return {
+      cardCount,
+      registeredUsers: 0,
+    };
   }
 
   public async getStudySession(cardLimit: number = 99) {
