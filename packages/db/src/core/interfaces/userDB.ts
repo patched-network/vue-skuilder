@@ -92,7 +92,7 @@ export interface UserDBInterface {
   /**
    * Get user's active courses
    */
-  getActiveCourses(username: string): Promise<CourseRegistration[]>;
+  getActiveCourses(): Promise<CourseRegistration[]>;
 
   /**
    * Get user's pending reviews
@@ -143,4 +143,10 @@ export interface UserDBInterface {
    * Update user's ELO rating for a course
    */
   updateUserElo(courseId: string, elo: CourseElo): Promise<PouchDB.Core.Response>;
+
+  getCourseInterface(courseId: string): Promise<UsrCrsDataInterface>;
+}
+
+export interface UsrCrsDataInterface {
+  getScheduledReviewCount(): Promise<number>;
 }
