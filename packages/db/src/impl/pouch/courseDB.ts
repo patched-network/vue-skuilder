@@ -409,6 +409,26 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
     }
   }
 
+  async updateCourseConfig(cfg: CourseConfig): Promise<PouchDB.Core.Response> {
+    // write both to the course DB:
+    const courseDBResponse = await updateCredentialledCourseConfig(this.id, cfg);
+
+    // and to the coursedb-lookup db:
+    try {
+      const existingConfig = await courseLookupDB.get<CourseConfig>(this.id);
+      const lookupDBResponse = await courseLookupDB.put({
+        ...cfg,
+        _rev: existingConfig._rev,
+        _id: this.id,
+      });
+      return lookupDBResponse;
+    } catch (error) {
+      console.error(`Error updating course config in lookup DB: ${error}`);
+      // Return the courseDB response if lookup DB update fails
+      return courseDBResponse;
+    }
+  }
+
   async updateCardElo(cardId: string, elo: CourseElo) {
     const ret = await updateCardElo(this.id, cardId, elo);
     if (ret) {
