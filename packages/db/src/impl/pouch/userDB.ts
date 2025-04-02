@@ -28,7 +28,8 @@ import {
   ScheduledCard,
   UserConfig,
 } from '@/core/types/user';
-import { UserDBInterface } from '@/core';
+import { UserDBInterface, UsrCrsDataInterface } from '@/core';
+import { UsrCrsData } from './user-course-relDB';
 
 const log = (s: any) => {
   console.log(s);
@@ -100,6 +101,9 @@ export class User implements UserDBInterface {
   }
 
   private remoteDB!: PouchDB.Database;
+  public remote(): PouchDB.Database {
+    return this.remoteDB;
+  }
   private localDB!: PouchDB.Database;
   private updateQueue!: UpdateQueue;
 
@@ -385,6 +389,10 @@ Currently logged-in as ${this._username}.`
 
       return this.localDB.put<CourseRegistrationDoc>(doc);
     });
+  }
+
+  public async getCourseInterface(courseId: string): Promise<UsrCrsDataInterface> {
+    return new UsrCrsData(this, courseId);
   }
 
   public async getUserEditableCourses() {
