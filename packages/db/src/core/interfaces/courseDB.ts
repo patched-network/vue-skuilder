@@ -114,4 +114,13 @@ export interface CourseDBInterface {
     uploads?: { [key: string]: PouchDB.Core.FullAttachment },
     elo?: CourseElo
   ): Promise<PouchDB.Core.Response>;
+
+  getInexperiencedCards(): Promise<
+    {
+      courseId: string;
+      cardId: string;
+      count: number;
+      elo: CourseElo;
+    }[]
+  >;
 }
