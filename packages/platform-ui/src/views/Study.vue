@@ -33,7 +33,7 @@
       v-if="sessionPrepared"
       :content-sources="sessionContentSources"
       :session-time-limit="sessionTimeLimit"
-      :user="user as User"
+      :user="user as UserDBInterface"
       :session-config="studySessionConfig"
       :get-view-component="getViewComponent"
       @session-finished="handleSessionFinished"
@@ -45,7 +45,7 @@
 import { defineComponent } from 'vue';
 import SessionConfiguration from '@/components/Study/SessionConfiguration.vue';
 import { StudySession, type StudySessionConfig } from '@vue-skuilder/common-ui';
-import { ContentSourceID, getCourseList, User } from '@vue-skuilder/db';
+import { ContentSourceID, UserDBInterface, getDataLayer } from '@vue-skuilder/db';
 import { getCurrentUser } from '@/stores/useAuthStore';
 import { Router } from 'vue-router';
 import { CourseConfig } from '@vue-skuilder/common';
@@ -100,7 +100,7 @@ export default defineComponent({
 
   data() {
     return {
-      user: null as User | null,
+      user: null as UserDBInterface | null,
       studySessionConfig: undefined as StudySessionConfig | undefined,
       previewCourseConfig: undefined as CourseConfig | undefined,
       previewMode: false,
@@ -123,7 +123,7 @@ export default defineComponent({
 
     if (this.randomPreview) {
       const userCourseRegDoc = await this.user.getCourseRegistrationsDoc();
-      const allCourses = (await getCourseList()).rows.map((r) => r.id);
+      const allCourses = (await getDataLayer().getCoursesDB().getCourseList()).rows.map((r) => r.id);
       const unRegisteredCourses = allCourses.filter((c) => {
         return !userCourseRegDoc.courses.some((rc) => rc.courseID === c);
       });
@@ -136,14 +136,17 @@ export default defineComponent({
 
     if (this.previewCourseID) {
       this.previewMode = true;
-      getCourseList().then((courses) => {
-        courses.rows.forEach((c) => {
-          if (c.id === this.previewCourseID) {
-            this.previewCourseConfig = c.doc!;
-            this.previewCourseConfig!.courseID = c.id;
-          }
+      getDataLayer()
+        .getCoursesDB()
+        .getCourseList()
+        .then((courses) => {
+          courses.rows.forEach((c) => {
+            if (c.id === this.previewCourseID) {
+              this.previewCourseConfig = c.doc!;
+              this.previewCourseConfig!.courseID = c.id;
+            }
+          });
         });
-      });
 
       console.log(`[Study] COURSE PREVIEW MODE FOR ${this.previewCourseID}`);
       await this.user!.registerForCourse(this.previewCourseID, true);

@@ -62,7 +62,7 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import { AdminDB } from '@vue-skuilder/db';
+import { AdminDBInterface, getDataLayer } from '@vue-skuilder/db';
 import { GuestUsername } from '@vue-skuilder/db';
 interface User {
   _id: string;
@@ -87,7 +87,7 @@ export default defineComponent({
   data() {
     return {
       title: 'Admin Panel',
-      db: null as AdminDB | null,
+      db: null as AdminDBInterface | null,
       users: [] as User[],
       courses: [] as Course[],
       classrooms: [] as Classroom[],
@@ -104,7 +104,7 @@ export default defineComponent({
 
   async created() {
     try {
-      this.db = await AdminDB.factory();
+      this.db = await getDataLayer().getAdminDB();
       this.users = (await this.db.getUsers()) as unknown as User[];
       this.courses = (await this.db.getCourses()) as unknown as Course[];
       this.classrooms = await this.db.getClassrooms();

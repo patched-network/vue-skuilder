@@ -87,7 +87,7 @@ import _ from 'lodash';
 import serverRequest from '../server';
 import { ServerRequestType, CourseConfig } from '@vue-skuilder/common';
 import { alertUser } from '@vue-skuilder/common-ui';
-import { getCourseList, User } from '@vue-skuilder/db';
+import { UserDBInterface, getDataLayer } from '@vue-skuilder/db';
 import { getCurrentUser } from '@/stores/useAuthStore';
 
 type DBCourseConfig = CourseConfig & PouchDB.Core.IdMeta;
@@ -107,7 +107,7 @@ export default defineComponent({
       awaitingCreateCourse: false,
       spinnerMap: {} as { [key: string]: boolean },
       newCourseDialog: false,
-      user: null as User | null,
+      user: null as UserDBInterface | null,
       myQuiltsPanel: 0, // Controls expansion panel
       showAllCourses: false,
       coursesPerPage: 8,
@@ -117,7 +117,7 @@ export default defineComponent({
   computed: {
     availableCourses(): DBCourseConfig[] {
       const availableCourses = _.without(this.existingCourses, ...this.registeredCourses);
-      const user = this.user?.username;
+      const user = this.user?.getUsername();
 
       const viewableCourses = availableCourses.filter((course) => {
         if (!user) {
@@ -174,14 +174,14 @@ export default defineComponent({
 
     async refreshData(): Promise<void> {
       console.log(`Pulling user course data...`);
-      const userCourseIDs = (await this.user!.getRegisteredCourses())
+      const userCourseIDs = (await this.user!.getCourseRegistrationsDoc()).courses
         .filter((c) => {
           return c.status === 'active' || c.status === 'maintenance-mode' || c.status === undefined;
         })
         .map((c) => {
           return c.courseID;
         });
-      const courseList = await getCourseList();
+      const courseList = await getDataLayer().getCoursesDB().getCourseList();
 
       this.existingCourses = courseList.rows
         .filter((course) => {
@@ -215,13 +215,13 @@ export default defineComponent({
           description: 'All of these courses will be the same!',
           public: true,
           deleted: false,
-          creator: this.user!.username,
-          admins: [this.user!.username],
+          creator: this.user!.getUsername(),
+          admins: [this.user!.getUsername()],
           moderators: [],
           dataShapes: [],
           questionTypes: [],
         },
-        user: this.user!.username,
+        user: this.user!.getUsername(),
         response: null,
       });
 
