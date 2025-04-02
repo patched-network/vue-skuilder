@@ -16,6 +16,8 @@ export interface CoursesDBInterface {
    * Get a list of all courses
    */
   getCourseList(): Promise<PouchDB.Core.AllDocsResponse<CourseConfig>>;
+
+  disambiguateCourse(courseId: string, disambiguator: string): Promise<void>;
 }
 
 export interface CourseInfo {

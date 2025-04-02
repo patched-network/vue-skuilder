@@ -49,6 +49,10 @@ export class CoursesDB implements CoursesDBInterface {
       throw new Error(`Course config not found for course ID: ${courseId}`);
     }
   }
+
+  public async disambiguateCourse(courseId: string, disambiguator: string): Promise<void> {
+    return await disambiguateCourse(courseId, disambiguator);
+  }
 }
 
 function randIntWeightedTowardZero(n: number) {
