@@ -24,9 +24,7 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 import { log } from '@vue-skuilder/common';
-import { getCourseDB } from '@vue-skuilder/db';
-import { getCourseConfig } from '@vue-skuilder/db';
-import { DocType } from '@vue-skuilder/db';
+import { getDataLayer } from '@vue-skuilder/db';
 import { CourseConfig } from '@vue-skuilder/common';
 import { useRouter } from 'vue-router';
 import { getCurrentUser } from '@/stores/useAuthStore';
@@ -54,17 +52,10 @@ export default defineComponent({
 
   async created() {
     try {
-      const db = await getCourseDB(this._id);
-      this.courseConfig = (await getCourseConfig(this._id))!;
+      const db = getDataLayer().getCourseDB(this._id);
+      this.courseConfig = (await db.getCourseConfig())!;
       this.isPrivate = !this.courseConfig.public;
-      this.questionCount = (
-        await db.find({
-          limit: 1000,
-          selector: {
-            docType: DocType.CARD,
-          },
-        })
-      ).docs.length;
+      this.questionCount = (await db.getCourseInfo()).cardCount;
       this.updatePending = false;
     } catch (e) {
       console.error(`Error loading course ${this._id}: ${e}`);

@@ -61,7 +61,7 @@ import { defineComponent, PropType } from 'vue';
 import { MidiConfig } from '@vue-skuilder/courses';
 import CourseCardBrowser from './CourseCardBrowser.vue';
 import { log } from '@vue-skuilder/common';
-import { CourseDB, getCourseConfig, getCourseTagStubs, Tag, User } from '@vue-skuilder/db';
+import { CourseDBInterface, Tag, UserDBInterface, getDataLayer } from '@vue-skuilder/db';
 import { CourseConfig } from '@vue-skuilder/common';
 import { getCurrentUser } from '@/stores/useAuthStore';
 
@@ -82,7 +82,7 @@ export default defineComponent({
 
   data() {
     return {
-      courseDB: null as CourseDB | null,
+      courseDB: null as CourseDBInterface | null,
       nameRules: [
         (value: string): string | boolean => {
           const max = 30;
@@ -93,7 +93,7 @@ export default defineComponent({
       courseCongig: {} as CourseConfig,
       userIsRegistered: false,
       tags: [] as Tag[],
-      user: null as User | null,
+      user: null as UserDBInterface | null,
     };
   },
 
@@ -104,7 +104,7 @@ export default defineComponent({
   },
 
   async created() {
-    this.courseDB = new CourseDB(this._id, getCurrentUser);
+    this.courseDB = getDataLayer().getCourseDB(this._id);
     this.user = await getCurrentUser();
 
     const userCourses = await this.user.getCourseRegistrationsDoc();
@@ -113,8 +113,8 @@ export default defineComponent({
         return c.courseID === this._id && (c.status === 'active' || c.status === undefined);
       }).length === 1;
 
-    this.courseCongig = (await getCourseConfig(this._id))!;
-    this.tags = (await getCourseTagStubs(this._id)).rows.map((r) => r.doc!);
+    this.courseCongig = (await this.courseDB!.getCourseConfig())!;
+    this.tags = (await this.courseDB!.getCourseTagStubs()).rows.map((r) => r.doc!);
     this.updatePending = false;
   },
 

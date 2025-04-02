@@ -34,7 +34,7 @@ import Courses from '@vue-skuilder/courses';
 import { BlanksCard, BlanksCardDataShapes } from '@vue-skuilder/courses';
 import { CourseConfig, NameSpacer, DataShape } from '@vue-skuilder/common';
 import DataInputForm from './ViewableDataInputForm/DataInputForm.vue';
-import { getCredentialledCourseConfig } from '@vue-skuilder/db';
+import { getDataLayer } from '@vue-skuilder/db';
 import { useDataInputFormStore } from '@/stores/useDataInputFormStore';
 
 export default defineComponent({
@@ -79,7 +79,7 @@ export default defineComponent({
   },
 
   async created() {
-    this.courseConfig = await getCredentialledCourseConfig(this.course);
+    this.courseConfig = await getDataLayer().getCoursesDB().getCourseConfig(this.course);
 
     // for testing getCourseTagStubs...
     // log(JSON.stringify(await getCourseTagStubs(this.course)));

@@ -44,7 +44,7 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import { disambiguateCourse, getCachedCourseList } from '@vue-skuilder/db';
+import { getDataLayer } from '@vue-skuilder/db';
 import { CourseConfig } from '@vue-skuilder/common';
 import CourseEditor from './CourseEditor.vue';
 import CourseInformation from './CourseInformation.vue';
@@ -75,14 +75,14 @@ export default defineComponent({
   },
 
   async created() {
-    this.courseList = await getCachedCourseList();
+    this.courseList = await getDataLayer().getCoursesDB().getCourseList();
     this.loadQuery();
   },
 
   methods: {
     update(c: CourseConfig) {
       if (c.courseID && c.disambiguator) {
-        disambiguateCourse(c.courseID, c.disambiguator);
+        getDataLayer().getCoursesDB().disambiguateCourse(c.courseID, c.disambiguator);
       } else {
         // todo: indicate error on input box
       }

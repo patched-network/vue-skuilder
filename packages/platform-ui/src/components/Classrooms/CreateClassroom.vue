@@ -45,7 +45,6 @@
 import moment from 'moment';
 import Mousetrap from 'mousetrap';
 import { log } from '@vue-skuilder/common';
-import { registerUserForClassroom } from '@vue-skuilder/db';
 import { Status, ClassroomConfig, CreateClassroom, ServerRequestType } from '@vue-skuilder/common';
 import serverRequest from '../../server';
 import { alertUser } from '@vue-skuilder/common-ui';
@@ -111,7 +110,7 @@ export default defineComponent({
 
       const config: ClassroomConfig = {
         name: this.name,
-        teachers: [u.username],
+        teachers: [u.getUsername()],
         students: [],
         birthYear: this.birthYear,
         classMeetingSchedule: '',
@@ -126,7 +125,7 @@ export default defineComponent({
         data: config,
         type: ServerRequestType.CREATE_CLASSROOM,
         response: null,
-        user: u.username,
+        user: u.getUsername(),
       });
 
       if (result.response && result.response.ok) {
@@ -135,7 +134,7 @@ export default defineComponent({
           status: Status.ok,
         });
 
-        registerUserForClassroom(u.username, result.response.uuid, 'teacher');
+        u.registerForClassroom(result.response.uuid, 'teacher');
       } else {
         alertUser({
           text: `Failed to create class. Please try again.`,

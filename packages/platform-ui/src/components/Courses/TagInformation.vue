@@ -63,7 +63,7 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import { getCredentialledCourseConfig, getTag, updateTag, DocType, Tag } from '@vue-skuilder/db';
+import { DocType, Tag, getDataLayer, CourseDBInterface } from '@vue-skuilder/db';
 import { Status, CourseConfig } from '@vue-skuilder/common';
 import CourseCardBrowser from './CourseCardBrowser.vue';
 import { alertUser } from '@vue-skuilder/common-ui';
@@ -96,6 +96,8 @@ export default defineComponent({
       editingWiki: false,
       wikiSaving: false,
 
+      courseDB: null as CourseDBInterface | null,
+
       tag: {
         course: this._courseId,
         name: this._id,
@@ -121,10 +123,11 @@ export default defineComponent({
   },
 
   async created() {
-    this.tag = await getTag(this._courseId, this._id);
+    this.courseDB = getDataLayer().getCourseDB(this._courseId);
+    this.tag = await this.courseDB.getTag(this._id);
     this.snippetModel = this.tag.snippet;
     this.wikiModel = this.tag.wiki;
-    this.course = await getCredentialledCourseConfig(this._courseId);
+    this.course = await this.courseDB.getCourseConfig();
   },
 
   methods: {
@@ -143,7 +146,7 @@ export default defineComponent({
     async saveSnippet() {
       this.snippetSaving = true;
 
-      const update = await updateTag({
+      const update = await this.courseDB!.updateTag({
         ...this.tag,
         snippet: this.snippetModel,
       });
@@ -169,7 +172,7 @@ export default defineComponent({
     async saveWiki() {
       this.wikiSaving = true;
 
-      const update = await updateTag({
+      const update = await this.courseDB!.updateTag({
         ...this.tag,
         wiki: this.wikiModel,
       });

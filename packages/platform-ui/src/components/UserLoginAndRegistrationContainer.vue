@@ -42,7 +42,7 @@ const userReady = computed(() => authStore.onLoadComplete);
 
 const guestMode = computed(() => {
   if (authStore._user) {
-    return authStore._user.username.startsWith(GuestUsername);
+    return authStore._user.getUsername().startsWith(GuestUsername);
   }
   return !authStore.loginAndRegistration.loggedIn;
 });

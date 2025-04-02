@@ -108,22 +108,10 @@ import { displayableDataToViewData } from '@vue-skuilder/common';
 import TagsInput from '@/components/Edit/TagsInput.vue';
 import { PaginatingToolbar, ViewComponent, CardLoader } from '@vue-skuilder/common-ui';
 import Courses from '@vue-skuilder/courses';
-import {
-  getCourseDB,
-  getCourseDoc,
-  getCourseDocs,
-  CourseDB,
-  getTag,
-  removeTagFromCard,
-  CardData,
-  DisplayableData,
-  DocType,
-  Tag,
-} from '@vue-skuilder/db';
+import { getDataLayer, CourseDBInterface, CardData, DisplayableData, Tag } from '@vue-skuilder/db';
 import { defineComponent } from 'vue';
 import { alertUser } from '@vue-skuilder/common-ui';
 import { Status } from '@vue-skuilder/common';
-import { getCurrentUser } from '@/stores/useAuthStore';
 
 function isConstructor(obj: unknown) {
   try {
@@ -159,7 +147,7 @@ export default defineComponent({
 
   data() {
     return {
-      courseDB: null as CourseDB | null,
+      courseDB: null as CourseDBInterface | null,
       page: 1,
       pages: [] as number[],
       cards: [] as { id: string; isOpen: boolean; delBtn: boolean }[],
@@ -176,19 +164,12 @@ export default defineComponent({
   },
 
   async created() {
-    this.courseDB = new CourseDB(this._id, getCurrentUser);
+    this.courseDB = getDataLayer().getCourseDB(this._id);
 
     if (this._tag) {
-      this.questionCount = (await getTag(this._id, this._tag)).taggedCards.length;
+      this.questionCount = (await this.courseDB.getTag(this._tag)).taggedCards.length;
     } else {
-      this.questionCount = (
-        await getCourseDB(this._id).find({
-          selector: {
-            docType: DocType.CARD,
-          },
-          limit: 1000,
-        })
-      ).docs.length;
+      this.questionCount = await this.courseDB!.getCourseInfo().cardCount;
     }
 
     for (let i = 1; (i - 1) * 25 < this.questionCount; i++) {
@@ -244,19 +225,12 @@ export default defineComponent({
     },
     async populateTableData() {
       if (this._tag) {
-        const tag = await getTag(this._id, this._tag);
+        const tag = await this.courseDB!.getTag(this._tag);
         this.cards = tag.taggedCards.map((c) => {
           return { id: `${this._id}-${c}`, isOpen: false, delBtn: false };
         });
       } else {
-        this.cards = (
-          await this.courseDB!.getCardsByEloLimits({
-            low: 0,
-            high: Number.MAX_SAFE_INTEGER,
-            limit: 25,
-            page: this.page - 1,
-          })
-        ).map((c) => {
+        this.cards = (await this.courseDB!.getCardsByELO(0, 25)).map((c) => {
           return {
             id: c,
             isOpen: false,
@@ -267,8 +241,7 @@ export default defineComponent({
 
       const toRemove: string[] = [];
       const hydratedCardData = (
-        await getCourseDocs<CardData>(
-          this._id,
+        await this.courseDB!.getCourseDocs<CardData>(
           this.cards.map((c) => c.id.split('-')[1]),
           {
             include_docs: true,
@@ -282,7 +255,7 @@ export default defineComponent({
             console.error(`Card ${r.id} not found`);
             toRemove.push(r.id);
             if (this._tag) {
-              removeTagFromCard(this._id, r.id, this._tag);
+              this.courseDB!.removeTagFromCard(r.id, this._tag);
             }
             return false;
           }
@@ -298,7 +271,6 @@ export default defineComponent({
       });
 
       this.cards.forEach(async (c) => {
-        const _courseID: string = c.id.split('-')[0];
         const _cardID: string = c.id.split('-')[1];
 
         const tmpCardData = hydratedCardData.find((c) => c._id == _cardID);
@@ -309,7 +281,7 @@ export default defineComponent({
         const tmpView: ViewComponent = Courses.getView(tmpCardData.id_view || 'default.question.BlanksCard.FillInView');
 
         const tmpDataDocs = tmpCardData.id_displayable_data.map((id) => {
-          return getCourseDoc<DisplayableData>(_courseID, id, {
+          return this.courseDB!.getCourseDoc<DisplayableData>(id, {
             attachments: false,
             binary: true,
           });
