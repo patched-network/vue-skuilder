@@ -1,4 +1,4 @@
-import { CourseDBInterface, UserDBInterface } from '@/core';
+import { CourseDBInterface, CoursesDBInterface, UserDBInterface } from '@/core';
 import { ScheduledCard } from '@/core/types/user';
 import {
   CourseConfig,
@@ -30,6 +30,26 @@ const courseLookupDB: PouchDB.Database = new pouch(
     skip_setup: true,
   }
 );
+
+export class CoursesDB implements CoursesDBInterface {
+  public async getCourseList(): Promise<PouchDB.Core.AllDocsResponse<CourseConfig>> {
+    return courseLookupDB.allDocs<CourseConfig>({
+      include_docs: true,
+    });
+  }
+
+  async getCourseConfig(courseId: string): Promise<CourseConfig> {
+    const config = await getCourseConfigs([courseId]);
+    const first = config.rows[0];
+    if (!first) {
+      throw new Error(`Course config not found for course ID: ${courseId}`);
+    } else if (isSuccessRow(first)) {
+      return first.doc!;
+    } else {
+      throw new Error(`Course config not found for course ID: ${courseId}`);
+    }
+  }
+}
 
 function randIntWeightedTowardZero(n: number) {
   return Math.floor(Math.random() * Math.random() * Math.random() * n);

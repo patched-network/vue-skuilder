@@ -1,7 +1,7 @@
 // db/src/core/interfaces.ts
 
 import { UserDBInterface } from './userDB';
-import { CourseDBInterface } from './courseDB';
+import { CourseDBInterface, CoursesDBInterface } from './courseDB';
 import { ClassroomDBInterface } from './classroomDB';
 import { AdminDBInterface } from './adminDB';
 
@@ -18,6 +18,11 @@ export interface DataLayerProvider {
    * Get a course database interface
    */
   getCourseDB(courseId: string): CourseDBInterface;
+
+  /**
+   * Get the courses-lookup interface
+   */
+  getCoursesDB(): CoursesDBInterface;
 
   /**
    * Get a classroom database interface

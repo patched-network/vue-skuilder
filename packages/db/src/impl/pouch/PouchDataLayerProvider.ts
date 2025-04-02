@@ -8,33 +8,35 @@ import {
   UserDBInterface,
 } from '../../core/interfaces';
 
+import { getLoggedInUsername } from './auth';
+
 import { AdminDB } from './adminDB';
 import { StudentClassroomDB, TeacherClassroomDB } from './classroomDB';
-import { CourseDB } from './courseDB';
+import { CourseDB, CoursesDB } from './courseDB';
+
+import { User } from './userDB';
+import { CoursesDBInterface } from '../../../dist';
 
 export class PouchDataLayerProvider implements DataLayerProvider {
   private initialized: boolean = false;
   private userDB!: UserDBInterface;
-  private userGetter: (() => Promise<UserDBInterface>) | null = null;
+  private currentUsername: string = '';
 
-  constructor(private options?: any) {
-    if (options && options.userGetter) {
-      this.userGetter = options.userGetter;
-    }
+  constructor() {
     this.initialize();
   }
 
   async initialize(): Promise<void> {
     if (this.initialized) return;
 
-    if (!this.userGetter) {
-      throw new Error('User getter is not provided');
-    } else {
-      this.userDB = await this.userGetter();
+    // Get the current username from session
+    this.currentUsername = await getLoggedInUsername();
+
+    // Create the user db instance
+    if (this.currentUsername) {
+      this.userDB = await User.instance(this.currentUsername);
     }
 
-    // Any global PouchDB setup that might be needed
-    // This could include registering plugins, etc.
     this.initialized = true;
   }
 
@@ -49,6 +51,10 @@ export class PouchDataLayerProvider implements DataLayerProvider {
 
   getCourseDB(courseId: string): CourseDBInterface {
     return new CourseDB(courseId, async () => this.getUserDB());
+  }
+
+  getCoursesDB(): CoursesDBInterface {
+    return new CoursesDB();
   }
 
   async getClassroomDB(

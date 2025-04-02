@@ -1,7 +1,6 @@
 import { CourseConfig, CourseElo, DataShape } from '@vue-skuilder/common';
 import { StudySessionNewItem, StudySessionItem } from './contentSource';
 import { TagStub, Tag } from '../types/types-legacy';
-import { UserDBInterface } from '..';
 import { SkuilderCourseData } from '@vue-skuilder/common/dist/db';
 
 /**
@@ -17,14 +16,6 @@ export interface CoursesDBInterface {
    * Get a list of all courses
    */
   getCourseList(): Promise<PouchDB.Core.AllDocsResponse<CourseConfig>>;
-
-  /**
-   * Get course database interface
-   */
-  getCourseDB(
-    courseId: string,
-    userLookup: () => Promise<UserDBInterface>
-  ): Promise<CourseDBInterface>;
 }
 
 export interface CourseDBInterface {
