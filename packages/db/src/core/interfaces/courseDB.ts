@@ -30,6 +30,12 @@ export interface CourseDBInterface {
    * Get course config
    */
   getCourseConfig(): Promise<CourseConfig>;
+
+  /**
+   * Set course config
+   */
+  updateCourseConfig(cfg: CourseConfig): Promise<PouchDB.Core.Response>;
+
   getCourseInfo(): Promise<CourseInfo>;
 
   getCourseDoc<T extends SkuilderCourseData>(
