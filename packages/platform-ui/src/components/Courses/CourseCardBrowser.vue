@@ -297,7 +297,7 @@ export default defineComponent({
             // see PR #510
             if (isConstructor(tmpView)) {
               const view = new tmpView();
-              (view as any).data = tmpData;
+              view.data = tmpData;
 
               this.cardPreview[c.id] = view.toString();
             } else {
