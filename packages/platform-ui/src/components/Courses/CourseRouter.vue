@@ -97,7 +97,7 @@ export default defineComponent({
       }
 
       this.candidates = this.courseList.filter((c) => {
-        const snakedName = c.name.replace(' ', '_').toLowerCase();
+        const snakedName = c.name.replaceAll(' ', '_').toLowerCase();
         return query === snakedName || query === c.courseID || query === `${snakedName}_(${c.disambiguator})`;
       });
 

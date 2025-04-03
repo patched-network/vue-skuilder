@@ -13,7 +13,9 @@
     </v-card-text>
 
     <v-card-actions>
-      <v-btn color="primary" @click="routeToCourse">More Info</v-btn>
+      <router-link :to="`/q/${courseConfig.name.replaceAll(' ', '_')}`" style="text-decoration: none">
+        <v-btn color="primary">More Info</v-btn>
+      </router-link>
       <v-btn data-cy="register-course-button" :loading="addingCourse" color="primary" @click="registerForCourse">
         Register
       </v-btn>
@@ -63,10 +65,6 @@ export default defineComponent({
   },
 
   methods: {
-    routeToCourse() {
-      useRouter().push(`/q/${this.courseConfig!.name.replace(' ', '_')}`);
-    },
-
     async registerForCourse() {
       this.addingCourse = true;
       log(`Attempting to register for ${this._id}.`);
