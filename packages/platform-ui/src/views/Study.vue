@@ -35,6 +35,7 @@
       :session-time-limit="sessionTimeLimit"
       :user="user as UserDBInterface"
       :session-config="studySessionConfig"
+      :data-layer="dataLayer"
       :get-view-component="getViewComponent"
       @session-finished="handleSessionFinished"
     />
@@ -110,6 +111,7 @@ export default defineComponent({
       sessionContentSources: [] as ContentSourceID[],
       dataInputFormStore: useDataInputFormStore(),
       getViewComponent: (view_id: string) => Courses.getView(view_id),
+      dataLayer: getDataLayer(),
     };
   },
 
