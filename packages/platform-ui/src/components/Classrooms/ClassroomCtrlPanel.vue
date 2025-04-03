@@ -1,16 +1,16 @@
 <template>
   <div v-if="!updatePending">
-    <h1><router-link to="/classrooms">My Classrooms</router-link> / {{ classroomCfg.name }}</h1>
+    <h1><router-link to="/classrooms">My Classrooms</router-link> / {{ classroomCfg!.name }}</h1>
 
     <h3>
-      Join code: {{ classroomCfg.joinCode }}
+      Join code: {{ classroomCfg!.joinCode }}
       <router-link :to="`/classrooms/${classroomId}/code`">
         <v-btn size="x-small" icon="mdi-fullscreen" color="accent" alt="Make Fullscreen"> </v-btn>
       </router-link>
     </h3>
     <v-row>
       <v-col cols="12" sm="6" md="4">
-        <v-checkbox v-model="classroomCfg.peerAssist" label="Allow peer instruction" :model-value="true"></v-checkbox>
+        <v-checkbox v-model="classroomCfg!.peerAssist" label="Allow peer instruction"></v-checkbox>
       </v-col>
       <v-col v-if="classroomDB" cols="12">
         <h2>Assigned Content:</h2>
@@ -148,8 +148,7 @@ export default defineComponent({
       console.log(`[ClassroomCtrlPanel] Config: ${JSON.stringify(this.classroomCfg)}`);
 
       // Get course list from data layer
-      const courseResponse = await getDataLayer().getCoursesDB().getCourseList();
-      this.availableCourses = courseResponse.rows.map((r) => r.doc!);
+      this.availableCourses = await getDataLayer().getCoursesDB().getCourseList();
 
       this.updatePending = false;
     } catch (error) {
