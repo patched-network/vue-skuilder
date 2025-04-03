@@ -1,4 +1,3 @@
-import { CourseRegistration, CourseRegistrationDoc, ScheduledCard } from '@/core/types/user';
 import {
   ActivityRecord,
   CourseRegistration,
@@ -10,11 +9,12 @@ import { CourseElo, Status } from '@vue-skuilder/common';
 import { Moment } from 'moment';
 import { CardHistory, CardRecord } from '../types/types-legacy';
 import { UserConfig } from '../types/user';
+import { DocumentUpdater } from '@/study';
 
 /**
  * User data and authentication
  */
-export interface UserDBInterface {
+export interface UserDBInterface extends DocumentUpdater {
   /**
    * Create a new user account
    */

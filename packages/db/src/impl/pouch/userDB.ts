@@ -30,6 +30,7 @@ import {
 } from '@/core/types/user';
 import { UserDBInterface, UsrCrsDataInterface } from '@/core';
 import { UsrCrsData } from './user-course-relDB';
+import { DocumentUpdater } from '@/study';
 
 const log = (s: any) => {
   console.log(s);
@@ -76,7 +77,7 @@ export async function doesUserExist(name: string) {
  * @package This concrete class should not be directly exported from the `db` package,
  * but should be created at runtime by the exported dataLayerProviderFactory.
  */
-export class User implements UserDBInterface {
+export class User implements UserDBInterface, DocumentUpdater {
   private static _instance: User;
   private static _initialized: boolean = false;
 
