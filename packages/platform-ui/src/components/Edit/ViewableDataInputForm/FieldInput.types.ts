@@ -1,6 +1,4 @@
-import { ValidationResult } from '../../../base-course/Interfaces/ValidationResult';
-import { ValidatingFunction } from '../../../base-course/Interfaces/ValidatingFunction';
-import { CourseElo } from '@vue-skuilder/common';
+import { CourseElo, ValidatingFunction, ValidationResult } from '@vue-skuilder/common';
 import { ComponentPublicInstance } from 'vue';
 
 export interface FieldInputInterface {
@@ -26,8 +24,8 @@ export function isFieldInput(component: unknown): component is FieldInputInstanc
     typeof component === 'object' &&
     'clearData' in component &&
     'validate' in component &&
-    typeof (component as any).clearData === 'function' &&
-    typeof (component as any).validate === 'function'
+    typeof (component as Record<string, unknown>).clearData === 'function' &&
+    typeof (component as Record<string, unknown>).validate === 'function'
   );
 }
 
