@@ -4,7 +4,7 @@
 
     <h3>
       Join code: {{ classroomCfg.joinCode }}
-      <router-link :to="`/classrooms/${_id}/code`">
+      <router-link :to="`/classrooms/${classroomId}/code`">
         <v-btn size="x-small" icon="mdi-fullscreen" color="accent" alt="Make Fullscreen"> </v-btn>
       </router-link>
     </h3>
@@ -85,7 +85,7 @@ export default defineComponent({
   name: 'ClassroomCtrlPanel',
 
   props: {
-    _id: {
+    classroomId: {
       type: String,
       required: true,
     },
@@ -137,11 +137,14 @@ export default defineComponent({
   async created() {
     try {
       // Get classroom DB from data layer
-      this.classroomDB = (await getDataLayer().getClassroomDB(this._id, 'teacher')) as TeacherClassroomDBInterface;
+      this.classroomDB = (await getDataLayer().getClassroomDB(
+        this.classroomId,
+        'teacher'
+      )) as TeacherClassroomDBInterface;
       this.assignedContent = await this.classroomDB.getAssignedContent();
       this.classroomCfg = this.classroomDB.getConfig();
 
-      console.log(`[ClassroomCtrlPanel] Route loaded w/ (prop) _id: ${this._id}`);
+      console.log(`[ClassroomCtrlPanel] Route loaded w/ (prop) _id: ${this.classroomId}`);
       console.log(`[ClassroomCtrlPanel] Config: ${JSON.stringify(this.classroomCfg)}`);
 
       // Get course list from data layer
