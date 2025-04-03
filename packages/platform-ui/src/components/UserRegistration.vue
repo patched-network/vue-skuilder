@@ -70,6 +70,8 @@ import { getCurrentUser, useAuthStore } from '@/stores/useAuthStore';
 export default defineComponent({
   name: 'UserRegistration',
 
+  emits: ['toggle'],
+
   data() {
     return {
       username: '',

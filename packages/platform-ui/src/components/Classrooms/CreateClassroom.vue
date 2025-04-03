@@ -52,6 +52,8 @@ import { defineComponent } from 'vue';
 import { getCurrentUser } from '@/stores/useAuthStore';
 
 export default defineComponent({
+  emits: ['ClassroomEditingComplete'],
+
   data() {
     return {
       mousetrap: new Mousetrap(this.$el),
