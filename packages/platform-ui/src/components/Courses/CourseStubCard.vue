@@ -33,7 +33,7 @@ export default defineComponent({
   name: 'CourseStubCard',
 
   props: {
-    _id: {
+    courseId: {
       type: String,
       required: true,
     },
@@ -52,21 +52,21 @@ export default defineComponent({
 
   async created() {
     try {
-      const db = getDataLayer().getCourseDB(this._id);
+      const db = getDataLayer().getCourseDB(this.courseId);
       this.courseConfig = (await db.getCourseConfig())!;
       this.isPrivate = !this.courseConfig.public;
       this.questionCount = (await db.getCourseInfo()).cardCount;
       this.updatePending = false;
     } catch (e) {
-      console.error(`Error loading course ${this._id}: ${e}`);
+      console.error(`Error loading course ${this.courseId}: ${e}`);
     }
   },
 
   methods: {
     async registerForCourse() {
       this.addingCourse = true;
-      log(`Attempting to register for ${this._id}.`);
-      await (await getCurrentUser()).registerForCourse(this._id);
+      log(`Attempting to register for ${this.courseId}.`);
+      await (await getCurrentUser()).registerForCourse(this.courseId);
       this.$emit('refresh');
     },
   },
