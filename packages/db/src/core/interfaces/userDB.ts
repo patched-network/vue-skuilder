@@ -10,7 +10,6 @@ import { Moment } from 'moment';
 import { CardHistory, CardRecord } from '../types/types-legacy';
 import { UserConfig } from '../types/user';
 import { DocumentUpdater } from '@/study';
-import { Update } from '@/impl/pouch/updateQueue';
 
 /**
  * User data and authentication
