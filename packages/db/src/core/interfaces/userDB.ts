@@ -147,6 +147,13 @@ export interface UserDBInterface {
   getCourseInterface(courseId: string): Promise<UsrCrsDataInterface>;
 }
 
+export interface UserCourseSettings {
+  [setting: string]: string | number | boolean;
+}
+
+// [ ] reconsider here. Should maybe be generic type based on <T extends StudyContentSource> ?
 export interface UsrCrsDataInterface {
   getScheduledReviewCount(): Promise<number>;
+  getCourseSettings(): Promise<UserCourseSettings>;
+  // getRegistrationDoc(): Promise<CourseRegistration>;
 }

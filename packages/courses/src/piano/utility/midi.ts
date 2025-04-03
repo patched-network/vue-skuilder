@@ -395,7 +395,8 @@ class SkMidi {
       // Get all course settings that might have MIDI configurations
       const courses = await user.getActiveCourses();
       for (const course of courses) {
-        const settings = await user.getCourseSettings(course.courseID);
+        const cdb = await user.getCourseInterface(course.courseID);
+        const settings = await cdb.getCourseSettings();
         if (settings?.midiinput || settings?.midioutput) {
           // We found MIDI settings, use the first valid ones
           if (settings.midiinput && this.webmidi.getInputById(settings.midiinput.toString())) {

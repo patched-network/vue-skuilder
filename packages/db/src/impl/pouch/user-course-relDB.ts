@@ -1,4 +1,4 @@
-import { ScheduledCard, UserDBInterface, UsrCrsDataInterface } from '@/core';
+import { ScheduledCard, UserCourseSettings, UserDBInterface, UsrCrsDataInterface } from '@/core';
 import { CourseDB } from './courseDB';
 import moment, { Moment } from 'moment';
 import { User } from './userDB';
@@ -27,6 +27,18 @@ export class UsrCrsData implements UsrCrsDataInterface {
 
   public async getScheduledReviewCount(): Promise<number> {
     return (await this.getPendingReviews()).length;
+  }
+
+  public async getCourseSettings(): Promise<UserCourseSettings> {
+    const regDoc = await this.user.getCourseRegistrationsDoc();
+    const crsDoc = regDoc.courses.find((c) => c.courseID === this._courseId);
+
+    if (crsDoc && crsDoc.settings) {
+      return crsDoc.settings;
+    } else {
+      console.warn(`no settings found during lookup on course ${this._courseId}`);
+      return {};
+    }
   }
 
   private async getReviewstoDate(targetDate: Moment) {
