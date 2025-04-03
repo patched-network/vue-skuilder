@@ -72,7 +72,7 @@
 import { defineComponent, PropType } from 'vue';
 import { isQuestionView } from '../composables/CompositionViewable';
 import { alertUser } from './SnackbarService';
-import ViewComponent from '../composables/Displayable';
+import { ViewComponent } from '@/composables';
 import SkMouseTrap from './SkMouseTrap.vue';
 import StudySessionTimer from './StudySessionTimer.vue';
 import HeatMap from './HeatMap.vue';
@@ -291,11 +291,11 @@ export default defineComponent({
       const sessionClassroomDBs = await Promise.all(
         this.contentSources
           .filter((s) => s.type === 'classroom')
-          .map(async (c) => this.dataLayer.getClassroomDB(c.id, this.user))
+          .map(async (c) => await this.dataLayer.getClassroomDB(c.id, 'student'))
       );
 
       sessionClassroomDBs.forEach((db) => {
-        db.setChangeFcn(this.handleClassroomMessage());
+        // db.setChangeFcn(this.handleClassroomMessage());
       });
 
       this.sessionController = new SessionController(this.sessionContentSources, 60 * this.sessionTimeLimit);
@@ -308,7 +308,9 @@ export default defineComponent({
 
       this.contentSources
         .filter((s) => s.type === 'course')
-        .forEach(async (c) => (this.courseNames[c.id] = (await dataLayer.getCourseConfig(c.id)).name));
+        .forEach(
+          async (c) => (this.courseNames[c.id] = (await this.dataLayer.getCoursesDB().getCourseConfig(c.id)).name)
+        );
 
       console.log(`[StudySession] Session created:
         ${this.sessionController.toString()}
@@ -426,7 +428,7 @@ export default defineComponent({
       if (k) {
         console.warn(`k value interpretation not currently implemented`);
       }
-      const courseDB = dayaLayer.getCourseDB(this.currentCard.card.course_id);
+      const courseDB = this.dataLayer.getCourseDB(this.currentCard.card.course_id);
       const userElo = toCourseElo(this.userCourseRegDoc!.courses.find((c) => c.courseID === course_id)!.elo);
       const cardElo = (await courseDB.getCardEloData([this.currentCard.card.card_id]))[0];
 
@@ -510,7 +512,7 @@ export default defineComponent({
       console.log(`[StudySession] Now displaying: ${qualified_id}`);
 
       try {
-        const tmpCardData = await getCourseDoc<CardData>(_courseID, _cardID);
+        const tmpCardData = await this.dataLayer.getCourseDB(_courseID).getCourseDoc<CardData>(_cardID);
 
         if (!isCourseElo(tmpCardData.elo)) {
           tmpCardData.elo = toCourseElo(tmpCardData.elo);
@@ -518,7 +520,7 @@ export default defineComponent({
 
         const tmpView: ViewComponent = this.getViewComponent(tmpCardData.id_view);
         const tmpDataDocs = tmpCardData.id_displayable_data.map((id) => {
-          return getCourseDoc<DisplayableData>(_courseID, id, {
+          return this.dataLayer.getCourseDB(_courseID).getCourseDoc<DisplayableData>(id, {
             attachments: true,
             binary: true,
           });
