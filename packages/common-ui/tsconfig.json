@@ -16,7 +16,7 @@
         "paths": {
             "@/*": ["src/*"]
         },
-        "types": ["vite/client", "vitest/globals", "cypress"]
+        "types": ["vite/client", "vitest/globals", "cypress", "pouchdb"]
     },
     "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.vue"],
     "exclude": ["node_modules", "dist"]
