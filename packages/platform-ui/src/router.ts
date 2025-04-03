@@ -146,8 +146,8 @@ const router = createRouter({
       component: Admin,
     },
     {
-      path: '/user/:_id',
-      alias: '/u/:_id',
+      path: '/user/:username',
+      alias: '/u/:username',
       props: true,
       component: User,
       children: [
