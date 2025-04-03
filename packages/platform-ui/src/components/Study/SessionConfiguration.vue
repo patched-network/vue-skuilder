@@ -74,7 +74,7 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 import { SkldrMouseTrap } from '@vue-skuilder/common-ui';
-import { CourseRegistration, User, getCourseName, StudentClassroomDB, ContentSourceID } from '@vue-skuilder/db';
+import { CourseRegistration, UserDBInterface, getDataLayer, ContentSourceID } from '@vue-skuilder/db';
 import { getCurrentUser } from '@/stores/useAuthStore';
 
 export interface SessionConfigMetaData {
@@ -102,7 +102,7 @@ export default defineComponent({
       activeCourses: [] as (CourseRegistration & SessionConfigMetaData)[],
       activeClasses: [] as ({ classID: string } & SessionConfigMetaData)[],
       hasRegistrations: true,
-      user: null as User | null,
+      user: null as UserDBInterface | null,
       timeLimit: this.initialTimeLimit,
     };
   },
@@ -191,7 +191,7 @@ export default defineComponent({
       await Promise.all(
         classes.map((c) =>
           (async (classID: string) => {
-            const classDb = await StudentClassroomDB.factory(classID, await getCurrentUser());
+            const classDb = await getDataLayer().getClassroomDB(classID, `student`);
             activeClasses.push({
               classID,
               name: classDb.getConfig().name,
@@ -213,14 +213,16 @@ export default defineComponent({
       }));
 
       Promise.all(
-        this.activeCourses.map((c, i) =>
-          (async () => {
+        this.activeCourses.map(async (c, i) => {
+          const cfg = await getDataLayer().getCoursesDB().getCourseConfig(c.courseID);
+          const crsInterface = await this.user?.getCourseInterface(c.courseID);
+          return (async () => {
             return Promise.all([
-              (this.activeCourses[i].name = await getCourseName(c.courseID)),
-              (this.activeCourses[i].reviews = await (await getCurrentUser()).getScheduledReviewCount(c.courseID)),
+              (this.activeCourses[i].name = cfg.name),
+              (this.activeCourses[i].reviews = await crsInterface!.getScheduledReviewCount()),
             ]);
-          })()
-        )
+          })();
+        })
       );
     },
 

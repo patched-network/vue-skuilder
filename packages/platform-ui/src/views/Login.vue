@@ -47,7 +47,7 @@ export default defineComponent({
   created() {
     if (this.isUserLoggedIn) {
       getCurrentUser().then((u) => {
-        this.username = u.username;
+        this.username = u.getUsername();
       });
     }
   },

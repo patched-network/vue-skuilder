@@ -5043,6 +5043,7 @@ __metadata:
     "@cypress/vite-dev-server": "npm:^6.0.3"
     "@highlightjs/vue-plugin": "npm:^2.1.2"
     "@mdi/font": "npm:^7.3.67"
+    "@types/pouchdb": "npm:^6.4.2"
     "@typescript-eslint/eslint-plugin": "npm:^8.25.0"
     "@typescript-eslint/parser": "npm:^8.25.0"
     "@vitejs/plugin-vue": "npm:^5.2.1"

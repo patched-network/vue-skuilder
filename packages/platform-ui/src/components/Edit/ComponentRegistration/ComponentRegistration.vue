@@ -31,7 +31,7 @@
 import { defineComponent } from 'vue';
 import { Displayable } from '@vue-skuilder/common-ui';
 import Courses from '@vue-skuilder/courses';
-import { addNote55, getCredentialledCourseConfig, updateCredentialledCourseConfig } from '@vue-skuilder/db';
+import { getDataLayer, CourseDBInterface } from '@vue-skuilder/db';
 import {
   NameSpacer,
   QuestionDescriptor,
@@ -74,11 +74,13 @@ export default defineComponent({
       courseDatashapes: [] as DataShape55[],
       courseQuestionTypes: [] as QuestionType55[],
       courseConfig: undefined as CourseConfig | undefined,
+      courseDB: null as CourseDBInterface | null,
     };
   },
 
   async created() {
-    this.courseConfig = await getCredentialledCourseConfig(this.course);
+    this.courseDB = getDataLayer().getCourseDB(this.course);
+    this.courseConfig = await this.courseDB.getCourseConfig();
     this.courseDatashapes = this.courseConfig.dataShapes;
     this.courseQuestionTypes = this.courseConfig.questionTypes;
 
@@ -149,7 +151,7 @@ export default defineComponent({
         questionTypes: [],
       });
 
-      const update = await updateCredentialledCourseConfig(this.course, this.courseConfig!);
+      const update = await this.courseDB!.updateCourseConfig(this.courseConfig!);
 
       if (update.ok) {
         shape.registered = true;
@@ -196,7 +198,7 @@ export default defineComponent({
         }
       });
 
-      const update = await updateCredentialledCourseConfig(this.course, this.courseConfig!);
+      const update = await this.courseDB!.updateCourseConfig(this.courseConfig!);
       const u = await getCurrentUser();
 
       if (update.ok) {
@@ -208,7 +210,7 @@ CourseID: ${this.course}
         if (question.question.seedData) {
           console.log(`[ComponentRegistration] Question has seed data!`);
           question.question.seedData.forEach((d) => {
-            addNote55(this.course, question.course, question.question.dataShapes[0], d, u.username, []);
+            this.courseDB!.addNote(question.course, question.question.dataShapes[0], d, u.getUsername(), []);
           });
         } else {
           console.log(`[ComponentRegistration] Question has NO seed data!`);

@@ -1,7 +1,7 @@
 <template>
   <v-card v-if="!updatePending && courseConfig" data-cy="available-course-card">
     <v-card-item>
-      <v-card-title data-cy="course-title" @click="routeToCourse">
+      <v-card-title data-cy="course-title">
         {{ courseConfig.name }}
         <v-icon v-if="isPrivate" icon="mdi-eye-off" class="ml-2"></v-icon>
       </v-card-title>
@@ -13,7 +13,9 @@
     </v-card-text>
 
     <v-card-actions>
-      <v-btn color="primary" @click="routeToCourse">More Info</v-btn>
+      <router-link :to="`/q/${courseConfig.name.replaceAll(' ', '_')}`" style="text-decoration: none">
+        <v-btn color="primary">More Info</v-btn>
+      </router-link>
       <v-btn data-cy="register-course-button" :loading="addingCourse" color="primary" @click="registerForCourse">
         Register
       </v-btn>
@@ -22,20 +24,16 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue';
-import { log } from '@vue-skuilder/common';
-import { getCourseDB } from '@vue-skuilder/db';
-import { getCourseConfig } from '@vue-skuilder/db';
-import { DocType } from '@vue-skuilder/db';
-import { CourseConfig } from '@vue-skuilder/common';
-import { useRouter } from 'vue-router';
 import { getCurrentUser } from '@/stores/useAuthStore';
+import { CourseConfig, log } from '@vue-skuilder/common';
+import { getDataLayer } from '@vue-skuilder/db';
+import { defineComponent } from 'vue';
 
 export default defineComponent({
   name: 'CourseStubCard',
 
   props: {
-    _id: {
+    courseId: {
       type: String,
       required: true,
     },
@@ -54,32 +52,21 @@ export default defineComponent({
 
   async created() {
     try {
-      const db = await getCourseDB(this._id);
-      this.courseConfig = (await getCourseConfig(this._id))!;
+      const db = getDataLayer().getCourseDB(this.courseId);
+      this.courseConfig = (await db.getCourseConfig())!;
       this.isPrivate = !this.courseConfig.public;
-      this.questionCount = (
-        await db.find({
-          limit: 1000,
-          selector: {
-            docType: DocType.CARD,
-          },
-        })
-      ).docs.length;
+      this.questionCount = (await db.getCourseInfo()).cardCount;
       this.updatePending = false;
     } catch (e) {
-      console.error(`Error loading course ${this._id}: ${e}`);
+      console.error(`Error loading course ${this.courseId}: ${e}`);
     }
   },
 
   methods: {
-    routeToCourse() {
-      useRouter().push(`/q/${this.courseConfig!.name.replace(' ', '_')}`);
-    },
-
     async registerForCourse() {
       this.addingCourse = true;
-      log(`Attempting to register for ${this._id}.`);
-      await (await getCurrentUser()).registerForCourse(this._id);
+      log(`Attempting to register for ${this.courseId}.`);
+      await (await getCurrentUser()).registerForCourse(this.courseId);
       this.$emit('refresh');
     },
   },

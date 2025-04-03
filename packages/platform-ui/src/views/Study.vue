@@ -33,8 +33,9 @@
       v-if="sessionPrepared"
       :content-sources="sessionContentSources"
       :session-time-limit="sessionTimeLimit"
-      :user="user as User"
+      :user="user as UserDBInterface"
       :session-config="studySessionConfig"
+      :data-layer="dataLayer"
       :get-view-component="getViewComponent"
       @session-finished="handleSessionFinished"
     />
@@ -42,16 +43,16 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue';
 import SessionConfiguration from '@/components/Study/SessionConfiguration.vue';
-import { StudySession, type StudySessionConfig } from '@vue-skuilder/common-ui';
-import { ContentSourceID, getCourseList, User } from '@vue-skuilder/db';
 import { getCurrentUser } from '@/stores/useAuthStore';
-import { Router } from 'vue-router';
-import { CourseConfig } from '@vue-skuilder/common';
 import { useConfigStore } from '@/stores/useConfigStore';
 import { useDataInputFormStore } from '@/stores/useDataInputFormStore';
+import { CourseConfig } from '@vue-skuilder/common';
+import { StudySession, type StudySessionConfig } from '@vue-skuilder/common-ui';
 import Courses from '@vue-skuilder/courses';
+import { ContentSourceID, UserDBInterface, getDataLayer } from '@vue-skuilder/db';
+import { defineComponent } from 'vue';
+import { Router } from 'vue-router';
 
 function randomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -100,7 +101,7 @@ export default defineComponent({
 
   data() {
     return {
-      user: null as User | null,
+      user: null as UserDBInterface | null,
       studySessionConfig: undefined as StudySessionConfig | undefined,
       previewCourseConfig: undefined as CourseConfig | undefined,
       previewMode: false,
@@ -110,6 +111,7 @@ export default defineComponent({
       sessionContentSources: [] as ContentSourceID[],
       dataInputFormStore: useDataInputFormStore(),
       getViewComponent: (view_id: string) => Courses.getView(view_id),
+      dataLayer: getDataLayer(),
     };
   },
 
@@ -123,27 +125,30 @@ export default defineComponent({
 
     if (this.randomPreview) {
       const userCourseRegDoc = await this.user.getCourseRegistrationsDoc();
-      const allCourses = (await getCourseList()).rows.map((r) => r.id);
+      const allCourses = (await getDataLayer().getCoursesDB().getCourseList()).map((r) => r.courseID);
       const unRegisteredCourses = allCourses.filter((c) => {
         return !userCourseRegDoc.courses.some((rc) => rc.courseID === c);
       });
       if (unRegisteredCourses.length > 0) {
-        singletonStudyCourseID = unRegisteredCourses[randomInt(0, unRegisteredCourses.length)];
+        singletonStudyCourseID = unRegisteredCourses[randomInt(0, unRegisteredCourses.length)]!;
       } else {
-        singletonStudyCourseID = allCourses[randomInt(0, allCourses.length)];
+        singletonStudyCourseID = allCourses[randomInt(0, allCourses.length)]!;
       }
     }
 
     if (this.previewCourseID) {
       this.previewMode = true;
-      getCourseList().then((courses) => {
-        courses.rows.forEach((c) => {
-          if (c.id === this.previewCourseID) {
-            this.previewCourseConfig = c.doc!;
-            this.previewCourseConfig!.courseID = c.id;
-          }
+      getDataLayer()
+        .getCoursesDB()
+        .getCourseList()
+        .then((courses) => {
+          courses.forEach((c) => {
+            if (c.courseID === this.previewCourseID) {
+              this.previewCourseConfig = c;
+              this.previewCourseConfig!.courseID = c.courseID;
+            }
+          });
         });
-      });
 
       console.log(`[Study] COURSE PREVIEW MODE FOR ${this.previewCourseID}`);
       await this.user!.registerForCourse(this.previewCourseID, true);

@@ -19,7 +19,7 @@
         Start <a @click="$emit('session-finished')">another study session</a>, or try
         <router-link :to="`/edit/${courseID}`">adding some new content</router-link> to challenge yourself and others!
       </p>
-      <heat-map activity-records-getter="user.getActivityRecords" />
+      <heat-map :activity-records-getter="user.getActivityRecords" />
     </div>
 
     <div v-else ref="shadowWrapper">
@@ -72,24 +72,18 @@
 import { defineComponent, PropType } from 'vue';
 import { isQuestionView } from '../composables/CompositionViewable';
 import { alertUser } from './SnackbarService';
-import ViewComponent from '../composables/Displayable';
+import { ViewComponent } from '@/composables';
 import SkMouseTrap from './SkMouseTrap.vue';
 import StudySessionTimer from './StudySessionTimer.vue';
 import HeatMap from './HeatMap.vue';
 import CardViewer from './cardRendering/CardViewer.vue';
 
 import {
-  getCourseDoc,
-  removeScheduledCardReview,
-  scheduleCardReview,
   ContentSourceID,
   getStudySource,
   isReview,
   StudyContentSource,
   StudySessionItem,
-  CourseDB,
-  getCourseName,
-  updateCardElo,
   docIsDeleted,
   CardData,
   CardHistory,
@@ -97,9 +91,8 @@ import {
   DisplayableData,
   isQuestionRecord,
   CourseRegistrationDoc,
-  updateUserElo,
-  User,
-  StudentClassroomDB,
+  DataLayerProvider,
+  UserDBInterface,
 } from '@vue-skuilder/db';
 import { SessionController, StudySessionRecord } from '@vue-skuilder/db';
 import { newInterval } from '@vue-skuilder/db';
@@ -148,7 +141,11 @@ export default defineComponent({
       required: true,
     },
     user: {
-      type: Object as PropType<User>,
+      type: Object as PropType<UserDBInterface>,
+      required: true,
+    },
+    dataLayer: {
+      type: Object as PropType<DataLayerProvider>,
       required: true,
     },
     sessionConfig: {
@@ -242,7 +239,7 @@ export default defineComponent({
     handleClassroomMessage() {
       return (v: unknown) => {
         alertUser({
-          text: this.user?.username || '[Unknown user]',
+          text: this.user?.getUsername() || '[Unknown user]',
           status: Status.ok,
         });
         console.log(`[StudySession] There was a change in the classroom DB:`);
@@ -294,11 +291,11 @@ export default defineComponent({
       const sessionClassroomDBs = await Promise.all(
         this.contentSources
           .filter((s) => s.type === 'classroom')
-          .map(async (c) => StudentClassroomDB.factory(c.id, this.user))
+          .map(async (c) => await this.dataLayer.getClassroomDB(c.id, 'student'))
       );
 
       sessionClassroomDBs.forEach((db) => {
-        db.setChangeFcn(this.handleClassroomMessage());
+        // db.setChangeFcn(this.handleClassroomMessage());
       });
 
       this.sessionController = new SessionController(this.sessionContentSources, 60 * this.sessionTimeLimit);
@@ -311,7 +308,9 @@ export default defineComponent({
 
       this.contentSources
         .filter((s) => s.type === 'course')
-        .forEach(async (c) => (this.courseNames[c.id] = await getCourseName(c.id)));
+        .forEach(
+          async (c) => (this.courseNames[c.id] = (await this.dataLayer.getCoursesDB().getCourseConfig(c.id)).name)
+        );
 
       console.log(`[StudySession] Session created:
         ${this.sessionController.toString()}
@@ -429,20 +428,17 @@ export default defineComponent({
       if (k) {
         console.warn(`k value interpretation not currently implemented`);
       }
+      const courseDB = this.dataLayer.getCourseDB(this.currentCard.card.course_id);
       const userElo = toCourseElo(this.userCourseRegDoc!.courses.find((c) => c.courseID === course_id)!.elo);
-      const cardElo = (
-        await new CourseDB(this.currentCard.card.course_id, () => Promise.resolve(this.user)).getCardEloData([
-          this.currentCard.card.card_id,
-        ])
-      )[0];
+      const cardElo = (await courseDB.getCardEloData([this.currentCard.card.card_id]))[0];
 
       if (cardElo && userElo) {
         const eloUpdate = adjustCourseScores(userElo, cardElo, userScore);
         this.userCourseRegDoc!.courses.find((c) => c.courseID === course_id)!.elo = eloUpdate.userElo;
 
         Promise.all([
-          updateUserElo(this.user!.username, course_id, eloUpdate.userElo),
-          updateCardElo(course_id, card_id, eloUpdate.cardElo),
+          this.user!.updateUserElo(course_id, eloUpdate.userElo),
+          courseDB.updateCardElo(card_id, eloUpdate.cardElo),
         ]).then((results) => {
           const user = results[0];
           const card = results[1];
@@ -482,11 +478,11 @@ export default defineComponent({
 
       if (isReview(item)) {
         console.log(`[StudySession] Removing previously scheduled review for: ${item.cardID}`);
-        removeScheduledCardReview(this.user!.username, item.reviewID);
+        this.user!.removeScheduledCardReview(this.user!.getUsername(), item.reviewID);
       }
 
-      scheduleCardReview({
-        user: this.user!.username,
+      this.user!.scheduleCardReview({
+        user: this.user!.getUsername(),
         course_id: history.courseID,
         card_id: history.cardID,
         time: nextReviewTime,
@@ -516,7 +512,7 @@ export default defineComponent({
       console.log(`[StudySession] Now displaying: ${qualified_id}`);
 
       try {
-        const tmpCardData = await getCourseDoc<CardData>(_courseID, _cardID);
+        const tmpCardData = await this.dataLayer.getCourseDB(_courseID).getCourseDoc<CardData>(_cardID);
 
         if (!isCourseElo(tmpCardData.elo)) {
           tmpCardData.elo = toCourseElo(tmpCardData.elo);
@@ -524,7 +520,7 @@ export default defineComponent({
 
         const tmpView: ViewComponent = this.getViewComponent(tmpCardData.id_view);
         const tmpDataDocs = tmpCardData.id_displayable_data.map((id) => {
-          return getCourseDoc<DisplayableData>(_courseID, id, {
+          return this.dataLayer.getCourseDB(_courseID).getCourseDoc<DisplayableData>(id, {
             attachments: true,
             binary: true,
           });
@@ -566,7 +562,7 @@ export default defineComponent({
         const err = e as Error;
         if (docIsDeleted(err) && isReview(item)) {
           console.warn(`Card was deleted: ${qualified_id}`);
-          removeScheduledCardReview(this.user!.username, item.reviewID);
+          this.user!.removeScheduledCardReview(this.user!.getUsername(), item.reviewID);
         }
 
         this.loadCard(this.sessionController!.nextCard('dismiss-error'));

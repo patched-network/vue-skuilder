@@ -1,4 +1,4 @@
-import { Loggable } from '../core/Loggable';
+import { Loggable } from '../../util/Loggable';
 
 export type Update<T> = Partial<T> | ((x: T) => T);
 

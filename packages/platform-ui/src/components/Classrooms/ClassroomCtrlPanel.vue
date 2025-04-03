@@ -1,18 +1,18 @@
 <template>
   <div v-if="!updatePending">
-    <h1><router-link to="/classrooms">My Classrooms</router-link> / {{ classroomCfg.name }}</h1>
+    <h1><router-link to="/classrooms">My Classrooms</router-link> / {{ classroomCfg!.name }}</h1>
 
     <h3>
-      Join code: {{ classroomCfg.joinCode }}
-      <router-link :to="`/classrooms/${_id}/code`">
+      Join code: {{ classroomCfg!.joinCode }}
+      <router-link :to="`/classrooms/${classroomId}/code`">
         <v-btn size="x-small" icon="mdi-fullscreen" color="accent" alt="Make Fullscreen"> </v-btn>
       </router-link>
     </h3>
     <v-row>
       <v-col cols="12" sm="6" md="4">
-        <v-checkbox v-model="classroomCfg.peerAssist" label="Allow peer instruction" :model-value="true"></v-checkbox>
+        <v-checkbox v-model="classroomCfg!.peerAssist" label="Allow peer instruction"></v-checkbox>
       </v-col>
-      <v-col v-if="classroomDB.ready" cols="12">
+      <v-col v-if="classroomDB" cols="12">
         <h2>Assigned Content:</h2>
         <h3>Quilts:</h3>
         <ul></ul>
@@ -76,14 +76,7 @@
 
 <script lang="ts">
 import moment from 'moment';
-import {
-  TeacherClassroomDB,
-  AssignedContent,
-  AssignedTag,
-  getCourseList,
-  getCourseTagStubs,
-  Tag,
-} from '@vue-skuilder/db';
+import { TeacherClassroomDBInterface, AssignedContent, AssignedTag, Tag, getDataLayer } from '@vue-skuilder/db';
 import { ClassroomConfig, CourseConfig } from '@vue-skuilder/common';
 import { defineComponent } from 'vue';
 import { getCurrentUser } from '@/stores/useAuthStore';
@@ -92,7 +85,7 @@ export default defineComponent({
   name: 'ClassroomCtrlPanel',
 
   props: {
-    _id: {
+    classroomId: {
       type: String,
       required: true,
     },
@@ -101,7 +94,7 @@ export default defineComponent({
   data() {
     return {
       classroomCfg: null as ClassroomConfig | null,
-      classroomDB: null as TeacherClassroomDB | null,
+      classroomDB: null as TeacherClassroomDBInterface | null,
       assignedContent: [] as AssignedContent[],
       nameRules: [
         (value: string): string | boolean => {
@@ -129,21 +122,38 @@ export default defineComponent({
 
   watch: {
     async selectedCourse() {
-      const tags = (await getCourseTagStubs(this.selectedCourse)).rows.map((row) => row.doc!);
-      this.availableTags = tags;
+      if (this.selectedCourse) {
+        // Get course DB from data layer
+        const courseDB = getDataLayer().getCourseDB(this.selectedCourse);
+        // Get tags from course DB
+        const tagResponse = await courseDB.getCourseTagStubs();
+        this.availableTags = tagResponse.rows.map((row) => row.doc!);
+      } else {
+        this.availableTags = [];
+      }
     },
   },
 
   async created() {
-    this.classroomDB = await TeacherClassroomDB.factory(this._id);
-    this.assignedContent = await this.classroomDB.getAssignedContent();
-    this.classroomCfg = this.classroomDB.getConfig();
+    try {
+      // Get classroom DB from data layer
+      this.classroomDB = (await getDataLayer().getClassroomDB(
+        this.classroomId,
+        'teacher'
+      )) as TeacherClassroomDBInterface;
+      this.assignedContent = await this.classroomDB.getAssignedContent();
+      this.classroomCfg = this.classroomDB.getConfig();
 
-    console.log(`[ClassroomCtrlPanel] Route loaded w/ (prop) _id: ${this._id}`);
-    console.log(`[ClassroomCtrlPanel] Config: ${JSON.stringify(this.classroomCfg)}`);
+      console.log(`[ClassroomCtrlPanel] Route loaded w/ (prop) _id: ${this.classroomId}`);
+      console.log(`[ClassroomCtrlPanel] Config: ${JSON.stringify(this.classroomCfg)}`);
 
-    this.availableCourses = (await getCourseList()).rows.map((r) => r.doc!);
-    this.updatePending = false;
+      // Get course list from data layer
+      this.availableCourses = await getDataLayer().getCoursesDB().getCourseList();
+
+      this.updatePending = false;
+    } catch (error) {
+      console.error('[ClassroomCtrlPanel] Error initializing:', error);
+    }
   },
 
   methods: {
@@ -152,23 +162,23 @@ export default defineComponent({
       const u = await getCurrentUser();
 
       if (this.selectedTags.length === 0) {
-        await this.classroomDB.assignContent({
+        await this.classroomDB.assignContent?.({
           assignedOn: moment(),
           activeOn: moment(),
           type: 'course',
           courseID: this.selectedCourse,
-          assignedBy: u.username,
+          assignedBy: u.getUsername(),
         });
       } else {
         await Promise.all(
           this.selectedTags.map((tag) =>
-            this.classroomDB!.assignContent({
+            this.classroomDB!.assignContent?.({
               assignedOn: moment(),
               activeOn: moment(),
               type: 'tag',
               courseID: this.selectedCourse,
               tagID: tag,
-              assignedBy: u.username,
+              assignedBy: u.getUsername(),
             })
           )
         );
@@ -182,8 +192,9 @@ export default defineComponent({
     },
 
     async removeContent(c: AssignedContent) {
-      if (this.classroomDB) {
+      if (this.classroomDB && this.classroomDB.removeContent) {
         await this.classroomDB.removeContent(c);
+        this.assignedContent = await this.classroomDB.getAssignedContent();
       }
     },
 

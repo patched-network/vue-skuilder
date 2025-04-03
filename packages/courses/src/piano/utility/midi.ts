@@ -11,7 +11,7 @@ import webmidi, {
 import { Note, Interval } from '@tonaljs/tonal';
 import { alertUser } from '@vue-skuilder/common-ui';
 import { Status } from '@vue-skuilder/common';
-import { User } from '@vue-skuilder/db';
+import { UserDBInterface } from '@vue-skuilder/db';
 // import Navigator from '@types/webmidi';
 
 export interface NoteEvent {
@@ -307,9 +307,9 @@ class SkMidi {
     return this._state;
   }
 
-  private _userLookup: (() => Promise<User>) | null;
+  private _userLookup: (() => Promise<UserDBInterface>) | null;
 
-  private constructor(userLookup?: () => Promise<User>) {
+  private constructor(userLookup?: () => Promise<UserDBInterface>) {
     this._userLookup = userLookup ?? null;
   }
 
@@ -395,7 +395,8 @@ class SkMidi {
       // Get all course settings that might have MIDI configurations
       const courses = await user.getActiveCourses();
       for (const course of courses) {
-        const settings = await user.getCourseSettings(course.courseID);
+        const cdb = await user.getCourseInterface(course.courseID);
+        const settings = await cdb.getCourseSettings();
         if (settings?.midiinput || settings?.midioutput) {
           // We found MIDI settings, use the first valid ones
           if (settings.midiinput && this.webmidi.getInputById(settings.midiinput.toString())) {

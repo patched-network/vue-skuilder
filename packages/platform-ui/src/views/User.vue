@@ -1,7 +1,7 @@
 <template>
   <div class="text-subtitle-1">
     <v-alert v-if="isNewUser" type="success" class="text-subtitle-1" variant="tonal" :prepend-icon="'mdi-check'">
-      Welcome, {{ _id }}! Please take a moment to look through these settings:
+      Welcome, {{ username }}! Please take a moment to look through these settings:
     </v-alert>
 
     <h1 class="text-h3">Account Settings</h1>
@@ -28,11 +28,11 @@
 </template>
 
 <script lang="ts">
+import { getCurrentUser } from '@/stores/useAuthStore';
+import { useConfigStore } from '@/stores/useConfigStore';
+import { UserDBInterface } from '@vue-skuilder/db';
 import confetti from 'canvas-confetti';
 import { defineComponent, PropType } from 'vue';
-import { User } from '@vue-skuilder/db';
-import { useConfigStore } from '@/stores/useConfigStore';
-import { getCurrentUser } from '@/stores/useAuthStore';
 import { useRoute } from 'vue-router';
 
 interface Language {
@@ -44,7 +44,7 @@ export default defineComponent({
   name: 'UserSettings',
 
   props: {
-    _id: {
+    username: {
       type: String as PropType<string>,
       required: true,
     },
@@ -64,7 +64,7 @@ export default defineComponent({
 
   data() {
     return {
-      u: {} as User,
+      u: {} as UserDBInterface,
       configLanguages: [
         {
           name: 'English',

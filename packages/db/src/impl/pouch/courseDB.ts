@@ -1,29 +1,28 @@
+import { CourseDBInterface, CourseInfo, CoursesDBInterface, UserDBInterface } from '@/core';
+import { ScheduledCard } from '@/core/types/user';
+import {
+  CourseConfig,
+  CourseElo,
+  DataShape,
+  ENV,
+  EloToNumber,
+  blankCourseElo,
+  toCourseElo,
+} from '@vue-skuilder/common';
 import _ from 'lodash';
 import pouch from 'pouchdb-browser';
-import { filterAllDocsByPrefix, getCourseDB } from '.';
-import { ENV, CourseConfig } from '@vue-skuilder/common';
-import { CourseElo, EloToNumber, blankCourseElo, toCourseElo } from '@vue-skuilder/common';
-import { GET_CACHED } from './clientCache';
+import { filterAllDocsByPrefix, getCourseDB, getCourseDoc, getCourseDocs } from '.';
 import {
   StudyContentSource,
   StudySessionItem,
   StudySessionNewItem,
   StudySessionReviewItem,
-} from './contentSource';
-import { getCredentialledCourseConfig, getTagID } from './courseAPI';
-import { CardData, DocType, Tag, TagStub } from '../core/types-legacy';
-import { ScheduledCard, User } from './userDB';
+} from '../../core/interfaces/contentSource';
+import { CardData, DocType, SkuilderCourseData, Tag, TagStub } from '../../core/types/types-legacy';
+import { GET_CACHED } from './clientCache';
+import { addNote55, addTagToCard, getCredentialledCourseConfig, getTagID } from './courseAPI';
 
 const courseLookupDBTitle = 'coursedb-lookup';
-
-interface PouchDBError extends Error {
-  error?: string;
-  reason?: string;
-}
-
-export function docIsDeleted(e: PouchDBError): boolean {
-  return Boolean(e?.error === 'not_found' && e?.reason === 'deleted');
-}
 
 const courseLookupDB: PouchDB.Database = new pouch(
   ENV.COUCHDB_SERVER_PROTOCOL + '://' + ENV.COUCHDB_SERVER_URL + courseLookupDBTitle,
@@ -32,23 +31,71 @@ const courseLookupDB: PouchDB.Database = new pouch(
   }
 );
 
+export class CoursesDB implements CoursesDBInterface {
+  public async getCourseList(): Promise<CourseConfig[]> {
+    const resp = await courseLookupDB.allDocs<CourseConfig>({
+      include_docs: true,
+    });
+    return resp.rows.map((r) => {
+      console.log(`found course ${JSON.stringify(r.doc)}`);
+
+      return {
+        ...r.doc!,
+        courseID: r.id,
+      };
+    });
+  }
+
+  async getCourseConfig(courseId: string): Promise<CourseConfig> {
+    const config = await getCourseConfigs([courseId]);
+    const first = config.rows[0];
+    if (!first) {
+      throw new Error(`Course config not found for course ID: ${courseId}`);
+    } else if (isSuccessRow(first)) {
+      return first.doc!;
+    } else {
+      throw new Error(`Course config not found for course ID: ${courseId}`);
+    }
+  }
+
+  public async disambiguateCourse(courseId: string, disambiguator: string): Promise<void> {
+    return await disambiguateCourse(courseId, disambiguator);
+  }
+}
+
 function randIntWeightedTowardZero(n: number) {
   return Math.floor(Math.random() * Math.random() * Math.random() * n);
 }
 
-export class CourseDB implements StudyContentSource {
+export class CourseDB implements StudyContentSource, CourseDBInterface {
   // private log(msg: string): void {
   //   log(`CourseLog: ${this.id}\n  ${msg}`);
   // }
 
   private db: PouchDB.Database;
   private id: string;
-  private _getCurrentUser: () => Promise<User>;
+  private _getCurrentUser: () => Promise<UserDBInterface>;
 
-  constructor(id: string, userLookup: () => Promise<User>) {
+  constructor(id: string, userLookup: () => Promise<UserDBInterface>) {
     this.id = id;
     this.db = getCourseDB(this.id);
     this._getCurrentUser = userLookup;
+  }
+
+  public async getCourseInfo(): Promise<CourseInfo> {
+    const cardCount = (
+      await this.db.find({
+        selector: {
+          docType: DocType.CARD,
+        },
+        limit: 1000,
+      })
+    ).docs.length;
+
+    return {
+      cardCount,
+      registeredUsers: 0,
+    };
   }
 
   public async getStudySession(cardLimit: number = 99) {
@@ -319,7 +366,7 @@ export class CourseDB implements StudyContentSource {
     });
   }
 
-  private async getCardsByELO(elo: number, cardLimit?: number) {
+  async getCardsByELO(elo: number, cardLimit?: number) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     elo = parseInt(elo as any);
     const limit = cardLimit ? cardLimit : 25;
@@ -359,6 +406,110 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
     console.log(`Getting ${limit} cards centered around elo: ${elo}:\n\n` + str);
 
     return ret;
+  }
+
+  async getCourseConfig(): Promise<CourseConfig> {
+    const ret = await getCourseConfig(this.id);
+    if (ret) {
+      return ret;
+    } else {
+      throw new Error(`Course config not found for course ID: ${this.id}`);
+    }
+  }
+
+  async updateCourseConfig(cfg: CourseConfig): Promise<PouchDB.Core.Response> {
+    // write both to the course DB:
+    const courseDBResponse = await updateCredentialledCourseConfig(this.id, cfg);
+
+    // and to the coursedb-lookup db:
+    try {
+      const existingConfig = await courseLookupDB.get<CourseConfig>(this.id);
+      const lookupDBResponse = await courseLookupDB.put({
+        ...cfg,
+        _rev: existingConfig._rev,
+        _id: this.id,
+      });
+      return lookupDBResponse;
+    } catch (error) {
+      console.error(`Error updating course config in lookup DB: ${error}`);
+      // Return the courseDB response if lookup DB update fails
+      return courseDBResponse;
+    }
+  }
+
+  async updateCardElo(cardId: string, elo: CourseElo) {
+    const ret = await updateCardElo(this.id, cardId, elo);
+    if (ret) {
+      return ret;
+    } else {
+      throw new Error(`Failed to update card elo for card ID: ${cardId}`);
+    }
+  }
+
+  async getAppliedTags(cardId: string): Promise<PouchDB.Query.Response<TagStub>> {
+    const ret = getAppliedTags(this.id, cardId);
+    if (ret) {
+      return ret;
+    } else {
+      throw new Error(`Failed to find tags for card ${this.id}-${cardId}`);
+    }
+  }
+
+  async addTagToCard(
+    cardId: string,
+    tagId: string,
+    updateELO?: boolean
+  ): Promise<PouchDB.Core.Response> {
+    return await addTagToCard(this.id, cardId, tagId, updateELO);
+  }
+
+  async removeTagFromCard(cardId: string, tagId: string): Promise<PouchDB.Core.Response> {
+    return await removeTagFromCard(this.id, cardId, tagId);
+  }
+
+  async createTag(name: string): Promise<PouchDB.Core.Response> {
+    return await createTag(this.id, name);
+  }
+
+  async getTag(tagId: string): Promise<PouchDB.Core.GetMeta & PouchDB.Core.Document<Tag>> {
+    return await getTag(this.id, tagId);
+  }
+
+  async updateTag(tag: Tag): Promise<PouchDB.Core.Response> {
+    if (tag.course !== this.id) {
+      throw new Error(`Tag ${JSON.stringify(tag)} does not belong to course ${this.id}`);
+    }
+
+    return await updateTag(tag);
+  }
+
+  async getCourseTagStubs(): Promise<PouchDB.Core.AllDocsResponse<Tag>> {
+    return getCourseTagStubs(this.id);
+  }
+
+  async addNote(
+    codeCourse: string,
+    shape: DataShape,
+    data: unknown,
+    author: string,
+    tags: string[],
+    uploads?: { [key: string]: PouchDB.Core.FullAttachment },
+    elo: CourseElo = blankCourseElo()
+  ): Promise<PouchDB.Core.Response> {
+    return await addNote55(this.id, codeCourse, shape, data, author, tags, uploads, elo);
+  }
+
+  async getCourseDoc<T extends SkuilderCourseData>(
+    id: string,
+    options?: PouchDB.Core.GetOptions
+  ): Promise<PouchDB.Core.GetMeta & PouchDB.Core.Document<T>> {
+    return await getCourseDoc(this.id, id, options);
+  }
+
+  async getCourseDocs<T extends SkuilderCourseData>(
+    ids: string[]
+  ): Promise<PouchDB.Core.AllDocsWithKeysResponse<{} & T>> {
+    return await getCourseDocs(this.id, ids);
   }
 }
 

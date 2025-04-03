@@ -1,12 +1,13 @@
-import { DocType, SkuilderCourseData, GuestUsername, log } from '../core/types-legacy';
+import { DocType, SkuilderCourseData, GuestUsername, log } from '../../core/types/types-legacy';
 import { ENV } from '@vue-skuilder/common';
-// import { getCurrentUser } from '../stores/useAuthStore';
+// import { getCurrentUser } from '../../stores/useAuthStore';
 import moment, { Moment } from 'moment';
 import PouchDBAuth from '@nilock2/pouchdb-authentication';
 import pouch from 'pouchdb-browser';
 import PouchDBFind from 'pouchdb-find';
 import process from 'process';
-import { getUserDB, ScheduledCard } from './userDB';
+import { getUserDB } from './userDB';
+import { ScheduledCard } from '@/core/types/user';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 (window as any).process = process; // required as a fix for pouchdb - see #18
@@ -234,5 +235,5 @@ export * from './userDB';
 export * from './courseDB';
 export * from './courseAPI';
 export * from './classroomDB';
-export * from './contentSource';
+export * from '../../core/interfaces/contentSource';
 export * from './adminDB';

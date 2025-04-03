@@ -5,10 +5,11 @@ import {
   StudySessionItem,
   StudySessionNewItem,
   StudySessionReviewItem,
-  ScheduledCard,
-} from '@/pouch';
+} from '@/impl/pouch';
 
-import { CardRecord, Loggable } from '@/core';
+import { CardRecord } from '@/core';
+import { Loggable } from '@/util';
+import { ScheduledCard } from '@/core/types/user';
 
 function randomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -357,7 +358,7 @@ export class SessionController extends Loggable {
       // if (action.includes('dismiss')) {
       //   if (this._currentCard.status === 'review' ||
       //     this._currentCard.status === 'failed-review') {
-      //     removeScheduledCardReview(this.user.username,
+      //     removeScheduledCardReview(this.user.getUsername(),
       //       (this._currentCard as StudySessionReviewItem).reviewID);
       //     this.log(`Dismissed review card: ${this._currentCard.qualifiedID}`)
       //   }

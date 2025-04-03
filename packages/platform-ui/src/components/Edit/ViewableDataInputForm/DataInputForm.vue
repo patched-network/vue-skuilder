@@ -79,13 +79,13 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import { DataShape } from '@/base-course/Interfaces/DataShape';
+import { DataShape } from '@vue-skuilder/common';
 import CardBrowser from '@/components/Edit/CardBrowser.vue';
 import TagsInput, { TagsInputInstance } from '@/components/Edit/TagsInput.vue';
 import { FieldInputInstance, isFieldInput } from '@/components/Edit/ViewableDataInputForm/FieldInput.types';
 import { alertUser } from '@vue-skuilder/common-ui';
 import Courses from '@vue-skuilder/courses';
-import { addNote55, getCourseTagStubs } from '@vue-skuilder/db';
+import { getDataLayer, CourseDBInterface } from '@vue-skuilder/db';
 import { FieldType, Status, CourseConfig, NameSpacer, ShapeDescriptor } from '@vue-skuilder/common';
 import _ from 'lodash';
 import IntegerInput from './FieldInputs/IntegerInput.vue';
@@ -97,7 +97,7 @@ import StringInput from './FieldInputs/StringInput.vue';
 import ChessPuzzleInput from './FieldInputs/ChessPuzzleInput.vue';
 import { CourseElo } from '@vue-skuilder/common';
 import { useDataInputFormStore } from '@/stores/useDataInputFormStore';
-import { ViewData } from '@/base-course/Interfaces/ViewData';
+import { ViewData } from '@vue-skuilder/common';
 import { getCurrentUser } from '@/stores/useAuthStore';
 import { Question } from '@vue-skuilder/common-ui';
 
@@ -112,6 +112,7 @@ export interface ComponentData {
   timer?: NodeJS.Timeout;
   dataInputFormStore: ReturnType<typeof useDataInputFormStore>;
   fieldInputRefs: (FieldInputInstance | null)[];
+  courseDB: CourseDBInterface | null;
 }
 
 export default defineComponent({
@@ -158,6 +159,7 @@ export default defineComponent({
       timer: undefined,
       dataInputFormStore: useDataInputFormStore(),
       fieldInputRefs: [] as (FieldInputInstance | null)[],
+      courseDB: null as CourseDBInterface | null,
     };
   },
 
@@ -273,6 +275,7 @@ export default defineComponent({
 
   created() {
     this.uploading = false;
+    this.courseDB = getDataLayer().getCourseDB(this.courseCfg.courseID!);
 
     this.getCourseTags();
     this.dataInputFormStore.setDataShape(this.dataShape);
@@ -310,7 +313,7 @@ export default defineComponent({
     },
 
     async getCourseTags() {
-      const existingTags = await getCourseTagStubs(this.courseCfg.courseID!);
+      const existingTags = await this.courseDB!.getCourseTagStubs();
       this.autoCompleteSuggestions = existingTags.rows.map((tagDoc) => {
         return tagDoc.doc!.name;
       });
@@ -424,14 +427,11 @@ export default defineComponent({
 
         const result = await Promise.all(
           inputs.map(async (input) => {
-            return await addNote55(
-              this.courseCfg.courseID!,
+            return await this.courseDB!.addNote(
               this.datashapeDescriptor.course,
               this.dataShape,
               input,
-              (
-                await getCurrentUser()
-              ).username,
+              (await getCurrentUser()).getUsername(),
               this.getTags(),
               undefined,
               this.getElo()

@@ -1,7 +1,7 @@
 <template>
   <div>
     <div v-if="initComplete">
-      <course-information v-if="courseId !== undefined && courseId !== ''" :_id="courseId" />
+      <course-information v-if="courseId !== undefined && courseId !== ''" :course-id="courseId" />
       <v-container v-else-if="candidates.length === 0">
         <v-row class="text-h4">
           {{ query }}
@@ -44,7 +44,7 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import { disambiguateCourse, getCachedCourseList } from '@vue-skuilder/db';
+import { getDataLayer } from '@vue-skuilder/db';
 import { CourseConfig } from '@vue-skuilder/common';
 import CourseEditor from './CourseEditor.vue';
 import CourseInformation from './CourseInformation.vue';
@@ -75,14 +75,14 @@ export default defineComponent({
   },
 
   async created() {
-    this.courseList = await getCachedCourseList();
+    this.courseList = await getDataLayer().getCoursesDB().getCourseList();
     this.loadQuery();
   },
 
   methods: {
     update(c: CourseConfig) {
       if (c.courseID && c.disambiguator) {
-        disambiguateCourse(c.courseID, c.disambiguator);
+        getDataLayer().getCoursesDB().disambiguateCourse(c.courseID, c.disambiguator);
       } else {
         // todo: indicate error on input box
       }
@@ -97,7 +97,7 @@ export default defineComponent({
       }
 
       this.candidates = this.courseList.filter((c) => {
-        const snakedName = c.name.replace(' ', '_').toLowerCase();
+        const snakedName = c.name.replaceAll(' ', '_').toLowerCase();
         return query === snakedName || query === c.courseID || query === `${snakedName}_(${c.disambiguator})`;
       });
 

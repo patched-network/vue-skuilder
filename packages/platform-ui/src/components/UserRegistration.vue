@@ -62,13 +62,15 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import { User } from '@vue-skuilder/db';
+import { UserDBInterface } from '@vue-skuilder/db';
 import { alertUser } from '@vue-skuilder/common-ui';
 import { Status, log } from '@vue-skuilder/common';
 import { getCurrentUser, useAuthStore } from '@/stores/useAuthStore';
 
 export default defineComponent({
   name: 'UserRegistration',
+
+  emits: ['toggle'],
 
   data() {
     return {
@@ -83,7 +85,7 @@ export default defineComponent({
       badLoginAttempt: false,
       userSecret: '',
       secret: 'goons',
-      user: null as User | null,
+      user: null as UserDBInterface | null,
       roles: ['Student', 'Teacher', 'Author'] as string[],
       student: true,
       teacher: false,
@@ -140,7 +142,7 @@ Author: ${this.author}
               this.authStore.loginAndRegistration.init = false;
               this.authStore.loginAndRegistration.init = true;
 
-              this.$router.push(`/u/${(await getCurrentUser()).username}/new`);
+              this.$router.push(`/u/${(await getCurrentUser()).getUsername()}/new`);
             } else {
               if (resp.error === 'This username is taken!') {
                 this.usernameError = true;

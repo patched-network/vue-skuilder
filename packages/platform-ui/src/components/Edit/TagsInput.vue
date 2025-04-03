@@ -24,7 +24,7 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import { addTagToCard, getAppliedTags, getCourseTagStubs, removeTagFromCard, Tag } from '@vue-skuilder/db';
+import { getDataLayer, Tag, CourseDBInterface } from '@vue-skuilder/db';
 // @ts-expect-error - suppress TS error for VueTagsInput - no types available
 import { VueTagsInput } from '@vojtechlanka/vue-tags-input';
 
@@ -54,7 +54,6 @@ export default defineComponent({
   name: 'SkTagsInput',
 
   components: {
-    // eslint-disable-next-line
     VueTagsInput,
   },
 
@@ -84,6 +83,7 @@ export default defineComponent({
       initialTags: [] as string[],
       availableCourseTags: [] as Tag[],
       separators: [';', ',', ' '] as string[],
+      courseDB: null as CourseDBInterface | null,
     };
   },
 
@@ -109,11 +109,14 @@ export default defineComponent({
       await this.getAppliedTags();
     },
     async courseID() {
+      this.courseDB = getDataLayer().getCourseDB(this.courseID);
       await this.updateAvailableCourseTags();
     },
   },
 
   async created() {
+    this.courseDB = getDataLayer().getCourseDB(this.courseID);
+
     await this.updateAvailableCourseTags();
     await this.getAppliedTags();
   },
@@ -128,7 +131,7 @@ export default defineComponent({
       this.initialTags = [];
       this.tags = [];
       try {
-        const appliedDocsFindResult = await getAppliedTags(this.courseID, this.cardID);
+        const appliedDocsFindResult = await this.courseDB!.getAppliedTags(this.cardID);
         appliedDocsFindResult.rows.forEach((row) => {
           console.log(`[TagsInput] The following tag is applied:
 \t${JSON.stringify(row)}`);
@@ -148,7 +151,7 @@ export default defineComponent({
 
     async updateAvailableCourseTags() {
       try {
-        this.availableCourseTags = (await getCourseTagStubs(this.courseID)).rows.map((row) => {
+        this.availableCourseTags = (await this.courseDB!.getCourseTagStubs()).rows.map((row) => {
           console.log(`[TagsInput] available tag: ${JSON.stringify(row)}`);
           return row.doc! as Tag;
         });
@@ -166,7 +169,7 @@ export default defineComponent({
           this.tags.map(async (currentTag) => {
             if (!this.initialTags.includes(currentTag.text)) {
               try {
-                await addTagToCard(this.courseID, this.cardID, currentTag.text);
+                await this.courseDB!.addTagToCard(this.cardID, currentTag.text);
                 console.log(`[TagsInput] Successfully added tag: ${currentTag.text}`);
               } catch (error) {
                 console.error(`Failed to add tag ${currentTag.text}:`, error);
@@ -187,7 +190,7 @@ export default defineComponent({
               }).length === 0
             ) {
               try {
-                await removeTagFromCard(this.courseID, this.cardID, initialTag);
+                await this.courseDB!.removeTagFromCard(this.cardID, initialTag);
                 console.log(`[TagsInput] Successfully removed tag: ${initialTag}`);
               } catch (error) {
                 console.error(`Failed to remove tag ${initialTag}:`, error);

@@ -1,5 +1,9 @@
-import { ENV } from '@vue-skuilder/common';
-import { ClassroomConfig } from '@vue-skuilder/common';
+import {
+  StudyContentSource,
+  StudySessionNewItem,
+  StudySessionReviewItem,
+} from '@/core/interfaces/contentSource';
+import { ClassroomConfig, ENV } from '@vue-skuilder/common';
 import moment from 'moment';
 import pouch from 'pouchdb-browser';
 import {
@@ -8,47 +12,22 @@ import {
   pouchDBincludeCredentialsConfig,
   REVIEW_TIME_FORMAT,
 } from '.';
-import { StudyContentSource, StudySessionNewItem, StudySessionReviewItem } from './contentSource';
 import { CourseDB, getTag } from './courseDB';
-import { ScheduledCard, User } from './userDB';
+
+import { UserDBInterface } from '@/core';
+import {
+  AssignedContent,
+  AssignedCourse,
+  AssignedTag,
+  StudentClassroomDBInterface,
+  TeacherClassroomDBInterface,
+} from '@/core/interfaces/classroomDB';
+import { ScheduledCard } from '@/core/types/user';
 
 const classroomLookupDBTitle = 'classdb-lookup';
 export const CLASSROOM_CONFIG = 'ClassroomConfig';
 
 export type ClassroomMessage = object;
-
-export type AssignedContent = AssignedCourse | AssignedTag | AssignedCard;
-
-export interface AssignedTag extends ContentBase {
-  type: 'tag';
-  tagID: string;
-}
-export interface AssignedCourse extends ContentBase {
-  type: 'course';
-}
-export interface AssignedCard extends ContentBase {
-  type: 'card';
-  cardID: string;
-}
-
-interface ContentBase {
-  type: 'course' | 'tag' | 'card';
-  /**
-   * Username of the assigning teacher.
-   */
-  assignedBy: string;
-  /**
-   * Date the content was assigned.
-   */
-  assignedOn: moment.Moment;
-  /**
-   * A 'due' date for this assigned content, for scheduling content
-   * in advance. Content will not be actively pushed to students until
-   * this date.
-   */
-  activeOn: moment.Moment;
-  courseID: string;
-}
 
 abstract class ClassroomDBBase {
   public _id!: string;
@@ -97,12 +76,15 @@ abstract class ClassroomDBBase {
   }
 }
 
-export class StudentClassroomDB extends ClassroomDBBase implements StudyContentSource {
+export class StudentClassroomDB
+  extends ClassroomDBBase
+  implements StudyContentSource, StudentClassroomDBInterface
+{
   // private readonly _prefix: string = 'content';
   private userMessages!: PouchDB.Core.Changes<object>;
-  private _user: User;
+  private _user: UserDBInterface;
 
-  private constructor(classID: string, user: User) {
+  private constructor(classID: string, user: UserDBInterface) {
     super();
     this._id = classID;
     this._user = user;
@@ -130,7 +112,7 @@ export class StudentClassroomDB extends ClassroomDBBase implements StudyContentS
     }
   }
 
-  public static async factory(classID: string, user: User): Promise<StudentClassroomDB> {
+  public static async factory(classID: string, user: UserDBInterface): Promise<StudentClassroomDB> {
     const ret = new StudentClassroomDB(classID, user);
     await ret.init();
     return ret;
@@ -212,7 +194,7 @@ export class StudentClassroomDB extends ClassroomDBBase implements StudyContentS
 /**
  * Interface for managing a classroom.
  */
-export class TeacherClassroomDB extends ClassroomDBBase {
+export class TeacherClassroomDB extends ClassroomDBBase implements TeacherClassroomDBInterface {
   private _stuDb!: PouchDB.Database;
 
   private constructor(classID: string) {

@@ -77,7 +77,7 @@
         <div v-if="c.isOpen" class="px-4 py-2 bg-blue-grey-lighten-5">
           <card-loader :qualified_id="c.id" :view-lookup="viewLookup" class="elevation-1" />
 
-          <tags-input v-show="editMode === 'tags'" :course-i-d="_id" :card-i-d="c.id.split('-')[1]" class="mt-4" />
+          <tags-input v-show="editMode === 'tags'" :course-i-d="courseId" :card-i-d="c.id.split('-')[1]" class="mt-4" />
 
           <div v-show="editMode === 'flag'" class="mt-4">
             <v-btn color="error" variant="outlined" @click="c.delBtn = true"> Delete this card </v-btn>
@@ -108,22 +108,10 @@ import { displayableDataToViewData } from '@vue-skuilder/common';
 import TagsInput from '@/components/Edit/TagsInput.vue';
 import { PaginatingToolbar, ViewComponent, CardLoader } from '@vue-skuilder/common-ui';
 import Courses from '@vue-skuilder/courses';
-import {
-  getCourseDB,
-  getCourseDoc,
-  getCourseDocs,
-  CourseDB,
-  getTag,
-  removeTagFromCard,
-  CardData,
-  DisplayableData,
-  DocType,
-  Tag,
-} from '@vue-skuilder/db';
+import { getDataLayer, CourseDBInterface, CardData, DisplayableData, Tag } from '@vue-skuilder/db';
 import { defineComponent } from 'vue';
 import { alertUser } from '@vue-skuilder/common-ui';
 import { Status } from '@vue-skuilder/common';
-import { getCurrentUser } from '@/stores/useAuthStore';
 
 function isConstructor(obj: unknown) {
   try {
@@ -146,11 +134,11 @@ export default defineComponent({
   },
 
   props: {
-    _id: {
+    courseId: {
       type: String,
       required: true,
     },
-    _tag: {
+    tagId: {
       type: String,
       required: false,
       default: '',
@@ -159,7 +147,7 @@ export default defineComponent({
 
   data() {
     return {
-      courseDB: null as CourseDB | null,
+      courseDB: null as CourseDBInterface | null,
       page: 1,
       pages: [] as number[],
       cards: [] as { id: string; isOpen: boolean; delBtn: boolean }[],
@@ -176,19 +164,12 @@ export default defineComponent({
   },
 
   async created() {
-    this.courseDB = new CourseDB(this._id, getCurrentUser);
+    this.courseDB = getDataLayer().getCourseDB(this.courseId);
 
-    if (this._tag) {
-      this.questionCount = (await getTag(this._id, this._tag)).taggedCards.length;
+    if (this.tagId) {
+      this.questionCount = (await this.courseDB.getTag(this.tagId)).taggedCards.length;
     } else {
-      this.questionCount = (
-        await getCourseDB(this._id).find({
-          selector: {
-            docType: DocType.CARD,
-          },
-          limit: 1000,
-        })
-      ).docs.length;
+      this.questionCount = (await this.courseDB!.getCourseInfo()).cardCount;
     }
 
     for (let i = 1; (i - 1) * 25 < this.questionCount; i++) {
@@ -243,20 +224,13 @@ export default defineComponent({
       }
     },
     async populateTableData() {
-      if (this._tag) {
-        const tag = await getTag(this._id, this._tag);
+      if (this.tagId) {
+        const tag = await this.courseDB!.getTag(this.tagId);
         this.cards = tag.taggedCards.map((c) => {
-          return { id: `${this._id}-${c}`, isOpen: false, delBtn: false };
+          return { id: `${this.courseId}-${c}`, isOpen: false, delBtn: false };
         });
       } else {
-        this.cards = (
-          await this.courseDB!.getCardsByEloLimits({
-            low: 0,
-            high: Number.MAX_SAFE_INTEGER,
-            limit: 25,
-            page: this.page - 1,
-          })
-        ).map((c) => {
+        this.cards = (await this.courseDB!.getCardsByELO(0, 25)).map((c) => {
           return {
             id: c,
             isOpen: false,
@@ -267,8 +241,7 @@ export default defineComponent({
 
       const toRemove: string[] = [];
       const hydratedCardData = (
-        await getCourseDocs<CardData>(
-          this._id,
+        await this.courseDB!.getCourseDocs<CardData>(
           this.cards.map((c) => c.id.split('-')[1]),
           {
             include_docs: true,
@@ -281,8 +254,8 @@ export default defineComponent({
           } else {
             console.error(`Card ${r.id} not found`);
             toRemove.push(r.id);
-            if (this._tag) {
-              removeTagFromCard(this._id, r.id, this._tag);
+            if (this.tagId) {
+              this.courseDB!.removeTagFromCard(r.id, this.tagId);
             }
             return false;
           }
@@ -298,7 +271,6 @@ export default defineComponent({
       });
 
       this.cards.forEach(async (c) => {
-        const _courseID: string = c.id.split('-')[0];
         const _cardID: string = c.id.split('-')[1];
 
         const tmpCardData = hydratedCardData.find((c) => c._id == _cardID);
@@ -309,7 +281,7 @@ export default defineComponent({
         const tmpView: ViewComponent = Courses.getView(tmpCardData.id_view || 'default.question.BlanksCard.FillInView');
 
         const tmpDataDocs = tmpCardData.id_displayable_data.map((id) => {
-          return getCourseDoc<DisplayableData>(_courseID, id, {
+          return this.courseDB!.getCourseDoc<DisplayableData>(id, {
             attachments: false,
             binary: true,
           });
@@ -325,7 +297,7 @@ export default defineComponent({
             // see PR #510
             if (isConstructor(tmpView)) {
               const view = new tmpView();
-              (view as any).data = tmpData;
+              view.data = tmpData;
 
               this.cardPreview[c.id] = view.toString();
             } else {

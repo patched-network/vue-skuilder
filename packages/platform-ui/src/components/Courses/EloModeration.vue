@@ -30,9 +30,8 @@
 import { CardLoader } from '@vue-skuilder/common-ui';
 import Courses from '@vue-skuilder/courses';
 import { CourseElo, adjustCourseScores, CourseConfig } from '@vue-skuilder/common';
-import { CourseDB, getCourseConfig, updateCardElo } from '@vue-skuilder/db';
+import { CourseDBInterface, getDataLayer } from '@vue-skuilder/db';
 import { defineComponent } from 'vue';
-import { getCurrentUser } from '@/stores/useAuthStore';
 
 export default defineComponent({
   name: 'ELOModerator',
@@ -42,7 +41,7 @@ export default defineComponent({
   },
 
   props: {
-    _id: {
+    courseId: {
       type: String,
       required: true,
     },
@@ -50,7 +49,7 @@ export default defineComponent({
 
   data() {
     return {
-      courseDB: null as CourseDB | null,
+      courseDB: null as CourseDBInterface | null,
       updatePending: true,
       courseConfig: null as CourseConfig | null,
       cards: [] as {
@@ -68,9 +67,9 @@ export default defineComponent({
   },
 
   async created() {
-    this.courseDB = new CourseDB(this._id, getCurrentUser);
+    this.courseDB = getDataLayer().getCourseDB(this.courseId);
 
-    this.courseConfig = (await getCourseConfig(this._id))!;
+    this.courseConfig = (await this.courseDB!.getCourseConfig())!;
     await this.getNewCards();
   },
 
@@ -82,8 +81,8 @@ export default defineComponent({
         globalOnly: true,
       });
 
-      updateCardElo(this._id, this.cards[0].cardId, scores.userElo);
-      updateCardElo(this._id, this.cards[1].cardId, scores.cardElo);
+      this.courseDB!.updateCardElo(this.cards[0].cardId, scores.userElo);
+      this.courseDB!.updateCardElo(this.cards[1].cardId, scores.cardElo);
 
       this.getNewCards();
     },
@@ -92,15 +91,15 @@ export default defineComponent({
       if (!this.courseDB) return;
 
       this.updatePending = true;
-      this.cards = await this.courseDB.getInexperiencedCards();
+      this.cards = await this.courseDB!.getInexperiencedCards();
 
       // console.log('Comparing:\n\t' + JSON.stringify(this.cards));
 
       this.id1 = '';
       this.id2 = '';
 
-      this.id1 = `${this._id}-${this.cards[0].cardId}`;
-      this.id2 = `${this._id}-${this.cards[1].cardId}`;
+      this.id1 = `${this.courseId}-${this.cards[0].cardId}`;
+      this.id2 = `${this.courseId}-${this.cards[1].cardId}`;
 
       this.elo1 = this.cards[0].elo;
       this.elo2 = this.cards[1].elo;

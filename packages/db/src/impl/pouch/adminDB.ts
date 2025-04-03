@@ -5,23 +5,18 @@ import { getCourseList, removeCourse } from './courseDB';
 import { TeacherClassroomDB, ClassroomLookupDB } from './classroomDB';
 import { PouchError } from './types';
 
-export class AdminDB {
+import { AdminDBInterface } from '@/core';
+
+export class AdminDB implements AdminDBInterface {
   private usersDB!: PouchDB.Database;
 
-  private constructor() {}
-
-  private async init() {
+  constructor() {
+    // [ ] execute a check here against credentials, and throw an error
+    //     if the user is not an admin
     this.usersDB = new pouch(
       ENV.COUCHDB_SERVER_PROTOCOL + '://' + ENV.COUCHDB_SERVER_URL + '_users',
       pouchDBincludeCredentialsConfig
     );
-    return;
-  }
-
-  public static async factory(): Promise<AdminDB> {
-    const ret = new AdminDB();
-    await ret.init();
-    return ret;
   }
 
   public async getUsers() {
@@ -30,10 +25,10 @@ export class AdminDB {
         include_docs: true,
         ...getStartAndEndKeys('org.couchdb.user:'),
       })
-    ).rows.map((r) => r.doc);
+    ).rows.map((r) => r.doc!);
   }
   public async getCourses() {
-    return (await getCourseList()).rows.map((r) => r.doc);
+    return (await getCourseList()).rows.map((r) => r.doc!);
   }
   public async removeCourse(id: string) {
     return await removeCourse(id);

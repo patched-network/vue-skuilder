@@ -17,7 +17,7 @@
 
 <script lang="ts">
 import { log } from '@vue-skuilder/common';
-import { TeacherClassroomDB } from '@vue-skuilder/db';
+import { TeacherClassroomDBInterface, getDataLayer } from '@vue-skuilder/db';
 import { ClassroomConfig } from '@vue-skuilder/common';
 import { defineComponent } from 'vue';
 
@@ -25,7 +25,7 @@ export default defineComponent({
   name: 'JoinCode',
 
   props: {
-    _id: {
+    classroomId: {
       type: String,
       required: true,
     },
@@ -34,16 +34,18 @@ export default defineComponent({
   data() {
     return {
       classroomCfg: null as ClassroomConfig | null,
-      classroomDB: null as TeacherClassroomDB | null,
+      classroomDB: null as TeacherClassroomDBInterface | null,
       updatePending: true,
     };
   },
 
   async created() {
-    this.classroomDB = await TeacherClassroomDB.factory(this._id);
-    this.classroomCfg = await this.classroomDB.getConfig();
+    const dl = getDataLayer();
+
+    this.classroomDB = await dl.getClassroomDB(this.classroomId, 'teacher');
+    this.classroomCfg = this.classroomDB.getConfig();
     await Promise.all([]);
-    log(`Route loaded w/ (prop) _id: ${this._id}`);
+    log(`Route loaded w/ (prop) _id: ${this.classroomId}`);
     log(`Config:
     ${JSON.stringify(this.classroomCfg)}`);
     this.updatePending = false;

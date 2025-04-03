@@ -97,13 +97,7 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 import { Status, ServerRequestType, JoinClassroom, LeaveClassroom, DeleteClassroom } from '@vue-skuilder/common';
-import {
-  registerUserForClassroom,
-  getUserClassrooms,
-  dropUserFromClassroom,
-  getClassroomConfig,
-  User,
-} from '@vue-skuilder/db';
+import { getDataLayer, UserDBInterface } from '@vue-skuilder/db';
 import serverRequest from '@/server/index';
 import { alertUser } from '@vue-skuilder/common-ui';
 import ClassroomEditor from '@/components/Classrooms/CreateClassroom.vue';
@@ -138,7 +132,7 @@ export default defineComponent({
       teacherClasses: [] as CourseReg[],
       spinnerMap: {} as { [index: string]: boolean },
       newClassDialog: false,
-      user: null as User | null,
+      user: null as UserDBInterface | null,
     };
   },
 
@@ -149,12 +143,17 @@ export default defineComponent({
   methods: {
     async refreshData() {
       this.$data.user = await getCurrentUser();
-      const registrations = (await getUserClassrooms(this.$data.user.username)).registrations;
+      const registrations = (await this.user!.getUserClassrooms()).registrations;
       const studentClasses: CourseReg[] = [];
       const teacherClasses: CourseReg[] = [];
 
       registrations.forEach(async (reg) => {
-        const cfg = await getClassroomConfig(reg.classID);
+        const cfg = (
+          await getDataLayer().getClassroomDB(
+            reg.classID,
+            reg.registeredAs == 'teacher' || reg.registeredAs == 'student' ? reg.registeredAs : 'student'
+          )
+        ).getConfig();
         console.log(`Registered class: ${JSON.stringify(cfg)}`);
         const regItem = {
           _id: reg.classID,
@@ -175,7 +174,7 @@ export default defineComponent({
     async deleteClass(classId: string) {
       const result = await serverRequest<DeleteClassroom>({
         type: ServerRequestType.DELETE_CLASSROOM,
-        user: this.user?.username || '',
+        user: this.user?.getUsername() || '',
         classID: classId,
         response: null,
       });
@@ -201,12 +200,12 @@ export default defineComponent({
         data: {
           classID: classID,
         },
-        user: this.user?.username || '',
+        user: this.user?.getUsername() || '',
         response: null,
       });
       if (result.response && result.response.ok) {
         if (this.user) {
-          await dropUserFromClassroom(this.user.username, classID);
+          await this.user!.dropFromClassroom(classID);
         }
       }
 
@@ -220,16 +219,16 @@ export default defineComponent({
         data: {
           joinCode: this.joinCode,
           registerAs: 'student',
-          user: this.user?.username || '',
+          user: this.user?.getUsername() || '',
         },
-        user: this.user?.username || '',
+        user: this.user?.getUsername() || '',
         response: null,
       });
 
       if (result.response && result.response.ok) {
         console.log(`Adding registration to userDB...`);
         if (this.user) {
-          await registerUserForClassroom(this.user.username, result.response!.id_course, 'student');
+          await registerUserForClassroom(this.user.getUsername(), result.response!.id_course, 'student');
           alertUser({
             text: `Successfully joined class: ${result.response.course_name}.`,
             status: Status.ok,

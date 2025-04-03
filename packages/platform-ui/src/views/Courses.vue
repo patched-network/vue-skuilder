@@ -22,12 +22,12 @@
             <v-expansion-panel-title data-cy="registered-quilts-panel">My Registered Quilts</v-expansion-panel-title>
             <v-expansion-panel-text>
               <v-row>
-                <v-col v-for="course in registeredCourses" :key="course._id" cols="12" sm="6" md="4" lg="3">
+                <v-col v-for="course in registeredCourses" :key="course.courseID" cols="12" sm="6" md="4" lg="3">
                   <v-card variant="outlined" density="compact" class="pa-2">
                     <div class="d-flex align-center justify-space-between">
                       <div data-cy="registered-course" class="d-flex align-center">
                         <router-link
-                          :to="`/q/${course.name.replace(' ', '_')}`"
+                          :to="`/q/${course.name.replaceAll(' ', '_')}`"
                           class="text-subtitle-2"
                           data-cy="registered-course-title"
                         >
@@ -59,7 +59,7 @@
         <h2 class="text-h5 mb-3">Available Quilts</h2>
         <v-row>
           <v-col v-for="course in displayedAvailableCourses" :key="course._id" cols="12" sm="6" md="4" lg="3">
-            <course-stub-card data-cy="available-course-card" :_id="course._id" @refresh="refreshData" />
+            <course-stub-card data-cy="available-course-card" :course-id="course._id" @refresh="refreshData" />
           </v-col>
         </v-row>
 
@@ -87,10 +87,12 @@ import _ from 'lodash';
 import serverRequest from '../server';
 import { ServerRequestType, CourseConfig } from '@vue-skuilder/common';
 import { alertUser } from '@vue-skuilder/common-ui';
-import { getCourseList, User } from '@vue-skuilder/db';
+import { UserDBInterface, getDataLayer } from '@vue-skuilder/db';
 import { getCurrentUser } from '@/stores/useAuthStore';
 
-type DBCourseConfig = CourseConfig & PouchDB.Core.IdMeta;
+type DBCourseConfig = CourseConfig & {
+  courseID: string;
+};
 
 export default defineComponent({
   name: 'CoursesView',
@@ -107,7 +109,7 @@ export default defineComponent({
       awaitingCreateCourse: false,
       spinnerMap: {} as { [key: string]: boolean },
       newCourseDialog: false,
-      user: null as User | null,
+      user: null as UserDBInterface | null,
       myQuiltsPanel: 0, // Controls expansion panel
       showAllCourses: false,
       coursesPerPage: 8,
@@ -117,7 +119,7 @@ export default defineComponent({
   computed: {
     availableCourses(): DBCourseConfig[] {
       const availableCourses = _.without(this.existingCourses, ...this.registeredCourses);
-      const user = this.user?.username;
+      const user = this.user?.getUsername();
 
       const viewableCourses = availableCourses.filter((course) => {
         if (!user) {
@@ -174,36 +176,26 @@ export default defineComponent({
 
     async refreshData(): Promise<void> {
       console.log(`Pulling user course data...`);
-      const userCourseIDs = (await this.user!.getRegisteredCourses())
+      const userCourseIDs = (await this.user!.getCourseRegistrationsDoc()).courses
         .filter((c) => {
           return c.status === 'active' || c.status === 'maintenance-mode' || c.status === undefined;
         })
         .map((c) => {
           return c.courseID;
         });
-      const courseList = await getCourseList();
+      console.log(`userCourseIDs: ${userCourseIDs}`);
 
-      this.existingCourses = courseList.rows
-        .filter((course) => {
-          return course && course.doc;
-        })
-        .map((course) => {
-          return course.doc!;
-        });
+      this.existingCourses = (await getDataLayer().getCoursesDB().getCourseList()) as DBCourseConfig[];
 
-      this.registeredCourses = courseList.rows
-        .filter((course) => {
-          let match: boolean = false;
-          userCourseIDs.forEach((id) => {
-            if (course.id === id) {
-              match = true;
-            }
-          });
-          return match;
-        })
-        .map((course) => {
-          return course.doc!;
+      this.registeredCourses = this.existingCourses.filter((course) => {
+        let match: boolean = false;
+        userCourseIDs.forEach((id: string) => {
+          if (course.courseID === id) {
+            match = true;
+          }
         });
+        return match;
+      });
     },
 
     async createCourse(): Promise<void> {
@@ -215,13 +207,13 @@ export default defineComponent({
           description: 'All of these courses will be the same!',
           public: true,
           deleted: false,
-          creator: this.user!.username,
-          admins: [this.user!.username],
+          creator: this.user!.getUsername(),
+          admins: [this.user!.getUsername()],
           moderators: [],
           dataShapes: [],
           questionTypes: [],
         },
-        user: this.user!.username,
+        user: this.user!.getUsername(),
         response: null,
       });
 

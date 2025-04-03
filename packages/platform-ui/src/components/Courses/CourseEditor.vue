@@ -47,7 +47,7 @@
           </v-radio-group>
         </v-row>
         <v-row class="cols sm md">
-          <v-btn :loading="updatePending" color="primary" @click="submit" data-cy="save-course-button">
+          <v-btn :loading="updatePending" color="primary" data-cy="save-course-button" @click="submit">
             Save Course Changes
           </v-btn>
         </v-row>
@@ -120,7 +120,7 @@ export default defineComponent({
         description: this.description,
         public: this.publicCourse,
         deleted: this.deleted,
-        creator: u.username,
+        creator: u.getUsername(),
         admins: this.admins,
         moderators: this.moderators,
         dataShapes: this.dataShapes,
@@ -131,7 +131,7 @@ export default defineComponent({
         data: config,
         type: ServerRequestType.CREATE_COURSE,
         response: null,
-        user: u.username,
+        user: u.getUsername(),
       });
 
       if (result.response && result.response.ok) {

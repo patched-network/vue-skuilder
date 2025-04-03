@@ -14,7 +14,7 @@
 
 <script lang="ts">
 import { defineComponent, PropType } from 'vue';
-import { getCourseDoc, CardData, CardRecord, DisplayableData } from '@vue-skuilder/db';
+import { getDataLayer, CardData, CardRecord, DisplayableData } from '@vue-skuilder/db';
 import { log, displayableDataToViewData, ViewData, ViewDescriptor } from '@vue-skuilder/common';
 import { ViewComponent } from '@/composables';
 import CardViewer from './CardViewer.vue';
@@ -72,12 +72,13 @@ export default defineComponent({
       this.loading = true;
       const _courseID = qualified_id.split('-')[0];
       const _cardID = qualified_id.split('-')[1];
+      const courseDB = getDataLayer().getCourseDB(_courseID);
 
       try {
-        const tmpCardData = await getCourseDoc<CardData>(_courseID, _cardID);
+        const tmpCardData = await courseDB.getCourseDoc<CardData>(_cardID);
         const tmpView = this.viewLookup(tmpCardData.id_view);
         const tmpDataDocs = tmpCardData.id_displayable_data.map((id) => {
-          return getCourseDoc<DisplayableData>(_courseID, id, {
+          return courseDB.getCourseDoc<DisplayableData>(id, {
             attachments: true,
             binary: true,
           });

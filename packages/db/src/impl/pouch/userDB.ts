@@ -1,33 +1,34 @@
-import { Status } from '@vue-skuilder/common';
-import { ENV } from '@vue-skuilder/common';
-import { getCardHistoryID, GuestUsername } from '../core/types-legacy';
-import { CourseElo } from '@vue-skuilder/common';
+import { getCardHistoryID } from '@/core/util';
+import { CourseElo, ENV, Status } from '@vue-skuilder/common';
 import moment, { Moment } from 'moment';
+import { GuestUsername } from '../../core/types/types-legacy';
 import pouch from './pouchdb-setup';
 
-export interface UserConfig {
-  darkMode: boolean;
-  likesConfetti: boolean;
-}
-
-interface ActivityRecord {
-  timeStamp: number | string;
-  [key: string]: any;
-}
-
+import { UserCourseSetting, UserDBInterface, UsrCrsDataInterface } from '@/core';
+import {
+  ActivityRecord,
+  CourseRegistration,
+  CourseRegistrationDoc,
+  ScheduledCard,
+  UserConfig,
+} from '@/core/types/user';
+import { DocumentUpdater } from '@/study';
+import { CardHistory, CardRecord } from '../../core/types/types-legacy';
 import { getCourseConfigs } from './courseDB';
 import {
   filterAllDocsByPrefix,
   getStartAndEndKeys,
   hexEncode,
   pouchDBincludeCredentialsConfig,
+  removeScheduledCardReview,
   REVIEW_PREFIX,
   REVIEW_TIME_FORMAT,
+  scheduleCardReview,
   updateGuestAccountExpirationDate,
 } from './index';
-import UpdateQueue, { Update } from './updateQueue';
-import { CardHistory, CardRecord } from '../core/types-legacy';
 import { PouchError } from './types';
+import UpdateQueue, { Update } from './updateQueue';
+import { UsrCrsData } from './user-course-relDB';
 
 const log = (s: any) => {
   console.log(s);
@@ -68,47 +69,13 @@ export async function doesUserExist(name: string) {
   }
 }
 
-export interface ScheduledCard {
-  _id: PouchDB.Core.DocumentId;
-
-  /**
-   * The docID of the card to be reviewed
-   */
-  cardId: PouchDB.Core.DocumentId;
-  /**
-   * The ID of the course
-   */
-  courseId: string;
-  /**
-   * The time at which the card becomes eligible for review.
-   *
-   * (Should probably be UTC adjusted so that performance is
-   * not wonky across time zones)
-   */
-  reviewTime: Moment;
-
-  /**
-   * The time at which this scheduled event was created.
-   */
-  scheduledAt: Moment;
-
-  /**
-   * Classifying whether this card is scheduled on behalf of a
-   * user-registered course or by as assigned content from a
-   * user-registered classroom
-   */
-  scheduledFor: 'course' | 'classroom';
-
-  /**
-   * The ID of the course or classroom that requested this card
-   */
-  schedulingAgentId: string;
-}
-
 /**
- * The current logged-in user
+ * The current logged-in user, with pouch / couch functionality.
+ *
+ * @package This concrete class should not be directly exported from the `db` package,
+ * but should be created at runtime by the exported dataLayerProviderFactory.
  */
-export class User {
+export class User implements UserDBInterface, DocumentUpdater {
   private static _instance: User;
   private static _initialized: boolean = false;
 
@@ -124,11 +91,18 @@ export class User {
 
   // private email: string;
   private _username: string;
-  public get username(): string {
+  public getUsername(): string {
     return this._username;
   }
 
+  public isLoggedIn(): boolean {
+    return !this._username.startsWith(GuestUsername);
+  }
+
   private remoteDB!: PouchDB.Database;
+  public remote(): PouchDB.Database {
+    return this.remoteDB;
+  }
   private localDB!: PouchDB.Database;
   private updateQueue!: UpdateQueue;
 
@@ -148,7 +122,7 @@ Currently logged-in as ${this._username}.`
         const signupRequest = await remoteCouchRootDB.signUp(username, password);
 
         if (signupRequest.ok) {
-          log(`CREATEACCOUNT: logging out of ${this.username}`);
+          log(`CREATEACCOUNT: logging out of ${this.getUsername()}`);
           const logoutResult = await remoteCouchRootDB.logOut();
           log(`CREATEACCOUNT: logged out: ${logoutResult.ok}`);
           const loginResult = await remoteCouchRootDB.logIn(username, password);
@@ -189,7 +163,7 @@ Currently logged-in as ${this._username}.`
   public async login(username: string, password: string) {
     if (!this._username.startsWith(GuestUsername)) {
       throw new Error(`Cannot change accounts while logged in.
-      Log out of account ${this.username} before logging in as ${username}.`);
+      Log out of account ${this.getUsername()} before logging in as ${username}.`);
     }
 
     const loginResult = await remoteCouchRootDB.logIn(username, password);
@@ -220,7 +194,7 @@ Currently logged-in as ${this._username}.`
   public async getCourseRegistrationsDoc(): Promise<
     CourseRegistrationDoc & PouchDB.Core.IdMeta & PouchDB.Core.GetMeta
   > {
-    console.log(`Fetching courseRegistrations for ${this.username}`);
+    console.log(`Fetching courseRegistrations for ${this.getUsername()}`);
 
     let ret;
 
@@ -338,7 +312,12 @@ Currently logged-in as ${this._username}.`
 
   public async getCourseRegDoc(courseID: string) {
     const regDocs = await this.getCourseRegistrationsDoc();
-    return regDocs.courses.find((c) => c.courseID === courseID);
+    const ret = regDocs.courses.find((c) => c.courseID === courseID);
+    if (ret) {
+      return ret;
+    } else {
+      throw new Error(`Course registration not found for course ID: ${courseID}`);
+    }
   }
 
   public async registerForCourse(course_id: string, previewMode: boolean = false) {
@@ -403,12 +382,16 @@ Currently logged-in as ${this._username}.`
         doc.courses[index].status = dropStatus;
       } else {
         throw new Error(
-          `User ${this.username} is not currently registered for course ${course_id}`
+          `User ${this.getUsername()} is not currently registered for course ${course_id}`
         );
       }
 
       return this.localDB.put<CourseRegistrationDoc>(doc);
     });
+  }
+
+  public async getCourseInterface(courseId: string): Promise<UsrCrsDataInterface> {
+    return new UsrCrsData(this, courseId);
   }
 
   public async getUserEditableCourses() {
@@ -466,14 +449,14 @@ Currently logged-in as ${this._username}.`
   }
 
   /**
-   * @deprecated
-   * @deprecated
-   * This function should be called *only* by the pinia auth store.
+   *
+   * This function should be called *only* by the pouchdb datalayer provider
+   * auth store.
+   *
    *
    * Anyone else seeking the current user should use the auth store's
    * exported `getCurrentUser` method.
-   * @deprecated
-   * @deprecated
+   *
    */
   public static async instance(username?: string): Promise<User> {
     if (username) {
@@ -642,7 +625,7 @@ Currently logged-in as ${this._username}.`
           streak: 0,
           bestInterval: 0,
         };
-        getUserDB(this.username).put<CardHistory<T>>(initCardHistory);
+        getUserDB(this.getUsername()).put<CardHistory<T>>(initCardHistory);
         return initCardHistory;
       } else {
         throw new Error(`putCardRecord failed because of:
@@ -733,13 +716,7 @@ Currently logged-in as ${this._username}.`
     return cards.rows.map((r) => r.doc);
   }
 
-  async updateCourseSettings(
-    course_id: string,
-    settings: {
-      key: string;
-      value: string | number | boolean;
-    }[]
-  ) {
+  async updateCourseSettings(course_id: string, settings: UserCourseSetting[]) {
     this.getCourseRegistrationsDoc().then((doc) => {
       const crs = doc.courses.find((c) => c.courseID === course_id);
       if (crs) {
@@ -797,6 +774,38 @@ Currently logged-in as ${this._username}.`
     return (await this.getOrCreateClassroomRegistrationsDoc()).registrations
       .filter((c) => c.registeredAs === 'student')
       .map((c) => c.classID);
+  }
+
+  public async scheduleCardReview(review: {
+    user: string;
+    course_id: string;
+    card_id: PouchDB.Core.DocumentId;
+    time: Moment;
+    scheduledFor: ScheduledCard['scheduledFor'];
+    schedulingAgentId: ScheduledCard['schedulingAgentId'];
+  }) {
+    return scheduleCardReview(review);
+  }
+  public async removeScheduledCardReview(reviewId: string): Promise<void> {
+    return removeScheduledCardReview(this._username, reviewId);
+  }
+
+  public async registerForClassroom(
+    classId: string,
+    registerAs: 'student' | 'teacher' | 'aide' | 'admin'
+  ): Promise<PouchDB.Core.Response> {
+    return registerUserForClassroom(this._username, classId, registerAs);
+  }
+
+  public async dropFromClassroom(classId: string): Promise<PouchDB.Core.Response> {
+    return dropUserFromClassroom(this._username, classId);
+  }
+  public async getUserClassrooms(): Promise<ClassroomRegistrationDoc> {
+    return getUserClassrooms(this._username);
+  }
+
+  public async updateUserElo(courseId: string, elo: CourseElo): Promise<PouchDB.Core.Response> {
+    return updateUserElo(this._username, courseId, elo);
   }
 }
 
@@ -882,27 +891,6 @@ export function getUserDB(username: string): PouchDB.Database {
 const userCoursesDoc = 'CourseRegistrations';
 const userClassroomsDoc = 'ClassroomRegistrations';
 
-export interface CourseRegistration {
-  status?: 'active' | 'dropped' | 'maintenance-mode' | 'preview';
-  courseID: string;
-  admin: boolean;
-  moderator: boolean;
-  user: boolean;
-  settings?: {
-    [setting: string]: string | number | boolean;
-  };
-  elo: number | CourseElo;
-}
-
-interface StudyWeights {
-  [courseID: string]: number;
-}
-
-export interface CourseRegistrationDoc {
-  courses: CourseRegistration[];
-  studyWeight: StudyWeights;
-}
-
 export type ClassroomRegistrationDesignation = 'student' | 'teacher' | 'aide' | 'admin';
 
 interface ClassroomRegistration {
@@ -910,7 +898,7 @@ interface ClassroomRegistration {
   registeredAs: ClassroomRegistrationDesignation;
 }
 
-interface ClassroomRegistrationDoc {
+export interface ClassroomRegistrationDoc {
   registrations: ClassroomRegistration[];
 }
 

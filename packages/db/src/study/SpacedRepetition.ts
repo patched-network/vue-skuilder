@@ -1,9 +1,14 @@
-import { areQuestionRecords, CardHistory, CardRecord, QuestionRecord } from '@/core';
-import { User } from '@/pouch';
+import { CardHistory, CardRecord, QuestionRecord } from '@/core/types/types-legacy';
+import { areQuestionRecords } from '@/core/util';
+import { Update } from '@/impl/pouch/updateQueue';
 import moment from 'moment';
 
 type Moment = moment.Moment;
 const duration = moment.duration;
+
+export interface DocumentUpdater {
+  update<T extends PouchDB.Core.Document<object>>(id: string, update: Update<T>): Promise<T>;
+}
 
 /**
  * Returns the minimum number of seconds that should pass before a
@@ -11,7 +16,7 @@ const duration = moment.duration;
  *
  * @param cardHistory The user's history working with the given card
  */
-export function newInterval(user: User, cardHistory: CardHistory<CardRecord>): number {
+export function newInterval(user: DocumentUpdater, cardHistory: CardHistory<CardRecord>): number {
   if (areQuestionRecords(cardHistory)) {
     return newQuestionInterval(user, cardHistory);
   } else {
@@ -19,7 +24,7 @@ export function newInterval(user: User, cardHistory: CardHistory<CardRecord>): n
   }
 }
 
-function newQuestionInterval(user: User, cardHistory: CardHistory<QuestionRecord>) {
+function newQuestionInterval(user: DocumentUpdater, cardHistory: CardHistory<QuestionRecord>) {
   const records = cardHistory.records;
   const currentAttempt = records[records.length - 1];
   const lastInterval: number = lastSuccessfulInterval(records);

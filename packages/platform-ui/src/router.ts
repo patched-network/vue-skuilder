@@ -101,15 +101,15 @@ const router = createRouter({
       component: Classrooms,
     },
     {
-      path: '/classrooms/:_id',
+      path: '/classrooms/:classroomId',
       props: true,
-      alias: '/c/:_id',
+      alias: '/c/:classroomId',
       component: ClassroomCtrlPanel,
     },
     {
-      path: '/classrooms/:_id/code',
+      path: '/classrooms/:classroomId/code',
       props: true,
-      alias: '/c/:_id',
+      alias: '/c/:classroomId',
       component: JoinCode,
     },
     {
@@ -124,15 +124,15 @@ const router = createRouter({
       component: CourseRouter,
     },
     {
-      path: '/courses/:_id/elo',
+      path: '/courses/:courseId/elo',
       props: true,
-      alias: ['/quilts/:_id/elo', '/q/:_id/elo'],
+      alias: ['/quilts/:courseId/elo', '/q/:courseId/elo'],
       component: ELOModerator,
     },
     {
-      path: '/courses/:_courseId/tags/:_id',
+      path: '/courses/:courseId/tags/:tagId',
       props: true,
-      alias: ['/quilts/:_courseId/tags/:_id', '/q/:_courseId/tags/:_id'],
+      alias: ['/quilts/:courseId/tags/:tagId', '/q/:courseId/tags/:tagId'],
       component: TagInformation,
     },
     {
@@ -146,8 +146,8 @@ const router = createRouter({
       component: Admin,
     },
     {
-      path: '/user/:_id',
-      alias: '/u/:_id',
+      path: '/user/:username',
+      alias: '/u/:username',
       props: true,
       component: User,
       children: [
