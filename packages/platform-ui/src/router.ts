@@ -130,9 +130,9 @@ const router = createRouter({
       component: ELOModerator,
     },
     {
-      path: '/courses/:_courseId/tags/:_id',
+      path: '/courses/:courseId/tags/:tagId',
       props: true,
-      alias: ['/quilts/:_courseId/tags/:_id', '/q/:_courseId/tags/:_id'],
+      alias: ['/quilts/:courseId/tags/:tagId', '/q/:courseId/tags/:tagId'],
       component: TagInformation,
     },
     {

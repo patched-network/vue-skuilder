@@ -57,7 +57,7 @@
       </template>
     </v-text-field>
 
-    <course-card-browser :_id="_courseId" :_tag="_id" />
+    <course-card-browser :_id="courseId" :_tag="tagId" />
   </div>
 </template>
 
@@ -76,11 +76,11 @@ export default defineComponent({
   },
 
   props: {
-    _id: {
+    tagId: {
       type: String,
       required: true,
     },
-    _courseId: {
+    courseId: {
       type: String,
       required: true,
     },
@@ -99,8 +99,8 @@ export default defineComponent({
       courseDB: null as CourseDBInterface | null,
 
       tag: {
-        course: this._courseId,
-        name: this._id,
+        course: this.courseId,
+        name: this.tagId,
         snippet: '',
         wiki: '',
         taggedCards: [],
@@ -108,7 +108,7 @@ export default defineComponent({
       } as Tag,
 
       course: {
-        courseID: this._courseId,
+        courseID: this.courseId,
         name: '',
         description: '',
         public: false,
@@ -123,8 +123,8 @@ export default defineComponent({
   },
 
   async created() {
-    this.courseDB = getDataLayer().getCourseDB(this._courseId);
-    this.tag = await this.courseDB.getTag(this._id);
+    this.courseDB = getDataLayer().getCourseDB(this.courseId);
+    this.tag = await this.courseDB.getTag(this.tagId);
     this.snippetModel = this.tag.snippet;
     this.wikiModel = this.tag.wiki;
     this.course = await this.courseDB.getCourseConfig();
