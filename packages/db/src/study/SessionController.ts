@@ -358,7 +358,7 @@ export class SessionController extends Loggable {
       // if (action.includes('dismiss')) {
       //   if (this._currentCard.status === 'review' ||
       //     this._currentCard.status === 'failed-review') {
-      //     removeScheduledCardReview(this.user.username,
+      //     removeScheduledCardReview(this.user.getUsername(),
       //       (this._currentCard as StudySessionReviewItem).reviewID);
       //     this.log(`Dismissed review card: ${this._currentCard.qualifiedID}`)
       //   }

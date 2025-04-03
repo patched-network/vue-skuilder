@@ -239,7 +239,7 @@ export default defineComponent({
     handleClassroomMessage() {
       return (v: unknown) => {
         alertUser({
-          text: this.user?.username || '[Unknown user]',
+          text: this.user?.getUsername() || '[Unknown user]',
           status: Status.ok,
         });
         console.log(`[StudySession] There was a change in the classroom DB:`);
@@ -476,11 +476,11 @@ export default defineComponent({
 
       if (isReview(item)) {
         console.log(`[StudySession] Removing previously scheduled review for: ${item.cardID}`);
-        this.user!.removeScheduledCardReview(this.user!.username, item.reviewID);
+        this.user!.removeScheduledCardReview(this.user!.getUsername(), item.reviewID);
       }
 
       this.user!.scheduleCardReview({
-        user: this.user!.username,
+        user: this.user!.getUsername(),
         course_id: history.courseID,
         card_id: history.cardID,
         time: nextReviewTime,
@@ -560,7 +560,7 @@ export default defineComponent({
         const err = e as Error;
         if (docIsDeleted(err) && isReview(item)) {
           console.warn(`Card was deleted: ${qualified_id}`);
-          this.user!.removeScheduledCardReview(this.user!.username, item.reviewID);
+          this.user!.removeScheduledCardReview(this.user!.getUsername(), item.reviewID);
         }
 
         this.loadCard(this.sessionController!.nextCard('dismiss-error'));

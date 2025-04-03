@@ -140,7 +140,7 @@ Author: ${this.author}
               this.authStore.loginAndRegistration.init = false;
               this.authStore.loginAndRegistration.init = true;
 
-              this.$router.push(`/u/${(await getCurrentUser()).username}/new`);
+              this.$router.push(`/u/${(await getCurrentUser()).getUsername()}/new`);
             } else {
               if (resp.error === 'This username is taken!') {
                 this.usernameError = true;
