@@ -57,7 +57,7 @@
       </template>
     </v-text-field>
 
-    <course-card-browser :course-id="courseId" :_tag="tagId" />
+    <course-card-browser :course-id="courseId" :tag-id="tagId" />
   </div>
 </template>
 

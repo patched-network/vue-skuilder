@@ -138,7 +138,7 @@ export default defineComponent({
       type: String,
       required: true,
     },
-    _tag: {
+    tagId: {
       type: String,
       required: false,
       default: '',
@@ -166,8 +166,8 @@ export default defineComponent({
   async created() {
     this.courseDB = getDataLayer().getCourseDB(this.courseId);
 
-    if (this._tag) {
-      this.questionCount = (await this.courseDB.getTag(this._tag)).taggedCards.length;
+    if (this.tagId) {
+      this.questionCount = (await this.courseDB.getTag(this.tagId)).taggedCards.length;
     } else {
       this.questionCount = await this.courseDB!.getCourseInfo().cardCount;
     }
@@ -224,8 +224,8 @@ export default defineComponent({
       }
     },
     async populateTableData() {
-      if (this._tag) {
-        const tag = await this.courseDB!.getTag(this._tag);
+      if (this.tagId) {
+        const tag = await this.courseDB!.getTag(this.tagId);
         this.cards = tag.taggedCards.map((c) => {
           return { id: `${this.courseId}-${c}`, isOpen: false, delBtn: false };
         });
@@ -254,8 +254,8 @@ export default defineComponent({
           } else {
             console.error(`Card ${r.id} not found`);
             toRemove.push(r.id);
-            if (this._tag) {
-              this.courseDB!.removeTagFromCard(r.id, this._tag);
+            if (this.tagId) {
+              this.courseDB!.removeTagFromCard(r.id, this.tagId);
             }
             return false;
           }
