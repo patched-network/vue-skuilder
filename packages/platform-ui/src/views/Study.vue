@@ -42,16 +42,16 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue';
 import SessionConfiguration from '@/components/Study/SessionConfiguration.vue';
-import { StudySession, type StudySessionConfig } from '@vue-skuilder/common-ui';
-import { ContentSourceID, UserDBInterface, getDataLayer } from '@vue-skuilder/db';
 import { getCurrentUser } from '@/stores/useAuthStore';
-import { Router } from 'vue-router';
-import { CourseConfig } from '@vue-skuilder/common';
 import { useConfigStore } from '@/stores/useConfigStore';
 import { useDataInputFormStore } from '@/stores/useDataInputFormStore';
+import { CourseConfig } from '@vue-skuilder/common';
+import { StudySession, type StudySessionConfig } from '@vue-skuilder/common-ui';
 import Courses from '@vue-skuilder/courses';
+import { ContentSourceID, UserDBInterface, getDataLayer } from '@vue-skuilder/db';
+import { defineComponent } from 'vue';
+import { Router } from 'vue-router';
 
 function randomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
