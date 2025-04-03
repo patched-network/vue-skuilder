@@ -81,7 +81,7 @@ import { defineComponent, ref, watch, onMounted } from 'vue';
 import { alertUser } from '@vue-skuilder/common-ui';
 import SkMidi from './midi';
 import { Status } from '@vue-skuilder/common';
-import { User } from '@vue-skuilder/db';
+import { UserDBInterface } from '@vue-skuilder/db';
 import { InputEventNoteon } from 'webmidi';
 import PianoRangeVisualizer from './PianoRangeVisualizer.vue';
 
@@ -102,7 +102,7 @@ export default defineComponent({
       required: true,
     },
     user: {
-      type: Object as () => User,
+      type: Object as () => UserDBInterface,
       required: true,
     },
   },
@@ -390,7 +390,7 @@ export default defineComponent({
     });
 
     const retrieveSettings = async () => {
-      const s = await props.user.getCourseSettings(props._id);
+      const s = await (await props.user.getCourseInterface(props._id)).getCourseSettings();
 
       if (s?.midiinput) {
         const savedInput = s.midiinput.toString();
