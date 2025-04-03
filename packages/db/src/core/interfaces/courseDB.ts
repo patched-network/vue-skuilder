@@ -123,6 +123,8 @@ export interface CourseDBInterface {
     elo?: CourseElo
   ): Promise<PouchDB.Core.Response>;
 
+  removeCard(cardId: string): Promise<PouchDB.Core.Response>;
+
   getInexperiencedCards(): Promise<
     {
       courseId: string;
