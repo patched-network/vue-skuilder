@@ -68,17 +68,17 @@ export default defineComponent({
 
   created() {
     getCurrentUser().then((u) => {
-      this.username = u.username;
+      this.username = u.getUsername();
     });
   },
 
   methods: {
     async gotoSettings() {
-      this.$router.push(`/u/${(await getCurrentUser()).username}`);
+      this.$router.push(`/u/${(await getCurrentUser()).getUsername()}`);
     },
 
     async gotoStats() {
-      this.$router.push(`/u/${(await getCurrentUser()).username}/stats`);
+      this.$router.push(`/u/${(await getCurrentUser()).getUsername()}/stats`);
     },
 
     dismiss(item: string) {
