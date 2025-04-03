@@ -169,7 +169,7 @@ export default defineComponent({
     if (this.tagId) {
       this.questionCount = (await this.courseDB.getTag(this.tagId)).taggedCards.length;
     } else {
-      this.questionCount = await this.courseDB!.getCourseInfo().cardCount;
+      this.questionCount = (await this.courseDB!.getCourseInfo()).cardCount;
     }
 
     for (let i = 1; (i - 1) * 25 < this.questionCount; i++) {
