@@ -107,9 +107,9 @@ const router = createRouter({
       component: ClassroomCtrlPanel,
     },
     {
-      path: '/classrooms/:_id/code',
+      path: '/classrooms/:classroomId/code',
       props: true,
-      alias: '/c/:_id',
+      alias: '/c/:classroomId',
       component: JoinCode,
     },
     {

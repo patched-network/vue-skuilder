@@ -25,7 +25,7 @@ export default defineComponent({
   name: 'JoinCode',
 
   props: {
-    _id: {
+    classroomId: {
       type: String,
       required: true,
     },
@@ -42,10 +42,10 @@ export default defineComponent({
   async created() {
     const dl = getDataLayer();
 
-    this.classroomDB = await dl.getClassroomDB(this._id, 'teacher');
+    this.classroomDB = await dl.getClassroomDB(this.classroomId, 'teacher');
     this.classroomCfg = this.classroomDB.getConfig();
     await Promise.all([]);
-    log(`Route loaded w/ (prop) _id: ${this._id}`);
+    log(`Route loaded w/ (prop) _id: ${this.classroomId}`);
     log(`Config:
     ${JSON.stringify(this.classroomCfg)}`);
     this.updatePending = false;
