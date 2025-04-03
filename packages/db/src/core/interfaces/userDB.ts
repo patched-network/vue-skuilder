@@ -1,4 +1,10 @@
 import { CourseRegistration, CourseRegistrationDoc, ScheduledCard } from '@/core/types/user';
+import {
+  ActivityRecord,
+  CourseRegistration,
+  CourseRegistrationDoc,
+  ScheduledCard,
+} from '@/core/types/user';
 import { ClassroomRegistrationDoc } from '@/impl/pouch/userDB';
 import { CourseElo, Status } from '@vue-skuilder/common';
 import { Moment } from 'moment';
@@ -98,6 +104,8 @@ export interface UserDBInterface {
    * Get user's pending reviews
    */
   getPendingReviews(courseId?: string): Promise<ScheduledCard[]>;
+
+  getActivityRecords(): Promise<ActivityRecord[]>;
 
   /**
    * Schedule a card for review
