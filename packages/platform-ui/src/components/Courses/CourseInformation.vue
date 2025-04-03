@@ -1,9 +1,9 @@
 <template>
   <div v-if="!updatePending">
-    <h1 class="text-h4 mb-2"><router-link to="/q">Quilts</router-link> / {{ courseCongig.name }}</h1>
+    <h1 class="text-h4 mb-2"><router-link to="/q">Quilts</router-link> / {{ courseConfig.name }}</h1>
 
     <p class="text-body-2">
-      {{ courseCongig.description }}
+      {{ courseConfig.description }}
     </p>
 
     <transition name="component-fade" mode="out-in">
@@ -90,7 +90,7 @@ export default defineComponent({
         },
       ],
       updatePending: true,
-      courseCongig: {} as CourseConfig,
+      courseConfig: {} as CourseConfig,
       userIsRegistered: false,
       tags: [] as Tag[],
       user: null as UserDBInterface | null,
@@ -99,7 +99,7 @@ export default defineComponent({
 
   computed: {
     isPianoCourse(): boolean {
-      return this.courseCongig.name.toLowerCase().includes('piano');
+      return this.courseConfig.name.toLowerCase().includes('piano');
     },
   },
 
@@ -113,7 +113,7 @@ export default defineComponent({
         return c.courseID === this._id && (c.status === 'active' || c.status === undefined);
       }).length === 1;
 
-    this.courseCongig = (await this.courseDB!.getCourseConfig())!;
+    this.courseConfig = (await this.courseDB!.getCourseConfig())!;
     this.tags = (await this.courseDB!.getCourseTagStubs()).rows.map((r) => r.doc!);
     this.updatePending = false;
   },
