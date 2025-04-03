@@ -1,4 +1,10 @@
-import { ScheduledCard, UserCourseSettings, UserDBInterface, UsrCrsDataInterface } from '@/core';
+import {
+  ScheduledCard,
+  UserCourseSetting,
+  UserCourseSettings,
+  UserDBInterface,
+  UsrCrsDataInterface,
+} from '@/core';
 import { CourseDB } from './courseDB';
 import moment, { Moment } from 'moment';
 import { User } from './userDB';
@@ -39,6 +45,9 @@ export class UsrCrsData implements UsrCrsDataInterface {
       console.warn(`no settings found during lookup on course ${this._courseId}`);
       return {};
     }
+  }
+  public async updateCourseSettings(updates: UserCourseSetting[]) {
+    return this.user.updateCourseSettings(this._courseId, updates);
   }
 
   private async getReviewstoDate(targetDate: Moment) {

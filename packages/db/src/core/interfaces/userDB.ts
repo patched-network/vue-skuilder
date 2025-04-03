@@ -10,6 +10,7 @@ import { Moment } from 'moment';
 import { CardHistory, CardRecord } from '../types/types-legacy';
 import { UserConfig } from '../types/user';
 import { DocumentUpdater } from '@/study';
+import { Update } from '@/impl/pouch/updateQueue';
 
 /**
  * User data and authentication
@@ -159,9 +160,15 @@ export interface UserCourseSettings {
   [setting: string]: string | number | boolean;
 }
 
+export interface UserCourseSetting {
+  key: string;
+  value: string | number | boolean;
+}
+
 // [ ] reconsider here. Should maybe be generic type based on <T extends StudyContentSource> ?
 export interface UsrCrsDataInterface {
   getScheduledReviewCount(): Promise<number>;
   getCourseSettings(): Promise<UserCourseSettings>;
+  updateCourseSettings(updates: UserCourseSetting[]): void; // [ ] return a result of some sort?
   // getRegistrationDoc(): Promise<CourseRegistration>;
 }

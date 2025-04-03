@@ -28,7 +28,7 @@ import {
   ScheduledCard,
   UserConfig,
 } from '@/core/types/user';
-import { UserDBInterface, UsrCrsDataInterface } from '@/core';
+import { UserCourseSetting, UserDBInterface, UsrCrsDataInterface } from '@/core';
 import { UsrCrsData } from './user-course-relDB';
 import { DocumentUpdater } from '@/study';
 
@@ -718,13 +718,7 @@ Currently logged-in as ${this._username}.`
     return cards.rows.map((r) => r.doc);
   }
 
-  async updateCourseSettings(
-    course_id: string,
-    settings: {
-      key: string;
-      value: string | number | boolean;
-    }[]
-  ) {
+  async updateCourseSettings(course_id: string, settings: UserCourseSetting[]) {
     this.getCourseRegistrationsDoc().then((doc) => {
       const crs = doc.courses.find((c) => c.courseID === course_id);
       if (crs) {
