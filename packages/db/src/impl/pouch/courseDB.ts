@@ -32,9 +32,17 @@ const courseLookupDB: PouchDB.Database = new pouch(
 );
 
 export class CoursesDB implements CoursesDBInterface {
-  public async getCourseList(): Promise<PouchDB.Core.AllDocsResponse<CourseConfig>> {
-    return courseLookupDB.allDocs<CourseConfig>({
+  public async getCourseList(): Promise<CourseConfig[]> {
+    const resp = await courseLookupDB.allDocs<CourseConfig>({
       include_docs: true,
+    });
+    return resp.rows.map((r) => {
+      console.log(`found course ${JSON.stringify(r.doc)}`);
+
+      return {
+        ...r.doc!,
+        courseID: r.id,
+      };
     });
   }
 

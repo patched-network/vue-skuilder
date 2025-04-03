@@ -26,9 +26,9 @@
         <v-btn color="error" size="small" variant="outlined" @click="drop"> Drop this course </v-btn>
       </div>
       <div v-else>
-        <v-btn color="primary" @click="register">Register</v-btn>
+        <v-btn color="primary" class="me-2" @click="register">Register</v-btn>
         <router-link :to="`/q/${_id}/preview`">
-          <v-btn variant="outlined" color="primary">Start a trial study session</v-btn>
+          <v-btn variant="outlined" color="primary" class="me-2">Start a trial study session</v-btn>
         </router-link>
       </div>
     </transition>
