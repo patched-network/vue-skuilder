@@ -54,7 +54,6 @@ export default defineComponent({
   name: 'SkTagsInput',
 
   components: {
-    // eslint-disable-next-line
     VueTagsInput,
   },
 
