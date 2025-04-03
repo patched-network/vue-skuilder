@@ -1,7 +1,7 @@
 <template>
   <v-card v-if="!updatePending && courseConfig" data-cy="available-course-card">
     <v-card-item>
-      <v-card-title data-cy="course-title" @click="routeToCourse">
+      <v-card-title data-cy="course-title">
         {{ courseConfig.name }}
         <v-icon v-if="isPrivate" icon="mdi-eye-off" class="ml-2"></v-icon>
       </v-card-title>
@@ -24,12 +24,10 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue';
-import { log } from '@vue-skuilder/common';
-import { getDataLayer } from '@vue-skuilder/db';
-import { CourseConfig } from '@vue-skuilder/common';
-import { useRouter } from 'vue-router';
 import { getCurrentUser } from '@/stores/useAuthStore';
+import { CourseConfig, log } from '@vue-skuilder/common';
+import { getDataLayer } from '@vue-skuilder/db';
+import { defineComponent } from 'vue';
 
 export default defineComponent({
   name: 'CourseStubCard',
