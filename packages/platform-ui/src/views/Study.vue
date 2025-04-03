@@ -125,14 +125,14 @@ export default defineComponent({
 
     if (this.randomPreview) {
       const userCourseRegDoc = await this.user.getCourseRegistrationsDoc();
-      const allCourses = (await getDataLayer().getCoursesDB().getCourseList()).rows.map((r) => r.id);
+      const allCourses = (await getDataLayer().getCoursesDB().getCourseList()).map((r) => r.courseID);
       const unRegisteredCourses = allCourses.filter((c) => {
         return !userCourseRegDoc.courses.some((rc) => rc.courseID === c);
       });
       if (unRegisteredCourses.length > 0) {
-        singletonStudyCourseID = unRegisteredCourses[randomInt(0, unRegisteredCourses.length)];
+        singletonStudyCourseID = unRegisteredCourses[randomInt(0, unRegisteredCourses.length)]!;
       } else {
-        singletonStudyCourseID = allCourses[randomInt(0, allCourses.length)];
+        singletonStudyCourseID = allCourses[randomInt(0, allCourses.length)]!;
       }
     }
 
@@ -142,10 +142,10 @@ export default defineComponent({
         .getCoursesDB()
         .getCourseList()
         .then((courses) => {
-          courses.rows.forEach((c) => {
-            if (c.id === this.previewCourseID) {
-              this.previewCourseConfig = c.doc!;
-              this.previewCourseConfig!.courseID = c.id;
+          courses.forEach((c) => {
+            if (c.courseID === this.previewCourseID) {
+              this.previewCourseConfig = c;
+              this.previewCourseConfig!.courseID = c.courseID;
             }
           });
         });
