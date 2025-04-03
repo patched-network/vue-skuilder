@@ -1,6 +1,6 @@
 // db/src/factory.ts
 
-import { DataLayerProvider, UserDBInterface } from './core/interfaces';
+import { DataLayerProvider } from './core/interfaces';
 
 // Configuration type for data layer initialization
 export interface DataLayerConfig {
