@@ -1,7 +1,7 @@
 <template>
   <div>
     <div v-if="initComplete">
-      <course-information v-if="courseId !== undefined && courseId !== ''" :_id="courseId" />
+      <course-information v-if="courseId !== undefined && courseId !== ''" :course-id="courseId" />
       <v-container v-else-if="candidates.length === 0">
         <v-row class="text-h4">
           {{ query }}
