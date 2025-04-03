@@ -1,14 +1,8 @@
-import {
-  ScheduledCard,
-  UserCourseSetting,
-  UserCourseSettings,
-  UserDBInterface,
-  UsrCrsDataInterface,
-} from '@/core';
-import { CourseDB } from './courseDB';
+import { ScheduledCard, UserCourseSetting, UserCourseSettings, UsrCrsDataInterface } from '@/core';
 import moment, { Moment } from 'moment';
-import { User } from './userDB';
 import { getStartAndEndKeys, REVIEW_PREFIX, REVIEW_TIME_FORMAT } from '.';
+import { CourseDB } from './courseDB';
+import { User } from './userDB';
 
 export class UsrCrsData implements UsrCrsDataInterface {
   private user: User;

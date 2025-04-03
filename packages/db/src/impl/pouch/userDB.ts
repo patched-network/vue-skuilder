@@ -1,11 +1,19 @@
-import { Status } from '@vue-skuilder/common';
-import { ENV } from '@vue-skuilder/common';
-import { GuestUsername } from '../../core/types/types-legacy';
 import { getCardHistoryID } from '@/core/util';
-import { CourseElo } from '@vue-skuilder/common';
+import { CourseElo, ENV, Status } from '@vue-skuilder/common';
 import moment, { Moment } from 'moment';
+import { GuestUsername } from '../../core/types/types-legacy';
 import pouch from './pouchdb-setup';
 
+import { UserCourseSetting, UserDBInterface, UsrCrsDataInterface } from '@/core';
+import {
+  ActivityRecord,
+  CourseRegistration,
+  CourseRegistrationDoc,
+  ScheduledCard,
+  UserConfig,
+} from '@/core/types/user';
+import { DocumentUpdater } from '@/study';
+import { CardHistory, CardRecord } from '../../core/types/types-legacy';
 import { getCourseConfigs } from './courseDB';
 import {
   filterAllDocsByPrefix,
@@ -18,19 +26,9 @@ import {
   scheduleCardReview,
   updateGuestAccountExpirationDate,
 } from './index';
-import UpdateQueue, { Update } from './updateQueue';
-import { CardHistory, CardRecord } from '../../core/types/types-legacy';
 import { PouchError } from './types';
-import {
-  ActivityRecord,
-  CourseRegistration,
-  CourseRegistrationDoc,
-  ScheduledCard,
-  UserConfig,
-} from '@/core/types/user';
-import { UserCourseSetting, UserDBInterface, UsrCrsDataInterface } from '@/core';
+import UpdateQueue, { Update } from './updateQueue';
 import { UsrCrsData } from './user-course-relDB';
-import { DocumentUpdater } from '@/study';
 
 const log = (s: any) => {
   console.log(s);
