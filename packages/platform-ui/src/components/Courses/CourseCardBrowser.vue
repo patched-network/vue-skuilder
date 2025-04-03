@@ -77,7 +77,7 @@
         <div v-if="c.isOpen" class="px-4 py-2 bg-blue-grey-lighten-5">
           <card-loader :qualified_id="c.id" :view-lookup="viewLookup" class="elevation-1" />
 
-          <tags-input v-show="editMode === 'tags'" :course-i-d="_id" :card-i-d="c.id.split('-')[1]" class="mt-4" />
+          <tags-input v-show="editMode === 'tags'" :course-i-d="courseId" :card-i-d="c.id.split('-')[1]" class="mt-4" />
 
           <div v-show="editMode === 'flag'" class="mt-4">
             <v-btn color="error" variant="outlined" @click="c.delBtn = true"> Delete this card </v-btn>
@@ -134,7 +134,7 @@ export default defineComponent({
   },
 
   props: {
-    _id: {
+    courseId: {
       type: String,
       required: true,
     },
@@ -164,7 +164,7 @@ export default defineComponent({
   },
 
   async created() {
-    this.courseDB = getDataLayer().getCourseDB(this._id);
+    this.courseDB = getDataLayer().getCourseDB(this.courseId);
 
     if (this._tag) {
       this.questionCount = (await this.courseDB.getTag(this._tag)).taggedCards.length;
@@ -227,7 +227,7 @@ export default defineComponent({
       if (this._tag) {
         const tag = await this.courseDB!.getTag(this._tag);
         this.cards = tag.taggedCards.map((c) => {
-          return { id: `${this._id}-${c}`, isOpen: false, delBtn: false };
+          return { id: `${this.courseId}-${c}`, isOpen: false, delBtn: false };
         });
       } else {
         this.cards = (await this.courseDB!.getCardsByELO(0, 25)).map((c) => {

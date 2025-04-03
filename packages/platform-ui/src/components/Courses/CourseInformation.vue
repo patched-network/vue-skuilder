@@ -52,7 +52,7 @@
       </v-card-text>
     </v-card>
 
-    <course-card-browser class="my-3" :_id="courseId" />
+    <course-card-browser class="my-3" :course-id="courseId" />
   </div>
 </template>
 
