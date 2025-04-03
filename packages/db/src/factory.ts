@@ -8,7 +8,6 @@ export interface DataLayerConfig {
   options?: {
     staticContentPath?: string; // Path to static content JSON files
     localStoragePrefix?: string; // Prefix for IndexedDB storage names
-    userGetter?: () => Promise<UserDBInterface>;
   };
 }
 

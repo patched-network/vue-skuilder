@@ -1,6 +1,6 @@
 // stores/useAuthStore.ts
 import { defineStore } from 'pinia';
-import { getDataLayer, initializeDataLayer, UserDBInterface } from '@vue-skuilder/db';
+import { getDataLayer, UserDBInterface } from '@vue-skuilder/db';
 
 export interface AuthState {
   _user: UserDBInterface | undefined;
@@ -47,9 +47,6 @@ export const useAuthStore = defineStore('auth', {
   actions: {
     async init() {
       try {
-        // Initialize data layer with PouchDB implementation
-        await initializeDataLayer({ type: 'pouch' });
-
         this._user = getDataLayer().getUserDB();
 
         this.loginAndRegistration.loggedIn = this._user.isLoggedIn();

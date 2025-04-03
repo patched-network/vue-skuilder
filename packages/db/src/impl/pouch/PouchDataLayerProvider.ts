@@ -3,6 +3,7 @@
 import {
   AdminDBInterface,
   ClassroomDBInterface,
+  CoursesDBInterface,
   CourseDBInterface,
   DataLayerProvider,
   UserDBInterface,
@@ -15,16 +16,13 @@ import { StudentClassroomDB, TeacherClassroomDB } from './classroomDB';
 import { CourseDB, CoursesDB } from './courseDB';
 
 import { User } from './userDB';
-import { CoursesDBInterface } from '../../../dist';
 
 export class PouchDataLayerProvider implements DataLayerProvider {
   private initialized: boolean = false;
   private userDB!: UserDBInterface;
   private currentUsername: string = '';
 
-  constructor() {
-    this.initialize();
-  }
+  constructor() {}
 
   async initialize(): Promise<void> {
     if (this.initialized) return;
