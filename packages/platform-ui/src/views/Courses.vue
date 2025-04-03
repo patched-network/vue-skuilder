@@ -22,12 +22,12 @@
             <v-expansion-panel-title data-cy="registered-quilts-panel">My Registered Quilts</v-expansion-panel-title>
             <v-expansion-panel-text>
               <v-row>
-                <v-col v-for="course in registeredCourses" :key="course._id" cols="12" sm="6" md="4" lg="3">
+                <v-col v-for="course in registeredCourses" :key="course.courseID" cols="12" sm="6" md="4" lg="3">
                   <v-card variant="outlined" density="compact" class="pa-2">
                     <div class="d-flex align-center justify-space-between">
                       <div data-cy="registered-course" class="d-flex align-center">
                         <router-link
-                          :to="`/q/${course.name.replace(' ', '_')}`"
+                          :to="`/q/${course.name.replaceAll(' ', '_')}`"
                           class="text-subtitle-2"
                           data-cy="registered-course-title"
                         >
@@ -90,7 +90,9 @@ import { alertUser } from '@vue-skuilder/common-ui';
 import { UserDBInterface, getDataLayer } from '@vue-skuilder/db';
 import { getCurrentUser } from '@/stores/useAuthStore';
 
-type DBCourseConfig = CourseConfig & PouchDB.Core.IdMeta;
+type DBCourseConfig = CourseConfig & {
+  courseID: string;
+};
 
 export default defineComponent({
   name: 'CoursesView',
@@ -181,29 +183,19 @@ export default defineComponent({
         .map((c) => {
           return c.courseID;
         });
-      const courseList = await getDataLayer().getCoursesDB().getCourseList();
+      console.log(`userCourseIDs: ${userCourseIDs}`);
 
-      this.existingCourses = courseList.rows
-        .filter((course) => {
-          return course && course.doc;
-        })
-        .map((course) => {
-          return course.doc!;
-        });
+      this.existingCourses = (await getDataLayer().getCoursesDB().getCourseList()) as DBCourseConfig[];
 
-      this.registeredCourses = courseList.rows
-        .filter((course) => {
-          let match: boolean = false;
-          userCourseIDs.forEach((id) => {
-            if (course.id === id) {
-              match = true;
-            }
-          });
-          return match;
-        })
-        .map((course) => {
-          return course.doc!;
+      this.registeredCourses = this.existingCourses.filter((course) => {
+        let match: boolean = false;
+        userCourseIDs.forEach((id: string) => {
+          if (course.courseID === id) {
+            match = true;
+          }
         });
+        return match;
+      });
     },
 
     async createCourse(): Promise<void> {
