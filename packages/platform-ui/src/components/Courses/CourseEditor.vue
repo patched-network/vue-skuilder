@@ -47,7 +47,7 @@
           </v-radio-group>
         </v-row>
         <v-row class="cols sm md">
-          <v-btn :loading="updatePending" color="primary" @click="submit" data-cy="save-course-button">
+          <v-btn :loading="updatePending" color="primary" data-cy="save-course-button" @click="submit">
             Save Course Changes
           </v-btn>
         </v-row>
