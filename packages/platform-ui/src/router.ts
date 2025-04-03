@@ -124,9 +124,9 @@ const router = createRouter({
       component: CourseRouter,
     },
     {
-      path: '/courses/:_id/elo',
+      path: '/courses/:courseId/elo',
       props: true,
-      alias: ['/quilts/:_id/elo', '/q/:_id/elo'],
+      alias: ['/quilts/:courseId/elo', '/q/:courseId/elo'],
       component: ELOModerator,
     },
     {

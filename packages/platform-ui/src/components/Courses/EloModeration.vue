@@ -41,7 +41,7 @@ export default defineComponent({
   },
 
   props: {
-    _id: {
+    courseId: {
       type: String,
       required: true,
     },
@@ -67,7 +67,7 @@ export default defineComponent({
   },
 
   async created() {
-    this.courseDB = getDataLayer().getCourseDB(this._id);
+    this.courseDB = getDataLayer().getCourseDB(this.courseId);
 
     this.courseConfig = (await this.courseDB!.getCourseConfig())!;
     await this.getNewCards();
@@ -98,8 +98,8 @@ export default defineComponent({
       this.id1 = '';
       this.id2 = '';
 
-      this.id1 = `${this._id}-${this.cards[0].cardId}`;
-      this.id2 = `${this._id}-${this.cards[1].cardId}`;
+      this.id1 = `${this.courseId}-${this.cards[0].cardId}`;
+      this.id2 = `${this.courseId}-${this.cards[1].cardId}`;
 
       this.elo1 = this.cards[0].elo;
       this.elo2 = this.cards[1].elo;
