@@ -31,9 +31,6 @@ yarn-error.log*
 # The caddy (web server) config file
 vue/Caddyfile
 
-# Cyrpress build artifacts
-/packages/platform-ui/cypress
-
 # yarn 2+ files
 .yarn/*
 !.yarn/patches
