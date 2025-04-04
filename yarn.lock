@@ -3837,7 +3837,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/cypress@npm:^1.1.6":
+"@types/cypress@npm:1.1.6":
   version: 1.1.6
   resolution: "@types/cypress@npm:1.1.6"
   dependencies:
@@ -5178,6 +5178,7 @@ __metadata:
     "@testing-library/vue": "npm:^8.1.0"
     "@tonaljs/tonal": "npm:^3.6.0"
     "@types/canvas-confetti": "npm:^1.9.0"
+    "@types/cypress": "npm:1.1.6"
     "@types/dom-mediacapture-record": "npm:^1.0.9"
     "@types/jest": "npm:^29"
     "@types/lodash": "npm:^4.14.136"
@@ -5207,6 +5208,7 @@ __metadata:
     buffer: "npm:^6.0.3"
     canvas-confetti: "npm:^1.9.3"
     chess.js: "npm:1.1.0"
+    cypress: "npm:14.1.0"
     eslint: "npm:^9.21.0"
     eslint-config-prettier: "npm:^10.0.2"
     eslint-plugin-vue: "npm:^9.32.0"
@@ -5239,6 +5241,7 @@ __metadata:
     vue: "npm:^3.5.13"
     vue-router: "npm:^4.2.0"
     vuetify: "npm:^3.7.0"
+    wait-on: "npm:8.0.2"
     wavesurfer.js: "npm:^5.1.0"
     webmidi: "npm:^2.5.1"
   languageName: unknown
@@ -7086,7 +7089,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"cypress@npm:*, cypress@npm:^14.1.0":
+"cypress@npm:*, cypress@npm:14.1.0":
   version: 14.1.0
   resolution: "cypress@npm:14.1.0"
   dependencies:
@@ -15510,10 +15513,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "vue-skuilder@workspace:."
   dependencies:
-    "@types/cypress": "npm:^1.1.6"
     concurrently: "npm:^9.1.2"
-    cypress: "npm:^14.1.0"
-    wait-on: "npm:^8.0.2"
   languageName: unknown
   linkType: soft
 
@@ -15606,7 +15606,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"wait-on@npm:^8.0.2":
+"wait-on@npm:8.0.2":
   version: 8.0.2
   resolution: "wait-on@npm:8.0.2"
   dependencies:

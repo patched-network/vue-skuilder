@@ -10,9 +10,6 @@
         "couchdb:status": "node scripts/dev-couchdb.js status",
         "couchdb:remove": "node scripts/dev-couchdb.js remove",
         "postdev": "node scripts/dev-couchdb.js stop",
-        "test:e2e": "cypress open",
-        "test:e2e:headless": "cypress run",
-        "ci:e2e": "yarn dev & wait-on http://localhost:5173 && cypress run; kill $(lsof -t -i:8080); yarn couchdb:stop",
         "build": "yarn workspace @vue-skuilder/common build && yarn workspace @vue-skuilder/db build && yarn workspace @vue-skuilder/common-ui build && yarn workspace @vue-skuilder/courses build && yarn workspace @vue-skuilder/platform-ui build && yarn workspace @vue-skuilder/express build",
         "clean": "yarn clean:dist && yarn clean:node_modules",
         "clean:dist": "find packages -name 'dist' -type d -exec rm -rf {} +",
@@ -25,9 +22,6 @@
     ],
     "packageManager": "yarn@4.6.0",
     "devDependencies": {
-        "@types/cypress": "^1.1.6",
-        "concurrently": "^9.1.2",
-        "cypress": "^14.1.0",
-        "wait-on": "^8.0.2"
+        "concurrently": "^9.1.2"
     }
 }

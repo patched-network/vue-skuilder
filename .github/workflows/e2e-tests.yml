@@ -53,7 +53,7 @@ jobs:
       - name: Run E2E tests
         run: |
           # Run Cypress tests
-          yarn cypress run
+          yarn workspace @vue-skuilder/platform-ui cypress run
 
       - name: Cleanup services
         if: always()
@@ -68,7 +68,7 @@ jobs:
         if: failure()
         with:
           name: cypress-screenshots
-          path: cypress/screenshots
+          path: packages/platform-ui/cypress/screenshots
           retention-days: 7 # Optional: set retention period
 
       - name: Upload videos
@@ -76,5 +76,5 @@ jobs:
         if: always()
         with:
           name: cypress-videos
-          path: cypress/videos
+          path: packages/platform-ui/cypress/videos
           retention-days: 7 # Optional: set retention period
