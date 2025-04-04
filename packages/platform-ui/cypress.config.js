@@ -2,7 +2,7 @@ const { defineConfig } = require('cypress');
 
 module.exports = defineConfig({
   e2e: {
-    baseUrl: 'http://localhost:5173', // package/vue vite dev server port
+    baseUrl: 'http://localhost:5173', // package/platform-ui vite dev server port
     supportFile: 'cypress/support/e2e.js',
     specPattern: 'cypress/e2e/**/*.cy.{js,jsx,ts,tsx}',
     setupNodeEvents(on, config) {

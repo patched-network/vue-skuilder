@@ -1,4 +1,4 @@
-![E2E Tests](https://github.com/patched-network/vue-skuilder/actions/workflows/e2e-tests.yml/badge.svg)
+![`platform-ui` E2E](https://github.com/patched-network/vue-skuilder/actions/workflows/e2e-tests.yml/badge.svg)
 
 General tooling for interactive tutoring systems, with experimentation toward
 - mass-collaborative authoring
