@@ -37,7 +37,7 @@ jobs:
         run: yarn install
 
       - name: Install Cypress
-        run: yarn cypress install
+        run: yarn workspace @vue-skuilder/platform-ui cypress install
 
       - name: Setup and wait for services
         run: |
