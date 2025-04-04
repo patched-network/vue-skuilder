@@ -6,6 +6,7 @@ import { postProcessCourse } from '../attachment-preprocessing/index.js';
 import AsyncProcessQueue from '../utils/processQueue.js';
 import nano from 'nano';
 import { Status } from '@vue-skuilder/common';
+import logger from '@/logger.js';
 
 /**
  * Fake fcn to allow usage in couchdb map fcns which, after passing
@@ -198,14 +199,20 @@ async function createCourse(cfg: CourseConfig): Promise<any> {
   if (dbCreation.ok) {
     const courseDB = CouchDB.use(courseDBName);
 
-    courseDB.insert({
-      _id: 'CourseConfig',
-      ...cfg,
-    });
+    courseDB
+      .insert({
+        _id: 'CourseConfig',
+        ...cfg,
+      })
+      .catch((e) => {
+        logger.error(`Error inserting CourseConfig for course ${courseID}:`, e);
+      });
 
     // insert the tags, elo, etc view docs
     courseDBDesignDocs.forEach((doc) => {
-      courseDB.insert(doc);
+      courseDB.insert(doc).catch((e) => {
+        logger.error(`Error inserting design doc for course ${courseID}:`, e);
+      });
     });
 
     if (!cfg.public) {
@@ -220,7 +227,12 @@ async function createCourse(cfg: CourseConfig): Promise<any> {
         },
       };
 
-      courseDB.insert(secObj as nano.MaybeDocument, '_security');
+      courseDB.insert(secObj as nano.MaybeDocument, '_security').catch((e) => {
+        logger.error(
+          `Error inserting security object for course ${courseID}:`,
+          e
+        );
+      });
     }
   }
 
