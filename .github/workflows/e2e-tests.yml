@@ -1,4 +1,4 @@
-name: E2E Tests
+name: Platform E2E Tests
 
 on:
   schedule:
