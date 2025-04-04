@@ -43,14 +43,13 @@ export async function addNote55(
   if (result.ok) {
     // create cards
     await createCards(courseID, dataShapeId, result.id, tags, elo);
+  } else {
+    console.log(`Error adding note: ${result.error}`);
   }
 
   return result;
 }
 
-/**
- * @deprecated Use similar functionality from the dataLayerProvider
- */
 export async function createCards(
   courseID: string,
   datashapeID: PouchDB.Core.DocumentId,
