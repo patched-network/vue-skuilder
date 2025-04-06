@@ -191,7 +191,13 @@ async function createCourse(cfg: CourseConfig): Promise<any> {
   }
 
   const courseID = lookupInsert.id;
+
   cfg.courseID = courseID;
+  await lookup.insert({
+    ...cfg,
+    _id: lookupInsert.id,
+    _rev: lookupInsert.rev,
+  } as nano.MaybeDocument);
 
   const courseDBName: string = getCourseDBName(courseID);
   const dbCreation = await CouchDB.db.create(courseDBName);
@@ -250,7 +256,7 @@ async function createCourse(cfg: CourseConfig): Promise<any> {
 export type CreateCourseResp = CreateCourse['response'];
 
 export const CourseCreationQueue = new AsyncProcessQueue<
-  // @ts-ignore
+  // @ts-expect-error [I do not know why this thinks is is broken or why it works.]
   CreateCourse['data'],
   CreateCourse['response']
 >(createCourse);
