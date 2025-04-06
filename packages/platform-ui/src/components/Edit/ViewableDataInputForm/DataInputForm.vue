@@ -39,6 +39,7 @@
               :ref="(el: FieldInputInstance) => setFieldInputRef(el, i)"
               :field="field"
               :autofocus="i == 0"
+              data-cy="markdown-input"
             />
             <midi-input
               v-else-if="field.type === midi"
@@ -57,6 +58,7 @@
           <tags-input ref="tagsInput" :hide-submit="true" :course-i-d="courseCfg.courseID" card-i-d="" />
           <v-btn
             v-if="!previewComponent"
+            data-cy="add-card-btn"
             class="float-right"
             type="submit"
             color="primary"
