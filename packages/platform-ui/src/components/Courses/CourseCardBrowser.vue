@@ -252,11 +252,11 @@ export default defineComponent({
           if (r.doc) {
             return true;
           } else {
-            console.error(`Card ${r.id} not found`);
-            toRemove.push(r.id);
-            if (this.tagId) {
-              this.courseDB!.removeTagFromCard(r.id, this.tagId);
-            }
+            console.error(`Card ${r.id}.doc not found.\ncard: ${JSON.stringify(r)}`);
+            // toRemove.push(r.id);
+            // if (this.tagId) {
+            //   this.courseDB!.removeTagFromCard(r.id, this.tagId);
+            // }
             return false;
           }
         })

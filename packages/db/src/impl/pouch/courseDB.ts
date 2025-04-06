@@ -532,9 +532,10 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
   }
 
   async getCourseDocs<T extends SkuilderCourseData>(
-    ids: string[]
+    ids: string[],
+    options: PouchDB.Core.AllDocsOptions = {}
   ): Promise<PouchDB.Core.AllDocsWithKeysResponse<{} & T>> {
-    return await getCourseDocs(this.id, ids);
+    return await getCourseDocs(this.id, ids, options);
   }
 }
 
