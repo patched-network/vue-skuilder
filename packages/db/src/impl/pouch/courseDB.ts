@@ -6,6 +6,7 @@ import {
   DataShape,
   ENV,
   EloToNumber,
+  Status,
   blankCourseElo,
   toCourseElo,
 } from '@vue-skuilder/common';
@@ -21,6 +22,8 @@ import {
 import { CardData, DocType, SkuilderCourseData, Tag, TagStub } from '../../core/types/types-legacy';
 import { GET_CACHED } from './clientCache';
 import { addNote55, addTagToCard, getCredentialledCourseConfig, getTagID } from './courseAPI';
+import { DataLayerResult } from '@/core/types/db';
+import { PouchError } from './types';
 
 const courseLookupDBTitle = 'coursedb-lookup';
 
@@ -495,8 +498,30 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
     tags: string[],
     uploads?: { [key: string]: PouchDB.Core.FullAttachment },
     elo: CourseElo = blankCourseElo()
-  ): Promise<PouchDB.Core.Response> {
-    return await addNote55(this.id, codeCourse, shape, data, author, tags, uploads, elo);
+  ): Promise<DataLayerResult> {
+    try {
+      const resp = await addNote55(this.id, codeCourse, shape, data, author, tags, uploads, elo);
+      if (resp.ok) {
+        return {
+          status: Status.ok,
+          message: '',
+        };
+      } else {
+        return {
+          status: Status.error,
+          message: 'Unexpected ',
+        };
+      }
+    } catch (e) {
+      const err = e as PouchDB.Core.Error;
+      console.error(
+        `[addNote] error ${err.name}\n\treason: ${err.reason}\n\tmessage: ${err.message}`
+      );
+      return {
+        status: Status.error,
+        message: `Error adding note to course. ${(e as PouchError).reason}`,
+      };
+    }
   }
 
   async getCourseDoc<T extends SkuilderCourseData>(

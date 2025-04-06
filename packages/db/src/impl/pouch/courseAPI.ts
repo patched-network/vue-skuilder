@@ -11,7 +11,6 @@ import { prepareNote55 } from '@vue-skuilder/common';
 import { User } from './userDB';
 
 /**
- * @deprecated Use similar functionality from the dataLayerProvider
  *
  * @param courseID id of the course (quilt) being added to
  * @param codeCourse
@@ -43,14 +42,13 @@ export async function addNote55(
   if (result.ok) {
     // create cards
     await createCards(courseID, dataShapeId, result.id, tags, elo);
+  } else {
+    console.log(`Error adding note: ${result}`);
   }
 
   return result;
 }
 
-/**
- * @deprecated Use similar functionality from the dataLayerProvider
- */
 export async function createCards(
   courseID: string,
   datashapeID: PouchDB.Core.DocumentId,
@@ -73,9 +71,6 @@ export async function createCards(
   }
 }
 
-/**
- * @deprecated Use similar functionality from the dataLayerProvider
- */
 async function createCard(
   questionViewName: string,
   courseID: string,
@@ -109,7 +104,6 @@ async function createCard(
 }
 
 /**
- * @deprecated Use similar functionality from the dataLayerProvider
  *
  * Adds a card to the DB. This function is called
  * as a side effect of adding either a View or
@@ -117,6 +111,8 @@ async function createCard(
  * @param course The name of the course that the card belongs to
  * @param id_displayable_data C/PouchDB ID of the data used to hydrate the view
  * @param id_view C/PouchDB ID of the view used to display the card
+ *
+ * @package
  */
 async function addCard(
   courseID: string,
@@ -153,8 +149,6 @@ export async function getCredentialledCourseConfig(courseID: string) {
 }
 
 /**
- @deprecated Use similar functionality from the dataLayerProvider
-
  Assciates a tag with a card.
 
  NB: DB stores tags as separate documents, with a list of card IDs.
@@ -163,6 +157,7 @@ export async function getCredentialledCourseConfig(courseID: string) {
  NB: tags are created if they don't already exist
 
  @param updateELO whether to update the ELO of the card with the new tag. Default true.
+ @package
 */
 export async function addTagToCard(
   courseID: string,
@@ -213,12 +208,6 @@ class AlreadyTaggedErr extends Error {
   }
 }
 
-/**
- * @deprecated Use similar functionality from the dataLayerProvider
- *
- * @param tagName
- * @returns
- */
 export function getTagID(tagName: string): string {
   const tagPrefix = DocType.TAG.valueOf() + '-';
   if (tagName.indexOf(tagPrefix) === 0) {
@@ -227,9 +216,7 @@ export function getTagID(tagName: string): string {
     return tagPrefix + tagName;
   }
 }
-/**
- * @deprecated Use similar functionality from the dataLayerProvider
- */
+
 export function getCourseDB(courseID: string): PouchDB.Database {
   const dbName = `coursedb-${courseID}`;
   return new pouch(

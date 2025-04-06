@@ -12,7 +12,7 @@
           <v-btn color="success">Start a study session</v-btn>
         </router-link>
         <router-link :to="`/edit/${courseId}`" class="me-2">
-          <v-btn color="indigo-lighten-1">
+          <v-btn data-cy="add-content-btn" color="indigo-lighten-1">
             <v-icon start>mdi-plus</v-icon>
             Add content
           </v-btn>
@@ -26,7 +26,7 @@
         <v-btn color="error" size="small" variant="outlined" @click="drop"> Drop this course </v-btn>
       </div>
       <div v-else>
-        <v-btn color="primary" class="me-2" @click="register">Register</v-btn>
+        <v-btn data-cy="register-btn" color="primary" class="me-2" @click="register">Register</v-btn>
         <router-link :to="`/q/${courseId}/preview`">
           <v-btn variant="outlined" color="primary" class="me-2">Start a trial study session</v-btn>
         </router-link>

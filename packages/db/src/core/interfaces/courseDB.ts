@@ -2,6 +2,7 @@ import { CourseConfig, CourseElo, DataShape } from '@vue-skuilder/common';
 import { StudySessionNewItem, StudySessionItem } from './contentSource';
 import { TagStub, Tag } from '../types/types-legacy';
 import { SkuilderCourseData } from '@vue-skuilder/common/dist/db';
+import { DataLayerResult } from '../types/db';
 
 /**
  * Course content and management
@@ -121,7 +122,7 @@ export interface CourseDBInterface {
     tags: string[],
     uploads?: { [key: string]: PouchDB.Core.FullAttachment },
     elo?: CourseElo
-  ): Promise<PouchDB.Core.Response>;
+  ): Promise<DataLayerResult>;
 
   removeCard(cardId: string): Promise<PouchDB.Core.Response>;
 

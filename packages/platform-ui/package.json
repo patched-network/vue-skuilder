@@ -11,7 +11,10 @@
         "test:unit": "vitest run",
         "test:unit:hmr": "vitest",
         "test:unit:coverage": "vitest run --coverage",
-        "test:unit:ui": "vitest --ui"
+        "test:unit:ui": "vitest --ui",
+        "test:e2e": "cypress open",
+        "test:e2e:headless": "cypress run",
+        "ci:e2e": "vite dev & wait-on http://localhost:5173 && cypress run"
     },
     "files": [
         "dist",
@@ -48,6 +51,7 @@
         "@testing-library/jest-dom": "^6.6.3",
         "@testing-library/vue": "^8.1.0",
         "@types/canvas-confetti": "^1.9.0",
+        "@types/cypress": "1.1.6",
         "@types/dom-mediacapture-record": "^1.0.9",
         "@types/jest": "^29",
         "@types/lodash": "^4.14.136",
@@ -68,6 +72,7 @@
         "autoprefixer": "^10.4.20",
         "babel-jest": "^29",
         "buffer": "^6.0.3",
+        "cypress": "14.1.0",
         "eslint": "^9.21.0",
         "eslint-config-prettier": "^10.0.2",
         "eslint-plugin-vue": "^9.32.0",
@@ -89,7 +94,8 @@
         "vite": "^6.0.9",
         "vite-plugin-eslint": "^1.8.1",
         "vite-plugin-pwa": "^0.21.1",
-        "vitest": "^3.0.5"
+        "vitest": "^3.0.5",
+        "wait-on": "8.0.2"
     },
     "engines": {
         "node": ">=18"
