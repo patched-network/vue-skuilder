@@ -81,7 +81,7 @@ import { defineComponent, ref, watch, onMounted } from 'vue';
 import { alertUser } from '@vue-skuilder/common-ui';
 import SkMidi from './midi';
 import { Status } from '@vue-skuilder/common';
-import { UserDBInterface } from '@vue-skuilder/db';
+import { UserDBInterface, getDataLayer } from '@vue-skuilder/db';
 import { InputEventNoteon } from 'webmidi';
 import PianoRangeVisualizer from './PianoRangeVisualizer.vue';
 
@@ -437,7 +437,10 @@ export default defineComponent({
 
     const saveSettings = async () => {
       updatePending.value = true;
-      await props.user.updateCourseSettings(props._id, [
+
+      const usrCrsDB = await getDataLayer().getUserDB().getCourseInterface(props._id);
+
+      usrCrsDB.updateCourseSettings([
         {
           key: 'midiinput',
           value: selectedInput.value,
