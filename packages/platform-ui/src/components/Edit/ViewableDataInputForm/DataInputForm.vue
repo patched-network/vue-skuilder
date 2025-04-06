@@ -439,7 +439,7 @@ export default defineComponent({
           })
         );
 
-        if (result[0].ok) {
+        if (result[0].status === Status.ok) {
           alertUser({
             text: `Content added... Thank you!`,
             status: Status.ok,
