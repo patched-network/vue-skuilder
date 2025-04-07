@@ -1,3 +1,4 @@
+// Excerpt from:
 // platform-ui/cypress/e2e/add-content.cy.js
 describe('Content Authoring', () => {
   let username;
@@ -46,6 +47,12 @@ describe('Content Authoring', () => {
           parseSpecialCharSequences: false,
         });
       cy.get('[data-cy="add-card-btn"').click();
+      cy.wait(500);
+
+      cy.visit(`/quilts/${courseName.replaceAll(' ', '_')}`);
+
+      // Verify there is exactly one course card
+      cy.get('[data-cy="course-card"]').should('have.length', 1);
     });
   });
 });
