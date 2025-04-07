@@ -140,7 +140,7 @@ export async function getCredentialledCourseConfig(courseID: string) {
   const db = getCourseDB(courseID);
   const ret = await db.get<CourseConfig>('CourseConfig');
   ret.courseID = courseID;
-  console.log(`Returning corse config:
+  console.log(`Returning course config:
 
   ${JSON.stringify(ret)}
   `);
