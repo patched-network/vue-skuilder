@@ -20,6 +20,7 @@
             'elevation-4': c.isOpen,
           }"
           density="compact"
+          data-cy="course-card"
         >
           <template #prepend>
             <div>
