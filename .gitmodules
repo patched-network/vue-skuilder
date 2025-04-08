@@ -1,3 +1,3 @@
 [submodule "test-couch"]
 	path = test-couch
-	url = http://github.com/nilock/skuilder-test-db
+	url = http://github.com/patched-network/skuilder-test-db
