@@ -4,14 +4,12 @@ import {
   CourseConfig,
   CourseElo,
   DataShape,
-  ENV,
   EloToNumber,
   Status,
   blankCourseElo,
   toCourseElo,
 } from '@vue-skuilder/common';
 import _ from 'lodash';
-import pouch from 'pouchdb-browser';
 import { filterAllDocsByPrefix, getCourseDB, getCourseDoc, getCourseDocs } from '.';
 import {
   StudyContentSource,
@@ -24,45 +22,25 @@ import { GET_CACHED } from './clientCache';
 import { addNote55, addTagToCard, getCredentialledCourseConfig, getTagID } from './courseAPI';
 import { DataLayerResult } from '@/core/types/db';
 import { PouchError } from './types';
-
-const courseLookupDBTitle = 'coursedb-lookup';
-
-const courseLookupDB: PouchDB.Database = new pouch(
-  ENV.COUCHDB_SERVER_PROTOCOL + '://' + ENV.COUCHDB_SERVER_URL + courseLookupDBTitle,
-  {
-    skip_setup: true,
-  }
-);
+import CourseLookup from './courseLookupDB';
 
 export class CoursesDB implements CoursesDBInterface {
   public async getCourseList(): Promise<CourseConfig[]> {
-    const resp = await courseLookupDB.allDocs<CourseConfig>({
-      include_docs: true,
-    });
-    return resp.rows.map((r) => {
-      console.log(`found course ${JSON.stringify(r.doc)}`);
+    const crsList = await CourseLookup.allCourses();
 
-      return {
-        ...r.doc!,
-        courseID: r.id,
-      };
-    });
+    return await Promise.all(
+      crsList.map((c) => {
+        return getCredentialledCourseConfig(c._id);
+      })
+    );
   }
 
   async getCourseConfig(courseId: string): Promise<CourseConfig> {
-    const config = await getCourseConfigs([courseId]);
-    const first = config.rows[0];
-    if (!first) {
-      throw new Error(`Course config not found for course ID: ${courseId}`);
-    } else if (isSuccessRow(first)) {
-      return first.doc!;
-    } else {
-      throw new Error(`Course config not found for course ID: ${courseId}`);
-    }
+    return getCredentialledCourseConfig(courseId);
   }
 
   public async disambiguateCourse(courseId: string, disambiguator: string): Promise<void> {
-    return await disambiguateCourse(courseId, disambiguator);
+    await CourseLookup.updateDisambiguator(courseId, disambiguator);
   }
 }
 
@@ -412,7 +390,7 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
   }
 
   async getCourseConfig(): Promise<CourseConfig> {
-    const ret = await getCourseConfig(this.id);
+    const ret = await getCredentialledCourseConfig(this.id);
     if (ret) {
       return ret;
     } else {
@@ -421,22 +399,13 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
   }
 
   async updateCourseConfig(cfg: CourseConfig): Promise<PouchDB.Core.Response> {
+    console.log(`Updating: ${JSON.stringify(cfg)}`);
     // write both to the course DB:
-    const courseDBResponse = await updateCredentialledCourseConfig(this.id, cfg);
-
-    // and to the coursedb-lookup db:
     try {
-      const existingConfig = await courseLookupDB.get<CourseConfig>(this.id);
-      const lookupDBResponse = await courseLookupDB.put({
-        ...cfg,
-        _rev: existingConfig._rev,
-        _id: this.id,
-      });
-      return lookupDBResponse;
+      return await updateCredentialledCourseConfig(this.id, cfg);
     } catch (error) {
-      console.error(`Error updating course config in lookup DB: ${error}`);
-      // Return the courseDB response if lookup DB update fails
-      return courseDBResponse;
+      console.error(`Error updating course config in course DB: ${error}`);
+      throw error;
     }
   }
 
@@ -539,68 +508,13 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
   }
 }
 
-// export async function incrementCourseMembership(courseID: string) {
-//   courseDB.get<CourseConfig>(courseID).then( (course) => {
-//     course.
-//   })
-// }
-
-export async function getCourseName(courseID: string): Promise<string> {
-  const ret = (await courseLookupDB.get<CourseConfig>(courseID))['name'];
-  // console.log(ret);
-  return ret;
-}
-
-export async function removeCourse(courseID: string) {
-  return courseLookupDB.get(courseID).then((course) => {
-    return courseLookupDB.remove({
-      ...course,
-    });
-  });
-}
-
-export async function disambiguateCourse(course: string, disambiguator: string) {
-  // do NOT update the `CourseConfig` doc in the course database.
-  // This information is for the course router only, and does not
-  // directly impaact the running of the course itself
-
-  // write to the lookup db
-  courseLookupDB.get<CourseConfig>(course).then((cfg) => {
-    courseLookupDB.put({
-      ...cfg,
-      disambiguator,
-    });
-  });
-}
-
-let courseListCache: CourseConfig[] = [];
-export async function getCachedCourseList(): Promise<CourseConfig[]> {
-  if (courseListCache.length) {
-    return courseListCache;
-  } else {
-    courseListCache = (await getCourseList()).rows.map((r) => {
-      return {
-        ...r.doc!,
-        courseID: r.id,
-      };
-    });
-    return getCachedCourseList();
-  }
-}
-
-export async function getCourseList() {
-  return courseLookupDB.allDocs<CourseConfig>({
-    include_docs: true,
-  });
-}
-
 /**
  * Returns a list of registered datashapes for the specified
  * course.
  * @param courseID The ID of the course
  */
 export async function getCourseDataShapes(courseID: string) {
-  const cfg = await getCourseConfig(courseID);
+  const cfg = await getCredentialledCourseConfig(courseID);
   return cfg!.dataShapes;
 }
 
@@ -611,20 +525,8 @@ export async function getCredentialledDataShapes(courseID: string) {
 }
 
 export async function getCourseQuestionTypes(courseID: string) {
-  const cfg = await getCourseConfig(courseID);
+  const cfg = await getCredentialledCourseConfig(courseID);
   return cfg!.questionTypes;
-}
-
-export async function getCourseConfig(courseID: string) {
-  const config = await getCourseConfigs([courseID]);
-  let first = config.rows[0];
-  if (!first) {
-    throw new Error(`Course config not found for course ID: ${courseID}`);
-  } else if (isSuccessRow(first)) {
-    return first.doc;
-  } else {
-    throw new Error(`Course config not found for course ID: ${courseID}`);
-  }
 }
 
 // todo: this is actually returning full tag docs now.
@@ -760,13 +662,6 @@ ${JSON.stringify(config)}
   return await db.put<CourseConfig>({
     ...config,
     _rev: old._rev,
-  });
-}
-
-export async function getCourseConfigs(ids: string[]) {
-  return courseLookupDB.allDocs<CourseConfig>({
-    include_docs: true,
-    keys: ids,
   });
 }
 
