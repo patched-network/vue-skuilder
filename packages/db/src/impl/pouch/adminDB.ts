@@ -1,11 +1,16 @@
 import pouch from 'pouchdb-browser';
 import { ENV } from '@vue-skuilder/common';
-import { pouchDBincludeCredentialsConfig, getStartAndEndKeys } from '.';
-import { getCourseList, removeCourse } from './courseDB';
+import {
+  pouchDBincludeCredentialsConfig,
+  getStartAndEndKeys,
+  getCredentialledCourseConfig,
+  updateCredentialledCourseConfig,
+} from '.';
 import { TeacherClassroomDB, ClassroomLookupDB } from './classroomDB';
 import { PouchError } from './types';
 
 import { AdminDBInterface } from '@/core';
+import CourseLookup from './courseLookupDB';
 
 export class AdminDB implements AdminDBInterface {
   private usersDB!: PouchDB.Database;
@@ -27,12 +32,31 @@ export class AdminDB implements AdminDBInterface {
       })
     ).rows.map((r) => r.doc!);
   }
+
   public async getCourses() {
-    return (await getCourseList()).rows.map((r) => r.doc!);
+    const list = await CourseLookup.allCourses();
+    return await Promise.all(
+      list.map((c) => {
+        return getCredentialledCourseConfig(c._id);
+      })
+    );
   }
   public async removeCourse(id: string) {
-    return await removeCourse(id);
+    // remove the indexer
+    const delResp = await CourseLookup.delete(id);
+
+    // set the 'CourseConfig' to 'deleted'
+    const cfg = await getCredentialledCourseConfig(id);
+    cfg.deleted = true;
+    const isDeletedResp = await updateCredentialledCourseConfig(id, cfg);
+
+    return {
+      ok: delResp.ok && isDeletedResp.ok,
+      id: delResp.id,
+      rev: delResp.rev,
+    };
   }
+
   public async getClassrooms() {
     // const joincodes =
     const uuids = (
