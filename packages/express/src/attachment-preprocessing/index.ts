@@ -2,10 +2,10 @@ import CouchDB, { useOrCreateDB } from '../couchdb/index.js';
 import nano from 'nano';
 import { normalize } from './normalize.js';
 import AsyncProcessQueue, { Result } from '../utils/processQueue.js';
-import { COURSE_DB_LOOKUP } from '../client-requests/course-requests.js';
 import logger from '../logger.js';
+import { CourseLookup } from '@vue-skuilder/db';
 
-// @ts-ignore
+// @ts-expect-error [todo]
 const Q = new AsyncProcessQueue<AttachmentProcessingRequest, Result>(
   processDocAttachments
 );
@@ -64,16 +64,14 @@ export function postProcessCourse(courseID: string): void {
 export default async function postProcess(): Promise<void> {
   try {
     logger.info(`Following all course databases for changes...`);
-    const lookupDB = await useOrCreateDB(COURSE_DB_LOOKUP);
-    const courses = await lookupDB.list({
-      include_docs: true,
-    });
 
-    for (const course of courses.rows) {
+    const courses = await CourseLookup.allCourses();
+
+    for (const course of courses) {
       try {
-        postProcessCourse(course.id);
+        postProcessCourse(course._id);
       } catch (e) {
-        logger.error(`Error processing course ${course.id}: ${e}`);
+        logger.error(`Error processing course ${course._id}: ${e}`);
         throw e;
       }
     }
@@ -181,7 +179,7 @@ async function processDocAttachments(
     doc['processed'] = true;
   }
 
-  const resp: any = await courseDatabase.insert(doc);
+  const resp = (await courseDatabase.insert(doc)) as unknown as Result;
   resp.status = 'ok';
 
   logger.info(`Processing request reinsert result: ${JSON.stringify(resp)}`);
