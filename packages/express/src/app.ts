@@ -1,11 +1,16 @@
-import Nano from 'nano';
-import express from 'express';
-import type { Request, Response } from 'express';
 import {
-  ServerRequest,
   ServerRequestType as RequestEnum,
+  ServerRequest,
   prepareNote55,
 } from '@vue-skuilder/common';
+import { CourseLookup } from '@vue-skuilder/db';
+import cookieParser from 'cookie-parser';
+import cors from 'cors';
+import type { Request, Response } from 'express';
+import express from 'express';
+import * as fileSystem from 'fs';
+import morgan from 'morgan';
+import Nano from 'nano';
 import PostProcess from './attachment-preprocessing/index.js';
 import {
   ClassroomCreationQueue,
@@ -13,20 +18,17 @@ import {
   ClassroomLeaveQueue,
 } from './client-requests/classroom-requests.js';
 import {
-  COURSE_DB_LOOKUP,
   CourseCreationQueue,
   initCourseDBDesignDocInsert,
 } from './client-requests/course-requests.js';
-import CouchDB, { useOrCreateCourseDB, useOrCreateDB } from './couchdb/index.js';
 import { requestIsAuthenticated } from './couchdb/authentication.js';
-import cors from 'cors';
-import cookieParser from 'cookie-parser';
-import * as fileSystem from 'fs';
-import ENV from './utils/env.js';
-import morgan from 'morgan';
+import CouchDB, {
+  useOrCreateCourseDB,
+  useOrCreateDB,
+} from './couchdb/index.js';
 import logger from './logger.js';
 import logsRouter from './routes/logs.js';
-import { CourseConfig } from '@vue-skuilder/common';
+import ENV from './utils/env.js';
 
 process.on('unhandledRejection', (reason, promise) => {
   logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
@@ -65,19 +67,13 @@ export interface VueClientRequest extends express.Request {
 }
 
 app.get('/courses', async (req: Request, res: Response) => {
-  const coursesDB = await useOrCreateDB<CourseConfig>(COURSE_DB_LOOKUP);
-
-  const courseStubs = await coursesDB.list({
-    include_docs: true,
-  });
-  const courses = courseStubs.rows.map((stub) => {
-    if (stub.doc) {
-      return `${stub.id} - ${stub.doc['name']}`;
-    } else {
-      return `${stub.id} - [no name]`;
-    }
-  });
-  res.send(courses);
+  try {
+    const courses = await CourseLookup.allCourses();
+    res.send(courses.map((c) => `${c._id} - ${c.name}`));
+  } catch (error) {
+    logger.error('Error fetching courses:', error);
+    res.status(500).send('Failed to fetch courses');
+  }
 });
 
 app.get('/course/:courseID/config', async (req: Request, res: Response) => {
@@ -97,16 +93,12 @@ app.delete('/course/:courseID', async (req: Request, res: Response) => {
       res.json({ success: false, error: dbResp });
       return;
     }
-    const lookupDB = await useOrCreateDB(COURSE_DB_LOOKUP);
-    const lookupDoc = await lookupDB.get(req.params.courseID);
-    const lookupResp = await lookupDB.destroy(
-      req.params.courseID,
-      lookupDoc._rev
-    );
-    if (lookupResp.ok) {
+    const delResp = await CourseLookup.delete(req.params.courseID);
+
+    if (delResp.ok) {
       res.json({ success: true });
     } else {
-      res.json({ success: false, error: lookupResp });
+      res.json({ success: false, error: delResp });
     }
   } else {
     res.json({ success: false, error: 'Not authenticated' });
@@ -208,7 +200,7 @@ app.listen(port, () => {
 
 init();
 
-async function init() {
+async function init(): void {
   while (!listening) {
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
