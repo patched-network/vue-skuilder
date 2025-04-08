@@ -1,6 +1,6 @@
 export * from './core';
 
-// export * from './impl/pouch';
+export { default as CourseLookup } from './impl/pouch/courseLookupDB';
 
 export * from './study';
 
