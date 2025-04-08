@@ -14,9 +14,9 @@ import {
 } from '@/core/types/user';
 import { DocumentUpdater } from '@/study';
 import { CardHistory, CardRecord } from '../../core/types/types-legacy';
-import { getCourseConfigs } from './courseDB';
 import {
   filterAllDocsByPrefix,
+  getCredentialledCourseConfig,
   getStartAndEndKeys,
   hexEncode,
   pouchDBincludeCredentialsConfig,
@@ -405,7 +405,12 @@ Currently logged-in as ${this._username}.`
       })
     );
 
-    return getCourseConfigs(courseIDs);
+    const cfgs = await Promise.all(
+      courseIDs.map(async (id) => {
+        return await getCredentialledCourseConfig(id);
+      })
+    );
+    return cfgs;
   }
 
   public async getConfig(): Promise<UserConfig & PouchDB.Core.IdMeta & PouchDB.Core.GetMeta> {
