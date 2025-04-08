@@ -21,6 +21,7 @@
     "license": "GPL-3.0-or-later",
     "dependencies": {
         "@vue-skuilder/common": "workspace:^",
+        "@vue-skuilder/db": "workspace:^",
         "axios": "^1.7.4",
         "cookie-parser": "^1.4.7",
         "cors": "^2.8.5",
