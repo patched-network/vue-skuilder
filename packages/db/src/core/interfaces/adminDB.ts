@@ -1,4 +1,4 @@
-import { ClassroomConfig } from '@vue-skuilder/common';
+import { ClassroomConfig, CourseConfig } from '@vue-skuilder/common';
 
 /**
  * Admin functionality
@@ -12,7 +12,7 @@ export interface AdminDBInterface {
   /**
    * Get all courses
    */
-  getCourses(): Promise<PouchDB.Core.Document<{}>[]>;
+  getCourses(): Promise<CourseConfig[]>;
 
   /**
    * Remove a course
