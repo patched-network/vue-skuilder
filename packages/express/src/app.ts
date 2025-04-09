@@ -198,9 +198,11 @@ app.listen(port, () => {
   logger.info(`Express app listening on port ${port}!`);
 });
 
-init();
+init().catch((e) => {
+  logger.error(`Error initializing app: ${JSON.stringify(e)}`);
+});
 
-async function init(): void {
+async function init(): Promise<void> {
   while (!listening) {
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
