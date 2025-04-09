@@ -85,7 +85,7 @@ import CourseEditor from '@/components/Courses/CourseEditor.vue';
 import CourseStubCard from '@/components/Courses/CourseStubCard.vue';
 import _ from 'lodash';
 import serverRequest from '../server';
-import { ServerRequestType, CourseConfig } from '@vue-skuilder/common';
+import { ServerRequestType, CourseConfig, Status } from '@vue-skuilder/common';
 import { alertUser } from '@vue-skuilder/common-ui';
 import { UserDBInterface, getDataLayer } from '@vue-skuilder/db';
 import { getCurrentUser } from '@/stores/useAuthStore';
@@ -176,28 +176,36 @@ export default defineComponent({
 
     async refreshData(): Promise<void> {
       console.log(`Pulling user course data...`);
-      const userCourseIDs = (await this.user!.getCourseRegistrationsDoc()).courses
-        .filter((c) => {
-          return c.status === 'active' || c.status === 'maintenance-mode' || c.status === undefined;
-        })
-        .map((c) => {
-          return c.courseID;
-        });
-      console.log(`userCourseIDs: ${userCourseIDs}`);
+      try {
+        const userCourseIDs = (await this.user!.getCourseRegistrationsDoc()).courses
+          .filter((c) => {
+            return c.status === 'active' || c.status === 'maintenance-mode' || c.status === undefined;
+          })
+          .map((c) => {
+            return c.courseID;
+          });
+        console.log(`userCourseIDs: ${userCourseIDs}`);
 
-      this.existingCourses = (await getDataLayer().getCoursesDB().getCourseList()) as DBCourseConfig[];
+        this.existingCourses = (await getDataLayer().getCoursesDB().getCourseList()) as DBCourseConfig[];
+        console.log(`existingCourses: \n\t${this.existingCourses.map((c) => c.name).join(',\n\t')}`);
 
-      this.registeredCourses = this.existingCourses.filter((course) => {
-        let match: boolean = false;
-        userCourseIDs.forEach((id: string) => {
-          if (course.courseID === id) {
-            match = true;
-          }
+        this.registeredCourses = this.existingCourses.filter((course) => {
+          let match: boolean = false;
+          userCourseIDs.forEach((id: string) => {
+            if (course.courseID === id) {
+              match = true;
+            }
+          });
+          return match;
         });
-        return match;
-      });
+      } catch (e) {
+        console.error(`Error refreshing course data:`, e);
+        alertUser({
+          status: Status.error,
+          text: `Failed to load courses: ${e.message || 'Database access error'}`,
+        });
+      }
     },
-
     async createCourse(): Promise<void> {
       this.awaitingCreateCourse = true;
       const resp = await serverRequest({
