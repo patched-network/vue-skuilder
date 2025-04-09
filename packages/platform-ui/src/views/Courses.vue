@@ -40,8 +40,8 @@
                         variant="text"
                         color="error"
                         data-cy="drop-course-button"
-                        :loading="spinnerMap[course._id] !== undefined"
-                        @click="dropCourse(course._id)"
+                        :loading="spinnerMap[course.courseID] !== undefined"
+                        @click="dropCourse(course.courseID)"
                       >
                         Drop
                       </v-btn>
@@ -58,8 +58,8 @@
       <v-col cols="12" class="mt-4">
         <h2 class="text-h5 mb-3">Available Quilts</h2>
         <v-row>
-          <v-col v-for="course in displayedAvailableCourses" :key="course._id" cols="12" sm="6" md="4" lg="3">
-            <course-stub-card data-cy="available-course-card" :course-id="course._id" @refresh="refreshData" />
+          <v-col v-for="course in displayedAvailableCourses" :key="course.courseID" cols="12" sm="6" md="4" lg="3">
+            <course-stub-card data-cy="available-course-card" :course-id="course.courseID" @refresh="refreshData" />
           </v-col>
         </v-row>
 
@@ -202,7 +202,7 @@ export default defineComponent({
         console.error(`Error refreshing course data:`, e);
         alertUser({
           status: Status.error,
-          text: `Failed to load courses: ${e.message || 'Database access error'}`,
+          text: `Failed to load courses: ${e || 'Database access error'}`,
         });
       }
     },
