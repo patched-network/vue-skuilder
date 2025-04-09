@@ -136,16 +136,17 @@ async function addCard(
   return card;
 }
 
-export async function getCredentialledCourseConfig(courseID: string) {
-  const db = getCourseDB(courseID);
-  const ret = await db.get<CourseConfig>('CourseConfig');
-  ret.courseID = courseID;
-  console.log(`Returning course config:
-
-  ${JSON.stringify(ret)}
-  `);
-
-  return ret;
+export async function getCredentialledCourseConfig(courseID: string): Promise<CourseConfig> {
+  try {
+    const db = getCourseDB(courseID);
+    const ret = await db.get<CourseConfig>('CourseConfig');
+    ret.courseID = courseID;
+    console.log(`Returning course config: ${JSON.stringify(ret)}`);
+    return ret;
+  } catch (e) {
+    console.error(`Error fetching config for ${courseID}:`, e);
+    throw e;
+  }
 }
 
 /**
