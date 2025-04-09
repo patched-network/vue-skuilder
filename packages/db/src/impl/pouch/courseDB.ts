@@ -27,16 +27,29 @@ import CourseLookup from './courseLookupDB';
 export class CoursesDB implements CoursesDBInterface {
   public async getCourseList(): Promise<CourseConfig[]> {
     const crsList = await CourseLookup.allCourses();
+    console.log(`AllCourses: ${crsList.map((c) => c.name)}`);
 
-    return await Promise.all(
-      crsList.map((c) => {
-        return getCredentialledCourseConfig(c._id);
+    const cfgs = await Promise.all(
+      crsList.map(async (c) => {
+        try {
+          const cfg = await getCredentialledCourseConfig(c._id);
+          console.log(`Found cfg: ${JSON.stringify(cfg)}`);
+          return cfg;
+        } catch (e) {
+          return undefined;
+        }
       })
     );
+    return cfgs.filter((c) => !!c);
   }
 
   async getCourseConfig(courseId: string): Promise<CourseConfig> {
-    return getCredentialledCourseConfig(courseId);
+    const cfg = await getCredentialledCourseConfig(courseId);
+    if (cfg === undefined) {
+      throw new Error(`Error fetching cfg for course ${courseId}`);
+    } else {
+      return cfg;
+    }
   }
 
   public async disambiguateCourse(courseId: string, disambiguator: string): Promise<void> {
@@ -661,7 +674,7 @@ ${JSON.stringify(config)}
 
   return await db.put<CourseConfig>({
     ...config,
-    _rev: old._rev,
+    _rev: (old as any)._rev,
   });
 }
 
