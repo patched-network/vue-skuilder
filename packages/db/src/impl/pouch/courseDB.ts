@@ -27,7 +27,7 @@ import CourseLookup from './courseLookupDB';
 export class CoursesDB implements CoursesDBInterface {
   public async getCourseList(): Promise<CourseConfig[]> {
     const crsList = await CourseLookup.allCourses();
-    console.log(`AllCourses: ${crsList.map((c) => c.name)}`);
+    console.log(`AllCourses: ${crsList.map((c) => c.name + ', ' + c._id + '\n\t')}`);
 
     const cfgs = await Promise.all(
       crsList.map(async (c) => {
@@ -36,6 +36,7 @@ export class CoursesDB implements CoursesDBInterface {
           console.log(`Found cfg: ${JSON.stringify(cfg)}`);
           return cfg;
         } catch (e) {
+          console.warn(`Error fetching cfg for course ${c.name}, ${c._id}: ${e}`);
           return undefined;
         }
       })
