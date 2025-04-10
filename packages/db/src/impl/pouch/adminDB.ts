@@ -1,4 +1,4 @@
-import pouch from 'pouchdb-browser';
+import pouch from 'pouchdb';
 import { ENV } from '@vue-skuilder/common';
 import {
   pouchDBincludeCredentialsConfig,

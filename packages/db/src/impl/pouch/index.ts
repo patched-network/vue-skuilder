@@ -3,14 +3,17 @@ import { ENV } from '@vue-skuilder/common';
 // import { getCurrentUser } from '../../stores/useAuthStore';
 import moment, { Moment } from 'moment';
 import PouchDBAuth from '@nilock2/pouchdb-authentication';
-import pouch from 'pouchdb-browser';
+import pouch from 'pouchdb';
 import PouchDBFind from 'pouchdb-find';
 import process from 'process';
 import { getUserDB } from './userDB';
 import { ScheduledCard } from '@/core/types/user';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-(window as any).process = process; // required as a fix for pouchdb - see #18
+const isBrowser = typeof window !== 'undefined';
+
+if (isBrowser) {
+  (window as any).process = process; // required as a fix for pouchdb - see #18
+}
 
 pouch.plugin(PouchDBAuth);
 pouch.plugin(PouchDBFind);

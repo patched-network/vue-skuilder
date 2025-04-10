@@ -30,7 +30,7 @@
         "@nilock2/pouchdb-authentication": "^1.0.2",
         "@vue-skuilder/common": "workspace:*",
         "moment": "^2.29.4",
-        "pouchdb-browser": "^9.0.0",
+        "pouchdb": "^9.0.0",
         "pouchdb-find": "^9.0.0"
     },
     "devDependencies": {

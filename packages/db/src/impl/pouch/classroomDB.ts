@@ -5,7 +5,7 @@ import {
 } from '@/core/interfaces/contentSource';
 import { ClassroomConfig, ENV } from '@vue-skuilder/common';
 import moment from 'moment';
-import pouch from 'pouchdb-browser';
+import pouch from 'pouchdb';
 import {
   getCourseDB,
   getStartAndEndKeys,
