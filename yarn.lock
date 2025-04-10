@@ -5104,14 +5104,14 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@vue-skuilder/db@workspace:*, @vue-skuilder/db@workspace:packages/db":
+"@vue-skuilder/db@workspace:*, @vue-skuilder/db@workspace:^, @vue-skuilder/db@workspace:packages/db":
   version: 0.0.0-use.local
   resolution: "@vue-skuilder/db@workspace:packages/db"
   dependencies:
     "@nilock2/pouchdb-authentication": "npm:^1.0.2"
     "@vue-skuilder/common": "workspace:*"
     moment: "npm:^2.29.4"
-    pouchdb-browser: "npm:^9.0.0"
+    pouchdb: "npm:^9.0.0"
     pouchdb-find: "npm:^9.0.0"
     tsup: "npm:^8.0.2"
     typescript: "npm:~5.7.2"
@@ -5139,6 +5139,7 @@ __metadata:
     "@typescript-eslint/eslint-plugin": "npm:^8.25.0"
     "@typescript-eslint/parser": "npm:^8.25.0"
     "@vue-skuilder/common": "workspace:^"
+    "@vue-skuilder/db": "workspace:^"
     axios: "npm:^1.7.4"
     babel-jest: "npm:^29.6.1"
     cookie-parser: "npm:^1.4.7"
@@ -12523,17 +12524,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pouchdb-browser@npm:^9.0.0":
-  version: 9.0.0
-  resolution: "pouchdb-browser@npm:9.0.0"
-  dependencies:
-    spark-md5: "npm:3.0.2"
-    uuid: "npm:8.3.2"
-    vuvuzela: "npm:1.0.3"
-  checksum: 10c0/559b70d08cfa8c8d0f166b27d21f8b745ec32f3db177e5c3e825782157ab02eafd1777702c56e72c020875f2a1ffe370287550db6636f4687bb3a856afab9e82
-  languageName: node
-  linkType: hard
-
 "pouchdb-collate@npm:9.0.0":
   version: 9.0.0
   resolution: "pouchdb-collate@npm:9.0.0"
@@ -12613,7 +12603,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pouchdb@npm:9.0.0":
+"pouchdb@npm:9.0.0, pouchdb@npm:^9.0.0":
   version: 9.0.0
   resolution: "pouchdb@npm:9.0.0"
   dependencies:

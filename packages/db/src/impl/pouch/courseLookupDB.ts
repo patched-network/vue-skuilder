@@ -1,6 +1,7 @@
-const courseLookupDBTitle = 'coursedb-lookup';
-import pouch from 'pouchdb-browser';
+import pouch from 'pouchdb';
 import { ENV } from '@vue-skuilder/common';
+
+const courseLookupDBTitle = 'coursedb-lookup';
 
 interface CourseLookupDoc {
   _id: string;

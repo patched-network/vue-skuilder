@@ -1,4 +1,4 @@
-import pouch from 'pouchdb-browser';
+import pouch from 'pouchdb';
 import { pouchDBincludeCredentialsConfig } from '.';
 import { ENV } from '@vue-skuilder/common';
 // import { DataShape } from '../..base-course/Interfaces/DataShape';
