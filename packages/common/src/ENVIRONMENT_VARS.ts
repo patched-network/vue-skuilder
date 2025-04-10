@@ -38,7 +38,7 @@ declare global {
 
 // Default fallback values if all else fails
 const defaultEnv: Environment = {
-  COUCHDB_SERVER_URL: 'default:5984/',
+  COUCHDB_SERVER_URL: 'localhost:5984/',
   COUCHDB_SERVER_PROTOCOL: 'http',
   EXPRESS_SERVER_URL: 'localhost:3000/',
   EXPRESS_SERVER_PROTOCOL: 'http',
