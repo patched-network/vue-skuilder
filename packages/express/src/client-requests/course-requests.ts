@@ -7,6 +7,7 @@ import AsyncProcessQueue from '../utils/processQueue.js';
 import nano from 'nano';
 import { Status } from '@vue-skuilder/common';
 import logger from '@/logger.js';
+import { CourseLookup } from '@vue-skuilder/db';
 
 /**
  * Fake fcn to allow usage in couchdb map fcns which, after passing
@@ -15,13 +16,6 @@ import logger from '@/logger.js';
 function emit(key?: unknown, value?: unknown) {
   return [key, value];
 }
-
-export const COURSE_DB_LOOKUP = 'coursedb-lookup';
-const courseHasher = new hashids(
-  COURSE_DB_LOOKUP,
-  6,
-  'abcdefghijkmnopqrstuvwxyz23456789'
-);
 
 function getCourseDBName(courseID: string): string {
   return `coursedb-${courseID}`;
@@ -161,45 +155,20 @@ const courseDBDesignDocs: { _id: string }[] = [
 ];
 
 export async function initCourseDBDesignDocInsert(): Promise<void> {
-  const lookup = await useOrCreateDB(COURSE_DB_LOOKUP);
-  lookup.list((err, body) => {
-    if (!err) {
-      body.rows.forEach((courseDoc) => {
-        courseDBDesignDocs.forEach((dDoc) => {
-          insertDesignDoc(getCourseDBName(courseDoc.id), dDoc);
-        });
-      });
-    }
+  const courses = await CourseLookup.allCourses();
+  courses.forEach((c) => {
+    courseDBDesignDocs.forEach((dd) => {
+      insertDesignDoc(getCourseDBName(c._id), dd);
+    });
   });
 }
 
 type CourseConfig = CreateCourse['data'];
 
 async function createCourse(cfg: CourseConfig): Promise<any> {
-  const lookup = await useOrCreateDB(COURSE_DB_LOOKUP);
+  cfg.courseID = await CourseLookup.add(cfg.name);
 
-  const lookupInsert = await lookup.insert({
-    ...cfg,
-  } as nano.MaybeDocument);
-
-  if (!lookupInsert.ok) {
-    return {
-      courseID: '',
-      ok: false,
-      status: Status.error,
-    };
-  }
-
-  const courseID = lookupInsert.id;
-
-  cfg.courseID = courseID;
-  await lookup.insert({
-    ...cfg,
-    _id: lookupInsert.id,
-    _rev: lookupInsert.rev,
-  } as nano.MaybeDocument);
-
-  const courseDBName: string = getCourseDBName(courseID);
+  const courseDBName: string = getCourseDBName(cfg.courseID);
   const dbCreation = await CouchDB.db.create(courseDBName);
 
   if (dbCreation.ok) {
@@ -211,13 +180,19 @@ async function createCourse(cfg: CourseConfig): Promise<any> {
         ...cfg,
       })
       .catch((e) => {
-        logger.error(`Error inserting CourseConfig for course ${courseID}:`, e);
+        logger.error(
+          `Error inserting CourseConfig for course ${cfg.courseID}:`,
+          e
+        );
       });
 
     // insert the tags, elo, etc view docs
     courseDBDesignDocs.forEach((doc) => {
       courseDB.insert(doc).catch((e) => {
-        logger.error(`Error inserting design doc for course ${courseID}:`, e);
+        logger.error(
+          `Error inserting design doc for course ${cfg.courseID}:`,
+          e
+        );
       });
     });
 
@@ -235,7 +210,7 @@ async function createCourse(cfg: CourseConfig): Promise<any> {
 
       courseDB.insert(secObj as nano.MaybeDocument, '_security').catch((e) => {
         logger.error(
-          `Error inserting security object for course ${courseID}:`,
+          `Error inserting security object for course ${cfg.courseID}:`,
           e
         );
       });
@@ -244,12 +219,12 @@ async function createCourse(cfg: CourseConfig): Promise<any> {
 
   // follow the course so that user-uploaded content goes through
   // post-processing
-  postProcessCourse(courseID);
+  postProcessCourse(cfg.courseID);
 
   return {
-    ok: lookupInsert.ok && dbCreation.ok,
+    ok: dbCreation.ok,
     status: 'ok',
-    courseID: courseID,
+    courseID: cfg.courseID,
   };
 }
 

@@ -40,8 +40,8 @@
                         variant="text"
                         color="error"
                         data-cy="drop-course-button"
-                        :loading="spinnerMap[course._id] !== undefined"
-                        @click="dropCourse(course._id)"
+                        :loading="spinnerMap[course.courseID] !== undefined"
+                        @click="dropCourse(course.courseID)"
                       >
                         Drop
                       </v-btn>
@@ -58,8 +58,8 @@
       <v-col cols="12" class="mt-4">
         <h2 class="text-h5 mb-3">Available Quilts</h2>
         <v-row>
-          <v-col v-for="course in displayedAvailableCourses" :key="course._id" cols="12" sm="6" md="4" lg="3">
-            <course-stub-card data-cy="available-course-card" :course-id="course._id" @refresh="refreshData" />
+          <v-col v-for="course in displayedAvailableCourses" :key="course.courseID" cols="12" sm="6" md="4" lg="3">
+            <course-stub-card data-cy="available-course-card" :course-id="course.courseID" @refresh="refreshData" />
           </v-col>
         </v-row>
 
@@ -85,7 +85,7 @@ import CourseEditor from '@/components/Courses/CourseEditor.vue';
 import CourseStubCard from '@/components/Courses/CourseStubCard.vue';
 import _ from 'lodash';
 import serverRequest from '../server';
-import { ServerRequestType, CourseConfig } from '@vue-skuilder/common';
+import { ServerRequestType, CourseConfig, Status } from '@vue-skuilder/common';
 import { alertUser } from '@vue-skuilder/common-ui';
 import { UserDBInterface, getDataLayer } from '@vue-skuilder/db';
 import { getCurrentUser } from '@/stores/useAuthStore';
@@ -176,28 +176,36 @@ export default defineComponent({
 
     async refreshData(): Promise<void> {
       console.log(`Pulling user course data...`);
-      const userCourseIDs = (await this.user!.getCourseRegistrationsDoc()).courses
-        .filter((c) => {
-          return c.status === 'active' || c.status === 'maintenance-mode' || c.status === undefined;
-        })
-        .map((c) => {
-          return c.courseID;
-        });
-      console.log(`userCourseIDs: ${userCourseIDs}`);
+      try {
+        const userCourseIDs = (await this.user!.getCourseRegistrationsDoc()).courses
+          .filter((c) => {
+            return c.status === 'active' || c.status === 'maintenance-mode' || c.status === undefined;
+          })
+          .map((c) => {
+            return c.courseID;
+          });
+        console.log(`userCourseIDs: ${userCourseIDs}`);
 
-      this.existingCourses = (await getDataLayer().getCoursesDB().getCourseList()) as DBCourseConfig[];
+        this.existingCourses = (await getDataLayer().getCoursesDB().getCourseList()) as DBCourseConfig[];
+        console.log(`existingCourses: \n\t${this.existingCourses.map((c) => c.name).join(',\n\t')}`);
 
-      this.registeredCourses = this.existingCourses.filter((course) => {
-        let match: boolean = false;
-        userCourseIDs.forEach((id: string) => {
-          if (course.courseID === id) {
-            match = true;
-          }
+        this.registeredCourses = this.existingCourses.filter((course) => {
+          let match: boolean = false;
+          userCourseIDs.forEach((id: string) => {
+            if (course.courseID === id) {
+              match = true;
+            }
+          });
+          return match;
         });
-        return match;
-      });
+      } catch (e) {
+        console.error(`Error refreshing course data:`, e);
+        alertUser({
+          status: Status.error,
+          text: `Failed to load courses: ${e || 'Database access error'}`,
+        });
+      }
     },
-
     async createCourse(): Promise<void> {
       this.awaitingCreateCourse = true;
       const resp = await serverRequest({
