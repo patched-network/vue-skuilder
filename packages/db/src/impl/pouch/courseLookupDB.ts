@@ -31,7 +31,7 @@ export default class CourseLookup {
    * @returns
    */
   static async add(courseName: string): Promise<string> {
-    const resp = await CourseLookup._db.put({
+    const resp = await CourseLookup._db.post({
       name: courseName,
     });
 
