@@ -1,4 +1,4 @@
-import { ENV } from '@vue-skuilder/common';
+import { ENV } from '@/factory';
 import { GuestUsername } from '../../core/types/types-legacy';
 
 interface SessionResponse {

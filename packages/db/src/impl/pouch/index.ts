@@ -1,5 +1,5 @@
-import { DocType, SkuilderCourseData, GuestUsername, log } from '../../core/types/types-legacy';
-import { ENV } from '@vue-skuilder/common';
+import { ENV } from '@/factory';
+import { DocType, GuestUsername, log, SkuilderCourseData } from '../../core/types/types-legacy';
 // import { getCurrentUser } from '../../stores/useAuthStore';
 import moment, { Moment } from 'moment';
 import PouchDBAuth from '@nilock2/pouchdb-authentication';

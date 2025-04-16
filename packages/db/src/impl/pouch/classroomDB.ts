@@ -3,7 +3,8 @@ import {
   StudySessionNewItem,
   StudySessionReviewItem,
 } from '@/core/interfaces/contentSource';
-import { ClassroomConfig, ENV } from '@vue-skuilder/common';
+import { ClassroomConfig } from '@vue-skuilder/common';
+import { ENV } from '@/factory';
 import moment from 'moment';
 import pouch from 'pouchdb';
 import {

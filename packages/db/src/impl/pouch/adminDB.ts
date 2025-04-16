@@ -1,5 +1,5 @@
-import pouch from 'pouchdb';
-import { ENV } from '@vue-skuilder/common';
+import pouch from './pouchdb-setup';
+import { ENV } from '@/factory';
 import {
   pouchDBincludeCredentialsConfig,
   getStartAndEndKeys,

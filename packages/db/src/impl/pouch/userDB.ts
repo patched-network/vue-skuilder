@@ -1,5 +1,6 @@
 import { getCardHistoryID } from '@/core/util';
-import { CourseElo, ENV, Status } from '@vue-skuilder/common';
+import { CourseElo, Status } from '@vue-skuilder/common';
+import { ENV } from '@/factory';
 import moment, { Moment } from 'moment';
 import { GuestUsername } from '../../core/types/types-legacy';
 import pouch from './pouchdb-setup';

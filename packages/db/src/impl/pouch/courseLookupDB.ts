@@ -1,5 +1,5 @@
 import pouch from 'pouchdb';
-import { ENV } from '@vue-skuilder/common';
+// import { ENV } from '@/factory';
 
 const courseLookupDBTitle = 'coursedb-lookup';
 
