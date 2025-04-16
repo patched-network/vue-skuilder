@@ -10,6 +10,7 @@ export default defineConfig({
     terserOptions: {
       keep_classnames: true,
     },
+    sourcemap: true,
     lib: {
       entry: resolve(__dirname, 'src/index.ts'),
       name: 'VueSkuilderCommonUI',
@@ -28,6 +29,7 @@ export default defineConfig({
         assetFileNames: (assetInfo) => {
           return `assets/[name][extname]`;
         },
+        sourcemap: true,
       },
     },
     // This is crucial for component libraries - allow CSS to be in chunks
