@@ -18,7 +18,7 @@ import SignUp from './views/SignUp.vue';
 import Study from './views/Study.vue';
 import User from './views/User.vue';
 import UIMocks from '@/mocks/UIMocks.vue';
-import { ENV } from '@vue-skuilder/common';
+import ENV from '@/ENVIRONMENT_VARS';
 import DataInputFormTester from './dev/DataInputFormTester.vue';
 
 const router = createRouter({
