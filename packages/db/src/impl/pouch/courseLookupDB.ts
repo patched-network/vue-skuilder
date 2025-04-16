@@ -10,6 +10,8 @@ interface CourseLookupDoc {
   disambiguator?: string;
 }
 
+console.log(`COURSELOOKUP FILE RUNNING`);
+
 /**
  * a k-v indexes created courses.
  *
@@ -18,13 +20,16 @@ interface CourseLookupDoc {
  */
 export default class CourseLookup {
   // [ ] this db should be read only for public, admin-write only
-  static _db: PouchDB.Database = new pouch(
-    ENV.COUCHDB_SERVER_PROTOCOL + '://' + ENV.COUCHDB_SERVER_URL + courseLookupDBTitle,
-    {
-      skip_setup: true,
-    }
-  );
+  // static _db: PouchDB.Database = new pouch(
+  //   ENV.COUCHDB_SERVER_PROTOCOL + '://' + ENV.COUCHDB_SERVER_URL + courseLookupDBTitle,
+  //   {
+  //     // skip_setup: true,
+  //   }
+  // );
 
+  static _db: PouchDB.Database = new pouch('http://localhost:5984/' + courseLookupDBTitle, {
+    skip_setup: true,
+  });
   /**
    * Adds a new course to the lookup database, and returns the courseID
    * @param courseName
