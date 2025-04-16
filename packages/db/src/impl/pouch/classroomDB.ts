@@ -6,7 +6,7 @@ import {
 import { ClassroomConfig } from '@vue-skuilder/common';
 import { ENV } from '@/factory';
 import moment from 'moment';
-import pouch from 'pouchdb';
+import pouch from './pouchdb-setup';
 import {
   getCourseDB,
   getStartAndEndKeys,
@@ -286,12 +286,10 @@ export class TeacherClassroomDB extends ClassroomDBBase implements TeacherClassr
   }
 }
 
-export const ClassroomLookupDB: PouchDB.Database = new pouch(
-  ENV.COUCHDB_SERVER_PROTOCOL + '://' + ENV.COUCHDB_SERVER_URL + classroomLookupDBTitle,
-  {
+export const ClassroomLookupDB: () => PouchDB.Database = () =>
+  new pouch(ENV.COUCHDB_SERVER_PROTOCOL + '://' + ENV.COUCHDB_SERVER_URL + classroomLookupDBTitle, {
     skip_setup: true,
-  }
-);
+  });
 
 export function getClassroomDB(classID: string, version: 'student' | 'teacher'): PouchDB.Database {
   const dbName = `classdb-${version}-${classID}`;
