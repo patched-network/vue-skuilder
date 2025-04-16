@@ -1,4 +1,4 @@
-import pouch from 'pouchdb';
+import pouch from './pouchdb-setup';
 import { pouchDBincludeCredentialsConfig } from '.';
 import { ENV } from '@/factory';
 // import { DataShape } from '../..base-course/Interfaces/DataShape';
