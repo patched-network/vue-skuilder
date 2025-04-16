@@ -36,18 +36,22 @@ const log = (s: any) => {
 };
 
 const cardHistoryPrefix = 'cardH-';
-const remoteStr: string = ENV.COUCHDB_SERVER_PROTOCOL + '://' + ENV.COUCHDB_SERVER_URL + 'skuilder';
 
-console.log(`Connecting to remote: ${remoteStr}`);
+// console.log(`Connecting to remote: ${remoteStr}`);
 
-let remoteCouchRootDB: PouchDB.Database;
-try {
-  remoteCouchRootDB = new pouch(remoteStr, {
-    skip_setup: true,
-  });
-} catch (error) {
-  console.error('Failed to initialize remote CouchDB connection:', error);
-  throw new Error(`Failed to initialize CouchDB: ${JSON.stringify(error)}`);
+function getRemoteCouchRootDB(): PouchDB.Database {
+  const remoteStr: string =
+    ENV.COUCHDB_SERVER_PROTOCOL + '://' + ENV.COUCHDB_SERVER_URL + 'skuilder';
+  let remoteCouchRootDB: PouchDB.Database;
+  try {
+    remoteCouchRootDB = new pouch(remoteStr, {
+      skip_setup: true,
+    });
+  } catch (error) {
+    console.error('Failed to initialize remote CouchDB connection:', error);
+    throw new Error(`Failed to initialize CouchDB: ${JSON.stringify(error)}`);
+  }
+  return remoteCouchRootDB;
 }
 
 interface DesignDoc {
@@ -57,17 +61,6 @@ interface DesignDoc {
       map: string; // String representation of the map function
     };
   };
-}
-
-export async function doesUserExist(name: string) {
-  try {
-    const user = await remoteCouchRootDB.getUser(name);
-    log(`user: ${user._id}`);
-    return true;
-  } catch (err) {
-    log(`User error: ${err}`);
-    return false;
-  }
 }
 
 /**
@@ -120,13 +113,13 @@ Currently logged-in as ${this._username}.`
       );
     } else {
       try {
-        const signupRequest = await remoteCouchRootDB.signUp(username, password);
+        const signupRequest = await getRemoteCouchRootDB().signUp(username, password);
 
         if (signupRequest.ok) {
           log(`CREATEACCOUNT: logging out of ${this.getUsername()}`);
-          const logoutResult = await remoteCouchRootDB.logOut();
+          const logoutResult = await getRemoteCouchRootDB().logOut();
           log(`CREATEACCOUNT: logged out: ${logoutResult.ok}`);
-          const loginResult = await remoteCouchRootDB.logIn(username, password);
+          const loginResult = await getRemoteCouchRootDB().logIn(username, password);
           log(`CREATEACCOUNT: logged in as new user: ${loginResult.ok}`);
           const newLocal = getLocalUserDB(username);
           const newRemote = getUserDB(username);
@@ -167,7 +160,7 @@ Currently logged-in as ${this._username}.`
       Log out of account ${this.getUsername()} before logging in as ${username}.`);
     }
 
-    const loginResult = await remoteCouchRootDB.logIn(username, password);
+    const loginResult = await getRemoteCouchRootDB().logIn(username, password);
     if (loginResult.ok) {
       log(`Logged in as ${username}`);
       this._username = username;
