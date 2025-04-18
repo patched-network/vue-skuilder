@@ -1,5 +1,5 @@
-import pouch from 'pouchdb';
-import { ENV } from '@vue-skuilder/common';
+import pouch from './pouchdb-setup';
+import { ENV } from '@/factory';
 import {
   pouchDBincludeCredentialsConfig,
   getStartAndEndKeys,
@@ -60,7 +60,7 @@ export class AdminDB implements AdminDBInterface {
   public async getClassrooms() {
     // const joincodes =
     const uuids = (
-      await ClassroomLookupDB.allDocs<{ uuid: string }>({
+      await ClassroomLookupDB().allDocs<{ uuid: string }>({
         include_docs: true,
       })
     ).rows.map((r) => r.doc!.uuid);

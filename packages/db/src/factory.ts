@@ -2,12 +2,24 @@
 
 import { DataLayerProvider } from './core/interfaces';
 
+interface DBEnv {
+  COUCHDB_SERVER_URL: string; // URL of CouchDB server
+  COUCHDB_SERVER_PROTOCOL: string; // Protocol of CouchDB server (http or https)
+}
+
+export const ENV: DBEnv = {
+  COUCHDB_SERVER_PROTOCOL: 'NOT_SET',
+  COUCHDB_SERVER_URL: 'NOT_SET',
+};
+
 // Configuration type for data layer initialization
 export interface DataLayerConfig {
   type: 'pouch' | 'static';
-  options?: {
+  options: {
     staticContentPath?: string; // Path to static content JSON files
     localStoragePrefix?: string; // Prefix for IndexedDB storage names
+    COUCHDB_SERVER_URL?: string;
+    COUCHDB_SERVER_PROTOCOL?: string;
   };
 }
 
@@ -23,8 +35,14 @@ export async function initializeDataLayer(config: DataLayerConfig): Promise<Data
     return dataLayerInstance;
   }
 
-  // Dynamic import to avoid loading both implementations when only one is needed
   if (config.type === 'pouch') {
+    if (!config.options.COUCHDB_SERVER_URL || !config.options.COUCHDB_SERVER_PROTOCOL) {
+      throw new Error('Missing CouchDB server URL or protocol');
+    }
+    ENV.COUCHDB_SERVER_PROTOCOL = config.options.COUCHDB_SERVER_PROTOCOL;
+    ENV.COUCHDB_SERVER_URL = config.options.COUCHDB_SERVER_URL;
+
+    // Dynamic import to avoid loading both implementations when only one is needed
     const { PouchDataLayerProvider } = await import('./impl/pouch/PouchDataLayerProvider');
     dataLayerInstance = new PouchDataLayerProvider();
   } else {

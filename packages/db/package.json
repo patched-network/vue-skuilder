@@ -24,6 +24,7 @@
     },
     "scripts": {
         "build": "tsup",
+        "build:debug": "tsup --sourcemap inline",
         "dev": "tsup --watch"
     },
     "dependencies": {

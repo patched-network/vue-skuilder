@@ -1,25 +1,18 @@
-import { DocType, SkuilderCourseData, GuestUsername, log } from '../../core/types/types-legacy';
-import { ENV } from '@vue-skuilder/common';
+import { ENV } from '@/factory';
+import { DocType, GuestUsername, log, SkuilderCourseData } from '../../core/types/types-legacy';
 // import { getCurrentUser } from '../../stores/useAuthStore';
 import moment, { Moment } from 'moment';
-import PouchDBAuth from '@nilock2/pouchdb-authentication';
-import pouch from 'pouchdb';
-import PouchDBFind from 'pouchdb-find';
+
+import pouch from './pouchdb-setup';
+
+import { ScheduledCard } from '@/core/types/user';
 import process from 'process';
 import { getUserDB } from './userDB';
-import { ScheduledCard } from '@/core/types/user';
 
 const isBrowser = typeof window !== 'undefined';
 
 if (isBrowser) {
   (window as any).process = process; // required as a fix for pouchdb - see #18
-}
-
-pouch.plugin(PouchDBAuth);
-pouch.plugin(PouchDBFind);
-
-if (ENV.DEBUG) {
-  // pouch.debug.enable('pouchdb:find');
 }
 
 const expiryDocID: string = 'GuestAccountExpirationDate';
@@ -234,9 +227,9 @@ export function getStartAndEndKeys(key: string) {
 // Package exports
 //////////////////////
 
-export * from './userDB';
-export * from './courseDB';
-export * from './courseAPI';
-export * from './classroomDB';
 export * from '../../core/interfaces/contentSource';
 export * from './adminDB';
+export * from './classroomDB';
+export * from './courseAPI';
+export * from './courseDB';
+export * from './userDB';

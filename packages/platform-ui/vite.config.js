@@ -54,12 +54,12 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
       // events: 'events-browserify',
       events: 'events',
-      'pouchdb-browser': 'pouchdb-browser/lib/index.js',
-      'pouchdb-find': 'pouchdb-find/lib/index.js',
+      // 'pouchdb': 'pouchdb/lib/index.js',
+      // 'pouchdb-find': 'pouchdb-find/lib/index.js',
     },
     extensions: ['.js', '.ts', '.json', '.vue'],
   },
   optimizeDeps: {
-    include: ['events', 'pouchdb-browser', 'pouchdb-find'],
+    include: ['events'],
   },
 });

@@ -1,6 +1,6 @@
-import pouch from 'pouchdb';
+import pouch from './pouchdb-setup';
 import { pouchDBincludeCredentialsConfig } from '.';
-import { ENV } from '@vue-skuilder/common';
+import { ENV } from '@/factory';
 // import { DataShape } from '../..base-course/Interfaces/DataShape';
 import { NameSpacer, ShapeDescriptor } from '@vue-skuilder/common';
 import { CourseConfig, DataShape } from '@vue-skuilder/common';
