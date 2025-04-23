@@ -27,12 +27,32 @@ export class PouchDataLayerProvider implements DataLayerProvider {
   async initialize(): Promise<void> {
     if (this.initialized) return;
 
-    // Get the current username from session
-    this.currentUsername = await getLoggedInUsername();
+    // Check if we are in a Node.js environment
+    const isNodeEnvironment =
+      typeof process !== 'undefined' && process.versions != null && process.versions.node != null;
 
-    // Create the user db instance
-    if (this.currentUsername) {
-      this.userDB = await User.instance(this.currentUsername);
+    if (isNodeEnvironment) {
+      console.log(
+        'PouchDataLayerProvider: Running in Node.js environment, skipping user session check and user DB initialization.'
+      );
+    } else {
+      // Assume browser-like environment, proceed with user session logic
+      try {
+        // Get the current username from session
+        this.currentUsername = await getLoggedInUsername();
+
+        // Create the user db instance if a username was found
+        if (this.currentUsername) {
+          this.userDB = await User.instance(this.currentUsername);
+        } else {
+          console.warn('PouchDataLayerProvider: No logged-in username found in session.');
+        }
+      } catch (error) {
+        console.error(
+          'PouchDataLayerProvider: Error during user session check or user DB initialization:',
+          error
+        );
+      }
     }
 
     this.initialized = true;
