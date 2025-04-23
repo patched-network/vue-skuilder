@@ -5,6 +5,8 @@ import { DataLayerProvider } from './core/interfaces';
 interface DBEnv {
   COUCHDB_SERVER_URL: string; // URL of CouchDB server
   COUCHDB_SERVER_PROTOCOL: string; // Protocol of CouchDB server (http or https)
+  COUCHDB_USERNAME?: string;
+  COUCHDB_PASSWORD?: string;
 }
 
 export const ENV: DBEnv = {
@@ -20,6 +22,8 @@ export interface DataLayerConfig {
     localStoragePrefix?: string; // Prefix for IndexedDB storage names
     COUCHDB_SERVER_URL?: string;
     COUCHDB_SERVER_PROTOCOL?: string;
+    COUCHDB_USERNAME?: string;
+    COUCHDB_PASSWORD?: string;
   };
 }
 
@@ -41,6 +45,8 @@ export async function initializeDataLayer(config: DataLayerConfig): Promise<Data
     }
     ENV.COUCHDB_SERVER_PROTOCOL = config.options.COUCHDB_SERVER_PROTOCOL;
     ENV.COUCHDB_SERVER_URL = config.options.COUCHDB_SERVER_URL;
+    ENV.COUCHDB_USERNAME = config.options.COUCHDB_USERNAME;
+    ENV.COUCHDB_PASSWORD = config.options.COUCHDB_PASSWORD;
 
     // Dynamic import to avoid loading both implementations when only one is needed
     const { PouchDataLayerProvider } = await import('./impl/pouch/PouchDataLayerProvider');

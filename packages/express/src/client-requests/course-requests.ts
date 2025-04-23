@@ -116,6 +116,11 @@ const elodoc = {
   language: 'javascript',
 };
 
+/**
+ * Inserts a design document into a course database.
+ * @param courseID - The ID of the course database.
+ * @param doc
+ */
 function insertDesignDoc(
   courseID: string,
   doc: {
@@ -167,6 +172,10 @@ type CourseConfig = CreateCourse['data'];
 
 async function createCourse(cfg: CourseConfig): Promise<any> {
   cfg.courseID = await CourseLookup.add(cfg.name);
+
+  if (!cfg.courseID) {
+    throw new Error('Course ID not found');
+  }
 
   const courseDBName: string = getCourseDBName(cfg.courseID);
   const dbCreation = await CouchDB.db.create(courseDBName);
