@@ -49,7 +49,7 @@ import { useConfigStore } from '@/stores/useConfigStore';
 import { useDataInputFormStore } from '@/stores/useDataInputFormStore';
 import { CourseConfig } from '@vue-skuilder/common';
 import { StudySession, type StudySessionConfig } from '@vue-skuilder/common-ui';
-import Courses from '@vue-skuilder/courses';
+import { allCourses } from '@vue-skuilder/courses';
 import { ContentSourceID, UserDBInterface, getDataLayer } from '@vue-skuilder/db';
 import { defineComponent } from 'vue';
 import { Router } from 'vue-router';
@@ -110,7 +110,7 @@ export default defineComponent({
       sessionPrepared: false,
       sessionContentSources: [] as ContentSourceID[],
       dataInputFormStore: useDataInputFormStore(),
-      getViewComponent: (view_id: string) => Courses.getView(view_id),
+      getViewComponent: (view_id: string) => allCourses.getView(view_id),
       dataLayer: getDataLayer(),
     };
   },

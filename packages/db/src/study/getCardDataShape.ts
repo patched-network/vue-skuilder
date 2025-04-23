@@ -1,11 +1,11 @@
-import Courses from '@vue-skuilder/courses';
+import { allCourses } from '@vue-skuilder/courses';
 import { log, NameSpacer, CourseConfig, DataShape } from '@vue-skuilder/common';
 import { CardData, DisplayableData } from '@/core';
 import { getCourseDB } from '@/impl/pouch/courseAPI';
 
 export async function getCardDataShape(courseID: string, cardID: string) {
   const dataShapes: DataShape[] = [];
-  Courses.courses.forEach((course) => {
+  allCourses.courses.forEach((course) => {
     course.questions.forEach((question) => {
       question.dataShapes.forEach((ds) => {
         dataShapes.push(ds);

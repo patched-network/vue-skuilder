@@ -17,8 +17,6 @@ import ReleaseNotes from './views/ReleaseNotes.vue';
 import SignUp from './views/SignUp.vue';
 import Study from './views/Study.vue';
 import User from './views/User.vue';
-import UIMocks from '@/mocks/UIMocks.vue';
-import ENV from '@/ENVIRONMENT_VARS';
 import DataInputFormTester from './dev/DataInputFormTester.vue';
 
 const router = createRouter({
@@ -166,10 +164,6 @@ const router = createRouter({
       props: true,
       alias: ['/u/:_id/stats'],
       component: Stats,
-    },
-    {
-      path: '/uimocks',
-      component: ENV.MOCK ? UIMocks : Home,
     },
   ],
 });

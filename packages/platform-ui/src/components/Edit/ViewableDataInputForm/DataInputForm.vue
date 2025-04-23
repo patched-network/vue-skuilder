@@ -86,7 +86,7 @@ import CardBrowser from '@/components/Edit/CardBrowser.vue';
 import TagsInput, { TagsInputInstance } from '@/components/Edit/TagsInput.vue';
 import { FieldInputInstance, isFieldInput } from '@/components/Edit/ViewableDataInputForm/FieldInput.types';
 import { alertUser } from '@vue-skuilder/common-ui';
-import Courses from '@vue-skuilder/courses';
+import { allCourses } from '@vue-skuilder/courses';
 import { getDataLayer, CourseDBInterface } from '@vue-skuilder/db';
 import { FieldType, Status, CourseConfig, NameSpacer, ShapeDescriptor } from '@vue-skuilder/common';
 import _ from 'lodash';
@@ -497,7 +497,7 @@ export default defineComponent({
         console.log('[DataInputForm] this.dataShape.name', this.dataShape.name);
 
         if (descriptor.dataShape === this.dataShape.name) {
-          const crs = Courses.getCourse(descriptor.course)!;
+          const crs = allCourses.getCourse(descriptor.course)!;
 
           this.shapeViews = [];
 

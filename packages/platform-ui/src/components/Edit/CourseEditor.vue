@@ -30,7 +30,7 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 import ComponentRegistration from '@/components/Edit/ComponentRegistration/ComponentRegistration.vue';
-import Courses from '@vue-skuilder/courses';
+import { allCourses } from '@vue-skuilder/courses';
 import { BlanksCard, BlanksCardDataShapes } from '@vue-skuilder/courses';
 import { CourseConfig, NameSpacer, DataShape } from '@vue-skuilder/common';
 import DataInputForm from './ViewableDataInputForm/DataInputForm.vue';
@@ -93,7 +93,7 @@ export default defineComponent({
 
     // #55 make all 'programmed' datashapes available, rather than
     // the previous code-based name scoping
-    Courses.courses.forEach((course) => {
+    allCourses.courses.forEach((course) => {
       course.questions.forEach((question) => {
         question.dataShapes.forEach((ds) => {
           this.dataShapes.push(ds);
