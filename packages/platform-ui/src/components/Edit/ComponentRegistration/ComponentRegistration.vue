@@ -30,7 +30,7 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 import { Displayable } from '@vue-skuilder/common-ui';
-import Courses from '@vue-skuilder/courses';
+import { allCourses } from '@vue-skuilder/courses';
 import { getDataLayer, CourseDBInterface } from '@vue-skuilder/db';
 import {
   NameSpacer,
@@ -84,9 +84,9 @@ export default defineComponent({
     this.courseDatashapes = this.courseConfig.dataShapes;
     this.courseQuestionTypes = this.courseConfig.questionTypes;
 
-    const dataShapeData = Courses.allDataShapes();
+    const dataShapeData = allCourses.allDataShapes();
 
-    Courses.allDataShapesRaw().forEach((ds) => {
+    allCourses.allDataShapesRaw().forEach((ds) => {
       console.log(`[ComponentRegistration] Datashape:\n${JSON.stringify(ds)}`);
     });
 
@@ -98,7 +98,7 @@ export default defineComponent({
       this.dataShapes.push({
         name: shape.dataShape,
         course: shape.course,
-        dataShape: Courses.getDataShape(shape),
+        dataShape: allCourses.getDataShape(shape),
         registered: index !== undefined,
         displayable: shape.displayable,
       });
@@ -106,11 +106,11 @@ export default defineComponent({
 
     this.dataShapes = _.sortBy(this.dataShapes, ['registered', 'name']);
 
-    const courseNameList = Courses.courses.map((course) => course.name);
+    const courseNameList = allCourses.courses.map((course) => course.name);
     const questionData: Array<[QuestionDescriptor, typeof Displayable]> = [];
 
     courseNameList.forEach((course) => {
-      const courseQs = Courses.getCourse(course)!.questions;
+      const courseQs = allCourses.getCourse(course)!.questions;
 
       courseQs.forEach((courseQ) => {
         questionData.push([

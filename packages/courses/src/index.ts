@@ -14,6 +14,15 @@ import sightSing from './sightsing';
 import typing from './typing';
 import wordWork from './word-work';
 
+export { default as chess } from './chess';
+export { default as french } from './french';
+export { default as math } from './math';
+export { default as piano } from './piano';
+export { default as pitch } from './pitch';
+export { default as sightSing } from './sightsing';
+export { default as typing } from './typing';
+export { default as wordWork } from './word-work';
+
 export { BlanksCard, BlanksCardDataShapes } from './default/questions/fillIn';
 export { default as gradeSpellingAttempt } from './default/questions/fillIn/blanksCorrection';
 
@@ -199,7 +208,7 @@ export class CourseList {
   }
 }
 
-const courseList: CourseList = new CourseList([
+export const allCourses: CourseList = new CourseList([
   math,
   wordWork,
   french,
@@ -210,5 +219,3 @@ const courseList: CourseList = new CourseList([
   chess,
   typing,
 ]);
-
-export default courseList;

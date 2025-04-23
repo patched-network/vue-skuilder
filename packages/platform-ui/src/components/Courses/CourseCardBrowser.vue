@@ -108,7 +108,7 @@
 import { displayableDataToViewData } from '@vue-skuilder/common';
 import TagsInput from '@/components/Edit/TagsInput.vue';
 import { PaginatingToolbar, ViewComponent, CardLoader } from '@vue-skuilder/common-ui';
-import Courses from '@vue-skuilder/courses';
+import { allCourses } from '@vue-skuilder/courses';
 import { getDataLayer, CourseDBInterface, CardData, DisplayableData, Tag } from '@vue-skuilder/db';
 import { defineComponent } from 'vue';
 import { alertUser } from '@vue-skuilder/common-ui';
@@ -160,7 +160,7 @@ export default defineComponent({
       userIsRegistered: false,
       questionCount: 0,
       tags: [] as Tag[],
-      viewLookup: Courses.getView,
+      viewLookup: allCourses.getView,
     };
   },
 
@@ -279,7 +279,9 @@ export default defineComponent({
           console.error(`No valid data found for card ${_cardID}`);
           return;
         }
-        const tmpView: ViewComponent = Courses.getView(tmpCardData.id_view || 'default.question.BlanksCard.FillInView');
+        const tmpView: ViewComponent = allCourses.getView(
+          tmpCardData.id_view || 'default.question.BlanksCard.FillInView'
+        );
 
         const tmpDataDocs = tmpCardData.id_displayable_data.map((id) => {
           return this.courseDB!.getCourseDoc<DisplayableData>(id, {
