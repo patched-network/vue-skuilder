@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 import process from 'process';
 import fs from 'fs';
+import { initializeDataLayer } from '@vue-skuilder/db';
 
 dotenv.config({
   path:
@@ -32,5 +33,18 @@ const env: Env = {
   COUCHDB_PASSWORD: getVar('COUCHDB_PASSWORD'),
   VERSION: getVar('VERSION'),
 };
+
+initializeDataLayer({
+  type: 'pouch',
+  options: {
+    COUCHDB_PASSWORD: env.COUCHDB_PASSWORD,
+    COUCHDB_USERNAME: env.COUCHDB_ADMIN,
+    COUCHDB_SERVER_PROTOCOL: env.COUCHDB_PROTOCOL,
+    COUCHDB_SERVER_URL: env.COUCHDB_SERVER,
+  },
+}).catch((e) => {
+  console.error('Error initializing data layer:', e);
+  process.exit(1);
+});
 
 export default env;
