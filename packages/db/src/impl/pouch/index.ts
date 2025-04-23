@@ -17,10 +17,6 @@ if (isBrowser) {
 
 const expiryDocID: string = 'GuestAccountExpirationDate';
 
-const remoteStr: string = ENV.COUCHDB_SERVER_PROTOCOL + '://' + ENV.COUCHDB_SERVER_URL + 'skuilder';
-
-log(`Remote db: ${remoteStr}`);
-
 const GUEST_LOCAL_DB = `userdb-${GuestUsername}`;
 export const localUserDB: PouchDB.Database = new pouch(GUEST_LOCAL_DB);
 
