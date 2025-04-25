@@ -1,4 +1,3 @@
-// packages/common/src/ENVIRONMENT_VARS.ts
 export interface Environment {
   /**
    * URL to the remote couchDB instance that the app connects to.
