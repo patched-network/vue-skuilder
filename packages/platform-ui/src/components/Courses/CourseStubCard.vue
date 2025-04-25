@@ -13,9 +13,7 @@
     </v-card-text>
 
     <v-card-actions>
-      <router-link :to="`/q/${courseConfig.name.replaceAll(' ', '_')}`" style="text-decoration: none">
-        <v-btn color="primary">More Info</v-btn>
-      </router-link>
+      <v-btn color="primary" @click="navigateToInfo">More Info</v-btn>
       <v-btn data-cy="register-course-button" :loading="addingCourse" color="primary" @click="registerForCourse">
         Register
       </v-btn>
@@ -68,6 +66,10 @@ export default defineComponent({
       log(`Attempting to register for ${this.courseId}.`);
       await (await getCurrentUser()).registerForCourse(this.courseId);
       this.$emit('refresh');
+    },
+    navigateToInfo() {
+      const path = `/q/${this.courseConfig?.name.replaceAll(' ', '_')}`;
+      this.$router.push(path);
     },
   },
 });
