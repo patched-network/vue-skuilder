@@ -44,8 +44,8 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import { getCurrentUser, useAuthStore } from '@/stores/useAuthStore';
-import { useConfigStore } from '@/stores/useConfigStore';
+import { getCurrentUser, useAuthStore } from '../../stores/useAuthStore';
+import { useConfigStore } from '../../stores/useConfigStore';
 
 export default defineComponent({
   name: 'UserChip',

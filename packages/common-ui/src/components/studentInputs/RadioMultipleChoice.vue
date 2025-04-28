@@ -17,7 +17,7 @@
 import UserInput from './BaseUserInput';
 import MultipleChoiceOption from './MultipleChoiceOption.vue';
 import { defineComponent, PropType } from 'vue';
-import { SkldrMouseTrap } from '@/utils/SkldrMouseTrap';
+import { SkldrMouseTrap } from '../../utils/SkldrMouseTrap';
 import { RadioMultipleChoiceAnswer } from './RadioMultipleChoice.types';
 
 export default defineComponent({

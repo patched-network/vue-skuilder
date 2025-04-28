@@ -18,7 +18,7 @@
 import { defineComponent, PropType } from 'vue';
 import { CardRecord } from '@vue-skuilder/db';
 import { CourseElo, ViewData } from '@vue-skuilder/common';
-import { ViewComponent } from '@/composables';
+import { ViewComponent } from '../../composables';
 
 interface CardViewerRefs {
   activeView: ViewComponent;

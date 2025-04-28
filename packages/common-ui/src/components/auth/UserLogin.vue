@@ -50,8 +50,8 @@ import { alertUser } from '../SnackbarService';
 import { log } from '@vue-skuilder/common';
 import { Status } from '@vue-skuilder/common';
 import { User } from '@vue-skuilder/db';
-import { getCurrentUser, useAuthStore } from '@/stores/useAuthStore';
-import { useConfigStore } from '@/stores/useConfigStore';
+import { getCurrentUser, useAuthStore } from '../../stores/useAuthStore';
+import { useConfigStore } from '../../stores/useConfigStore';
 
 const router = useRouter();
 const route = useRoute();

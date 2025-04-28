@@ -65,7 +65,7 @@ import { defineComponent } from 'vue';
 import { UserDBInterface } from '@vue-skuilder/db';
 import { alertUser } from '../SnackbarService';
 import { Status, log } from '@vue-skuilder/common';
-import { getCurrentUser, useAuthStore } from '@/stores/useAuthStore';
+import { getCurrentUser, useAuthStore } from '../../stores/useAuthStore';
 
 export default defineComponent({
   name: 'UserRegistration',

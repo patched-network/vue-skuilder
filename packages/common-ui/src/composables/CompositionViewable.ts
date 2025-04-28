@@ -3,7 +3,7 @@
 import moment from 'moment';
 import { computed, ComputedRef, ref, Ref } from 'vue';
 import { CardRecord, QuestionRecord } from '@vue-skuilder/db';
-import { HotKey } from '@/utils/SkldrMouseTrap';
+import { HotKey } from '../utils/SkldrMouseTrap';
 import { Question } from './Displayable';
 import { ViewData, Answer } from '@vue-skuilder/common';
 

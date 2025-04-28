@@ -72,7 +72,7 @@
 import { defineComponent, PropType } from 'vue';
 import { isQuestionView } from '../composables/CompositionViewable';
 import { alertUser } from './SnackbarService';
-import { ViewComponent } from '@/composables';
+import { ViewComponent } from '../composables';
 import SkMouseTrap from './SkMouseTrap.vue';
 import StudySessionTimer from './StudySessionTimer.vue';
 import HeatMap from './HeatMap.vue';

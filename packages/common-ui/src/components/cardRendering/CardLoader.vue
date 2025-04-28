@@ -16,7 +16,7 @@
 import { defineComponent, PropType } from 'vue';
 import { getDataLayer, CardData, CardRecord, DisplayableData } from '@vue-skuilder/db';
 import { log, displayableDataToViewData, ViewData, ViewDescriptor } from '@vue-skuilder/common';
-import { ViewComponent } from '@/composables';
+import { ViewComponent } from '../../composables';
 import CardViewer from './CardViewer.vue';
 
 export default defineComponent({
