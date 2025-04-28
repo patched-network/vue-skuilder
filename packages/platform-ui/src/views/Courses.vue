@@ -88,7 +88,7 @@ import serverRequest from '../server';
 import { ServerRequestType, CourseConfig, Status } from '@vue-skuilder/common';
 import { alertUser } from '@vue-skuilder/common-ui';
 import { UserDBInterface, getDataLayer } from '@vue-skuilder/db';
-import { getCurrentUser } from '@/stores/useAuthStore';
+import { getCurrentUser } from '@vue-skuilder/common-ui';
 
 type DBCourseConfig = CourseConfig & {
   courseID: string;

@@ -28,7 +28,7 @@
 </template>
 
 <script lang="ts">
-import { getCurrentUser } from '@/stores/useAuthStore';
+import { getCurrentUser } from '@vue-skuilder/common-ui';
 import { useConfigStore } from '@/stores/useConfigStore';
 import { UserDBInterface } from '@vue-skuilder/db';
 import confetti from 'canvas-confetti';

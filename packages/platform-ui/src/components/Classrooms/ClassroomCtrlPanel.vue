@@ -79,7 +79,7 @@ import moment from 'moment';
 import { TeacherClassroomDBInterface, AssignedContent, AssignedTag, Tag, getDataLayer } from '@vue-skuilder/db';
 import { ClassroomConfig, CourseConfig } from '@vue-skuilder/common';
 import { defineComponent } from 'vue';
-import { getCurrentUser } from '@/stores/useAuthStore';
+import { getCurrentUser } from '@vue-skuilder/common-ui';
 
 export default defineComponent({
   name: 'ClassroomCtrlPanel',

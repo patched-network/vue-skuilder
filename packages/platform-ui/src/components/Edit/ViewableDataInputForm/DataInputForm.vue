@@ -100,7 +100,7 @@ import ChessPuzzleInput from './FieldInputs/ChessPuzzleInput.vue';
 import { CourseElo } from '@vue-skuilder/common';
 import { useDataInputFormStore } from '@/stores/useDataInputFormStore';
 import { ViewData } from '@vue-skuilder/common';
-import { getCurrentUser } from '@/stores/useAuthStore';
+import { getCurrentUser } from '@vue-skuilder/common-ui';
 import { Question } from '@vue-skuilder/common-ui';
 
 type StringIndexable = { [x: string]: unknown };

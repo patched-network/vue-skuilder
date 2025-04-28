@@ -12,7 +12,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { User } from '@vue-skuilder/db';
-import { getCurrentUser } from '@/stores/useAuthStore';
+import { getCurrentUser } from '@vue-skuilder/common-ui';
 
 const user = ref<User | null>(null);
 const scheduledReviews = ref<number[]>([]);

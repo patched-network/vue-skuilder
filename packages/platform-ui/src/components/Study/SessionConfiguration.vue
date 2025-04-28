@@ -75,7 +75,7 @@
 import { defineComponent } from 'vue';
 import { SkldrMouseTrap } from '@vue-skuilder/common-ui';
 import { CourseRegistration, UserDBInterface, getDataLayer, ContentSourceID } from '@vue-skuilder/db';
-import { getCurrentUser } from '@/stores/useAuthStore';
+import { getCurrentUser } from '@vue-skuilder/common-ui';
 
 export interface SessionConfigMetaData {
   selected: boolean;

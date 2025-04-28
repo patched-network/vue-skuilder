@@ -62,7 +62,7 @@ import Mousetrap from 'mousetrap';
 import serverRequest from '../../server';
 import { CourseConfig, CreateCourse, DataShape55, QuestionType55, ServerRequestType } from '@vue-skuilder/common';
 import { alertUser } from '@vue-skuilder/common-ui';
-import { getCurrentUser } from '@/stores/useAuthStore';
+import { getCurrentUser } from '@vue-skuilder/common-ui';
 
 export default defineComponent({
   name: 'CourseEditor',
