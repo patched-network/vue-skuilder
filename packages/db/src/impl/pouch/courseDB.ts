@@ -28,16 +28,21 @@ export class CoursesDB implements CoursesDBInterface {
   _courseIDs: string[] | undefined;
 
   constructor(courseIDs?: string[]) {
-    this._courseIDs = courseIDs;
+    if (courseIDs && courseIDs.length > 0) {
+      this._courseIDs = courseIDs;
+    } else {
+      this._courseIDs = undefined;
+    }
   }
 
   public async getCourseList(): Promise<CourseConfig[]> {
     let crsList = await CourseLookup.allCourses();
+    console.log(`AllCourses: ${crsList.map((c) => c.name + ', ' + c._id + '\n\t')}`);
     if (this._courseIDs) {
       crsList = crsList.filter((c) => this._courseIDs!.includes(c._id));
     }
 
-    console.log(`AllCourses: ${crsList.map((c) => c.name + ', ' + c._id + '\n\t')}`);
+    console.log(`AllCourses.filtered: ${crsList.map((c) => c.name + ', ' + c._id + '\n\t')}`);
 
     const cfgs = await Promise.all(
       crsList.map(async (c) => {
@@ -55,7 +60,7 @@ export class CoursesDB implements CoursesDBInterface {
   }
 
   async getCourseConfig(courseId: string): Promise<CourseConfig> {
-    if (this._courseIDs && !this._courseIDs.includes(courseId)) {
+    if (this._courseIDs && this._courseIDs.length && !this._courseIDs.includes(courseId)) {
       throw new Error(`Course ${courseId} not in course list`);
     }
 
