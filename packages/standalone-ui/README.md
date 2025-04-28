@@ -14,3 +14,9 @@ When courses are generated via the Skuilder CLI, this template transforms into c
 ## Core Dependencies
 
 Vue 3, Vuetify 3
+
+## Development
+
+The existing `./skuilder.config.js` file contains a devenv config that loads an `anatomy` course from the existing test DB docker image.
+
+Before `yarn dev` of the standalone package, the testDB docker image must be loaded via `yarn couchdb:start` in project root.

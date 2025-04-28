@@ -1,3 +1,5 @@
+import ENV from './ENVIRONMENT_VARS';
+
 import { createApp } from 'vue';
 import { createPinia } from 'pinia';
 import App from './App.vue';
@@ -9,18 +11,32 @@ import { createVuetify } from 'vuetify';
 import * as components from 'vuetify/components';
 import * as directives from 'vuetify/directives';
 
-const vuetify = createVuetify({
-  components,
-  directives,
-  theme: {
-    defaultTheme: 'light',
-  },
-});
+// data layer
+import { initializeDataLayer } from '@vue-skuilder/db';
 
-const app = createApp(App);
+(async () => {
+  await initializeDataLayer({
+    type: 'pouch',
+    options: {
+      COUCHDB_SERVER_URL: ENV.COUCHDB_SERVER_URL,
+      COUCHDB_SERVER_PROTOCOL: ENV.COUCHDB_SERVER_PROTOCOL,
+      COURSE_IDS: [ENV.STATIC_COURSE_ID],
+    },
+  });
 
-app.use(createPinia());
-app.use(router);
-app.use(vuetify);
+  const vuetify = createVuetify({
+    components,
+    directives,
+    theme: {
+      defaultTheme: 'light',
+    },
+  });
 
-app.mount('#app');
+  const app = createApp(App);
+
+  app.use(createPinia());
+  app.use(router);
+  app.use(vuetify);
+
+  app.mount('#app');
+})();
