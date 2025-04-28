@@ -25,8 +25,18 @@ import { PouchError } from './types';
 import CourseLookup from './courseLookupDB';
 
 export class CoursesDB implements CoursesDBInterface {
+  _courseIDs: string[] | undefined;
+
+  constructor(courseIDs?: string[]) {
+    this._courseIDs = courseIDs;
+  }
+
   public async getCourseList(): Promise<CourseConfig[]> {
-    const crsList = await CourseLookup.allCourses();
+    let crsList = await CourseLookup.allCourses();
+    if (this._courseIDs) {
+      crsList = crsList.filter((c) => this._courseIDs!.includes(c._id));
+    }
+
     console.log(`AllCourses: ${crsList.map((c) => c.name + ', ' + c._id + '\n\t')}`);
 
     const cfgs = await Promise.all(
@@ -45,6 +55,10 @@ export class CoursesDB implements CoursesDBInterface {
   }
 
   async getCourseConfig(courseId: string): Promise<CourseConfig> {
+    if (this._courseIDs && !this._courseIDs.includes(courseId)) {
+      throw new Error(`Course ${courseId} not in course list`);
+    }
+
     const cfg = await getCredentialledCourseConfig(courseId);
     if (cfg === undefined) {
       throw new Error(`Error fetching cfg for course ${courseId}`);

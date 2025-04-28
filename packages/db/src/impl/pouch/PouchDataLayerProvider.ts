@@ -22,7 +22,15 @@ export class PouchDataLayerProvider implements DataLayerProvider {
   private userDB!: UserDBInterface;
   private currentUsername: string = '';
 
-  constructor() {}
+  // the scoped list of courseIDs for a UI focused on a specific course
+  // or group of courses
+  private _courseIDs: string[] = [];
+
+  constructor(coursIDs?: string[]) {
+    if (coursIDs) {
+      this._courseIDs = coursIDs;
+    }
+  }
 
   async initialize(): Promise<void> {
     if (this.initialized) return;
@@ -40,6 +48,7 @@ export class PouchDataLayerProvider implements DataLayerProvider {
       try {
         // Get the current username from session
         this.currentUsername = await getLoggedInUsername();
+        console.log(`Current username: ${this.currentUsername}`);
 
         // Create the user db instance if a username was found
         if (this.currentUsername) {
@@ -72,7 +81,7 @@ export class PouchDataLayerProvider implements DataLayerProvider {
   }
 
   getCoursesDB(): CoursesDBInterface {
-    return new CoursesDB();
+    return new CoursesDB(this._courseIDs);
   }
 
   async getClassroomDB(
