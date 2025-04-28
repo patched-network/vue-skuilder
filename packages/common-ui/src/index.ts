@@ -60,6 +60,12 @@ export { default as MdTokenRenderer } from './components/cardRendering/MdTokenRe
 export { default as MarkdownRenderer } from './components/cardRendering/MarkdownRenderer.vue';
 
 /*
+  Authentication Components
+*/
+export * from './components/auth';
+export * from './stores/useAuthStore';
+
+/*
   stores
 */
 export * from './stores/useCardPreviewModeStore';
