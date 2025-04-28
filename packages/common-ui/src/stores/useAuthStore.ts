@@ -1,6 +1,7 @@
 // stores/useAuthStore.ts
-import { defineStore } from 'pinia';
+import { defineStore, setActivePinia } from 'pinia';
 import { getDataLayer, UserDBInterface } from '@vue-skuilder/db';
+import { getPinia } from '../plugins/pinia';
 
 export interface AuthState {
   _user: UserDBInterface | undefined;
@@ -32,51 +33,60 @@ export async function getCurrentUser(): Promise<UserDBInterface> {
   return getDataLayer().getUserDB();
 }
 
-export const useAuthStore = defineStore('auth', {
-  state: (): AuthState => ({
-    _user: undefined as UserDBInterface | undefined,
-    loginAndRegistration: {
-      init: false,
-      loggedIn: false,
-      regDialogOpen: false,
-      loginDialogOpen: false,
+export const useAuthStore = () => {
+  // Get the Pinia instance from the plugin
+  const pinia = getPinia();
+  if (pinia) {
+    setActivePinia(pinia);
+  }
+
+  // Return the store
+  return defineStore('auth', {
+    state: (): AuthState => ({
+      _user: undefined as UserDBInterface | undefined,
+      loginAndRegistration: {
+        init: false,
+        loggedIn: false,
+        regDialogOpen: false,
+        loginDialogOpen: false,
+      },
+      onLoadComplete: false,
+    }),
+
+    actions: {
+      async init() {
+        try {
+          this._user = getDataLayer().getUserDB();
+
+          this.loginAndRegistration.loggedIn = this._user.isLoggedIn();
+
+          this.onLoadComplete = true;
+          this.loginAndRegistration.init = true;
+        } catch (e) {
+          console.error('Failed to initialize auth store:', e);
+        }
+      },
+
+      setLoginDialog(open: boolean) {
+        this.loginAndRegistration.loginDialogOpen = open;
+      },
+
+      setRegDialog(open: boolean) {
+        this.loginAndRegistration.regDialogOpen = open;
+      },
     },
-    onLoadComplete: false,
-  }),
 
-  actions: {
-    async init() {
-      try {
-        this._user = getDataLayer().getUserDB();
-
-        this.loginAndRegistration.loggedIn = this._user.isLoggedIn();
-
-        this.onLoadComplete = true;
-        this.loginAndRegistration.init = true;
-      } catch (e) {
-        console.error('Failed to initialize auth store:', e);
-      }
+    getters: {
+      currentUser: async () => getCurrentUser(),
+      isLoggedIn: (state) => state.loginAndRegistration.loggedIn,
+      isInitialized: (state) => state.loginAndRegistration.init,
+      status: (state) => {
+        return {
+          loggedIn: state.loginAndRegistration.loggedIn,
+          init: state.loginAndRegistration.init,
+          user: state._user,
+        };
+      },
     },
-
-    setLoginDialog(open: boolean) {
-      this.loginAndRegistration.loginDialogOpen = open;
-    },
-
-    setRegDialog(open: boolean) {
-      this.loginAndRegistration.regDialogOpen = open;
-    },
-  },
-
-  getters: {
-    currentUser: async () => getCurrentUser(),
-    isLoggedIn: (state) => state.loginAndRegistration.loggedIn,
-    isInitialized: (state) => state.loginAndRegistration.init,
-    status: (state) => {
-      return {
-        loggedIn: state.loginAndRegistration.loggedIn,
-        init: state.loginAndRegistration.init,
-        user: state._user,
-      };
-    },
-  },
-});
+  })();
+};
