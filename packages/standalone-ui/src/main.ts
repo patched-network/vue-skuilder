@@ -23,6 +23,7 @@ import { initializeDataLayer } from '@vue-skuilder/db';
       COURSE_IDS: [ENV.STATIC_COURSE_ID],
     },
   });
+  const pinia = createPinia();
 
   const vuetify = createVuetify({
     components,
@@ -34,9 +35,12 @@ import { initializeDataLayer } from '@vue-skuilder/db';
 
   const app = createApp(App);
 
-  app.use(createPinia());
   app.use(router);
   app.use(vuetify);
+  app.use(pinia);
+
+  const { piniaPlugin } = await import('@vue-skuilder/common-ui');
+  app.use(piniaPlugin, { pinia });
 
   app.mount('#app');
 })();
