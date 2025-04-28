@@ -86,9 +86,8 @@ import CourseStubCard from '@/components/Courses/CourseStubCard.vue';
 import _ from 'lodash';
 import serverRequest from '../server';
 import { ServerRequestType, CourseConfig, Status } from '@vue-skuilder/common';
-import { alertUser } from '@vue-skuilder/common-ui';
+import { alertUser, getCurrentUser } from '@vue-skuilder/common-ui';
 import { UserDBInterface, getDataLayer } from '@vue-skuilder/db';
-import { getCurrentUser } from '@vue-skuilder/common-ui';
 
 type DBCourseConfig = CourseConfig & {
   courseID: string;
