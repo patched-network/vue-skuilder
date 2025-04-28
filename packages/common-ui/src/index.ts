@@ -63,12 +63,13 @@ export { default as MarkdownRenderer } from './components/cardRendering/Markdown
   Authentication Components
 */
 export * from './components/auth';
-export * from './stores/useAuthStore';
 
 /*
   stores
 */
 export * from './stores/useCardPreviewModeStore';
+export * from './stores/useAuthStore';
+export * from './stores/useConfigStore';
 
 /*
   plugins
