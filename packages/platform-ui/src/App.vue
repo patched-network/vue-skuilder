@@ -60,10 +60,8 @@
 <script lang="ts" setup>
 import { ref, computed, onBeforeMount, onMounted, watch } from 'vue';
 import { useTheme } from 'vuetify';
-import UserLoginAndRegistrationContainer from '@/components/UserLoginAndRegistrationContainer.vue';
-import { SnackbarService } from '@vue-skuilder/common-ui';
-import { useConfigStore } from '@/stores/useConfigStore';
-import { useAuthStore } from '@vue-skuilder/common-ui';
+import UserLoginAndRegistrationContainer from '@vue-skuilder/common-ui';
+import { SnackbarService, useConfigStore, useAuthStore } from '@vue-skuilder/common-ui';
 
 defineOptions({
   name: 'App',

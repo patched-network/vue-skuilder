@@ -44,8 +44,7 @@
 
 <script lang="ts">
 import SessionConfiguration from '@/components/Study/SessionConfiguration.vue';
-import { getCurrentUser } from '@vue-skuilder/common-ui';
-import { useConfigStore } from '@/stores/useConfigStore';
+import { getCurrentUser, useConfigStore } from '@vue-skuilder/common-ui';
 import { useDataInputFormStore } from '@/stores/useDataInputFormStore';
 import { CourseConfig } from '@vue-skuilder/common';
 import { StudySession, type StudySessionConfig } from '@vue-skuilder/common-ui';
