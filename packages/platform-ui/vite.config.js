@@ -4,6 +4,7 @@ import { VitePWA } from 'vite-plugin-pwa';
 import eslint from 'vite-plugin-eslint';
 import { fileURLToPath, URL } from 'node:url';
 import injectEnvPlugin from './vite-env-plugin';
+import { resolve } from 'path';
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -56,8 +57,11 @@ export default defineConfig({
       events: 'events',
       // 'pouchdb': 'pouchdb/lib/index.js',
       // 'pouchdb-find': 'pouchdb-find/lib/index.js',
+      '@vue-skuilder/db': resolve(__dirname, '../../packages/db/dist/index.mjs'),
+      '@vue-skuilder/common-ui': resolve(__dirname, '../../packages/common-ui/src/index.ts'),
     },
     extensions: ['.js', '.ts', '.json', '.vue'],
+    dedupe: ['vue', 'vuetify', 'vue-router', 'pinia', '@vue-skuilder/db', '@vue-skuilder/common'],
   },
   optimizeDeps: {
     include: ['events'],

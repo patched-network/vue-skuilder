@@ -7,8 +7,6 @@ import './registerServiceWorker';
 import router from './router';
 import { createPinia } from 'pinia';
 import vuetify from './plugins/vuetify';
-// common-ui imports
-import '@vue-skuilder/common-ui/style';
 // `courses` imports - keep style import for initial page rendering
 import '@vue-skuilder/courses/style';
 // `db` import and initialization
