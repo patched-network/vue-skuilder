@@ -46,7 +46,7 @@
 <script lang="ts" setup>
 import { ref, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { alertUser } from '@vue-skuilder/common-ui';
+import { alertUser } from '../SnackbarService';
 import { log } from '@vue-skuilder/common';
 import { Status } from '@vue-skuilder/common';
 import { User } from '@vue-skuilder/db';
@@ -75,6 +75,7 @@ const buttonStatus = computed(() => ({
 
 const initBadLogin = () => {
   badLoginAttempt.value = true;
+
   alertUser({
     text: 'Username or password was incorrect.',
     status: Status.error,

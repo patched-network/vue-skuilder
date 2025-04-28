@@ -63,7 +63,7 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 import { UserDBInterface } from '@vue-skuilder/db';
-import { alertUser } from '@vue-skuilder/common-ui';
+import { alertUser } from '../SnackbarService';
 import { Status, log } from '@vue-skuilder/common';
 import { getCurrentUser, useAuthStore } from '@/stores/useAuthStore';
 
