@@ -16,6 +16,9 @@ import { aliases, mdi } from 'vuetify/iconsets/mdi';
 // data layer
 import { initializeDataLayer } from '@vue-skuilder/db';
 
+// auth store
+import { useAuthStore } from '@vue-skuilder/common-ui';
+
 (async () => {
   await initializeDataLayer({
     type: 'pouch',
@@ -50,6 +53,8 @@ import { initializeDataLayer } from '@vue-skuilder/db';
 
   const { piniaPlugin } = await import('@vue-skuilder/common-ui');
   app.use(piniaPlugin, { pinia });
+
+  await useAuthStore().init();
 
   app.mount('#app');
 })();

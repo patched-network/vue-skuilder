@@ -32,12 +32,4 @@ const authStore = useAuthStore();
 const authDialogOpen = ref(false);
 
 const isLoggedIn = computed(() => authStore.isLoggedIn);
-
-onMounted(async () => {
-  // Initialize the auth store with the user database
-  if (!authStore.isInitialized) {
-    const userDB = getDataLayer().getUserDB();
-    await authStore.init(userDB);
-  }
-});
 </script>
