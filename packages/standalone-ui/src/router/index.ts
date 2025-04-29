@@ -27,6 +27,7 @@ const routes: Array<RouteRecordRaw> = [
   },
   {
     path: '/register',
+    alias: '/signup',
     name: 'Register',
     component: UserRegistration,
   },
