@@ -45,7 +45,7 @@ export default defineConfig({
     ],
   },
   server: {
-    port: 3001, // Keep your specific port
+    port: 6173, // distinct from platform-ui
   },
   build: {
     sourcemap: true, // Keep sourcemaps for build
