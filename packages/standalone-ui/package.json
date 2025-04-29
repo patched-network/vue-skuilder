@@ -9,6 +9,7 @@
         "preview": "vite preview"
     },
     "dependencies": {
+        "@mdi/font": "^7.3.67",
         "@vue-skuilder/common-ui": "workspace:*",
         "@vue-skuilder/db": "workspace:*",
         "pinia": "^2.3.0",

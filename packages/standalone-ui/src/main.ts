@@ -1,4 +1,5 @@
 import ENV from './ENVIRONMENT_VARS';
+import '@mdi/font/css/materialdesignicons.css';
 
 import { createApp } from 'vue';
 import { createPinia } from 'pinia';
@@ -10,6 +11,7 @@ import 'vuetify/styles';
 import { createVuetify } from 'vuetify';
 import * as components from 'vuetify/components';
 import * as directives from 'vuetify/directives';
+import { aliases, mdi } from 'vuetify/iconsets/mdi';
 
 // data layer
 import { initializeDataLayer } from '@vue-skuilder/db';
@@ -30,6 +32,13 @@ import { initializeDataLayer } from '@vue-skuilder/db';
     directives,
     theme: {
       defaultTheme: 'light',
+    },
+    icons: {
+      defaultSet: 'mdi',
+      aliases,
+      sets: {
+        mdi,
+      },
     },
   });
 
