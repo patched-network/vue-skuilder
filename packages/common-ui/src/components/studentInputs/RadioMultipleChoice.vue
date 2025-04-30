@@ -122,7 +122,24 @@ export default defineComponent({
         ...Array.from({ length: this.choiceList.length }, (_, i) => ({
           hotkey: (i + 1).toString(),
           callback: () => this.setSelection(i),
-          command: `Select option ${i + 1}`,
+          command: `Select ${((i) => {
+            switch (i) {
+              case 0:
+                return 'first';
+              case 1:
+                return 'second';
+              case 2:
+                return 'third';
+              case 3:
+                return 'fourth';
+              case 4:
+                return 'fifth';
+              case 5:
+                return 'sixth';
+              default:
+                return `${i + 1}th`;
+            }
+          })(i)} option`,
         })),
       ]);
     },
