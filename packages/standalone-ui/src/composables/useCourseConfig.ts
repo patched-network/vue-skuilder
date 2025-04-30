@@ -4,7 +4,7 @@ import config from '../../skuilder.config.json';
 // This would be replaced by actual course configuration in a real implementation
 const defaultConfig = {
   title: config.title ? config.title : '[UNSET] Course Title',
-  description: 'Course Description',
+  description: 'This is the devenv test course setup.',
   logo: '',
   darkMode: false,
   links: [
