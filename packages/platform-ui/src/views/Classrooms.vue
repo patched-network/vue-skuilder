@@ -101,7 +101,7 @@ import { getDataLayer, UserDBInterface } from '@vue-skuilder/db';
 import serverRequest from '@/server/index';
 import { alertUser } from '@vue-skuilder/common-ui';
 import ClassroomEditor from '@/components/Classrooms/CreateClassroom.vue';
-import { getCurrentUser } from '@/stores/useAuthStore';
+import { getCurrentUser } from '@vue-skuilder/common-ui';
 
 interface CourseReg {
   _id: string;

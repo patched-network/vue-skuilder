@@ -19,9 +19,7 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import UserLogin from '@/components/UserLogin.vue';
-import { getCurrentUser, useAuthStore } from '@/stores/useAuthStore';
-import { useConfigStore } from '@/stores/useConfigStore';
+import { UserLogin, getCurrentUser, useAuthStore, useConfigStore } from '@vue-skuilder/common-ui';
 
 export default defineComponent({
   name: 'LoginRoute',

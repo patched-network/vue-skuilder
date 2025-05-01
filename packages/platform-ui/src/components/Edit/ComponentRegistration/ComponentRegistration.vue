@@ -41,7 +41,7 @@ import {
   DataShape,
 } from '@vue-skuilder/common';
 import * as _ from 'lodash';
-import { getCurrentUser } from '@/stores/useAuthStore';
+import { getCurrentUser } from '@vue-skuilder/common-ui';
 
 export interface DataShapeRegistrationStatus {
   name: string;

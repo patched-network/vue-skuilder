@@ -107,11 +107,10 @@
 <script lang="ts">
 import { displayableDataToViewData } from '@vue-skuilder/common';
 import TagsInput from '@/components/Edit/TagsInput.vue';
-import { PaginatingToolbar, ViewComponent, CardLoader } from '@vue-skuilder/common-ui';
+import { PaginatingToolbar, ViewComponent, CardLoader, alertUser } from '@vue-skuilder/common-ui';
 import { allCourses } from '@vue-skuilder/courses';
 import { getDataLayer, CourseDBInterface, CardData, DisplayableData, Tag } from '@vue-skuilder/db';
 import { defineComponent } from 'vue';
-import { alertUser } from '@vue-skuilder/common-ui';
 import { Status } from '@vue-skuilder/common';
 
 function isConstructor(obj: unknown) {

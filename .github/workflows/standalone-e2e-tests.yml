@@ -1,0 +1,88 @@
+name: Standalone UI E2E Tests
+permissions:
+  contents: read
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # Run daily at midnight
+  workflow_dispatch: # Allow manual triggering
+  push:
+    paths:
+      - '.github/workflows/standalone-e2e-tests.yml'
+      - 'packages/standalone-ui/**'
+
+jobs:
+  e2e-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: 'recursive' # Get submodule for couchdb snapshot
+
+      - name: Display submodule information
+        run: |
+          echo "Submodule information:"
+          git submodule status
+          echo "CouchDB snapshot details:"
+          cd test-couch && git log -1 --pretty=format:'%h - %s (%cr) <%an>'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'yarn'
+
+      - name: Setup Docker
+        uses: docker/setup-buildx-action@v2
+
+      - name: Install dependencies
+        run: yarn install
+
+      - name: Install Cypress
+        run: yarn workspace @vue-skuilder/standalone-ui cypress install
+
+      - name: Build dependencies
+        run: |
+          yarn workspace @vue-skuilder/common build
+          yarn workspace @vue-skuilder/db build
+          yarn workspace @vue-skuilder/common-ui build
+          yarn workspace @vue-skuilder/courses build
+
+      - name: Start CouchDB
+        run: yarn couchdb:start
+
+      - name: Start standalone UI and wait for services
+        run: |
+          # Start the standalone-ui in background
+          yarn workspace @vue-skuilder/standalone-ui dev &
+          # Wait for the webserver to be ready
+          npx wait-on http://localhost:6173
+          # Wait for the database to be ready
+          npx wait-on http://localhost:5984
+
+      - name: Run E2E tests
+        run: yarn workspace @vue-skuilder/standalone-ui cypress run
+
+      - name: Cleanup services
+        if: always()
+        run: |
+          # Clean up
+          kill $(lsof -t -i:6173) || true
+          yarn couchdb:stop
+
+      - name: Upload screenshots on failure
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: cypress-screenshots
+          path: packages/standalone-ui/cypress/screenshots
+          retention-days: 7
+
+      - name: Upload videos
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cypress-videos
+          path: packages/standalone-ui/cypress/videos
+          retention-days: 7

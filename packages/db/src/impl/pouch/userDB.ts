@@ -5,7 +5,13 @@ import moment, { Moment } from 'moment';
 import { GuestUsername } from '../../core/types/types-legacy';
 import pouch from './pouchdb-setup';
 
-import { UserCourseSetting, UserDBInterface, UsrCrsDataInterface } from '@/core';
+import {
+  ClassroomRegistrationDesignation,
+  ClassroomRegistrationDoc,
+  UserCourseSetting,
+  UserDBInterface,
+  UsrCrsDataInterface,
+} from '@/core';
 import {
   ActivityRecord,
   CourseRegistration,
@@ -889,17 +895,6 @@ export function getUserDB(username: string): PouchDB.Database {
 
 const userCoursesDoc = 'CourseRegistrations';
 const userClassroomsDoc = 'ClassroomRegistrations';
-
-export type ClassroomRegistrationDesignation = 'student' | 'teacher' | 'aide' | 'admin';
-
-interface ClassroomRegistration {
-  classID: string;
-  registeredAs: ClassroomRegistrationDesignation;
-}
-
-export interface ClassroomRegistrationDoc {
-  registrations: ClassroomRegistration[];
-}
 
 async function getOrCreateClassroomRegistrationsDoc(
   user: string

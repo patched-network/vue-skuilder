@@ -49,7 +49,7 @@ import { Status, ClassroomConfig, CreateClassroom, ServerRequestType } from '@vu
 import serverRequest from '../../server';
 import { alertUser } from '@vue-skuilder/common-ui';
 import { defineComponent } from 'vue';
-import { getCurrentUser } from '@/stores/useAuthStore';
+import { getCurrentUser } from '@vue-skuilder/common-ui';
 
 export default defineComponent({
   emits: ['ClassroomEditingComplete'],

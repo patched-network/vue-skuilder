@@ -5245,9 +5245,12 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@vue-skuilder/standalone-ui@workspace:packages/standalone-ui"
   dependencies:
+    "@mdi/font": "npm:^7.3.67"
+    "@types/cypress": "npm:1.1.6"
     "@vitejs/plugin-vue": "npm:^5.2.1"
     "@vue-skuilder/common-ui": "workspace:*"
     "@vue-skuilder/db": "workspace:*"
+    cypress: "npm:14.1.0"
     pinia: "npm:^2.3.0"
     typescript: "npm:^5.7.2"
     vite: "npm:^6.0.9"
@@ -5255,6 +5258,7 @@ __metadata:
     vue-router: "npm:^4.2.0"
     vue-tsc: "npm:^1.8.0"
     vuetify: "npm:^3.7.0"
+    wait-on: "npm:8.0.2"
   languageName: unknown
   linkType: soft
 

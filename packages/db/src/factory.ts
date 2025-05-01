@@ -24,6 +24,8 @@ export interface DataLayerConfig {
     COUCHDB_SERVER_PROTOCOL?: string;
     COUCHDB_USERNAME?: string;
     COUCHDB_PASSWORD?: string;
+
+    COURSE_IDS?: string[];
   };
 }
 
@@ -50,7 +52,7 @@ export async function initializeDataLayer(config: DataLayerConfig): Promise<Data
 
     // Dynamic import to avoid loading both implementations when only one is needed
     const { PouchDataLayerProvider } = await import('./impl/pouch/PouchDataLayerProvider');
-    dataLayerInstance = new PouchDataLayerProvider();
+    dataLayerInstance = new PouchDataLayerProvider(config.options.COURSE_IDS);
   } else {
     throw new Error('static data layer not implemented');
     // const { StaticDataLayerProvider } = await import('./impl/static/StaticDataLayerProvider');

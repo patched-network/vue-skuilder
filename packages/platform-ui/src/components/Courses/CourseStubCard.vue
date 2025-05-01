@@ -22,7 +22,7 @@
 </template>
 
 <script lang="ts">
-import { getCurrentUser } from '@/stores/useAuthStore';
+import { getCurrentUser } from '@vue-skuilder/common-ui';
 import { CourseConfig, log } from '@vue-skuilder/common';
 import { getDataLayer } from '@vue-skuilder/db';
 import { defineComponent } from 'vue';

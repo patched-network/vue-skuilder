@@ -1,8 +1,8 @@
 import { defineComponent } from 'vue';
 import { Answer, log } from '@vue-skuilder/common';
-import { useCardPreviewModeStore } from '@/stores/useCardPreviewModeStore';
-import { ViewComponent } from '@/composables/Displayable';
-import { isQuestionView } from '@/composables/CompositionViewable';
+import { useCardPreviewModeStore } from '../../stores/useCardPreviewModeStore';
+import { ViewComponent } from '../../composables/Displayable';
+import { isQuestionView } from '../../composables/CompositionViewable';
 import { QuestionRecord } from '@vue-skuilder/db';
 import { Store } from 'pinia';
 

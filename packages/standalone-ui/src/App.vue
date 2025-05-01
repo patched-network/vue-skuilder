@@ -6,7 +6,7 @@
       <router-view />
     </v-main>
 
-    <course-footer :links="courseConfig.links" :copyright="courseConfig.copyright" />
+    <!-- <course-footer :links="courseConfig.links" :copyright="courseConfig.copyright" /> -->
   </v-app>
 </template>
 

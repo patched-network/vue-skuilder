@@ -6,9 +6,13 @@
     "scripts": {
         "dev": "vite",
         "build": "vue-tsc --noEmit && vite build",
-        "preview": "vite preview"
+        "preview": "vite preview",
+        "test:e2e": "cypress open",
+        "test:e2e:headless": "cypress run",
+        "ci:e2e": "vite dev & wait-on http://localhost:6173 && cypress run"
     },
     "dependencies": {
+        "@mdi/font": "^7.3.67",
         "@vue-skuilder/common-ui": "workspace:*",
         "@vue-skuilder/db": "workspace:*",
         "pinia": "^2.3.0",
@@ -17,9 +21,12 @@
         "vuetify": "^3.7.0"
     },
     "devDependencies": {
+        "@types/cypress": "1.1.6",
         "@vitejs/plugin-vue": "^5.2.1",
+        "cypress": "14.1.0",
         "typescript": "^5.7.2",
         "vite": "^6.0.9",
-        "vue-tsc": "^1.8.0"
+        "vue-tsc": "^1.8.0",
+        "wait-on": "8.0.2"
     }
 }

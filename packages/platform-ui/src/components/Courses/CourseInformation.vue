@@ -63,7 +63,7 @@ import CourseCardBrowser from './CourseCardBrowser.vue';
 import { log } from '@vue-skuilder/common';
 import { CourseDBInterface, Tag, UserDBInterface, getDataLayer } from '@vue-skuilder/db';
 import { CourseConfig } from '@vue-skuilder/common';
-import { getCurrentUser } from '@/stores/useAuthStore';
+import { getCurrentUser } from '@vue-skuilder/common-ui';
 
 export default defineComponent({
   name: 'CourseInformation',

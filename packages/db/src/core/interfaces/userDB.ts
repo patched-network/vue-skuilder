@@ -4,7 +4,6 @@ import {
   CourseRegistrationDoc,
   ScheduledCard,
 } from '@/core/types/user';
-import { ClassroomRegistrationDoc } from '@/impl/pouch/userDB';
 import { CourseElo, Status } from '@vue-skuilder/common';
 import { Moment } from 'moment';
 import { CardHistory, CardRecord } from '../types/types-legacy';
@@ -170,4 +169,15 @@ export interface UsrCrsDataInterface {
   getCourseSettings(): Promise<UserCourseSettings>;
   updateCourseSettings(updates: UserCourseSetting[]): void; // [ ] return a result of some sort?
   // getRegistrationDoc(): Promise<CourseRegistration>;
+}
+
+export type ClassroomRegistrationDesignation = 'student' | 'teacher' | 'aide' | 'admin';
+
+export interface ClassroomRegistration {
+  classID: string;
+  registeredAs: ClassroomRegistrationDesignation;
+}
+
+export interface ClassroomRegistrationDoc {
+  registrations: ClassroomRegistration[];
 }

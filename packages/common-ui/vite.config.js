@@ -18,12 +18,15 @@ export default defineConfig({
     },
     rollupOptions: {
       // External packages that shouldn't be bundled
-      external: ['vue', 'vuetify'],
+      external: ['vue', 'vuetify', 'pinia', '@vue-skuilder/db', '@vue-skuilder/common'],
       output: {
         // Global variables to use in UMD build for externalized deps
         globals: {
           vue: 'Vue',
           vuetify: 'Vuetify',
+          pinia: 'Pinia',
+          '@vue-skuilder/db': 'VueSkuilderDb',
+          '@vue-skuilder/common': 'VueSkuilderCommon',
         },
         // Preserve CSS in the output bundle
         assetFileNames: (assetInfo) => {

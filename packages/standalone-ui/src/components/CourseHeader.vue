@@ -14,12 +14,18 @@
         {{ item.text }}
       </v-btn>
     </div>
+
+    <v-divider vertical class="mx-2"></v-divider>
+
+    <UserLoginAndRegistrationContainer :show-login-button="true" redirect-to-path="/study" />
   </v-app-bar>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useDisplay } from 'vuetify';
+import { UserLoginAndRegistrationContainer, useAuthStore } from '@vue-skuilder/common-ui';
+import { getDataLayer } from '@vue-skuilder/db';
 
 const props = defineProps<{
   title: string;
