@@ -1,4 +1,6 @@
 name: Standalone UI E2E Tests
+permissions:
+  contents: read
 
 on:
   schedule:
