@@ -1,106 +1,116 @@
 <template>
-  <v-card v-if="!updatePending">
-    <paginating-toolbar
-      title="Exercises"
-      :page="page"
-      :pages="pages"
-      :subtitle="`(${questionCount})`"
-      @first="first"
-      @prev="prev"
-      @next="next"
-      @last="last"
-      @set-page="(n) => setPage(n)"
-    />
+  <v-card>
+    <div v-if="updatePending" class="d-flex justify-center align-center pa-6">
+      <v-progress-circular indeterminate color="primary" />
+    </div>
+    <div v-else>
+      <paginating-toolbar
+        title="Exercises"
+        :page="page"
+        :pages="pages"
+        :subtitle="`(${questionCount})`"
+        @first="first"
+        @prev="prev"
+        @next="next"
+        @last="last"
+        @set-page="(n) => setPage(n)"
+      />
 
-    <v-list>
-      <template v-for="c in cards" :key="c.id">
-        <v-list-item
-          :class="{
-            'bg-blue-grey-lighten-5': c.isOpen,
-            'elevation-4': c.isOpen,
-          }"
-          density="compact"
-          data-cy="course-card"
-        >
-          <template #prepend>
-            <div>
-              <v-list-item-title :class="{ 'text-blue-grey-darken-1': c.isOpen }" class="font-weight-medium">
-                {{ cardPreview[c.id] }}
-              </v-list-item-title>
-              <v-list-item-subtitle>
-                {{ c.id.split('-').length === 3 ? c.id.split('-')[2] : '' }}
-              </v-list-item-subtitle>
-            </div>
-          </template>
+      <v-list>
+        <template v-for="c in cards" :key="c.id">
+          <v-list-item
+            :class="{
+              'bg-blue-grey-lighten-5': c.isOpen,
+              'elevation-4': c.isOpen,
+            }"
+            density="compact"
+            data-cy="course-card"
+          >
+            <template #prepend>
+              <div>
+                <v-list-item-title :class="{ 'text-blue-grey-darken-1': c.isOpen }" class="font-weight-medium">
+                  {{ cardPreview[c.id] }}
+                </v-list-item-title>
+                <v-list-item-subtitle>
+                  {{ c.id.split('-').length === 3 ? c.id.split('-')[2] : '' }}
+                </v-list-item-subtitle>
+              </div>
+            </template>
 
-          <template #append>
-            <v-speed-dial
-              v-model="c.isOpen"
-              location="left center"
-              transition="slide-x-transition"
-              style="display: flex; flex-direction: row-reverse"
-            >
-              <template #activator="{ props }">
+            <template #append>
+              <v-speed-dial
+                v-model="c.isOpen"
+                location="left center"
+                transition="slide-x-transition"
+                style="display: flex; flex-direction: row-reverse"
+              >
+                <template #activator="{ props }">
+                  <v-btn
+                    v-bind="props"
+                    :icon="c.isOpen ? 'mdi-close' : 'mdi-plus'"
+                    size="small"
+                    variant="text"
+                    @click="clearSelections(c.id)"
+                  />
+                </template>
+
                 <v-btn
-                  v-bind="props"
-                  :icon="c.isOpen ? 'mdi-close' : 'mdi-plus'"
+                  key="tags"
+                  icon
                   size="small"
-                  variant="text"
-                  @click="clearSelections(c.id)"
-                />
-              </template>
+                  :variant="editMode !== 'tags' ? 'outlined' : 'elevated'"
+                  :color="editMode === 'tags' ? 'teal' : 'teal-darken-3'"
+                  @click.stop="editMode = 'tags'"
+                >
+                  <v-icon>mdi-bookmark</v-icon>
+                </v-btn>
 
-              <v-btn
-                key="tags"
-                icon
-                size="small"
-                :variant="editMode !== 'tags' ? 'outlined' : 'elevated'"
-                :color="editMode === 'tags' ? 'teal' : 'teal-darken-3'"
-                @click.stop="editMode = 'tags'"
-              >
-                <v-icon>mdi-bookmark</v-icon>
-              </v-btn>
+                <v-btn
+                  key="flag"
+                  icon
+                  size="small"
+                  :variant="editMode !== 'flag' ? 'outlined' : 'elevated'"
+                  :color="editMode === 'flag' ? 'error' : 'error-darken-3'"
+                  @click.stop="editMode = 'flag'"
+                >
+                  <v-icon>mdi-flag</v-icon>
+                </v-btn>
+              </v-speed-dial>
+            </template>
+          </v-list-item>
 
-              <v-btn
-                key="flag"
-                icon
-                size="small"
-                :variant="editMode !== 'flag' ? 'outlined' : 'elevated'"
-                :color="editMode === 'flag' ? 'error' : 'error-darken-3'"
-                @click.stop="editMode = 'flag'"
-              >
-                <v-icon>mdi-flag</v-icon>
-              </v-btn>
-            </v-speed-dial>
-          </template>
-        </v-list-item>
+          <div v-if="c.isOpen" class="px-4 py-2 bg-blue-grey-lighten-5">
+            <card-loader :qualified_id="c.id" :view-lookup="viewLookup" class="elevation-1" />
 
-        <div v-if="c.isOpen" class="px-4 py-2 bg-blue-grey-lighten-5">
-          <card-loader :qualified_id="c.id" :view-lookup="viewLookup" class="elevation-1" />
+            <tags-input
+              v-show="editMode === 'tags'"
+              :course-i-d="courseId"
+              :card-i-d="c.id.split('-')[1]"
+              class="mt-4"
+            />
 
-          <tags-input v-show="editMode === 'tags'" :course-i-d="courseId" :card-i-d="c.id.split('-')[1]" class="mt-4" />
-
-          <div v-show="editMode === 'flag'" class="mt-4">
-            <v-btn color="error" variant="outlined" @click="c.delBtn = true"> Delete this card </v-btn>
-            <span v-if="c.delBtn" class="ml-4">
-              <span class="mr-2">Are you sure?</span>
-              <v-btn color="error" variant="elevated" @click="deleteCard(c.id)"> Confirm </v-btn>
-            </span>
+            <div v-show="editMode === 'flag'" class="mt-4">
+              <v-btn color="error" variant="outlined" @click="c.delBtn = true"> Delete this card </v-btn>
+              <span v-if="c.delBtn" class="ml-4">
+                <span class="mr-2">Are you sure?</span>
+                <v-btn color="error" variant="elevated" @click="deleteCard(c.id)"> Confirm </v-btn>
+              </span>
+            </div>
           </div>
-        </div>
-      </template>
-    </v-list>
+        </template>
+      </v-list>
 
-    <paginating-toolbar
-      class="elevation-0"
-      :page="page"
-      :pages="pages"
-      @first="first"
-      @prev="prev"
-      @next="next"
-      @last="last"
-      @set-page="(n) => setPage(n)"
-    />
+      <paginating-toolbar
+        class="elevation-0"
+        :page="page"
+        :pages="pages"
+        @first="first"
+        @prev="prev"
+        @next="next"
+        @last="last"
+        @set-page="(n) => setPage(n)"
+      />
+    </div>
   </v-card>
 </template>
 
@@ -164,19 +174,25 @@ export default defineComponent({
   },
 
   async created() {
-    this.courseDB = getDataLayer().getCourseDB(this.courseId);
+    try {
+      this.courseDB = getDataLayer().getCourseDB(this.courseId);
 
-    if (this.tagId) {
-      this.questionCount = (await this.courseDB.getTag(this.tagId)).taggedCards.length;
-    } else {
-      this.questionCount = (await this.courseDB!.getCourseInfo()).cardCount;
+      if (this.tagId) {
+        this.questionCount = (await this.courseDB.getTag(this.tagId)).taggedCards.length;
+      } else {
+        this.questionCount = (await this.courseDB!.getCourseInfo()).cardCount;
+      }
+
+      for (let i = 1; (i - 1) * 25 < this.questionCount; i++) {
+        this.pages.push(i);
+      }
+
+      await this.populateTableData();
+    } catch (error) {
+      console.error('Error initializing CourseCardBrowser:', error);
+    } finally {
+      this.updatePending = false;
     }
-
-    for (let i = 1; (i - 1) * 25 < this.questionCount; i++) {
-      this.pages.push(i);
-    }
-
-    await this.populateTableData();
   },
 
   methods: {
@@ -224,6 +240,7 @@ export default defineComponent({
       }
     },
     async populateTableData() {
+      this.updatePending = true;
       if (this.tagId) {
         const tag = await this.courseDB!.getTag(this.tagId);
         this.cards = tag.taggedCards.map((c) => {
@@ -270,47 +287,53 @@ export default defineComponent({
         }
       });
 
-      this.cards.forEach(async (c) => {
-        const _cardID: string = c.id.split('-')[1];
-
-        const tmpCardData = hydratedCardData.find((c) => c._id == _cardID);
-        if (!tmpCardData || !tmpCardData.id_displayable_data) {
-          console.error(`No valid data found for card ${_cardID}`);
-          return;
-        }
-        const tmpView: ViewComponent = allCourses.getView(
-          tmpCardData.id_view || 'default.question.BlanksCard.FillInView'
-        );
-
-        const tmpDataDocs = tmpCardData.id_displayable_data.map((id) => {
-          return this.courseDB!.getCourseDoc<DisplayableData>(id, {
-            attachments: false,
-            binary: true,
-          });
-        });
-
-        const allDocs = await Promise.all(tmpDataDocs);
+      try {
         await Promise.all(
-          allDocs.map((doc) => {
-            const tmpData = [];
-            tmpData.unshift(displayableDataToViewData(doc));
+          this.cards.map(async (c) => {
+            const _cardID: string = c.id.split('-')[1];
 
-            // [ ] remove/replace this after the vue 3 migration is complete
-            // see PR #510
-            if (isConstructor(tmpView)) {
-              const view = new tmpView();
-              view.data = tmpData;
-
-              this.cardPreview[c.id] = view.toString();
-            } else {
-              this.cardPreview[c.id] = tmpView.name ? tmpView.name : 'Unknown';
+            const tmpCardData = hydratedCardData.find((c) => c._id == _cardID);
+            if (!tmpCardData || !tmpCardData.id_displayable_data) {
+              console.error(`No valid data found for card ${_cardID}`);
+              return;
             }
+            const tmpView: ViewComponent = allCourses.getView(
+              tmpCardData.id_view || 'default.question.BlanksCard.FillInView'
+            );
+
+            const tmpDataDocs = tmpCardData.id_displayable_data.map((id) => {
+              return this.courseDB!.getCourseDoc<DisplayableData>(id, {
+                attachments: false,
+                binary: true,
+              });
+            });
+
+            const allDocs = await Promise.all(tmpDataDocs);
+            await Promise.all(
+              allDocs.map((doc) => {
+                const tmpData = [];
+                tmpData.unshift(displayableDataToViewData(doc));
+
+                // [ ] remove/replace this after the vue 3 migration is complete
+                // see PR #510
+                if (isConstructor(tmpView)) {
+                  const view = new tmpView();
+                  view.data = tmpData;
+
+                  this.cardPreview[c.id] = view.toString();
+                } else {
+                  this.cardPreview[c.id] = tmpView.name ? tmpView.name : 'Unknown';
+                }
+              })
+            );
           })
         );
-
+      } catch (error) {
+        console.error('Error populating table data:', error);
+      } finally {
         this.updatePending = false;
         this.$forceUpdate();
-      });
+      }
     },
   },
 });
