@@ -128,40 +128,6 @@ export class CourseDB implements StudyContentSource, CourseDBInterface {
     // get scheduled reviews ... .... .....
     return newCards;
   }
-  public async getPendingReviews(): Promise<(StudySessionReviewItem & ScheduledCard)[]> {
-    type ratedReview = ScheduledCard & CourseElo;
-
-    const u = await this._getCurrentUser();
-    u.getCourseRegDoc(this.id);
-
-    const reviews = await u.getPendingReviews(this.id); // todo: this adds a db round trip - should be server side
-    const elo = await this.getCardEloData(reviews.map((r) => r.cardId));
-
-    const ratedReviews = reviews.map((r, i) => {
-      const ratedR: ratedReview = {
-        ...r,
-        ...elo[i],
-      };
-      return ratedR;
-    });
-
-    ratedReviews.sort((a, b) => {
-      return a.global.score - b.global.score;
-    });
-
-    return ratedReviews.map((r) => {
-      return {
-        ...r,
-        contentSourceType: 'course',
-        contentSourceID: this.id,
-        cardID: r.cardId,
-        courseID: r.courseId,
-        qualifiedID: `${r.courseId}-${r.cardId}`,
-        reviewID: r._id,
-        status: 'review',
-      };
-    });
-  }
 
   public async getInexperiencedCards(limit: number = 2) {
     return (
@@ -286,98 +252,6 @@ export class CourseDB implements StudyContentSource, CourseDBInterface {
     );
 
     return ret;
-  }
-
-  public async getCardsCenteredAtELO(
-    options: {
-      limit: number;
-      elo: 'user' | 'random' | number;
-    } = {
-      limit: 99,
-      elo: 'user',
-    },
-    filter?: (a: string) => boolean
-  ): Promise<StudySessionItem[]> {
-    let targetElo: number;
-
-    if (options.elo === 'user') {
-      const u = await this._getCurrentUser();
-
-      targetElo = -1;
-      try {
-        const courseDoc = (await u.getCourseRegistrationsDoc()).courses.find((c) => {
-          return c.courseID === this.id;
-        })!;
-        targetElo = EloToNumber(courseDoc.elo);
-      } catch {
-        targetElo = 1000;
-      }
-    } else if (options.elo === 'random') {
-      const bounds = await GET_CACHED(`elo-bounds-${this.id}`, () => this.getELOBounds());
-      targetElo = Math.round(bounds.low + Math.random() * (bounds.high - bounds.low));
-      // console.log(`Picked ${targetElo} from [${bounds.low}, ${bounds.high}]`);
-    } else {
-      targetElo = options.elo;
-    }
-
-    let cards: string[] = [];
-    let mult: number = 4;
-    let previousCount: number = -1;
-    let newCount: number = 0;
-
-    while (cards.length < options.limit && newCount !== previousCount) {
-      cards = await this.getCardsByELO(targetElo, mult * options.limit);
-      previousCount = newCount;
-      newCount = cards.length;
-
-      console.log(`Found ${cards.length} elo neighbor cards...`);
-
-      if (filter) {
-        cards = cards.filter(filter);
-        console.log(`Filtered to ${cards.length} cards...`);
-      }
-
-      mult *= 2;
-    }
-
-    const selectedCards: string[] = [];
-
-    while (selectedCards.length < options.limit && cards.length > 0) {
-      const index = randIntWeightedTowardZero(cards.length);
-      const card = cards.splice(index, 1)[0];
-      selectedCards.push(card);
-    }
-
-    return selectedCards.map((c) => {
-      const split = c.split('-');
-      return {
-        courseID: this.id,
-        cardID: split[1],
-        qualifiedID: `${split[0]}-${split[1]}`,
-        contentSourceType: 'course',
-        contentSourceID: this.id,
-        status: 'new',
-      };
-    });
-  }
-  public async getNewCards(limit: number = 99): Promise<StudySessionNewItem[]> {
-    const u = await this._getCurrentUser();
-
-    const activeCards = await u.getActiveCards();
-    return (
-      await this.getCardsCenteredAtELO({ limit: limit, elo: 'user' }, (c: string) => {
-        if (activeCards.some((ac) => c.includes(ac))) {
-          return false;
-        } else {
-          return true;
-        }
-      })
-    ).map((c) => {
-      return {
-        ...c,
-        status: 'new',
-      };
-    });
   }
 
   async getCardsByELO(elo: number, cardLimit?: number) {
@@ -538,6 +412,138 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
     options: PouchDB.Core.AllDocsOptions = {}
   ): Promise<PouchDB.Core.AllDocsWithKeysResponse<{} & T>> {
     return await getCourseDocs(this.id, ids, options);
+  }
+
+  ////////////////////////////////////
+  // StudyContentSource implementation
+  ////////////////////////////////////
+
+  public async getNewCards(limit: number = 99): Promise<StudySessionNewItem[]> {
+    const u = await this._getCurrentUser();
+
+    const activeCards = await u.getActiveCards();
+    return (
+      await this.getCardsCenteredAtELO({ limit: limit, elo: 'user' }, (c: string) => {
+        if (activeCards.some((ac) => c.includes(ac))) {
+          return false;
+        } else {
+          return true;
+        }
+      })
+    ).map((c) => {
+      return {
+        ...c,
+        status: 'new',
+      };
+    });
+  }
+
+  public async getPendingReviews(): Promise<(StudySessionReviewItem & ScheduledCard)[]> {
+    type ratedReview = ScheduledCard & CourseElo;
+
+    const u = await this._getCurrentUser();
+    u.getCourseRegDoc(this.id);
+
+    const reviews = await u.getPendingReviews(this.id); // todo: this adds a db round trip - should be server side
+    const elo = await this.getCardEloData(reviews.map((r) => r.cardId));
+
+    const ratedReviews = reviews.map((r, i) => {
+      const ratedR: ratedReview = {
+        ...r,
+        ...elo[i],
+      };
+      return ratedR;
+    });
+
+    ratedReviews.sort((a, b) => {
+      return a.global.score - b.global.score;
+    });
+
+    return ratedReviews.map((r) => {
+      return {
+        ...r,
+        contentSourceType: 'course',
+        contentSourceID: this.id,
+        cardID: r.cardId,
+        courseID: r.courseId,
+        qualifiedID: `${r.courseId}-${r.cardId}`,
+        reviewID: r._id,
+        status: 'review',
+      };
+    });
+  }
+
+  public async getCardsCenteredAtELO(
+    options: {
+      limit: number;
+      elo: 'user' | 'random' | number;
+    } = {
+      limit: 99,
+      elo: 'user',
+    },
+    filter?: (a: string) => boolean
+  ): Promise<StudySessionItem[]> {
+    let targetElo: number;
+
+    if (options.elo === 'user') {
+      const u = await this._getCurrentUser();
+
+      targetElo = -1;
+      try {
+        const courseDoc = (await u.getCourseRegistrationsDoc()).courses.find((c) => {
+          return c.courseID === this.id;
+        })!;
+        targetElo = EloToNumber(courseDoc.elo);
+      } catch {
+        targetElo = 1000;
+      }
+    } else if (options.elo === 'random') {
+      const bounds = await GET_CACHED(`elo-bounds-${this.id}`, () => this.getELOBounds());
+      targetElo = Math.round(bounds.low + Math.random() * (bounds.high - bounds.low));
+      // console.log(`Picked ${targetElo} from [${bounds.low}, ${bounds.high}]`);
+    } else {
+      targetElo = options.elo;
+    }
+
+    let cards: string[] = [];
+    let mult: number = 4;
+    let previousCount: number = -1;
+    let newCount: number = 0;
+
+    while (cards.length < options.limit && newCount !== previousCount) {
+      cards = await this.getCardsByELO(targetElo, mult * options.limit);
+      previousCount = newCount;
+      newCount = cards.length;
+
+      console.log(`Found ${cards.length} elo neighbor cards...`);
+
+      if (filter) {
+        cards = cards.filter(filter);
+        console.log(`Filtered to ${cards.length} cards...`);
+      }
+
+      mult *= 2;
+    }
+
+    const selectedCards: string[] = [];
+
+    while (selectedCards.length < options.limit && cards.length > 0) {
+      const index = randIntWeightedTowardZero(cards.length);
+      const card = cards.splice(index, 1)[0];
+      selectedCards.push(card);
+    }
+
+    return selectedCards.map((c) => {
+      const split = c.split('-');
+      return {
+        courseID: this.id,
+        cardID: split[1],
+        qualifiedID: `${split[0]}-${split[1]}`,
+        contentSourceType: 'course',
+        contentSourceID: this.id,
+        status: 'new',
+      };
+    });
   }
 }
 
