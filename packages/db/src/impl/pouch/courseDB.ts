@@ -456,7 +456,7 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
 
     try {
       const strategy = await this.surfaceNavigationStrategy();
-      return ContentNavigator.create(u, strategy).getNewCards(limit);
+      return ContentNavigator.create(u, this, strategy).getNewCards(limit);
     } catch (e) {
       console.warn(
         `[courseDB] Error surfacing a NavigationStrategy: ${e}`,
@@ -483,9 +483,10 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
 
   public async getPendingReviews(): Promise<(StudySessionReviewItem & ScheduledCard)[]> {
     const u = await this._getCurrentUser();
+
     try {
       const strategy = await this.surfaceNavigationStrategy();
-      return ContentNavigator.create(u, strategy).getPendingReviews();
+      return ContentNavigator.create(u, this, strategy).getPendingReviews();
     } catch (e) {
       console.warn(
         `[courseDB] Error surfacing a NavigationStrategy: ${e}`,

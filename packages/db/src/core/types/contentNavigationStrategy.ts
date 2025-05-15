@@ -1,6 +1,12 @@
 import { StudyContentSource } from '../interfaces/contentSource';
 import { DocType, SkuilderCourseData } from './types-legacy';
-import { ScheduledCard, StudySessionNewItem, StudySessionReviewItem, UserDBInterface } from '..';
+import {
+  CourseDBInterface,
+  ScheduledCard,
+  StudySessionNewItem,
+  StudySessionReviewItem,
+  UserDBInterface,
+} from '..';
 
 /**
  *
@@ -25,17 +31,21 @@ export interface ContentNavigationStrategyData extends SkuilderCourseData {
 /**
  * A content-navigator provides runtime steering of study sessions.
  */
-abstract class ContentNavigator implements StudyContentSource {
+export abstract class ContentNavigator implements StudyContentSource {
   /**
    *
    * @param user
-   * @param strategy
+   * @param strategyData
    * @returns the runtime object used to steer a study session.
    */
-  static create(user: UserDBInterface, strategy: ContentNavigationStrategyData): ContentNavigator {
-    const implementingClass = strategy.implementingClass;
+  static create(
+    user: UserDBInterface,
+    course: CourseDBInterface,
+    strategyData: ContentNavigationStrategyData
+  ): ContentNavigator {
+    const implementingClass = strategyData.implementingClass;
     const NavigatorClass = require(`./${implementingClass}`).default; // todo: determine better relative location here
-    return new NavigatorClass(user, strategy);
+    return new NavigatorClass(user, course, strategyData);
   }
 
   abstract getPendingReviews(): Promise<(StudySessionReviewItem & ScheduledCard)[]>;
