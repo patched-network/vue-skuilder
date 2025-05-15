@@ -25,9 +25,9 @@ import { PouchError } from './types';
 import CourseLookup from './courseLookupDB';
 import {
   ContentNavigationStrategyData,
-  ContentNavigationStrategyData,
   ContentNavigator,
 } from '@/core/types/contentNavigationStrategy';
+import { Navigators } from '@/core/navigators';
 
 export class CoursesDB implements CoursesDBInterface {
   _courseIDs: string[] | undefined;
@@ -61,7 +61,7 @@ export class CoursesDB implements CoursesDBInterface {
         }
       })
     );
-    return cfgs.filter((c: unknown) => !!c);
+    return cfgs.filter((c) => !!c);
   }
 
   async getCourseConfig(courseId: string): Promise<CourseConfig> {
@@ -99,6 +99,10 @@ export class CourseDB implements StudyContentSource, CourseDBInterface {
     this.id = id;
     this.db = getCourseDB(this.id);
     this._getCurrentUser = userLookup;
+  }
+
+  public getCourseID(): string {
+    return this.id;
   }
 
   public async getCourseInfo(): Promise<CourseInfo> {
@@ -424,7 +428,7 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
   ////////////////////////////////////
 
   getNavigationStrategy(id: string): Promise<ContentNavigationStrategyData> {
-    throw new Error('Method not implemented.');
+    throw new Error(`Method not implemented. getNavigationStrategy(${id})`);
   }
 
   getAllNavigationStrategies(): Promise<ContentNavigationStrategyData[]> {
@@ -433,14 +437,24 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
   }
 
   addNavigationStrategy(data: ContentNavigationStrategyData): Promise<void> {
-    throw new Error('Method not implemented.');
+    throw new Error(`Method not implemented. addNavigationStrategy(${data})`);
   }
   updateNavigationStrategy(id: string, data: ContentNavigationStrategyData): Promise<void> {
-    throw new Error('Method not implemented.');
+    throw new Error(`Method not implemented. updateNavigationStrategy(${id}, ${data})`);
   }
 
-  surfaceNavigationStrategy(): Promise<ContentNavigationStrategyData> {
-    throw new Error('Method not implemented');
+  async surfaceNavigationStrategy(): Promise<ContentNavigationStrategyData> {
+    console.warn(`Returning hard-coded default ELO navigator`);
+    const ret: ContentNavigationStrategyData = {
+      id: 'ELO',
+      docType: DocType.NAVIGATION_STRATEGY,
+      name: 'ELO',
+      description: 'ELO-based navigation strategy',
+      implementingClass: Navigators.ELO,
+      course: this.id,
+      serializedData: '', // serde is a noop for ELO navigator.
+    };
+    return Promise.resolve(ret);
   }
 
   ////////////////////////////////////
@@ -458,27 +472,9 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
       const strategy = await this.surfaceNavigationStrategy();
       return ContentNavigator.create(u, this, strategy).getNewCards(limit);
     } catch (e) {
-      console.warn(
-        `[courseDB] Error surfacing a NavigationStrategy: ${e}`,
-        'Falling back to default ELO neighbor lookup.'
-      );
+      console.error(`[courseDB] Error surfacing a NavigationStrategy: ${e}`);
+      throw e;
     }
-
-    const activeCards = await u.getActiveCards();
-    return (
-      await this.getCardsCenteredAtELO({ limit: limit, elo: 'user' }, (c: string) => {
-        if (activeCards.some((ac) => c.includes(ac))) {
-          return false;
-        } else {
-          return true;
-        }
-      })
-    ).map((c) => {
-      return {
-        ...c,
-        status: 'new',
-      };
-    });
   }
 
   public async getPendingReviews(): Promise<(StudySessionReviewItem & ScheduledCard)[]> {
@@ -488,7 +484,7 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
       const strategy = await this.surfaceNavigationStrategy();
       return ContentNavigator.create(u, this, strategy).getPendingReviews();
     } catch (e) {
-      console.warn(
+      console.error(
         `[courseDB] Error surfacing a NavigationStrategy: ${e}`,
         'Falling back to default SRS scheuler.'
       );
