@@ -33,6 +33,8 @@ export interface CourseDBInterface extends NavigationStrategyManager {
    */
   getCourseConfig(): Promise<CourseConfig>;
 
+  getCourseID(): string;
+
   /**
    * Set course config
    */
