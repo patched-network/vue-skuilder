@@ -11,7 +11,7 @@ import {
 } from '../types/contentNavigationStrategy';
 import { CourseElo } from '@vue-skuilder/common';
 
-class ELONavigator extends ContentNavigator {
+export default class ELONavigator extends ContentNavigator {
   user: UserDBInterface;
   course: CourseDBInterface;
 

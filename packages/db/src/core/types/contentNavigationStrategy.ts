@@ -7,6 +7,8 @@ import {
   StudySessionReviewItem,
   UserDBInterface,
 } from '..';
+import { Navigators } from '../navigators';
+import ELONavigator from '../navigators/elo';
 
 /**
  *
@@ -44,8 +46,13 @@ export abstract class ContentNavigator implements StudyContentSource {
     strategyData: ContentNavigationStrategyData
   ): ContentNavigator {
     const implementingClass = strategyData.implementingClass;
-    const NavigatorClass = require(`./${implementingClass}`).default; // todo: determine better relative location here
-    return new NavigatorClass(user, course, strategyData);
+
+    switch (implementingClass) {
+      case Navigators.ELO:
+        return new ELONavigator(user, course);
+      default:
+        throw new Error(`Unknown implementing class: ${implementingClass}`);
+    }
   }
 
   abstract getPendingReviews(): Promise<(StudySessionReviewItem & ScheduledCard)[]>;
