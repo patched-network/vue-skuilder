@@ -3,6 +3,7 @@ import { StudySessionNewItem, StudySessionItem } from './contentSource';
 import { TagStub, Tag } from '../types/types-legacy';
 import { SkuilderCourseData } from '@vue-skuilder/common/dist/db';
 import { DataLayerResult } from '../types/db';
+import { NavigationStrategyManager } from './navigationStrategyManager';
 
 /**
  * Course content and management
@@ -26,7 +27,7 @@ export interface CourseInfo {
   registeredUsers: number;
 }
 
-export interface CourseDBInterface {
+export interface CourseDBInterface extends NavigationStrategyManager {
   /**
    * Get course config
    */
