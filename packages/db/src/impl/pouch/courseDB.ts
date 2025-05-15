@@ -26,6 +26,7 @@ import CourseLookup from './courseLookupDB';
 import {
   ContentNavigationStrategyData,
   ContentNavigationStrategyData,
+  ContentNavigator,
 } from '@/core/types/contentNavigationStrategy';
 
 export class CoursesDB implements CoursesDBInterface {
@@ -451,17 +452,17 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
   ////////////////////////////////////
 
   public async getNewCards(limit: number = 99): Promise<StudySessionNewItem[]> {
+    const u = await this._getCurrentUser();
+
     try {
       const strategy = await this.surfaceNavigationStrategy();
-      return strategy.getNavigator().getNewCards();
+      return ContentNavigator.create(u, strategy).getNewCards(limit);
     } catch (e) {
       console.warn(
         `[courseDB] Error surfacing a NavigationStrategy: ${e}`,
         'Falling back to default ELO neighbor lookup.'
       );
     }
-
-    const u = await this._getCurrentUser();
 
     const activeCards = await u.getActiveCards();
     return (
@@ -481,9 +482,10 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
   }
 
   public async getPendingReviews(): Promise<(StudySessionReviewItem & ScheduledCard)[]> {
+    const u = await this._getCurrentUser();
     try {
       const strategy = await this.surfaceNavigationStrategy();
-      return strategy.getNavigator().getPendingReviews();
+      return ContentNavigator.create(u, strategy).getPendingReviews();
     } catch (e) {
       console.warn(
         `[courseDB] Error surfacing a NavigationStrategy: ${e}`,
@@ -493,7 +495,6 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
 
     type ratedReview = ScheduledCard & CourseElo;
 
-    const u = await this._getCurrentUser();
     u.getCourseRegDoc(this.id);
 
     const reviews = await u.getPendingReviews(this.id); // todo: this adds a db round trip - should be server side
