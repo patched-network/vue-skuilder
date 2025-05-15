@@ -484,43 +484,9 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
       const strategy = await this.surfaceNavigationStrategy();
       return ContentNavigator.create(u, this, strategy).getPendingReviews();
     } catch (e) {
-      console.error(
-        `[courseDB] Error surfacing a NavigationStrategy: ${e}`,
-        'Falling back to default SRS scheuler.'
-      );
+      console.error(`[courseDB] Error surfacing a NavigationStrategy: ${e}`);
+      throw e;
     }
-
-    type ratedReview = ScheduledCard & CourseElo;
-
-    u.getCourseRegDoc(this.id);
-
-    const reviews = await u.getPendingReviews(this.id); // todo: this adds a db round trip - should be server side
-    const elo = await this.getCardEloData(reviews.map((r) => r.cardId));
-
-    const ratedReviews = reviews.map((r, i) => {
-      const ratedR: ratedReview = {
-        ...r,
-        ...elo[i],
-      };
-      return ratedR;
-    });
-
-    ratedReviews.sort((a, b) => {
-      return a.global.score - b.global.score;
-    });
-
-    return ratedReviews.map((r) => {
-      return {
-        ...r,
-        contentSourceType: 'course',
-        contentSourceID: this.id,
-        cardID: r.cardId,
-        courseID: r.courseId,
-        qualifiedID: `${r.courseId}-${r.cardId}`,
-        reviewID: r._id,
-        status: 'review',
-      };
-    });
   }
 
   public async getCardsCenteredAtELO(
