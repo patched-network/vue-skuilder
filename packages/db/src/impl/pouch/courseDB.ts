@@ -1,4 +1,10 @@
-import { CourseDBInterface, CourseInfo, CoursesDBInterface, UserDBInterface } from '@/core';
+import {
+  CourseDBInterface,
+  CourseInfo,
+  CoursesDBInterface,
+  StudyContentSourceInternal,
+  UserDBInterface,
+} from '@/core';
 import { ScheduledCard } from '@/core/types/user';
 import {
   CourseConfig,
@@ -23,11 +29,8 @@ import { addNote55, addTagToCard, getCredentialledCourseConfig, getTagID } from 
 import { DataLayerResult } from '@/core/types/db';
 import { PouchError } from './types';
 import CourseLookup from './courseLookupDB';
-import {
-  ContentNavigationStrategyData,
-  ContentNavigator,
-} from '@/core/types/contentNavigationStrategy';
-import { Navigators } from '@/core/navigators';
+import { ContentNavigationStrategyData } from '@/core/types/contentNavigationStrategy';
+import { ContentNavigator, Navigators } from '@/core/navigators';
 
 export class CoursesDB implements CoursesDBInterface {
   _courseIDs: string[] | undefined;

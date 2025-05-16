@@ -1,15 +1,9 @@
-import {
-  CourseDBInterface,
-  ScheduledCard,
-  StudySessionNewItem,
-  StudySessionReviewItem,
-  UserDBInterface,
-} from '..';
-import {
-  ContentNavigationStrategyData,
-  ContentNavigator,
-} from '../types/contentNavigationStrategy';
+import { ScheduledCard } from '../types/user';
+import { CourseDBInterface } from '../interfaces/courseDB';
+import { UserDBInterface } from '../interfaces/userDB';
+import { ContentNavigator } from './index';
 import { CourseElo } from '@vue-skuilder/common';
+import { StudySessionReviewItem, StudySessionNewItem } from '..';
 
 export default class ELONavigator extends ContentNavigator {
   user: UserDBInterface;
@@ -26,7 +20,6 @@ export default class ELONavigator extends ContentNavigator {
     // strategy?: ContentNavigationStrategyData
   ) {
     super();
-    this.user = user;
     this.user = user;
     this.course = course;
   }
