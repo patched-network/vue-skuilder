@@ -37,16 +37,57 @@ if (!validCommands.includes(command)) {
   process.exit(1);
 }
 
-// Check if CouchDB is already running if command is 'start'
+// Docker container name constant
+const CONTAINER_NAME = 'skuilder-test-couch';
+
+// Check if Docker is available
+try {
+  execSync('docker --version', { stdio: 'pipe' });
+} catch (error) {
+  console.error('Error: Docker is not available or not running.');
+  console.error('Please ensure Docker is installed and running before using this script.');
+  process.exit(1);
+}
+
+// For the 'start' command, always clean up existing container first to avoid conflicts
 if (command === 'start') {
   try {
-    const status = execSync(`${scriptPath} status`, { stdio: 'pipe' }).toString();
-    if (status.includes('Up') || status.includes('running')) {
-      console.log('CouchDB is already running');
-      process.exit(0);
+    // Check if the container exists
+    const containerExists = execSync(`docker ps -a -q -f name=^${CONTAINER_NAME}$`, { stdio: 'pipe' }).toString().trim();
+    
+    if (containerExists) {
+      console.log(`Found existing container '${CONTAINER_NAME}'. Cleaning up before starting...`);
+      
+      try {
+        // Check if container is running
+        const isRunning = execSync(`docker ps -q -f name=^${CONTAINER_NAME}$`, { stdio: 'pipe' }).toString().trim();
+        if (isRunning) {
+          console.log('Container is running. Stopping it...');
+          execSync(`docker stop ${CONTAINER_NAME}`, { stdio: 'pipe' });
+          console.log('Container stopped successfully.');
+        } else {
+          console.log('Container is not running (already stopped).');
+        }
+      } catch (error) {
+        console.error('Error stopping container:', error.message);
+        console.log('Attempting to remove anyway...');
+      }
+      
+      try {
+        // Remove the container
+        console.log('Removing container...');
+        execSync(`docker rm ${CONTAINER_NAME}`, { stdio: 'pipe' });
+        console.log('Container removed successfully.');
+      } catch (error) {
+        console.error('Error removing container:', error.message);
+        console.error('This may cause issues when starting CouchDB.');
+      }
+    } else {
+      console.log(`No container named '${CONTAINER_NAME}' found. Clean start possible.`);
     }
   } catch (error) {
-    // If the status check fails, continue with the start command
+    console.error('Docker command failed:', error.message);
+    console.log('Continuing anyway, but this may cause issues.');
   }
 }
 
@@ -55,6 +96,7 @@ console.log(`Managing CouchDB: ${command}`);
 const child = spawn(scriptPath, [command], {
   cwd: testCouchDir,
   stdio: 'inherit',
+  env: { ...process.env, CONTAINER_NAME }
 });
 
 child.on('error', (error) => {
