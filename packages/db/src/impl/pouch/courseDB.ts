@@ -121,23 +121,6 @@ export class CourseDB implements StudyContentSource, CourseDBInterface {
     };
   }
 
-  public async getStudySession(cardLimit: number = 99) {
-    // cardLimit = cardLimit ? cardLimit : 999;
-    const u = await this._getCurrentUser();
-    const userCrsdoc = await u.getCourseRegDoc(this.id);
-    const activeCards = await u.getActiveCards();
-
-    // console.log()
-    const newCards = (await this.getCardsByELO(EloToNumber(userCrsdoc!.elo), cardLimit)).filter(
-      (card) => {
-        return activeCards.indexOf(card) === -1;
-      }
-    );
-
-    // get scheduled reviews ... .... .....
-    return newCards;
-  }
-
   public async getInexperiencedCards(limit: number = 2) {
     return (
       await this.db.query('cardsByInexperience', {
