@@ -8,8 +8,12 @@
         <router-link to="/q">Quilts</router-link> /
         <router-link :to="`/q/${courseConfig ? courseConfig.name : course}`">{{ courseConfig?.name }}</router-link>
       </h1>
-      <v-btn color="success" @click="toggleComponent">Content Editing / Component Registration</v-btn>
-      <div v-if="editingMode">
+      <v-btn-toggle v-model="editorMode" mandatory color="success" class="mb-4">
+        <v-btn value="content">Content Editing</v-btn>
+        <v-btn value="component">Component Registration</v-btn>
+        <v-btn value="navigation">Navigation Strategies</v-btn>
+      </v-btn-toggle>
+      <div v-if="editorMode === 'content'">
         <v-select
           v-model="selectedShape"
           label="What kind of content are you adding?"
@@ -22,7 +26,8 @@
           :course-cfg="courseConfig"
         />
       </div>
-      <component-registration v-else :course="course" />
+      <component-registration v-else-if="editorMode === 'component'" :course="course" />
+      <navigation-strategy-editor v-else-if="editorMode === 'navigation'" :course-id="course" />
     </div>
   </div>
 </template>
@@ -30,6 +35,7 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 import ComponentRegistration from '@/components/Edit/ComponentRegistration/ComponentRegistration.vue';
+import NavigationStrategyEditor from '@/components/Edit/NavigationStrategy/NavigationStrategyEditor.vue';
 import { allCourses } from '@vue-skuilder/courses';
 import { BlanksCard, BlanksCardDataShapes } from '@vue-skuilder/courses';
 import { CourseConfig, NameSpacer, DataShape } from '@vue-skuilder/common';
@@ -43,6 +49,7 @@ export default defineComponent({
   components: {
     DataInputForm,
     ComponentRegistration,
+    NavigationStrategyEditor,
   },
 
   props: {
@@ -60,7 +67,7 @@ export default defineComponent({
       courseConfig: null as CourseConfig | null,
       dataShape: BlanksCardDataShapes[0] as DataShape,
       loading: true,
-      editingMode: true,
+      editorMode: 'content', // 'content', 'component', or 'navigation'
       dataInputFormStore: useDataInputFormStore(),
     };
   },
@@ -120,7 +127,8 @@ export default defineComponent({
     },
 
     toggleComponent() {
-      this.editingMode = !this.editingMode;
+      // Legacy method, now handled by v-btn-toggle
+      this.editorMode = this.editorMode === 'content' ? 'component' : 'content';
     },
   },
 });

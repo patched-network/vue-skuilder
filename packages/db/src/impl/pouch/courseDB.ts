@@ -408,19 +408,47 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
   ////////////////////////////////////
 
   getNavigationStrategy(id: string): Promise<ContentNavigationStrategyData> {
-    throw new Error(`Method not implemented. getNavigationStrategy(${id})`);
+    console.log(`[courseDB] Getting navigation strategy: ${id}`);
+    // For now, just return the ELO strategy regardless of the ID
+    const strategy: ContentNavigationStrategyData = {
+      id: 'ELO',
+      docType: DocType.NAVIGATION_STRATEGY,
+      name: 'ELO',
+      description: 'ELO-based navigation strategy for ordering content by difficulty',
+      implementingClass: Navigators.ELO,
+      course: this.id,
+      serializedData: '', // serde is a noop for ELO navigator.
+    };
+    return Promise.resolve(strategy);
   }
 
   getAllNavigationStrategies(): Promise<ContentNavigationStrategyData[]> {
-    // [ ] return `default` hard coded ELO-neighbor lookup
-    throw new Error('Method not implemented.');
+    console.log('[courseDB] Returning hard-coded navigation strategies');
+    const strategies: ContentNavigationStrategyData[] = [
+      {
+        id: 'ELO',
+        docType: DocType.NAVIGATION_STRATEGY,
+        name: 'ELO',
+        description: 'ELO-based navigation strategy for ordering content by difficulty',
+        implementingClass: Navigators.ELO,
+        course: this.id,
+        serializedData: '', // serde is a noop for ELO navigator.
+      }
+    ];
+    return Promise.resolve(strategies);
   }
 
   addNavigationStrategy(data: ContentNavigationStrategyData): Promise<void> {
-    throw new Error(`Method not implemented. addNavigationStrategy(${data})`);
+    console.log(`[courseDB] Adding navigation strategy: ${data.id}`);
+    // For now, just log the data and return success
+    console.log(data);
+    return Promise.resolve();
   }
   updateNavigationStrategy(id: string, data: ContentNavigationStrategyData): Promise<void> {
-    throw new Error(`Method not implemented. updateNavigationStrategy(${id}, ${data})`);
+    console.log(`[courseDB] Updating navigation strategy: ${id}`);
+    // For now, just log the data and return success
+    console.log(data);
+    return Promise.resolve();
   }
 
   async surfaceNavigationStrategy(): Promise<ContentNavigationStrategyData> {
