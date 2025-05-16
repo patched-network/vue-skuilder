@@ -23,6 +23,8 @@ import { addNote55, addTagToCard, getCredentialledCourseConfig, getTagID } from 
 import { DataLayerResult } from '@/core/types/db';
 import { PouchError } from './types';
 import CourseLookup from './courseLookupDB';
+import { ContentNavigationStrategyData } from '@/core/types/contentNavigationStrategy';
+import { ContentNavigator, Navigators } from '@/core/navigators';
 
 export class CoursesDB implements CoursesDBInterface {
   _courseIDs: string[] | undefined;
@@ -96,6 +98,10 @@ export class CourseDB implements StudyContentSource, CourseDBInterface {
     this._getCurrentUser = userLookup;
   }
 
+  public getCourseID(): string {
+    return this.id;
+  }
+
   public async getCourseInfo(): Promise<CourseInfo> {
     const cardCount = (
       await this.db.find({
@@ -110,57 +116,6 @@ export class CourseDB implements StudyContentSource, CourseDBInterface {
       cardCount,
       registeredUsers: 0,
     };
-  }
-
-  public async getStudySession(cardLimit: number = 99) {
-    // cardLimit = cardLimit ? cardLimit : 999;
-    const u = await this._getCurrentUser();
-    const userCrsdoc = await u.getCourseRegDoc(this.id);
-    const activeCards = await u.getActiveCards();
-
-    // console.log()
-    const newCards = (await this.getCardsByELO(EloToNumber(userCrsdoc!.elo), cardLimit)).filter(
-      (card) => {
-        return activeCards.indexOf(card) === -1;
-      }
-    );
-
-    // get scheduled reviews ... .... .....
-    return newCards;
-  }
-  public async getPendingReviews(): Promise<(StudySessionReviewItem & ScheduledCard)[]> {
-    type ratedReview = ScheduledCard & CourseElo;
-
-    const u = await this._getCurrentUser();
-    u.getCourseRegDoc(this.id);
-
-    const reviews = await u.getPendingReviews(this.id); // todo: this adds a db round trip - should be server side
-    const elo = await this.getCardEloData(reviews.map((r) => r.cardId));
-
-    const ratedReviews = reviews.map((r, i) => {
-      const ratedR: ratedReview = {
-        ...r,
-        ...elo[i],
-      };
-      return ratedR;
-    });
-
-    ratedReviews.sort((a, b) => {
-      return a.global.score - b.global.score;
-    });
-
-    return ratedReviews.map((r) => {
-      return {
-        ...r,
-        contentSourceType: 'course',
-        contentSourceID: this.id,
-        cardID: r.cardId,
-        courseID: r.courseId,
-        qualifiedID: `${r.courseId}-${r.cardId}`,
-        reviewID: r._id,
-        status: 'review',
-      };
-    });
   }
 
   public async getInexperiencedCards(limit: number = 2) {
@@ -286,98 +241,6 @@ export class CourseDB implements StudyContentSource, CourseDBInterface {
     );
 
     return ret;
-  }
-
-  public async getCardsCenteredAtELO(
-    options: {
-      limit: number;
-      elo: 'user' | 'random' | number;
-    } = {
-      limit: 99,
-      elo: 'user',
-    },
-    filter?: (a: string) => boolean
-  ): Promise<StudySessionItem[]> {
-    let targetElo: number;
-
-    if (options.elo === 'user') {
-      const u = await this._getCurrentUser();
-
-      targetElo = -1;
-      try {
-        const courseDoc = (await u.getCourseRegistrationsDoc()).courses.find((c) => {
-          return c.courseID === this.id;
-        })!;
-        targetElo = EloToNumber(courseDoc.elo);
-      } catch {
-        targetElo = 1000;
-      }
-    } else if (options.elo === 'random') {
-      const bounds = await GET_CACHED(`elo-bounds-${this.id}`, () => this.getELOBounds());
-      targetElo = Math.round(bounds.low + Math.random() * (bounds.high - bounds.low));
-      // console.log(`Picked ${targetElo} from [${bounds.low}, ${bounds.high}]`);
-    } else {
-      targetElo = options.elo;
-    }
-
-    let cards: string[] = [];
-    let mult: number = 4;
-    let previousCount: number = -1;
-    let newCount: number = 0;
-
-    while (cards.length < options.limit && newCount !== previousCount) {
-      cards = await this.getCardsByELO(targetElo, mult * options.limit);
-      previousCount = newCount;
-      newCount = cards.length;
-
-      console.log(`Found ${cards.length} elo neighbor cards...`);
-
-      if (filter) {
-        cards = cards.filter(filter);
-        console.log(`Filtered to ${cards.length} cards...`);
-      }
-
-      mult *= 2;
-    }
-
-    const selectedCards: string[] = [];
-
-    while (selectedCards.length < options.limit && cards.length > 0) {
-      const index = randIntWeightedTowardZero(cards.length);
-      const card = cards.splice(index, 1)[0];
-      selectedCards.push(card);
-    }
-
-    return selectedCards.map((c) => {
-      const split = c.split('-');
-      return {
-        courseID: this.id,
-        cardID: split[1],
-        qualifiedID: `${split[0]}-${split[1]}`,
-        contentSourceType: 'course',
-        contentSourceID: this.id,
-        status: 'new',
-      };
-    });
-  }
-  public async getNewCards(limit: number = 99): Promise<StudySessionNewItem[]> {
-    const u = await this._getCurrentUser();
-
-    const activeCards = await u.getActiveCards();
-    return (
-      await this.getCardsCenteredAtELO({ limit: limit, elo: 'user' }, (c: string) => {
-        if (activeCards.some((ac) => c.includes(ac))) {
-          return false;
-        } else {
-          return true;
-        }
-      })
-    ).map((c) => {
-      return {
-        ...c,
-        status: 'new',
-      };
-    });
   }
 
   async getCardsByELO(elo: number, cardLimit?: number) {
@@ -538,6 +401,145 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
     options: PouchDB.Core.AllDocsOptions = {}
   ): Promise<PouchDB.Core.AllDocsWithKeysResponse<{} & T>> {
     return await getCourseDocs(this.id, ids, options);
+  }
+
+  ////////////////////////////////////
+  // NavigationStrategyManager implementation
+  ////////////////////////////////////
+
+  getNavigationStrategy(id: string): Promise<ContentNavigationStrategyData> {
+    throw new Error(`Method not implemented. getNavigationStrategy(${id})`);
+  }
+
+  getAllNavigationStrategies(): Promise<ContentNavigationStrategyData[]> {
+    // [ ] return `default` hard coded ELO-neighbor lookup
+    throw new Error('Method not implemented.');
+  }
+
+  addNavigationStrategy(data: ContentNavigationStrategyData): Promise<void> {
+    throw new Error(`Method not implemented. addNavigationStrategy(${data})`);
+  }
+  updateNavigationStrategy(id: string, data: ContentNavigationStrategyData): Promise<void> {
+    throw new Error(`Method not implemented. updateNavigationStrategy(${id}, ${data})`);
+  }
+
+  async surfaceNavigationStrategy(): Promise<ContentNavigationStrategyData> {
+    console.warn(`Returning hard-coded default ELO navigator`);
+    const ret: ContentNavigationStrategyData = {
+      id: 'ELO',
+      docType: DocType.NAVIGATION_STRATEGY,
+      name: 'ELO',
+      description: 'ELO-based navigation strategy',
+      implementingClass: Navigators.ELO,
+      course: this.id,
+      serializedData: '', // serde is a noop for ELO navigator.
+    };
+    return Promise.resolve(ret);
+  }
+
+  ////////////////////////////////////
+  // END NavigationStrategyManager implementation
+  ////////////////////////////////////
+
+  ////////////////////////////////////
+  // StudyContentSource implementation
+  ////////////////////////////////////
+
+  public async getNewCards(limit: number = 99): Promise<StudySessionNewItem[]> {
+    const u = await this._getCurrentUser();
+
+    try {
+      const strategy = await this.surfaceNavigationStrategy();
+      return ContentNavigator.create(u, this, strategy).getNewCards(limit);
+    } catch (e) {
+      console.error(`[courseDB] Error surfacing a NavigationStrategy: ${e}`);
+      throw e;
+    }
+  }
+
+  public async getPendingReviews(): Promise<(StudySessionReviewItem & ScheduledCard)[]> {
+    const u = await this._getCurrentUser();
+
+    try {
+      const strategy = await this.surfaceNavigationStrategy();
+      return ContentNavigator.create(u, this, strategy).getPendingReviews();
+    } catch (e) {
+      console.error(`[courseDB] Error surfacing a NavigationStrategy: ${e}`);
+      throw e;
+    }
+  }
+
+  public async getCardsCenteredAtELO(
+    options: {
+      limit: number;
+      elo: 'user' | 'random' | number;
+    } = {
+      limit: 99,
+      elo: 'user',
+    },
+    filter?: (a: string) => boolean
+  ): Promise<StudySessionItem[]> {
+    let targetElo: number;
+
+    if (options.elo === 'user') {
+      const u = await this._getCurrentUser();
+
+      targetElo = -1;
+      try {
+        const courseDoc = (await u.getCourseRegistrationsDoc()).courses.find((c) => {
+          return c.courseID === this.id;
+        })!;
+        targetElo = EloToNumber(courseDoc.elo);
+      } catch {
+        targetElo = 1000;
+      }
+    } else if (options.elo === 'random') {
+      const bounds = await GET_CACHED(`elo-bounds-${this.id}`, () => this.getELOBounds());
+      targetElo = Math.round(bounds.low + Math.random() * (bounds.high - bounds.low));
+      // console.log(`Picked ${targetElo} from [${bounds.low}, ${bounds.high}]`);
+    } else {
+      targetElo = options.elo;
+    }
+
+    let cards: string[] = [];
+    let mult: number = 4;
+    let previousCount: number = -1;
+    let newCount: number = 0;
+
+    while (cards.length < options.limit && newCount !== previousCount) {
+      cards = await this.getCardsByELO(targetElo, mult * options.limit);
+      previousCount = newCount;
+      newCount = cards.length;
+
+      console.log(`Found ${cards.length} elo neighbor cards...`);
+
+      if (filter) {
+        cards = cards.filter(filter);
+        console.log(`Filtered to ${cards.length} cards...`);
+      }
+
+      mult *= 2;
+    }
+
+    const selectedCards: string[] = [];
+
+    while (selectedCards.length < options.limit && cards.length > 0) {
+      const index = randIntWeightedTowardZero(cards.length);
+      const card = cards.splice(index, 1)[0];
+      selectedCards.push(card);
+    }
+
+    return selectedCards.map((c) => {
+      const split = c.split('-');
+      return {
+        courseID: this.id,
+        cardID: split[1],
+        qualifiedID: `${split[0]}-${split[1]}`,
+        contentSourceType: 'course',
+        contentSourceID: this.id,
+        status: 'new',
+      };
+    });
   }
 }
 
