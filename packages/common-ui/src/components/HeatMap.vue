@@ -111,12 +111,27 @@ export default defineComponent({
       try {
         this.isLoading = true;
         console.log('Fetching activity records using getter...');
-        // Ensure the getter is called safely with proper error handling
-        const result = await this.activityRecordsGetter();
         
+        // Ensure the getter is called safely with proper error handling
+        let result = await this.activityRecordsGetter();
+        
+        // Handle the result - ensure it's an array of activity records
         if (Array.isArray(result)) {
-          this.localActivityRecords = result;
-          console.log('Received activity records:', this.localActivityRecords.length);
+          // Filter out records with invalid timestamps before processing
+          this.localActivityRecords = result.filter(record => {
+            if (!record || !record.timeStamp) return false;
+            
+            // Basic validation check for timestamps
+            try {
+              const m = moment(record.timeStamp);
+              return m.isValid() && m.year() > 2000 && m.year() < 2100;
+            } catch (e) {
+              return false;
+            }
+          });
+          
+          console.log(`Received ${result.length} records, ${this.localActivityRecords.length} valid after filtering`);
+          
           // Process the loaded records
           this.processRecords();
           this.createWeeksData();
@@ -153,34 +168,70 @@ export default defineComponent({
         return;
       }
 
-      records.forEach((record) => {
-        if (!record || typeof record !== 'object') {
-          console.warn('Invalid record:', record);
-          return;
+      // Sample logging of a few records to understand structure without flooding console
+      const uniqueDates = new Set<string>();
+      const dateDistribution: Record<string, number> = {};
+      let validCount = 0;
+      let invalidCount = 0;
+      
+      for (let i = 0; i < records.length; i++) {
+        const record = records[i];
+        
+        if (!record || typeof record !== 'object' || !record.timeStamp) {
+          invalidCount++;
+          continue;
         }
         
-        if (!record.timeStamp) {
-          console.warn('Record missing timeStamp:', record);
-          return;
-        }
-        
-        // Make sure timeStamp is properly handled
-        let date;
         try {
-          // Try to parse the timestamp
-          const m = moment(record.timeStamp);
-          if (m.isValid()) {
-            date = m.format('YYYY-MM-DD');
-            data[date] = (data[date] || 0) + 1;
+          // Attempt to normalize the timestamp
+          let normalizedDate: string;
+          
+          if (typeof record.timeStamp === 'string') {
+            // For ISO strings, parse directly with moment
+            normalizedDate = moment(record.timeStamp).format('YYYY-MM-DD');
+          } else if (typeof record.timeStamp === 'number') {
+            // For numeric timestamps, use Date constructor then moment
+            normalizedDate = moment(new Date(record.timeStamp)).format('YYYY-MM-DD');
+          } else if (typeof record.timeStamp === 'object') {
+            // For objects (like Moment), try toString() or direct parsing
+            if (typeof record.timeStamp.format === 'function') {
+              // It's likely a Moment object
+              normalizedDate = record.timeStamp.format('YYYY-MM-DD');
+            } else if (record.timeStamp instanceof Date) {
+              normalizedDate = moment(record.timeStamp).format('YYYY-MM-DD');
+            } else {
+              // Try to parse it as a string representation
+              normalizedDate = moment(String(record.timeStamp)).format('YYYY-MM-DD');
+            }
           } else {
-            console.warn('Invalid date from record:', record);
+            // Unhandled type
+            invalidCount++;
+            continue;
+          }
+          
+          // Verify the date is valid before using it
+          if (moment(normalizedDate, 'YYYY-MM-DD', true).isValid()) {
+            data[normalizedDate] = (data[normalizedDate] || 0) + 1;
+            uniqueDates.add(normalizedDate);
+            
+            // Track distribution by month for debugging
+            const month = normalizedDate.substring(0, 7); // YYYY-MM
+            dateDistribution[month] = (dateDistribution[month] || 0) + 1;
+            
+            validCount++;
+          } else {
+            invalidCount++;
           }
         } catch (e) {
-          console.error('Error processing record date:', e, record);
+          invalidCount++;
         }
-      });
+      }
+      
+      // Log summary statistics
+      console.log(`Processed ${validCount} valid dates, ${invalidCount} invalid dates`);
+      console.log(`Found ${uniqueDates.size} unique dates`);
+      console.log('Date distribution by month:', dateDistribution);
 
-      console.log('Processed heatmap data:', Object.keys(data).length, 'unique dates');
       this.heatmapData = data;
     },
 
@@ -194,7 +245,17 @@ export default defineComponent({
       const day = start.clone().startOf('week');
       
       console.log('Creating weeks data from', start.format('YYYY-MM-DD'), 'to', end.format('YYYY-MM-DD'));
+      
+      // Ensure we have data to display
+      if (Object.keys(this.heatmapData).length === 0) {
+        console.log('No heatmap data available to display');
+      }
 
+      // For debugging, log some sample dates from the heatmap data
+      const sampleDates = Object.keys(this.heatmapData).slice(0, 5);
+      console.log('Sample dates in heatmap data:', sampleDates);
+      
+      // Build the week data structure
       while (day.isSameOrBefore(end)) {
         const weekData: DayData[] = [];
         for (let i = 0; i < 7; i++) {
@@ -215,8 +276,17 @@ export default defineComponent({
       }
       
       console.log('Weeks data created, maxInRange:', this.maxInRange);
-      console.log('First week sample:', this.weeks[0]);
-      console.log('Last week sample:', this.weeks[this.weeks.length - 1]);
+      
+      // Calculate summary stats for display
+      let totalDaysWithActivity = 0;
+      let totalActivity = 0;
+      
+      Object.values(this.heatmapData).forEach(count => {
+        totalDaysWithActivity++;
+        totalActivity += count;
+      });
+      
+      console.log(`Activity summary: ${totalActivity} activities across ${totalDaysWithActivity} days`);
     },
 
     getColor(count: number): string {
