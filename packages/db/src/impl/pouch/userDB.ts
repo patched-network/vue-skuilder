@@ -245,20 +245,48 @@ Currently logged-in as ${this._username}.`
   }
 
   public async getActivityRecords(): Promise<ActivityRecord[]> {
-    const hist = await this.getHistory();
-
-    const allRecords: ActivityRecord[] = [];
-    for (let i = 0; i < hist.length; i++) {
-      if (hist[i] && hist[i]!.records) {
-        hist[i]!.records.forEach((record: CardRecord) => {
-          allRecords.push({
-            timeStamp: record.timeStamp.toString(),
-          });
-        });
+    try {
+      const hist = await this.getHistory();
+      
+      const allRecords: ActivityRecord[] = [];
+      if (!Array.isArray(hist)) {
+        console.error('getHistory did not return an array:', hist);
+        return allRecords;
       }
-    }
+      
+      for (let i = 0; i < hist.length; i++) {
+        try {
+          if (hist[i] && Array.isArray(hist[i]!.records)) {
+            hist[i]!.records.forEach((record: CardRecord) => {
+              try {
+                // Convert Moment objects to ISO string format for consistency
+                const timeStamp = record.timeStamp && typeof record.timeStamp.isValid === 'function' && record.timeStamp.isValid() 
+                  ? record.timeStamp.toISOString() 
+                  : new Date().toISOString();
+                  
+                allRecords.push({
+                  timeStamp,
+                  courseID: record.courseID || 'unknown',
+                  cardID: record.cardID || 'unknown',
+                  timeSpent: record.timeSpent || 0,
+                  type: 'card_view'
+                });
+              } catch (err) {
+                console.error('Error processing record:', err, record);
+              }
+            });
+          }
+        } catch (err) {
+          console.error('Error processing history item:', err, hist[i]);
+        }
+      }
 
-    return allRecords;
+      console.log(`Found ${allRecords.length} activity records`);
+      return allRecords;
+    } catch (err) {
+      console.error('Error in getActivityRecords:', err);
+      return [];
+    }
   }
 
   private async getReviewstoDate(targetDate: Moment, course_id?: string) {

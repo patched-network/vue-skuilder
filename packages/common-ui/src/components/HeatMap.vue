@@ -89,7 +89,10 @@ export default defineComponent({
       return 7 * (this.cellSize + this.cellMargin);
     },
     effectiveActivityRecords(): ActivityRecord[] {
-      return this.localActivityRecords.length > 0 ? this.localActivityRecords : this.activityRecords;
+      const useLocal = Array.isArray(this.localActivityRecords) && this.localActivityRecords.length > 0;
+      const records = useLocal ? this.localActivityRecords : this.activityRecords || [];
+      console.log('Using effectiveActivityRecords, count:', records.length, 'source:', useLocal ? 'local' : 'prop');
+      return records;
     },
   },
 
@@ -107,12 +110,28 @@ export default defineComponent({
     if (this.activityRecordsGetter) {
       try {
         this.isLoading = true;
-        this.localActivityRecords = await this.activityRecordsGetter();
+        console.log('Fetching activity records using getter...');
+        // Ensure the getter is called safely with proper error handling
+        const result = await this.activityRecordsGetter();
+        
+        if (Array.isArray(result)) {
+          this.localActivityRecords = result;
+          console.log('Received activity records:', this.localActivityRecords.length);
+          // Process the loaded records
+          this.processRecords();
+          this.createWeeksData();
+        } else {
+          console.error('Activity records getter did not return an array:', result);
+          this.localActivityRecords = [];
+        }
       } catch (error) {
         console.error('Error fetching activity records:', error);
+        this.localActivityRecords = [];
       } finally {
         this.isLoading = false;
       }
+    } else {
+      console.log('No activityRecordsGetter provided, using direct activityRecords prop');
     }
   },
 
@@ -123,16 +142,45 @@ export default defineComponent({
     },
 
     processRecords() {
-      const records = this.effectiveActivityRecords;
+      const records = this.effectiveActivityRecords || [];
       console.log(`Processing ${records.length} records`);
 
       const data: { [key: string]: number } = {};
 
+      if (records.length === 0) {
+        console.log('No records to process');
+        this.heatmapData = data;
+        return;
+      }
+
       records.forEach((record) => {
-        const date = moment(record.timeStamp).format('YYYY-MM-DD');
-        data[date] = (data[date] || 0) + 1;
+        if (!record || typeof record !== 'object') {
+          console.warn('Invalid record:', record);
+          return;
+        }
+        
+        if (!record.timeStamp) {
+          console.warn('Record missing timeStamp:', record);
+          return;
+        }
+        
+        // Make sure timeStamp is properly handled
+        let date;
+        try {
+          // Try to parse the timestamp
+          const m = moment(record.timeStamp);
+          if (m.isValid()) {
+            date = m.format('YYYY-MM-DD');
+            data[date] = (data[date] || 0) + 1;
+          } else {
+            console.warn('Invalid date from record:', record);
+          }
+        } catch (e) {
+          console.error('Error processing record date:', e, record);
+        }
       });
 
+      console.log('Processed heatmap data:', Object.keys(data).length, 'unique dates');
       this.heatmapData = data;
     },
 
@@ -140,18 +188,21 @@ export default defineComponent({
       // Reset weeks and max count
       this.weeks = [];
       this.maxInRange = 0;
-
+      
       const end = moment();
       const start = end.clone().subtract(52, 'weeks');
       const day = start.clone().startOf('week');
+      
+      console.log('Creating weeks data from', start.format('YYYY-MM-DD'), 'to', end.format('YYYY-MM-DD'));
 
       while (day.isSameOrBefore(end)) {
         const weekData: DayData[] = [];
         for (let i = 0; i < 7; i++) {
           const date = day.format('YYYY-MM-DD');
+          const count = this.heatmapData[date] || 0;
           const dayData: DayData = {
             date,
-            count: this.heatmapData[date] || 0,
+            count,
           };
           weekData.push(dayData);
           if (dayData.count > this.maxInRange) {
@@ -162,6 +213,10 @@ export default defineComponent({
         }
         this.weeks.push(weekData);
       }
+      
+      console.log('Weeks data created, maxInRange:', this.maxInRange);
+      console.log('First week sample:', this.weeks[0]);
+      console.log('Last week sample:', this.weeks[this.weeks.length - 1]);
     },
 
     getColor(count: number): string {

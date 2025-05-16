@@ -19,7 +19,7 @@
         Start <a @click="$emit('session-finished')">another study session</a>, or try
         <router-link :to="`/edit/${courseID}`">adding some new content</router-link> to challenge yourself and others!
       </p>
-      <heat-map :activity-records-getter="user.getActivityRecords" />
+      <heat-map :activity-records-getter="() => user.getActivityRecords()" />
     </div>
 
     <div v-else ref="shadowWrapper">
