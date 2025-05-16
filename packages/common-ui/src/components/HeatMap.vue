@@ -89,7 +89,10 @@ export default defineComponent({
       return 7 * (this.cellSize + this.cellMargin);
     },
     effectiveActivityRecords(): ActivityRecord[] {
-      return this.localActivityRecords.length > 0 ? this.localActivityRecords : this.activityRecords;
+      const useLocal = Array.isArray(this.localActivityRecords) && this.localActivityRecords.length > 0;
+      const records = useLocal ? this.localActivityRecords : this.activityRecords || [];
+      console.log('Using effectiveActivityRecords, count:', records.length, 'source:', useLocal ? 'local' : 'prop');
+      return records;
     },
   },
 
@@ -107,12 +110,43 @@ export default defineComponent({
     if (this.activityRecordsGetter) {
       try {
         this.isLoading = true;
-        this.localActivityRecords = await this.activityRecordsGetter();
+        console.log('Fetching activity records using getter...');
+        
+        // Ensure the getter is called safely with proper error handling
+        let result = await this.activityRecordsGetter();
+        
+        // Handle the result - ensure it's an array of activity records
+        if (Array.isArray(result)) {
+          // Filter out records with invalid timestamps before processing
+          this.localActivityRecords = result.filter(record => {
+            if (!record || !record.timeStamp) return false;
+            
+            // Basic validation check for timestamps
+            try {
+              const m = moment(record.timeStamp);
+              return m.isValid() && m.year() > 2000 && m.year() < 2100;
+            } catch (e) {
+              return false;
+            }
+          });
+          
+          console.log(`Received ${result.length} records, ${this.localActivityRecords.length} valid after filtering`);
+          
+          // Process the loaded records
+          this.processRecords();
+          this.createWeeksData();
+        } else {
+          console.error('Activity records getter did not return an array:', result);
+          this.localActivityRecords = [];
+        }
       } catch (error) {
         console.error('Error fetching activity records:', error);
+        this.localActivityRecords = [];
       } finally {
         this.isLoading = false;
       }
+    } else {
+      console.log('No activityRecordsGetter provided, using direct activityRecords prop');
     }
   },
 
@@ -123,15 +157,80 @@ export default defineComponent({
     },
 
     processRecords() {
-      const records = this.effectiveActivityRecords;
+      const records = this.effectiveActivityRecords || [];
       console.log(`Processing ${records.length} records`);
 
       const data: { [key: string]: number } = {};
 
-      records.forEach((record) => {
-        const date = moment(record.timeStamp).format('YYYY-MM-DD');
-        data[date] = (data[date] || 0) + 1;
-      });
+      if (records.length === 0) {
+        console.log('No records to process');
+        this.heatmapData = data;
+        return;
+      }
+
+      // Sample logging of a few records to understand structure without flooding console
+      const uniqueDates = new Set<string>();
+      const dateDistribution: Record<string, number> = {};
+      let validCount = 0;
+      let invalidCount = 0;
+      
+      for (let i = 0; i < records.length; i++) {
+        const record = records[i];
+        
+        if (!record || typeof record !== 'object' || !record.timeStamp) {
+          invalidCount++;
+          continue;
+        }
+        
+        try {
+          // Attempt to normalize the timestamp
+          let normalizedDate: string;
+          
+          if (typeof record.timeStamp === 'string') {
+            // For ISO strings, parse directly with moment
+            normalizedDate = moment(record.timeStamp).format('YYYY-MM-DD');
+          } else if (typeof record.timeStamp === 'number') {
+            // For numeric timestamps, use Date constructor then moment
+            normalizedDate = moment(new Date(record.timeStamp)).format('YYYY-MM-DD');
+          } else if (typeof record.timeStamp === 'object') {
+            // For objects (like Moment), try toString() or direct parsing
+            if (typeof record.timeStamp.format === 'function') {
+              // It's likely a Moment object
+              normalizedDate = record.timeStamp.format('YYYY-MM-DD');
+            } else if (record.timeStamp instanceof Date) {
+              normalizedDate = moment(record.timeStamp).format('YYYY-MM-DD');
+            } else {
+              // Try to parse it as a string representation
+              normalizedDate = moment(String(record.timeStamp)).format('YYYY-MM-DD');
+            }
+          } else {
+            // Unhandled type
+            invalidCount++;
+            continue;
+          }
+          
+          // Verify the date is valid before using it
+          if (moment(normalizedDate, 'YYYY-MM-DD', true).isValid()) {
+            data[normalizedDate] = (data[normalizedDate] || 0) + 1;
+            uniqueDates.add(normalizedDate);
+            
+            // Track distribution by month for debugging
+            const month = normalizedDate.substring(0, 7); // YYYY-MM
+            dateDistribution[month] = (dateDistribution[month] || 0) + 1;
+            
+            validCount++;
+          } else {
+            invalidCount++;
+          }
+        } catch (e) {
+          invalidCount++;
+        }
+      }
+      
+      // Log summary statistics
+      console.log(`Processed ${validCount} valid dates, ${invalidCount} invalid dates`);
+      console.log(`Found ${uniqueDates.size} unique dates`);
+      console.log('Date distribution by month:', dateDistribution);
 
       this.heatmapData = data;
     },
@@ -140,18 +239,31 @@ export default defineComponent({
       // Reset weeks and max count
       this.weeks = [];
       this.maxInRange = 0;
-
+      
       const end = moment();
       const start = end.clone().subtract(52, 'weeks');
       const day = start.clone().startOf('week');
+      
+      console.log('Creating weeks data from', start.format('YYYY-MM-DD'), 'to', end.format('YYYY-MM-DD'));
+      
+      // Ensure we have data to display
+      if (Object.keys(this.heatmapData).length === 0) {
+        console.log('No heatmap data available to display');
+      }
 
+      // For debugging, log some sample dates from the heatmap data
+      const sampleDates = Object.keys(this.heatmapData).slice(0, 5);
+      console.log('Sample dates in heatmap data:', sampleDates);
+      
+      // Build the week data structure
       while (day.isSameOrBefore(end)) {
         const weekData: DayData[] = [];
         for (let i = 0; i < 7; i++) {
           const date = day.format('YYYY-MM-DD');
+          const count = this.heatmapData[date] || 0;
           const dayData: DayData = {
             date,
-            count: this.heatmapData[date] || 0,
+            count,
           };
           weekData.push(dayData);
           if (dayData.count > this.maxInRange) {
@@ -162,6 +274,19 @@ export default defineComponent({
         }
         this.weeks.push(weekData);
       }
+      
+      console.log('Weeks data created, maxInRange:', this.maxInRange);
+      
+      // Calculate summary stats for display
+      let totalDaysWithActivity = 0;
+      let totalActivity = 0;
+      
+      Object.values(this.heatmapData).forEach(count => {
+        totalDaysWithActivity++;
+        totalActivity += count;
+      });
+      
+      console.log(`Activity summary: ${totalActivity} activities across ${totalDaysWithActivity} days`);
     },
 
     getColor(count: number): string {

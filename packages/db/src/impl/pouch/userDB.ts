@@ -245,20 +245,85 @@ Currently logged-in as ${this._username}.`
   }
 
   public async getActivityRecords(): Promise<ActivityRecord[]> {
-    const hist = await this.getHistory();
-
-    const allRecords: ActivityRecord[] = [];
-    for (let i = 0; i < hist.length; i++) {
-      if (hist[i] && hist[i]!.records) {
-        hist[i]!.records.forEach((record: CardRecord) => {
-          allRecords.push({
-            timeStamp: record.timeStamp.toString(),
-          });
-        });
+    try {
+      const hist = await this.getHistory();
+      
+      const allRecords: ActivityRecord[] = [];
+      if (!Array.isArray(hist)) {
+        console.error('getHistory did not return an array:', hist);
+        return allRecords;
       }
-    }
+      
+      // Sample the first few records to understand structure
+      let sampleCount = 0;
+      
+      for (let i = 0; i < hist.length; i++) {
+        try {
+          if (hist[i] && Array.isArray(hist[i]!.records)) {
+            hist[i]!.records.forEach((record: CardRecord) => {
+              try {
+                // Skip this record if timeStamp is missing
+                if (!record.timeStamp) {
+                  return;
+                }
+                
+                let timeStamp;
+                
+                // Handle different timestamp formats
+                if (typeof record.timeStamp === 'object') {
+                  // It's likely a Moment object
+                  if (typeof record.timeStamp.toDate === 'function') {
+                    // It's definitely a Moment object
+                    timeStamp = record.timeStamp.toISOString();
+                  } else if (record.timeStamp instanceof Date) {
+                    // It's a Date object
+                    timeStamp = record.timeStamp.toISOString();
+                  } else {
+                    // Log a sample of unknown object types, but don't flood console
+                    if (sampleCount < 3) {
+                      console.warn('Unknown timestamp object type:', record.timeStamp);
+                      sampleCount++;
+                    }
+                    return;
+                  }
+                } else if (typeof record.timeStamp === 'string') {
+                  // It's already a string, but make sure it's a valid date
+                  const date = new Date(record.timeStamp);
+                  if (isNaN(date.getTime())) {
+                    return; // Invalid date string
+                  }
+                  timeStamp = record.timeStamp;
+                } else if (typeof record.timeStamp === 'number') {
+                  // Assume it's a Unix timestamp (milliseconds since epoch)
+                  timeStamp = new Date(record.timeStamp).toISOString();
+                } else {
+                  // Unknown type, skip
+                  return;
+                }
+                
+                allRecords.push({
+                  timeStamp,
+                  courseID: record.courseID || 'unknown',
+                  cardID: record.cardID || 'unknown',
+                  timeSpent: record.timeSpent || 0,
+                  type: 'card_view'
+                });
+              } catch (err) {
+                // Silently skip problematic records to avoid flooding logs
+              }
+            });
+          }
+        } catch (err) {
+          console.error('Error processing history item:', err);
+        }
+      }
 
-    return allRecords;
+      console.log(`Found ${allRecords.length} activity records`);
+      return allRecords;
+    } catch (err) {
+      console.error('Error in getActivityRecords:', err);
+      return [];
+    }
   }
 
   private async getReviewstoDate(targetDate: Moment, course_id?: string) {
