@@ -1,10 +1,4 @@
-import {
-  CourseDBInterface,
-  CourseInfo,
-  CoursesDBInterface,
-  StudyContentSourceInternal,
-  UserDBInterface,
-} from '@/core';
+import { CourseDBInterface, CourseInfo, CoursesDBInterface, UserDBInterface } from '@/core';
 import { ScheduledCard } from '@/core/types/user';
 import {
   CourseConfig,
