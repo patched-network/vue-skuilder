@@ -1,45 +1,47 @@
 <template>
   <div v-if="hasRegistrations">
-    <div data-cy="select-quilts-header" class="text-h4 mb-12">Study Session Setup</div>
+    <div data-cy="select-quilts-header" class="text-h4 mb-4">Study Session Setup</div>
 
-    <v-row>
+    <div class="session-layout">
       <!-- Left Column: Time Configuration and Start Button -->
-      <v-col cols="12" md="4" lg="3" class="time-config-column">
-        <div class="text-h6 mb-3">Session Settings</div>
+      <div class="fixed-controls-container">
+        <div class="fixed-controls">
+          <div class="text-h6 mb-3">Session Settings</div>
 
-        <div class="mb-5">
-          <v-text-field
-            ref="numberField"
-            v-model="timeLimit"
-            class="time-limit-field"
-            variant="outlined"
-            label="Study Session Timelimit"
-            prepend-inner-icon="mdi-clock-outline"
-            prepend-icon="mdi-minus"
-            append-icon="mdi-plus"
-            :suffix="timeLimit > 1 ? 'minutes' : 'minute'"
-            mask="##"
-            type="number"
-            @click:prepend="dec"
-            @click:append="inc"
-          />
+          <div class="mb-5">
+            <v-text-field
+              ref="numberField"
+              v-model="timeLimit"
+              class="time-limit-field"
+              variant="outlined"
+              label="Study Session Timelimit"
+              prepend-inner-icon="mdi-clock-outline"
+              prepend-icon="mdi-minus"
+              append-icon="mdi-plus"
+              :suffix="timeLimit > 1 ? 'minutes' : 'minute'"
+              mask="##"
+              type="number"
+              @click:prepend="dec"
+              @click:append="inc"
+            />
+          </div>
+
+          <v-btn
+            data-cy="start-studying-button"
+            color="success"
+            size="large"
+            block
+            class="start-btn"
+            @click="startSession"
+          >
+            <v-icon start>mdi-play</v-icon>
+            Start!
+          </v-btn>
         </div>
-
-        <v-btn
-          data-cy="start-studying-button"
-          color="success"
-          size="large"
-          block
-          class="start-btn"
-          @click="startSession"
-        >
-          <v-icon start>mdi-play</v-icon>
-          Start!
-        </v-btn>
-      </v-col>
+      </div>
 
       <!-- Right Column: Course Selection -->
-      <v-col cols="12" md="8" lg="9" class="course-selection-column">
+      <div class="course-selection-container">
         <div class="text-h6 mb-3">Select Quilts to Study</div>
         <table width="100%">
           <thead>
@@ -81,8 +83,8 @@
             </tr>
           </tbody>
         </table>
-      </v-col>
-    </v-row>
+      </div>
+    </div>
   </div>
   <div v-else class="text-h4">
     <p>You don't have anything to study!</p>
@@ -283,7 +285,19 @@ td {
   text-align: center !important;
 }
 
-.time-config-column {
+/* Layout for session configuration */
+.session-layout {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Fixed controls container */
+.fixed-controls-container {
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.fixed-controls {
   display: flex;
   flex-direction: column;
 }
@@ -298,13 +312,33 @@ td {
   max-height: 150px;
 }
 
-.course-selection-column {
-  /* Only add border on medium screens and larger */
+/* Course selection styles */
+.course-selection-container {
+  width: 100%;
 }
 
+/* Media queries for desktop layout */
 @media (min-width: 960px) {
-  .course-selection-column {
+  .session-layout {
+    flex-direction: row;
+    gap: 40px;
+  }
+
+  .fixed-controls-container {
+    width: 300px;
+    flex-shrink: 0;
+  }
+
+  .fixed-controls {
+    position: sticky;
+    top: 20px;
+    padding-right: 20px;
+  }
+
+  .course-selection-container {
+    flex-grow: 1;
     border-left: 1px solid rgba(0, 0, 0, 0.12);
+    padding-left: 20px;
   }
 }
 </style>
