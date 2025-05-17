@@ -1,69 +1,88 @@
 <template>
   <div v-if="hasRegistrations">
-    <div data-cy="select-quilts-header" class="text-h4">Select your quilts</div>
-    <table width="100%">
-      <thead>
-        <tr>
-          <th>
-            <v-checkbox
-              id="SelectAll"
-              ref="selectAll"
-              v-model="allSelected"
-              autofocus
-              label="Select All"
-              @update:model-value="toggleAll"
-            ></v-checkbox>
-          </th>
+    <div data-cy="select-quilts-header" class="text-h4 mb-12">Study Session Setup</div>
 
-          <th>
-            Reviews
-            <!-- <v-icon>info</v-icon> -->
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="classroom in activeClasses" :key="classroom.classID">
-          <td>
-            <v-checkbox v-model="classroom.selected" :label="`Class: ${classroom.name}`" @click.capture="update" />
-          </td>
-          <td>-</td>
-        </tr>
-        <tr v-for="course in activeCourses" :key="course.courseID">
-          <td>
-            <v-checkbox
-              v-model="course.selected"
-              data-cy="course-checkbox"
-              :label="`q/${course.name}`"
-              @click.capture="update"
-            />
-          </td>
-          <td>{{ course.reviews }}</td>
-        </tr>
-      </tbody>
-    </table>
-    <!-- <v-text-field
-      label="Card Limit for this Session"
-      hint="Study as much or as little as you like by adjusting this"
-      type="number"
-      ref="numberField"
-      v-model="cardCount"
-    /> -->
-    <v-text-field
-      ref="numberField"
-      v-model="timeLimit"
-      class="col-12 col-sm-6 col-md-4 col-lg-3 text-h5"
-      variant="solo"
-      prepend-inner-icon="mdi-clock-outline"
-      prepend-icon="mdi-minus"
-      append-icon="mdi-plus"
-      :suffix="timeLimit > 1 ? '(minutes)' : '(minute)'"
-      hint="Time Limit for this Session"
-      mask="##"
-      type="number"
-      @click:prepend="dec"
-      @click:append="inc"
-    />
-    <v-btn data-cy="start-studying-button" color="success" @click="startSession">Start Studying!</v-btn>
+    <v-row>
+      <!-- Left Column: Time Configuration and Start Button -->
+      <v-col cols="12" md="4" lg="3" class="time-config-column">
+        <div class="text-h6 mb-3">Session Settings</div>
+
+        <div class="mb-5">
+          <v-text-field
+            ref="numberField"
+            v-model="timeLimit"
+            class="time-limit-field"
+            variant="outlined"
+            label="Study Session Timelimit"
+            prepend-inner-icon="mdi-clock-outline"
+            prepend-icon="mdi-minus"
+            append-icon="mdi-plus"
+            :suffix="timeLimit > 1 ? 'minutes' : 'minute'"
+            mask="##"
+            type="number"
+            @click:prepend="dec"
+            @click:append="inc"
+          />
+        </div>
+
+        <v-btn
+          data-cy="start-studying-button"
+          color="success"
+          size="large"
+          block
+          class="start-btn"
+          @click="startSession"
+        >
+          <v-icon start>mdi-play</v-icon>
+          Start!
+        </v-btn>
+      </v-col>
+
+      <!-- Right Column: Course Selection -->
+      <v-col cols="12" md="8" lg="9" class="course-selection-column">
+        <div class="text-h6 mb-3">Select Quilts to Study</div>
+        <table width="100%">
+          <thead>
+            <tr>
+              <th>
+                <v-checkbox
+                  id="SelectAll"
+                  ref="selectAll"
+                  v-model="allSelected"
+                  autofocus
+                  label="Select All"
+                  @update:model-value="toggleAll"
+                ></v-checkbox>
+              </th>
+
+              <th>
+                Reviews
+                <!-- <v-icon>info</v-icon> -->
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="classroom in activeClasses" :key="classroom.classID">
+              <td>
+                <v-checkbox v-model="classroom.selected" :label="`Class: ${classroom.name}`" @click.capture="update" />
+              </td>
+              <td>-</td>
+            </tr>
+            <tr v-for="course in activeCourses" :key="course.courseID">
+              <td>
+                <v-checkbox
+                  v-model="course.selected"
+                  data-cy="course-checkbox"
+                  :label="`q/${course.name}`"
+                  @click.capture="update"
+                />
+              </td>
+              <td>{{ course.reviews }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </v-col>
+    </v-row>
   </div>
   <div v-else class="text-h4">
     <p>You don't have anything to study!</p>
@@ -229,14 +248,14 @@ export default defineComponent({
       SkldrMouseTrap.reset();
       SkldrMouseTrap.bind([
         {
-          hotkey: 'up',
+          hotkey: 'right',
           callback: () => {
             this.timeLimit++;
           },
           command: '',
         },
         {
-          hotkey: 'down',
+          hotkey: 'left',
           callback: () => {
             this.timeLimit--;
           },
@@ -262,5 +281,30 @@ td {
 .cb {
   align-content: center !important;
   text-align: center !important;
+}
+
+.time-config-column {
+  display: flex;
+  flex-direction: column;
+}
+
+.time-limit-field {
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.start-btn {
+  margin-top: 8px;
+  max-height: 150px;
+}
+
+.course-selection-column {
+  /* Only add border on medium screens and larger */
+}
+
+@media (min-width: 960px) {
+  .course-selection-column {
+    border-left: 1px solid rgba(0, 0, 0, 0.12);
+  }
 }
 </style>
