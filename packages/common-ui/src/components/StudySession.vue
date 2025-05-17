@@ -93,6 +93,7 @@ import {
   CourseRegistrationDoc,
   DataLayerProvider,
   UserDBInterface,
+  ClassroomDBInterface,
 } from '@vue-skuilder/db';
 import { SessionController, StudySessionRecord } from '@vue-skuilder/db';
 import { newInterval } from '@vue-skuilder/db';
@@ -158,7 +159,15 @@ export default defineComponent({
     },
   },
 
-  emits: ['session-finished', 'session-started', 'card-loaded', 'card-response', 'time-changed', 'session-prepared', 'session-error'],
+  emits: [
+    'session-finished',
+    'session-started',
+    'card-loaded',
+    'card-response',
+    'time-changed',
+    'session-prepared',
+    'session-error',
+  ],
 
   data() {
     return {
@@ -273,11 +282,11 @@ export default defineComponent({
     },
 
     async initSession() {
-      let sessionClassroomDBs = [];
+      let sessionClassroomDBs: ClassroomDBInterface[] = [];
       try {
         console.log(`[StudySession] starting study session w/ sources: ${JSON.stringify(this.contentSources)}`);
         console.log('[StudySession] Beginning preparation process');
-        
+
         this.sessionContentSources = (
           await Promise.all(
             this.contentSources.map(async (s) => {
@@ -310,7 +319,7 @@ export default defineComponent({
         this.intervalHandler = setInterval(this.tick, 1000);
 
         this.sessionPrepared = true;
-        
+
         console.log('[StudySession] Session preparation complete, emitting session-prepared event');
         this.$emit('session-prepared');
         console.log('[StudySession] Event emission completed');
@@ -333,7 +342,7 @@ export default defineComponent({
             .filter((s) => s.type === 'course')
             .map((c) => c.id)
             .toString()}
-          User classrooms: ${sessionClassroomDBs.map((db) => db._id).toString() || 'No classrooms'}
+          User classrooms: ${sessionClassroomDBs.map((db: any) => db._id).toString() || 'No classrooms'}
         `);
       } catch (error) {
         console.error('[StudySession] Error during final session setup:', error);
