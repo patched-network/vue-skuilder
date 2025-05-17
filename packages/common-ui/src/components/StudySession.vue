@@ -93,6 +93,7 @@ import {
   CourseRegistrationDoc,
   DataLayerProvider,
   UserDBInterface,
+  ClassroomDBInterface,
 } from '@vue-skuilder/db';
 import { SessionController, StudySessionRecord } from '@vue-skuilder/db';
 import { newInterval } from '@vue-skuilder/db';
@@ -158,7 +159,15 @@ export default defineComponent({
     },
   },
 
-  emits: ['session-finished', 'session-started', 'card-loaded', 'card-response', 'time-changed'],
+  emits: [
+    'session-finished',
+    'session-started',
+    'card-loaded',
+    'card-response',
+    'time-changed',
+    'session-prepared',
+    'session-error',
+  ],
 
   data() {
     return {
@@ -224,7 +233,9 @@ export default defineComponent({
 
   async created() {
     this.userCourseRegDoc = await this.user.getCourseRegistrationsDoc();
-    this.initSession();
+    console.log('[StudySession] Created lifecycle hook - starting initSession');
+    await this.initSession();
+    console.log('[StudySession] InitSession completed in created hook');
   },
 
   methods: {
@@ -271,58 +282,84 @@ export default defineComponent({
     },
 
     async initSession() {
-      console.log(`[StudySession] starting study session w/ sources: ${JSON.stringify(this.contentSources)}`);
+      let sessionClassroomDBs: ClassroomDBInterface[] = [];
+      try {
+        console.log(`[StudySession] starting study session w/ sources: ${JSON.stringify(this.contentSources)}`);
+        console.log('[StudySession] Beginning preparation process');
 
-      this.sessionContentSources = (
-        await Promise.all(
-          this.contentSources.map(async (s) => {
-            try {
-              return await getStudySource(s, this.user);
-            } catch (e) {
-              console.error(`Failed to load study source: ${s.type}/${s.id}`, e);
-              return null;
-            }
-          })
-        )
-      ).filter((s) => s !== null);
+        this.sessionContentSources = (
+          await Promise.all(
+            this.contentSources.map(async (s) => {
+              try {
+                return await getStudySource(s, this.user);
+              } catch (e) {
+                console.error(`Failed to load study source: ${s.type}/${s.id}`, e);
+                return null;
+              }
+            })
+          )
+        ).filter((s) => s !== null);
 
-      this.timeRemaining = this.sessionTimeLimit * 60;
+        this.timeRemaining = this.sessionTimeLimit * 60;
 
-      const sessionClassroomDBs = await Promise.all(
-        this.contentSources
-          .filter((s) => s.type === 'classroom')
-          .map(async (c) => await this.dataLayer.getClassroomDB(c.id, 'student'))
-      );
-
-      sessionClassroomDBs.forEach((db) => {
-        // db.setChangeFcn(this.handleClassroomMessage());
-      });
-
-      this.sessionController = new SessionController(this.sessionContentSources, 60 * this.sessionTimeLimit);
-      this.sessionController.sessionRecord = this.sessionRecord;
-
-      await this.sessionController.prepareSession();
-      this.intervalHandler = setInterval(this.tick, 1000);
-
-      this.sessionPrepared = true;
-
-      this.contentSources
-        .filter((s) => s.type === 'course')
-        .forEach(
-          async (c) => (this.courseNames[c.id] = (await this.dataLayer.getCoursesDB().getCourseConfig(c.id)).name)
+        sessionClassroomDBs = await Promise.all(
+          this.contentSources
+            .filter((s) => s.type === 'classroom')
+            .map(async (c) => await this.dataLayer.getClassroomDB(c.id, 'student'))
         );
 
-      console.log(`[StudySession] Session created:
-        ${this.sessionController.toString()}
-        User courses: ${this.contentSources
-          .filter((s) => s.type === 'course')
-          .map((c) => c.id)
-          .toString()}
-        User classrooms: ${sessionClassroomDBs.map((db) => db._id)}
-      `);
+        sessionClassroomDBs.forEach((db) => {
+          // db.setChangeFcn(this.handleClassroomMessage());
+        });
 
-      this.$emit('session-started');
-      this.loadCard(this.sessionController.nextCard());
+        this.sessionController = new SessionController(this.sessionContentSources, 60 * this.sessionTimeLimit);
+        this.sessionController.sessionRecord = this.sessionRecord;
+
+        await this.sessionController.prepareSession();
+        this.intervalHandler = setInterval(this.tick, 1000);
+
+        this.sessionPrepared = true;
+
+        console.log('[StudySession] Session preparation complete, emitting session-prepared event');
+        this.$emit('session-prepared');
+        console.log('[StudySession] Event emission completed');
+      } catch (error) {
+        console.error('[StudySession] Error during session preparation:', error);
+        // Notify parent component about the error
+        this.$emit('session-error', { message: 'Failed to prepare study session', error });
+      }
+
+      try {
+        this.contentSources
+          .filter((s) => s.type === 'course')
+          .forEach(
+            async (c) => (this.courseNames[c.id] = (await this.dataLayer.getCoursesDB().getCourseConfig(c.id)).name)
+          );
+
+        console.log(`[StudySession] Session created:
+          ${this.sessionController?.toString() || 'Session controller not initialized'}
+          User courses: ${this.contentSources
+            .filter((s) => s.type === 'course')
+            .map((c) => c.id)
+            .toString()}
+          User classrooms: ${sessionClassroomDBs.map((db: any) => db._id).toString() || 'No classrooms'}
+        `);
+      } catch (error) {
+        console.error('[StudySession] Error during final session setup:', error);
+      }
+
+      if (this.sessionController) {
+        try {
+          this.$emit('session-started');
+          this.loadCard(this.sessionController.nextCard());
+        } catch (error) {
+          console.error('[StudySession] Error loading next card:', error);
+          this.$emit('session-error', { message: 'Failed to load study card', error });
+        }
+      } else {
+        console.error('[StudySession] Cannot load card: session controller not initialized');
+        this.$emit('session-error', { message: 'Study session initialization failed' });
+      }
     },
 
     countCardViews(course_id: string, card_id: string): number {
