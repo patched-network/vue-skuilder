@@ -29,16 +29,53 @@
       </v-row>
     </div>
 
-    <StudySession
-      v-if="sessionPrepared"
-      :content-sources="sessionContentSources"
-      :session-time-limit="sessionTimeLimit"
-      :user="user as UserDBInterface"
-      :session-config="studySessionConfig"
-      :data-layer="dataLayer"
-      :get-view-component="getViewComponent"
-      @session-finished="handleSessionFinished"
-    />
+    <!-- Study Session Component (may be in loading state) -->
+    <div v-if="inSession">
+      <!-- Loading indicator while session is being prepared -->
+      <div v-if="!sessionPrepared && !sessionError" class="session-loading">
+        <v-container class="text-center">
+          <v-row justify="center" align="center" style="min-height: 50vh">
+            <v-col cols="12">
+              <v-progress-circular
+                size="70"
+                width="7"
+                color="primary"
+                indeterminate
+              ></v-progress-circular>
+              <div class="text-h5 mt-4">Preparing your study session...</div>
+              <div class="text-subtitle-1 mt-2">Getting your learning materials ready</div>
+            </v-col>
+          </v-row>
+        </v-container>
+      </div>
+
+      <!-- Error state -->
+      <div v-if="sessionError" class="session-error">
+        <v-container class="text-center">
+          <v-row justify="center" align="center" style="min-height: 50vh">
+            <v-col cols="12">
+              <v-icon size="64" color="error">mdi-alert-circle</v-icon>
+              <div class="text-h5 mt-4 text-error">Session Preparation Failed</div>
+              <div class="text-subtitle-1 mt-2">{{ errorMessage || 'There was a problem preparing your study session.' }}</div>
+              <v-btn color="primary" class="mt-6" @click="refreshRoute">Try Again</v-btn>
+            </v-col>
+          </v-row>
+        </v-container>
+      </div>
+
+      <StudySession
+        :content-sources="sessionContentSources"
+        :session-time-limit="sessionTimeLimit"
+        :user="user as UserDBInterface"
+        :session-config="studySessionConfig"
+        :data-layer="dataLayer"
+        :get-view-component="getViewComponent"
+        :class="{ 'hidden-session': !sessionPrepared }"
+        @session-finished="handleSessionFinished"
+        @session-prepared="handleSessionPrepared"
+        @session-error="handleSessionError"
+      />
+    </div>
   </div>
 </template>
 
@@ -107,6 +144,8 @@ export default defineComponent({
       sessionTimeLimit: 5,
       inSession: false,
       sessionPrepared: false,
+      sessionError: false,
+      errorMessage: '',
       sessionContentSources: [] as ContentSourceID[],
       dataInputFormStore: useDataInputFormStore(),
       getViewComponent: (view_id: string) => allCourses.getView(view_id),
@@ -176,7 +215,10 @@ export default defineComponent({
       this.sessionContentSources = sources;
       this.sessionTimeLimit = timeLimit;
       this.inSession = true;
-      this.sessionPrepared = true;
+      this.sessionPrepared = false;
+      
+      // Adding a console log to debug event handling
+      console.log('[Study] Waiting for session-prepared event from StudySession component');
     },
 
     registerUserForPreviewCourse() {
@@ -188,6 +230,32 @@ export default defineComponent({
     handleSessionFinished() {
       this.refreshRoute();
     },
+
+    handleSessionPrepared() {
+      console.log('[Study] Session preparation complete - received session-prepared event');
+      this.sessionPrepared = true;
+      this.sessionError = false;
+      this.errorMessage = '';
+    },
+
+    handleSessionError({ message, error }) {
+      console.error('[Study] Session error:', message, error);
+      this.sessionError = true;
+      this.errorMessage = message || 'An error occurred while preparing your study session.';
+      this.sessionPrepared = false;
+    },
   },
 });
 </script>
+
+<style scoped>
+.hidden-session {
+  visibility: hidden;
+  position: absolute;
+  z-index: -1;
+}
+
+.session-error {
+  color: var(--v-error-base);
+}
+</style>
