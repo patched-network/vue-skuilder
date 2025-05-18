@@ -70,7 +70,7 @@ tags: tagC"
 
 <script lang="ts">
 import { defineComponent, PropType } from 'vue';
-import { CourseConfig, DataShape, Status } from '@vue-skuilder/common';
+import { CourseConfig, DataShape, Status, NameSpacer } from '@vue-skuilder/common';
 import { BlanksCardDataShapes } from '@vue-skuilder/courses';
 import { getCurrentUser } from '@vue-skuilder/common-ui';
 import { getDataLayer, CourseDBInterface } from '@vue-skuilder/db';
@@ -107,6 +107,15 @@ export default defineComponent({
   created() {
     if (this.courseCfg?.courseID) {
       this.courseDB = getDataLayer().getCourseDB(this.courseCfg.courseID);
+
+      // Validate that we have datashapes in the course config
+      if (!this.courseCfg.dataShapes || this.courseCfg.dataShapes.length === 0) {
+        console.error('[BulkImportView] Course config does not contain any dataShapes.');
+        alertUser({
+          text: 'Course configuration has no dataShapes. Bulk import may not work correctly.',
+          status: Status.warning,
+        });
+      }
     } else {
       console.error('[BulkImportView] Course config or Course ID is missing.');
       alertUser({
@@ -157,6 +166,16 @@ export default defineComponent({
       }
       if (!this.bulkText.trim()) return;
 
+      // Validate that we have datashapes in the course config
+      if (!this.courseCfg?.dataShapes || this.courseCfg.dataShapes.length === 0) {
+        alertUser({
+          text: 'This course has no data shapes configured. Cannot import cards.',
+          status: Status.error,
+        });
+        this.processing = false;
+        return;
+      }
+
       this.processing = true;
       this.results = [];
 
@@ -164,6 +183,8 @@ export default defineComponent({
       const cardStrings = this.bulkText.split(cardDelimiter);
       const currentUser = await getCurrentUser();
       const userName = currentUser.getUsername();
+
+      // Use the BlanksCardDataShapes for the data structure
       const dataShapeToUse: DataShape = BlanksCardDataShapes[0];
 
       if (!dataShapeToUse) {
@@ -175,6 +196,14 @@ export default defineComponent({
         this.processing = false;
         return;
       }
+
+      // Log the course configuration to help with debugging
+      console.log('[BulkImportView] Processing with course config:', {
+        courseID: this.courseCfg.courseID,
+        dataShapes: this.courseCfg.dataShapes,
+        questionTypes: this.courseCfg.questionTypes,
+        dataShapeToUse: dataShapeToUse.name,
+      });
 
       for (const cardString of cardStrings) {
         const originalText = cardString.trim();
@@ -201,8 +230,17 @@ export default defineComponent({
         };
 
         try {
+          // Extract course code from first dataShape in course config
+          const configDataShape = this.courseCfg?.dataShapes?.[0];
+          if (!configDataShape) {
+            throw new Error('No data shapes found in course configuration');
+          }
+
+          const codeCourse = NameSpacer.getDataShapeDescriptor(configDataShape.name).course;
+          console.log(`[BulkImportView] Using codeCourse: ${codeCourse} for note addition`);
+
           const result = await this.courseDB.addNote(
-            'default',
+            codeCourse,
             dataShapeToUse,
             cardData,
             userName,
@@ -216,7 +254,7 @@ export default defineComponent({
               originalText,
               status: 'success',
               message: 'Card added successfully.',
-              cardId: '(unknown)',
+              cardId: result.id ? result.id : '(unknown)',
             });
           } else {
             this.results.push({
@@ -230,7 +268,7 @@ export default defineComponent({
           this.results.push({
             originalText,
             status: 'error',
-            message: `Error adding card: ${(error as any).message || 'Unknown error'}`,
+            message: `Error adding card: ${error instanceof Error ? error.message : 'Unknown error'}`,
           });
         }
       }
