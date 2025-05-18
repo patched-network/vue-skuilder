@@ -40,16 +40,27 @@ export async function addNote55(
   });
 
   if (result.ok) {
-    // create cards
-    await createCards(courseID, dataShapeId, result.id, tags, elo);
+    try {
+      // create cards
+      await createCards(courseID, dataShapeId, result.id, tags, elo);
+    } catch (error) {
+      console.error(
+        `[addNote55] Failed to create cards for note ${result.id}: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+      // Add info to result to indicate card creation failed
+      (result as any).cardCreationFailed = true;
+      (result as any).cardCreationError = error instanceof Error ? error.message : String(error);
+    }
   } else {
-    console.log(`Error adding note: ${result}`);
+    console.error(`[addNote55] Error adding note. Result: ${JSON.stringify(result)}`);
   }
 
   return result;
 }
 
-export async function createCards(
+async function createCards(
   courseID: string,
   datashapeID: PouchDB.Core.DocumentId,
   noteID: PouchDB.Core.DocumentId,
@@ -66,8 +77,16 @@ export async function createCards(
     }
   }
 
+  if (questionViewTypes.length === 0) {
+    const errorMsg = `No questionViewTypes found for datashapeID: ${datashapeID} in course config. Cards cannot be created.`;
+    console.error(errorMsg);
+    throw new Error(errorMsg);
+  }
+
+  let createdCards = 0;
   for (const questionView of questionViewTypes) {
-    createCard(questionView, courseID, dsDescriptor, noteID, tags, elo);
+    await createCard(questionView, courseID, dsDescriptor, noteID, tags, elo);
+    createdCards++;
   }
 }
 
@@ -86,7 +105,7 @@ async function createCard(
   for (const rQ of cfg.questionTypes) {
     if (rQ.name === questionViewName) {
       for (const view of rQ.viewList) {
-        addCard(
+        await addCard(
           courseID,
           dsDescriptor.course,
           [noteID],
