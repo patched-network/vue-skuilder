@@ -169,7 +169,7 @@ export default defineComponent({
       userIsRegistered: false,
       questionCount: 0,
       tags: [] as Tag[],
-      viewLookup: () => allCourses.getView(),
+      viewLookup: (x: unknown) => allCourses.getView(x),
     };
   },
 
