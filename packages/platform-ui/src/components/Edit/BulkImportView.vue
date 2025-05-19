@@ -11,10 +11,12 @@ Example:
 Card 1 Question
 {{blank}}
 tags: tagA, tagB
+elo: 1500
 ---
 ---
 Card 2 Question
 Another {{blank}}
+elo: 1200
 tags: tagC"
           rows="15"
           varient="outlined"
@@ -75,18 +77,7 @@ import { BlanksCardDataShapes } from '@vue-skuilder/courses';
 import { getCurrentUser } from '@vue-skuilder/common-ui';
 import { getDataLayer, CourseDBInterface } from '@vue-skuilder/db';
 import { alertUser } from '@vue-skuilder/common-ui'; // For user feedback
-
-interface ImportResult {
-  originalText: string;
-  status: 'success' | 'error';
-  message: string;
-  cardId?: string;
-}
-
-interface ParsedCard {
-  markdown: string;
-  tags: string[];
-}
+import { ImportResult, processBulkCards, validateProcessorConfig, isValidBulkFormat } from '@/utils/bulkImport';
 
 export default defineComponent({
   name: 'BulkImportView',
@@ -125,36 +116,6 @@ export default defineComponent({
     }
   },
   methods: {
-    parseCard(cardString: string): ParsedCard | null {
-      const trimmedCardString = cardString.trim();
-      if (!trimmedCardString) {
-        return null;
-      }
-
-      const lines = trimmedCardString.split('\n');
-      let tags: string[] = [];
-      const markdownLines = [...lines];
-
-      if (lines.length > 0) {
-        const lastLine = lines[lines.length - 1].trim();
-        if (lastLine.toLowerCase().startsWith('tags:')) {
-          tags = lastLine
-            .substring(5)
-            .split(',')
-            .map((tag) => tag.trim())
-            .filter((tag) => tag);
-          markdownLines.pop(); // Remove the tags line
-        }
-      }
-
-      const markdown = markdownLines.join('\n').trim();
-      if (!markdown) {
-        // Card must have some markdown content
-        return null;
-      }
-      return { markdown, tags };
-    },
-
     async processCards() {
       if (!this.courseDB) {
         alertUser({
@@ -164,7 +125,11 @@ export default defineComponent({
         this.processing = false;
         return;
       }
-      if (!this.bulkText.trim()) return;
+
+      if (!isValidBulkFormat(this.bulkText)) {
+        this.processing = false;
+        return;
+      }
 
       // Validate that we have datashapes in the course config
       if (!this.courseCfg?.dataShapes || this.courseCfg.dataShapes.length === 0) {
@@ -179,8 +144,6 @@ export default defineComponent({
       this.processing = true;
       this.results = [];
 
-      const cardDelimiter = '\n---\n---\n';
-      const cardStrings = this.bulkText.split(cardDelimiter);
       const currentUser = await getCurrentUser();
       const userName = currentUser.getUsername();
 
@@ -205,80 +168,49 @@ export default defineComponent({
         dataShapeToUse: dataShapeToUse.name,
       });
 
-      for (const cardString of cardStrings) {
-        const originalText = cardString.trim();
-        if (!originalText) continue;
-
-        const parsed = this.parseCard(originalText);
-
-        if (!parsed) {
-          this.results.push({
-            originalText,
-            status: 'error',
-            message: 'Failed to parse card: Empty content after tag removal or invalid format.',
-          });
-          continue;
-        }
-
-        const { markdown, tags } = parsed;
-
-        // The BlanksCardDataShapes expects an 'Input' field for markdown
-        // and an 'Uploads' field for media.
-        const cardData = {
-          Input: markdown,
-          Uploads: [], // As per requirement, no uploads for bulk import
-        };
-
-        try {
-          // Extract course code from first dataShape in course config
-          const configDataShape = this.courseCfg?.dataShapes?.[0];
-          if (!configDataShape) {
-            throw new Error('No data shapes found in course configuration');
-          }
-
-          const codeCourse = NameSpacer.getDataShapeDescriptor(configDataShape.name).course;
-          console.log(`[BulkImportView] Using codeCourse: ${codeCourse} for note addition`);
-
-          const result = await this.courseDB.addNote(
-            codeCourse,
-            dataShapeToUse,
-            cardData,
-            userName,
-            tags,
-            undefined, // deck
-            undefined // elo
-          );
-
-          if (result.status === Status.ok) {
-            this.results.push({
-              originalText,
-              status: 'success',
-              message: 'Card added successfully.',
-              cardId: result.id ? result.id : '(unknown)',
-            });
-          } else {
-            this.results.push({
-              originalText,
-              status: 'error',
-              message: result.message || 'Failed to add card to database. Unknown error.',
-            });
-          }
-        } catch (error) {
-          console.error('Error adding note:', error);
-          this.results.push({
-            originalText,
-            status: 'error',
-            message: `Error adding card: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          });
-        }
+      // Extract course code from first dataShape in course config
+      const configDataShape = this.courseCfg?.dataShapes?.[0];
+      if (!configDataShape) {
+        this.results.push({
+          originalText: 'N/A - Configuration Error',
+          status: 'error',
+          message: 'No data shapes found in course configuration',
+        });
+        this.processing = false;
+        return;
       }
 
-      if (this.results.length === 0 && cardStrings.length > 0 && cardStrings.every((s) => !s.trim())) {
-        // This case handles if bulkText only contained delimiters or whitespace
+      const codeCourse = NameSpacer.getDataShapeDescriptor(configDataShape.name).course;
+      console.log(`[BulkImportView] Using codeCourse: ${codeCourse} for note addition`);
+
+      // Prepare processor configuration
+      const config = {
+        dataShape: dataShapeToUse,
+        courseCode: codeCourse,
+        userName: userName,
+      };
+
+      // Validate processor configuration
+      const validation = validateProcessorConfig(config);
+      if (!validation.isValid) {
+        this.results.push({
+          originalText: 'N/A - Configuration Error',
+          status: 'error',
+          message: validation.errorMessage || 'Invalid processor configuration',
+        });
+        this.processing = false;
+        return;
+      }
+
+      // Process the cards
+      try {
+        this.results = await processBulkCards(this.bulkText, this.courseDB, config);
+      } catch (error) {
+        console.error('[BulkImportView] Error processing cards:', error);
         this.results.push({
           originalText: this.bulkText,
           status: 'error',
-          message: 'No valid card data found. Please check your input and delimiters.',
+          message: `Error processing cards: ${error instanceof Error ? error.message : 'Unknown error'}`,
         });
       }
 
