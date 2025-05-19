@@ -22,6 +22,8 @@ export interface ParsedCard {
   markdown: string;
   /** Tags associated with the card */
   tags: string[];
+  /** ELO rating for the card (optional) */
+  elo?: number;
 }
 
 /**

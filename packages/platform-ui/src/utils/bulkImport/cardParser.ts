@@ -6,6 +6,8 @@ import { ParsedCard } from './types';
 export interface CardParserConfig {
   /** Custom tag identifier (defaults to 'tags:') */
   tagIdentifier?: string;
+  /** Custom ELO identifier (defaults to 'elo:') */
+  eloIdentifier?: string;
 }
 
 /**
@@ -13,6 +15,7 @@ export interface CardParserConfig {
  */
 const DEFAULT_PARSER_CONFIG: CardParserConfig = {
   tagIdentifier: 'tags:',
+  eloIdentifier: 'elo:',
 };
 
 /**
@@ -35,20 +38,43 @@ export function parseCard(cardString: string, config: CardParserConfig = DEFAULT
 
   const lines = trimmedCardString.split('\n');
   let tags: string[] = [];
+  let elo: number | undefined = undefined;
   const markdownLines = [...lines];
-
-  if (lines.length > 0) {
-    const lastLine = lines[lines.length - 1].trim();
-    const tagId = config.tagIdentifier || DEFAULT_PARSER_CONFIG.tagIdentifier;
+  
+  // Process the lines from bottom to top to handle metadata
+  let metadataLines = 0;
+  
+  // Get the configured identifiers
+  const tagId = config.tagIdentifier || DEFAULT_PARSER_CONFIG.tagIdentifier;
+  const eloId = config.eloIdentifier || DEFAULT_PARSER_CONFIG.eloIdentifier;
+  
+  // Check the last few lines for metadata (tags and elo)
+  for (let i = lines.length - 1; i >= 0 && i >= lines.length - 2; i--) {
+    const line = lines[i].trim();
     
-    if (lastLine.toLowerCase().startsWith(tagId!.toLowerCase())) {
-      tags = lastLine
+    // Check for tags
+    if (line.toLowerCase().startsWith(tagId!.toLowerCase())) {
+      tags = line
         .substring(tagId!.length)
         .split(',')
         .map((tag) => tag.trim())
         .filter((tag) => tag);
-      markdownLines.pop(); // Remove the tags line
+      metadataLines++;
     }
+    // Check for ELO
+    else if (line.toLowerCase().startsWith(eloId!.toLowerCase())) {
+      const eloValue = line.substring(eloId!.length).trim();
+      const parsedElo = parseInt(eloValue, 10);
+      if (!isNaN(parsedElo)) {
+        elo = parsedElo;
+      }
+      metadataLines++;
+    }
+  }
+  
+  // Remove metadata lines from the end of the content
+  if (metadataLines > 0) {
+    markdownLines.splice(markdownLines.length - metadataLines);
   }
 
   const markdown = markdownLines.join('\n').trim();
@@ -57,7 +83,7 @@ export function parseCard(cardString: string, config: CardParserConfig = DEFAULT
     return null;
   }
   
-  return { markdown, tags };
+  return { markdown, tags, elo };
 }
 
 /**

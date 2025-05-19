@@ -5,7 +5,7 @@ import { parseCard, splitCardsText } from './cardParser';
 
 /**
  * Processes multiple cards from bulk text input
- * 
+ *
  * @param bulkText - Raw text containing multiple cards
  * @param courseDB - Course database interface
  * @param config - Configuration for the card processor
@@ -17,7 +17,7 @@ export async function processBulkCards(
   config: BulkCardProcessorConfig
 ): Promise<ImportResult[]> {
   const results: ImportResult[] = [];
-  
+
   if (!bulkText.trim()) {
     return results;
   }
@@ -55,7 +55,9 @@ export async function processBulkCards(
       results.push({
         originalText,
         status: 'error',
-        message: `Error processing card: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        message: `Error processing card: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`,
       });
     }
   }
@@ -65,7 +67,7 @@ export async function processBulkCards(
 
 /**
  * Processes a single parsed card
- * 
+ *
  * @param parsedCard - Parsed card data
  * @param courseDB - Course database interface
  * @param config - Configuration for the card processor
@@ -76,14 +78,30 @@ async function processCard(
   courseDB: CourseDBInterface,
   config: BulkCardProcessorConfig
 ): Promise<ImportResult> {
-  const { markdown, tags } = parsedCard;
-  const originalText = `${markdown}\ntags: ${tags.join(', ')}`;
+  const { markdown, tags, elo } = parsedCard;
+
+  // Build the original text representation including metadata
+  let originalText = markdown;
+  if (tags.length > 0) {
+    originalText += `\ntags: ${tags.join(', ')}`;
+  }
+  if (elo !== undefined) {
+    originalText += `\nelo: ${elo}`;
+  }
 
   // Create card data object
   const cardData: CardData = {
     Input: markdown,
     Uploads: [], // No uploads for bulk import
   };
+
+  const tagsElo = {};
+  for (const tag of tags) {
+    tagsElo[tag] = {
+      score: elo || 0,
+      count: 1,
+    };
+  }
 
   try {
     const result = await courseDB.addNote(
@@ -92,8 +110,17 @@ async function processCard(
       cardData,
       config.userName,
       tags,
-      undefined, // deck
-      undefined  // elo
+      undefined, // attachments
+      elo
+        ? {
+            global: {
+              score: elo,
+              count: 1,
+            },
+            tags: tagsElo,
+            misc: {},
+          }
+        : undefined
     );
 
     if (result.status === Status.ok) {
@@ -122,33 +149,34 @@ async function processCard(
 
 /**
  * Validates the configuration for bulk card processing
- * 
+ *
  * @param config - Configuration to validate
  * @returns Object with validation result and error message if any
  */
-export function validateProcessorConfig(config: Partial<BulkCardProcessorConfig>): 
-  { isValid: boolean; errorMessage?: string } {
-  
+export function validateProcessorConfig(config: Partial<BulkCardProcessorConfig>): {
+  isValid: boolean;
+  errorMessage?: string;
+} {
   if (!config.dataShape) {
-    return { 
-      isValid: false, 
-      errorMessage: 'No data shape provided for card processing' 
+    return {
+      isValid: false,
+      errorMessage: 'No data shape provided for card processing',
     };
   }
-  
+
   if (!config.courseCode) {
-    return { 
-      isValid: false, 
-      errorMessage: 'No course code provided for card processing' 
+    return {
+      isValid: false,
+      errorMessage: 'No course code provided for card processing',
     };
   }
-  
+
   if (!config.userName) {
-    return { 
-      isValid: false, 
-      errorMessage: 'No user name provided for card processing' 
+    return {
+      isValid: false,
+      errorMessage: 'No user name provided for card processing',
     };
   }
-  
+
   return { isValid: true };
 }

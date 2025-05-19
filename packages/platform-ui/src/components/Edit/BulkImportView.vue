@@ -11,10 +11,12 @@ Example:
 Card 1 Question
 {{blank}}
 tags: tagA, tagB
+elo: 1500
 ---
 ---
 Card 2 Question
 Another {{blank}}
+elo: 1200
 tags: tagC"
           rows="15"
           varient="outlined"
