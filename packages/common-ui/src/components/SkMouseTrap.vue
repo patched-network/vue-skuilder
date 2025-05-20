@@ -1,7 +1,9 @@
 <template>
   <v-dialog v-if="display" max-width="500px" transition="dialog-transition">
     <template #activator="{ props }">
-      <v-btn icon color="primary" v-bind="props"> ? </v-btn>
+      <v-btn icon color="primary" v-bind="props">
+        <v-icon>mdi-keyboard</v-icon>
+      </v-btn>
     </template>
 
     <v-card>
