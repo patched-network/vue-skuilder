@@ -5,4 +5,5 @@ export * from './types/types-legacy';
 export * from './types/user';
 export * from '../util/Loggable';
 export * from './util';
+export * from './navigators';
 export * from './bulkImport';

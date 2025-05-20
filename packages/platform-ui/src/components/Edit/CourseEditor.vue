@@ -12,6 +12,7 @@
       <v-tabs v-model="currentTab" bg-color="primary" grow>
         <v-tab value="single">Single Card Input</v-tab>
         <v-tab value="bulk">Bulk Import</v-tab>
+        <v-tab value="registration">Navigation</v-tab>
         <v-tab value="registration">Component Registration</v-tab>
       </v-tabs>
 
@@ -43,6 +44,13 @@
             <component-registration :course="course" class="mt-4" />
           </v-container>
         </v-window-item>
+        
+        <v-window-item value="navigation">
+          <v-container fluid>
+            <navigation-strategy-editor :course-id="course" />    
+          </v-container>
+        </v-window-item>
+        
       </v-window>
     </div>
   </div>
@@ -51,6 +59,7 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 import ComponentRegistration from '@/components/Edit/ComponentRegistration/ComponentRegistration.vue';
+import NavigationStrategyEditor from '@/components/Edit/NavigationStrategy/NavigationStrategyEditor.vue';
 import { allCourses } from '@vue-skuilder/courses';
 import { BlanksCard, BlanksCardDataShapes } from '@vue-skuilder/courses';
 import { CourseConfig, NameSpacer, DataShape } from '@vue-skuilder/common';
@@ -65,6 +74,7 @@ export default defineComponent({
   components: {
     DataInputForm,
     ComponentRegistration,
+    NavigationStrategyEditor,
     BulkImportView,
   },
 
