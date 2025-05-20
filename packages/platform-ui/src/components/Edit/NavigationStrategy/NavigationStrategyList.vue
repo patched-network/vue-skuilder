@@ -4,16 +4,14 @@
       <v-list-item
         v-for="strategy in strategies"
         :key="strategy.id"
-        :class="{ 'active-strategy': strategy.id === activeStrategyId }"
         lines="three"
       >
         <template #prepend>
-          <v-icon :color="strategy.id === activeStrategyId ? 'primary' : ''"> mdi-navigation </v-icon>
+          <v-icon> mdi-navigation </v-icon>
         </template>
 
         <v-list-item-title class="text-h6">
           {{ strategy.name }}
-          <v-chip v-if="strategy.id === activeStrategyId" color="primary" size="small" class="ml-2"> Active </v-chip>
         </v-list-item-title>
 
         <v-list-item-subtitle>{{ strategy.description }}</v-list-item-subtitle>
@@ -25,7 +23,7 @@
 
         <template #append>
           <div class="d-flex">
-            <v-btn icon size="small" title="Edit Strategy" class="mr-1" @click="$emit('edit', strategy)">
+            <v-btn icon size="small" title="Edit Strategy (coming soon)" class="mr-1" disabled>
               <v-icon>mdi-pencil</v-icon>
             </v-btn>
 
@@ -34,22 +32,9 @@
               size="small"
               title="Delete Strategy"
               class="mr-1"
-              :disabled="strategy.id === activeStrategyId"
               @click="$emit('delete', strategy)"
             >
               <v-icon>mdi-delete</v-icon>
-            </v-btn>
-
-            <v-btn
-              icon
-              size="small"
-              title="Set as Active Strategy"
-              class="mr-1"
-              :disabled="strategy.id === activeStrategyId"
-              color="success"
-              @click="$emit('activate', strategy.id)"
-            >
-              <v-icon>mdi-check-circle</v-icon>
             </v-btn>
           </div>
         </template>
@@ -70,13 +55,9 @@ export default defineComponent({
       type: Array as PropType<ContentNavigationStrategyData[]>,
       required: true,
     },
-    activeStrategyId: {
-      type: String,
-      required: true,
-    },
   },
 
-  emits: ['edit', 'delete', 'activate'],
+  emits: ['edit', 'delete'],
 
   methods: {
     getDisplayConfig(strategy: ContentNavigationStrategyData): string {
@@ -102,9 +83,7 @@ export default defineComponent({
   margin: 16px 0;
 }
 
-.active-strategy {
-  background-color: rgba(0, 0, 0, 0.05);
-}
+
 
 .strategy-details {
   font-size: 0.9em;

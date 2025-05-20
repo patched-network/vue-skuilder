@@ -7,38 +7,22 @@
       <h2 class="text-h5 mb-4">Navigation Strategies</h2>
 
       <div v-if="strategies.length === 0" class="no-strategies">
-        <p>No navigation strategies defined for this course. Course will be served via default ELO based strategy.</p>
+        <p>No navigation strategies defined for this course.</p>
       </div>
-
-      <navigation-strategy-list
+      
+      <navigation-strategy-list 
         v-else
-        :strategies="strategies"
-        :active-strategy-id="activeStrategyId"
-        @edit="editStrategy"
-        @activate="activateStrategy"
+        :strategies="strategies" 
+        @edit="editStrategy" 
         @delete="confirmDeleteStrategy"
       />
 
-      <v-btn color="primary" class="mt-4" @click="createNewStrategy">
+      <v-btn color="primary" class="mt-4" disabled title="New strategy types coming soon">
         <v-icon start>mdi-plus</v-icon>
         Add New Strategy
       </v-btn>
 
-      <v-dialog v-model="showForm" max-width="700px">
-        <v-card>
-          <v-card-title class="text-h5">
-            {{ isEditing ? 'Edit Navigation Strategy' : 'Create Navigation Strategy' }}
-          </v-card-title>
-          <v-card-text>
-            <navigation-strategy-form
-              :strategy="currentStrategy"
-              :course-id="courseId"
-              @save="saveStrategy"
-              @cancel="cancelEdit"
-            />
-          </v-card-text>
-        </v-card>
-      </v-dialog>
+
 
       <v-dialog v-model="showDeleteConfirm" max-width="400px">
         <v-card>
@@ -59,7 +43,6 @@
 import { defineComponent } from 'vue';
 import type { ContentNavigationStrategyData } from '@vue-skuilder/db/src/core/types/contentNavigationStrategy';
 import NavigationStrategyList from './NavigationStrategyList.vue';
-import NavigationStrategyForm from './NavigationStrategyForm.vue';
 import { getDataLayer, DocType, Navigators } from '@vue-skuilder/db';
 
 export default defineComponent({
@@ -67,7 +50,6 @@ export default defineComponent({
 
   components: {
     NavigationStrategyList,
-    NavigationStrategyForm,
   },
 
   props: {
@@ -80,13 +62,9 @@ export default defineComponent({
   data() {
     return {
       strategies: [] as ContentNavigationStrategyData[],
-      currentStrategy: null as ContentNavigationStrategyData | null,
-      showForm: false,
-      isEditing: false,
       loading: true,
-      activeStrategyId: '',
       showDeleteConfirm: false,
-      strategyToDelete: null as ContentNavigationStrategyData | null,
+      strategyToDelete: null as ContentNavigationStrategyData | null
     };
   },
 
@@ -98,14 +76,11 @@ export default defineComponent({
     async loadStrategies() {
       this.loading = true;
       try {
-        const courseDB = getDataLayer().getCoursesDB(this.courseId);
-
+        const dataLayer = getDataLayer();
+        const courseDB = dataLayer.getCourseDB(this.courseId);
+        
         // Get all navigation strategies
         this.strategies = await courseDB.getAllNavigationStrategies();
-
-        // Get the active strategy
-        const activeStrategy = await courseDB.surfaceNavigationStrategy();
-        this.activeStrategyId = activeStrategy.id;
       } catch (error) {
         console.error('Failed to load navigation strategies:', error);
         // In case of error, use a placeholder
@@ -120,74 +95,21 @@ export default defineComponent({
             serializedData: '',
           },
         ];
-        this.activeStrategyId = 'ELO';
       }
       this.loading = false;
     },
 
     createNewStrategy() {
-      this.currentStrategy = {
-        id: '', // Will be generated when saved
-        docType: DocType.NAVIGATION_STRATEGY,
-        name: '',
-        description: '',
-        implementingClass: Navigators.ELO, // Default to ELO
-        course: this.courseId,
-        serializedData: '',
-      };
-      this.isEditing = false;
-      this.showForm = true;
+      // Disabled for now - new strategy types will be implemented in the future
+      console.log('Creating new strategies is not yet implemented');
     },
 
     editStrategy(strategy: ContentNavigationStrategyData) {
-      this.currentStrategy = { ...strategy };
-      this.isEditing = true;
-      this.showForm = true;
+      // Strategy editing is not yet implemented
+      console.log(`Editing strategy ${strategy.id} is not yet implemented`);
     },
 
-    async saveStrategy(strategy: ContentNavigationStrategyData) {
-      this.loading = true;
-      try {
-        const courseDB = getDataLayer().getCoursesDB(this.courseId);
 
-        if (this.isEditing) {
-          // Update existing strategy
-          await courseDB.updateNavigationStrategy(strategy.id, strategy);
-        } else {
-          // For new strategies, generate an ID if not provided
-          if (!strategy.id) {
-            strategy.id = `strategy-${Date.now()}`;
-          }
-          // Add new strategy
-          await courseDB.addNavigationStrategy(strategy);
-        }
-
-        // Reload strategies to get the updated list
-        await this.loadStrategies();
-        this.showForm = false;
-      } catch (error) {
-        console.error('Failed to save navigation strategy:', error);
-        // In a real app, you would show an error message to the user
-      }
-      this.loading = false;
-    },
-
-    cancelEdit() {
-      this.showForm = false;
-      this.currentStrategy = null;
-    },
-
-    async activateStrategy(strategyId: string) {
-      // Set the active strategy ID locally
-      this.activeStrategyId = strategyId;
-
-      // In a real implementation, you would save this preference to the database
-      // For now, we just log it
-      console.log(`Strategy ${strategyId} activated`);
-
-      // In the future, you might implement:
-      // await courseDB.setActiveNavigationStrategy(strategyId);
-    },
 
     confirmDeleteStrategy(strategy: ContentNavigationStrategyData) {
       this.strategyToDelete = strategy;
@@ -199,13 +121,27 @@ export default defineComponent({
 
       this.loading = true;
       try {
-        // In a real implementation, you would call an API to delete the strategy
-        console.log(`Strategy ${this.strategyToDelete.id} deleted`);
+        const dataLayer = getDataLayer();
+        const courseDB = dataLayer.getCourseDB(this.courseId);
+        
+        // Since deleteNavigationStrategy doesn't exist in the interface yet,
+        // we'll use updateNavigationStrategy with an empty/invalid strategy that
+        // will be ignored by the system
+        const emptyStrategy: ContentNavigationStrategyData = {
+          id: this.strategyToDelete!.id,
+          docType: DocType.NAVIGATION_STRATEGY,
+          name: "DELETED",
+          description: "This strategy has been deleted",
+          implementingClass: "",
+          course: this.courseId,
+          serializedData: ""
+        };
+        
+        // Update with empty strategy
+        await courseDB.updateNavigationStrategy(this.strategyToDelete!.id, emptyStrategy);
+        console.log(`Strategy ${this.strategyToDelete!.id} marked as deleted`);
 
-        // For now, we only support removal from the local array
-        // In the future, you would implement:
-        // await courseDB.deleteNavigationStrategy(this.strategyToDelete.id);
-
+        // Remove from our local array
         this.strategies = this.strategies.filter((s) => s.id !== this.strategyToDelete?.id);
 
         this.showDeleteConfirm = false;
