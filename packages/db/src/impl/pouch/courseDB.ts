@@ -367,14 +367,28 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
     try {
       const resp = await addNote55(this.id, codeCourse, shape, data, author, tags, uploads, elo);
       if (resp.ok) {
+        // Check if card creation failed (property added by addNote55)
+        if ((resp as any).cardCreationFailed) {
+          console.warn(
+            `[courseDB.addNote] Note added but card creation failed: ${
+              (resp as any).cardCreationError
+            }`
+          );
+          return {
+            status: Status.error,
+            message: `Note was added but no cards were created: ${(resp as any).cardCreationError}`,
+            id: resp.id,
+          };
+        }
         return {
           status: Status.ok,
           message: '',
+          id: resp.id,
         };
       } else {
         return {
           status: Status.error,
-          message: 'Unexpected ',
+          message: 'Unexpected error adding note',
         };
       }
     } catch (e) {
@@ -384,7 +398,7 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
       );
       return {
         status: Status.error,
-        message: `Error adding note to course. ${(e as PouchError).reason}`,
+        message: `Error adding note to course. ${(e as PouchError).reason || err.message}`,
       };
     }
   }

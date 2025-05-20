@@ -2,13 +2,13 @@
   <v-row column align="center" justify="center">
     <CardViewer :view="views[viewIndex]" :data="data" :course_id="'[browsing]'" :card_id="'[browsing]'" />
     <br /><br />
-    <div class="text-subtitle-1 pa-2">
-      <v-btn v-if="spinner" icon color="accent" @click="decrementView">
-        <v-icon>chevron_left</v-icon>
+    <div v-if="!suppressSpinner" class="text-subtitle-1 pa-2">
+      <v-btn v-if="spinner" icon variant="outlined" color="primary" @click="decrementView">
+        <v-icon>mdi-chevron-left</v-icon>
       </v-btn>
       {{ views[viewIndex].name }}
-      <v-btn v-if="spinner" icon color="accent" @click="incrementView">
-        <v-icon alt="Hello">chevron_right</v-icon>
+      <v-btn v-if="spinner" icon variant="outlined" color="primary" @click="incrementView">
+        <v-icon>mdi-chevron-right</v-icon>
       </v-btn>
     </div>
   </v-row>
@@ -34,6 +34,10 @@ export default defineComponent({
     data: {
       type: Array as PropType<ViewData[]>,
       required: true,
+    },
+    suppressSpinner: {
+      type: Boolean,
+      default: false,
     },
   },
 

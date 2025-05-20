@@ -1,16 +1,14 @@
 <template>
-  <v-container class="pa-0">
-    <v-text-field
+  <span class="user-input-container">
+    <input
       v-model="answer"
       :autofocus="autofocus"
-      :prepend-icon="prependIcon"
       type="text"
-      variant="underlined"
-      single-line
-      hide-details
+      class="user-input-string"
+      ref="input"
       @keyup.enter="submitAnswer(answer)"
-    ></v-text-field>
-  </v-container>
+    />
+  </span>
 </template>
 
 <script lang="ts">
@@ -61,3 +59,31 @@ export default defineComponent({
   },
 });
 </script>
+
+<style scoped>
+.user-input-container {
+  display: inline-block;
+  min-width: 6em;
+  vertical-align: baseline;
+}
+
+.user-input-string {
+  display: inline-block;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid currentColor;
+  color: currentColor;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  padding: 0;
+  margin: 0;
+  text-align: center;
+  width: 100%;
+  outline: none;
+}
+
+.user-input-string:focus {
+  border-bottom: 2px solid currentColor;
+}
+</style>

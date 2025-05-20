@@ -8,26 +8,50 @@
         <router-link to="/q">Quilts</router-link> /
         <router-link :to="`/q/${courseConfig ? courseConfig.name : course}`">{{ courseConfig?.name }}</router-link>
       </h1>
-      <v-btn-toggle v-model="editorMode" mandatory color="success" class="mb-4">
-        <v-btn value="content">Content Editing</v-btn>
-        <v-btn value="component">Component Registration</v-btn>
-        <v-btn value="navigation">Navigation Strategies</v-btn>
-      </v-btn-toggle>
-      <div v-if="editorMode === 'content'">
-        <v-select
-          v-model="selectedShape"
-          label="What kind of content are you adding?"
-          :items="registeredDataShapes.map((shape) => shape.name)"
-        />
 
-        <data-input-form
-          v-if="!loading && selectedShape !== '' && courseConfig && dataShape"
-          :data-shape="dataShape"
-          :course-cfg="courseConfig"
-        />
-      </div>
-      <component-registration v-else-if="editorMode === 'component'" :course="course" />
-      <navigation-strategy-editor v-else-if="editorMode === 'navigation'" :course-id="course" />
+      <v-tabs v-model="currentTab" bg-color="primary" grow>
+        <v-tab value="single">Single Card Input</v-tab>
+        <v-tab value="bulk">Bulk Import</v-tab>
+        <v-tab value="registration">Navigation</v-tab>
+        <v-tab value="registration">Component Registration</v-tab>
+      </v-tabs>
+
+      <v-window v-model="currentTab">
+        <v-window-item value="single">
+          <v-container fluid>
+            <v-select
+              v-model="selectedShape"
+              label="What kind of content are you adding?"
+              :items="registeredDataShapes.map((shape) => shape.name)"
+              class="mt-4"
+            />
+            <data-input-form
+              v-if="selectedShape !== '' && courseConfig && dataShape"
+              :data-shape="dataShape"
+              :course-cfg="courseConfig"
+            />
+          </v-container>
+        </v-window-item>
+
+        <v-window-item value="bulk">
+          <v-container fluid>
+            <bulk-import-view v-if="courseConfig" :course-cfg="courseConfig" class="mt-4" />
+          </v-container>
+        </v-window-item>
+
+        <v-window-item value="registration">
+          <v-container fluid>
+            <component-registration :course="course" class="mt-4" />
+          </v-container>
+        </v-window-item>
+        
+        <v-window-item value="navigation">
+          <v-container fluid>
+            <navigation-strategy-editor :course-id="course" />    
+          </v-container>
+        </v-window-item>
+        
+      </v-window>
     </div>
   </div>
 </template>
@@ -40,6 +64,7 @@ import { allCourses } from '@vue-skuilder/courses';
 import { BlanksCard, BlanksCardDataShapes } from '@vue-skuilder/courses';
 import { CourseConfig, NameSpacer, DataShape } from '@vue-skuilder/common';
 import DataInputForm from './ViewableDataInputForm/DataInputForm.vue';
+import BulkImportView from './BulkImportView.vue'; // Added import
 import { getDataLayer } from '@vue-skuilder/db';
 import { useDataInputFormStore } from '@/stores/useDataInputFormStore';
 
@@ -50,6 +75,7 @@ export default defineComponent({
     DataInputForm,
     ComponentRegistration,
     NavigationStrategyEditor,
+    BulkImportView,
   },
 
   props: {
@@ -67,7 +93,7 @@ export default defineComponent({
       courseConfig: null as CourseConfig | null,
       dataShape: BlanksCardDataShapes[0] as DataShape,
       loading: true,
-      editorMode: 'content', // 'content', 'component', or 'navigation'
+      currentTab: 'single',
       dataInputFormStore: useDataInputFormStore(),
     };
   },
@@ -124,11 +150,6 @@ export default defineComponent({
       return this.dataShapes.find((shape) => {
         return shape.name === shapeName;
       })!;
-    },
-
-    toggleComponent() {
-      // Legacy method, now handled by v-btn-toggle
-      this.editorMode = this.editorMode === 'content' ? 'component' : 'content';
     },
   },
 });
