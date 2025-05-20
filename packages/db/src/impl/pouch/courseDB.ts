@@ -433,7 +433,7 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
         implementingClass: Navigators.ELO,
         course: this.id,
         serializedData: '', // serde is a noop for ELO navigator.
-      }
+      },
     ];
     return Promise.resolve(strategies);
   }
