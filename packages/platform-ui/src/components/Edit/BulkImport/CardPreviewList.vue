@@ -6,12 +6,7 @@
         <v-card-title class="text-h5">Remove Card</v-card-title>
         <v-card-text>
           <p>Are you sure you want to remove this card?</p>
-          <v-checkbox
-            v-model="dontAskAgain"
-            label="Don't ask me again"
-            hide-details
-            class="mt-2"
-          ></v-checkbox>
+          <v-checkbox v-model="dontAskAgain" label="Don't ask me again" hide-details class="mt-2"></v-checkbox>
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
@@ -20,7 +15,7 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
-    
+
     <v-card v-if="parsedCards.length > 0" class="mb-4">
       <v-card-title class="d-flex align-center justify-space-between">
         <span>Card Preview</span>
@@ -108,9 +103,7 @@
 </template>
 
 <script lang="ts">
-import { SkldrMouseTrap, HotKey } from '@vue-skuilder/common-ui/src/utils/SkldrMouseTrap';
-import type { ViewComponent } from '@vue-skuilder/common-ui/src/composables';
-import SkMouseTrap from '@vue-skuilder/common-ui/src/components/SkMouseTrap.vue';
+import { ViewComponent, SkldrMouseTrap, HotKey, SkMouseTrap } from '@vue-skuilder/common-ui';
 import { DataShape, ParsedCard, ViewData } from '@vue-skuilder/common';
 import { defineComponent, PropType } from 'vue';
 import CardBrowser from '../CardBrowser.vue';
@@ -202,7 +195,7 @@ export default defineComponent({
         this.currentIndex = index;
       }
     },
-    
+
     setupKeyBindings() {
       // Define key bindings for navigation
       this.keyBindings = [
@@ -245,7 +238,7 @@ export default defineComponent({
         SkldrMouseTrap.bind(this.keyBindings);
       }
     },
-    
+
     enableShortcuts() {
       if (!this.shortcutsEnabled) {
         this.shortcutsEnabled = true;
@@ -261,7 +254,7 @@ export default defineComponent({
         console.log('[CardPreviewList] Keyboard shortcuts disabled');
       }
     },
-    
+
     toggleShortcuts(enable: boolean) {
       if (enable) {
         this.enableShortcuts();
@@ -272,27 +265,27 @@ export default defineComponent({
 
     promptDelete() {
       if (!this.currentCard) return;
-      
+
       if (this.skipDeleteConfirmation) {
         this.deleteCurrentCard();
       } else {
         this.showDeleteConfirm = true;
       }
     },
-    
+
     cancelDelete() {
       this.showDeleteConfirm = false;
     },
-    
+
     confirmDelete() {
       if (this.dontAskAgain) {
         this.skipDeleteConfirmation = true;
       }
-      
+
       this.showDeleteConfirm = false;
       this.deleteCurrentCard();
     },
-    
+
     deleteCurrentCard() {
       if (!this.currentCard) return;
 
@@ -319,7 +312,6 @@ export default defineComponent({
       this.$emit('edit-card', this.currentCard, this.currentIndex);
     },
   },
-
 });
 </script>
 

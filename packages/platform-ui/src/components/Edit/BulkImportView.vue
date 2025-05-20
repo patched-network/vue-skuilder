@@ -76,7 +76,7 @@ tags: tagC"
               variant="outlined"
               @keydown.ctrl.enter="saveEditedCard"
             ></v-textarea>
-            
+
             <div class="my-4">
               <div class="d-flex align-center mb-2">
                 <h3 class="text-subtitle-1 mr-2">Tags</h3>
@@ -87,24 +87,18 @@ tags: tagC"
                   placeholder="Add a tag"
                   variant="outlined"
                   class="mr-2"
-                  @keydown.enter.prevent="addTag" 
+                  @keydown.enter.prevent="addTag"
                   @keydown.esc="closeEditDialog"
                 ></v-text-field>
                 <v-btn size="small" color="primary" variant="text" @click="addTag">Add</v-btn>
               </div>
               <div class="d-flex flex-wrap">
-                <v-chip
-                  v-for="tag in editedTags"
-                  :key="tag"
-                  closable
-                  class="mr-1 mb-1"
-                  @click:close="removeTag(tag)"
-                >
+                <v-chip v-for="tag in editedTags" :key="tag" closable class="mr-1 mb-1" @click:close="removeTag(tag)">
                   {{ tag }}
                 </v-chip>
               </div>
             </div>
-            
+
             <v-text-field
               v-model.number="editedElo"
               label="ELO Rating (optional)"
@@ -128,7 +122,7 @@ tags: tagC"
         </v-card-actions>
       </v-card>
     </v-dialog>
-    
+
     <v-row>
       <v-col cols="12">
         <!-- Button for initial parsing -->
@@ -166,7 +160,7 @@ tags: tagC"
             @click="resetToInputStage"
           >
             <v-icon start>mdi-pencil</v-icon>
-            Edit Again
+            Back to bulk-editor.
           </v-btn>
           <v-btn
             v-if="importAttempted"
@@ -230,8 +224,7 @@ import {
   isValidBulkFormat,
 } from '@vue-skuilder/common';
 import { BlanksCardDataShapes, allCourses } from '@vue-skuilder/courses';
-import { ViewComponent } from '@vue-skuilder/common-ui/src/composables';
-import { getCurrentUser, alertUser } from '@vue-skuilder/common-ui/src/index';
+import { ViewComponent, getCurrentUser, alertUser } from '@vue-skuilder/common-ui';
 import {
   getDataLayer,
   CourseDBInterface,
@@ -314,62 +307,60 @@ export default defineComponent({
       // The card is already removed from the parsedCards array via v-model
       // This method can be used for additional processing if needed
       console.log(`[BulkImportView] Card at index ${index} was deleted`);
-      
+
       // Show alert to confirm deletion
       alertUser({
         text: 'Card removed from import list',
-        status: Status.warning, // Use warning instead of info
+        status: Status.info,
       });
     },
-    
+
     handleEditCard(card: ParsedCard, index: number) {
       // Disable keyboard shortcuts while editing
       if (this.$refs.cardPreviewList) {
-        const previewComp = this.$refs.cardPreviewList as { toggleShortcuts: (enable: boolean) => void };
-        previewComp.toggleShortcuts(false);
+        (this.$refs.cardPreviewList as any).toggleShortcuts(false);
       }
-      
+
       this.editingCard = { ...card }; // Create a copy
       this.editingCardIndex = index;
       this.editedMarkdown = card.markdown;
       this.editedTags = [...card.tags];
       this.editedElo = card.elo;
       this.showEditDialog = true;
-      
+
       // Focus the text area after dialog opens
       this.$nextTick(() => {
         if (this.$refs.markdownTextarea) {
-          const textareaComp = this.$refs.markdownTextarea as { $el: HTMLElement; focus?: () => void };
-          textareaComp.$el.querySelector('textarea')?.focus();
+          (this.$refs.markdownTextarea as any).$el.querySelector('textarea')?.focus();
         }
       });
     },
-    
+
     saveEditedCard() {
       if (this.editingCardIndex < 0 || !this.editingCard) return;
-      
+
       // Create updated card
       const updatedCard: ParsedCard = {
         markdown: this.editedMarkdown,
         tags: this.editedTags,
         elo: this.editedElo,
       };
-      
+
       // Update the card in the array
       const updatedCards = [...this.parsedCards];
       updatedCards[this.editingCardIndex] = updatedCard;
       this.parsedCards = updatedCards;
-      
+
       // Reset editing state
       this.closeEditDialog();
-      
+
       // Show alert to confirm edit
       alertUser({
         text: 'Card updated successfully',
-        status: Status.ok,
+        status: Status.success,
       });
     },
-    
+
     closeEditDialog() {
       this.showEditDialog = false;
       this.editingCard = null;
@@ -377,16 +368,15 @@ export default defineComponent({
       this.editedMarkdown = '';
       this.editedTags = [];
       this.editedElo = undefined;
-      
+
       // Re-enable keyboard shortcuts after editing
       setTimeout(() => {
         if (this.$refs.cardPreviewList) {
-          const previewComp = this.$refs.cardPreviewList as { toggleShortcuts: (enable: boolean) => void };
-          previewComp.toggleShortcuts(true);
+          (this.$refs.cardPreviewList as any).toggleShortcuts(true);
         }
       }, 100);
     },
-    
+
     addTag() {
       const newTag = this.newTagText.trim();
       if (newTag && !this.editedTags.includes(newTag)) {
@@ -394,11 +384,11 @@ export default defineComponent({
         this.newTagText = '';
       }
     },
-    
+
     removeTag(tag: string) {
-      this.editedTags = this.editedTags.filter(t => t !== tag);
+      this.editedTags = this.editedTags.filter((t) => t !== tag);
     },
-    
+
     initializeCardPreviewComponents() {
       // Use the first data shape from the course config
       const configDataShape = this.courseCfg?.dataShapes?.[0];
@@ -592,7 +582,7 @@ export default defineComponent({
         // this.bulkText = ''; // Clear input text
         // this.parsingComplete = false; // Go back to input stage
         // this.parsedCards = [];
-        alertUser({ text: `${this.results.length} card(s) imported successfully!`, status: Status.ok });
+        alertUser({ text: `${this.results.length} card(s) imported successfully!`, status: Status.success });
       } else if (this.results.some((r) => r.status === 'error')) {
         alertUser({ text: 'Some cards failed to import. Please review the results below.', status: Status.warning });
       }
