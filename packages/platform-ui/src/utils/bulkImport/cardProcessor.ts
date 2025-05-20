@@ -1,12 +1,10 @@
 import { CourseElo, Status } from '@vue-skuilder/common';
 import { CourseDBInterface } from '@vue-skuilder/db';
 import { ParsedCard, ImportResult, BulkCardProcessorConfig, CardData } from './types';
-import { parseCard, splitCardsText } from './cardParser';
 
 /**
  * Processes multiple cards from bulk text input
  *
- * @param bulkText - Raw text containing multiple cards
  * @param courseDB - Course database interface
  * @param config - Configuration for the card processor
  * @returns Array of import results
