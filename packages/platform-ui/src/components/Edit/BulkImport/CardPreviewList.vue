@@ -80,8 +80,8 @@
           color="error"
           prepend-icon="mdi-delete"
           class="mx-2"
-          @click="promptDelete"
           :disabled="!currentCard || loading"
+          @click="promptDelete"
         >
           Remove
         </v-btn>
@@ -91,8 +91,8 @@
           color="primary"
           prepend-icon="mdi-pencil"
           class="mx-2"
-          @click="editCurrentCard"
           :disabled="!currentCard || loading"
+          @click="editCurrentCard"
         >
           Edit
         </v-btn>
@@ -108,7 +108,9 @@
 </template>
 
 <script lang="ts">
-import { ViewComponent, SkldrMouseTrap, HotKey, SkMouseTrap } from '@vue-skuilder/common-ui';
+import { SkldrMouseTrap, HotKey } from '@vue-skuilder/common-ui/src/utils/SkldrMouseTrap';
+import type { ViewComponent } from '@vue-skuilder/common-ui/src/composables';
+import SkMouseTrap from '@vue-skuilder/common-ui/src/components/SkMouseTrap.vue';
 import { DataShape, ParsedCard, ViewData } from '@vue-skuilder/common';
 import { defineComponent, PropType } from 'vue';
 import CardBrowser from '../CardBrowser.vue';
@@ -173,6 +175,15 @@ export default defineComponent({
     },
   },
 
+  mounted() {
+    this.setupKeyBindings();
+  },
+
+  beforeUnmount() {
+    // Clean up key bindings when component is unmounted
+    SkldrMouseTrap.reset();
+  },
+
   methods: {
     nextCard() {
       if (this.currentIndex < this.parsedCards.length - 1) {
@@ -191,7 +202,7 @@ export default defineComponent({
         this.currentIndex = index;
       }
     },
-
+    
     setupKeyBindings() {
       // Define key bindings for navigation
       this.keyBindings = [
@@ -308,14 +319,7 @@ export default defineComponent({
       this.$emit('edit-card', this.currentCard, this.currentIndex);
     },
   },
-  mounted() {
-    this.setupKeyBindings();
-  },
-  
-  beforeUnmount() {
-    // Clean up key bindings when component is unmounted
-    SkldrMouseTrap.reset();
-  },
+
 });
 </script>
 

@@ -51,10 +51,10 @@ tags: tagC"
       <v-col cols="12" md="8">
         <card-preview-list
           v-if="parsedCards.length > 0"
+          ref="cardPreviewList"
           v-model:parsed-cards="parsedCards"
           :data-shape="dataShape"
           :view-components="cardViewComponents"
-          ref="cardPreviewList"
           @edit-card="handleEditCard"
           @delete-card="handleDeleteCard"
         />
@@ -68,12 +68,12 @@ tags: tagC"
         <v-card-text>
           <v-form @submit.prevent="saveEditedCard" @keydown.esc="closeEditDialog">
             <v-textarea
+              ref="markdownTextarea"
               v-model="editedMarkdown"
               label="Card Content"
               rows="6"
               auto-grow
               variant="outlined"
-              ref="markdownTextarea"
               @keydown.ctrl.enter="saveEditedCard"
             ></v-textarea>
             
@@ -219,7 +219,7 @@ tags: tagC"
 </template>
 
 <script lang="ts">
-import { defineComponent, PropType, ref } from 'vue';
+import { defineComponent, PropType } from 'vue';
 import {
   CourseConfig,
   DataShape,
@@ -230,7 +230,8 @@ import {
   isValidBulkFormat,
 } from '@vue-skuilder/common';
 import { BlanksCardDataShapes, allCourses } from '@vue-skuilder/courses';
-import { getCurrentUser, alertUser, ViewComponent } from '@vue-skuilder/common-ui';
+import { ViewComponent } from '@vue-skuilder/common-ui/src/composables';
+import { getCurrentUser, alertUser } from '@vue-skuilder/common-ui/src/index';
 import {
   getDataLayer,
   CourseDBInterface,
@@ -317,14 +318,15 @@ export default defineComponent({
       // Show alert to confirm deletion
       alertUser({
         text: 'Card removed from import list',
-        status: Status.info,
+        status: Status.warning, // Use warning instead of info
       });
     },
     
     handleEditCard(card: ParsedCard, index: number) {
       // Disable keyboard shortcuts while editing
       if (this.$refs.cardPreviewList) {
-        (this.$refs.cardPreviewList as any).toggleShortcuts(false);
+        const previewComp = this.$refs.cardPreviewList as { toggleShortcuts: (enable: boolean) => void };
+        previewComp.toggleShortcuts(false);
       }
       
       this.editingCard = { ...card }; // Create a copy
@@ -337,7 +339,8 @@ export default defineComponent({
       // Focus the text area after dialog opens
       this.$nextTick(() => {
         if (this.$refs.markdownTextarea) {
-          (this.$refs.markdownTextarea as any).$el.querySelector('textarea').focus();
+          const textareaComp = this.$refs.markdownTextarea as { $el: HTMLElement; focus?: () => void };
+          textareaComp.$el.querySelector('textarea')?.focus();
         }
       });
     },
@@ -363,7 +366,7 @@ export default defineComponent({
       // Show alert to confirm edit
       alertUser({
         text: 'Card updated successfully',
-        status: Status.success,
+        status: Status.ok,
       });
     },
     
@@ -378,7 +381,8 @@ export default defineComponent({
       // Re-enable keyboard shortcuts after editing
       setTimeout(() => {
         if (this.$refs.cardPreviewList) {
-          (this.$refs.cardPreviewList as any).toggleShortcuts(true);
+          const previewComp = this.$refs.cardPreviewList as { toggleShortcuts: (enable: boolean) => void };
+          previewComp.toggleShortcuts(true);
         }
       }, 100);
     },
@@ -588,7 +592,7 @@ export default defineComponent({
         // this.bulkText = ''; // Clear input text
         // this.parsingComplete = false; // Go back to input stage
         // this.parsedCards = [];
-        alertUser({ text: `${this.results.length} card(s) imported successfully!`, status: Status.success });
+        alertUser({ text: `${this.results.length} card(s) imported successfully!`, status: Status.ok });
       } else if (this.results.some((r) => r.status === 'error')) {
         alertUser({ text: 'Some cards failed to import. Please review the results below.', status: Status.warning });
       }
