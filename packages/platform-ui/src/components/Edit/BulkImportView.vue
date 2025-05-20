@@ -1,6 +1,6 @@
 <template>
   <v-container fluid>
-    <v-row>
+    <v-row v-if="!parsingComplete">
       <v-col cols="12">
         <v-textarea
           v-model="bulkText"
@@ -19,23 +19,91 @@ Another {{blank}}
 elo: 1200
 tags: tagC"
           rows="15"
-          varient="outlined"
+          variant="outlined"
           data-cy="bulk-import-textarea"
         ></v-textarea>
       </v-col>
     </v-row>
+
+    <!-- Card Parsing Summary Section -->
+    <v-row v-if="parsingComplete" class="mb-4">
+      <v-col cols="12">
+        <v-card border>
+          <v-card-title>Parsing Summary</v-card-title>
+          <v-card-text>
+            <p>
+              <strong>{{ parsedCards.length }}</strong> card(s) parsed and ready for import.
+            </p>
+            <div v-if="parsedCards.length > 0">
+              <strong>Tags Found:</strong>
+              <template v-if="uniqueTags.length > 0">
+                <v-chip v-for="tag in uniqueTags" :key="tag" class="mr-1 mb-1" size="small" label>
+                  {{ tag }}
+                </v-chip>
+              </template>
+              <template v-else>
+                <span class="text--secondary">No unique tags identified across parsed cards.</span>
+              </template>
+            </div>
+            <!--
+              Future enhancement: Add a paginated/scrollable list of parsed cards here for review.
+            -->
+          </v-card-text>
+        </v-card>
+      </v-col>
+    </v-row>
+
     <v-row>
       <v-col cols="12">
+        <!-- Button for initial parsing -->
         <v-btn
+          v-if="!parsingComplete"
           color="primary"
           :loading="processing"
-          :disabled="!bulkText.trim()"
-          data-cy="bulk-import-process-btn"
-          @click="processCards"
+          :disabled="!bulkText.trim() || processing"
+          data-cy="bulk-import-parse-btn"
+          @click="handleInitialParse"
         >
-          Process Cards
+          Parse Cards
           <v-icon end>mdi-play-circle-outline</v-icon>
         </v-btn>
+
+        <!-- Buttons for post-parsing stage -->
+        <template v-if="parsingComplete">
+          <v-btn
+            color="primary"
+            class="mr-2"
+            :loading="processing"
+            :disabled="parsedCards.length === 0 || processing || importAttempted"
+            data-cy="bulk-import-confirm-btn"
+            @click="confirmAndImportCards"
+          >
+            Confirm and Import {{ parsedCards.length }} Card(s)
+            <v-icon end>mdi-check-circle-outline</v-icon>
+          </v-btn>
+          <v-btn
+            v-if="!importAttempted"
+            variant="outlined"
+            color="grey-darken-1"
+            :disabled="processing"
+            data-cy="bulk-import-edit-again-btn"
+            @click="resetToInputStage"
+          >
+            <v-icon start>mdi-pencil</v-icon>
+            Edit Again
+          </v-btn>
+          <v-btn
+            v-if="importAttempted"
+            variant="outlined"
+            color="blue-darken-1"
+            :disabled="processing"
+            data-cy="bulk-import-add-another-btn"
+            @click="startNewBulkImport"
+          >
+            <v-icon start>mdi-plus-circle-outline</v-icon>
+            Add Another Bulk Import
+          </v-btn>
+        </template>
       </v-col>
     </v-row>
     <v-row v-if="results.length > 0">
@@ -45,7 +113,11 @@ tags: tagC"
           <v-list-item
             v-for="(result, index) in results"
             :key="index"
-            :class="{ 'lime-lighten-5': result.status === 'success', 'red-lighten-5': result.status === 'error' }"
+            :class="{
+              'lime-lighten-5': result.status === 'success',
+              'red-lighten-5': result.status === 'error',
+              'force-dark-text': result.status === 'success' || result.status === 'error',
+            }"
           >
             <v-list-item-title>
               <v-icon :color="result.status === 'success' ? 'green' : 'red'">
@@ -77,7 +149,14 @@ import { BlanksCardDataShapes } from '@vue-skuilder/courses';
 import { getCurrentUser } from '@vue-skuilder/common-ui';
 import { getDataLayer, CourseDBInterface } from '@vue-skuilder/db';
 import { alertUser } from '@vue-skuilder/common-ui'; // For user feedback
-import { ImportResult, processBulkCards, validateProcessorConfig, isValidBulkFormat } from '@/utils/bulkImport';
+import {
+  ImportResult,
+  ParsedCard,
+  parseBulkTextToCards,
+  importParsedCards,
+  validateProcessorConfig,
+  isValidBulkFormat,
+} from '@/utils/bulkImport';
 
 export default defineComponent({
   name: 'BulkImportView',
@@ -90,10 +169,27 @@ export default defineComponent({
   data() {
     return {
       bulkText: '',
+      parsedCards: [] as ParsedCard[],
+      parsingComplete: false,
+      importAttempted: false,
       results: [] as ImportResult[],
-      processing: false,
+      processing: false, // Will be used for both parsing and import stages
       courseDB: null as CourseDBInterface | null,
     };
+  },
+  computed: {
+    uniqueTags(): string[] {
+      if (!this.parsedCards || this.parsedCards.length === 0) {
+        return [];
+      }
+      const allTags = this.parsedCards.reduce((acc, card) => {
+        if (card.tags && card.tags.length > 0) {
+          acc.push(...card.tags);
+        }
+        return acc;
+      }, [] as string[]);
+      return [...new Set(allTags)].sort();
+    },
   },
   created() {
     if (this.courseCfg?.courseID) {
@@ -116,18 +212,76 @@ export default defineComponent({
     }
   },
   methods: {
-    async processCards() {
+    resetToInputStage() {
+      this.parsingComplete = false;
+      this.parsedCards = [];
+      this.importAttempted = false; // Reset import attempt flag
+      // Optionally keep results if you want to show them even after going back
+      // this.results = [];
+      // this.bulkText = ''; // Optionally clear the bulk text
+    },
+
+    startNewBulkImport() {
+      this.bulkText = '';
+      this.results = [];
+      this.parsedCards = [];
+      this.parsingComplete = false;
+      this.importAttempted = false;
+    },
+
+    handleInitialParse() {
       if (!this.courseDB) {
         alertUser({
           text: 'Database connection not available. Cannot process cards.',
           status: Status.error,
         });
-        this.processing = false;
         return;
       }
 
+      // isValidBulkFormat calls alertUser internally if format is invalid.
       if (!isValidBulkFormat(this.bulkText)) {
+        return;
+      }
+
+      this.processing = true;
+      this.results = []; // Clear previous import results
+      this.parsedCards = []; // Clear previously parsed cards
+      this.parsingComplete = false; // Reset parsing complete state
+
+      try {
+        this.parsedCards = parseBulkTextToCards(this.bulkText);
+
+        if (this.parsedCards.length === 0) {
+          alertUser({
+            text: 'No cards could be parsed from the input. Please check the format and ensure cards are separated by two "---" lines and that cards have content.',
+            status: Status.warning,
+          });
+          this.processing = false;
+          return;
+        }
+
+        // Successfully parsed, ready for review stage
+        this.parsingComplete = true;
+      } catch (error) {
+        console.error('[BulkImportView] Error parsing bulk text:', error);
+        alertUser({
+          text: `Error parsing cards: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          status: Status.error,
+        });
+      } finally {
         this.processing = false;
+      }
+    },
+
+    async confirmAndImportCards() {
+      if (!this.courseDB) {
+        alertUser({ text: 'Database connection lost before import.', status: Status.error });
+        this.processing = false; // Ensure processing is false
+        return;
+      }
+      if (this.parsedCards.length === 0) {
+        alertUser({ text: 'No parsed cards to import.', status: Status.warning });
+        this.processing = false; // Ensure processing is false
         return;
       }
 
@@ -142,82 +296,76 @@ export default defineComponent({
       }
 
       this.processing = true;
-      this.results = [];
+      this.results = []; // Clear results from parsing stage or previous attempts
 
       const currentUser = await getCurrentUser();
       const userName = currentUser.getUsername();
 
-      // Use the BlanksCardDataShapes for the data structure
       const dataShapeToUse: DataShape = BlanksCardDataShapes[0];
 
       if (!dataShapeToUse) {
-        this.results.push({
-          originalText: 'N/A - Configuration Error',
-          status: 'error',
-          message: 'Could not find BlanksCardDataShapes. Aborting.',
-        });
+        alertUser({ text: 'Critical: Could not find BlanksCardDataShapes. Aborting import.', status: Status.error });
         this.processing = false;
         return;
       }
 
-      // Log the course configuration to help with debugging
-      console.log('[BulkImportView] Processing with course config:', {
-        courseID: this.courseCfg.courseID,
-        dataShapes: this.courseCfg.dataShapes,
-        questionTypes: this.courseCfg.questionTypes,
-        dataShapeToUse: dataShapeToUse.name,
-      });
-
-      // Extract course code from first dataShape in course config
       const configDataShape = this.courseCfg?.dataShapes?.[0];
       if (!configDataShape) {
-        this.results.push({
-          originalText: 'N/A - Configuration Error',
-          status: 'error',
-          message: 'No data shapes found in course configuration',
+        alertUser({
+          text: 'Critical: No data shapes found in course configuration. Aborting import.',
+          status: Status.error,
         });
         this.processing = false;
         return;
       }
 
       const codeCourse = NameSpacer.getDataShapeDescriptor(configDataShape.name).course;
-      console.log(`[BulkImportView] Using codeCourse: ${codeCourse} for note addition`);
 
-      // Prepare processor configuration
-      const config = {
+      const processorConfig = {
         dataShape: dataShapeToUse,
         courseCode: codeCourse,
         userName: userName,
       };
 
-      // Validate processor configuration
-      const validation = validateProcessorConfig(config);
+      const validation = validateProcessorConfig(processorConfig);
       if (!validation.isValid) {
-        this.results.push({
-          originalText: 'N/A - Configuration Error',
-          status: 'error',
-          message: validation.errorMessage || 'Invalid processor configuration',
+        alertUser({
+          text: validation.errorMessage || 'Invalid processor configuration for import.',
+          status: Status.error,
         });
         this.processing = false;
         return;
       }
 
-      // Process the cards
+      console.log('[BulkImportView] Starting import of parsed cards:', {
+        courseID: this.courseCfg.courseID,
+        dataShapeToUse: dataShapeToUse.name,
+        courseCode: codeCourse,
+        numberOfCards: this.parsedCards.length,
+      });
+
       try {
-        this.results = await processBulkCards(this.bulkText, this.courseDB, config);
+        this.results = await importParsedCards(this.parsedCards, this.courseDB, processorConfig);
       } catch (error) {
-        console.error('[BulkImportView] Error processing cards:', error);
+        console.error('[BulkImportView] Error importing parsed cards:', error);
         this.results.push({
-          originalText: this.bulkText,
+          originalText: 'Bulk Operation Error',
           status: 'error',
-          message: `Error processing cards: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          message: `Critical error during import: ${error instanceof Error ? error.message : 'Unknown error'}`,
         });
+      } finally {
+        this.processing = false;
+        this.importAttempted = true; // Mark that an import attempt has been made
       }
 
-      this.processing = false;
-      if (!this.results.some((r) => r.status === 'error')) {
-        // Potentially clear bulkText if all successful, or offer a button to do so
-        // this.bulkText = '';
+      if (this.results.every((r) => r.status === 'success') && this.results.length > 0) {
+        // All successful, optionally reset
+        // this.bulkText = ''; // Clear input text
+        // this.parsingComplete = false; // Go back to input stage
+        // this.parsedCards = [];
+        alertUser({ text: `${this.results.length} card(s) imported successfully!`, status: Status.success });
+      } else if (this.results.some((r) => r.status === 'error')) {
+        alertUser({ text: 'Some cards failed to import. Please review the results below.', status: Status.warning });
       }
     },
   },
@@ -239,4 +387,16 @@ pre {
   border-radius: 4px;
   margin-top: 5px;
 }
+.force-dark-text {
+  color: rgba(0, 0, 0, 0.87) !important;
+}
+/* Ensure child elements also get dark text if not overridden */
+.force-dark-text .v-list-item-subtitle,
+.force-dark-text .v-list-item-title,
+.force-dark-text div, /* Ensure divs within the list item also get dark text */
+.force-dark-text summary {
+  /* Ensure summary elements for <details> also get dark text */
+  color: rgba(0, 0, 0, 0.87) !important;
+}
+/* Icons are handled by their :color prop, so no specific override needed here unless that changes. */
 </style>

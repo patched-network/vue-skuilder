@@ -99,6 +99,26 @@ export function splitCardsText(bulkText: string): string[] {
 }
 
 /**
+ * Parses a bulk text input into an array of structured ParsedCard objects.
+ *
+ * @param bulkText - Raw string containing multiple cards.
+ * @param config - Optional parser configuration.
+ * @returns Array of ParsedCard objects. Filters out cards that fail to parse.
+ */
+export function parseBulkTextToCards(bulkText: string, config: CardParserConfig = DEFAULT_PARSER_CONFIG): ParsedCard[] {
+  const cardStrings = splitCardsText(bulkText);
+  const parsedCards: ParsedCard[] = [];
+
+  for (const cardString of cardStrings) {
+    const parsedCard = parseCard(cardString, config);
+    if (parsedCard) {
+      parsedCards.push(parsedCard);
+    }
+  }
+  return parsedCards;
+}
+
+/**
  * Validates if a bulk text input has valid format
  * 
  * @param bulkText - Raw string containing multiple cards
