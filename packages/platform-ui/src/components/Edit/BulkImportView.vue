@@ -144,19 +144,24 @@ tags: tagC"
 
 <script lang="ts">
 import { defineComponent, PropType } from 'vue';
-import { CourseConfig, DataShape, Status, NameSpacer } from '@vue-skuilder/common';
-import { BlanksCardDataShapes } from '@vue-skuilder/courses';
-import { getCurrentUser } from '@vue-skuilder/common-ui';
-import { getDataLayer, CourseDBInterface } from '@vue-skuilder/db';
-import { alertUser } from '@vue-skuilder/common-ui'; // For user feedback
-import {
-  ImportResult,
+import { 
+  CourseConfig, 
+  DataShape, 
+  Status, 
+  NameSpacer,
   ParsedCard,
   parseBulkTextToCards,
+  isValidBulkFormat 
+} from '@vue-skuilder/common';
+import { BlanksCardDataShapes } from '@vue-skuilder/courses';
+import { getCurrentUser, alertUser } from '@vue-skuilder/common-ui';
+import { 
+  getDataLayer, 
+  CourseDBInterface,
+  ImportResult,
   importParsedCards,
-  validateProcessorConfig,
-  isValidBulkFormat,
-} from '@/utils/bulkImport';
+  validateProcessorConfig
+} from '@vue-skuilder/db';
 
 export default defineComponent({
   name: 'BulkImportView',

@@ -1,6 +1,22 @@
-export * from './types';
-export * from './cardParser';
-export * from './cardProcessor';
+// Re-export parsing utilities from common
+export {
+  ParsedCard,
+  CardData,
+  parseCard,
+  parseBulkTextToCards,
+  isValidBulkFormat,
+  splitCardsText,
+  CardParserConfig,
+  CARD_DELIMITER
+} from '@vue-skuilder/common';
+
+// Re-export database utilities from db
+export {
+  ImportResult,
+  BulkCardProcessorConfig,
+  importParsedCards,
+  validateProcessorConfig
+} from '@vue-skuilder/db';
 
 // Example usage for documentation purposes:
 /*
@@ -34,7 +50,7 @@ tags: tagC`;
     courseCode: 'COURSE-123',
     userName: 'user123'
   };
-  
+
   const validation = validateProcessorConfig(config);
   if (!validation.isValid) {
     console.error(validation.errorMessage);
@@ -48,7 +64,7 @@ tags: tagC`;
     return;
   }
   const parsedCardsArray = parseBulkTextToCards(bulkText);
-  
+
   if (parsedCardsArray.length === 0 && bulkText.trim().length > 0) {
     console.error("No cards could be parsed from the input.");
     // Potentially show an error or return if no cards were parsed,
@@ -58,12 +74,12 @@ tags: tagC`;
 
   // Step 2: Process the array of parsed cards
   const results = await importParsedCards(parsedCardsArray, courseDB, config);
-  
+
   // Check results
   console.log(`Attempted to import ${parsedCardsArray.length} cards.`);
   console.log(`Successfully imported: ${results.filter(r => r.status === 'success').length}`);
   console.log(`Failed: ${results.filter(r => r.status === 'error').length}`);
-  
+
   // Example of parsing a single card (remains the same)
   const singleCard = `Example card with a {{blank}}
 elo: 1600
