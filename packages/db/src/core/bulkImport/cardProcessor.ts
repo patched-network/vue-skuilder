@@ -1,59 +1,41 @@
-import { Status } from '@vue-skuilder/common';
-import { CourseDBInterface } from '@vue-skuilder/db';
-import { ParsedCard, ImportResult, BulkCardProcessorConfig, CardData } from './types';
-import { parseCard, splitCardsText } from './cardParser';
+import { CourseElo, Status, ParsedCard, CardData } from '@vue-skuilder/common';
+import { CourseDBInterface } from '../../core/interfaces/courseDB';
+import { ImportResult, BulkCardProcessorConfig } from './types';
 
 /**
  * Processes multiple cards from bulk text input
  *
- * @param bulkText - Raw text containing multiple cards
+ * @param parsedCards - Array of parsed cards to import
  * @param courseDB - Course database interface
  * @param config - Configuration for the card processor
  * @returns Array of import results
  */
-export async function processBulkCards(
-  bulkText: string,
+export async function importParsedCards(
+  parsedCards: ParsedCard[],
   courseDB: CourseDBInterface,
   config: BulkCardProcessorConfig
 ): Promise<ImportResult[]> {
   const results: ImportResult[] = [];
 
-  if (!bulkText.trim()) {
-    return results;
-  }
-
-  const cardStrings = splitCardsText(bulkText);
-  if (cardStrings.length === 0) {
-    results.push({
-      originalText: bulkText,
-      status: 'error',
-      message: 'No valid card data found. Please check your input and delimiters.',
-    });
-    return results;
-  }
-
-  for (const cardString of cardStrings) {
-    const originalText = cardString.trim();
-    if (!originalText) continue;
-
-    const parsed = parseCard(originalText);
-
-    if (!parsed) {
-      results.push({
-        originalText,
-        status: 'error',
-        message: 'Failed to parse card: Empty content after tag removal or invalid format.',
-      });
-      continue;
-    }
-
+  for (const parsedCard of parsedCards) {
     try {
-      const result = await processCard(parsed, courseDB, config);
+      // processCard takes a ParsedCard and returns an ImportResult
+      const result = await processCard(parsedCard, courseDB, config);
       results.push(result);
     } catch (error) {
       console.error('Error processing card:', error);
+      // Reconstruct originalText from parsedCard for this specific catch block
+      // This is a fallback if processCard itself throws an unhandled error.
+      // Normally, processCard should return an ImportResult with status 'error'.
+      let errorOriginalText = parsedCard.markdown;
+      if (parsedCard.tags && parsedCard.tags.length > 0) {
+        errorOriginalText += `\ntags: ${parsedCard.tags.join(', ')}`;
+      }
+      if (parsedCard.elo !== undefined) {
+        errorOriginalText += `\nelo: ${parsedCard.elo}`;
+      }
       results.push({
-        originalText,
+        originalText: errorOriginalText,
         status: 'error',
         message: `Error processing card: ${
           error instanceof Error ? error.message : 'Unknown error'
@@ -95,7 +77,7 @@ async function processCard(
     Uploads: [], // No uploads for bulk import
   };
 
-  const tagsElo = {};
+  const tagsElo: CourseElo['tags'] = {};
   for (const tag of tags) {
     tagsElo[tag] = {
       score: elo || 0,

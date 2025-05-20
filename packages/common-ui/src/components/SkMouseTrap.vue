@@ -1,23 +1,26 @@
 <template>
   <v-dialog v-if="display" max-width="500px" transition="dialog-transition">
     <template #activator="{ props }">
-      <v-btn icon color="primary" v-bind="props"> ? </v-btn>
+      <v-btn icon color="primary" v-bind="props">
+        <v-icon>mdi-keyboard</v-icon>
+      </v-btn>
     </template>
 
     <v-card>
-      <v-toolbar color="teal" dark>
-        <v-toolbar-title>Shortcut keys for this card:</v-toolbar-title>
-        <v-spacer></v-spacer>
+      <v-toolbar color="teal" dark dense>
+        <v-toolbar-title class="text-subtitle-1">Shortcut keys:</v-toolbar-title>
       </v-toolbar>
-      <v-list>
-        <v-list-item v-for="hk in commands" :key="Array.isArray(hk.hotkey) ? hk.hotkey.join(',') : hk.hotkey">
-          <v-btn variant="outlined" color="black">
+      <v-list dense>
+        <v-list-item
+          v-for="hk in commands"
+          :key="Array.isArray(hk.hotkey) ? hk.hotkey.join(',') : hk.hotkey"
+          class="py-1"
+        >
+          <v-btn variant="outlined" color="primary" class="text-white" size="small">
             {{ Array.isArray(hk.hotkey) ? hk.hotkey[0] : hk.hotkey }}
           </v-btn>
           <v-spacer></v-spacer>
-          <span class="text-right">
-            {{ hk.command }}
-          </span>
+          <span class="text-caption ml-2">{{ hk.command }}</span>
         </v-list-item>
       </v-list>
     </v-card>

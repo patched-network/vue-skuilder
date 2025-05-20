@@ -1,4 +1,4 @@
-import { ParsedCard } from './types';
+import { ParsedCard } from './types.js';
 
 /**
  * Configuration for the bulk card parser
@@ -25,12 +25,15 @@ export const CARD_DELIMITER = '\n---\n---\n';
 
 /**
  * Parses a single card string into a structured object
- * 
+ *
  * @param cardString - Raw string containing card content
  * @param config - Optional parser configuration
  * @returns ParsedCard object or null if parsing fails
  */
-export function parseCard(cardString: string, config: CardParserConfig = DEFAULT_PARSER_CONFIG): ParsedCard | null {
+export function parseCard(
+  cardString: string,
+  config: CardParserConfig = DEFAULT_PARSER_CONFIG
+): ParsedCard | null {
   const trimmedCardString = cardString.trim();
   if (!trimmedCardString) {
     return null;
@@ -40,18 +43,18 @@ export function parseCard(cardString: string, config: CardParserConfig = DEFAULT
   let tags: string[] = [];
   let elo: number | undefined = undefined;
   const markdownLines = [...lines];
-  
+
   // Process the lines from bottom to top to handle metadata
   let metadataLines = 0;
-  
+
   // Get the configured identifiers
   const tagId = config.tagIdentifier || DEFAULT_PARSER_CONFIG.tagIdentifier;
   const eloId = config.eloIdentifier || DEFAULT_PARSER_CONFIG.eloIdentifier;
-  
+
   // Check the last few lines for metadata (tags and elo)
   for (let i = lines.length - 1; i >= 0 && i >= lines.length - 2; i--) {
     const line = lines[i].trim();
-    
+
     // Check for tags
     if (line.toLowerCase().startsWith(tagId!.toLowerCase())) {
       tags = line
@@ -71,7 +74,7 @@ export function parseCard(cardString: string, config: CardParserConfig = DEFAULT
       metadataLines++;
     }
   }
-  
+
   // Remove metadata lines from the end of the content
   if (metadataLines > 0) {
     markdownLines.splice(markdownLines.length - metadataLines);
@@ -82,29 +85,53 @@ export function parseCard(cardString: string, config: CardParserConfig = DEFAULT
     // Card must have some markdown content
     return null;
   }
-  
+
   return { markdown, tags, elo };
 }
 
 /**
  * Splits a bulk text input into individual card strings
- * 
+ *
  * @param bulkText - Raw string containing multiple cards
  * @returns Array of card strings
  */
 export function splitCardsText(bulkText: string): string[] {
-  return bulkText.split(CARD_DELIMITER)
-    .map(card => card.trim())
-    .filter(card => card); // Filter out empty strings
+  return bulkText
+    .split(CARD_DELIMITER)
+    .map((card) => card.trim())
+    .filter((card) => card); // Filter out empty strings
+}
+
+/**
+ * Parses a bulk text input into an array of structured ParsedCard objects.
+ *
+ * @param bulkText - Raw string containing multiple cards.
+ * @param config - Optional parser configuration.
+ * @returns Array of ParsedCard objects. Filters out cards that fail to parse.
+ */
+export function parseBulkTextToCards(
+  bulkText: string,
+  config: CardParserConfig = DEFAULT_PARSER_CONFIG
+): ParsedCard[] {
+  const cardStrings = splitCardsText(bulkText);
+  const parsedCards: ParsedCard[] = [];
+
+  for (const cardString of cardStrings) {
+    const parsedCard = parseCard(cardString, config);
+    if (parsedCard) {
+      parsedCards.push(parsedCard);
+    }
+  }
+  return parsedCards;
 }
 
 /**
  * Validates if a bulk text input has valid format
- * 
+ *
  * @param bulkText - Raw string containing multiple cards
  * @returns true if valid, false otherwise
  */
 export function isValidBulkFormat(bulkText: string): boolean {
   const cardStrings = splitCardsText(bulkText);
-  return cardStrings.length > 0 && cardStrings.some(card => !!card.trim());
+  return cardStrings.length > 0 && cardStrings.some((card) => !!card.trim());
 }
