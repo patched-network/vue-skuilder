@@ -18,7 +18,15 @@
         "baseUrl": ".",
         "types": ["node", "jest", "@types/jest", "vuetify", "vite/client"],
         "paths": {
-            "@/*": ["src/*"]
+            "@/*": ["src/*"],
+            "@vue-skuilder/common-ui": ["../common-ui/src"],
+            "@vue-skuilder/common-ui/*": ["../common-ui/src/*"],
+            "@vue-skuilder/db": ["../db/src"],
+            "@vue-skuilder/db/*": ["../db/src/*"],
+            "@vue-skuilder/common": ["../common/src"],
+            "@vue-skuilder/common/*": ["../common/src/*"],
+            "@vue-skuilder/courses": ["../courses/src"],
+            "@vue-skuilder/courses/*": ["../courses/src/*"]
         },
         "lib": ["esnext", "dom", "dom.iterable", "scripthost"]
     },
