@@ -27,7 +27,7 @@ tags: tagC"
 
     <!-- Card Parsing Summary Section -->
     <v-row v-if="parsingComplete" class="mb-4">
-      <v-col cols="12">
+      <v-col cols="12" md="4">
         <v-card border>
           <v-card-title>Parsing Summary</v-card-title>
           <v-card-text>
@@ -45,14 +45,90 @@ tags: tagC"
                 <span class="text--secondary">No unique tags identified across parsed cards.</span>
               </template>
             </div>
-            <!--
-              Future enhancement: Add a paginated/scrollable list of parsed cards here for review.
-            -->
           </v-card-text>
         </v-card>
       </v-col>
+      <v-col cols="12" md="8">
+        <card-preview-list
+          v-if="parsedCards.length > 0"
+          v-model:parsed-cards="parsedCards"
+          :data-shape="dataShape"
+          :view-components="cardViewComponents"
+          ref="cardPreviewList"
+          @edit-card="handleEditCard"
+          @delete-card="handleDeleteCard"
+        />
+      </v-col>
     </v-row>
 
+    <!-- Card Edit Dialog -->
+    <v-dialog v-model="showEditDialog" max-width="800px">
+      <v-card>
+        <v-card-title>Edit Card</v-card-title>
+        <v-card-text>
+          <v-form @submit.prevent="saveEditedCard" @keydown.esc="closeEditDialog">
+            <v-textarea
+              v-model="editedMarkdown"
+              label="Card Content"
+              rows="6"
+              auto-grow
+              variant="outlined"
+              ref="markdownTextarea"
+              @keydown.ctrl.enter="saveEditedCard"
+            ></v-textarea>
+            
+            <div class="my-4">
+              <div class="d-flex align-center mb-2">
+                <h3 class="text-subtitle-1 mr-2">Tags</h3>
+                <v-text-field
+                  v-model="newTagText"
+                  density="compact"
+                  hide-details
+                  placeholder="Add a tag"
+                  variant="outlined"
+                  class="mr-2"
+                  @keydown.enter.prevent="addTag" 
+                  @keydown.esc="closeEditDialog"
+                ></v-text-field>
+                <v-btn size="small" color="primary" variant="text" @click="addTag">Add</v-btn>
+              </div>
+              <div class="d-flex flex-wrap">
+                <v-chip
+                  v-for="tag in editedTags"
+                  :key="tag"
+                  closable
+                  class="mr-1 mb-1"
+                  @click:close="removeTag(tag)"
+                >
+                  {{ tag }}
+                </v-chip>
+              </div>
+            </div>
+            
+            <v-text-field
+              v-model.number="editedElo"
+              label="ELO Rating (optional)"
+              type="number"
+              variant="outlined"
+              min="0"
+              max="3000"
+            ></v-text-field>
+          </v-form>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="grey" variant="text" @click="closeEditDialog">
+            Cancel
+            <v-tooltip activator="parent" location="top">Press ESC</v-tooltip>
+          </v-btn>
+          <v-btn color="primary" @click="saveEditedCard">
+            Save
+            <v-tooltip activator="parent" location="top">Press Ctrl+Enter</v-tooltip>
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+    
     <v-row>
       <v-col cols="12">
         <!-- Button for initial parsing -->
@@ -143,28 +219,32 @@ tags: tagC"
 </template>
 
 <script lang="ts">
-import { defineComponent, PropType } from 'vue';
-import { 
-  CourseConfig, 
-  DataShape, 
-  Status, 
+import { defineComponent, PropType, ref } from 'vue';
+import {
+  CourseConfig,
+  DataShape,
+  Status,
   NameSpacer,
   ParsedCard,
   parseBulkTextToCards,
-  isValidBulkFormat 
+  isValidBulkFormat,
 } from '@vue-skuilder/common';
-import { BlanksCardDataShapes } from '@vue-skuilder/courses';
-import { getCurrentUser, alertUser } from '@vue-skuilder/common-ui';
-import { 
-  getDataLayer, 
+import { BlanksCardDataShapes, allCourses } from '@vue-skuilder/courses';
+import { getCurrentUser, alertUser, ViewComponent } from '@vue-skuilder/common-ui';
+import {
+  getDataLayer,
   CourseDBInterface,
   ImportResult,
   importParsedCards,
-  validateProcessorConfig
+  validateProcessorConfig,
 } from '@vue-skuilder/db';
+import CardPreviewList from './BulkImport/CardPreviewList.vue';
 
 export default defineComponent({
   name: 'BulkImportView',
+  components: {
+    CardPreviewList,
+  },
   props: {
     courseCfg: {
       type: Object as PropType<CourseConfig>,
@@ -180,6 +260,15 @@ export default defineComponent({
       results: [] as ImportResult[],
       processing: false, // Will be used for both parsing and import stages
       courseDB: null as CourseDBInterface | null,
+      dataShape: BlanksCardDataShapes[0],
+      cardViewComponents: [] as ViewComponent[],
+      editingCard: null as ParsedCard | null,
+      editingCardIndex: -1,
+      showEditDialog: false,
+      editedMarkdown: '',
+      editedTags: [] as string[],
+      editedElo: undefined as number | undefined,
+      newTagText: '',
     };
   },
   computed: {
@@ -207,6 +296,9 @@ export default defineComponent({
           text: 'Course configuration has no dataShapes. Bulk import may not work correctly.',
           status: Status.warning,
         });
+      } else {
+        // Get the data shape and view components for card preview
+        this.initializeCardPreviewComponents();
       }
     } else {
       console.error('[BulkImportView] Course config or Course ID is missing.');
@@ -217,6 +309,128 @@ export default defineComponent({
     }
   },
   methods: {
+    handleDeleteCard(index: number) {
+      // The card is already removed from the parsedCards array via v-model
+      // This method can be used for additional processing if needed
+      console.log(`[BulkImportView] Card at index ${index} was deleted`);
+      
+      // Show alert to confirm deletion
+      alertUser({
+        text: 'Card removed from import list',
+        status: Status.info,
+      });
+    },
+    
+    handleEditCard(card: ParsedCard, index: number) {
+      // Disable keyboard shortcuts while editing
+      if (this.$refs.cardPreviewList) {
+        (this.$refs.cardPreviewList as any).toggleShortcuts(false);
+      }
+      
+      this.editingCard = { ...card }; // Create a copy
+      this.editingCardIndex = index;
+      this.editedMarkdown = card.markdown;
+      this.editedTags = [...card.tags];
+      this.editedElo = card.elo;
+      this.showEditDialog = true;
+      
+      // Focus the text area after dialog opens
+      this.$nextTick(() => {
+        if (this.$refs.markdownTextarea) {
+          (this.$refs.markdownTextarea as any).$el.querySelector('textarea').focus();
+        }
+      });
+    },
+    
+    saveEditedCard() {
+      if (this.editingCardIndex < 0 || !this.editingCard) return;
+      
+      // Create updated card
+      const updatedCard: ParsedCard = {
+        markdown: this.editedMarkdown,
+        tags: this.editedTags,
+        elo: this.editedElo,
+      };
+      
+      // Update the card in the array
+      const updatedCards = [...this.parsedCards];
+      updatedCards[this.editingCardIndex] = updatedCard;
+      this.parsedCards = updatedCards;
+      
+      // Reset editing state
+      this.closeEditDialog();
+      
+      // Show alert to confirm edit
+      alertUser({
+        text: 'Card updated successfully',
+        status: Status.success,
+      });
+    },
+    
+    closeEditDialog() {
+      this.showEditDialog = false;
+      this.editingCard = null;
+      this.editingCardIndex = -1;
+      this.editedMarkdown = '';
+      this.editedTags = [];
+      this.editedElo = undefined;
+      
+      // Re-enable keyboard shortcuts after editing
+      setTimeout(() => {
+        if (this.$refs.cardPreviewList) {
+          (this.$refs.cardPreviewList as any).toggleShortcuts(true);
+        }
+      }, 100);
+    },
+    
+    addTag() {
+      const newTag = this.newTagText.trim();
+      if (newTag && !this.editedTags.includes(newTag)) {
+        this.editedTags.push(newTag);
+        this.newTagText = '';
+      }
+    },
+    
+    removeTag(tag: string) {
+      this.editedTags = this.editedTags.filter(t => t !== tag);
+    },
+    
+    initializeCardPreviewComponents() {
+      // Use the first data shape from the course config
+      const configDataShape = this.courseCfg?.dataShapes?.[0];
+      if (!configDataShape) return;
+
+      // Validate that we're using the correct dataShape for consistency with the import process
+      if (this.dataShape.name !== BlanksCardDataShapes[0].name) {
+        this.dataShape = BlanksCardDataShapes[0];
+      }
+
+      // Get the code course from the dataShape descriptor
+      const descriptor = NameSpacer.getDataShapeDescriptor(configDataShape.name);
+      const course = allCourses.getCourse(descriptor.course);
+
+      if (course) {
+        // Get view components for this dataShape
+        this.cardViewComponents = [];
+
+        // Add base question type views
+        course.getBaseQTypes().forEach((qType) => {
+          if (qType.dataShapes[0].name === this.dataShape?.name) {
+            this.cardViewComponents = this.cardViewComponents.concat(qType.views);
+          }
+        });
+
+        // Add question-specific views
+        for (const q of configDataShape.questionTypes) {
+          const qDescriptor = NameSpacer.getQuestionDescriptor(q);
+          const questionViews = course.getQuestion(qDescriptor.questionType)?.views || [];
+          this.cardViewComponents = this.cardViewComponents.concat(questionViews);
+        }
+
+        console.log(`[BulkImportView] Loaded ${this.cardViewComponents.length} view components for card preview`);
+      }
+    },
+
     resetToInputStage() {
       this.parsingComplete = false;
       this.parsedCards = [];
@@ -265,8 +479,14 @@ export default defineComponent({
           return;
         }
 
+        // Initialize card preview components if not already done
+        if (this.cardViewComponents.length === 0) {
+          this.initializeCardPreviewComponents();
+        }
+
         // Successfully parsed, ready for review stage
         this.parsingComplete = true;
+        console.log(`[BulkImportView] Successfully parsed ${this.parsedCards.length} cards for preview`);
       } catch (error) {
         console.error('[BulkImportView] Error parsing bulk text:', error);
         alertUser({
@@ -404,4 +624,16 @@ pre {
   color: rgba(0, 0, 0, 0.87) !important;
 }
 /* Icons are handled by their :color prop, so no specific override needed here unless that changes. */
+
+/* Card Preview Styling */
+.card-preview-container {
+  border-radius: 4px;
+  max-width: 100%;
+}
+
+@media (min-width: 960px) {
+  .card-preview-container {
+    max-width: 65%;
+  }
+}
 </style>
