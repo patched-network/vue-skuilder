@@ -87,19 +87,19 @@ jobs:
           echo "$TMP_PKG" > ./packages/express/temp-package.json
           rsync -rl ./packages/express/temp-package.json ${{ secrets.DO_USERNAME }}@eduquilt.com:/home/skuilder/dist/express/${{github.sha}}/package.json
           
-          # Install dependencies on the server
+          # Install dependencies on the server (using full path to yarn)
           echo "Installing dependencies for Express app..."
-          ssh ${{ secrets.DO_USERNAME }}@eduquilt.com "cd /home/skuilder/dist/express/${{github.sha}} && yarn install --production"
+          ssh ${{ secrets.DO_USERNAME }}@eduquilt.com "cd /home/skuilder/dist/express/${{github.sha}} && source ~/.nvm/nvm.sh && yarn install --production"
           
           # Install dependencies for workspace packages
           if [ -d "./packages/common" ]; then
             echo "Installing dependencies for common package..."
-            ssh ${{ secrets.DO_USERNAME }}@eduquilt.com "cd /home/skuilder/dist/common && yarn install --production"
+            ssh ${{ secrets.DO_USERNAME }}@eduquilt.com "cd /home/skuilder/dist/common && source ~/.nvm/nvm.sh && yarn install --production"
           fi
           
           if [ -d "./packages/db" ]; then
             echo "Installing dependencies for db package..."
-            ssh ${{ secrets.DO_USERNAME }}@eduquilt.com "cd /home/skuilder/dist/db && yarn install --production"
+            ssh ${{ secrets.DO_USERNAME }}@eduquilt.com "cd /home/skuilder/dist/db && source ~/.nvm/nvm.sh && yarn install --production"
           fi
 
           # Update symlink to new version
