@@ -6,7 +6,7 @@ import {
   LeaveClassroom,
   Status,
 } from '@vue-skuilder/common';
-import { classroomDbDesignDoc } from '../app.js';
+import { classroomDbDesignDoc } from '../design-docs.js';
 import CouchDB, {
   SecurityObject,
   docCount,
