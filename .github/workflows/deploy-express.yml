@@ -12,10 +12,11 @@ jobs:
     steps:
       - run: echo "🎉 The job was triggered by a ${{ github.event_name }} on commit ${{ github.SHA }}"
       - name: Check out repository code
-        uses: actions/checkout@v2
-      - uses: actions/setup-node@v3
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
         with:
-          node-version: 16
+          node-version: 18
           cache: 'yarn'
       - name: SSH to DO
         uses: shimataro/ssh-key-action@v2
@@ -24,8 +25,10 @@ jobs:
           name: id_rsa
           known_hosts: ${{ secrets.KNOWN_HOSTS }}
       - name: Build
+        env:
+          YARN_IGNORE_NODE: 1
         run: |
-          npm install -g yarn@1.22.17
+          npm install -g yarn@1.22.19
           npm install -g lerna@3.22.1
           lerna bootstrap
           cd ./packages/express
@@ -34,6 +37,7 @@ jobs:
           yarn build
       - name: Deploy and run
         run: |
+          # Create necessary directories
           ssh ${{ secrets.DO_USERNAME }}@eduquilt.com mkdir -p /home/skuilder/dist/express/${{github.SHA}}
           ssh ${{ secrets.DO_USERNAME }}@eduquilt.com mkdir -p /home/skuilder/dist/express/${{github.SHA}}/assets
 
@@ -57,19 +61,40 @@ jobs:
           # Restart service
           ssh -t ${{ secrets.DO_USERNAME }}@eduquilt.com 'echo ${{ secrets.DO_PASSWORD }} | sudo -S systemctl restart eqExpress'
 
+          echo "Waiting for service to start..."
           sleep 10s
       - name: Verify deployment
         run: |
-          response=$(curl -sS https://eduquilt.com/express)
-          if [[ $? -ne 0 ]]; then
-            echo "Error: Failed to fetch https://eduquilt.com/express"
-            exit 1
-          fi
-          if echo "$response" | grep -q "${{ github.SHA }}"; then
-            echo "Success. Current version found in production"
-          else
-            echo "Error! Current version not reported by production."
-            echo "Response received:"
-            echo "$response"
-            exit 1
-          fi
+          max_retries=3
+          retry_count=0
+          while [ $retry_count -lt $max_retries ]; do
+            response=$(curl -sS https://eduquilt.com/express)
+            if [[ $? -ne 0 ]]; then
+              echo "Error: Failed to fetch https://eduquilt.com/express"
+              retry_count=$((retry_count+1))
+              if [ $retry_count -lt $max_retries ]; then
+                echo "Retrying in 5 seconds... (Attempt $retry_count of $max_retries)"
+                sleep 5
+                continue
+              else
+                exit 1
+              fi
+            fi
+            
+            if echo "$response" | grep -q "${{ github.SHA }}"; then
+              echo "Success. Current version found in production"
+              exit 0
+            else
+              echo "Current version not found in production. Retrying..."
+              retry_count=$((retry_count+1))
+              if [ $retry_count -lt $max_retries ]; then
+                echo "Retrying in 5 seconds... (Attempt $retry_count of $max_retries)"
+                sleep 5
+              else
+                echo "Error! Max retries reached. Current version not reported by production."
+                echo "Response received:"
+                echo "$response"
+                exit 1
+              fi
+            fi
+          done
