@@ -57,10 +57,7 @@ jobs:
 
       - name: Deploy and run
         run: |
-          # Install yarn on the remote server if not available
-          echo "Setting up yarn on remote server..."
-          ssh ${{ secrets.DO_USERNAME }}@eduquilt.com "command -v yarn || (echo 'Installing yarn...' && echo ${{ secrets.DO_PASSWORD }} | sudo -S npm install -g yarn@4.6.0)"
-          
+
           # Create necessary directories
           ssh ${{ secrets.DO_USERNAME }}@eduquilt.com mkdir -p /home/skuilder/dist/express/${{github.sha}}
           ssh ${{ secrets.DO_USERNAME }}@eduquilt.com mkdir -p /home/skuilder/dist/express/${{github.sha}}/assets
