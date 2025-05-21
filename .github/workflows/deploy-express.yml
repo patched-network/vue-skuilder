@@ -57,6 +57,10 @@ jobs:
 
       - name: Deploy and run
         run: |
+          # Install yarn on the remote server if not available
+          echo "Setting up yarn on remote server..."
+          ssh ${{ secrets.DO_USERNAME }}@eduquilt.com "command -v yarn || (echo 'Installing yarn...' && echo ${{ secrets.DO_PASSWORD }} | sudo -S npm install -g yarn@4.6.0)"
+          
           # Create necessary directories
           ssh ${{ secrets.DO_USERNAME }}@eduquilt.com mkdir -p /home/skuilder/dist/express/${{github.sha}}
           ssh ${{ secrets.DO_USERNAME }}@eduquilt.com mkdir -p /home/skuilder/dist/express/${{github.sha}}/assets
@@ -87,14 +91,17 @@ jobs:
           rsync -rl ./packages/express/temp-package.json ${{ secrets.DO_USERNAME }}@eduquilt.com:/home/skuilder/dist/express/${{github.sha}}/package.json
           
           # Install dependencies on the server
+          echo "Installing dependencies for Express app..."
           ssh ${{ secrets.DO_USERNAME }}@eduquilt.com "cd /home/skuilder/dist/express/${{github.sha}} && yarn install --production"
           
           # Install dependencies for workspace packages
           if [ -d "./packages/common" ]; then
+            echo "Installing dependencies for common package..."
             ssh ${{ secrets.DO_USERNAME }}@eduquilt.com "cd /home/skuilder/dist/common && yarn install --production"
           fi
           
           if [ -d "./packages/db" ]; then
+            echo "Installing dependencies for db package..."
             ssh ${{ secrets.DO_USERNAME }}@eduquilt.com "cd /home/skuilder/dist/db && yarn install --production"
           fi
 
@@ -110,6 +117,7 @@ jobs:
           ssh -t ${{ secrets.DO_USERNAME }}@eduquilt.com 'echo COUCHDB_SERVER=${{ secrets.COUCHDB_SERVER }} >> /home/skuilder/.env.development.local'
 
           # Restart service
+          echo "Restarting Express service..."
           ssh -t ${{ secrets.DO_USERNAME }}@eduquilt.com 'echo ${{ secrets.DO_PASSWORD }} | sudo -S systemctl restart eqExpress'
 
           echo "Waiting for service to start..."
