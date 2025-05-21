@@ -89,17 +89,17 @@ jobs:
           
           # Install dependencies on the server (using full path to yarn)
           echo "Installing dependencies for Express app..."
-          ssh ${{ secrets.DO_USERNAME }}@eduquilt.com "cd /home/skuilder/dist/express/${{github.sha}} && source ~/.nvm/nvm.sh && yarn install --production"
+          ssh ${{ secrets.DO_USERNAME }}@eduquilt.com "cd /home/skuilder/dist/express/${{github.sha}} && source ~/.nvm/nvm.sh && yarn install --mode=production"
           
           # Install dependencies for workspace packages
           if [ -d "./packages/common" ]; then
             echo "Installing dependencies for common package..."
-            ssh ${{ secrets.DO_USERNAME }}@eduquilt.com "cd /home/skuilder/dist/common && source ~/.nvm/nvm.sh && yarn install --production"
+            ssh ${{ secrets.DO_USERNAME }}@eduquilt.com "cd /home/skuilder/dist/common && source ~/.nvm/nvm.sh && yarn install --mode=production"
           fi
           
           if [ -d "./packages/db" ]; then
             echo "Installing dependencies for db package..."
-            ssh ${{ secrets.DO_USERNAME }}@eduquilt.com "cd /home/skuilder/dist/db && source ~/.nvm/nvm.sh && yarn install --production"
+            ssh ${{ secrets.DO_USERNAME }}@eduquilt.com "cd /home/skuilder/dist/db && source ~/.nvm/nvm.sh && yarn install --mode=production"
           fi
 
           # Update symlink to new version
