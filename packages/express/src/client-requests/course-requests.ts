@@ -8,113 +8,19 @@ import nano from 'nano';
 import { Status } from '@vue-skuilder/common';
 import logger from '@/logger.js';
 import { CourseLookup } from '@vue-skuilder/db';
+import { courseDBDesignDocs } from '../design-docs.js';
 
 /**
  * Fake fcn to allow usage in couchdb map fcns which, after passing
  * through `.toString()`, are applied to all courses
  */
-function emit(key?: unknown, value?: unknown) {
+function emit(key?: unknown, value?: unknown): [unknown, unknown] {
   return [key, value];
 }
 
 function getCourseDBName(courseID: string): string {
   return `coursedb-${courseID}`;
 }
-
-const cardsByInexperienceDoc = {
-  _id: '_design/cardsByInexperience',
-  views: {
-    cardsByInexperience: {
-      // @ts-expect-error - this function needs to be plain JS in order to land correctly as a design doc function in CouchDBKs
-      map: function (doc) {
-        if (doc.docType && doc.docType === 'CARD') {
-          if (
-            doc.elo &&
-            doc.elo.global &&
-            typeof doc.elo.global.count == 'number'
-          ) {
-            emit(doc.elo.global.count, doc.elo);
-          } else if (doc.elo && typeof doc.elo == 'number') {
-            emit(0, doc.elo);
-          } else {
-            emit(0, 995 + Math.floor(10 * Math.random()));
-          }
-        }
-      }.toString(),
-    },
-  },
-  language: 'javascript',
-};
-
-const tagsDoc = {
-  _id: '_design/getTags',
-  views: {
-    getTags: {
-      map: `function (doc) {
-                if (doc.docType && doc.docType === "TAG") {
-                    for (var cardIndex in doc.taggedCards) {
-                        emit(doc.taggedCards[cardIndex], {
-                            docType: doc.docType,
-                            name: doc.name,
-                            snippit: doc.snippit,
-                            wiki: '',
-                            taggedCards: []
-                        });
-                    }
-                }
-            }`,
-      // "mapFcn": function getTags(doc) {
-      //     if (doc.docType && doc.docType === "TAG") {
-      //         for (var cardIndex in doc.taggedCards) {
-      //             emit(doc.taggedCards[cardIndex], {
-      //                 docType: doc.docType,
-      //                 name: doc.name,
-      //                 snippit: doc.snippit,
-      //                 wiki: '',
-      //                 taggedCards: []
-      //             });
-      //         }
-      //     }
-      // }
-    },
-  },
-  language: 'javascript',
-};
-
-const elodoc = {
-  _id: '_design/elo',
-  views: {
-    elo: {
-      map: `function (doc) {
-                if (doc.docType && doc.docType === 'CARD') {
-                    if (doc.elo && typeof(doc.elo) === 'number') {
-                        emit(doc.elo, doc._id);
-                    } else if (doc.elo && doc.elo.global) {
-                        emit(doc.elo.global.score, doc._id);
-                    } else if (doc.elo) {
-                        emit(doc.elo.score, doc._id);
-                    } else {
-                        const randElo = 995 + Math.round(10 * Math.random());
-                        emit(randElo, doc._id);
-                    }
-                }
-            }`,
-      // mapFcn: function eloView(doc: any) {
-      //   if (doc.docType && doc.docType === 'CARD') {
-      //     if (doc.elo && typeof doc.elo === 'number') {
-      //       emit(doc.elo, doc._id);
-      //     } else if (doc.elo) {
-      //       emit(doc.elo.score, doc._id);
-      //     } else {
-      //       const randElo = 995 + Math.round(10 * Math.random());
-      //       emit(randElo, doc._id);
-      //     }
-      //   }
-      // },
-    },
-  },
-  language: 'javascript',
-};
 
 /**
  * Inserts a design document into a course database.
@@ -126,19 +32,19 @@ function insertDesignDoc(
   doc: {
     _id: string;
   }
-) {
+): void {
   const courseDB = CouchDB.use(courseID);
 
   courseDB
     .get(doc._id)
     .then((priorDoc) => {
-      courseDB.insert({
+      void courseDB.insert({
         ...doc,
         _rev: priorDoc._rev,
       });
     })
     .catch(() => {
-      courseDB
+      void courseDB
         .insert(doc)
         .catch((e) => {
           log(
@@ -153,18 +59,50 @@ function insertDesignDoc(
     });
 }
 
-const courseDBDesignDocs: { _id: string }[] = [
-  elodoc,
-  tagsDoc,
-  cardsByInexperienceDoc,
-];
+
+
 
 export async function initCourseDBDesignDocInsert(): Promise<void> {
   const courses = await CourseLookup.allCourses();
   courses.forEach((c) => {
+    // Insert design docs
     courseDBDesignDocs.forEach((dd) => {
       insertDesignDoc(getCourseDBName(c._id), dd);
     });
+
+    // Update security object for public courses
+    const courseDB = CouchDB.use(getCourseDBName(c._id));
+    courseDB
+      .get('CourseConfig')
+      .then((configDoc) => {
+        if (configDoc.public === true) {
+          const secObj: SecurityObject = {
+            admins: {
+              names: [],
+              roles: [],
+            },
+            members: {
+              names: [], // Empty array for public courses to allow all users access
+              roles: [],
+            },
+          };
+          courseDB
+            .insert(secObj as nano.MaybeDocument, '_security')
+            .then(() => {
+              logger.info(
+                `Updated security settings for public course ${c._id}`
+              );
+            })
+            .catch((e) => {
+              logger.error(
+                `Error updating security for public course ${c._id}: ${e}`
+              );
+            });
+        }
+      })
+      .catch((e) => {
+        logger.error(`Error getting CourseConfig for ${c._id}: ${e}`);
+      });
   });
 }
 
@@ -205,25 +143,38 @@ async function createCourse(cfg: CourseConfig): Promise<any> {
       });
     });
 
-    if (!cfg.public) {
-      const secObj: SecurityObject = {
-        admins: {
-          names: [],
-          roles: [],
-        },
-        members: {
-          names: [cfg.creator],
-          roles: [],
-        },
-      };
+    // Configure security for both public and private courses
+    const secObj: SecurityObject = {
+      admins: {
+        names: [],
+        roles: [],
+      },
+      members: {
+        names: cfg.public ? [] : [cfg.creator], // Empty array for public courses to allow all users access
+        roles: [],
+      },
+    };
 
-      courseDB.insert(secObj as nano.MaybeDocument, '_security').catch((e) => {
+    courseDB
+      .insert(secObj as nano.MaybeDocument, '_security')
+      .then(() => {
+        logger.info(
+          `Successfully set security for ${
+            cfg.public ? 'public' : 'private'
+          } course ${cfg.courseID}`
+        );
+      })
+      .catch((e) => {
         logger.error(
           `Error inserting security object for course ${cfg.courseID}:`,
           e
         );
       });
-    }
+
+    // Design documents including validation are inserted via courseDBDesignDocs
+    logger.info(
+      `Validation design document will be inserted for course ${cfg.courseID}`
+    );
   }
 
   // follow the course so that user-uploaded content goes through

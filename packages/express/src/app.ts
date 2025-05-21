@@ -8,7 +8,6 @@ import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import type { Request, Response } from 'express';
 import express from 'express';
-import * as fileSystem from 'fs';
 import morgan from 'morgan';
 import Nano from 'nano';
 import PostProcess from './attachment-preprocessing/index.js';
@@ -37,14 +36,7 @@ process.on('unhandledRejection', (reason, promise) => {
 logger.info(`Express app running version: ${ENV.VERSION}`);
 
 const port = 3000;
-export const classroomDbDesignDoc = fileSystem.readFileSync(
-  './assets/classroomDesignDoc.js',
-  'utf-8'
-);
-export const courseDBDesignDoc = fileSystem.readFileSync(
-  './assets/get-tagsDesignDoc.json',
-  'utf-8'
-);
+import { classroomDbDesignDoc } from './design-docs.js';
 const app = express();
 
 app.use(cookieParser());
@@ -105,7 +97,10 @@ app.delete('/course/:courseID', async (req: Request, res: Response) => {
   }
 });
 
-async function postHandler(req: VueClientRequest, res: express.Response) {
+async function postHandler(
+  req: VueClientRequest,
+  res: express.Response
+): Promise<void> {
   const auth = await requestIsAuthenticated(req);
   if (auth) {
     const body = req.body;
