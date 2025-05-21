@@ -29,8 +29,6 @@ jobs:
           YARN_IGNORE_NODE: 1
         run: |
           npm install -g yarn@1.22.19
-          npm install -g lerna@3.22.1
-          lerna bootstrap
           cd ./packages/express
           yarn remove @types/jest
           # yarn remove @types/pouchdb
@@ -80,7 +78,7 @@ jobs:
                 exit 1
               fi
             fi
-            
+
             if echo "$response" | grep -q "${{ github.SHA }}"; then
               echo "Success. Current version found in production"
               exit 0
