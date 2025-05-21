@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       reason:
-        description: 'Reason for running the workflow'
+        description: 'Reason for deploying Express API'
         required: true
         default: 'Manual trigger'
 jobs:
@@ -13,39 +13,90 @@ jobs:
       - run: echo "🎉 The job was triggered by a ${{ github.event_name }} on commit ${{ github.SHA }}"
       - name: Check out repository code
         uses: actions/checkout@v4
+
       - name: Set up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 18
           cache: 'yarn'
-      - name: SSH to DO
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Configure SSH key
         uses: shimataro/ssh-key-action@v2
         with:
           key: ${{ secrets.DO_SSH_KEY }}
           name: id_rsa
           known_hosts: ${{ secrets.KNOWN_HOSTS }}
-      - name: Build
-        env:
-          YARN_IGNORE_NODE: 1
+
+      - name: Install dependencies
+        run: yarn install
+
+      - name: Build workspace dependencies
         run: |
-          npm install -g yarn@1.22.19
-          npm install -g lerna@3.22.1
-          lerna bootstrap
+          # Build common package if it exists
+          if [ -d "./packages/common" ]; then
+            echo "Building @vue-skuilder/common package..."
+            cd ./packages/common
+            yarn build
+            cd ../..
+          fi
+          
+          # Build db package if it exists
+          if [ -d "./packages/db" ]; then
+            echo "Building @vue-skuilder/db package..."
+            cd ./packages/db
+            yarn build
+            cd ../..
+          fi
+
+      - name: Build Express API
+        run: |
           cd ./packages/express
-          yarn remove @types/jest
-          # yarn remove @types/pouchdb
           yarn build
+
       - name: Deploy and run
         run: |
           # Create necessary directories
-          ssh ${{ secrets.DO_USERNAME }}@eduquilt.com mkdir -p /home/skuilder/dist/express/${{github.SHA}}
-          ssh ${{ secrets.DO_USERNAME }}@eduquilt.com mkdir -p /home/skuilder/dist/express/${{github.SHA}}/assets
+          ssh ${{ secrets.DO_USERNAME }}@eduquilt.com mkdir -p /home/skuilder/dist/express/${{github.sha}}
+          ssh ${{ secrets.DO_USERNAME }}@eduquilt.com mkdir -p /home/skuilder/dist/express/${{github.sha}}/assets
 
           # Copy build artifacts and dependencies
-          rsync -rl ./packages/express/dist/ ${{ secrets.DO_USERNAME }}@eduquilt.com:/home/skuilder/dist/express/${{github.SHA}}
-          rsync -rl ./packages/express/assets/ ${{ secrets.DO_USERNAME }}@eduquilt.com:/home/skuilder/dist/express/${{github.SHA}}/assets
-          rsync -rl ./packages/express/package.json ${{ secrets.DO_USERNAME }}@eduquilt.com:/home/skuilder/dist/express/${{github.SHA}}
-          rsync -rl ./packages/express/node_modules/ ${{ secrets.DO_USERNAME }}@eduquilt.com:/home/skuilder/dist/express/${{github.SHA}}/node_modules
+          rsync -rl ./packages/express/dist/ ${{ secrets.DO_USERNAME }}@eduquilt.com:/home/skuilder/dist/express/${{github.sha}}
+          rsync -rl ./packages/express/assets/ ${{ secrets.DO_USERNAME }}@eduquilt.com:/home/skuilder/dist/express/${{github.sha}}/assets
+          rsync -rl ./packages/express/package.json ${{ secrets.DO_USERNAME }}@eduquilt.com:/home/skuilder/dist/express/${{github.sha}}
+          
+          # Handle workspace dependencies by copying them to the server
+          if [ -d "./packages/common" ]; then
+            echo "Copying @vue-skuilder/common package..."
+            ssh ${{ secrets.DO_USERNAME }}@eduquilt.com mkdir -p /home/skuilder/dist/common/dist
+            rsync -rl ./packages/common/dist/ ${{ secrets.DO_USERNAME }}@eduquilt.com:/home/skuilder/dist/common/dist
+            rsync -rl ./packages/common/package.json ${{ secrets.DO_USERNAME }}@eduquilt.com:/home/skuilder/dist/common/
+          fi
+          
+          if [ -d "./packages/db" ]; then
+            echo "Copying @vue-skuilder/db package..."
+            ssh ${{ secrets.DO_USERNAME }}@eduquilt.com mkdir -p /home/skuilder/dist/db/dist
+            rsync -rl ./packages/db/dist/ ${{ secrets.DO_USERNAME }}@eduquilt.com:/home/skuilder/dist/db/dist
+            rsync -rl ./packages/db/package.json ${{ secrets.DO_USERNAME }}@eduquilt.com:/home/skuilder/dist/db/
+          fi
+          
+          # Replace workspace references with file paths
+          TMP_PKG=$(cat ./packages/express/package.json | sed 's|"@vue-skuilder/common": "workspace:^"|"@vue-skuilder/common": "file:/home/skuilder/dist/common"|g' | sed 's|"@vue-skuilder/db": "workspace:^"|"@vue-skuilder/db": "file:/home/skuilder/dist/db"|g')
+          echo "$TMP_PKG" > ./packages/express/temp-package.json
+          rsync -rl ./packages/express/temp-package.json ${{ secrets.DO_USERNAME }}@eduquilt.com:/home/skuilder/dist/express/${{github.sha}}/package.json
+          
+          # Install dependencies on the server
+          ssh ${{ secrets.DO_USERNAME }}@eduquilt.com "cd /home/skuilder/dist/express/${{github.sha}} && yarn install --production"
+          
+          # Install dependencies for workspace packages
+          if [ -d "./packages/common" ]; then
+            ssh ${{ secrets.DO_USERNAME }}@eduquilt.com "cd /home/skuilder/dist/common && yarn install --production"
+          fi
+          
+          if [ -d "./packages/db" ]; then
+            ssh ${{ secrets.DO_USERNAME }}@eduquilt.com "cd /home/skuilder/dist/db && yarn install --production"
+          fi
 
           # Update symlink to new version
           ssh ${{ secrets.DO_USERNAME }}@eduquilt.com ln -sfn /home/skuilder/dist/express/${{github.SHA}} /home/skuilder/api
@@ -65,6 +116,7 @@ jobs:
           sleep 10s
       - name: Verify deployment
         run: |
+          echo "Verifying Express API deployment..."
           max_retries=3
           retry_count=0
           while [ $retry_count -lt $max_retries ]; do
@@ -80,9 +132,15 @@ jobs:
                 exit 1
               fi
             fi
-            
+
             if echo "$response" | grep -q "${{ github.SHA }}"; then
               echo "Success. Current version found in production"
+              
+              # Log deployment success
+              echo "✅ Express API deployed successfully with version ${{ github.SHA }}"
+              echo "✅ Deployment triggered by: ${{ github.event.inputs.reason }}"
+              echo "✅ Deployment timestamp: $(date -u)"
+              
               exit 0
             else
               echo "Current version not found in production. Retrying..."
