@@ -10,14 +10,6 @@ import logger from '@/logger.js';
 import { CourseLookup } from '@vue-skuilder/db';
 import { courseDBDesignDocs } from '../design-docs.js';
 
-/**
- * Fake fcn to allow usage in couchdb map fcns which, after passing
- * through `.toString()`, are applied to all courses
- */
-function emit(key?: unknown, value?: unknown): [unknown, unknown] {
-  return [key, value];
-}
-
 function getCourseDBName(courseID: string): string {
   return `coursedb-${courseID}`;
 }
@@ -59,9 +51,6 @@ function insertDesignDoc(
     });
 }
 
-
-
-
 export async function initCourseDBDesignDocInsert(): Promise<void> {
   const courses = await CourseLookup.allCourses();
   courses.forEach((c) => {
@@ -71,7 +60,7 @@ export async function initCourseDBDesignDocInsert(): Promise<void> {
     });
 
     // Update security object for public courses
-    const courseDB = CouchDB.use(getCourseDBName(c._id));
+    const courseDB = CouchDB.use<CourseConfig>(getCourseDBName(c._id));
     courseDB
       .get('CourseConfig')
       .then((configDoc) => {
@@ -87,6 +76,8 @@ export async function initCourseDBDesignDocInsert(): Promise<void> {
             },
           };
           courseDB
+            // @ts-expect-error allow insertion of _security document.
+            //                  db scoped as ConfigDoc to make the read easier.
             .insert(secObj as nano.MaybeDocument, '_security')
             .then(() => {
               logger.info(

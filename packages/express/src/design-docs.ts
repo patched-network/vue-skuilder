@@ -1,4 +1,13 @@
+import { CardData, DocType } from '@vue-skuilder/db';
 import * as fileSystem from 'fs';
+
+/**
+ * Fake fcn to allow usage in couchdb map fcns which, after passing
+ * through `.toString()`, are applied to all courses
+ */
+function emit(key?: unknown, value?: unknown): [unknown, unknown] {
+  return [key, value];
+}
 
 // Load design documents
 export const classroomDbDesignDoc = fileSystem.readFileSync(
@@ -65,8 +74,9 @@ export const cardsByInexperienceDoc = {
   _id: '_design/cardsByInexperience',
   views: {
     cardsByInexperience: {
-      map: function (doc) {
-        if (doc.docType && doc.docType === 'CARD') {
+      // eslint-disable-next-line
+      map: function (doc: CardData) {
+        if (doc.docType && doc.docType === DocType.CARD) {
           if (
             doc.elo &&
             doc.elo.global &&
@@ -94,5 +104,5 @@ export const courseDBDesignDocs = [
   elodoc,
   tagsDoc,
   cardsByInexperienceDoc,
-  authDesignDoc
+  authDesignDoc,
 ];
