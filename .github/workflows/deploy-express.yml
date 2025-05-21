@@ -31,6 +31,9 @@ jobs:
 
       - name: Install dependencies
         run: yarn install
+        
+      - name: Install jq (for JSON manipulation)
+        run: sudo apt-get update && sudo apt-get install -y jq
 
       - name: Build workspace dependencies
         run: |
@@ -82,25 +85,26 @@ jobs:
             rsync -rl ./packages/db/package.json ${{ secrets.DO_USERNAME }}@eduquilt.com:/home/skuilder/dist/db/
           fi
           
-          # Replace workspace references with file paths
-          TMP_PKG=$(cat ./packages/express/package.json | sed 's|"@vue-skuilder/common": "workspace:^"|"@vue-skuilder/common": "file:/home/skuilder/dist/common"|g' | sed 's|"@vue-skuilder/db": "workspace:^"|"@vue-skuilder/db": "file:/home/skuilder/dist/db"|g')
-          echo "$TMP_PKG" > ./packages/express/temp-package.json
+          # Create package.json with absolute paths instead of workspace references
+          echo "Creating package.json with resolved dependency paths..."
+          cat ./packages/express/package.json | jq '.dependencies["@vue-skuilder/common"] = "file:/home/skuilder/dist/common" | .dependencies["@vue-skuilder/db"] = "file:/home/skuilder/dist/db"' > ./packages/express/temp-package.json
+          # Upload the modified package.json
           rsync -rl ./packages/express/temp-package.json ${{ secrets.DO_USERNAME }}@eduquilt.com:/home/skuilder/dist/express/${{github.sha}}/package.json
           
-          # Install dependencies on the server (using full path to yarn)
-          echo "Installing dependencies for Express app..."
-          ssh ${{ secrets.DO_USERNAME }}@eduquilt.com "cd /home/skuilder/dist/express/${{github.sha}} && source ~/.nvm/nvm.sh && NODE_ENV=production yarn install"
-          
-          # Install dependencies for workspace packages
+          # First install dependencies for common and db packages
           if [ -d "./packages/common" ]; then
             echo "Installing dependencies for common package..."
-            ssh ${{ secrets.DO_USERNAME }}@eduquilt.com "cd /home/skuilder/dist/common && source ~/.nvm/nvm.sh && NODE_ENV=production yarn install"
+            ssh ${{ secrets.DO_USERNAME }}@eduquilt.com "cd /home/skuilder/dist/common && source ~/.nvm/nvm.sh && NODE_ENV=production yarn install --no-immutable"
           fi
           
           if [ -d "./packages/db" ]; then
             echo "Installing dependencies for db package..."
-            ssh ${{ secrets.DO_USERNAME }}@eduquilt.com "cd /home/skuilder/dist/db && source ~/.nvm/nvm.sh && NODE_ENV=production yarn install"
+            ssh ${{ secrets.DO_USERNAME }}@eduquilt.com "cd /home/skuilder/dist/db && source ~/.nvm/nvm.sh && NODE_ENV=production yarn install --no-immutable"
           fi
+          
+          # Now install dependencies for express app
+          echo "Installing dependencies for Express app..."
+          ssh ${{ secrets.DO_USERNAME }}@eduquilt.com "cd /home/skuilder/dist/express/${{github.sha}} && source ~/.nvm/nvm.sh && NODE_ENV=production yarn install --no-immutable"
 
           # Update symlink to new version
           ssh ${{ secrets.DO_USERNAME }}@eduquilt.com ln -sfn /home/skuilder/dist/express/${{github.SHA}} /home/skuilder/api
