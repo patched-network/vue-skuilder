@@ -76,7 +76,7 @@ export class SkldrMouseTrap {
    * Remove specific keyboard binding(s) without affecting others
    * @param hotkey Single hotkey or array of hotkeys to remove
    */
-  public static removeBinding(hotkey: string | string[] | Array<string | string[]>) {
+  public static removeBinding(hotkey: string | string[]) {
     const instance = SkldrMouseTrap.instance();
     const currentHotkeys = [...instance.hotkeys];
 
