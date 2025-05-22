@@ -37,6 +37,7 @@ export default defineComponent({
       currentSelection: -1,
       incorrectSelections: [] as number[],
       containerRef: null as null | HTMLElement,
+      _registeredHotkeys: [] as (string | string[])[],
     };
   },
   watch: {
@@ -102,7 +103,7 @@ export default defineComponent({
       return ret;
     },
     bindKeys() {
-      SkldrMouseTrap.bind([
+      const hotkeys = [
         {
           hotkey: 'left',
           callback: this.decrementSelection,
@@ -141,19 +142,21 @@ export default defineComponent({
             }
           })(i)} option`,
         })),
-      ]);
+      ];
+
+      SkldrMouseTrap.addBinding(hotkeys);
+      
+      // Store hotkeys for cleanup
+      this._registeredHotkeys = hotkeys.map(k => k.hotkey);
     },
 
     unbindKeys() {
-      // this.MouseTrap.unbind('left');
-      // this.MouseTrap.unbind('right');
-      // this.MouseTrap.unbind('enter');
-
-      // for (let i = 1; i <= this.choiceList.length; i++) {
-      //   this.MouseTrap.unbind(i.toString());
-      // }
-
-      SkldrMouseTrap.reset();
+      // Remove specific hotkeys instead of resetting all
+      if (this._registeredHotkeys) {
+        this._registeredHotkeys.forEach(key => {
+          SkldrMouseTrap.removeBinding(key);
+        });
+      }
     },
     // bindNumberKey(n: number): void {
     //   this.MouseTrap.bind(n.toString(), () => {

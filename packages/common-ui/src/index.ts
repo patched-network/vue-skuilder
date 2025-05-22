@@ -6,7 +6,9 @@ export type { DayData, Color, ActivityRecord } from './components/HeatMap.types'
 
 // global keybinding controller
 export { default as SkMouseTrap } from './components/SkMouseTrap.vue';
+export { default as SkMouseTrapToolTip } from './components/SkMouseTrapToolTip.vue';
 export * from './components/SkMouseTrap.types';
+export * from './components/SkMouseTrapToolTip.types';
 export { SkldrMouseTrap } from './utils/SkldrMouseTrap';
 export type { HotKey, HotKeyMetaData } from './utils/SkldrMouseTrap';
 

@@ -232,7 +232,7 @@ export default defineComponent({
       init();
 
       // Bind space key
-      SkldrMouseTrap.bind([
+      SkldrMouseTrap.addBinding([
         {
           hotkey: 'space',
           callback: clearAttempt,
@@ -242,7 +242,7 @@ export default defineComponent({
     });
 
     onBeforeUnmount(() => {
-      SkldrMouseTrap.reset();
+      SkldrMouseTrap.removeBinding('space');
     });
 
     return {
