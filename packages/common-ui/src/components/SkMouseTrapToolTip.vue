@@ -2,11 +2,9 @@
   <div
     class="sk-mousetrap-tooltip-wrapper"
     ref="wrapperElement"
-    :class="{
-      'sk-mousetrap-highlight-glow': isControlKeyPressed && !disabled && highlightEffect === 'glow',
-      'sk-mousetrap-highlight-scale': isControlKeyPressed && !disabled && highlightEffect === 'scale',
-      'sk-mousetrap-highlight-border': isControlKeyPressed && !disabled && highlightEffect === 'border',
-    }"
+    :class="[
+      isControlKeyPressed && !disabled && highlightEffect !== 'none' ? `sk-mousetrap-highlight-${highlightEffect}` : ''
+    ]"
   >
     <slot></slot>
     <transition name="fade">
@@ -76,17 +74,17 @@ export default defineComponent({
     watch(
       () => isControlKeyPressed.value,
       (pressed) => {
-        if (!wrapperElement.value || props.disabled || props.highlightEffect === 'none') return;
+        if (!wrapperElement.value || props.disabled) return;
 
         const clickableElement = wrapperElement.value.querySelector(
           'button, a, input[type="button"], [role="button"]'
         ) as HTMLElement;
 
         if (clickableElement) {
-          clickableElement.style.transition = 'all 350ms ease';
+          clickableElement.style.transition = 'all 250ms ease';
 
-          if (pressed) {
-            // Add slight brightness increase to the inner element regardless of highlight type
+          if (pressed && props.highlightEffect !== 'none') {
+            // Add slight brightness increase to the inner element
             clickableElement.style.filter = 'brightness(1.1)';
           } else {
             clickableElement.style.filter = '';
@@ -99,7 +97,6 @@ export default defineComponent({
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Control') {
         isControlKeyPressed.value = true;
-        console.log(`highlight: ${props.highlightEffect}`);
       }
     };
 
@@ -202,7 +199,6 @@ export default defineComponent({
 .sk-mousetrap-tooltip-wrapper {
   display: inline-block;
   position: relative;
-  transition: all 250ms ease;
 }
 
 .sk-mousetrap-tooltip {
@@ -232,23 +228,19 @@ export default defineComponent({
 /* Highlight effects when Ctrl is pressed */
 .sk-mousetrap-highlight-glow {
   box-shadow: 0 0 8px 2px rgba(25, 118, 210, 0.6);
+  transition: box-shadow 250ms ease;
 }
 
 .sk-mousetrap-highlight-scale {
   transform: scale(1.03);
+  transition: transform 250ms ease;
 }
 
 .sk-mousetrap-highlight-border {
   outline: 2px solid rgba(25, 118, 210, 0.8);
   outline-offset: 2px;
   border-radius: 4px;
-}
-
-/* Transitions for all highlight effects */
-.sk-mousetrap-highlight-glow,
-.sk-mousetrap-highlight-scale,
-.sk-mousetrap-highlight-border {
-  transition: all 250ms ease;
+  transition: outline 250ms ease, outline-offset 250ms ease;
 }
 
 /* Fade transition */
