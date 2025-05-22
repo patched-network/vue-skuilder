@@ -6,28 +6,36 @@
           <template #prepend>
             <v-icon icon="mdi-home"></v-icon>
           </template>
-          <v-list-item-title>Home</v-list-item-title>
+          <SkMouseTrapToolTip hotkey="g h" command="Go to Home" highlight-effect="none" position="right">
+            <v-list-item-title>Home</v-list-item-title>
+          </SkMouseTrapToolTip>
         </v-list-item>
 
         <v-list-item to="/study" value="study">
           <template #prepend>
             <v-icon icon="mdi-school"></v-icon>
           </template>
-          <v-list-item-title>Study</v-list-item-title>
+          <SkMouseTrapToolTip hotkey="g s" command="Go to Study" highlight-effect="none" position="right">
+            <v-list-item-title>Study</v-list-item-title>
+          </SkMouseTrapToolTip>
         </v-list-item>
 
         <v-list-item to="/classrooms" value="classrooms">
           <template #prepend>
             <v-icon icon="mdi-account-group"></v-icon>
           </template>
-          <v-list-item-title>Classrooms</v-list-item-title>
+          <SkMouseTrapToolTip hotkey="g c" command="Go to Classrooms" highlight-effect="none" position="right">
+            <v-list-item-title>Classrooms</v-list-item-title>
+          </SkMouseTrapToolTip>
         </v-list-item>
 
         <v-list-item to="/quilts" value="quilts">
           <template #prepend>
             <v-icon icon="mdi-bookmark-multiple"></v-icon>
           </template>
-          <v-list-item-title>Quilts</v-list-item-title>
+          <SkMouseTrapToolTip hotkey="g q" command="Go to Quilts" highlight-effect="none" position="right">
+            <v-list-item-title>Quilts</v-list-item-title>
+          </SkMouseTrapToolTip>
         </v-list-item>
       </v-list>
     </v-navigation-drawer>
@@ -54,6 +62,16 @@
       </span>
     </v-footer> -->
     <snackbar-service id="SnackbarService" />
+    <SkMouseTrap />
+    
+    <v-footer app class="pa-0" color="transparent">
+      <v-card flat width="100%" class="text-center">
+        <v-card-text class="text-body-2 text-medium-emphasis">
+          <v-icon small class="me-1">mdi-keyboard</v-icon>
+          Tip: Hold <kbd>Ctrl</kbd> to see keyboard shortcuts or press <kbd>?</kbd> to view all shortcuts
+        </v-card-text>
+      </v-card>
+    </v-footer>
   </v-app>
 </template>
 
@@ -63,6 +81,9 @@ import { useTheme } from 'vuetify';
 import {
   UserLoginAndRegistrationContainer,
   SnackbarService,
+  SkMouseTrapToolTip,
+  SkMouseTrap,
+  SkldrMouseTrap,
   useConfigStore,
   useAuthStore,
 } from '@vue-skuilder/common-ui';
@@ -110,6 +131,20 @@ onBeforeMount(async () => {
 
 onMounted(async () => {
   latestBuild.value = 'buildValue not implemented';
+  
+  // Add a global shortcut to show the keyboard shortcuts dialog
+  SkldrMouseTrap.bind([
+    {
+      hotkey: '?',
+      command: 'Show keyboard shortcuts',
+      callback: () => {
+        const keyboardButton = document.querySelector('.mdi-keyboard');
+        if (keyboardButton) {
+          (keyboardButton as HTMLElement).click();
+        }
+      }
+    }
+  ]);
 });
 </script>
 
