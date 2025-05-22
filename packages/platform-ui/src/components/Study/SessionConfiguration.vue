@@ -117,15 +117,6 @@ export default defineComponent({
     SkMouseTrapToolTip,
   },
 
-  beforeUnmount() {
-    // Clean up registered hotkeys when component unmounts
-    if (this._registeredHotkeys) {
-      this._registeredHotkeys.forEach(key => {
-        SkldrMouseTrap.removeBinding(key);
-      });
-    }
-  },
-
   props: {
     initialTimeLimit: {
       type: Number,
@@ -138,7 +129,7 @@ export default defineComponent({
 
   data() {
     return {
-      _registeredHotkeys: [] as (string | string[])[],
+      registeredHotkeys: [] as (string | string[])[],
       allSelected: true,
       activeCourses: [] as (CourseRegistration & SessionConfigMetaData)[],
       activeClasses: [] as ({ classID: string } & SessionConfigMetaData)[],
@@ -156,6 +147,15 @@ export default defineComponent({
         }
       },
     },
+  },
+
+  beforeUnmount() {
+    // Clean up registered hotkeys when component unmounts
+    if (this.registeredHotkeys) {
+      this.registeredHotkeys.forEach(key => {
+        SkldrMouseTrap.removeBinding(key);
+      });
+    }
   },
 
   async created() {
@@ -176,8 +176,8 @@ export default defineComponent({
 
   unmounted() {
     // Clean up registered hotkeys when component unmounts
-    if (this._registeredHotkeys) {
-      this._registeredHotkeys.forEach(key => {
+    if (this.registeredHotkeys) {
+      this.registeredHotkeys.forEach(key => {
         SkldrMouseTrap.removeBinding(key);
       });
     }
@@ -212,8 +212,8 @@ export default defineComponent({
 
     startSession() {
       // Clean up any registered hotkeys before starting session
-      if (this._registeredHotkeys) {
-        this._registeredHotkeys.forEach(key => {
+      if (this.registeredHotkeys) {
+        this.registeredHotkeys.forEach(key => {
           SkldrMouseTrap.removeBinding(key);
         });
       }
@@ -295,7 +295,7 @@ export default defineComponent({
         },
       ];
       SkldrMouseTrap.addBinding(hotkeys);
-      this._registeredHotkeys = hotkeys.map(k => k.hotkey);
+      this.registeredHotkeys = hotkeys.map(k => k.hotkey);
     },
   },
 });
