@@ -68,11 +68,22 @@ export default defineComponent({
     // Format hotkey for display
     const formattedHotkey = computed(() => {
       const hotkey = Array.isArray(props.hotkey) ? props.hotkey[0] : props.hotkey;
-      return hotkey
-        .toLowerCase()
-        .split('+')
-        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-        .join(' + ');
+      // Check if this is a sequence (has spaces) or a combination (has +)
+      if (hotkey.includes(' ')) {
+        // For sequences like "g h", display as "G, H" 
+        return hotkey
+          .toLowerCase()
+          .split(' ')
+          .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+          .join(', ');
+      } else {
+        // For combinations like "ctrl+s", display as "Ctrl + S"
+        return hotkey
+          .toLowerCase()
+          .split('+')
+          .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+          .join(' + ');
+      }
     });
 
     // Apply highlight effect to the actual button/control when Ctrl is pressed
@@ -115,16 +126,58 @@ export default defineComponent({
     const handleHotkeyPress = () => {
       if (props.disabled || !wrapperElement.value) return;
 
-      // Find the first clickable element within our wrapper
-      const clickableElement = wrapperElement.value.querySelector(
+      // Try finding a clickable element within our wrapper
+      let clickableElement = wrapperElement.value.querySelector(
         'button, a, input[type="button"], [role="button"]'
       ) as HTMLElement;
 
+      // If no standard clickable element found, try to find navigation or list items
+      if (!clickableElement) {
+        clickableElement = wrapperElement.value.querySelector(
+          'v-list-item, .v-list-item, router-link, .router-link, a, [to]'
+        ) as HTMLElement;
+      }
+
+      // If still no element found, try the wrapper itself - it might be clickable
+      if (!clickableElement && (
+        wrapperElement.value.hasAttribute('to') || 
+        wrapperElement.value.tagName === 'A' ||
+        wrapperElement.value.classList.contains('v-list-item')
+      )) {
+        clickableElement = wrapperElement.value;
+      }
+
+      // Get closest parent list item or router link if we found a title/content element
+      if (!clickableElement) {
+        const closestClickableParent = wrapperElement.value.closest('v-list-item, .v-list-item, a, [to]');
+        if (closestClickableParent) {
+          clickableElement = closestClickableParent as HTMLElement;
+        }
+      }
+
       if (clickableElement) {
-        clickableElement.click();
-        emit('hotkey-triggered', props.hotkey);
+        if (clickableElement.hasAttribute('to')) {
+          // Handle router-link style navigation
+          const routePath = clickableElement.getAttribute('to');
+          if (routePath && window.location.pathname !== routePath) {
+            // Use parent router if available (Vue component)
+            const router = (window as any).$nuxt?.$router || (window as any).$router;
+            if (router && typeof router.push === 'function') {
+              router.push(routePath);
+            } else {
+              // Fallback to regular navigation
+              window.location.pathname = routePath;
+            }
+          }
+          emit('hotkey-triggered', props.hotkey);
+        } else {
+          // Regular click for standard elements
+          clickableElement.click();
+          emit('hotkey-triggered', props.hotkey);
+        }
       } else {
         // If no clickable element found, emit the event for parent handling
+        console.log('No clickable element found for hotkey', props.hotkey);
         emit('hotkey-triggered', props.hotkey);
       }
     };
