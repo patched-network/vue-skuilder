@@ -21,7 +21,7 @@ export interface SkMouseTrapToolTipProps {
    * The position of the tooltip relative to the wrapped element.
    * @default 'top'
    */
-  position?: 'top' | 'bottom';
+  position?: 'top' | 'bottom' | 'left' | 'right';
 
   /**
    * Whether to show the tooltip when the Ctrl key is pressed.

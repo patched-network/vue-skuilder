@@ -11,7 +11,12 @@
       <div
         v-if="showTooltip && isControlKeyPressed && !disabled"
         class="sk-mousetrap-tooltip"
-        :class="{ 'sk-mt-tooltip-top': position === 'top', 'sk-mt-tooltip-bottom': position === 'bottom' }"
+        :class="{ 
+          'sk-mt-tooltip-top': position === 'top', 
+          'sk-mt-tooltip-bottom': position === 'bottom',
+          'sk-mt-tooltip-left': position === 'left',
+          'sk-mt-tooltip-right': position === 'right'
+        }"
       >
         {{ formattedHotkey }}
       </div>
@@ -40,7 +45,7 @@ export default defineComponent({
       default: false,
     },
     position: {
-      type: String as PropType<'top' | 'bottom'>,
+      type: String as PropType<'top' | 'bottom' | 'left' | 'right'>,
       default: 'top',
     },
     showTooltip: {
@@ -211,18 +216,34 @@ export default defineComponent({
   white-space: nowrap;
   pointer-events: none;
   z-index: 9999;
-  left: 50%;
-  transform: translateX(-50%);
 }
 
 .sk-mt-tooltip-top {
   bottom: 100%;
   margin-bottom: 5px;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 .sk-mt-tooltip-bottom {
   top: 100%;
   margin-top: 5px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.sk-mt-tooltip-left {
+  right: 100%;
+  margin-right: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.sk-mt-tooltip-right {
+  left: 100%;
+  margin-left: 5px;
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 /* Highlight effects when Ctrl is pressed */
