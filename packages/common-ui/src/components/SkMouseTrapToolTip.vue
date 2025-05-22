@@ -3,7 +3,7 @@
     class="sk-mousetrap-tooltip-wrapper"
     ref="wrapperElement"
     :class="[
-      isControlKeyPressed && !disabled && highlightEffect !== 'none' ? `sk-mousetrap-highlight-${highlightEffect}` : ''
+      isControlKeyPressed && !disabled && highlightEffect !== 'none' ? `sk-mousetrap-highlight-${highlightEffect}` : '',
     ]"
   >
     <slot></slot>
@@ -11,11 +11,11 @@
       <div
         v-if="showTooltip && isControlKeyPressed && !disabled"
         class="sk-mousetrap-tooltip"
-        :class="{ 
-          'sk-mt-tooltip-top': position === 'top', 
+        :class="{
+          'sk-mt-tooltip-top': position === 'top',
           'sk-mt-tooltip-bottom': position === 'bottom',
           'sk-mt-tooltip-left': position === 'left',
-          'sk-mt-tooltip-right': position === 'right'
+          'sk-mt-tooltip-right': position === 'right',
         }"
       >
         {{ formattedHotkey }}
@@ -70,11 +70,11 @@ export default defineComponent({
       const hotkey = Array.isArray(props.hotkey) ? props.hotkey[0] : props.hotkey;
       // Check if this is a sequence (has spaces) or a combination (has +)
       if (hotkey.includes(' ')) {
-        // For sequences like "g h", display as "G, H" 
+        // For sequences like "g h", display as "g, h"
         return hotkey
           .toLowerCase()
           .split(' ')
-          .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+          .map((part) => part.charAt(0) + part.slice(1))
           .join(', ');
       } else {
         // For combinations like "ctrl+s", display as "Ctrl + S"
@@ -139,11 +139,12 @@ export default defineComponent({
       }
 
       // If still no element found, try the wrapper itself - it might be clickable
-      if (!clickableElement && (
-        wrapperElement.value.hasAttribute('to') || 
-        wrapperElement.value.tagName === 'A' ||
-        wrapperElement.value.classList.contains('v-list-item')
-      )) {
+      if (
+        !clickableElement &&
+        (wrapperElement.value.hasAttribute('to') ||
+          wrapperElement.value.tagName === 'A' ||
+          wrapperElement.value.classList.contains('v-list-item'))
+      ) {
         clickableElement = wrapperElement.value;
       }
 
@@ -185,32 +186,17 @@ export default defineComponent({
     // Register/unregister the hotkey binding
     const registerHotkey = () => {
       if (!props.disabled) {
-        SkldrMouseTrap.bind([
-          {
-            hotkey: props.hotkey,
-            command: props.command,
-            callback: handleHotkeyPress,
-          },
-        ]);
+        SkldrMouseTrap.addBinding({
+          hotkey: props.hotkey,
+          command: props.command,
+          callback: handleHotkeyPress,
+        });
       }
     };
 
     const unregisterHotkey = () => {
-      // Currently, SkldrMouseTrap only supports full reset
-      // To avoid affecting other hotkeys, we need to track all active hotkeys
-      // and rebind the ones we want to keep
-      const currentCommands = [...SkldrMouseTrap.commands];
-      const filteredCommands = currentCommands.filter(
-        (cmd) => JSON.stringify(cmd.hotkey) !== JSON.stringify(props.hotkey)
-      );
-
-      if (filteredCommands.length !== currentCommands.length) {
-        // There was a match - we need to reset and rebind the remaining hotkeys
-        SkldrMouseTrap.reset();
-
-        // Rebind all the other hotkeys
-        // Note: this approach has limitations since we don't have access to the callbacks
-        // In a future enhancement, SkldrMouseTrap should be updated to support selective unbinding
+      if (!props.disabled) {
+        SkldrMouseTrap.removeBinding(props.hotkey);
       }
     };
 

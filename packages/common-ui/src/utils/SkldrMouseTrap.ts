@@ -36,8 +36,47 @@ export class SkldrMouseTrap {
     SkldrMouseTrap.instance().hotkeys = hk;
 
     hk.forEach((k) => {
-      Mousetrap.bindGlobal(k.hotkey, k.callback);
+      Mousetrap.bindGlobal(k.hotkey, (a, b) => {
+        console.log(`Running ${k.hotkey}`);
+        k.callback(a, b);
+      });
     });
+  }
+
+  /**
+   * Add bindings without resetting existing ones
+   */
+  public static addBinding(hk: HotKey | HotKey[]) {
+    const hotkeys = Array.isArray(hk) ? hk : [hk];
+    const instance = SkldrMouseTrap.instance();
+    
+    // Add to internal registry
+    instance.hotkeys = [...instance.hotkeys, ...hotkeys];
+    
+    // Bind each hotkey
+    hotkeys.forEach((k) => {
+      Mousetrap.bindGlobal(k.hotkey, (a, b) => {
+        console.log(`Running ${k.hotkey}`);
+        k.callback(a, b);
+      });
+    });
+  }
+
+  /**
+   * Remove a specific binding without affecting others
+   */
+  public static removeBinding(hotkey: string | string[]) {
+    const instance = SkldrMouseTrap.instance();
+    const currentHotkeys = [...instance.hotkeys];
+    
+    // Remove from internal registry
+    instance.hotkeys = currentHotkeys.filter(k => {
+      // Convert both to JSON for comparison to handle arrays correctly
+      return JSON.stringify(k.hotkey) !== JSON.stringify(hotkey);
+    });
+    
+    // Unbind from Mousetrap
+    Mousetrap.unbind(hotkey);
   }
 
   public static reset() {
