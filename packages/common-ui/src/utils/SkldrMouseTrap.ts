@@ -17,6 +17,15 @@ export interface HotKeyMetaData {
  */
 function inputElementIsFocused(): boolean {
   const activeElement = document.activeElement;
+
+  // Special handling for checkbox and radio inputs
+  if (
+    activeElement instanceof HTMLInputElement &&
+    (activeElement.type === 'checkbox' || activeElement.type === 'radio')
+  ) {
+    return false;
+  }
+
   return (
     activeElement instanceof HTMLElement &&
     (activeElement.tagName === 'INPUT' ||
