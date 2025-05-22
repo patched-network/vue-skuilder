@@ -3,44 +3,7 @@
     <div data-cy="select-quilts-header" class="text-h4 mb-4">Study Session Setup</div>
 
     <div class="session-layout">
-      <!-- Left Column: Time Configuration and Start Button -->
-      <div class="fixed-controls-container">
-        <div class="fixed-controls">
-          <div class="text-h6 mb-3">Session Settings</div>
-
-          <div class="mb-5">
-            <v-text-field
-              ref="numberField"
-              v-model="timeLimit"
-              class="time-limit-field"
-              variant="outlined"
-              label="Study Session Timelimit"
-              prepend-inner-icon="mdi-clock-outline"
-              prepend-icon="mdi-minus"
-              append-icon="mdi-plus"
-              :suffix="timeLimit > 1 ? 'minutes' : 'minute'"
-              mask="##"
-              type="number"
-              @click:prepend="dec"
-              @click:append="inc"
-            />
-          </div>
-
-          <v-btn
-            data-cy="start-studying-button"
-            color="success"
-            size="large"
-            block
-            class="start-btn"
-            @click="startSession"
-          >
-            <v-icon start>mdi-play</v-icon>
-            Start!
-          </v-btn>
-        </div>
-      </div>
-
-      <!-- Right Column: Course Selection -->
+      <!-- Left Column: Course Selection -->
       <div class="course-selection-container">
         <div class="text-h6 mb-3">Select Quilts to Study</div>
         <table width="100%">
@@ -83,6 +46,43 @@
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <!-- Right Column: Time Configuration and Start Button -->
+      <div class="fixed-controls-container">
+        <div class="fixed-controls">
+          <div class="text-h6 mb-3">Session Settings</div>
+
+          <div class="mb-5">
+            <v-text-field
+              ref="numberField"
+              v-model="timeLimit"
+              class="time-limit-field"
+              variant="outlined"
+              label="Study Session Timelimit"
+              prepend-inner-icon="mdi-clock-outline"
+              prepend-icon="mdi-minus"
+              append-icon="mdi-plus"
+              :suffix="timeLimit > 1 ? 'minutes' : 'minute'"
+              mask="##"
+              type="number"
+              @click:prepend="dec"
+              @click:append="inc"
+            />
+          </div>
+
+          <v-btn
+            data-cy="start-studying-button"
+            color="success"
+            size="large"
+            block
+            class="start-btn"
+            @click="startSession"
+          >
+            <v-icon start>mdi-play</v-icon>
+            Start!
+          </v-btn>
+        </div>
       </div>
     </div>
   </div>
@@ -332,13 +332,13 @@ td {
   .fixed-controls {
     position: sticky;
     top: 20px;
-    padding-right: 20px;
+    padding-left: 20px;
   }
 
   .course-selection-container {
     flex-grow: 1;
-    border-left: 1px solid rgba(0, 0, 0, 0.12);
-    padding-left: 20px;
+    border-right: 1px solid rgba(0, 0, 0, 0.12);
+    padding-right: 20px;
   }
 }
 </style>
