@@ -66,14 +66,14 @@
     <snackbar-service id="SnackbarService" />
     <SkMouseTrap />
 
-    <v-footer app class="pa-0" color="transparent">
+    <!-- <v-footer app class="pa-0" color="transparent">
       <v-card flat width="100%" class="text-center">
         <v-card-text class="text-body-2 text-medium-emphasis">
           <v-icon small class="me-1">mdi-keyboard</v-icon>
           Tip: Hold <kbd>Ctrl</kbd> to see keyboard shortcuts or press <kbd>?</kbd> to view all shortcuts
         </v-card-text>
       </v-card>
-    </v-footer>
+    </v-footer> -->
   </v-app>
 </template>
 
