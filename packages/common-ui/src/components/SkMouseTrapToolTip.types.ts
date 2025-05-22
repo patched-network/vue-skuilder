@@ -28,6 +28,12 @@ export interface SkMouseTrapToolTipProps {
    * @default true
    */
   showTooltip?: boolean;
+
+  /**
+   * The visual effect to apply to the wrapped element when Ctrl is pressed.
+   * @default 'glow'
+   */
+  highlightEffect?: 'glow' | 'scale' | 'border' | 'none';
 }
 
 export interface SkMouseTrapToolTipEmits {
