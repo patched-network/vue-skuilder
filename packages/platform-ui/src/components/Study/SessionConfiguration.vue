@@ -71,17 +71,24 @@
             />
           </div>
 
-          <v-btn
-            data-cy="start-studying-button"
-            color="success"
-            size="large"
-            block
-            class="start-btn"
-            @click="startSession"
+          <SkMouseTrapToolTip
+            hotkey="enter"
+            command="Start Session"
+            :disabled="!activeCourses.length && !activeClasses.length"
+            highlight-effect="scale"
           >
-            <v-icon start>mdi-play</v-icon>
-            Start!
-          </v-btn>
+            <v-btn
+              data-cy="start-studying-button"
+              color="success"
+              size="large"
+              block
+              class="start-btn"
+              @click="startSession"
+            >
+              <v-icon start>mdi-play</v-icon>
+              Start!
+            </v-btn>
+          </SkMouseTrapToolTip>
         </div>
       </div>
     </div>
@@ -94,7 +101,7 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import { SkldrMouseTrap, getCurrentUser } from '@vue-skuilder/common-ui';
+import { SkldrMouseTrap, getCurrentUser, SkMouseTrapToolTip } from '@vue-skuilder/common-ui';
 import { CourseRegistration, UserDBInterface, getDataLayer, ContentSourceID } from '@vue-skuilder/db';
 
 export interface SessionConfigMetaData {
@@ -105,6 +112,19 @@ export interface SessionConfigMetaData {
 
 export default defineComponent({
   name: 'SessionConfiguration',
+
+  components: {
+    SkMouseTrapToolTip,
+  },
+
+  beforeUnmount() {
+    // Clean up registered hotkeys when component unmounts
+    if (this._registeredHotkeys) {
+      this._registeredHotkeys.forEach(key => {
+        SkldrMouseTrap.removeBinding(key);
+      });
+    }
+  },
 
   props: {
     initialTimeLimit: {
@@ -118,6 +138,7 @@ export default defineComponent({
 
   data() {
     return {
+      _registeredHotkeys: [] as (string | string[])[],
       allSelected: true,
       activeCourses: [] as (CourseRegistration & SessionConfigMetaData)[],
       activeClasses: [] as ({ classID: string } & SessionConfigMetaData)[],
@@ -154,7 +175,12 @@ export default defineComponent({
   },
 
   unmounted() {
-    SkldrMouseTrap.reset();
+    // Clean up registered hotkeys when component unmounts
+    if (this._registeredHotkeys) {
+      this._registeredHotkeys.forEach(key => {
+        SkldrMouseTrap.removeBinding(key);
+      });
+    }
   },
 
   methods: {
@@ -185,7 +211,12 @@ export default defineComponent({
     },
 
     startSession() {
-      SkldrMouseTrap.reset();
+      // Clean up any registered hotkeys before starting session
+      if (this._registeredHotkeys) {
+        this._registeredHotkeys.forEach(key => {
+          SkldrMouseTrap.removeBinding(key);
+        });
+      }
       const selectedCourses: ContentSourceID[] = this.activeCourses
         .filter((c) => c.selected)
         .map((c) => ({
@@ -247,28 +278,24 @@ export default defineComponent({
     },
 
     setHotkeys() {
-      SkldrMouseTrap.reset();
-      SkldrMouseTrap.bind([
+      const hotkeys = [
         {
           hotkey: 'right',
           callback: () => {
             this.timeLimit++;
           },
-          command: '',
+          command: 'Increase time limit',
         },
         {
           hotkey: 'left',
           callback: () => {
             this.timeLimit--;
           },
-          command: '',
+          command: 'Decrease time limit',
         },
-        {
-          hotkey: 'enter',
-          callback: this.startSession,
-          command: '',
-        },
-      ]);
+      ];
+      SkldrMouseTrap.addBinding(hotkeys);
+      this._registeredHotkeys = hotkeys.map(k => k.hotkey);
     },
   },
 });

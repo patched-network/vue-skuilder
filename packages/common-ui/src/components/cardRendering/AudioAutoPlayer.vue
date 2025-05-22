@@ -91,19 +91,24 @@ onMounted(() => {
     });
   }
 
-  SkldrMouseTrap.bind([
+  // Define hotkeys
+  const hotkeys = [
     {
       hotkey: 'up',
       callback: play,
       command: 'Replay Audio',
     },
-  ]);
+  ];
+  
+  // Add bindings
+  SkldrMouseTrap.addBinding(hotkeys);
 
   play();
 });
 
 onBeforeUnmount(() => {
-  SkldrMouseTrap.reset();
+  // Clean up hotkey bindings
+  SkldrMouseTrap.removeBinding('up');
   stop();
 });
 </script>

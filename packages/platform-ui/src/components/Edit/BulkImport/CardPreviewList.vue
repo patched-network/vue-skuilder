@@ -174,7 +174,11 @@ export default defineComponent({
 
   beforeUnmount() {
     // Clean up key bindings when component is unmounted
-    SkldrMouseTrap.reset();
+    if (this.shortcutsEnabled) {
+      this.keyBindings.forEach(kb => {
+        SkldrMouseTrap.removeBinding(kb.hotkey);
+      });
+    }
   },
 
   methods: {
@@ -235,14 +239,14 @@ export default defineComponent({
 
       if (this.shortcutsEnabled) {
         // Register keyboard shortcuts
-        SkldrMouseTrap.bind(this.keyBindings);
+        SkldrMouseTrap.addBinding(this.keyBindings);
       }
     },
 
     enableShortcuts() {
       if (!this.shortcutsEnabled) {
         this.shortcutsEnabled = true;
-        SkldrMouseTrap.bind(this.keyBindings);
+        SkldrMouseTrap.addBinding(this.keyBindings);
         console.log('[CardPreviewList] Keyboard shortcuts enabled');
       }
     },
@@ -250,7 +254,10 @@ export default defineComponent({
     disableShortcuts() {
       if (this.shortcutsEnabled) {
         this.shortcutsEnabled = false;
-        SkldrMouseTrap.reset();
+        // Remove all registered key bindings
+        this.keyBindings.forEach(kb => {
+          SkldrMouseTrap.removeBinding(kb.hotkey);
+        });
         console.log('[CardPreviewList] Keyboard shortcuts disabled');
       }
     },

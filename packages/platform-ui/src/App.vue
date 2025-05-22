@@ -41,7 +41,9 @@
     </v-navigation-drawer>
 
     <v-app-bar density="compact">
-      <v-app-bar-nav-icon @click.stop="toggleDrawer"></v-app-bar-nav-icon>
+      <SkMouseTrapToolTip hotkey="m" command="Toggle Menu" highlight-effect="none" position="right">
+        <v-app-bar-nav-icon @click.stop="toggleDrawer"></v-app-bar-nav-icon>
+      </SkMouseTrapToolTip>
       <v-spacer></v-spacer>
       <user-login-and-registration-container />
     </v-app-bar>
@@ -63,7 +65,7 @@
     </v-footer> -->
     <snackbar-service id="SnackbarService" />
     <SkMouseTrap />
-    
+
     <v-footer app class="pa-0" color="transparent">
       <v-card flat width="100%" class="text-center">
         <v-card-text class="text-body-2 text-medium-emphasis">
@@ -131,20 +133,18 @@ onBeforeMount(async () => {
 
 onMounted(async () => {
   latestBuild.value = 'buildValue not implemented';
-  
+
   // Add a global shortcut to show the keyboard shortcuts dialog
-  SkldrMouseTrap.bind([
-    {
-      hotkey: '?',
-      command: 'Show keyboard shortcuts',
-      callback: () => {
-        const keyboardButton = document.querySelector('.mdi-keyboard');
-        if (keyboardButton) {
-          (keyboardButton as HTMLElement).click();
-        }
+  SkldrMouseTrap.addBinding({
+    hotkey: '?',
+    command: 'Show keyboard shortcuts',
+    callback: () => {
+      const keyboardButton = document.querySelector('.mdi-keyboard');
+      if (keyboardButton) {
+        (keyboardButton as HTMLElement).click();
       }
-    }
-  ]);
+    },
+  });
 });
 </script>
 
