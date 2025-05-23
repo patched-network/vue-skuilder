@@ -3909,6 +3909,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/express-rate-limit@npm:^6.0.2":
+  version: 6.0.2
+  resolution: "@types/express-rate-limit@npm:6.0.2"
+  dependencies:
+    express-rate-limit: "npm:*"
+  checksum: 10c0/079dcea4a65242e7777ffd36e336dc86762988eb91534d8c691e0d2856bb12e5c28d5b8812641f51e2f86bdd2994da23b7cff683453cf20d78501bd0b13a70ba
+  languageName: node
+  linkType: hard
+
 "@types/express-serve-static-core@npm:^4.17.33":
   version: 4.19.6
   resolution: "@types/express-serve-static-core@npm:4.19.6"
@@ -5155,6 +5164,7 @@ __metadata:
     "@types/cors": "npm:^2.8.17"
     "@types/dotenv": "npm:^8.2.3"
     "@types/express": "npm:4.17.21"
+    "@types/express-rate-limit": "npm:^6.0.2"
     "@types/ffmpeg-static": "npm:^2.0.0"
     "@types/hashids": "npm:^1.0.30"
     "@types/jest": "npm:^29.5.14"
@@ -5174,6 +5184,7 @@ __metadata:
     eslint-config-prettier: "npm:^10.0.2"
     eslint-plugin-prettier: "npm:^5.2.3"
     express: "npm:^4.21.2"
+    express-rate-limit: "npm:^7.5.0"
     ffmpeg-static: "npm:^5.2.0"
     hashids: "npm:^2.3.0"
     jest: "npm:^29.6.1"
@@ -8414,6 +8425,15 @@ __metadata:
   version: 3.1.2
   resolution: "exponential-backoff@npm:3.1.2"
   checksum: 10c0/d9d3e1eafa21b78464297df91f1776f7fbaa3d5e3f7f0995648ca5b89c069d17055033817348d9f4a43d1c20b0eab84f75af6991751e839df53e4dfd6f22e844
+  languageName: node
+  linkType: hard
+
+"express-rate-limit@npm:*, express-rate-limit@npm:^7.5.0":
+  version: 7.5.0
+  resolution: "express-rate-limit@npm:7.5.0"
+  peerDependencies:
+    express: ^4.11 || 5 || ^5.0.0-beta.1
+  checksum: 10c0/3e96afa05b4f577395688ede37e0cb19901f20c350b32575fb076f3d25176209fb88d3648151755c232aaf304147c58531f070757978f376e2f08326449299fd
   languageName: node
   linkType: hard
 
