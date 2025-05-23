@@ -14,7 +14,9 @@
         "clean": "yarn clean:dist && yarn clean:node_modules",
         "clean:dist": "find packages -name 'dist' -type d -exec rm -rf {} +",
         "clean:node_modules": "find . -name 'node_modules' -type d -exec rm -rf {} +",
-        "clean:all": "yarn clean && rm -rf .pnp.* .yarn/cache .yarn/install-state.gz"
+        "clean:all": "yarn clean && rm -rf .pnp.* .yarn/cache .yarn/install-state.gz",
+        "test:e2e-db": "yarn workspace @vue-skuilder/e2e-db test:e2e",
+        "test:e2e-db-watch": "yarn workspace @vue-skuilder/e2e-db test:watch"
     },
     "private": true,
     "workspaces": [
