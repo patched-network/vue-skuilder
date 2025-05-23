@@ -121,7 +121,7 @@ export interface UserDBInterface extends DocumentUpdater {
   /**
    * Remove a scheduled card review
    */
-  removeScheduledCardReview(username: string, reviewId: string): Promise<void>;
+  removeScheduledCardReview(reviewId: string): Promise<void>;
 
   /**
    * Register user for a classroom
