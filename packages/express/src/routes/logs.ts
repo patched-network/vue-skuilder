@@ -1,14 +1,29 @@
 import express, { Request, Response } from 'express';
 import { promises as fs } from 'fs';
 import path from 'path';
-import { requestIsAdminAuthenticated } from '../couchdb/authentication.js';
+import rateLimit from 'express-rate-limit';
+
 import logger from '../logger.js';
 import process from 'process';
 
 const router = express.Router();
 
+// Rate limiting middleware for logs routes
+const logsRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20, // Limit each IP to 20 requests per windowMs
+  message: {
+    error: 'Too many log requests from this IP, please try again later.'
+  },
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+});
+
+// Apply rate limiting to all routes in this router
+router.use(logsRateLimit);
+
 // Get list of available log files
-router.get('/', async (req: Request, res: Response) => {
+router.get('/', async (_req: Request, res: Response) => {
   // [ ] add an auth mechanism. Below fcn is based on
   //     the CouchDB auth mechanism, forwarded from the web-app (not direct-access of server).
   //

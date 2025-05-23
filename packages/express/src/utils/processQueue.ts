@@ -1,6 +1,6 @@
 import { IServerRequest } from '@vue-skuilder/common';
 
-interface Request {}
+
 export interface Result {
   status: 'ok' | 'awaiting' | 'warning' | 'error';
   ok: boolean;
@@ -88,8 +88,7 @@ export default class AsyncProcessQueue<
             reject();
           }
         },
-        intervals[depth],
-        jobID
+        intervals[depth]
       );
     });
 
@@ -102,7 +101,7 @@ export default class AsyncProcessQueue<
       });
   }
 
-  public async getResult(jobID: number, depth = 0): Promise<R> {
+  public async getResult(jobID: number, _depth = 0): Promise<R> {
     const status = this.jobStatus(jobID);
 
     if (status === 'complete') {

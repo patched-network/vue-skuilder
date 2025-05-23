@@ -8,5 +8,5 @@ export interface FieldDefinition {
   type: FieldType;
   validator?: Validator;
   tagger?: Tagger;
-  generateELO?: (x: any) => CourseElo;
+  generateELO?: (x: unknown) => CourseElo;
 }

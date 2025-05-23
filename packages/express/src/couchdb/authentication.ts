@@ -36,7 +36,7 @@ export async function requestIsAdminAuthenticated(req: VueClientRequest) {
         const isLoggedInUser = s.userCtx.name === username;
         return isAdmin && isLoggedInUser;
       })
-      .catch((err) => {
+      .catch((_err) => {
         return false;
       });
   }
@@ -78,7 +78,7 @@ export async function requestIsAuthenticated(req: VueClientRequest) {
         logger.info(`AuthUser: ${JSON.stringify(s)}`);
         return s.userCtx.name === username;
       })
-      .catch((err) => {
+      .catch((_err) => {
         return false;
       });
   }

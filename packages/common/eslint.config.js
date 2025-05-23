@@ -3,7 +3,7 @@ import backendConfig from '../../eslint.config.backend.mjs';
 export default [
   ...backendConfig,
   {
-    ignores: ['node_modules/**', 'dist/**', 'coverage/**', 'eslint.config.js', 'assets/**', 'babel.config.js', 'jest.config.ts', 'test/**'],
+    ignores: ['node_modules/**', 'dist/**', 'dist-esm/**', 'eslint.config.js'],
   },
   {
     languageOptions: {
@@ -11,9 +11,6 @@ export default [
         project: './tsconfig.json',
         tsconfigRootDir: import.meta.dirname,
       },
-    },
-    rules: {
-      // Express-specific rules (backend config already includes most needed rules)
     },
   },
 ];

@@ -16,13 +16,13 @@ export interface ParsedCard {
 /**
  * Interface for card data ready to be stored in the database
  */
-export interface CardData {
+export interface BulkImportCardData {
   /** Card markdown content */
   Input: string;
   /** Card media uploads */
-  Uploads: any[];
+  Uploads: unknown[];
   /** Any additional fields can be added as needed */
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 // ImportResult and BulkCardProcessorConfig have been moved to @vue-skuilder/db

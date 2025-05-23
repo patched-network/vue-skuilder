@@ -25,7 +25,10 @@
     "scripts": {
         "build": "tsup",
         "build:debug": "tsup --sourcemap inline",
-        "dev": "tsup --watch"
+        "dev": "tsup --watch",
+        "lint": "npx eslint .",
+        "lint:fix": "npx eslint . --fix",
+        "lint:check": "npx eslint . --max-warnings 0"
     },
     "dependencies": {
         "@nilock2/pouchdb-authentication": "^1.0.2",

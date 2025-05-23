@@ -3,7 +3,7 @@ import backendConfig from '../../eslint.config.backend.mjs';
 export default [
   ...backendConfig,
   {
-    ignores: ['node_modules/**', 'dist/**', 'coverage/**', 'eslint.config.js', 'assets/**', 'babel.config.js', 'jest.config.ts', 'test/**'],
+    ignores: ['node_modules/**', 'dist/**', 'eslint.config.mjs'],
   },
   {
     languageOptions: {
@@ -13,7 +13,8 @@ export default [
       },
     },
     rules: {
-      // Express-specific rules (backend config already includes most needed rules)
+      // Database-specific rules
+      '@typescript-eslint/no-explicit-any': 'off', // PouchDB types often use any
     },
   },
 ];

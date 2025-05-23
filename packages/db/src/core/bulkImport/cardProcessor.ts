@@ -1,4 +1,4 @@
-import { CourseElo, Status, ParsedCard, CardData } from '@vue-skuilder/common';
+import { CourseElo, Status, ParsedCard, BulkImportCardData } from '@vue-skuilder/common';
 import { CourseDBInterface } from '../../core/interfaces/courseDB';
 import { ImportResult, BulkCardProcessorConfig } from './types';
 
@@ -72,7 +72,7 @@ async function processCard(
   }
 
   // Create card data object
-  const cardData: CardData = {
+  const cardData: BulkImportCardData = {
     Input: markdown,
     Uploads: [], // No uploads for bulk import
   };

@@ -13,7 +13,7 @@ export function prepareNote55(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data: any,
   author: string,
-  tags: string[],
+  _tags: string[],
   uploads?: { [x: string]: PouchDB.Core.FullAttachment }
 ): DisplayableData {
   const dataShapeId = NameSpacer.getDataShapeString({

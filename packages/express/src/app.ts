@@ -58,7 +58,7 @@ export interface VueClientRequest extends express.Request {
   body: ServerRequest;
 }
 
-app.get('/courses', async (req: Request, res: Response) => {
+app.get('/courses', async (_req: Request, res: Response) => {
   try {
     const courses = await CourseLookup.allCourses();
     res.send(courses.map((c) => `${c._id} - ${c.name}`));
@@ -164,11 +164,11 @@ app.post('/', (req: Request, res: Response) => {
   postHandler(req, res);
 });
 
-app.get('/version', (req: Request, res: Response) => {
+app.get('/version', (_req: Request, res: Response) => {
   res.send(ENV.VERSION);
 });
 
-app.get('/', (req: Request, res: Response) => {
+app.get('/', (_req: Request, res: Response) => {
   let status = `Express service is running.\nVersion: ${ENV.VERSION}\n`;
 
   CouchDB.session()

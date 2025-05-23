@@ -1,15 +1,10 @@
 {
+    "extends": "../../tsconfig.base.json",
     "compilerOptions": {
-        "declaration": true,
         "outDir": "dist",
         "rootDir": "src",
         "module": "NodeNext",
-        "moduleResolution": "nodenext",
-        "target": "es2018",
-        "strict": true,
-        "esModuleInterop": true,
-        "skipLibCheck": true,
-        "forceConsistentCasingInFileNames": true
+        "moduleResolution": "NodeNext"
     },
     "include": ["src/**/*"],
     "exclude": ["node_modules", "dist"]

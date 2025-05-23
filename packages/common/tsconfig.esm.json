@@ -3,10 +3,9 @@
   "compilerOptions": {
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "noEmit": true,
-    "paths": {
-      "@/*": ["./src/*"]
-    }
+    "outDir": "dist-esm",
+    "rootDir": "src"
   },
-  "include": ["src"]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "dist-esm"]
 }

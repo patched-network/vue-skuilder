@@ -1,7 +1,6 @@
-import { CourseConfig, CourseElo, DataShape } from '@vue-skuilder/common';
+import { CourseConfig, CourseElo, DataShape, SkuilderCourseData } from '@vue-skuilder/common';
 import { StudySessionNewItem, StudySessionItem } from './contentSource';
 import { TagStub, Tag } from '../types/types-legacy';
-import { SkuilderCourseData } from '@vue-skuilder/common/dist/db';
 import { DataLayerResult } from '../types/db';
 import { NavigationStrategyManager } from './navigationStrategyManager';
 
