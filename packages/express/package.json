@@ -58,7 +58,7 @@
         "eslint-plugin-prettier": "^5.2.3",
         "jest": "^29.6.1",
         "jest-environment-node": "^29.7.0",
-        "prettier": "^2.8.8",
+        "prettier": "^3.0.0",
         "rimraf": "*",
         "ts-jest": "^29.2.5",
         "ts-node": "^10.9.2",
