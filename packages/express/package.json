@@ -11,8 +11,9 @@
         "build": "yarn clean && tsc",
         "start": "node dist/app.js",
         "test": "jest --config jest.config.ts",
-        "lint": "eslint . \"**/*.ts\"",
-        "lint:fix": "eslint . \"**/*.ts\" --fix",
+        "lint": "npx eslint .",
+        "lint:fix": "npx eslint . --fix",
+        "lint:check": "npx eslint . --max-warnings 0",
         "type-check": "tsc --noEmit"
     },
     "packageManager": "yarn@4.6.0",

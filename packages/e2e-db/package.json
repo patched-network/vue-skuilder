@@ -10,7 +10,10 @@
         "db:start": "cd ../../ && yarn couchdb:start",
         "db:stop": "cd ../../ && yarn couchdb:stop",
         "test:e2e": "yarn db:start && yarn test && yarn db:stop",
-        "type-check": "tsc --noEmit"
+        "type-check": "tsc --noEmit",
+        "lint": "npx eslint .",
+        "lint:fix": "npx eslint . --fix",
+        "lint:check": "npx eslint . --max-warnings 0"
     },
     "dependencies": {
         "@vue-skuilder/common": "workspace:*",

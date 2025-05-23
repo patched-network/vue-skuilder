@@ -572,16 +572,18 @@ export default [
 - [ ] Create package-specific templates (skipped - going directly to implementation)
 - [ ] Test base configuration with simple TypeScript file (skipped - applying to full codebase)
 
-### ✅ Week 2: Backend Migration
-- [ ] Create ESLint config for `common` package
-- [ ] Create ESLint config for `db` package  
-- [ ] Update ESLint config for `express` package
-- [ ] Create ESLint config for `e2e-db` package
-- [ ] Add lint scripts to all backend package.json files
-- [ ] Test: `yarn workspace @vue-skuilder/common lint`
-- [ ] Test: `yarn workspace @vue-skuilder/db lint`
-- [ ] Test: `yarn workspace @vue-skuilder/express lint`
-- [ ] Test: `yarn workspace @vue-skuilder/e2e-db lint`
+### ✅ Week 2: Backend Migration - COMPLETED
+- [x] Create ESLint config for `common` package
+- [x] Create ESLint config for `db` package  
+- [x] Update ESLint config for `express` package
+- [x] Create ESLint config for `e2e-db` package
+- [x] Add lint scripts to all backend package.json files
+- [x] Test: `yarn workspace @vue-skuilder/common lint:check` (11 warnings found)
+- [x] Test: `yarn workspace @vue-skuilder/db lint:check` (extensive issues found)
+- [x] Test: `yarn workspace @vue-skuilder/express lint:check` (53 problems found)
+- [x] Test: `yarn workspace @vue-skuilder/e2e-db lint:check` (28 problems found)
+- [x] Fix ESLint config file extensions (.js → .mjs for non-module packages)
+- [x] Add appropriate ignore patterns for each package
 
 ### ✅ Week 3: Frontend Migration
 - [ ] Update `platform-ui` ESLint config to use shared base
