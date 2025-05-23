@@ -1,14 +1,14 @@
 import express, { Request, Response } from 'express';
 import { promises as fs } from 'fs';
 import path from 'path';
-import { requestIsAdminAuthenticated } from '../couchdb/authentication.js';
+
 import logger from '../logger.js';
 import process from 'process';
 
 const router = express.Router();
 
 // Get list of available log files
-router.get('/', async (req: Request, res: Response) => {
+router.get('/', async (_req: Request, res: Response) => {
   // [ ] add an auth mechanism. Below fcn is based on
   //     the CouchDB auth mechanism, forwarded from the web-app (not direct-access of server).
   //

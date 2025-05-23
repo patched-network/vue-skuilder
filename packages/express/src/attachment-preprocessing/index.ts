@@ -1,4 +1,4 @@
-import CouchDB, { useOrCreateDB } from '../couchdb/index.js';
+import CouchDB from '../couchdb/index.js';
 import nano from 'nano';
 import { normalize } from './normalize.js';
 import AsyncProcessQueue, { Result } from '../utils/processQueue.js';
@@ -186,11 +186,11 @@ async function processDocAttachments(
   return resp;
 }
 
-interface DatabaseChangesResultItemWithDoc
-  extends nano.DatabaseChangesResultItem {
-  doc: nano.DocumentGetResponse;
-  courseID: string;
-}
+// interface _DatabaseChangesResultItemWithDoc
+//   extends nano.DatabaseChangesResultItem {
+//   doc: nano.DocumentGetResponse;
+//   courseID: string;
+// }
 
 interface AttachmentProcessingRequest {
   courseID: string;

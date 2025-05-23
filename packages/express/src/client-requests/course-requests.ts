@@ -1,11 +1,10 @@
-import hashids from 'hashids';
 import { log } from 'util';
 import { CreateCourse } from '@vue-skuilder/common';
-import CouchDB, { SecurityObject, useOrCreateDB } from '../couchdb/index.js';
+import CouchDB, { SecurityObject } from '../couchdb/index.js';
 import { postProcessCourse } from '../attachment-preprocessing/index.js';
 import AsyncProcessQueue from '../utils/processQueue.js';
 import nano from 'nano';
-import { Status } from '@vue-skuilder/common';
+
 import logger from '@/logger.js';
 import { CourseLookup } from '@vue-skuilder/db';
 import { courseDBDesignDocs } from '../design-docs.js';

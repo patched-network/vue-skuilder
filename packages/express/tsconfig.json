@@ -1,38 +1,25 @@
 {
-  "extends": "@tsconfig/node18/tsconfig.json",
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "target": "ES2022", // Updated from ES5 for modern Node.js features
-    "module": "NodeNext", // Updated from commonjs for modern module support
-    "moduleResolution": "nodenext", // Added to support modern module resolution
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "outDir": "dist",
     "rootDir": "src",
-    "sourceMap": true,
 
-    // Modern TypeScript best practices
-    "esModuleInterop": true,
-    "strict": true, // Recommended for better type safety
-    "skipLibCheck": true, // Speeds up compilation
-    "forceConsistentCasingInFileNames": true,
-
-    // Existing options maintained
+    // Express-specific options
     "experimentalDecorators": true,
+    "lib": ["ES2022"],
 
-    // Updated lib array for modern features
-    "lib": ["ES2022", "DOM"],
-
-    // Added for better module resolution
+    // Module resolution
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],
       "*": ["node_modules/*"]
     },
     "typeRoots": ["./node_modules/@types", "./types"],
-    // "types": ["node"],
 
     "moduleDetection": "force",
-    "composite": true,
-    "declaration": true,
-    "declarationMap": true
+    "noEmit": false
   },
   // Changed from "files" to "include" for better project structure
   "include": ["src/**/*"],

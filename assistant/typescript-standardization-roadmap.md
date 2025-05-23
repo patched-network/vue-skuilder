@@ -244,15 +244,19 @@ yarn workspace @vue-skuilder/db build
 
 **COMMIT POINT**: Dual CommonJS/ESM exports working for shared libraries
 
-### ✅ Day 2: Express Package
-- [ ] Update `express/tsconfig.json` (extends base, NodeNext)
-- [ ] Test: Build express package
-- [ ] Verify: No breaking changes in build outputs
+### ✅ Day 2: Express Package - COMPLETED
+- [x] Update `express/tsconfig.json` (extends base, NodeNext)
+- [x] Test: Build express package
+- [x] Verify: No breaking changes in build outputs
+- [x] Fixed: 20+ TypeScript strict errors (unused parameters, imports)
+- [x] Fixed: Composite flag issue preventing JavaScript output
+- [x] Fixed: ESM import paths in common package (.js → .mjs)
+- [x] Fixed: Runtime import error for EloToNumber function
 
 ### ✅ Integration Testing
-- [ ] Test: `yarn workspace @vue-skuilder/common build`
-- [ ] Test: `yarn workspace @vue-skuilder/db build`
-- [ ] Test: `yarn workspace @vue-skuilder/express build`
+- [x] Test: `yarn workspace @vue-skuilder/common build`
+- [x] Test: `yarn workspace @vue-skuilder/db build`
+- [x] Test: `yarn workspace @vue-skuilder/express build`
 - [ ] Test: `yarn workspace @vue-skuilder/e2e-db test`
 - [ ] Verify: IDE intellisense works across backend packages
 
@@ -402,25 +406,50 @@ export interface Answer { ... }
 - Build system inconsistencies create more complexity than necessary
 - Package boundaries need clearer definition between domain and persistence concerns
 
+### ESM Import Path Resolution Issues
+
+#### Problem Discovered:
+When building dual CommonJS/ESM packages, simply renaming `.js` files to `.mjs` isn't sufficient - the import statements inside the files must also be updated to reference `.mjs` extensions.
+
+#### Specific Issue:
+- Common package generated both `elo.js` (CJS) and `elo.mjs` (ESM)
+- ESM `index.mjs` still contained `export * from './elo.js'`
+- Express app (running in ESM mode) tried to import ESM version but got wrong file references
+- Runtime error: `The requested module '@vue-skuilder/common' does not provide an export named 'EloToNumber'`
+
+#### Root Cause:
+ESM requires explicit file extensions and the build process wasn't updating import paths within files when creating the `.mjs` versions.
+
+#### Solution Implemented:
+Updated build script to use `sed` to replace `.js` with `.mjs` in import statements:
+```bash
+find dist-esm -name '*.js' -exec sed -i "s/\.js'/\.mjs'/g; s/\.js\"/\.mjs\"/g" {} \;
+```
+
+#### Impact:
+This type of import path issue would affect any ESM consumer of workspace packages and demonstrates the complexity of maintaining dual module formats manually.
+
 ## Current Status (Session 1 Complete)
 
 ### ✅ Completed Today
 - Created shared `tsconfig.base.json` with ES2022 target and strict settings
-- Migrated `common` and `db` packages to extend base configuration
-- Fixed unused parameter strictness issue in common package
+- Migrated `common`, `db`, and `express` packages to extend base configuration
+- Fixed unused parameter strictness issues across packages
 - Added dual CommonJS/ESM exports to shared libraries
 - Resolved database type export issues and naming conflicts
-- Verified all builds and dev environment still work
+- Fixed ESM import path issues (.js → .mjs) in build process
+- Verified all builds, dev environment, and express runtime working
 
 ### 🎯 Next Session Goals
-- Update express package to use base config
 - Fix e2e-db Jest import issues with new CommonJS exports
 - Complete backend TypeScript standardization
 - Test full integration with Jest consuming CommonJS exports
+- Verify IDE intellisense works across all backend packages
 
 ### 📊 Progress Metrics
-- **Packages Standardized**: 2/4 backend packages (common, db)
+- **Packages Standardized**: 3/4 backend packages (common, db, express)
 - **Build Status**: ✅ All packages building successfully with dual outputs
 - **Dev Environment**: ✅ yarn dev working
+- **Runtime Status**: ✅ Express app running with ESM imports
 - **Type Consistency**: ✅ ES2022 target across standardized packages
 - **Module Exports**: ✅ CommonJS/ESM dual exports ready for Jest

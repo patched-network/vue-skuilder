@@ -1,6 +1,6 @@
 import dotenv from 'dotenv';
 import process from 'process';
-import fs from 'fs';
+
 import { initializeDataLayer } from '@vue-skuilder/db';
 
 dotenv.config({

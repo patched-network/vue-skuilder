@@ -23,7 +23,7 @@ interface lookupData {
   uuid: string;
 }
 
-async function deleteClassroom(classroom_id: string) {}
+// async function deleteClassroom(_classroom_id: string) {}
 
 async function getClassID(joinCode: string) {
   try {
@@ -55,7 +55,7 @@ async function writeClassroomConfig(config: ClassroomConfig, classID: string) {
           ...config,
         });
       })
-      .catch((err) => {
+      .catch((_err) => {
         studentDB.insert({
           _id: CLASSROOM_CONFIG,
           ...config,
@@ -70,7 +70,7 @@ async function writeClassroomConfig(config: ClassroomConfig, classID: string) {
           ...config,
         });
       })
-      .catch((err) => {
+      .catch((_err) => {
         teacherDB.insert({
           _id: CLASSROOM_CONFIG,
           ...config,

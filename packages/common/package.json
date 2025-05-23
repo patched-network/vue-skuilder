@@ -14,7 +14,7 @@
         }
     },
     "scripts": {
-        "build": "rm -rf dist dist-esm && tsc -p tsconfig.cjs.json && tsc -p tsconfig.esm.json && find dist-esm -name '*.js' -exec sh -c 'mv \"$1\" \"${1%.js}.mjs\"' _ {} \\; && cp -r dist-esm/* dist/ && rm -rf dist-esm",
+        "build": "rm -rf dist dist-esm && tsc -p tsconfig.cjs.json && tsc -p tsconfig.esm.json && find dist-esm -name '*.js' -exec sed -i \"s/\\.js'/\\.mjs'/g; s/\\.js\\\"/\\.mjs\\\"/g\" {} \\; && find dist-esm -name '*.js' -exec sh -c 'mv \"$1\" \"${1%.js}.mjs\"' _ {} \\; && cp -r dist-esm/* dist/ && rm -rf dist-esm",
         "dev": "tsc --watch"
     },
     "packageManager": "yarn@4.6.0",
