@@ -1,17 +1,17 @@
 export class EloRanker {
   constructor(public k: number = 32) {}
 
-  setKFactor(k: number) {
+  setKFactor(k: number): void {
     this.k = k;
   }
-  getKFactor() {
+  getKFactor(): number {
     return this.k;
   }
 
-  getExpected(a: number, b: number) {
+  getExpected(a: number, b: number): number {
     return 1 / (1 + Math.pow(10, (b - a) / 400));
   }
-  updateRating(expected: number, actual: number, current: number) {
+  updateRating(expected: number, actual: number, current: number): number {
     return Math.round(current + this.k * (actual - expected));
   }
 }

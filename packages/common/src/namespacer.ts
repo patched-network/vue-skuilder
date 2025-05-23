@@ -11,7 +11,7 @@ export class NameSpacer {
       };
     }
   }
-  public static getDataShapeString(shapeDescription: ShapeDescriptor) {
+  public static getDataShapeString(shapeDescription: ShapeDescriptor): string {
     return `${shapeDescription.course}.datashape.${shapeDescription.dataShape}`;
   }
 
