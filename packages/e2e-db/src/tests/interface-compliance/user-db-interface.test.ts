@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from '@jest/globals';
 import { _resetDataLayer } from '@vue-skuilder/db';
-import type { DataLayerProvider } from '@vue-skuilder/db/core';
+import type { DataLayerProvider } from '@vue-skuilder/db';
 import { RawCouchHelper } from '../../helpers/raw-couch';
 import { TestUtils, type UserTestContext } from '../../helpers/test-utils';
 

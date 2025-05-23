@@ -8,9 +8,13 @@ export interface RawCouchDBOptions {
 
 export class RawCouchHelper {
   private couch: nano.ServerScope;
-
+  
   constructor(options: RawCouchDBOptions) {
-    this.couch = nano(options.couchUrl);
+    // Use admin credentials for test database operations
+    const couchUrl = options.adminUsername && options.adminPassword
+      ? options.couchUrl.replace('http://', `http://${options.adminUsername}:${options.adminPassword}@`)
+      : options.couchUrl;
+    this.couch = nano(couchUrl);
   }
 
   async documentExists(username: string, documentId: string): Promise<boolean> {

@@ -1,4 +1,4 @@
-import { DataLayerProvider, UserDBInterface } from '@vue-skuilder/db/core';
+import { DataLayerProvider, UserDBInterface } from '@vue-skuilder/db';
 import { initializeDataLayer, _resetDataLayer } from '@vue-skuilder/db';
 import { RawCouchHelper } from './raw-couch';
 import { TestDataFactory, TestUser } from './test-data-factory';
@@ -29,7 +29,9 @@ export class TestUtils {
     });
 
     const rawCouch = new RawCouchHelper({
-      couchUrl: 'http://localhost:5984'
+      couchUrl: 'http://localhost:5984',
+      adminUsername: 'admin',
+      adminPassword: 'password'
     });
 
     return {
@@ -148,7 +150,11 @@ export class TestUtils {
 // Global test assertions
 export const customMatchers = {
   toExistInDatabase: async (received: { username: string; documentId: string }) => {
-    const rawCouch = new RawCouchHelper({ couchUrl: 'http://localhost:5984' });
+    const rawCouch = new RawCouchHelper({ 
+      couchUrl: 'http://localhost:5984',
+      adminUsername: 'admin',
+      adminPassword: 'password'
+    });
     const exists = await rawCouch.documentExists(received.username, received.documentId);
     
     return {
@@ -158,7 +164,11 @@ export const customMatchers = {
   },
 
   toBeRemovedFromDatabase: async (received: { username: string; documentId: string }) => {
-    const rawCouch = new RawCouchHelper({ couchUrl: 'http://localhost:5984' });
+    const rawCouch = new RawCouchHelper({ 
+      couchUrl: 'http://localhost:5984',
+      adminUsername: 'admin',
+      adminPassword: 'password'
+    });
     const exists = await rawCouch.documentExists(received.username, received.documentId);
     
     return {
@@ -168,7 +178,11 @@ export const customMatchers = {
   },
 
   toHaveScheduledReviewCount: async (received: string, expectedCount: number) => {
-    const rawCouch = new RawCouchHelper({ couchUrl: 'http://localhost:5984' });
+    const rawCouch = new RawCouchHelper({ 
+      couchUrl: 'http://localhost:5984',
+      adminUsername: 'admin',
+      adminPassword: 'password'
+    });
     const actualCount = await rawCouch.getScheduledReviewCount(received);
     
     return {

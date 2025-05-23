@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from '@jest/globals';
 import { initializeDataLayer, _resetDataLayer } from '@vue-skuilder/db';
-import type { DataLayerProvider, UserDBInterface } from '@vue-skuilder/db/core';
+import type { DataLayerProvider, UserDBInterface } from '@vue-skuilder/db';
 import { RawCouchHelper } from '../../helpers/raw-couch';
 import { type TestUser, type TestScheduledReview } from '../../helpers/test-data-factory';
 
@@ -31,7 +31,9 @@ describe('Scheduled Review Removal Regression Tests', () => {
 
     // Create raw CouchDB helper for direct database verification
     rawCouch = new RawCouchHelper({
-      couchUrl: 'http://localhost:5984'
+      couchUrl: 'http://localhost:5984',
+      adminUsername: 'admin',
+      adminPassword: 'password'
     });
 
     // Create test user
@@ -110,28 +112,12 @@ describe('Scheduled Review Removal Regression Tests', () => {
       const reviewExists = await rawCouch.assertReviewExists(testUser.username, scheduledReview._id);
       expect(reviewExists).toBe(true);
 
-      // Use the CORRECTED calling pattern (if interface is updated to match implementation)
-      // NOTE: This test documents what the interface should be if we fix it
-      // For now, this might fail until the interface mismatch is resolved
-      try {
-        // @ts-expect-error - This shows the mismatch: implementation expects 1 param, interface declares 2
-        await user.removeScheduledCardReview(scheduledReview._id);
-        
-        // Verify removal
-        const finalCount = await rawCouch.getScheduledReviewCount(testUser.username);
-        expect(finalCount).toBe(0);
-        
-      } catch (error) {
-        // Document the current interface/implementation mismatch
-        console.warn('Interface mismatch detected:', error);
-        
-        // Fall back to the broken pattern that StudySession.vue currently uses
-        await user.removeScheduledCardReview(testUser.username, scheduledReview._id);
-        
-        // Still verify it works
-        const finalCount = await rawCouch.getScheduledReviewCount(testUser.username);
-        expect(finalCount).toBe(0);
-      }
+      // Use the CORRECT interface signature (username, reviewId)
+      await user.removeScheduledCardReview(testUser.username, scheduledReview._id);
+      
+      // Verify removal
+      const finalCount = await rawCouch.getScheduledReviewCount(testUser.username);
+      expect(finalCount).toBe(0);
     });
 
     it('should handle multiple scheduled reviews correctly', async () => {
@@ -169,7 +155,7 @@ describe('Scheduled Review Removal Regression Tests', () => {
       expect(reviewRemoved).toBe(true);
       
       // Verify other reviews still exist
-      const remainingIds = pendingReviews.map(r => r._id);
+      const remainingIds = pendingReviews.map((r: any) => r._id);
       for (const id of remainingIds) {
         const stillExists = await rawCouch.assertReviewExists(testUser.username, id);
         expect(stillExists).toBe(true);
@@ -208,7 +194,7 @@ describe('Scheduled Review Removal Regression Tests', () => {
       expect(pendingReviews).toHaveLength(5);
 
       // Remove reviews concurrently
-      const removePromises = pendingReviews.map(review => 
+      const removePromises = pendingReviews.map((review: any) => 
         user.removeScheduledCardReview(testUser.username, review._id)
       );
       

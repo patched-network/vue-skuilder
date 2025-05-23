@@ -3,9 +3,11 @@ import nano from 'nano';
 export class DatabaseManager {
   private couch: nano.ServerScope;
   private testDatabases: Set<string> = new Set();
-
+  
   constructor(couchUrl: string) {
-    this.couch = nano(couchUrl);
+    // Use admin credentials for test database operations
+    const adminCouchUrl = couchUrl.replace('http://', 'http://admin:password@');
+    this.couch = nano(adminCouchUrl);
   }
 
   async waitForDatabase(maxAttempts: number = 30): Promise<void> {
