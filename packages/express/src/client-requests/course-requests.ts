@@ -5,7 +5,7 @@ import { postProcessCourse } from '../attachment-preprocessing/index.js';
 import AsyncProcessQueue from '../utils/processQueue.js';
 import nano from 'nano';
 
-import logger from '@/logger.js';
+import logger from '../logger.js';
 import { CourseLookup } from '@vue-skuilder/db';
 import { courseDBDesignDocs } from '../design-docs.js';
 
