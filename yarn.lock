@@ -3942,10 +3942,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/ffmpeg-static@npm:^2.0.0":
-  version: 2.0.0
-  resolution: "@types/ffmpeg-static@npm:2.0.0"
-  checksum: 10c0/a5aff4cc58d64efbd488b394cee485944366150487ca9cd11c738a874226a75e733cf5dd3cc8e0a87e0dec12fd4366599cbf18f0223a53fbf89c7ca85d4905d9
+"@types/ffmpeg-static@npm:^3.0.3":
+  version: 3.0.3
+  resolution: "@types/ffmpeg-static@npm:3.0.3"
+  checksum: 10c0/9df00805dee3d9133a78fca6aa82f0614388c95306ccc3d28badc6c953f4f38209aea7b448953d61980939566d738d2fc509149f48b668ec12cb297f0ab1c793
   languageName: node
   linkType: hard
 
@@ -5165,7 +5165,7 @@ __metadata:
     "@types/dotenv": "npm:^8.2.3"
     "@types/express": "npm:4.17.21"
     "@types/express-rate-limit": "npm:^6.0.2"
-    "@types/ffmpeg-static": "npm:^2.0.0"
+    "@types/ffmpeg-static": "npm:^3.0.3"
     "@types/hashids": "npm:^1.0.30"
     "@types/jest": "npm:^29.5.14"
     "@types/morgan": "npm:^1.9.9"
