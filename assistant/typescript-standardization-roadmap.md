@@ -231,15 +231,18 @@ yarn workspace @vue-skuilder/db build
 - [x] Fixed unused parameter issue in common package
 - [x] Verified all packages build and dev environment works
 
-### ✅ Day 1: Build System Updates - READY FOR NEXT SESSION
-- [ ] Update `common/package.json` exports
-- [ ] Add dual CommonJS/ESM build to common
-- [ ] Update `db/tsup.config.ts` for dual output
-- [ ] Update `db/package.json` exports
-- [ ] Test: Rebuild common and db packages
-- [ ] Verify: Both CJS and ESM outputs generated
+### ✅ Day 1: Build System Updates - COMPLETED
+- [x] Update `common/package.json` exports
+- [x] Add dual CommonJS/ESM build to common
+- [x] Update `db/tsup.config.ts` for dual output
+- [x] Update `db/package.json` exports (was already correct)
+- [x] Test: Rebuild common and db packages
+- [x] Verify: Both CJS and ESM outputs generated
+- [x] Fixed missing db.js export in common package
+- [x] Resolved CardData naming conflict between db.ts and bulkImport/types.ts
+- [x] Updated imports to use BulkImportCardData in db package
 
-**COMMIT POINT**: Base TypeScript configuration standardized across backend packages
+**COMMIT POINT**: Dual CommonJS/ESM exports working for shared libraries
 
 ### ✅ Day 2: Express Package
 - [ ] Update `express/tsconfig.json` (extends base, NodeNext)
@@ -326,22 +329,98 @@ yarn workspace @vue-skuilder/db build
 **Secondary Benefits**: Improved IDE support for backend packages, consistent type checking, future-proofed backend configuration
 **Scope**: Backend packages only (common, db, express, e2e-db)
 
+## Discoveries During Implementation
+
+### TSup Build Tool Analysis
+
+#### What is TSup?
+TSup is a fast TypeScript bundler built on ESBuild, designed for:
+- Bundle TypeScript libraries quickly
+- Generate multiple output formats (CJS, ESM, IIFE, etc.)
+- Create TypeScript declaration files automatically
+- Handle external dependencies properly
+
+#### Current Usage Assessment: INCONSISTENT
+
+| Package | Build Tool | Purpose | Assessment |
+|---------|------------|---------|------------|
+| **db** | 🟡 TSup | Library bundling (CJS + ESM + DTS) | ✅ Appropriate |
+| **common** | 🔵 TSC | Direct TypeScript compilation | ❌ Should use TSup |
+| **express** | 🔵 TSC | Node.js service compilation | ✅ Appropriate |
+| **client** | 🟠 TSC + Rollup | Legacy client bundling | ❓ Legacy |
+| **common-ui** | 🟢 Vite | Vue component library | ✅ Appropriate |
+| **courses** | 🟢 Vite | Vue component library | ✅ Appropriate |
+| **platform-ui** | 🟢 Vite | Vue application | ✅ Appropriate |
+| **standalone-ui** | 🟢 Vite | Vue application | ✅ Appropriate |
+
+#### Key Issues Identified:
+- **Inconsistent library building**: `db` uses TSup (sophisticated) while `common` uses raw TSC (manual)
+- **Manual dual builds**: Had to implement complex shell scripts for common package
+- **Build tool diversity**: 5 different build approaches across 8 packages
+- **TSup underutilized**: Only used in 1 package despite being ideal for library packages
+
+#### Recommendation:
+Future consolidation should standardize on TSup for library packages (common, db) while keeping TSC for Node.js services and Vite for frontend packages.
+
+### Database Type Architecture Issues
+
+#### Problem Discovered:
+Database document interfaces (`SkuilderCourseData`, `CardData`, `DisplayableData`) are exported from the `common` package but logically belong to database layer.
+
+#### Architectural Concerns:
+```
+common (exports database types) → db (imports from common)
+```
+
+This creates:
+- **Misplaced abstractions**: Database schemas in common package
+- **Circular dependency risk**: Database layer depending on "common" for its own types
+- **Package responsibility confusion**: Common should contain business logic, not database schemas
+
+#### Issues Encountered:
+- Missing exports from common package index
+- Naming conflicts between database types and bulk import types
+- Had to add `db.js` export to common package during implementation
+
+#### Proper Architecture Should Be:
+```typescript
+// packages/db/src/types/documents.ts
+export interface SkuilderCourseData { ... }
+export interface CardData { ... }
+
+// packages/common/src/ (domain types only)
+export interface CourseElo { ... }
+export interface Answer { ... }
+```
+
+#### Current Status:
+**Continuing with existing structure** to maintain implementation focus, but flagged as **technical debt** for future architectural cleanup.
+
+### Implementation Insights:
+- TypeScript strict settings caught unused parameters and improved code quality
+- Dual module exports solved Jest CommonJS import issues effectively
+- Build system inconsistencies create more complexity than necessary
+- Package boundaries need clearer definition between domain and persistence concerns
+
 ## Current Status (Session 1 Complete)
 
 ### ✅ Completed Today
 - Created shared `tsconfig.base.json` with ES2022 target and strict settings
 - Migrated `common` and `db` packages to extend base configuration
 - Fixed unused parameter strictness issue in common package
+- Added dual CommonJS/ESM exports to shared libraries
+- Resolved database type export issues and naming conflicts
 - Verified all builds and dev environment still work
 
 ### 🎯 Next Session Goals
-- Add dual CommonJS/ESM exports to shared libraries
 - Update express package to use base config
-- Fix e2e-db Jest import issues
+- Fix e2e-db Jest import issues with new CommonJS exports
 - Complete backend TypeScript standardization
+- Test full integration with Jest consuming CommonJS exports
 
 ### 📊 Progress Metrics
 - **Packages Standardized**: 2/4 backend packages (common, db)
-- **Build Status**: ✅ All packages building successfully
+- **Build Status**: ✅ All packages building successfully with dual outputs
 - **Dev Environment**: ✅ yarn dev working
 - **Type Consistency**: ✅ ES2022 target across standardized packages
+- **Module Exports**: ✅ CommonJS/ESM dual exports ready for Jest

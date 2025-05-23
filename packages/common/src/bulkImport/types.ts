@@ -16,7 +16,7 @@ export interface ParsedCard {
 /**
  * Interface for card data ready to be stored in the database
  */
-export interface CardData {
+export interface BulkImportCardData {
   /** Card markdown content */
   Input: string;
   /** Card media uploads */
