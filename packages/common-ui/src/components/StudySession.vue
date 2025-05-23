@@ -515,7 +515,7 @@ export default defineComponent({
 
       if (isReview(item)) {
         console.log(`[StudySession] Removing previously scheduled review for: ${item.cardID}`);
-        this.user!.removeScheduledCardReview(this.user!.getUsername(), item.reviewID);
+        this.user!.removeScheduledCardReview(item.reviewID);
       }
 
       this.user!.scheduleCardReview({
@@ -599,7 +599,7 @@ export default defineComponent({
         const err = e as Error;
         if (docIsDeleted(err) && isReview(item)) {
           console.warn(`Card was deleted: ${qualified_id}`);
-          this.user!.removeScheduledCardReview(this.user!.getUsername(), item.reviewID);
+          this.user!.removeScheduledCardReview(item.reviewID);
         }
 
         this.loadCard(this.sessionController!.nextCard('dismiss-error'));
