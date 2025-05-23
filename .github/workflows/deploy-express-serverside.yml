@@ -41,7 +41,7 @@ jobs:
             cd /home/skuilder
 
             # Execute the deployment script
-            ./deploy-express-minimal-downtime.sh
+            echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S ./deploy-express-minimal-downtime.sh
 
             echo "=== Deployment completed at $(date) ==="
           EOF
@@ -67,12 +67,12 @@ jobs:
 
             if echo "$response" | grep -q "${{ github.SHA }}"; then
               echo "Success. Current version found in production"
-              
+
               # Log deployment success
               echo "✅ Express API deployed successfully with version ${{ github.SHA }}"
               echo "✅ Deployment triggered by: ${{ github.event.inputs.reason || 'Push to master' }}"
               echo "✅ Deployment timestamp: $(date -u)"
-              
+
               exit 0
             else
               echo "Current version not found in production. Retrying..."
