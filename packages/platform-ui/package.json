@@ -1,6 +1,9 @@
 {
     "name": "@vue-skuilder/platform-ui",
-    "private": true,
+    "private": false,
+    "publishConfig": {
+      "access": "public"
+    },
     "version": "0.1.0",
     "scripts": {
         "dev": "vite",

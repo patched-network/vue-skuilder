@@ -1,7 +1,10 @@
 {
     "name": "@vue-skuilder/standalone-ui",
+    "private": false,
+    "publishConfig": {
+      "access": "public"
+    },
     "version": "0.1.0",
-    "private": true,
     "type": "module",
     "scripts": {
         "dev": "vite",

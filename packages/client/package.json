@@ -1,7 +1,10 @@
 {
   "name": "@vue-skuilder/client",
+  "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
   "version": "0.1.0",
-  "private": true,
   "license": "MIT",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",

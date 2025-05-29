@@ -1,5 +1,9 @@
 {
     "name": "@vue-skuilder/db",
+    "private": false,
+    "publishConfig": {
+      "access": "public"
+    },
     "version": "0.1.0",
     "description": "Database layer for vue-skuilder",
     "main": "dist/index.js",

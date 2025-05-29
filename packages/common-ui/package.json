@@ -1,5 +1,9 @@
 {
   "name": "@vue-skuilder/common-ui",
+  "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
   "version": "0.1.0",
   "main": "./dist/common-ui.umd.js",
   "module": "./dist/common-ui.es.js",
