@@ -1,5 +1,9 @@
 {
     "name": "@vue-skuilder/express",
+    "private": false,
+    "publishConfig": {
+      "access": "public"
+    },
     "version": "0.1.0",
     "description": "an API",
     "main": "dist/app.js",
@@ -17,7 +21,6 @@
         "type-check": "tsc --noEmit"
     },
     "packageManager": "yarn@4.6.0",
-    "private": true,
     "author": "Colin Kennedy",
     "license": "GPL-3.0-or-later",
     "dependencies": {
