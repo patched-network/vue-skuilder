@@ -7,6 +7,7 @@ export interface AdminDBInterface {
   /**
    * Get all users
    */
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
   getUsers(): Promise<PouchDB.Core.Document<{}>[]>;
 
   /**

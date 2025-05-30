@@ -131,13 +131,13 @@ Currently logged-in as ${this._username}.`
           const newRemote = getUserDB(username);
           this._username = username;
 
-          this.localDB.replicate.to(newLocal).on('complete', () => {
-            newLocal.replicate.to(newRemote).on('complete', async () => {
+          void this.localDB.replicate.to(newLocal).on('complete', () => {
+            void newLocal.replicate.to(newRemote).on('complete', async () => {
               log('CREATEACCOUNT: Attempting to destroy guest localDB');
               await clearLocalGuestDB();
 
               // reset this.local & this.remote DBs
-              this.init();
+              void this.init();
             });
           });
         } else {
@@ -573,12 +573,12 @@ Currently logged-in as ${this._username}.`
     User._initialized = false;
     this.setDBandQ();
 
-    pouch.sync(this.localDB, this.remoteDB, {
+    void pouch.sync(this.localDB, this.remoteDB, {
       live: true,
       retry: true,
     });
-    this.applyDesignDocs();
-    this.deduplicateReviews();
+    void this.applyDesignDocs();
+    void this.deduplicateReviews();
     User._initialized = true;
   }
 
@@ -695,7 +695,7 @@ Currently logged-in as ${this._username}.`
           streak: 0,
           bestInterval: 0,
         };
-        getUserDB(this.getUsername()).put<CardHistory<T>>(initCardHistory);
+        void getUserDB(this.getUsername()).put<CardHistory<T>>(initCardHistory);
         return initCardHistory;
       } else {
         throw new Error(`putCardRecord failed because of:
@@ -728,12 +728,12 @@ Currently logged-in as ${this._username}.`
         // this card is scheduled more than once! delete this scheduled review
         log(`Removing duplicate scheduled review for card: ${r.value}`);
         log(`Replacing review ${reviewsMap[r.value]} with ${r.key}`);
-        this.remoteDB
+        void this.remoteDB
           .get(reviewsMap[r.value])
           .then((doc) => {
             // remove the already-hashed review, since it is the earliest one
             // (prevents continual loop of short-scheduled reviews)
-            this.remoteDB.remove(doc);
+            return this.remoteDB.remove(doc);
           })
           .then(() => {
             // replace with the later-dated scheduled review
@@ -787,7 +787,7 @@ Currently logged-in as ${this._username}.`
   }
 
   async updateCourseSettings(course_id: string, settings: UserCourseSetting[]) {
-    this.getCourseRegistrationsDoc().then((doc) => {
+    void this.getCourseRegistrationsDoc().then((doc) => {
       const crs = doc.courses.find((c) => c.courseID === course_id);
       if (crs) {
         if (crs.settings === null || crs.settings === undefined) {
@@ -893,7 +893,7 @@ async function clearLocalGuestDB() {
 
   docs.rows.forEach((r) => {
     log(`CREATEACCOUNT: Deleting ${r.id}`);
-    getLocalUserDB(GuestUsername).remove(r.doc!);
+    void getLocalUserDB(GuestUsername).remove(r.doc!);
   });
   delete localStorage.dbUUID;
 }

@@ -40,8 +40,8 @@ export class UsrCrsData implements UsrCrsDataInterface {
       return {};
     }
   }
-  public async updateCourseSettings(updates: UserCourseSetting[]) {
-    return this.user.updateCourseSettings(this._courseId, updates);
+  public updateCourseSettings(updates: UserCourseSetting[]): void {
+    void this.user.updateCourseSettings(this._courseId, updates);
   }
 
   private async getReviewstoDate(targetDate: Moment) {

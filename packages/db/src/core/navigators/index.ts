@@ -7,6 +7,7 @@ import {
 } from '..';
 import { ContentNavigationStrategyData } from '../types/contentNavigationStrategy';
 import { ScheduledCard } from '../types/user';
+import { logger } from '../../util/logger';
 
 export enum Navigators {
   ELO = 'elo',
@@ -22,24 +23,25 @@ export abstract class ContentNavigator implements StudyContentSource {
    * @param strategyData
    * @returns the runtime object used to steer a study session.
    */
-  static create(
+  static async create(
     user: UserDBInterface,
     course: CourseDBInterface,
     strategyData: ContentNavigationStrategyData
-  ): ContentNavigator {
+  ): Promise<ContentNavigator> {
     const implementingClass = strategyData.implementingClass;
     let NavigatorImpl;
 
     // Try different extension variations
-    const variations = ['', '.ts', '.js'];
+    const variations = ['', '.js', '.ts'];
 
     for (const ext of variations) {
       try {
-        NavigatorImpl = require(`./${implementingClass}${ext}`).default;
+        const module = await import(`./${implementingClass}${ext}`);
+        NavigatorImpl = module.default;
         break; // Break the loop if loading succeeds
       } catch (e) {
         // Continue to next variation if this one fails
-        console.log(`Failed to load with extension ${ext}:`, e);
+        logger.debug(`Failed to load with extension ${ext}:`, e);
       }
     }
 

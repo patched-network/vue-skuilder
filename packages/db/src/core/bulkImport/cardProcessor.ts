@@ -1,6 +1,7 @@
 import { CourseElo, Status, ParsedCard, BulkImportCardData } from '@vue-skuilder/common';
 import { CourseDBInterface } from '../../core/interfaces/courseDB';
 import { ImportResult, BulkCardProcessorConfig } from './types';
+import { logger } from '../../util/logger';
 
 /**
  * Processes multiple cards from bulk text input
@@ -23,7 +24,7 @@ export async function importParsedCards(
       const result = await processCard(parsedCard, courseDB, config);
       results.push(result);
     } catch (error) {
-      console.error('Error processing card:', error);
+      logger.error('Error processing card:', error);
       // Reconstruct originalText from parsedCard for this specific catch block
       // This is a fallback if processCard itself throws an unhandled error.
       // Normally, processCard should return an ImportResult with status 'error'.
@@ -120,7 +121,7 @@ async function processCard(
       };
     }
   } catch (error) {
-    console.error('Error adding note:', error);
+    logger.error('Error adding note:', error);
     return {
       originalText,
       status: 'error',

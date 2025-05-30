@@ -315,7 +315,7 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
   }
 
   async getAppliedTags(cardId: string): Promise<PouchDB.Query.Response<TagStub>> {
-    const ret = getAppliedTags(this.id, cardId);
+    const ret = await getAppliedTags(this.id, cardId);
     if (ret) {
       return ret;
     } else {
@@ -492,7 +492,8 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
 
     try {
       const strategy = await this.surfaceNavigationStrategy();
-      return ContentNavigator.create(u, this, strategy).getNewCards(limit);
+      const navigator = await ContentNavigator.create(u, this, strategy);
+      return navigator.getNewCards(limit);
     } catch (e) {
       console.error(`[courseDB] Error surfacing a NavigationStrategy: ${e}`);
       throw e;
@@ -504,7 +505,8 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
 
     try {
       const strategy = await this.surfaceNavigationStrategy();
-      return ContentNavigator.create(u, this, strategy).getPendingReviews();
+      const navigator = await ContentNavigator.create(u, this, strategy);
+      return navigator.getPendingReviews();
     } catch (e) {
       console.error(`[courseDB] Error surfacing a NavigationStrategy: ${e}`);
       throw e;

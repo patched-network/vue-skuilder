@@ -8,6 +8,7 @@ import {
   DataLayerProvider,
   UserDBInterface,
 } from '../../core/interfaces';
+import { logger } from '../../util/logger';
 
 import { getLoggedInUsername } from './auth';
 
@@ -40,7 +41,7 @@ export class PouchDataLayerProvider implements DataLayerProvider {
       typeof process !== 'undefined' && process.versions != null && process.versions.node != null;
 
     if (isNodeEnvironment) {
-      console.log(
+      logger.info(
         'PouchDataLayerProvider: Running in Node.js environment, skipping user session check and user DB initialization.'
       );
     } else {
@@ -48,16 +49,16 @@ export class PouchDataLayerProvider implements DataLayerProvider {
       try {
         // Get the current username from session
         this.currentUsername = await getLoggedInUsername();
-        console.log(`Current username: ${this.currentUsername}`);
+        logger.debug(`Current username: ${this.currentUsername}`);
 
         // Create the user db instance if a username was found
         if (this.currentUsername) {
           this.userDB = await User.instance(this.currentUsername);
         } else {
-          console.warn('PouchDataLayerProvider: No logged-in username found in session.');
+          logger.warn('PouchDataLayerProvider: No logged-in username found in session.');
         }
       } catch (error) {
-        console.error(
+        logger.error(
           'PouchDataLayerProvider: Error during user session check or user DB initialization:',
           error
         );

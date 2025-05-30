@@ -87,17 +87,17 @@ export function updateGuestAccountExpirationDate(guestDB: PouchDB.Database<objec
   const currentTime = moment.utc();
   const expirationDate: string = currentTime.add(2, 'months').toISOString();
 
-  guestDB
+  void guestDB
     .get(expiryDocID)
     .then((doc) => {
-      guestDB.put({
+      return guestDB.put({
         _id: expiryDocID,
         _rev: doc._rev,
         date: expirationDate,
       });
     })
     .catch(() => {
-      guestDB.put({
+      return guestDB.put({
         _id: expiryDocID,
         date: expirationDate,
       });
@@ -168,7 +168,7 @@ export function scheduleCardReview(review: {
 }) {
   const now = moment.utc();
   console.log(`Scheduling for review in: ${review.time.diff(now, 'h') / 24} days`);
-  getUserDB(review.user).put<ScheduledCard>({
+  void getUserDB(review.user).put<ScheduledCard>({
     _id: REVIEW_PREFIX + review.time.format(REVIEW_TIME_FORMAT),
     cardId: review.card_id,
     reviewTime: review.time,

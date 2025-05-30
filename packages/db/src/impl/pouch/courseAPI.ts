@@ -148,10 +148,10 @@ async function addCard(
     docType: DocType.CARD,
     elo: elo || toCourseElo(990 + Math.round(20 * Math.random())),
   });
-  tags.forEach((tag) => {
+  for (const tag of tags) {
     console.log(`adding tag: ${tag} to card ${card.id}`);
-    addTagToCard(courseID, card.id, tag, false);
-  });
+    await addTagToCard(courseID, card.id, tag, false);
+  }
   return card;
 }
 
@@ -197,14 +197,17 @@ export async function addTagToCard(
       tag.taggedCards.push(cardID);
 
       if (updateELO) {
-        courseApi.getCardEloData([cardID]).then((eloData) => {
+        try {
+          const eloData = await courseApi.getCardEloData([cardID]);
           const elo = eloData[0];
           elo.tags[tagID] = {
             count: 0,
             score: elo.global.score, // todo: or 1000?
           };
-          updateCardElo(courseID, cardID, elo);
-        });
+          await updateCardElo(courseID, cardID, elo);
+        } catch (error) {
+          console.error('Failed to update ELO data for card:', cardID, error);
+        }
       }
 
       return courseDB.put<Tag>(tag);

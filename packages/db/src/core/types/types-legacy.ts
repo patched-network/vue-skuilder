@@ -1,10 +1,11 @@
 import { CourseElo, Answer, Evaluation } from '@vue-skuilder/common';
 import { Moment } from 'moment';
+import { logger } from '../../util/logger';
 
 export const GuestUsername: string = 'Guest';
 
-export const log = (message: string) => {
-  console.log(message);
+export const log = (message: string): void => {
+  logger.log(message);
 };
 
 export enum DocType {
