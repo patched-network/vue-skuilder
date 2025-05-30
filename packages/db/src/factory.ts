@@ -1,6 +1,7 @@
 // db/src/factory.ts
 
 import { DataLayerProvider } from './core/interfaces';
+import { logger } from './util/logger';
 
 interface DBEnv {
   COUCHDB_SERVER_URL: string; // URL of CouchDB server
@@ -37,7 +38,7 @@ let dataLayerInstance: DataLayerProvider | null = null;
  */
 export async function initializeDataLayer(config: DataLayerConfig): Promise<DataLayerProvider> {
   if (dataLayerInstance) {
-    console.warn('Data layer already initialized. Returning existing instance.');
+    logger.warn('Data layer already initialized. Returning existing instance.');
     return dataLayerInstance;
   }
 

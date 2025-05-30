@@ -7,6 +7,7 @@ import {
 } from '..';
 import { ContentNavigationStrategyData } from '../types/contentNavigationStrategy';
 import { ScheduledCard } from '../types/user';
+import { logger } from '../../util/logger';
 
 export enum Navigators {
   ELO = 'elo',
@@ -40,7 +41,7 @@ export abstract class ContentNavigator implements StudyContentSource {
         break; // Break the loop if loading succeeds
       } catch (e) {
         // Continue to next variation if this one fails
-        console.log(`Failed to load with extension ${ext}:`, e);
+        logger.debug(`Failed to load with extension ${ext}:`, e);
       }
     }
 
