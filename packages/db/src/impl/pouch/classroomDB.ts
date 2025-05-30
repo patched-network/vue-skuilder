@@ -89,7 +89,7 @@ export class StudentClassroomDB
     super();
     this._id = classID;
     this._user = user;
-    this.init();
+    // init() is called explicitly in factory method, not in constructor
   }
 
   async init() {
@@ -122,7 +122,9 @@ export class StudentClassroomDB
   public setChangeFcn(f: (value: unknown) => object) {
     // todo: make this into a view request, w/ the user's name attached
     // todo: requires creating the view doc on classroom create in /express
-    this.userMessages.on('change', f);
+    if (this.userMessages) {
+      this.userMessages.on('change', f);
+    }
   }
 
   public async getPendingReviews(): Promise<(StudySessionReviewItem & ScheduledCard)[]> {
@@ -238,16 +240,15 @@ export class TeacherClassroomDB extends ClassroomDBBase implements TeacherClassr
   public async removeContent(content: AssignedContent) {
     const contentID = this.getContentId(content);
 
-    this._db
-      .get(contentID)
-      .then((doc) => {
-        this._db.remove(doc);
-      })
-      .then(() => {
-        this._db.replicate.to(this._stuDb, {
-          doc_ids: [contentID],
-        });
+    try {
+      const doc = await this._db.get(contentID);
+      await this._db.remove(doc);
+      void this._db.replicate.to(this._stuDb, {
+        doc_ids: [contentID],
       });
+    } catch (error) {
+      console.error('Failed to remove content:', contentID, error);
+    }
   }
 
   public async assignContent(content: AssignedContent) {
@@ -276,7 +277,7 @@ export class TeacherClassroomDB extends ClassroomDBBase implements TeacherClassr
     }
 
     if (put.ok) {
-      this._db.replicate.to(this._stuDb, {
+      void this._db.replicate.to(this._stuDb, {
         doc_ids: [id],
       });
       return true;
