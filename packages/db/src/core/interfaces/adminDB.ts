@@ -7,7 +7,7 @@ export interface AdminDBInterface {
   /**
    * Get all users
    */
-  getUsers(): Promise<PouchDB.Core.Document<{}>[]>;
+  getUsers(): Promise<PouchDB.Core.Document<unknown>[]>;
 
   /**
    * Get all courses
