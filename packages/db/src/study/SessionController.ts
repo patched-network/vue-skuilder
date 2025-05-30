@@ -97,7 +97,7 @@ export class SessionController extends Loggable {
   public get detailedReport(): string {
     return this.newQ.toString + '\n' + this.reviewQ.toString + '\n' + this.failedQ.toString;
   }
-  // @ts-expect-error
+  // @ts-expect-error NodeJS.Timeout type not available in browser context
   private _intervalHandle: NodeJS.Timeout;
 
   /**
@@ -257,7 +257,7 @@ export class SessionController extends Loggable {
 
     // queue some more content if we are getting low
     if (this._isInitialized && this.newQ.length < 5) {
-      this.getNewCards();
+      void this.getNewCards();
     }
 
     return item;

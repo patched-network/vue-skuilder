@@ -315,7 +315,7 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
   }
 
   async getAppliedTags(cardId: string): Promise<PouchDB.Query.Response<TagStub>> {
-    const ret = getAppliedTags(this.id, cardId);
+    const ret = await getAppliedTags(this.id, cardId);
     if (ret) {
       return ret;
     } else {

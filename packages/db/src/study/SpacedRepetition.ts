@@ -32,7 +32,7 @@ function newQuestionInterval(user: DocumentUpdater, cardHistory: CardHistory<Que
   if (lastInterval > cardHistory.bestInterval) {
     cardHistory.bestInterval = lastInterval;
     // update bestInterval on cardHistory in db
-    user.update<CardHistory<QuestionRecord>>(cardHistory._id, {
+    void user.update<CardHistory<QuestionRecord>>(cardHistory._id, {
       bestInterval: lastInterval,
     });
   }

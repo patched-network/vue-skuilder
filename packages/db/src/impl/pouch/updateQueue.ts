@@ -31,7 +31,7 @@ export default class UpdateQueue extends Loggable {
     // PouchDB.debug.enable('*');
     this.db = db;
     console.log(`UpdateQ initialized...`);
-    this.db.info().then((i) => {
+    void this.db.info().then((i) => {
       console.log(`db info: ${JSON.stringify(i)}`);
     });
   }

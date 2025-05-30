@@ -122,9 +122,7 @@ export class StudentClassroomDB
   public setChangeFcn(f: (value: unknown) => object) {
     // todo: make this into a view request, w/ the user's name attached
     // todo: requires creating the view doc on classroom create in /express
-    if (this.userMessages) {
-      this.userMessages.on('change', f);
-    }
+    void this.userMessages.on('change', f);
   }
 
   public async getPendingReviews(): Promise<(StudySessionReviewItem & ScheduledCard)[]> {
