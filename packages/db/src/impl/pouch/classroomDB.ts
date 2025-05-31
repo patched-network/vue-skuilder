@@ -5,6 +5,7 @@ import {
 } from '@/core/interfaces/contentSource';
 import { ClassroomConfig } from '@vue-skuilder/common';
 import { ENV } from '@/factory';
+import logger from '@/utils/logger';
 import moment from 'moment';
 import pouch from './pouchdb-setup';
 import {
@@ -37,14 +38,17 @@ abstract class ClassroomDBBase {
   protected _initComplete: boolean = false;
 
   protected readonly _content_prefix: string = 'content';
-  protected get _content_searchkeys() {
+  protected get _content_searchkeys(): {
+    startKey: string;
+    endKey: string;
+  } {
     return getStartAndEndKeys(this._content_prefix);
   }
 
   protected abstract init(): Promise<void>;
 
   public async getAssignedContent(): Promise<AssignedContent[]> {
-    console.log(`Getting assigned content...`);
+    logger.info(`Getting assigned content...`);
     // see couchdb docs 6.2.2:
     //   Guide to Views -> Views Collation -> String Ranges
     const docRows = await this._db.allDocs<AssignedContent>({
@@ -56,7 +60,7 @@ abstract class ClassroomDBBase {
     const ret = docRows.rows.map((row) => {
       return row.doc!;
     });
-    // console.log(`Assigned content: ${JSON.stringify(ret)}`);
+    // logger.info(`Assigned content: ${JSON.stringify(ret)}`);
 
     return ret;
   }
@@ -92,7 +96,7 @@ export class StudentClassroomDB
     // init() is called explicitly in factory method, not in constructor
   }
 
-  async init() {
+  async init(): Promise<void> {
     const dbName = `classdb-student-${this._id}`;
     this._db = new pouch(
       ENV.COUCHDB_SERVER_PROTOCOL + '://' + ENV.COUCHDB_SERVER_URL + dbName,
@@ -119,7 +123,7 @@ export class StudentClassroomDB
     return ret;
   }
 
-  public setChangeFcn(f: (value: unknown) => object) {
+  public setChangeFcn(f: (value: unknown) => object): void {
     // todo: make this into a view request, w/ the user's name attached
     // todo: requires creating the view doc on classroom create in /express
     void this.userMessages.on('change', f);
@@ -149,7 +153,7 @@ export class StudentClassroomDB
     const assigned = await this.getAssignedContent();
     const due = assigned.filter((c) => now.isAfter(moment.utc(c.activeOn, REVIEW_TIME_FORMAT)));
 
-    console.log(`Due content: ${JSON.stringify(due)}`);
+    logger.info(`Due content: ${JSON.stringify(due)}`);
 
     let ret: StudySessionNewItem[] = [];
 
@@ -180,7 +184,7 @@ export class StudentClassroomDB
       }
     }
 
-    console.log(`New Cards from classroom ${this._cfg.name}: ${ret.map((c) => c.qualifiedID)}`);
+    logger.info(`New Cards from classroom ${this._cfg.name}: ${ret.map((c) => c.qualifiedID)}`);
 
     return ret.filter((c) => {
       if (activeCards.some((ac) => c.qualifiedID.includes(ac))) {
@@ -203,7 +207,7 @@ export class TeacherClassroomDB extends ClassroomDBBase implements TeacherClassr
     this._id = classID;
   }
 
-  async init() {
+  async init(): Promise<void> {
     const dbName = `classdb-teacher-${this._id}`;
     const stuDbName = `classdb-student-${this._id}`;
     this._db = new pouch(
@@ -235,7 +239,7 @@ export class TeacherClassroomDB extends ClassroomDBBase implements TeacherClassr
     return ret;
   }
 
-  public async removeContent(content: AssignedContent) {
+  public async removeContent(content: AssignedContent): Promise<void> {
     const contentID = this.getContentId(content);
 
     try {
@@ -245,11 +249,11 @@ export class TeacherClassroomDB extends ClassroomDBBase implements TeacherClassr
         doc_ids: [contentID],
       });
     } catch (error) {
-      console.error('Failed to remove content:', contentID, error);
+      logger.error('Failed to remove content:', contentID, error);
     }
   }
 
-  public async assignContent(content: AssignedContent) {
+  public async assignContent(content: AssignedContent): Promise<boolean> {
     let put: PouchDB.Core.Response;
     const id: string = this.getContentId(content);
 
@@ -292,7 +296,7 @@ export const ClassroomLookupDB: () => PouchDB.Database = () =>
 
 export function getClassroomDB(classID: string, version: 'student' | 'teacher'): PouchDB.Database {
   const dbName = `classdb-${version}-${classID}`;
-  console.log(`Retrieving classroom db: ${dbName}`);
+  logger.info(`Retrieving classroom db: ${dbName}`);
 
   return new pouch(
     ENV.COUCHDB_SERVER_PROTOCOL + '://' + ENV.COUCHDB_SERVER_URL + dbName,
