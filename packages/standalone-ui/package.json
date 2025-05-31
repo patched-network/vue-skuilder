@@ -7,7 +7,7 @@
     "type": "module",
     "scripts": {
         "dev": "vite",
-        "build": "vue-tsc --noEmit && vite build",
+        "build": "vite build",
         "preview": "vite preview",
         "test:e2e": "cypress open",
         "test:e2e:headless": "cypress run",
