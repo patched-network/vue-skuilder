@@ -29,7 +29,7 @@ export async function addNote55(
   tags: string[],
   uploads?: { [x: string]: PouchDB.Core.FullAttachment },
   elo: CourseElo = blankCourseElo()
-) {
+): Promise<PouchDB.Core.Response> {
   const db = getCourseDB(courseID);
   const payload = prepareNote55(courseID, codeCourse, shape, data, author, tags, uploads);
   const result = await db.post<DisplayableData>(payload);
@@ -44,7 +44,7 @@ export async function addNote55(
       // create cards
       await createCards(courseID, dataShapeId, result.id, tags, elo);
     } catch (error) {
-      console.error(
+      logger.error(
         `[addNote55] Failed to create cards for note ${result.id}: ${
           error instanceof Error ? error.message : String(error)
         }`
@@ -54,7 +54,7 @@ export async function addNote55(
       (result as any).cardCreationError = error instanceof Error ? error.message : String(error);
     }
   } else {
-    console.error(`[addNote55] Error adding note. Result: ${JSON.stringify(result)}`);
+    logger.error(`[addNote55] Error adding note. Result: ${JSON.stringify(result)}`);
   }
 
   return result;
@@ -66,7 +66,7 @@ async function createCards(
   noteID: PouchDB.Core.DocumentId,
   tags: string[],
   elo: CourseElo = blankCourseElo()
-) {
+): Promise<void> {
   const cfg = await getCredentialledCourseConfig(courseID);
   const dsDescriptor = NameSpacer.getDataShapeDescriptor(datashapeID);
   let questionViewTypes: string[] = [];
@@ -79,14 +79,12 @@ async function createCards(
 
   if (questionViewTypes.length === 0) {
     const errorMsg = `No questionViewTypes found for datashapeID: ${datashapeID} in course config. Cards cannot be created.`;
-    console.error(errorMsg);
+    logger.error(errorMsg);
     throw new Error(errorMsg);
   }
 
-  let createdCards = 0;
   for (const questionView of questionViewTypes) {
     await createCard(questionView, courseID, dsDescriptor, noteID, tags, elo);
-    createdCards++;
   }
 }
 
@@ -97,8 +95,7 @@ async function createCard(
   noteID: string,
   tags: string[],
   elo: CourseElo = blankCourseElo()
-) {
-  tags.forEach((t) => console.log(`Adding ${t}!`));
+): Promise<void> {
   const qDescriptor = NameSpacer.getQuestionDescriptor(questionViewName);
   const cfg = await getCredentialledCourseConfig(courseID);
 
@@ -140,7 +137,7 @@ async function addCard(
   id_view: PouchDB.Core.DocumentId,
   elo: CourseElo,
   tags: string[]
-) {
+): Promise<PouchDB.Core.Response> {
   const card = await getCourseDB(courseID).post<CardData>({
     course,
     id_displayable_data,
@@ -149,7 +146,7 @@ async function addCard(
     elo: elo || toCourseElo(990 + Math.round(20 * Math.random())),
   });
   for (const tag of tags) {
-    console.log(`adding tag: ${tag} to card ${card.id}`);
+    logger.info(`adding tag: ${tag} to card ${card.id}`);
     await addTagToCard(courseID, card.id, tag, false);
   }
   return card;
@@ -160,10 +157,10 @@ export async function getCredentialledCourseConfig(courseID: string): Promise<Co
     const db = getCourseDB(courseID);
     const ret = await db.get<CourseConfig>('CourseConfig');
     ret.courseID = courseID;
-    console.log(`Returning course config: ${JSON.stringify(ret)}`);
+    logger.info(`Returning course config: ${JSON.stringify(ret)}`);
     return ret;
   } catch (e) {
-    console.error(`Error fetching config for ${courseID}:`, e);
+    logger.error(`Error fetching config for ${courseID}:`, e);
     throw e;
   }
 }
@@ -191,7 +188,7 @@ export async function addTagToCard(
   const courseDB = getCourseDB(courseID);
   const courseApi = new CourseDB(courseID, async () => User.Dummy());
   try {
-    console.log(`Applying tag ${tagID} to card ${courseID + '-' + cardID}...`);
+    logger.info(`Applying tag ${tagID} to card ${courseID + '-' + cardID}...`);
     const tag = await courseDB.get<Tag>(prefixedTagID);
     if (!tag.taggedCards.includes(cardID)) {
       tag.taggedCards.push(cardID);
@@ -206,7 +203,7 @@ export async function addTagToCard(
           };
           await updateCardElo(courseID, cardID, elo);
         } catch (error) {
-          console.error('Failed to update ELO data for card:', cardID, error);
+          logger.error('Failed to update ELO data for card:', cardID, error);
         }
       }
 
@@ -214,11 +211,9 @@ export async function addTagToCard(
     } else throw new AlreadyTaggedErr(`Card ${cardID} is already tagged with ${tagID}`);
   } catch (e) {
     if (e instanceof AlreadyTaggedErr) {
-      console.warn(e.message);
       throw e;
     }
 
-    console.log(`Tag ${tagID} does not exist...`);
     await createTag(courseID, tagID);
     return addTagToCard(courseID, cardID, tagID, updateELO);
   }

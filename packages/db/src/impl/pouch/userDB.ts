@@ -4,6 +4,7 @@ import { ENV } from '@/factory';
 import moment, { Moment } from 'moment';
 import { GuestUsername } from '../../core/types/types-legacy';
 import pouch from './pouchdb-setup';
+import { logger } from '../../util/logger';
 
 import {
   ClassroomRegistrationDesignation,
@@ -38,7 +39,7 @@ import UpdateQueue, { Update } from './updateQueue';
 import { UsrCrsData } from './user-course-relDB';
 
 const log = (s: any) => {
-  console.log(s);
+  logger.debug(s);
 };
 
 const cardHistoryPrefix = 'cardH-';
@@ -54,7 +55,7 @@ function getRemoteCouchRootDB(): PouchDB.Database {
       skip_setup: true,
     });
   } catch (error) {
-    console.error('Failed to initialize remote CouchDB connection:', error);
+    logger.error('Failed to initialize remote CouchDB connection:', error);
     throw new Error(`Failed to initialize CouchDB: ${JSON.stringify(error)}`);
   }
   return remoteCouchRootDB;
@@ -143,7 +144,7 @@ Currently logged-in as ${this._username}.`
         } else {
           ret.status = Status.error;
           ret.error = '';
-          console.log(`Signup not OK: ${JSON.stringify(signupRequest)}`);
+          logger.warn(`Signup not OK: ${JSON.stringify(signupRequest)}`);
           // throw signupRequest;
           return ret;
         }
@@ -153,7 +154,7 @@ Currently logged-in as ${this._username}.`
           ret.error = 'This username is taken!';
           ret.status = Status.error;
         }
-        console.log(`Error on signup: ${JSON.stringify(e)}`);
+        logger.error(`Error on signup: ${JSON.stringify(e)}`);
         return ret;
       }
     }
@@ -194,7 +195,7 @@ Currently logged-in as ${this._username}.`
   public async getCourseRegistrationsDoc(): Promise<
     CourseRegistrationDoc & PouchDB.Core.IdMeta & PouchDB.Core.GetMeta
   > {
-    console.log(`Fetching courseRegistrations for ${this.getUsername()}`);
+    logger.debug(`Fetching courseRegistrations for ${this.getUsername()}`);
 
     let ret;
 
@@ -247,16 +248,16 @@ Currently logged-in as ${this._username}.`
   public async getActivityRecords(): Promise<ActivityRecord[]> {
     try {
       const hist = await this.getHistory();
-      
+
       const allRecords: ActivityRecord[] = [];
       if (!Array.isArray(hist)) {
-        console.error('getHistory did not return an array:', hist);
+        logger.error('getHistory did not return an array:', hist);
         return allRecords;
       }
-      
+
       // Sample the first few records to understand structure
       let sampleCount = 0;
-      
+
       for (let i = 0; i < hist.length; i++) {
         try {
           if (hist[i] && Array.isArray(hist[i]!.records)) {
@@ -266,9 +267,9 @@ Currently logged-in as ${this._username}.`
                 if (!record.timeStamp) {
                   return;
                 }
-                
+
                 let timeStamp;
-                
+
                 // Handle different timestamp formats
                 if (typeof record.timeStamp === 'object') {
                   // It's likely a Moment object
@@ -281,7 +282,7 @@ Currently logged-in as ${this._username}.`
                   } else {
                     // Log a sample of unknown object types, but don't flood console
                     if (sampleCount < 3) {
-                      console.warn('Unknown timestamp object type:', record.timeStamp);
+                      logger.warn('Unknown timestamp object type:', record.timeStamp);
                       sampleCount++;
                     }
                     return;
@@ -300,28 +301,29 @@ Currently logged-in as ${this._username}.`
                   // Unknown type, skip
                   return;
                 }
-                
+
                 allRecords.push({
                   timeStamp,
                   courseID: record.courseID || 'unknown',
                   cardID: record.cardID || 'unknown',
                   timeSpent: record.timeSpent || 0,
-                  type: 'card_view'
+                  type: 'card_view',
                 });
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
               } catch (err) {
                 // Silently skip problematic records to avoid flooding logs
               }
             });
           }
         } catch (err) {
-          console.error('Error processing history item:', err);
+          logger.error('Error processing history item:', err);
         }
       }
 
-      console.log(`Found ${allRecords.length} activity records`);
+      logger.debug(`Found ${allRecords.length} activity records`);
       return allRecords;
     } catch (err) {
-      console.error('Error in getActivityRecords:', err);
+      logger.error('Error in getActivityRecords:', err);
       return [];
     }
   }
@@ -389,7 +391,7 @@ Currently logged-in as ${this._username}.`
     return this.getCourseRegistrationsDoc()
       .then((doc: CourseRegistrationDoc) => {
         const status = previewMode ? 'preview' : 'active';
-        console.log(`Registering for ${course_id} with status: ${status}`);
+        logger.debug(`Registering for ${course_id} with status: ${status}`);
 
         const regItem: CourseRegistration = {
           status: status,
@@ -487,7 +489,7 @@ Currently logged-in as ${this._username}.`
 
     try {
       const cfg = await this.localDB.get<UserConfig>(User.DOC_IDS.CONFIG);
-      console.log('Raw config from DB:', cfg);
+      logger.debug('Raw config from DB:', cfg);
 
       return cfg;
     } catch (e) {
@@ -496,14 +498,14 @@ Currently logged-in as ${this._username}.`
         await this.localDB.put<UserConfig>(defaultConfig);
         return this.getConfig();
       } else {
-        console.error(e);
+        logger.error(e);
         throw new Error(`Error returning the user's configuration: ${JSON.stringify(e)}`);
       }
     }
   }
 
   public async setConfig(items: Partial<UserConfig>) {
-    console.log(`Setting Config items ${JSON.stringify(items)}`);
+    logger.debug(`Setting Config items ${JSON.stringify(items)}`);
 
     const c = await this.getConfig();
     const put = await this.localDB.put<UserConfig>({
@@ -512,9 +514,9 @@ Currently logged-in as ${this._username}.`
     });
 
     if (put.ok) {
-      console.log(`Config items set: ${JSON.stringify(items)}`);
+      logger.debug(`Config items set: ${JSON.stringify(items)}`);
     } else {
-      console.error(`Error setting config items: ${JSON.stringify(put)}`);
+      logger.error(`Error setting config items: ${JSON.stringify(put)}`);
     }
   }
 
@@ -625,12 +627,12 @@ Currently logged-in as ${this._username}.`
         }
       } catch (error: unknown) {
         if (error instanceof Error && error.name === 'conflict') {
-          console.warn(`Design doc ${doc._id} update conflict - will retry`);
+          logger.warn(`Design doc ${doc._id} update conflict - will retry`);
           // Wait a bit and try again
           await new Promise((resolve) => setTimeout(resolve, 1000));
           await this.applyDesignDoc(doc); // Recursive retry
         } else {
-          console.error(`Failed to apply design doc ${doc._id}:`, error);
+          logger.error(`Failed to apply design doc ${doc._id}:`, error);
           throw error;
         }
       }
@@ -836,7 +838,7 @@ Currently logged-in as ${this._username}.`
       }
     }
 
-    console.log(`Returning classroom registrations doc: ${JSON.stringify(ret)}`);
+    logger.debug(`Returning classroom registrations doc: ${JSON.stringify(ret)}`);
     return ret;
   }
 
@@ -1052,7 +1054,7 @@ export async function registerUserForClassroom(
  * This noop exists to facilitate writing couchdb filter fcns
  */
 function emit(x: unknown, y: unknown): void {
-  console.log(`noop:`, x, y);
+  logger.debug(`noop:`, x, y);
 }
 
 export async function dropUserFromClassroom(user: string, classID: string) {

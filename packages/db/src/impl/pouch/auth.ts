@@ -16,8 +16,8 @@ export async function getCurrentSession(): Promise<SessionResponse> {
     const authXML = new XMLHttpRequest();
     authXML.withCredentials = true;
 
-    authXML.onerror = (e) => {
-      reject(new Error('Session check failed'));
+    authXML.onerror = (e): void => {
+      reject(new Error('Session check failed:', e));
     };
 
     authXML.addEventListener('load', () => {

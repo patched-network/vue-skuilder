@@ -1,4 +1,5 @@
 import { Loggable } from '../../util/Loggable';
+import { logger } from '../../util/logger';
 
 export type Update<T> = Partial<T> | ((x: T) => T);
 
@@ -17,7 +18,7 @@ export default class UpdateQueue extends Loggable {
     id: PouchDB.Core.DocumentId,
     update: Update<T>
   ) {
-    console.log(`Update requested on doc: ${id}`);
+    logger.debug(`Update requested on doc: ${id}`);
     if (this.pendingUpdates[id]) {
       this.pendingUpdates[id].push(update);
     } else {
@@ -30,14 +31,14 @@ export default class UpdateQueue extends Loggable {
     super();
     // PouchDB.debug.enable('*');
     this.db = db;
-    console.log(`UpdateQ initialized...`);
+    logger.debug(`UpdateQ initialized...`);
     void this.db.info().then((i) => {
-      console.log(`db info: ${JSON.stringify(i)}`);
+      logger.debug(`db info: ${JSON.stringify(i)}`);
     });
   }
 
   private async applyUpdates<T extends PouchDB.Core.Document<object>>(id: string): Promise<T> {
-    console.log(`Applying updates on doc: ${id}`);
+    logger.debug(`Applying updates on doc: ${id}`);
     if (this.inprogressUpdates[id]) {
       // console.log(`Updates in progress...`);
       await this.db.info(); // stall for a round trip
@@ -49,7 +50,7 @@ export default class UpdateQueue extends Loggable {
 
         try {
           let doc = await this.db.get<T>(id);
-          console.log(`Retrieved doc: ${id}`);
+          logger.debug(`Retrieved doc: ${id}`);
           while (this.pendingUpdates[id].length !== 0) {
             const update = this.pendingUpdates[id].splice(0, 1)[0];
             if (typeof update === 'function') {
@@ -66,7 +67,7 @@ export default class UpdateQueue extends Loggable {
           // }
           // console.log(`Applied updates to doc: ${JSON.stringify(doc)}`);
           await this.db.put<T>(doc);
-          console.log(`Put doc: ${id}`);
+          logger.debug(`Put doc: ${id}`);
 
           if (this.pendingUpdates[id].length === 0) {
             this.inprogressUpdates[id] = false;
@@ -77,7 +78,7 @@ export default class UpdateQueue extends Loggable {
           return doc;
         } catch (e) {
           delete this.inprogressUpdates[id];
-          console.log(`Error on attemped update: ${JSON.stringify(e)}`);
+          logger.error(`Error on attemped update: ${JSON.stringify(e)}`);
           throw e;
         }
       } else {

@@ -2,6 +2,7 @@ import { CardHistory, CardRecord, QuestionRecord } from '@/core/types/types-lega
 import { areQuestionRecords } from '@/core/util';
 import { Update } from '@/impl/pouch/updateQueue';
 import moment from 'moment';
+import { logger } from '../util/logger';
 
 type Moment = moment.Moment;
 const duration = moment.duration;
@@ -39,7 +40,7 @@ function newQuestionInterval(user: DocumentUpdater, cardHistory: CardHistory<Que
 
   if (currentAttempt.isCorrect) {
     const skill = currentAttempt.performance as number;
-    console.log(`Demontrated skill: \t${skill}`);
+    logger.debug(`Demontrated skill: \t${skill}`);
     const interval: number = lastInterval * (0.75 + skill);
     cardHistory.lapses = getLapses(cardHistory.records);
     cardHistory.streak = getStreak(cardHistory.records);
@@ -55,7 +56,7 @@ function newQuestionInterval(user: DocumentUpdater, cardHistory: CardHistory<Que
       const ret =
         (cardHistory.lapses * interval + cardHistory.streak * cardHistory.bestInterval) /
         (cardHistory.lapses + cardHistory.streak);
-      console.log(`Weighted average interval calculation:
+      logger.debug(`Weighted average interval calculation:
 \t(${cardHistory.lapses} * ${interval} + ${cardHistory.streak} * ${cardHistory.bestInterval}) / (${cardHistory.lapses} + ${cardHistory.streak}) = ${ret}`);
       return ret;
     } else {
@@ -78,7 +79,7 @@ function lastSuccessfulInterval(cardHistory: QuestionRecord[]): number {
     if (cardHistory[i].priorAttemps === 0 && cardHistory[i].isCorrect) {
       const lastInterval = secondsBetween(cardHistory[i - 1].timeStamp, cardHistory[i].timeStamp);
       const ret = Math.max(lastInterval, 20 * 60 * 60);
-      console.log(`Last interval w/ this card was: ${lastInterval}s, returning ${ret}s`);
+      logger.debug(`Last interval w/ this card was: ${lastInterval}s, returning ${ret}s`);
       return ret;
     }
   }
@@ -102,7 +103,7 @@ function getLapses(records: QuestionRecord[]): number {
 }
 
 function getInitialInterval(cardHistory: QuestionRecord[]): number {
-  console.warn(`history of length: ${cardHistory.length} ignored!`);
+  logger.warn(`history of length: ${cardHistory.length} ignored!`);
 
   // todo make this a data-driven service, relying on:
   //  - global experience w/ the card (ie, what interval

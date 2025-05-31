@@ -18,6 +18,7 @@ import {
   StudySessionReviewItem,
 } from '../../core/interfaces/contentSource';
 import { CardData, DocType, SkuilderCourseData, Tag, TagStub } from '../../core/types/types-legacy';
+import { logger } from '../../util/logger';
 import { GET_CACHED } from './clientCache';
 import { addNote55, addTagToCard, getCredentialledCourseConfig, getTagID } from './courseAPI';
 import { DataLayerResult } from '@/core/types/db';
@@ -39,21 +40,21 @@ export class CoursesDB implements CoursesDBInterface {
 
   public async getCourseList(): Promise<CourseConfig[]> {
     let crsList = await CourseLookup.allCourses();
-    console.log(`AllCourses: ${crsList.map((c) => c.name + ', ' + c._id + '\n\t')}`);
+    logger.debug(`AllCourses: ${crsList.map((c) => c.name + ', ' + c._id + '\n\t')}`);
     if (this._courseIDs) {
       crsList = crsList.filter((c) => this._courseIDs!.includes(c._id));
     }
 
-    console.log(`AllCourses.filtered: ${crsList.map((c) => c.name + ', ' + c._id + '\n\t')}`);
+    logger.debug(`AllCourses.filtered: ${crsList.map((c) => c.name + ', ' + c._id + '\n\t')}`);
 
     const cfgs = await Promise.all(
       crsList.map(async (c) => {
         try {
           const cfg = await getCredentialledCourseConfig(c._id);
-          console.log(`Found cfg: ${JSON.stringify(cfg)}`);
+          logger.debug(`Found cfg: ${JSON.stringify(cfg)}`);
           return cfg;
         } catch (e) {
-          console.warn(`Error fetching cfg for course ${c.name}, ${c._id}: ${e}`);
+          logger.warn(`Error fetching cfg for course ${c.name}, ${c._id}: ${e}`);
           return undefined;
         }
       })
@@ -170,11 +171,11 @@ export class CourseDB implements StudyContentSource, CourseDBInterface {
         if (r.doc && r.doc.elo) {
           ret.push(toCourseElo(r.doc.elo));
         } else {
-          console.warn('no elo data for card: ' + r.id);
+          logger.warn('no elo data for card: ' + r.id);
           ret.push(blankCourseElo());
         }
       } else {
-        console.warn('no elo data for card: ' + JSON.stringify(r));
+        logger.warn('no elo data for card: ' + JSON.stringify(r));
         ret.push(blankCourseElo());
       }
     });
@@ -218,7 +219,7 @@ export class CourseDB implements StudyContentSource, CourseDBInterface {
   }
 
   public async getCardDisplayableDataIDs(id: string[]) {
-    console.log(id);
+    logger.debug(id);
     const cards = await this.db.allDocs<CardData>({
       keys: id,
       include_docs: true,
@@ -280,7 +281,7 @@ export class CourseDB implements StudyContentSource, CourseDBInterface {
 
 above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
 
-    console.log(`Getting ${limit} cards centered around elo: ${elo}:\n\n` + str);
+    logger.debug(`Getting ${limit} cards centered around elo: ${elo}:\n\n` + str);
 
     return ret;
   }
@@ -295,12 +296,12 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
   }
 
   async updateCourseConfig(cfg: CourseConfig): Promise<PouchDB.Core.Response> {
-    console.log(`Updating: ${JSON.stringify(cfg)}`);
+    logger.debug(`Updating: ${JSON.stringify(cfg)}`);
     // write both to the course DB:
     try {
       return await updateCredentialledCourseConfig(this.id, cfg);
     } catch (error) {
-      console.error(`Error updating course config in course DB: ${error}`);
+      logger.error(`Error updating course config in course DB: ${error}`);
       throw error;
     }
   }
@@ -369,7 +370,7 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
       if (resp.ok) {
         // Check if card creation failed (property added by addNote55)
         if ((resp as any).cardCreationFailed) {
-          console.warn(
+          logger.warn(
             `[courseDB.addNote] Note added but card creation failed: ${
               (resp as any).cardCreationError
             }`
@@ -393,7 +394,7 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
       }
     } catch (e) {
       const err = e as PouchDB.Core.Error;
-      console.error(
+      logger.error(
         `[addNote] error ${err.name}\n\treason: ${err.reason}\n\tmessage: ${err.message}`
       );
       return {
@@ -422,7 +423,7 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
   ////////////////////////////////////
 
   getNavigationStrategy(id: string): Promise<ContentNavigationStrategyData> {
-    console.log(`[courseDB] Getting navigation strategy: ${id}`);
+    logger.debug(`[courseDB] Getting navigation strategy: ${id}`);
     // For now, just return the ELO strategy regardless of the ID
     const strategy: ContentNavigationStrategyData = {
       id: 'ELO',
@@ -437,7 +438,7 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
   }
 
   getAllNavigationStrategies(): Promise<ContentNavigationStrategyData[]> {
-    console.log('[courseDB] Returning hard-coded navigation strategies');
+    logger.debug('[courseDB] Returning hard-coded navigation strategies');
     const strategies: ContentNavigationStrategyData[] = [
       {
         id: 'ELO',
@@ -453,20 +454,20 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
   }
 
   addNavigationStrategy(data: ContentNavigationStrategyData): Promise<void> {
-    console.log(`[courseDB] Adding navigation strategy: ${data.id}`);
+    logger.debug(`[courseDB] Adding navigation strategy: ${data.id}`);
     // For now, just log the data and return success
-    console.log(data);
+    logger.debug(data);
     return Promise.resolve();
   }
   updateNavigationStrategy(id: string, data: ContentNavigationStrategyData): Promise<void> {
-    console.log(`[courseDB] Updating navigation strategy: ${id}`);
+    logger.debug(`[courseDB] Updating navigation strategy: ${id}`);
     // For now, just log the data and return success
-    console.log(data);
+    logger.debug(data);
     return Promise.resolve();
   }
 
   async surfaceNavigationStrategy(): Promise<ContentNavigationStrategyData> {
-    console.warn(`Returning hard-coded default ELO navigator`);
+    logger.warn(`Returning hard-coded default ELO navigator`);
     const ret: ContentNavigationStrategyData = {
       id: 'ELO',
       docType: DocType.NAVIGATION_STRATEGY,
@@ -495,7 +496,7 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
       const navigator = await ContentNavigator.create(u, this, strategy);
       return navigator.getNewCards(limit);
     } catch (e) {
-      console.error(`[courseDB] Error surfacing a NavigationStrategy: ${e}`);
+      logger.error(`[courseDB] Error surfacing a NavigationStrategy: ${e}`);
       throw e;
     }
   }
@@ -508,7 +509,7 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
       const navigator = await ContentNavigator.create(u, this, strategy);
       return navigator.getPendingReviews();
     } catch (e) {
-      console.error(`[courseDB] Error surfacing a NavigationStrategy: ${e}`);
+      logger.error(`[courseDB] Error surfacing a NavigationStrategy: ${e}`);
       throw e;
     }
   }
@@ -555,11 +556,11 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
       previousCount = newCount;
       newCount = cards.length;
 
-      console.log(`Found ${cards.length} elo neighbor cards...`);
+      logger.debug(`Found ${cards.length} elo neighbor cards...`);
 
       if (filter) {
         cards = cards.filter(filter);
-        console.log(`Filtered to ${cards.length} cards...`);
+        logger.debug(`Filtered to ${cards.length} cards...`);
       }
 
       mult *= 2;
@@ -615,14 +616,14 @@ export async function getCourseQuestionTypes(courseID: string) {
 export async function getCourseTagStubs(
   courseID: string
 ): Promise<PouchDB.Core.AllDocsResponse<Tag>> {
-  console.log(`Getting tag stubs for course: ${courseID}`);
+  logger.debug(`Getting tag stubs for course: ${courseID}`);
   const stubs = await filterAllDocsByPrefix<Tag>(
     getCourseDB(courseID),
     DocType.TAG.valueOf() + '-'
   );
 
   stubs.rows.forEach((row) => {
-    console.log(`\tTag stub for doc: ${row.id}`);
+    logger.debug(`\tTag stub for doc: ${row.id}`);
   });
 
   return stubs;
@@ -637,7 +638,7 @@ export async function deleteTag(courseID: string, tagName: string) {
 }
 
 export async function createTag(courseID: string, tagName: string) {
-  console.log(`Creating tag: ${tagName}...`);
+  logger.debug(`Creating tag: ${tagName}...`);
   const tagID = getTagID(tagName);
   const courseDB = getCourseDB(courseID);
   const resp = await courseDB.put<Tag>({
@@ -723,14 +724,14 @@ export async function updateCardElo(courseID: string, cardID: string, elo: Cours
     // checking against null, undefined, NaN
     const cDB = getCourseDB(courseID);
     const card = await cDB.get<CardData>(cardID);
-    console.log(`Replacing ${JSON.stringify(card.elo)} with ${JSON.stringify(elo)}`);
+    logger.debug(`Replacing ${JSON.stringify(card.elo)} with ${JSON.stringify(elo)}`);
     card.elo = elo;
     return cDB.put(card); // race conditions - is it important? probably not (net-zero effect)
   }
 }
 
 export async function updateCredentialledCourseConfig(courseID: string, config: CourseConfig) {
-  console.log(`Updating course config:
+  logger.debug(`Updating course config:
 
 ${JSON.stringify(config)}
 `);

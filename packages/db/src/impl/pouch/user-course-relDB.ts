@@ -3,6 +3,7 @@ import moment, { Moment } from 'moment';
 import { getStartAndEndKeys, REVIEW_PREFIX, REVIEW_TIME_FORMAT } from '.';
 import { CourseDB } from './courseDB';
 import { User } from './userDB';
+import { logger } from '../../util/logger';
 
 export class UsrCrsData implements UsrCrsDataInterface {
   private user: User;
@@ -36,7 +37,7 @@ export class UsrCrsData implements UsrCrsDataInterface {
     if (crsDoc && crsDoc.settings) {
       return crsDoc.settings;
     } else {
-      console.warn(`no settings found during lookup on course ${this._courseId}`);
+      logger.warn(`no settings found during lookup on course ${this._courseId}`);
       return {};
     }
   }
@@ -53,7 +54,7 @@ export class UsrCrsData implements UsrCrsDataInterface {
       include_docs: true,
     });
 
-    console.log(
+    logger.debug(
       `Fetching ${this.user.getUsername()}'s scheduled reviews for course ${this._courseId}.`
     );
     return reviews.rows
