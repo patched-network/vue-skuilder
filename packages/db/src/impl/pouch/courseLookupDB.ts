@@ -1,5 +1,6 @@
 import pouch from './pouchdb-setup';
 import { ENV } from '@/factory';
+import { logger } from '../../util/logger';
 
 const courseLookupDBTitle = 'coursedb-lookup';
 
@@ -10,7 +11,7 @@ interface CourseLookupDoc {
   disambiguator?: string;
 }
 
-console.log(`COURSELOOKUP FILE RUNNING`);
+logger.debug(`COURSELOOKUP FILE RUNNING`);
 
 /**
  * A Lookup table of existant courses. Each docID in this DB correspondes to a
@@ -60,18 +61,18 @@ export default class CourseLookup {
         username: ENV.COUCHDB_USERNAME,
         password: ENV.COUCHDB_PASSWORD,
       };
-      console.log(`CourseLookup: Connecting to ${dbUrl} with authentication.`);
+      logger.info(`CourseLookup: Connecting to ${dbUrl} with authentication.`);
     } else {
-      console.log(`CourseLookup: Connecting to ${dbUrl} without authentication.`);
+      logger.info(`CourseLookup: Connecting to ${dbUrl} without authentication.`);
     }
 
     // --- Create and cache the PouchDB instance ---
     try {
       this._dbInstance = new pouch(dbUrl, options);
-      console.log(`CourseLookup: Database instance created for ${courseLookupDBTitle}.`);
+      logger.info(`CourseLookup: Database instance created for ${courseLookupDBTitle}.`);
       return this._dbInstance;
     } catch (error) {
-      console.error(`CourseLookup: Failed to create PouchDB instance for ${dbUrl}`, error);
+      logger.error(`CourseLookup: Failed to create PouchDB instance for ${dbUrl}`, error);
       // Reset cache attempt on failure
       this._dbInstance = null;
       // Re-throw the error to indicate connection failure
@@ -127,6 +128,7 @@ export default class CourseLookup {
       await CourseLookup._db.get(courseID);
       return true;
     } catch (error) {
+      logger.info(`Courselookup failed:`, error);
       return false;
     }
   }

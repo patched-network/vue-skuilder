@@ -11,6 +11,7 @@ import { PouchError } from './types';
 
 import { AdminDBInterface } from '@/core';
 import CourseLookup from './courseLookupDB';
+import { logger } from '@/util/logger';
 
 export class AdminDB implements AdminDBInterface {
   private usersDB!: PouchDB.Database;
@@ -64,7 +65,7 @@ export class AdminDB implements AdminDBInterface {
         include_docs: true,
       })
     ).rows.map((r) => r.doc!.uuid);
-    console.log(uuids);
+    logger.debug(uuids.join(', '));
 
     const promisedCRDbs: TeacherClassroomDB[] = [];
     for (let i = 0; i < uuids.length; i++) {
@@ -74,7 +75,7 @@ export class AdminDB implements AdminDBInterface {
       } catch (e) {
         const err = e as PouchError;
         if (err.error && err.error === 'not_found') {
-          console.log(`db ${uuids[i]} not found`);
+          logger.warn(`db ${uuids[i]} not found`);
         }
       }
     }

@@ -1,5 +1,6 @@
 import { ENV } from '@/factory';
 import { GuestUsername } from '../../core/types/types-legacy';
+import { logger } from '@/util/logger';
 
 interface SessionResponse {
   info: unknown;
@@ -15,8 +16,8 @@ export async function getCurrentSession(): Promise<SessionResponse> {
     const authXML = new XMLHttpRequest();
     authXML.withCredentials = true;
 
-    authXML.onerror = (e) => {
-      reject(new Error('Session check failed'));
+    authXML.onerror = (e): void => {
+      reject(new Error('Session check failed:', e));
     };
 
     authXML.addEventListener('load', () => {
@@ -41,7 +42,7 @@ export async function getLoggedInUsername(): Promise<string> {
       return session.userCtx.name;
     }
   } catch (error) {
-    console.error('Failed to get session:', error);
+    logger.error('Failed to get session:', error);
   }
   return GuestUsername;
 }
