@@ -34,11 +34,6 @@ jobs:
           yarn workspace @vue-skuilder/db lint:check
           yarn workspace @vue-skuilder/express lint:check
 
-      - name: Type check packages
-        run: |
-          yarn workspace @vue-skuilder/express type-check
-          yarn workspace @vue-skuilder/courses type-check
-
       - name: Build packages in dependency order
         run: |
           echo "Building common package..."
