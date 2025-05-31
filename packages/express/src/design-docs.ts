@@ -74,7 +74,6 @@ export const cardsByInexperienceDoc = {
   _id: '_design/cardsByInexperience',
   views: {
     cardsByInexperience: {
-      // eslint-disable-next-line
       map: function (doc: CardData) {
         if (doc.docType && doc.docType === DocType.CARD) {
           if (

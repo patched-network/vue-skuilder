@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 import process from 'process';
 
 import { initializeDataLayer } from '@vue-skuilder/db';
+import logger from '../logger.js';
 
 dotenv.config({
   path:
@@ -43,7 +44,7 @@ initializeDataLayer({
     COUCHDB_SERVER_URL: env.COUCHDB_SERVER,
   },
 }).catch((e) => {
-  console.error('Error initializing data layer:', e);
+  logger.error('Error initializing data layer:', e);
   process.exit(1);
 });
 

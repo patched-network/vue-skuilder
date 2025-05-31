@@ -39,7 +39,7 @@ export async function useOrCreateDB<T>(dbName: string): Promise<Nano.DocumentSco
   try {
     await ret.info();
     return ret;
-  } catch (err) {
+  } catch {
     try {
       await CouchDB.db.create(dbName);
       return ret;

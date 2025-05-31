@@ -29,7 +29,7 @@ async function getClassID(joinCode: string) {
   try {
     const doc = await (await useOrCreateDB(CLASSROOM_DB_LOOKUP)).get(joinCode);
     return (doc as lookupData).uuid;
-  } catch (e) {
+  } catch {
     return '';
   }
 }

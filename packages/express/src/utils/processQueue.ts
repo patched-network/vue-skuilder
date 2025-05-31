@@ -1,4 +1,5 @@
 import { IServerRequest } from '@vue-skuilder/common';
+import logger from '../logger.js';
 
 
 export interface Result {
@@ -72,7 +73,7 @@ export default class AsyncProcessQueue<
 
   private async recurseGetResult(jobID: number, depth: number): Promise<R> {
     // polling intervals in milliseconds
-    console.log(`Checking job status of job ${jobID}...`);
+    logger.info(`Checking job status of job ${jobID}...`);
     const intervals = [100, 200, 400, 800, 1000, 2000, 3000, 5000];
     depth = Math.min(depth, intervals.length - 1);
 
@@ -171,7 +172,7 @@ export default class AsyncProcessQueue<
 
     while (this.queue.length > 0) {
       const req = this.queue[0];
-      console.log(`Processing ${req.id}`);
+      logger.info(`Processing ${req.id}`);
 
       try {
         const result = await this.processRequest(req.request);
