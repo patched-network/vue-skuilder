@@ -1,6 +1,5 @@
 {
   "name": "@vue-skuilder/common-ui",
-  "private": false,
   "publishConfig": {
     "access": "public"
   },

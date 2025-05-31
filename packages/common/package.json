@@ -1,8 +1,7 @@
 {
     "name": "@vue-skuilder/common",
-    "private": false,
     "publishConfig": {
-      "access": "public"
+        "access": "public"
     },
     "version": "0.1.0",
     "type": "module",
