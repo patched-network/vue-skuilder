@@ -4,7 +4,7 @@ import { IServerRequest } from '@vue-skuilder/common';
 export interface Result {
   status: 'ok' | 'awaiting' | 'warning' | 'error';
   ok: boolean;
-  error?: any;
+  error?: unknown;
 }
 
 interface ProcessingFunction<T> {
@@ -17,7 +17,7 @@ interface LabelledRequest<R> {
 
 interface FailedRequest<R> extends LabelledRequest<R> {
   result: Result | null;
-  error: any;
+  error: unknown;
 }
 interface CompletedRequest<R> extends LabelledRequest<R> {
   result: Result;
@@ -48,7 +48,7 @@ export default class AsyncProcessQueue<
    * @param jobID The jobID returned by addRequest
    */
   public jobStatus(jobID: number): 'complete' | 'error' | number {
-    let ret: any;
+    let ret: 'complete' | 'error' | number;
     this.queue.forEach((req) => {
       if (req.id === jobID) {
         ret = this.queue.indexOf(req);

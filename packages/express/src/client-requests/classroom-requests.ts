@@ -28,7 +28,7 @@ interface lookupData {
 async function getClassID(joinCode: string) {
   try {
     const doc = await (await useOrCreateDB(CLASSROOM_DB_LOOKUP)).get(joinCode);
-    return (doc as any as lookupData).uuid;
+    return (doc as lookupData).uuid;
   } catch (e) {
     return '';
   }
@@ -121,7 +121,7 @@ async function createClassroom(config: ClassroomConfig) {
     studentdb.insert(
       {
         validate_doc_update: classroomDbDesignDoc,
-      } as any,
+      } as Nano.MaybeDocument,
       '_design/_auth'
     ),
     // studentdb.insert(security, '_security'),
@@ -130,7 +130,7 @@ async function createClassroom(config: ClassroomConfig) {
       {
         num,
         uuid,
-      } as any,
+      } as Nano.MaybeDocument,
       config.joinCode
     ),
     writeClassroomConfig(config, uuid),
@@ -215,19 +215,19 @@ async function joinClassroom(req: JoinClassroom['data']) {
 }
 
 export const ClassroomLeaveQueue = new AsyncProcessQueue<
-  // @ts-ignore
+  // @ts-expect-error Type intersection with username field not properly recognized by AsyncProcessQueue generic
   LeaveClassroom['data'] & { username: string },
   LeaveClassroom['response']
 >(leaveClassroom);
 
 export const ClassroomJoinQueue = new AsyncProcessQueue<
-  // @ts-ignore
+  // @ts-expect-error JoinClassroom data type not fully compatible with AsyncProcessQueue generic constraints
   JoinClassroom['data'],
   JoinClassroom['response']
 >(joinClassroom);
 
 export const ClassroomCreationQueue = new AsyncProcessQueue<
-  // @ts-ignore
+  // @ts-expect-error CreateClassroom data type not fully compatible with AsyncProcessQueue generic constraints
   CreateClassroom['data'],
   CreateClassroom['response']
 >(createClassroom);

@@ -98,7 +98,7 @@ export async function initCourseDBDesignDocInsert(): Promise<void> {
 
 type CourseConfig = CreateCourse['data'];
 
-async function createCourse(cfg: CourseConfig): Promise<any> {
+async function createCourse(cfg: CourseConfig): Promise<Result> {
   cfg.courseID = await CourseLookup.add(cfg.name);
 
   if (!cfg.courseID) {
