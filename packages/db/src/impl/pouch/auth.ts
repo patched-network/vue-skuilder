@@ -1,5 +1,6 @@
 import { ENV } from '@/factory';
 import { GuestUsername } from '../../core/types/types-legacy';
+import logger from '@/utils/logger';
 
 interface SessionResponse {
   info: unknown;
@@ -41,7 +42,7 @@ export async function getLoggedInUsername(): Promise<string> {
       return session.userCtx.name;
     }
   } catch (error) {
-    console.error('Failed to get session:', error);
+    logger.error('Failed to get session:', error);
   }
   return GuestUsername;
 }

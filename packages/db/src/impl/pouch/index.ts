@@ -34,7 +34,7 @@ export function hexEncode(str: string): string {
 export const pouchDBincludeCredentialsConfig: PouchDB.Configuration.RemoteDatabaseConfiguration = {
   fetch(url: string | Request, opts: RequestInit): Promise<Response> {
     opts.credentials = 'include';
-     
+
     return (pouch as any).fetch(url, opts);
   },
 } as PouchDB.Configuration.RemoteDatabaseConfiguration;
@@ -212,7 +212,10 @@ export function filterAllDocsByPrefix<T>(
   return db.allDocs<T>(options);
 }
 
-export function getStartAndEndKeys(key: string) {
+export function getStartAndEndKeys(key: string): {
+  startKey: string;
+  endKey: string;
+} {
   return {
     startkey: key,
     endkey: key + '\ufff0',
