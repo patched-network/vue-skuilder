@@ -1,12 +1,12 @@
 /**
  * Simple logging utility for @vue-skuilder/db package
- * 
+ *
  * This utility provides environment-aware logging with ESLint suppressions
  * to resolve console statement violations while maintaining logging functionality.
  */
 
 const isDevelopment = typeof process !== 'undefined' && process.env.NODE_ENV === 'development';
-const isBrowser = typeof window !== 'undefined';
+const _isBrowser = typeof window !== 'undefined';
 
 export const logger = {
   /**
@@ -51,5 +51,5 @@ export const logger = {
       // eslint-disable-next-line no-console
       console.log(`[DB:LOG] ${message}`, ...args);
     }
-  }
+  },
 };
