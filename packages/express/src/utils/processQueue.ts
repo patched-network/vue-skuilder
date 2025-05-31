@@ -49,7 +49,7 @@ export default class AsyncProcessQueue<
    * @param jobID The jobID returned by addRequest
    */
   public jobStatus(jobID: number): 'complete' | 'error' | number {
-    let ret: 'complete' | 'error' | number;
+    let ret: 'complete' | 'error' | number = -1; // Default to -1 if job not found
     this.queue.forEach((req) => {
       if (req.id === jobID) {
         ret = this.queue.indexOf(req);

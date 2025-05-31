@@ -2,7 +2,7 @@ import { log } from 'util';
 import { CreateCourse } from '@vue-skuilder/common';
 import CouchDB, { SecurityObject } from '../couchdb/index.js';
 import { postProcessCourse } from '../attachment-preprocessing/index.js';
-import AsyncProcessQueue from '../utils/processQueue.js';
+import AsyncProcessQueue, { Result } from '../utils/processQueue.js';
 import nano from 'nano';
 
 import logger from '../logger.js';
@@ -172,8 +172,9 @@ async function createCourse(cfg: CourseConfig): Promise<Result> {
   postProcessCourse(cfg.courseID);
 
   return {
-    ok: dbCreation.ok,
+    ok: dbCreation.ok ?? false,
     status: 'ok',
+    // @ts-expect-error courseID required for runtime but not in Result interface - see sideQuest.md
     courseID: cfg.courseID,
   };
 }

@@ -1,4 +1,5 @@
 import hashids from 'hashids';
+import Nano from 'nano';
 import {
   ClassroomConfig,
   CreateClassroom,
@@ -28,7 +29,7 @@ interface lookupData {
 async function getClassID(joinCode: string) {
   try {
     const doc = await (await useOrCreateDB(CLASSROOM_DB_LOOKUP)).get(joinCode);
-    return (doc as lookupData).uuid;
+    return (doc as unknown as lookupData).uuid;
   } catch {
     return '';
   }
