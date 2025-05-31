@@ -2,6 +2,7 @@ import { ENV } from '@/factory';
 import { DocType, GuestUsername, log, SkuilderCourseData } from '../../core/types/types-legacy';
 // import { getCurrentUser } from '../../stores/useAuthStore';
 import moment, { Moment } from 'moment';
+import { logger } from '@/util/logger';
 
 import pouch from './pouchdb-setup';
 
@@ -213,8 +214,8 @@ export function filterAllDocsByPrefix<T>(
 }
 
 export function getStartAndEndKeys(key: string): {
-  startKey: string;
-  endKey: string;
+  startkey: string;
+  endkey: string;
 } {
   return {
     startkey: key,

@@ -9,6 +9,7 @@ import { CourseDB, createTag, updateCardElo } from './courseDB';
 import { CardData, DisplayableData, DocType, Tag } from '../../core/types/types-legacy';
 import { prepareNote55 } from '@vue-skuilder/common';
 import { User } from './userDB';
+import { logger } from '@/util/logger';
 
 /**
  *

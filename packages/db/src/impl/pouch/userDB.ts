@@ -498,7 +498,7 @@ Currently logged-in as ${this._username}.`
         await this.localDB.put<UserConfig>(defaultConfig);
         return this.getConfig();
       } else {
-        logger.error(e);
+        logger.error(`Error setting user default config:`, e);
         throw new Error(`Error returning the user's configuration: ${JSON.stringify(e)}`);
       }
     }

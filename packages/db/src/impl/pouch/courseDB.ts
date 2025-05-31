@@ -219,7 +219,7 @@ export class CourseDB implements StudyContentSource, CourseDBInterface {
   }
 
   public async getCardDisplayableDataIDs(id: string[]) {
-    logger.debug(id);
+    logger.debug(id.join(', '));
     const cards = await this.db.allDocs<CardData>({
       keys: id,
       include_docs: true,
@@ -245,7 +245,6 @@ export class CourseDB implements StudyContentSource, CourseDBInterface {
   }
 
   async getCardsByELO(elo: number, cardLimit?: number) {
-     
     elo = parseInt(elo as any);
     const limit = cardLimit ? cardLimit : 25;
 
@@ -456,13 +455,13 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
   addNavigationStrategy(data: ContentNavigationStrategyData): Promise<void> {
     logger.debug(`[courseDB] Adding navigation strategy: ${data.id}`);
     // For now, just log the data and return success
-    logger.debug(data);
+    logger.debug(JSON.stringify(data));
     return Promise.resolve();
   }
   updateNavigationStrategy(id: string, data: ContentNavigationStrategyData): Promise<void> {
     logger.debug(`[courseDB] Updating navigation strategy: ${id}`);
     // For now, just log the data and return success
-    logger.debug(data);
+    logger.debug(JSON.stringify(data));
     return Promise.resolve();
   }
 

@@ -5,7 +5,7 @@ import {
 } from '@/core/interfaces/contentSource';
 import { ClassroomConfig } from '@vue-skuilder/common';
 import { ENV } from '@/factory';
-import logger from '@/utils/logger';
+import { logger } from '@/util/logger';
 import moment from 'moment';
 import pouch from './pouchdb-setup';
 import {
@@ -38,10 +38,7 @@ abstract class ClassroomDBBase {
   protected _initComplete: boolean = false;
 
   protected readonly _content_prefix: string = 'content';
-  protected get _content_searchkeys(): {
-    startKey: string;
-    endKey: string;
-  } {
+  protected get _content_searchkeys() {
     return getStartAndEndKeys(this._content_prefix);
   }
 
