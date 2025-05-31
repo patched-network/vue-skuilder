@@ -28,7 +28,7 @@ export default class SkldrClient {
       response: null,
     };
 
-    const resp = await axios.post<any, AxiosResponse<CreateCourseResp>>(
+    const resp = await axios.post<CreateCourse, AxiosResponse<CreateCourseResp>>(
       `${this.server}`,
       request,
       {
@@ -89,7 +89,7 @@ class SkldrCourseClient {
   }
 
   async getConfig(): Promise<CourseConfig> {
-    const resp = await axios.get<any, AxiosResponse<CourseConfig>>(
+    const resp = await axios.get<void, AxiosResponse<CourseConfig>>(
       `${this.server}/course/${this.id}/config`
     );
     return resp.data;

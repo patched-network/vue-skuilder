@@ -1,10 +1,11 @@
 import { IServerRequest } from '@vue-skuilder/common';
+import logger from '../logger.js';
 
 
 export interface Result {
   status: 'ok' | 'awaiting' | 'warning' | 'error';
   ok: boolean;
-  error?: any;
+  error?: unknown;
 }
 
 interface ProcessingFunction<T> {
@@ -17,7 +18,7 @@ interface LabelledRequest<R> {
 
 interface FailedRequest<R> extends LabelledRequest<R> {
   result: Result | null;
-  error: any;
+  error: unknown;
 }
 interface CompletedRequest<R> extends LabelledRequest<R> {
   result: Result;
@@ -48,7 +49,7 @@ export default class AsyncProcessQueue<
    * @param jobID The jobID returned by addRequest
    */
   public jobStatus(jobID: number): 'complete' | 'error' | number {
-    let ret: any;
+    let ret: 'complete' | 'error' | number = -1; // Default to -1 if job not found
     this.queue.forEach((req) => {
       if (req.id === jobID) {
         ret = this.queue.indexOf(req);
@@ -72,7 +73,7 @@ export default class AsyncProcessQueue<
 
   private async recurseGetResult(jobID: number, depth: number): Promise<R> {
     // polling intervals in milliseconds
-    console.log(`Checking job status of job ${jobID}...`);
+    logger.info(`Checking job status of job ${jobID}...`);
     const intervals = [100, 200, 400, 800, 1000, 2000, 3000, 5000];
     depth = Math.min(depth, intervals.length - 1);
 
@@ -153,7 +154,7 @@ export default class AsyncProcessQueue<
     });
 
     if (!this.processing) {
-      this.process();
+      void this.process();
     }
 
     return id;
@@ -171,7 +172,7 @@ export default class AsyncProcessQueue<
 
     while (this.queue.length > 0) {
       const req = this.queue[0];
-      console.log(`Processing ${req.id}`);
+      logger.info(`Processing ${req.id}`);
 
       try {
         const result = await this.processRequest(req.request);

@@ -23,7 +23,8 @@ const logsRateLimit = rateLimit({
 router.use(logsRateLimit);
 
 // Get list of available log files
-router.get('/', async (_req: Request, res: Response) => {
+router.get('/', (_req: Request, res: Response) => {
+  void (async () => {
   // [ ] add an auth mechanism. Below fcn is based on
   //     the CouchDB auth mechanism, forwarded from the web-app (not direct-access of server).
   //
@@ -90,9 +91,11 @@ router.get('/', async (_req: Request, res: Response) => {
     logger.error('Error reading logs directory:', error);
     res.status(500).json({ error: 'Failed to retrieve log files' });
   }
+  })();
 });
 
-router.get('/:filename', async (req: Request, res: Response) => {
+router.get('/:filename', (req: Request, res: Response) => {
+  void (async () => {
   try {
     const filename = req.params.filename;
     // Sanitize filename to prevent directory traversal
@@ -236,10 +239,12 @@ router.get('/:filename', async (req: Request, res: Response) => {
     logger.error(`Error reading log file ${req.params.filename}:`, error);
     res.status(500).send('<h1>Error</h1><p>Failed to retrieve log file</p>');
   }
+  })();
 });
 
 // Get contents of specific log file
-router.get('/:filename/raw', async (req: Request, res: Response) => {
+router.get('/:filename/raw', (req: Request, res: Response) => {
+  void (async () => {
   // const auth = await requestIsAdminAuthenticated(req);
   // if (!auth) {
   //   res.status(401).json({ error: 'Unauthorized' });
@@ -278,6 +283,7 @@ router.get('/:filename/raw', async (req: Request, res: Response) => {
     logger.error(`Error reading log file ${req.params.filename}:`, error);
     res.status(500).json({ error: 'Failed to retrieve log file' });
   }
+  })();
 });
 
 export default router;

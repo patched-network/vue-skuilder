@@ -15,7 +15,7 @@ interface DocForProcessing extends nano.DocumentGetResponse {
   _attachments: {
     [key: string]: {
       content_type: string;
-      data?: any;
+      data?: any; // eslint-disable-line @typescript-eslint/no-explicit-any
       digest?: string;
       length?: number;
       revpos?: number;
@@ -200,5 +200,5 @@ interface AttachmentProcessingRequest {
 interface ProcessingField {
   name: string;
   mimetype: string;
-  returnData?: any;
+  returnData?: string;
 }

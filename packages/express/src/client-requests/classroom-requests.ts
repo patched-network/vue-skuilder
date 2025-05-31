@@ -1,4 +1,5 @@
 import hashids from 'hashids';
+import Nano from 'nano';
 import {
   ClassroomConfig,
   CreateClassroom,
@@ -28,8 +29,8 @@ interface lookupData {
 async function getClassID(joinCode: string) {
   try {
     const doc = await (await useOrCreateDB(CLASSROOM_DB_LOOKUP)).get(joinCode);
-    return (doc as any as lookupData).uuid;
-  } catch (e) {
+    return (doc as unknown as lookupData).uuid;
+  } catch {
     return '';
   }
 }
@@ -49,14 +50,14 @@ async function writeClassroomConfig(config: ClassroomConfig, classID: string) {
     studentDB
       .get(CLASSROOM_CONFIG)
       .then((doc) => {
-        studentDB.insert({
+        return studentDB.insert({
           _id: CLASSROOM_CONFIG,
           _rev: doc._rev,
           ...config,
         });
       })
       .catch((_err) => {
-        studentDB.insert({
+        return studentDB.insert({
           _id: CLASSROOM_CONFIG,
           ...config,
         });
@@ -64,14 +65,14 @@ async function writeClassroomConfig(config: ClassroomConfig, classID: string) {
     teacherDB
       .get(CLASSROOM_CONFIG)
       .then((doc) => {
-        teacherDB.insert({
+        return teacherDB.insert({
           _id: CLASSROOM_CONFIG,
           _rev: doc._rev,
           ...config,
         });
       })
       .catch((_err) => {
-        teacherDB.insert({
+        return teacherDB.insert({
           _id: CLASSROOM_CONFIG,
           ...config,
         });
@@ -121,7 +122,7 @@ async function createClassroom(config: ClassroomConfig) {
     studentdb.insert(
       {
         validate_doc_update: classroomDbDesignDoc,
-      } as any,
+      } as Nano.MaybeDocument,
       '_design/_auth'
     ),
     // studentdb.insert(security, '_security'),
@@ -130,7 +131,7 @@ async function createClassroom(config: ClassroomConfig) {
       {
         num,
         uuid,
-      } as any,
+      } as Nano.MaybeDocument,
       config.joinCode
     ),
     writeClassroomConfig(config, uuid),
@@ -181,7 +182,7 @@ async function joinClassroom(req: JoinClassroom['data']) {
   if (classID) {
     const classDBNames = getClassDBNames(classID);
 
-    (await useOrCreateDB(classDBNames.studentDB)).get('ClassroomConfig');
+    void (await useOrCreateDB(classDBNames.studentDB)).get('ClassroomConfig');
 
     logger.info(`joinClassroom running...
         \tRequest: ${JSON.stringify(req)}`);
@@ -194,7 +195,7 @@ async function joinClassroom(req: JoinClassroom['data']) {
       }
     }
 
-    writeClassroomConfig(cfg, classID);
+    await writeClassroomConfig(cfg, classID);
 
     const res: JoinClassroom['response'] = {
       ok: true,
@@ -215,19 +216,19 @@ async function joinClassroom(req: JoinClassroom['data']) {
 }
 
 export const ClassroomLeaveQueue = new AsyncProcessQueue<
-  // @ts-ignore
+  // @ts-expect-error Type intersection with username field not properly recognized by AsyncProcessQueue generic
   LeaveClassroom['data'] & { username: string },
   LeaveClassroom['response']
 >(leaveClassroom);
 
 export const ClassroomJoinQueue = new AsyncProcessQueue<
-  // @ts-ignore
+  // @ts-expect-error JoinClassroom data type not fully compatible with AsyncProcessQueue generic constraints
   JoinClassroom['data'],
   JoinClassroom['response']
 >(joinClassroom);
 
 export const ClassroomCreationQueue = new AsyncProcessQueue<
-  // @ts-ignore
+  // @ts-expect-error CreateClassroom data type not fully compatible with AsyncProcessQueue generic constraints
   CreateClassroom['data'],
   CreateClassroom['response']
 >(createClassroom);
