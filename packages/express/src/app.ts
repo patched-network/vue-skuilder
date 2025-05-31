@@ -58,43 +58,61 @@ export interface VueClientRequest extends express.Request {
   body: ServerRequest;
 }
 
-app.get('/courses', async (_req: Request, res: Response) => {
-  try {
-    const courses = await CourseLookup.allCourses();
-    res.send(courses.map((c) => `${c._id} - ${c.name}`));
-  } catch (error) {
-    logger.error('Error fetching courses:', error);
-    res.status(500).send('Failed to fetch courses');
-  }
+app.get('/courses', (_req: Request, res: Response) => {
+  void (async () => {
+    try {
+      const courses = await CourseLookup.allCourses();
+      res.send(courses.map((c) => `${c._id} - ${c.name}`));
+    } catch (error) {
+      logger.error('Error fetching courses:', error);
+      res.status(500).send('Failed to fetch courses');
+    }
+  })();
 });
 
-app.get('/course/:courseID/config', async (req: Request, res: Response) => {
-  const courseDB = await useOrCreateCourseDB(req.params.courseID);
-  const cfg = await courseDB.get('CourseConfig'); // [ ] pull courseConfig docName into global const
+app.get('/course/:courseID/config', (req: Request, res: Response) => {
+  void (async () => {
+    try {
+      const courseDB = await useOrCreateCourseDB(req.params.courseID);
+      const cfg = await courseDB.get('CourseConfig'); // [ ] pull courseConfig docName into global const
 
-  res.json(cfg);
+      res.json(cfg);
+    } catch (error) {
+      logger.error('Error fetching course config:', error);
+      res.status(500).send('Failed to fetch course config');
+    }
+  })();
 });
 
-app.delete('/course/:courseID', async (req: Request, res: Response) => {
-  logger.info(`Delete request made on course ${req.params.courseID}...`);
-  const auth = await requestIsAuthenticated(req);
-  if (auth) {
-    logger.info(`\tAuthenticated delete request made...`);
-    const dbResp = await CouchDB.db.destroy(`coursedb-${req.params.courseID}`);
-    if (!dbResp.ok) {
-      res.json({ success: false, error: dbResp });
-      return;
-    }
-    const delResp = await CourseLookup.delete(req.params.courseID);
+app.delete('/course/:courseID', (req: Request, res: Response) => {
+  void (async () => {
+    try {
+      logger.info(`Delete request made on course ${req.params.courseID}...`);
+      const auth = await requestIsAuthenticated(req);
+      if (auth) {
+        logger.info(`\tAuthenticated delete request made...`);
+        const dbResp = await CouchDB.db.destroy(
+          `coursedb-${req.params.courseID}`
+        );
+        if (!dbResp.ok) {
+          res.json({ success: false, error: dbResp });
+          return;
+        }
+        const delResp = await CourseLookup.delete(req.params.courseID);
 
-    if (delResp.ok) {
-      res.json({ success: true });
-    } else {
-      res.json({ success: false, error: delResp });
+        if (delResp.ok) {
+          res.json({ success: true });
+        } else {
+          res.json({ success: false, error: delResp });
+        }
+      } else {
+        res.json({ success: false, error: 'Not authenticated' });
+      }
+    } catch (error) {
+      logger.error('Error deleting course:', error);
+      res.status(500).json({ success: false, error: 'Failed to delete course' });
     }
-  } else {
-    res.json({ success: false, error: 'Not authenticated' });
-  }
+  })();
 });
 
 async function postHandler(
@@ -161,7 +179,7 @@ async function postHandler(
 }
 
 app.post('/', (req: Request, res: Response) => {
-  postHandler(req, res);
+  void postHandler(req, res);
 });
 
 app.get('/version', (_req: Request, res: Response) => {
@@ -205,13 +223,15 @@ async function init(): Promise<void> {
   try {
     // start the change-listener that does post-processing on user
     // media uploads
-    PostProcess();
+    void PostProcess();
 
-    initCourseDBDesignDocInsert();
+    void initCourseDBDesignDocInsert();
 
-    useOrCreateDB('classdb-lookup');
+    void useOrCreateDB('classdb-lookup');
     try {
-      (await useOrCreateDB('coursedb')).insert(
+      await (
+        await useOrCreateDB('coursedb')
+      ).insert(
         {
           validate_doc_update: classroomDbDesignDoc,
         } as Nano.MaybeDocument,

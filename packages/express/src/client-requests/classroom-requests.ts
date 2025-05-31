@@ -49,14 +49,14 @@ async function writeClassroomConfig(config: ClassroomConfig, classID: string) {
     studentDB
       .get(CLASSROOM_CONFIG)
       .then((doc) => {
-        studentDB.insert({
+        return studentDB.insert({
           _id: CLASSROOM_CONFIG,
           _rev: doc._rev,
           ...config,
         });
       })
       .catch((_err) => {
-        studentDB.insert({
+        return studentDB.insert({
           _id: CLASSROOM_CONFIG,
           ...config,
         });
@@ -64,14 +64,14 @@ async function writeClassroomConfig(config: ClassroomConfig, classID: string) {
     teacherDB
       .get(CLASSROOM_CONFIG)
       .then((doc) => {
-        teacherDB.insert({
+        return teacherDB.insert({
           _id: CLASSROOM_CONFIG,
           _rev: doc._rev,
           ...config,
         });
       })
       .catch((_err) => {
-        teacherDB.insert({
+        return teacherDB.insert({
           _id: CLASSROOM_CONFIG,
           ...config,
         });
@@ -181,7 +181,7 @@ async function joinClassroom(req: JoinClassroom['data']) {
   if (classID) {
     const classDBNames = getClassDBNames(classID);
 
-    (await useOrCreateDB(classDBNames.studentDB)).get('ClassroomConfig');
+    void (await useOrCreateDB(classDBNames.studentDB)).get('ClassroomConfig');
 
     logger.info(`joinClassroom running...
         \tRequest: ${JSON.stringify(req)}`);
@@ -194,7 +194,7 @@ async function joinClassroom(req: JoinClassroom['data']) {
       }
     }
 
-    writeClassroomConfig(cfg, classID);
+    await writeClassroomConfig(cfg, classID);
 
     const res: JoinClassroom['response'] = {
       ok: true,

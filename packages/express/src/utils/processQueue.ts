@@ -153,7 +153,7 @@ export default class AsyncProcessQueue<
     });
 
     if (!this.processing) {
-      this.process();
+      void this.process();
     }
 
     return id;
