@@ -34,7 +34,7 @@ export function hexEncode(str: string): string {
 export const pouchDBincludeCredentialsConfig: PouchDB.Configuration.RemoteDatabaseConfiguration = {
   fetch(url: string | Request, opts: RequestInit): Promise<Response> {
     opts.credentials = 'include';
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     return (pouch as any).fetch(url, opts);
   },
 } as PouchDB.Configuration.RemoteDatabaseConfiguration;
@@ -167,7 +167,7 @@ export function scheduleCardReview(review: {
   schedulingAgentId: ScheduledCard['schedulingAgentId'];
 }) {
   const now = moment.utc();
-  console.log(`Scheduling for review in: ${review.time.diff(now, 'h') / 24} days`);
+  logger.info(`Scheduling for review in: ${review.time.diff(now, 'h') / 24} days`);
   void getUserDB(review.user).put<ScheduledCard>({
     _id: REVIEW_PREFIX + review.time.format(REVIEW_TIME_FORMAT),
     cardId: review.card_id,

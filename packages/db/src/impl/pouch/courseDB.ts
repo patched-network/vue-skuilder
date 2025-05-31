@@ -244,7 +244,7 @@ export class CourseDB implements StudyContentSource, CourseDBInterface {
   }
 
   async getCardsByELO(elo: number, cardLimit?: number) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     elo = parseInt(elo as any);
     const limit = cardLimit ? cardLimit : 25;
 
