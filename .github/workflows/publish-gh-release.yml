@@ -1,0 +1,132 @@
+name: Publish GitHub Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Git tag for the release (e.g., v0.1.1)'
+        required: true
+        type: string
+      prerelease:
+        description: 'Mark as prerelease'
+        required: false
+        type: boolean
+        default: false
+  workflow_run:
+    workflows: ["Publish to NPM"]
+    types: [completed]
+    branches: [main]
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="${{ github.event.inputs.tag }}"
+          else
+            # Extract tag from the workflow_run event
+            TAG=$(git describe --tags --exact-match HEAD 2>/dev/null || echo "")
+            if [ -z "$TAG" ]; then
+              # Fallback: get the latest tag
+              TAG=$(git describe --tags --abbrev=0)
+            fi
+          fi
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "Using tag: $TAG"
+
+      - name: Verify tag exists
+        run: |
+          TAG="${{ steps.tag.outputs.tag }}"
+          if ! git tag -l | grep -q "^${TAG}$"; then
+            echo "Error: Tag $TAG does not exist"
+            exit 1
+          fi
+          echo "Tag $TAG verified"
+
+      - name: Get package versions
+        id: versions
+        run: |
+          TAG="${{ steps.tag.outputs.tag }}"
+          git checkout $TAG
+          
+          # Extract package information
+          PACKAGES=""
+          for package_dir in packages/*/; do
+            if [ -f "$package_dir/package.json" ]; then
+              package_name=$(jq -r '.name' "$package_dir/package.json")
+              package_version=$(jq -r '.version' "$package_dir/package.json")
+              PACKAGES="${PACKAGES}- ${package_name}@${package_version}\n"
+            fi
+          done
+          
+          # Save to output (escape newlines for GitHub Actions)
+          echo "packages<<EOF" >> $GITHUB_OUTPUT
+          echo -e "$PACKAGES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Generate release notes
+        id: release_notes
+        run: |
+          TAG="${{ steps.tag.outputs.tag }}"
+          PACKAGES="${{ steps.versions.outputs.packages }}"
+          
+          # Create release notes
+          cat << EOF > release_notes.md
+          ## Vue Skuilder Release $TAG
+          
+          This release includes the following published packages:
+          
+          $PACKAGES
+          
+          ### Installation
+          \`\`\`bash
+          npm install @vue-skuilder/platform-ui@$TAG
+          npm install @vue-skuilder/express@$TAG
+          # ... or any other package
+          \`\`\`
+          
+          ### What's Changed
+          - Automated release for vue-skuilder monorepo packages
+          - All packages built and published to NPM registry
+          - TypeScript definitions included for all packages
+          
+          Full changelog: https://github.com/${{ github.repository }}/commits/$TAG
+          EOF
+          
+          echo "Release notes generated"
+
+      - name: Create GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ steps.tag.outputs.tag }}"
+          PRERELEASE_FLAG=""
+          
+          if [ "${{ github.event.inputs.prerelease }}" = "true" ]; then
+            PRERELEASE_FLAG="--prerelease"
+          fi
+          
+          gh release create "$TAG" \
+            --title "Release $TAG" \
+            --notes-file release_notes.md \
+            $PRERELEASE_FLAG \
+            --verify-tag
+
+      - name: Release created successfully
+        run: |
+          TAG="${{ steps.tag.outputs.tag }}"
+          echo "✅ GitHub release created successfully for $TAG"
+          echo "📦 Release URL: https://github.com/${{ github.repository }}/releases/tag/$TAG"

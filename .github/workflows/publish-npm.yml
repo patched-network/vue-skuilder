@@ -102,24 +102,17 @@ jobs:
           
           echo "All packages published successfully!"
 
-      - name: Create GitHub Release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          body: |
-            Automated release for vue-skuilder packages
-            
-            Published packages:
-            - @vue-skuilder/common
-            - @vue-skuilder/db
-            - @vue-skuilder/common-ui
-            - @vue-skuilder/courses
-            - @vue-skuilder/client
-            - @vue-skuilder/platform-ui
-            - @vue-skuilder/standalone-ui
-            - @vue-skuilder/express
-          draft: false
-          prerelease: false
+      - name: NPM publish completed
+        run: |
+          echo "✅ All vue-skuilder packages published to NPM registry"
+          echo "📦 Packages published:"
+          echo "   - @vue-skuilder/common"
+          echo "   - @vue-skuilder/db" 
+          echo "   - @vue-skuilder/common-ui"
+          echo "   - @vue-skuilder/courses"
+          echo "   - @vue-skuilder/client"
+          echo "   - @vue-skuilder/platform-ui"
+          echo "   - @vue-skuilder/standalone-ui"
+          echo "   - @vue-skuilder/express"
+          echo ""
+          echo "🚀 GitHub release will be created by the 'Publish GitHub Release' workflow"
