@@ -28,11 +28,36 @@ jobs:
       - name: Install dependencies
         run: yarn install --immutable
 
+      - name: Extract version from tag
+        id: extract_version
+        run: |
+          # Remove 'v' prefix from tag
+          VERSION=${GITHUB_REF_NAME#v}
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "📌 Expected version: $VERSION"
+
+      - name: Verify package versions match tag
+        run: |
+          VERSION=${{ steps.extract_version.outputs.VERSION }}
+          
+          # Verify all packages have the correct version
+          for package in common db common-ui courses client platform-ui standalone-ui express cli; do
+            PACKAGE_VERSION=$(cd packages/$package && node -p "require('./package.json').version")
+            if [ "$PACKAGE_VERSION" != "$VERSION" ]; then
+              echo "❌ Version mismatch in packages/$package: expected $VERSION, found $PACKAGE_VERSION"
+              exit 1
+            fi
+            echo "✅ packages/$package version $PACKAGE_VERSION matches tag"
+          done
+          
+          echo "✅ All package versions verified"
+
       - name: Lint packages
         run: |
           yarn workspace @vue-skuilder/common lint:check
           yarn workspace @vue-skuilder/db lint:check
           yarn workspace @vue-skuilder/express lint:check
+          yarn workspace @vue-skuilder/cli lint:check
 
       - name: Build packages in dependency order
         run: |
@@ -59,10 +84,13 @@ jobs:
           
           echo "Building express package..."
           yarn workspace @vue-skuilder/express build
+          
+          echo "Building cli package..."
+          yarn workspace @vue-skuilder/cli build
 
       - name: Verify build outputs
         run: |
-          for package in common db common-ui courses client platform-ui standalone-ui express; do
+          for package in common db common-ui courses client platform-ui standalone-ui express cli; do
             if [ ! -d "packages/$package/dist" ]; then
               echo "Error: dist directory not found for @vue-skuilder/$package"
               exit 1
@@ -77,28 +105,50 @@ jobs:
           set -e
           
           echo "Publishing @vue-skuilder/common..."
-          cd packages/common && npm publish --access public
+          cd packages/common && yarn npm publish --access public && cd ../..
           
           echo "Publishing @vue-skuilder/db..."
-          cd ../db && npm publish --access public
+          cd packages/db && yarn npm publish --access public && cd ../..
           
           echo "Publishing @vue-skuilder/common-ui..."
-          cd ../common-ui && npm publish --access public
+          cd packages/common-ui && yarn npm publish --access public && cd ../..
           
           echo "Publishing @vue-skuilder/courses..."
-          cd ../courses && npm publish --access public
+          cd packages/courses && yarn npm publish --access public && cd ../..
           
           echo "Publishing @vue-skuilder/client..."
-          cd ../client && npm publish --access public
+          cd packages/client && yarn npm publish --access public && cd ../..
           
           echo "Publishing @vue-skuilder/platform-ui..."
-          cd ../platform-ui && npm publish --access public
+          cd packages/platform-ui && yarn npm publish --access public && cd ../..
           
           echo "Publishing @vue-skuilder/standalone-ui..."
-          cd ../standalone-ui && npm publish --access public
+          cd packages/standalone-ui && yarn npm publish --access public && cd ../..
           
           echo "Publishing @vue-skuilder/express..."
-          cd ../express && npm publish --access public
+          cd packages/express && yarn npm publish --access public && cd ../..
+          
+          echo "Publishing @vue-skuilder/cli (scoped)..."
+          cd packages/cli && yarn npm publish --access public && cd ../..
+          
+          # Dual-publish CLI as unscoped 'skuilder' package
+          echo "Publishing CLI as 'skuilder'..."
+          TEMP_DIR=$(mktemp -d)
+          cp -r packages/cli/* "$TEMP_DIR/"
+          cd "$TEMP_DIR"
+          
+          # Modify package.json for unscoped publish
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            pkg.name = 'skuilder';
+            pkg.description = 'CLI tool for scaffolding Skuilder course applications';
+            delete pkg.publishConfig;
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
+          "
+          
+          npm publish --access public
+          cd - && rm -rf "$TEMP_DIR"
           
           echo "All packages published successfully!"
 
@@ -114,5 +164,7 @@ jobs:
           echo "   - @vue-skuilder/platform-ui"
           echo "   - @vue-skuilder/standalone-ui"
           echo "   - @vue-skuilder/express"
+          echo "   - @vue-skuilder/cli"
+          echo "   - skuilder (CLI unscoped)"
           echo ""
           echo "🚀 GitHub release will be created by the 'Publish GitHub Release' workflow"
