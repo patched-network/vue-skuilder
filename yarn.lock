@@ -3916,6 +3916,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/events@npm:^3":
+  version: 3.0.3
+  resolution: "@types/events@npm:3.0.3"
+  checksum: 10c0/3a56f8c51eb4ebc0d05dcadca0c6636c816acc10216ce36c976fad11e54a01f4bb979a07211355686015884753b37f17d74bfdc7aaf4ebb027c1e8a501c7b21d
+  languageName: node
+  linkType: hard
+
 "@types/express-rate-limit@npm:^6.0.2":
   version: 6.0.2
   resolution: "@types/express-rate-limit@npm:6.0.2"
@@ -5362,10 +5369,13 @@ __metadata:
   dependencies:
     "@mdi/font": "npm:^7.3.67"
     "@types/cypress": "npm:1.1.6"
+    "@types/events": "npm:^3"
     "@vitejs/plugin-vue": "npm:^5.2.1"
     "@vue-skuilder/common-ui": "workspace:*"
+    "@vue-skuilder/courses": "workspace:*"
     "@vue-skuilder/db": "workspace:*"
     cypress: "npm:14.1.0"
+    events: "npm:^3.3.0"
     pinia: "npm:^2.3.0"
     typescript: "npm:^5.7.2"
     vite: "npm:^6.0.9"
