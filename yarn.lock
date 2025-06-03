@@ -5165,6 +5165,7 @@ __metadata:
     vuetify: "npm:^3.7.0"
   peerDependencies:
     vue: ^3.2.0
+    vue-router: ^4.0.0
     vuetify: ^3.0.0
   languageName: unknown
   linkType: soft
