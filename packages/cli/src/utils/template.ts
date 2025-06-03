@@ -363,6 +363,36 @@ Current theme: **${config.theme.name}** (${config.theme.defaultMode} mode)
 
 This theme includes both light and dark variants. The application will use the ${config.theme.defaultMode} theme by default, but users can toggle between light and dark modes in their settings.
 
+### Theme Customization
+
+To customize the theme colors, edit the \`theme\` section in \`skuilder.config.json\`:
+
+\`\`\`json
+{
+  "theme": {
+    "name": "custom",
+    "defaultMode": "light",
+    "light": {
+      "dark": false,
+      "colors": {
+        "primary": "#your-color",
+        "secondary": "#your-color",
+        "accent": "#your-color"
+        // ... other semantic colors
+      }
+    },
+    "dark": {
+      "dark": true,
+      "colors": {
+        // ... dark variant colors
+      }
+    }
+  }
+}
+\`\`\`
+
+The theme system supports all Vuetify semantic colors including error, success, warning, info, background, surface, and text colors. Changes to the configuration file are applied automatically on restart.
+
 ## Testing
 
 Run end-to-end tests:
