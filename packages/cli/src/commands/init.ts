@@ -2,7 +2,7 @@ import { existsSync } from 'fs';
 import path from 'path';
 import chalk from 'chalk';
 import { CliOptions } from '../types.js';
-import { gatherProjectConfig, confirmProjectCreation } from '../utils/prompts.js';
+import { gatherProjectConfig, confirmProjectCreation, displayThemePreview } from '../utils/prompts.js';
 import { processTemplate } from '../utils/template.js';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
@@ -53,7 +53,11 @@ export async function initCommand(
 
     // Success message
     console.log(chalk.green('\n🎉 Project created successfully!\n'));
-    console.log(chalk.cyan('Next steps:'));
+    
+    // Show theme preview
+    displayThemePreview(config.theme.name);
+    
+    console.log(chalk.cyan('\nNext steps:'));
     console.log(`  ${chalk.white('cd')} ${projectName}`);
     console.log(`  ${chalk.white('npm install')}`);
     console.log(`  ${chalk.white('npm run dev')}`);

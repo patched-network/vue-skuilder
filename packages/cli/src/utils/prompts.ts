@@ -1,6 +1,78 @@
 import inquirer from 'inquirer';
 import chalk from 'chalk';
-import { CliOptions, ProjectConfig, PREDEFINED_THEMES, ThemeConfig } from '../types.js';
+import { CliOptions, ProjectConfig, PREDEFINED_THEMES } from '../types.js';
+
+/**
+ * Convert hex color to closest ANSI color code
+ */
+function hexToAnsi(hex: string): string {
+  // Remove # if present
+  hex = hex.replace('#', '');
+  
+  // Convert hex to RGB
+  const r = parseInt(hex.substr(0, 2), 16);
+  const g = parseInt(hex.substr(2, 2), 16);
+  const b = parseInt(hex.substr(4, 2), 16);
+  
+  // Convert to 256-color ANSI
+  const ansiCode = 16 + (36 * Math.round(r / 255 * 5)) + (6 * Math.round(g / 255 * 5)) + Math.round(b / 255 * 5);
+  return `\x1b[48;5;${ansiCode}m`;
+}
+
+/**
+ * Create a color swatch for terminal display
+ */
+function createColorSwatch(hex: string, label: string): string {
+  const colorCode = hexToAnsi(hex);
+  const reset = '\x1b[0m';
+  return `${colorCode}  ${reset} ${label}`;
+}
+
+/**
+ * Create theme preview with color swatches
+ */
+function createThemePreview(themeName: string): string {
+  const theme = PREDEFINED_THEMES[themeName];
+  const lightColors = theme.light.colors;
+  
+  const primarySwatch = createColorSwatch(lightColors.primary, 'Primary');
+  const secondarySwatch = createColorSwatch(lightColors.secondary, 'Secondary');
+  const accentSwatch = createColorSwatch(lightColors.accent, 'Accent');
+  
+  return `${primarySwatch} ${secondarySwatch} ${accentSwatch}`;
+}
+
+/**
+ * Display comprehensive theme preview after selection
+ */
+export function displayThemePreview(themeName: string): void {
+  const theme = PREDEFINED_THEMES[themeName];
+  
+  console.log(chalk.cyan('\n🎨 Theme Color Palette:'));
+  console.log(chalk.white(`   ${theme.name.toUpperCase()} THEME`));
+  
+  // Light theme colors
+  console.log(chalk.white('\n   Light Mode:'));
+  const lightColors = theme.light.colors;
+  console.log(`     ${createColorSwatch(lightColors.primary, `Primary: ${lightColors.primary}`)}`);
+  console.log(`     ${createColorSwatch(lightColors.secondary, `Secondary: ${lightColors.secondary}`)}`);
+  console.log(`     ${createColorSwatch(lightColors.accent, `Accent: ${lightColors.accent}`)}`);
+  console.log(`     ${createColorSwatch(lightColors.success, `Success: ${lightColors.success}`)}`);
+  console.log(`     ${createColorSwatch(lightColors.warning, `Warning: ${lightColors.warning}`)}`);
+  console.log(`     ${createColorSwatch(lightColors.error, `Error: ${lightColors.error}`)}`);
+  
+  // Dark theme colors
+  console.log(chalk.white('\n   Dark Mode:'));
+  const darkColors = theme.dark.colors;
+  console.log(`     ${createColorSwatch(darkColors.primary, `Primary: ${darkColors.primary}`)}`);
+  console.log(`     ${createColorSwatch(darkColors.secondary, `Secondary: ${darkColors.secondary}`)}`);
+  console.log(`     ${createColorSwatch(darkColors.accent, `Accent: ${darkColors.accent}`)}`);
+  console.log(`     ${createColorSwatch(darkColors.success, `Success: ${darkColors.success}`)}`);
+  console.log(`     ${createColorSwatch(darkColors.warning, `Warning: ${darkColors.warning}`)}`);
+  console.log(`     ${createColorSwatch(darkColors.error, `Error: ${darkColors.error}`)}`);
+  
+  console.log(chalk.gray(`\n   Default mode: ${theme.defaultMode}`));
+}
 
 export async function gatherProjectConfig(
   projectName: string,
@@ -65,19 +137,19 @@ export async function gatherProjectConfig(
         message: 'Select theme:',
         choices: [
           {
-            name: 'Default (Material Blue)',
+            name: `Default (Material Blue) ${createThemePreview('default')}`,
             value: 'default'
           },
           {
-            name: 'Medical (Healthcare Green)',
+            name: `Medical (Healthcare Green) ${createThemePreview('medical')}`,
             value: 'medical'
           },
           {
-            name: 'Educational (Academic Orange)',
+            name: `Educational (Academic Orange) ${createThemePreview('educational')}`,
             value: 'educational'
           },
           {
-            name: 'Corporate (Professional Gray)',
+            name: `Corporate (Professional Gray) ${createThemePreview('corporate')}`,
             value: 'corporate'
           }
         ],
@@ -93,6 +165,9 @@ export async function gatherProjectConfig(
       course: answers.courseId,
       theme: PREDEFINED_THEMES[answers.themeName]
     };
+
+    // Show comprehensive theme preview
+    displayThemePreview(answers.themeName);
   } else {
     // Non-interactive mode: use provided options
     config = {
@@ -130,7 +205,7 @@ export async function confirmProjectCreation(
     console.log(`   Course ID: ${chalk.white(config.course)}`);
   }
   
-  console.log(`   Theme: ${chalk.white(config.theme.name)}`);
+  console.log(`   Theme: ${chalk.white(config.theme.name)} ${createThemePreview(config.theme.name)}`);
   console.log(`   Directory: ${chalk.white(projectPath)}`);
 
   const { confirmed } = await inquirer.prompt([
@@ -145,48 +220,7 @@ export async function confirmProjectCreation(
   return confirmed;
 }
 
-export async function promptForCustomTheme(): Promise<ThemeConfig> {
-  console.log(chalk.cyan('\n🎨 Custom Theme Configuration\n'));
 
-  const answers = await inquirer.prompt([
-    {
-      type: 'input',
-      name: 'name',
-      message: 'Theme name:',
-      validate: (input: string) => input.trim().length > 0 || 'Theme name is required'
-    },
-    {
-      type: 'input',
-      name: 'primary',
-      message: 'Primary color (hex):',
-      default: '#1976D2',
-      validate: validateHexColor
-    },
-    {
-      type: 'input',
-      name: 'secondary',
-      message: 'Secondary color (hex):',
-      default: '#424242',
-      validate: validateHexColor
-    },
-    {
-      type: 'input',
-      name: 'accent',
-      message: 'Accent color (hex):',
-      default: '#82B1FF',
-      validate: validateHexColor
-    }
-  ]);
-
-  return {
-    name: answers.name,
-    colors: {
-      primary: answers.primary,
-      secondary: answers.secondary,
-      accent: answers.accent
-    }
-  };
-}
 
 function formatProjectName(projectName: string): string {
   return projectName
@@ -195,10 +229,3 @@ function formatProjectName(projectName: string): string {
     .join(' ');
 }
 
-function validateHexColor(input: string): boolean | string {
-  const hexColorRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
-  if (!hexColorRegex.test(input)) {
-    return 'Please enter a valid hex color (e.g., #1976D2)';
-  }
-  return true;
-}

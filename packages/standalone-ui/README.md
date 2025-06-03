@@ -15,6 +15,10 @@ When courses are generated via the Skuilder CLI, this template transforms into c
 
 Vue 3, Vuetify 3
 
+## Theme Configuration
+
+Theme colors and styling are loaded from `skuilder.config.json` at runtime. The application automatically applies both light and dark theme variants based on the configuration. When generated via the Skuilder CLI, this file is populated with the selected theme's complete color palette including all Vuetify semantic colors.
+
 ## Development
 
 The existing `./skuilder.config.js` file contains a devenv config that loads an `anatomy` course from the existing test DB docker image.
