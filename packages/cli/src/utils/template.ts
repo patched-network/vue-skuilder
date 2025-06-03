@@ -188,6 +188,129 @@ export async function generateSkuilderConfig(
 }
 
 /**
+ * Generate .gitignore file for the project
+ */
+export async function generateGitignore(gitignorePath: string): Promise<void> {
+  const gitignoreContent = `# Dependencies
+node_modules/
+/.pnp
+.pnp.js
+
+# Production builds
+/dist
+/build
+
+# Local env files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Log files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# nyc test coverage
+.nyc_output
+
+# Dependency directories
+jspm_packages/
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# parcel-bundler cache (https://parceljs.org/)
+.cache
+.parcel-cache
+
+# Next.js build output
+.next
+
+# Nuxt.js build / generate output
+.nuxt
+dist
+
+# Gatsby files
+.cache/
+public
+
+# Storybook build outputs
+.out
+.storybook-out
+
+# Temporary folders
+tmp/
+temp/
+
+# Editor directories and files
+.vscode/
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS generated files
+Thumbs.db
+
+# Cypress
+/cypress/videos/
+/cypress/screenshots/
+
+# Local development
+.env.development
+.env.production
+
+# Package manager lockfiles (uncomment if you want to ignore them)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# Skuilder specific
+/src/data/local-*.json
+`;
+
+  await fs.writeFile(gitignorePath, gitignoreContent);
+}
+
+/**
  * Generate project README.md
  */
 export async function generateReadme(
@@ -289,6 +412,10 @@ export async function processTemplate(
   console.log(chalk.blue('📝 Creating README...'));
   const readmePath = path.join(projectPath, 'README.md');
   await generateReadme(readmePath, config);
+  
+  console.log(chalk.blue('📄 Generating .gitignore...'));
+  const gitignorePath = path.join(projectPath, '.gitignore');
+  await generateGitignore(gitignorePath);
   
   console.log(chalk.green('✅ Template processing complete!'));
 }
