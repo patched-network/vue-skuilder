@@ -18,11 +18,12 @@ export default defineConfig({
     },
     rollupOptions: {
       // External packages that shouldn't be bundled
-      external: ['vue', 'vuetify', 'pinia', '@vue-skuilder/db', '@vue-skuilder/common'],
+      external: ['vue', 'vue-router', 'vuetify', 'pinia', '@vue-skuilder/db', '@vue-skuilder/common'],
       output: {
         // Global variables to use in UMD build for externalized deps
         globals: {
           vue: 'Vue',
+          'vue-router': 'VueRouter',
           vuetify: 'Vuetify',
           pinia: 'Pinia',
           '@vue-skuilder/db': 'VueSkuilderDb',
