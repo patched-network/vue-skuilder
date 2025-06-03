@@ -1,5 +1,4 @@
-import { promises as fs } from 'fs';
-import { existsSync } from 'fs';
+import { promises as fs, existsSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import chalk from 'chalk';
@@ -81,10 +80,84 @@ export async function transformPackageJson(
     }
   }
   
+  // Add missing terser devDependency for build minification
+  if (packageJson.devDependencies && !packageJson.devDependencies['terser']) {
+    packageJson.devDependencies['terser'] = '^5.39.0';
+  }
+  
   // Remove CLI-specific fields that don't belong in generated projects
   delete packageJson.publishConfig;
   
   await fs.writeFile(packageJsonPath, JSON.stringify(packageJson, null, 2));
+}
+
+/**
+ * Create a vite.config.ts to work with published packages instead of workspace sources
+ * 
+ * // [ ] This should be revised so that it works from the existing vite.config.ts in standalone-ui. As is, it recreates 95% of the same config.
+ */
+export async function createViteConfig(viteConfigPath: string): Promise<void> {
+  // Create a clean vite config for standalone projects
+  const transformedContent = `// packages/standalone-ui/vite.config.ts
+import { defineConfig } from 'vite';
+import vue from '@vitejs/plugin-vue';
+import { fileURLToPath, URL } from 'node:url';
+
+export default defineConfig({
+  plugins: [vue()],
+  resolve: {
+    alias: {
+      // Alias for internal src paths
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
+      
+      // Add events alias if needed (often required by dependencies)
+      events: 'events',
+    },
+    extensions: ['.js', '.ts', '.json', '.vue'],
+    dedupe: [
+      // Ensure single instances of core libs and published packages
+      'vue',
+      'vuetify',
+      'pinia',
+      'vue-router',
+      '@vue-skuilder/db',
+      '@vue-skuilder/common',
+      '@vue-skuilder/common-ui',
+      '@vue-skuilder/courses',
+    ],
+  },
+  // --- Dependencies optimization ---
+  optimizeDeps: {
+    // Help Vite pre-bundle dependencies from published packages
+    include: [
+      '@vue-skuilder/common-ui',
+      '@vue-skuilder/db',
+      '@vue-skuilder/common',
+      '@vue-skuilder/courses',
+    ],
+  },
+  server: {
+    port: 5173, // Use standard Vite port for standalone projects
+  },
+  build: {
+    sourcemap: true,
+    target: 'es2020',
+    minify: 'terser',
+    terserOptions: {
+      keep_classnames: true,
+    },
+  },
+  // Add define block for process polyfills
+  define: {
+    global: 'window',
+    'process.env': process.env,
+    'process.browser': true,
+    'process.version': JSON.stringify(process.version),
+  },
+});
+`;
+  
+  await fs.writeFile(viteConfigPath, transformedContent);
 }
 
 /**
@@ -112,6 +185,129 @@ export async function generateSkuilderConfig(
   }
   
   await fs.writeFile(configPath, JSON.stringify(skuilderConfig, null, 2));
+}
+
+/**
+ * Generate .gitignore file for the project
+ */
+export async function generateGitignore(gitignorePath: string): Promise<void> {
+  const gitignoreContent = `# Dependencies
+node_modules/
+/.pnp
+.pnp.js
+
+# Production builds
+/dist
+/build
+
+# Local env files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Log files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# nyc test coverage
+.nyc_output
+
+# Dependency directories
+jspm_packages/
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# parcel-bundler cache (https://parceljs.org/)
+.cache
+.parcel-cache
+
+# Next.js build output
+.next
+
+# Nuxt.js build / generate output
+.nuxt
+dist
+
+# Gatsby files
+.cache/
+public
+
+# Storybook build outputs
+.out
+.storybook-out
+
+# Temporary folders
+tmp/
+temp/
+
+# Editor directories and files
+.vscode/
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS generated files
+Thumbs.db
+
+# Cypress
+/cypress/videos/
+/cypress/screenshots/
+
+# Local development
+.env.development
+.env.production
+
+# Package manager lockfiles (uncomment if you want to ignore them)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# Skuilder specific
+/src/data/local-*.json
+`;
+
+  await fs.writeFile(gitignorePath, gitignoreContent);
 }
 
 /**
@@ -203,6 +399,12 @@ export async function processTemplate(
   const packageJsonPath = path.join(projectPath, 'package.json');
   await transformPackageJson(packageJsonPath, config.projectName, cliVersion);
   
+  console.log(chalk.blue('🔧 Creating vite.config.ts...'));
+  const viteConfigPath = path.join(projectPath, 'vite.config.ts');
+  if (existsSync(viteConfigPath)) {
+    await createViteConfig(viteConfigPath);
+  }
+  
   console.log(chalk.blue('🔧 Generating configuration...'));
   const configPath = path.join(projectPath, 'skuilder.config.json');
   await generateSkuilderConfig(configPath, config);
@@ -210,6 +412,10 @@ export async function processTemplate(
   console.log(chalk.blue('📝 Creating README...'));
   const readmePath = path.join(projectPath, 'README.md');
   await generateReadme(readmePath, config);
+  
+  console.log(chalk.blue('📄 Generating .gitignore...'));
+  const gitignorePath = path.join(projectPath, '.gitignore');
+  await generateGitignore(gitignorePath);
   
   console.log(chalk.green('✅ Template processing complete!'));
 }
