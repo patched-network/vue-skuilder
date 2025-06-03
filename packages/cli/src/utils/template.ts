@@ -1,5 +1,4 @@
-import { promises as fs } from 'fs';
-import { existsSync } from 'fs';
+import { promises as fs, existsSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import chalk from 'chalk';
@@ -81,10 +80,84 @@ export async function transformPackageJson(
     }
   }
   
+  // Add missing terser devDependency for build minification
+  if (packageJson.devDependencies && !packageJson.devDependencies['terser']) {
+    packageJson.devDependencies['terser'] = '^5.39.0';
+  }
+  
   // Remove CLI-specific fields that don't belong in generated projects
   delete packageJson.publishConfig;
   
   await fs.writeFile(packageJsonPath, JSON.stringify(packageJson, null, 2));
+}
+
+/**
+ * Create a vite.config.ts to work with published packages instead of workspace sources
+ * 
+ * // [ ] This should be revised so that it works from the existing vite.config.ts in standalone-ui. As is, it recreates 95% of the same config.
+ */
+export async function createViteConfig(viteConfigPath: string): Promise<void> {
+  // Create a clean vite config for standalone projects
+  const transformedContent = `// packages/standalone-ui/vite.config.ts
+import { defineConfig } from 'vite';
+import vue from '@vitejs/plugin-vue';
+import { fileURLToPath, URL } from 'node:url';
+
+export default defineConfig({
+  plugins: [vue()],
+  resolve: {
+    alias: {
+      // Alias for internal src paths
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
+      
+      // Add events alias if needed (often required by dependencies)
+      events: 'events',
+    },
+    extensions: ['.js', '.ts', '.json', '.vue'],
+    dedupe: [
+      // Ensure single instances of core libs and published packages
+      'vue',
+      'vuetify',
+      'pinia',
+      'vue-router',
+      '@vue-skuilder/db',
+      '@vue-skuilder/common',
+      '@vue-skuilder/common-ui',
+      '@vue-skuilder/courses',
+    ],
+  },
+  // --- Dependencies optimization ---
+  optimizeDeps: {
+    // Help Vite pre-bundle dependencies from published packages
+    include: [
+      '@vue-skuilder/common-ui',
+      '@vue-skuilder/db',
+      '@vue-skuilder/common',
+      '@vue-skuilder/courses',
+    ],
+  },
+  server: {
+    port: 5173, // Use standard Vite port for standalone projects
+  },
+  build: {
+    sourcemap: true,
+    target: 'es2020',
+    minify: 'terser',
+    terserOptions: {
+      keep_classnames: true,
+    },
+  },
+  // Add define block for process polyfills
+  define: {
+    global: 'window',
+    'process.env': process.env,
+    'process.browser': true,
+    'process.version': JSON.stringify(process.version),
+  },
+});
+`;
+  
+  await fs.writeFile(viteConfigPath, transformedContent);
 }
 
 /**
@@ -202,6 +275,12 @@ export async function processTemplate(
   console.log(chalk.blue('⚙️  Configuring package.json...'));
   const packageJsonPath = path.join(projectPath, 'package.json');
   await transformPackageJson(packageJsonPath, config.projectName, cliVersion);
+  
+  console.log(chalk.blue('🔧 Creating vite.config.ts...'));
+  const viteConfigPath = path.join(projectPath, 'vite.config.ts');
+  if (existsSync(viteConfigPath)) {
+    await createViteConfig(viteConfigPath);
+  }
   
   console.log(chalk.blue('🔧 Generating configuration...'));
   const configPath = path.join(projectPath, 'skuilder.config.json');
