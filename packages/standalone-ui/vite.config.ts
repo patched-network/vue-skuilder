@@ -13,7 +13,7 @@ export default defineConfig({
 
       // --- Link workspace packages to their SOURCE ---
       // Adjust relative paths as needed based on your monorepo structure
-      '@vue-skuilder/common-ui': resolve(__dirname, '../../packages/common-ui/src/index.ts'),
+      // '@vue-skuilder/common-ui': resolve(__dirname, '../../packages/common-ui/src/index.ts'), // Removed - now uses built package
 
       // Add events alias if needed (often required by dependencies)
       events: 'events',
