@@ -19,6 +19,9 @@ import { initializeDataLayer } from '@vue-skuilder/db';
 // auth store
 import { useAuthStore } from '@vue-skuilder/common-ui';
 
+// theme configuration
+import config from '../skuilder.config.json';
+
 (async () => {
   await initializeDataLayer({
     type: 'pouch',
@@ -30,12 +33,43 @@ import { useAuthStore } from '@vue-skuilder/common-ui';
   });
   const pinia = createPinia();
 
+  // Apply theme configuration from skuilder.config.json
+  const themeConfig = config.theme ? {
+    defaultTheme: 'light',
+    themes: {
+      light: {
+        colors: {
+          primary: config.theme.colors.primary,
+          secondary: config.theme.colors.secondary,
+          accent: config.theme.colors.accent,
+          error: '#FF5252', // Default error color
+          info: '#2196F3', // Default info color
+          success: '#4CAF50', // Default success color
+          warning: '#FFC107', // Default warning color
+        },
+      },
+    },
+  } : {
+    defaultTheme: 'light',
+    themes: {
+      light: {
+        colors: {
+          primary: '#1976D2', // Default primary color
+          secondary: '#424242', // Default secondary color
+          accent: '#82B1FF', // Default accent color
+          error: '#FF5252', // Default error color
+          info: '#2196F3', // Default info color
+          success: '#4CAF50', // Default success color
+          warning: '#FFC107', // Default warning color
+        },
+      },
+    },
+  };
+
   const vuetify = createVuetify({
     components,
     directives,
-    theme: {
-      defaultTheme: 'light',
-    },
+    theme: themeConfig,
     icons: {
       defaultSet: 'mdi',
       aliases,
