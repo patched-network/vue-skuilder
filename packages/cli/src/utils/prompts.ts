@@ -1,6 +1,6 @@
 import inquirer from 'inquirer';
 import chalk from 'chalk';
-import { CliOptions, ProjectConfig, PREDEFINED_THEMES, ThemeConfig } from '../types.js';
+import { CliOptions, ProjectConfig, PREDEFINED_THEMES } from '../types.js';
 
 export async function gatherProjectConfig(
   projectName: string,
@@ -145,48 +145,7 @@ export async function confirmProjectCreation(
   return confirmed;
 }
 
-export async function promptForCustomTheme(): Promise<ThemeConfig> {
-  console.log(chalk.cyan('\n🎨 Custom Theme Configuration\n'));
 
-  const answers = await inquirer.prompt([
-    {
-      type: 'input',
-      name: 'name',
-      message: 'Theme name:',
-      validate: (input: string) => input.trim().length > 0 || 'Theme name is required'
-    },
-    {
-      type: 'input',
-      name: 'primary',
-      message: 'Primary color (hex):',
-      default: '#1976D2',
-      validate: validateHexColor
-    },
-    {
-      type: 'input',
-      name: 'secondary',
-      message: 'Secondary color (hex):',
-      default: '#424242',
-      validate: validateHexColor
-    },
-    {
-      type: 'input',
-      name: 'accent',
-      message: 'Accent color (hex):',
-      default: '#82B1FF',
-      validate: validateHexColor
-    }
-  ]);
-
-  return {
-    name: answers.name,
-    colors: {
-      primary: answers.primary,
-      secondary: answers.secondary,
-      accent: answers.accent
-    }
-  };
-}
 
 function formatProjectName(projectName: string): string {
   return projectName
@@ -195,10 +154,3 @@ function formatProjectName(projectName: string): string {
     .join(' ');
 }
 
-function validateHexColor(input: string): boolean | string {
-  const hexColorRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
-  if (!hexColorRegex.test(input)) {
-    return 'Please enter a valid hex color (e.g., #1976D2)';
-  }
-  return true;
-}

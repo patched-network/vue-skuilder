@@ -356,10 +356,12 @@ Course configuration is managed in \`skuilder.config.json\`. You can modify:
 
 ## Theme
 
-Current theme: **${config.theme.name}**
-- Primary: ${config.theme.colors.primary}
-- Secondary: ${config.theme.colors.secondary}
-- Accent: ${config.theme.colors.accent}
+Current theme: **${config.theme.name}** (${config.theme.defaultMode} mode)
+- Primary: ${config.theme.light.colors.primary}
+- Secondary: ${config.theme.light.colors.secondary}  
+- Accent: ${config.theme.light.colors.accent}
+
+This theme includes both light and dark variants. The application will use the ${config.theme.defaultMode} theme by default, but users can toggle between light and dark modes in their settings.
 
 ## Testing
 
