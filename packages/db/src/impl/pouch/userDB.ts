@@ -710,42 +710,65 @@ Currently logged-in as ${this._username}.`
   }
 
   private async deduplicateReviews() {
-    /**
-     * Maps the qualified-id of a scheduled review card to
-     * the docId of the same scheduled review.
-     *
-     * EG: {
-     *  courseId-cardId: 'card_review_2021-06--17:12:165
-     * }
-     */
-    const reviewsMap: { [index: string]: string } = {};
+    try {
+      log('Starting deduplication of scheduled reviews...');
+      /**
+       * Maps the qualified-id of a scheduled review card to
+       * the docId of the same scheduled review.
+       *
+       * EG: {
+       *  courseId-cardId: 'card_review_2021-06--17:12:165'
+       * }
+       */
+      const reviewsMap: { [index: string]: string } = {};
+      const duplicateDocIds: string[] = [];
 
-    const scheduledReviews = await this.remoteDB.query<{
-      id: string;
-      value: string;
-    }>('reviewCards');
+      const scheduledReviews = await this.remoteDB.query<{
+        id: string;
+        value: string;
+      }>('reviewCards/reviewCards');
 
-    scheduledReviews.rows.forEach((r) => {
-      if (reviewsMap[r.value]) {
-        // this card is scheduled more than once! delete this scheduled review
-        log(`Removing duplicate scheduled review for card: ${r.value}`);
-        log(`Replacing review ${reviewsMap[r.value]} with ${r.key}`);
-        void this.remoteDB
-          .get(reviewsMap[r.value])
-          .then((doc) => {
-            // remove the already-hashed review, since it is the earliest one
-            // (prevents continual loop of short-scheduled reviews)
-            return this.remoteDB.remove(doc);
-          })
-          .then(() => {
-            // replace with the later-dated scheduled review
-            reviewsMap[r.value] = r.key;
-          });
+      log(`Found ${scheduledReviews.rows.length} scheduled reviews to process`);
+
+      // First pass: identify duplicates
+      scheduledReviews.rows.forEach((r) => {
+        const qualifiedCardId = r.value; // courseId-cardId
+        const docId = r.key; // card_review_2021-06--17:12:165
+
+        if (reviewsMap[qualifiedCardId]) {
+          // this card is scheduled more than once! mark the earlier one for deletion
+          log(`Found duplicate scheduled review for card: ${qualifiedCardId}`);
+          log(`Marking earlier review ${reviewsMap[qualifiedCardId]} for deletion, keeping ${docId}`);
+          duplicateDocIds.push(reviewsMap[qualifiedCardId]);
+          // replace with the later-dated scheduled review
+          reviewsMap[qualifiedCardId] = docId;
+        } else {
+          // note that this card is scheduled for review
+          reviewsMap[qualifiedCardId] = docId;
+        }
+      });
+
+      // Second pass: remove duplicates
+      if (duplicateDocIds.length > 0) {
+        log(`Removing ${duplicateDocIds.length} duplicate reviews...`);
+        const deletePromises = duplicateDocIds.map(async (docId) => {
+          try {
+            const doc = await this.remoteDB.get(docId);
+            await this.remoteDB.remove(doc);
+            log(`Successfully removed duplicate review: ${docId}`);
+          } catch (error) {
+            log(`Failed to remove duplicate review ${docId}: ${error}`);
+          }
+        });
+
+        await Promise.all(deletePromises);
+        log(`Deduplication complete. Processed ${duplicateDocIds.length} duplicates`);
       } else {
-        // note that this card is scheduled for review
-        reviewsMap[r.value] = r.key;
+        log('No duplicate reviews found');
       }
-    });
+    } catch (error) {
+      log(`Error during review deduplication: ${error}`);
+    }
   }
 
   /**
