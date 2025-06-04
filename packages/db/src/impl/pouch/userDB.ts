@@ -589,12 +589,11 @@ Currently logged-in as ${this._username}.`
       _id: '_design/reviewCards',
       views: {
         reviewCards: {
-          // @ts-expect-error This fcn will be converted to a string and interpreted in a js-only env. No types allowed!
-          map: function (doc) {
+          map: `function (doc) {
             if (doc._id && doc._id.indexOf('card_review') === 0 && doc.courseId && doc.cardId) {
               emit(doc._id, doc.courseId + '-' + doc.cardId);
             }
-          }.toString(),
+          }`,
         },
       },
     },
