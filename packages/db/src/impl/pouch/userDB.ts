@@ -39,7 +39,7 @@ import UpdateQueue, { Update } from './updateQueue';
 import { UsrCrsData } from './user-course-relDB';
 
 const log = (s: any) => {
-  logger.debug(s);
+  logger.info(s);
 };
 
 const cardHistoryPrefix = 'cardH-';
@@ -738,7 +738,9 @@ Currently logged-in as ${this._username}.`
         if (reviewsMap[qualifiedCardId]) {
           // this card is scheduled more than once! mark the earlier one for deletion
           log(`Found duplicate scheduled review for card: ${qualifiedCardId}`);
-          log(`Marking earlier review ${reviewsMap[qualifiedCardId]} for deletion, keeping ${docId}`);
+          log(
+            `Marking earlier review ${reviewsMap[qualifiedCardId]} for deletion, keeping ${docId}`
+          );
           duplicateDocIds.push(reviewsMap[qualifiedCardId]);
           // replace with the later-dated scheduled review
           reviewsMap[qualifiedCardId] = docId;
