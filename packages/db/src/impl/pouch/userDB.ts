@@ -589,16 +589,10 @@ Currently logged-in as ${this._username}.`
       _id: '_design/reviewCards',
       views: {
         reviewCards: {
-          map: function (doc: PouchDB.Core.Document<object>) {
-            if (doc._id.indexOf('card_review') === 0) {
-              type ReviewCard = {
-                _id: string;
-                courseId: string;
-                cardId: string;
-              };
-
-              const copy: ReviewCard = doc as ReviewCard;
-              emit(copy._id, copy.courseId + '-' + copy.cardId);
+          // @ts-expect-error This fcn will be converted to a string and interpreted in a js-only env. No types allowed!
+          map: function (doc) {
+            if (doc._id && doc._id.indexOf('card_review') === 0 && doc.courseId && doc.cardId) {
+              emit(doc._id, doc.courseId + '-' + doc.cardId);
             }
           }.toString(),
         },
