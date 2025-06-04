@@ -1068,13 +1068,6 @@ export async function registerUserForClassroom(
   });
 }
 
-/**
- * This noop exists to facilitate writing couchdb filter fcns
- */
-function emit(x: unknown, y: unknown): void {
-  logger.debug(`noop:`, x, y);
-}
-
 export async function dropUserFromClassroom(user: string, classID: string) {
   return getOrCreateClassroomRegistrationsDoc(user).then((doc) => {
     let index: number = -1;
