@@ -850,8 +850,19 @@ Currently logged-in as ${this._username}.`
         });
         ret = await this.getOrCreateClassroomRegistrationsDoc();
       } else {
+        // Properly serialize error information
+        const errorDetails = {
+          name: err.name,
+          status: err.status,
+          message: err.message,
+          reason: err.reason,
+          error: err.error,
+        };
+        
+        logger.error('Database error in getOrCreateClassroomRegistrationsDoc (private method):', errorDetails);
+        
         throw new Error(
-          `Unexpected error ${JSON.stringify(e)} in getOrCreateClassroomRegistrationDoc...`
+          `Database error accessing classroom registrations: ${err.message || err.name || 'Unknown error'} (status: ${err.status})`
         );
       }
     }
@@ -860,10 +871,27 @@ Currently logged-in as ${this._username}.`
     return ret;
   }
 
+  /**
+   * Retrieves the list of active classroom IDs where the user is registered as a student.
+   * 
+   * @returns Promise<string[]> - Array of classroom IDs, or empty array if classroom 
+   *                              registration document is unavailable due to database errors
+   * 
+   * @description This method gracefully handles database connectivity issues by returning
+   *              an empty array when the classroom registrations document cannot be accessed.
+   *              This ensures that users can still access other application features even
+   *              when classroom functionality is temporarily unavailable.
+   */
   public async getActiveClasses(): Promise<string[]> {
-    return (await this.getOrCreateClassroomRegistrationsDoc()).registrations
-      .filter((c) => c.registeredAs === 'student')
-      .map((c) => c.classID);
+    try {
+      return (await this.getOrCreateClassroomRegistrationsDoc()).registrations
+        .filter((c) => c.registeredAs === 'student')
+        .map((c) => c.classID);
+    } catch (error) {
+      logger.warn('Failed to load classroom registrations, continuing without classroom data:', error);
+      // Return empty array so user can still access other features
+      return [];
+    }
   }
 
   public async scheduleCardReview(review: {
@@ -999,8 +1027,19 @@ async function getOrCreateClassroomRegistrationsDoc(
       });
       ret = await getOrCreateClassroomRegistrationsDoc(user);
     } else {
+      // Properly serialize error information
+      const errorDetails = {
+        name: err.name,
+        status: err.status,
+        message: err.message,
+        reason: err.reason,
+        error: err.error,
+      };
+      
+      logger.error('Database error in getOrCreateClassroomRegistrationsDoc (standalone function):', errorDetails);
+      
       throw new Error(
-        `Unexpected error ${JSON.stringify(e)} in getOrCreateClassroomRegistrationDoc...`
+        `Database error accessing classroom registrations: ${err.message || err.name || 'Unknown error'} (status: ${err.status})`
       );
     }
   }
