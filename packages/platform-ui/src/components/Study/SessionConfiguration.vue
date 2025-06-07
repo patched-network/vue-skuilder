@@ -1,6 +1,15 @@
 <template>
-  <div v-if="hasRegistrations">
+  <div v-if="hasRegistrations || courseLoadError || classroomLoadError">
     <div data-cy="select-quilts-header" class="text-h4 mb-4">Study Session Setup</div>
+
+    <!-- Error Messages -->
+    <v-alert v-if="courseLoadError" type="warning" class="mb-4">
+      Unable to load course data. Some features may be unavailable.
+    </v-alert>
+    
+    <v-alert v-if="classroomLoadError" type="warning" class="mb-4">  
+      Unable to load classroom data. You can still study individual courses.
+    </v-alert>
 
     <div class="session-layout">
       <!-- Left Column: Course Selection -->
@@ -93,9 +102,13 @@
       </div>
     </div>
   </div>
-  <div v-else class="text-h4">
+  <div v-else-if="!courseLoadError && !classroomLoadError" class="text-h4">
     <p>You don't have anything to study!</p>
     <p>Head over to the <router-link to="/quilts">Quilts</router-link> page to find something for you.</p>
+  </div>
+  <div v-else class="text-h4">
+    <p>Unable to load study data due to technical issues.</p>
+    <p>Please try refreshing the page or contact support if the problem persists.</p>
   </div>
 </template>
 
@@ -136,6 +149,8 @@ export default defineComponent({
       hasRegistrations: true,
       user: null as UserDBInterface | null,
       timeLimit: this.initialTimeLimit,
+      courseLoadError: false,
+      classroomLoadError: false,
     };
   },
 
@@ -163,9 +178,24 @@ export default defineComponent({
     this.timeLimit = this.initialTimeLimit;
 
     this.setHotkeys();
-    await Promise.all([this.getActiveCourses(), this.getActiveClassrooms()]);
+    const [coursesResult, classroomsResult] = await Promise.allSettled([
+      this.getActiveCourses(),
+      this.getActiveClassrooms()
+    ]);
 
-    if (this.activeCourses.length === 0 && this.activeClasses.length === 0) {
+    // Handle course loading failure
+    if (coursesResult.status === 'rejected') {
+      console.error('Failed to load courses:', coursesResult.reason);
+      this.courseLoadError = true;
+    }
+
+    // Handle classroom loading failure  
+    if (classroomsResult.status === 'rejected') {
+      console.error('Failed to load classrooms:', classroomsResult.reason);
+      this.classroomLoadError = true;
+    }
+
+    if (this.activeCourses.length === 0 && this.activeClasses.length === 0 && !this.courseLoadError && !this.classroomLoadError) {
       this.hasRegistrations = false;
     }
   },
