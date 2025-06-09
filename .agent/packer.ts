@@ -1,7 +1,7 @@
-// packages/db/src/impl/static/packer/index.ts
+// packages/db/src/util/packer/index.ts
 
-import { logger } from '../../../util/logger';
-import { CardData, DocType, SkuilderCourseData, Tag } from '../../../core/types/types-legacy';
+import { logger } from '../../util/logger';
+import { CardData, DocType, SkuilderCourseData, Tag } from '../../core/types/types-legacy';
 import { CourseConfig, CourseElo } from '@vue-skuilder/common';
 
 export interface StaticCourseManifest {
@@ -21,7 +21,6 @@ export interface ChunkMetadata {
   startKey: string;
   endKey: string;
   documentCount: number;
-  sizeBytes: number;
   path: string;
 }
 
@@ -29,7 +28,6 @@ export interface IndexMetadata {
   name: string;
   type: 'btree' | 'hash' | 'spatial';
   path: string;
-  sizeBytes: number;
 }
 
 export interface DesignDocument {
@@ -44,28 +42,30 @@ export interface DesignDocument {
 
 export interface PackerConfig {
   chunkSize: number; // Number of documents per chunk
-  outputDir: string;
   includeAttachments: boolean;
-  compressionLevel?: number;
+}
+
+export interface PackedCourseData {
+  manifest: StaticCourseManifest;
+  chunks: Map<string, any[]>; // chunkId -> documents
+  indices: Map<string, any>; // indexName -> index data
 }
 
 export class CouchDBToStaticPacker {
   private config: PackerConfig;
-  private indexData: Map<string, any> = new Map();
 
-  constructor(config: PackerConfig) {
+  constructor(config: Partial<PackerConfig> = {}) {
     this.config = {
       chunkSize: 1000,
-      compressionLevel: 6,
       includeAttachments: true,
       ...config,
     };
   }
 
   /**
-   * Pack a CouchDB course database into static files
+   * Pack a CouchDB course database into static data structures
    */
-  async packCourse(sourceDB: PouchDB.Database, courseId: string): Promise<StaticCourseManifest> {
+  async packCourse(sourceDB: PouchDB.Database, courseId: string): Promise<PackedCourseData> {
     logger.info(`Starting static pack for course: ${courseId}`);
 
     const manifest: StaticCourseManifest = {
@@ -89,22 +89,26 @@ export class CouchDBToStaticPacker {
     // 3. Extract all documents by type and create chunks
     const docsByType = await this.extractDocumentsByType(sourceDB);
 
-    // 4. Create chunks
+    // 4. Create chunks and prepare chunk data
+    const chunks = new Map<string, any[]>();
     for (const [docType, docs] of Object.entries(docsByType)) {
-      const chunks = this.createChunks(docs, docType as DocType);
-      manifest.chunks.push(...chunks);
+      const chunkMetadata = this.createChunks(docs, docType as DocType);
+      manifest.chunks.push(...chunkMetadata);
       manifest.documentCount += docs.length;
+
+      // Prepare chunk data
+      this.prepareChunkData(chunkMetadata, docs, chunks);
     }
 
-    // 5. Build indices based on design documents
-    manifest.indices = await this.buildIndices(docsByType, manifest.designDocs);
+    // 5. Build indices
+    const indices = new Map<string, any>();
+    manifest.indices = await this.buildIndices(docsByType, manifest.designDocs, indices);
 
-    // 6. Write all files
-    await this.writeManifest(manifest);
-    await this.writeChunks(manifest.chunks, docsByType);
-    await this.writeIndices(manifest.indices);
-
-    return manifest;
+    return {
+      manifest,
+      chunks,
+      indices,
+    };
   }
 
   private async extractCourseConfig(db: PouchDB.Database): Promise<CourseConfig> {
@@ -162,7 +166,6 @@ export class CouchDBToStaticPacker {
         startKey: chunk[0]._id,
         endKey: chunk[chunk.length - 1]._id,
         documentCount: chunk.length,
-        sizeBytes: 0, // Will be updated when written
         path: `chunks/${chunkId}.json`,
       });
     }
@@ -170,43 +173,65 @@ export class CouchDBToStaticPacker {
     return chunks;
   }
 
+  private prepareChunkData(chunkMetadata: ChunkMetadata[], docs: any[], chunks: Map<string, any[]>): void {
+    const sortedDocs = docs.sort((a, b) => a._id.localeCompare(b._id));
+
+    for (const chunk of chunkMetadata) {
+      const chunkDocs = sortedDocs.filter((doc) => doc._id >= chunk.startKey && doc._id <= chunk.endKey);
+      
+      // Clean documents for storage
+      const cleanedDocs = chunkDocs.map((doc) => {
+        const cleaned = { ...doc };
+        delete cleaned._rev; // Remove revision info
+        if (!this.config.includeAttachments) {
+          delete cleaned._attachments;
+        }
+        return cleaned;
+      });
+
+      chunks.set(chunk.id, cleanedDocs);
+    }
+  }
+
   private async buildIndices(
     docsByType: Record<DocType, any[]>,
-    designDocs: DesignDocument[]
+    designDocs: DesignDocument[],
+    indices: Map<string, any>
   ): Promise<IndexMetadata[]> {
-    const indices: IndexMetadata[] = [];
+    const indexMetadata: IndexMetadata[] = [];
 
     // Build ELO index
     if (docsByType[DocType.CARD]) {
-      const eloIndex = await this.buildEloIndex(docsByType[DocType.CARD] as CardData[]);
-      indices.push(eloIndex);
+      const eloIndexMeta = await this.buildEloIndex(docsByType[DocType.CARD] as CardData[], indices);
+      indexMetadata.push(eloIndexMeta);
     }
 
     // Build tag indices
     if (docsByType[DocType.TAG]) {
-      const tagIndex = await this.buildTagIndex(docsByType[DocType.TAG] as Tag[]);
-      indices.push(tagIndex);
+      const tagIndexMeta = await this.buildTagIndex(docsByType[DocType.TAG] as Tag[], indices);
+      indexMetadata.push(tagIndexMeta);
     }
 
     // Build indices from design documents
     for (const designDoc of designDocs) {
       for (const [viewName, viewDef] of Object.entries(designDoc.views)) {
         if (viewDef.map) {
-          const index = await this.buildViewIndex(
+          const indexMeta = await this.buildViewIndex(
             viewName,
             viewDef.map,
             docsByType,
+            indices,
             viewDef.reduce
           );
-          if (index) indices.push(index);
+          if (indexMeta) indexMetadata.push(indexMeta);
         }
       }
     }
 
-    return indices;
+    return indexMetadata;
   }
 
-  private async buildEloIndex(cards: CardData[]): Promise<IndexMetadata> {
+  private async buildEloIndex(cards: CardData[], indices: Map<string, any>): Promise<IndexMetadata> {
     // Build a B-tree like structure for ELO queries
     const eloIndex: Array<{ elo: number; cardId: string }> = [];
 
@@ -232,8 +257,8 @@ export class CouchDBToStaticPacker {
       buckets[bucket].push(entry.cardId);
     }
 
-    // Store the index data for later writing
-    this.indexData.set('elo', {
+    // Store the index data
+    indices.set('elo', {
       sorted: eloIndex,
       buckets: buckets,
       stats: {
@@ -247,11 +272,10 @@ export class CouchDBToStaticPacker {
       name: 'elo',
       type: 'btree',
       path: 'indices/elo.json',
-      sizeBytes: 0, // Updated when written
     };
   }
 
-  private async buildTagIndex(tags: Tag[]): Promise<IndexMetadata> {
+  private async buildTagIndex(tags: Tag[], indices: Map<string, any>): Promise<IndexMetadata> {
     // Build inverted index for tags
     const tagIndex: Record<
       string,
@@ -279,7 +303,7 @@ export class CouchDBToStaticPacker {
       }
     }
 
-    this.indexData.set('tags', {
+    indices.set('tags', {
       byTag: tagIndex,
       byCard: cardToTags,
     });
@@ -288,7 +312,6 @@ export class CouchDBToStaticPacker {
       name: 'tags',
       type: 'hash',
       path: 'indices/tags.json',
-      sizeBytes: 0,
     };
   }
 
@@ -296,6 +319,7 @@ export class CouchDBToStaticPacker {
     viewName: string,
     mapFunction: string,
     docsByType: Record<DocType, any[]>,
+    indices: Map<string, any>,
     reduceFunction?: string
   ): Promise<IndexMetadata | null> {
     try {
@@ -333,103 +357,16 @@ export class CouchDBToStaticPacker {
         return 0;
       });
 
+      indices.set(`view-${viewName}`, viewResults);
+
       return {
         name: `view-${viewName}`,
         type: 'btree',
         path: `indices/view-${viewName}.json`,
-        sizeBytes: 0,
       };
     } catch (error) {
       logger.error(`Failed to build index for view ${viewName}:`, error);
       return null;
-    }
-  }
-
-  // File writing methods - Full implementation
-  private async writeManifest(manifest: StaticCourseManifest): Promise<void> {
-    logger.info('Writing manifest...');
-    const fs = await import('fs-extra');
-    const path = await import('path');
-
-    const manifestPath = path.join(this.config.outputDir, 'manifest.json');
-    await fs.writeJson(manifestPath, manifest, { spaces: 2 });
-  }
-
-  private async writeChunks(
-    chunks: ChunkMetadata[],
-    docsByType: Record<DocType, any[]>
-  ): Promise<void> {
-    logger.info(`Writing ${chunks.length} chunks...`);
-    const fs = await import('fs-extra');
-    const path = await import('path');
-    const zlib = await import('zlib');
-    const { promisify } = await import('util');
-    const gzip = promisify(zlib.gzip);
-
-    const chunksDir = path.join(this.config.outputDir, 'chunks');
-    await fs.ensureDir(chunksDir);
-
-    // Group documents by chunk
-    const docsByChunk = new Map<string, any[]>();
-
-    for (const chunk of chunks) {
-      const docs = docsByType[chunk.docType] || [];
-      const chunkDocs = docs.filter((doc) => doc._id >= chunk.startKey && doc._id <= chunk.endKey);
-      docsByChunk.set(chunk.id, chunkDocs);
-    }
-
-    // Write each chunk
-    for (const chunk of chunks) {
-      const chunkPath = path.join(this.config.outputDir, chunk.path);
-      const docs = docsByChunk.get(chunk.id) || [];
-
-      // Remove unnecessary fields to reduce size
-      const cleanedDocs = docs.map((doc) => {
-        const cleaned = { ...doc };
-        delete cleaned._rev; // Remove revision info
-        if (!this.config.includeAttachments) {
-          delete cleaned._attachments;
-        }
-        return cleaned;
-      });
-
-      const jsonData = JSON.stringify(cleanedDocs);
-
-      // Optionally compress
-      if (this.config.compressionLevel && this.config.compressionLevel > 0) {
-        const compressed = await gzip(jsonData, {
-          level: this.config.compressionLevel,
-        });
-        await fs.writeFile(chunkPath + '.gz', compressed);
-        chunk.sizeBytes = compressed.length;
-        chunk.path += '.gz';
-      } else {
-        await fs.writeFile(chunkPath, jsonData);
-        chunk.sizeBytes = Buffer.byteLength(jsonData);
-      }
-    }
-  }
-
-  private async writeIndices(indices: IndexMetadata[]): Promise<void> {
-    logger.info(`Writing ${indices.length} indices...`);
-    const fs = await import('fs-extra');
-    const path = await import('path');
-
-    const indicesDir = path.join(this.config.outputDir, 'indices');
-    await fs.ensureDir(indicesDir);
-
-    // Write each index with its data
-    for (const index of indices) {
-      const indexPath = path.join(this.config.outputDir, index.path);
-      const indexData = this.indexData.get(index.name);
-
-      if (indexData) {
-        const jsonData = JSON.stringify(indexData, null, 2);
-        await fs.writeFile(indexPath, jsonData);
-        index.sizeBytes = Buffer.byteLength(jsonData);
-      } else {
-        logger.warn(`No data found for index: ${index.name}`);
-      }
     }
   }
 }

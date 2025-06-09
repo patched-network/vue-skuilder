@@ -1,34 +1,35 @@
-# Packing MVP Plan
+# Packing MVP Plan (Refactored)
 
 ## Objective
-Create a minimal viable packing system that allows converting CouchDB course databases to static files via a CLI command. This focuses purely on the packing functionality to enable testing and validation.
+Create a minimal viable packing system that allows converting CouchDB course databases to static files via a CLI command. The refactored architecture separates data transformation (in db package) from file I/O (in CLI package).
 
 ## Architecture Overview
 
-### 1. Move Packer to DB Package
+### 1. Refactored Packer (Web-Safe)
 **Location**: `packages/db/src/util/packer/`
-**Purpose**: Make packing functionality available to other packages in the monorepo
+**Purpose**: Pure data transformation without file system dependencies
+**Returns**: Data structures that CLI can write to files
 
 **File Structure**:
 ```
 packages/db/src/util/packer/
-├── index.ts                 # Main exports
-├── CouchDBToStaticPacker.ts # Core packing logic
-├── StaticDataUnpacker.ts    # Reading packed data (for validation)
-└── types.ts                 # Shared interfaces
+├── index.ts          # Main exports
+├── types.ts          # Interfaces and types
+└── CouchDBToStaticPacker.ts  # Core packing logic (data only)
 ```
 
-### 2. Expose Packer in DB Package Exports
-**Update**: `packages/db/src/index.ts` and `packages/db/tsup.config.ts`
-**Purpose**: Make packer available for import by CLI package
-
-### 3. Add Pack Command to CLI
+### 2. CLI File Writer
 **Location**: `packages/cli/src/commands/pack.ts`
-**Purpose**: Provide user-facing command for packing CouchDB to static files
+**Purpose**: Handles all file I/O operations using data from packer
+**Dependencies**: `fs-extra`, `pouchdb` (only in CLI package)
+
+### 3. Clean Package Separation
+- **DB Package**: Pure data transformation, web-safe, no file system deps
+- **CLI Package**: File I/O, Node.js specific operations
 
 ## Implementation Steps
 
-### Step 1: Reorganize Packer Code (15 mins)
+### Step 1: Move Refactored Packer to DB Package (10 mins)
 
 Create `packages/db/src/util/packer/types.ts`:
 ```typescript
@@ -43,20 +44,40 @@ export interface StaticCourseManifest {
   designDocs: DesignDocument[];
 }
 
-export interface PackerConfig {
-  chunkSize: number;
-  outputDir: string;
-  includeAttachments: boolean;
-  compressionLevel?: number;
+export interface ChunkMetadata {
+  id: string;
+  docType: DocType;
+  startKey: string;
+  endKey: string;
+  documentCount: number;
+  path: string; // Relative path for file writing
 }
 
-// ... other interfaces from original packer.ts
+export interface IndexMetadata {
+  name: string;
+  type: 'btree' | 'hash' | 'spatial';
+  path: string; // Relative path for file writing
+}
+
+export interface PackerConfig {
+  chunkSize: number;
+  includeAttachments: boolean;
+}
+
+export interface PackedCourseData {
+  manifest: StaticCourseManifest;
+  chunks: Map<string, any[]>; // chunkId -> documents
+  indices: Map<string, any>; // indexName -> index data
+}
 ```
 
-Move and refactor existing packer code:
-- Extract `CouchDBToStaticPacker` class to separate file
-- Extract `StaticDataUnpacker` class to separate file  
-- Create clean exports in `index.ts`
+Move the refactored `CouchDBToStaticPacker` class (already completed in previous step).
+
+Create `packages/db/src/util/packer/index.ts`:
+```typescript
+export * from './types.js';
+export { CouchDBToStaticPacker } from './CouchDBToStaticPacker.js';
+```
 
 ### Step 2: Update DB Package Exports (5 mins)
 
@@ -65,11 +86,18 @@ Update `packages/db/tsup.config.ts`:
 export default defineConfig({
   entry: [
     'src/index.ts',
-    'src/core/index.ts',
+    'src/core/index.ts', 
     'src/pouch/index.ts',
     'src/util/packer/index.ts'  // Add packer export
   ],
-  // ... rest of config
+  format: ['cjs', 'esm'],
+  dts: true,
+  splitting: false,
+  sourcemap: true,
+  clean: true,
+  outExtension: ({ format }) => ({
+    js: format === 'esm' ? '.mjs' : '.js'
+  })
 });
 ```
 
@@ -77,31 +105,46 @@ Update `packages/db/package.json` exports:
 ```json
 {
   "exports": {
-    ".": { /* existing */ },
-    "./core": { /* existing */ },
-    "./pouch": { /* existing */ },
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    },
+    "./core": {
+      "types": "./dist/core/index.d.ts",
+      "import": "./dist/core/index.mjs",
+      "require": "./dist/core/index.js"
+    },
+    "./pouch": {
+      "types": "./dist/pouch/index.d.ts",
+      "import": "./dist/pouch/index.mjs",
+      "require": "./dist/pouch/index.js"
+    },
     "./packer": {
       "types": "./dist/util/packer/index.d.ts",
-      "import": "./dist/util/packer/index.mjs", 
+      "import": "./dist/util/packer/index.mjs",
       "require": "./dist/util/packer/index.js"
     }
   }
 }
 ```
 
-### Step 3: Add Dependencies to DB Package (2 mins)
+### Step 3: Create CLI Pack Command with File I/O (25 mins)
 
-Update `packages/db/package.json`:
+Update `packages/cli/package.json` dependencies:
 ```json
 {
   "dependencies": {
-    // ... existing deps
-    "fs-extra": "^11.2.0"
+    "@vue-skuilder/cli": "workspace:*",
+    "@vue-skuilder/db": "workspace:*",
+    "chalk": "^5.3.0",
+    "commander": "^11.0.0",
+    "fs-extra": "^11.2.0",
+    "inquirer": "^9.2.0",
+    "pouchdb": "^9.0.0"
   }
 }
 ```
-
-### Step 4: Create CLI Pack Command (20 mins)
 
 Create `packages/cli/src/commands/pack.ts`:
 ```typescript
@@ -151,34 +194,39 @@ async function packCourse(courseId: string, options: any) {
     // Test connection
     try {
       await sourceDB.info();
+      console.log(chalk.green('✅ Connected to database'));
     } catch (error) {
       throw new Error(`Failed to connect to database: ${error.message}`);
     }
 
-    // Create output directory
-    const outputDir = path.resolve(options.output, courseId);
-    await fs.ensureDir(outputDir);
-
-    // Configure packer
+    // Configure packer (data transformation only)
     const packerConfig: PackerConfig = {
-      outputDir,
       chunkSize: parseInt(options.chunkSize),
       includeAttachments: !options.noAttachments,
     };
 
-    console.log(chalk.gray(`📁 Output directory: ${outputDir}`));
     console.log(chalk.gray(`📦 Chunk size: ${packerConfig.chunkSize} documents`));
+    console.log(chalk.gray(`📎 Include attachments: ${packerConfig.includeAttachments}`));
 
-    // Pack the course
+    // Pack the course (data transformation)
+    console.log(chalk.cyan('🔄 Processing course data...'));
     const packer = new CouchDBToStaticPacker(packerConfig);
-    const manifest = await packer.packCourse(sourceDB, courseId);
+    const packedData = await packer.packCourse(sourceDB, courseId);
+
+    // Create output directory
+    const outputDir = path.resolve(options.output, courseId);
+    await fs.ensureDir(outputDir);
+    console.log(chalk.gray(`📁 Output directory: ${outputDir}`));
+
+    // Write files
+    await writePackedData(packedData, outputDir);
 
     // Success summary
     console.log(chalk.green('\n✅ Successfully packed course!'));
-    console.log(chalk.white(`📊 Course: ${manifest.courseName}`));
-    console.log(chalk.white(`📄 Documents: ${manifest.documentCount}`));
-    console.log(chalk.white(`🗂️  Chunks: ${manifest.chunks.length}`));
-    console.log(chalk.white(`🗃️  Indices: ${manifest.indices.length}`));
+    console.log(chalk.white(`📊 Course: ${packedData.manifest.courseName}`));
+    console.log(chalk.white(`📄 Documents: ${packedData.manifest.documentCount}`));
+    console.log(chalk.white(`🗂️  Chunks: ${packedData.manifest.chunks.length}`));
+    console.log(chalk.white(`🗃️  Indices: ${packedData.manifest.indices.length}`));
     console.log(chalk.white(`📁 Location: ${outputDir}`));
 
   } catch (error) {
@@ -187,46 +235,111 @@ async function packCourse(courseId: string, options: any) {
     process.exit(1);
   }
 }
+
+async function writePackedData(
+  packedData: { manifest: any; chunks: Map<string, any[]>; indices: Map<string, any> },
+  outputDir: string
+) {
+  console.log(chalk.cyan('💾 Writing files...'));
+
+  // Write manifest
+  const manifestPath = path.join(outputDir, 'manifest.json');
+  await fs.writeJson(manifestPath, packedData.manifest, { spaces: 2 });
+  console.log(chalk.gray(`📋 Wrote manifest: ${manifestPath}`));
+
+  // Create directories
+  const chunksDir = path.join(outputDir, 'chunks');
+  const indicesDir = path.join(outputDir, 'indices');
+  await fs.ensureDir(chunksDir);
+  await fs.ensureDir(indicesDir);
+
+  // Write chunks
+  let chunkCount = 0;
+  for (const [chunkId, chunkData] of packedData.chunks) {
+    const chunkPath = path.join(chunksDir, `${chunkId}.json`);
+    await fs.writeJson(chunkPath, chunkData);
+    chunkCount++;
+  }
+  console.log(chalk.gray(`📦 Wrote ${chunkCount} chunks`));
+
+  // Write indices  
+  let indexCount = 0;
+  for (const [indexName, indexData] of packedData.indices) {
+    const indexPath = path.join(indicesDir, `${indexName}.json`);
+    await fs.writeJson(indexPath, indexData, { spaces: 2 });
+    indexCount++;
+  }
+  console.log(chalk.gray(`🗃️  Wrote ${indexCount} indices`));
+}
 ```
 
-### Step 5: Update CLI Main File (3 mins)
+### Step 4: Update CLI Main File (3 mins)
 
 Update `packages/cli/src/cli.ts`:
 ```typescript
-// Add import
-import { createPackCommand } from './commands/pack.js';
+#!/usr/bin/env node
 
-// Add to program
+import { Command } from 'commander';
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+import { initCommand } from './commands/init.js';
+import { createPackCommand } from './commands/pack.js';  // Add import
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Read package.json to get version
+const packagePath = join(__dirname, '..', 'package.json');
+const packageJson = JSON.parse(readFileSync(packagePath, 'utf-8'));
+
+const program = new Command();
+
+program
+  .name('skuilder')
+  .description('CLI tool for scaffolding Skuilder course applications')
+  .version(packageJson.version);
+
+program
+  .command('init')
+  .argument('<project-name>', 'name of the project to create')
+  .description('create a new Skuilder course application')
+  .option('--data-layer <type>', 'data layer type (static|dynamic)', 'dynamic')
+  .option('--theme <n>', 'theme name (default|medical|educational|corporate)', 'default')
+  .option('--no-interactive', 'skip interactive prompts')
+  .option('--couchdb-url <url>', 'CouchDB server URL (for dynamic data layer)')
+  .option('--course-id <id>', 'course ID to import (for dynamic data layer)')
+  .action(initCommand);
+
+// Add pack command
 program.addCommand(createPackCommand());
-```
 
-### Step 6: Add Dependencies to CLI Package (2 mins)
+program.on('--help', () => {
+  console.log('');
+  console.log('Examples:');
+  console.log('  $ skuilder init my-anatomy-course');
+  console.log('  $ skuilder init biology-101 --data-layer=static --theme=medical');
+  console.log('  $ skuilder pack sample-course-id');
+  console.log('  $ skuilder pack biology-101 --server http://localhost:5984 --username admin');
+});
 
-Update `packages/cli/package.json`:
-```json
-{
-  "dependencies": {
-    // ... existing deps
-    "@vue-skuilder/db": "workspace:*",
-    "pouchdb": "^9.0.0"
-  }
-}
+program.parse();
 ```
 
 ## Testing Plan
 
-### 1. Build and Link
+### 1. Build Packages
 ```bash
-# Build db package first
+# Build db package first (no fs-extra dependency!)
 cd packages/db
 yarn build
 
-# Build cli package
-cd ../cli  
+# Build cli package  
+cd ../cli
 yarn build
 
-# Test from root
-yarn build
+# Verify no fs-extra in db package node_modules
+ls packages/db/node_modules | grep fs-extra  # Should be empty
 ```
 
 ### 2. Test Pack Command
@@ -243,33 +356,55 @@ yarn build
 # Test with custom output
 ./packages/cli/dist/cli.js pack chemistry \
   --output ./test-output \
-  --chunk-size 500
+  --chunk-size 500 \
+  --no-attachments
 ```
 
-### 3. Validate Output
-- Check manifest.json exists and is valid
-- Verify chunks directory and files
-- Verify indices directory and files
-- Test file sizes are reasonable
+### 3. Validate Output Structure
+```bash
+# Check directory structure
+ls static-courses/sample-course-id/
+# Should show: manifest.json, chunks/, indices/
+
+# Check manifest content
+cat static-courses/sample-course-id/manifest.json | jq .
+
+# Check chunks exist
+ls static-courses/sample-course-id/chunks/
+
+# Check indices exist  
+ls static-courses/sample-course-id/indices/
+```
+
+## Key Benefits of Refactored Architecture
+
+### 1. Web-Safe DB Package
+- ✅ No file system dependencies in db package
+- ✅ Can be safely bundled in web applications
+- ✅ Tree-shaking friendly
+- ✅ Pure data transformation functions
+
+### 2. Clean Separation of Concerns
+- **DB Package**: Data transformation logic
+- **CLI Package**: File I/O and Node.js operations
+- Better testing and maintainability
+
+### 3. Flexible Output
+- Packer returns structured data, not files
+- CLI can choose compression, format, directory structure
+- Future: Could support other outputs (S3, FTP, etc.)
 
 ## Success Criteria
 
-✅ Packer functionality moved to `packages/db/src/util/packer/`
-✅ Packer exported from db package and importable by CLI
+✅ DB package builds without `fs-extra` dependency
+✅ Packer returns `PackedCourseData` structure instead of writing files
+✅ CLI package handles all file I/O operations
 ✅ CLI `pack` command successfully connects to CouchDB
-✅ CLI `pack` command generates static files with proper structure
+✅ CLI `pack` command generates proper static file structure
 ✅ Generated manifest.json contains expected metadata
-✅ Error handling provides clear feedback for common failures
-✅ Help text and examples are clear and useful
-
-## Known Limitations (Acceptable for MVP)
-
-- No verification/validation of packed output
-- No progress indicators for large courses
-- No resume capability for interrupted packing
-- Basic error handling only
-- No compression options exposed in CLI
+✅ Chunks and indices are written correctly
+✅ Error handling provides clear feedback
 
 ## Time Estimate: ~45 minutes
 
-This provides the core functionality needed to test packing CouchDB courses to static files, without the complexity of the full static data layer implementation.
+The refactored architecture is cleaner and maintains the same timeline while providing better separation of concerns and web compatibility.
