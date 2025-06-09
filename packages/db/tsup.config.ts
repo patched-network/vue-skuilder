@@ -4,7 +4,8 @@ export default defineConfig({
   entry: [
     'src/index.ts',
     'src/core/index.ts',
-    'src/pouch/index.ts'
+    'src/pouch/index.ts',
+    'src/util/packer/index.ts'
   ],
   format: ['cjs', 'esm'],
   dts: true,
