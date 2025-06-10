@@ -4,7 +4,7 @@ import { Command } from 'commander';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { initCommand } from './commands/init.js';
+import { createInitCommand } from './commands/init.js';
 import { createPackCommand } from './commands/pack.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -21,18 +21,8 @@ program
   .description('CLI tool for scaffolding Skuilder course applications')
   .version(packageJson.version);
 
-program
-  .command('init')
-  .argument('<project-name>', 'name of the project to create')
-  .description('create a new Skuilder course application')
-  .option('--data-layer <type>', 'data layer type (static|dynamic)', 'dynamic')
-  .option('--theme <name>', 'theme name (default|medical|educational|corporate)', 'default')
-  .option('--no-interactive', 'skip interactive prompts')
-  .option('--couchdb-url <url>', 'CouchDB server URL (for dynamic data layer)')
-  .option('--course-id <id>', 'course ID to import (for dynamic data layer)')
-  .action(initCommand);
-
-// Add pack command
+// Add commands
+program.addCommand(createInitCommand());
 program.addCommand(createPackCommand());
 
 program.on('--help', () => {
