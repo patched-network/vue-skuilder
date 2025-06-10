@@ -23,6 +23,11 @@
             "types": "./dist/pouch/index.d.ts",
             "import": "./dist/pouch/index.mjs",
             "require": "./dist/pouch/index.js"
+        },
+        "./packer": {
+            "types": "./dist/util/packer/index.d.ts",
+            "import": "./dist/util/packer/index.mjs",
+            "require": "./dist/util/packer/index.js"
         }
     },
     "scripts": {
