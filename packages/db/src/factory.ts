@@ -54,10 +54,11 @@ export async function initializeDataLayer(config: DataLayerConfig): Promise<Data
     // Dynamic import to avoid loading both implementations when only one is needed
     const { PouchDataLayerProvider } = await import('./impl/pouch/PouchDataLayerProvider');
     dataLayerInstance = new PouchDataLayerProvider(config.options.COURSE_IDS);
+  } else if (config.type === 'static') {
+    const { StaticDataLayerProvider } = await import('./impl/static/StaticDataLayerProvider');
+    dataLayerInstance = new StaticDataLayerProvider(config.options);
   } else {
-    throw new Error('static data layer not implemented');
-    // const { StaticDataLayerProvider } = await import('./impl/static/StaticDataLayerProvider');
-    // dataLayerInstance = new StaticDataLayerProvider(config.options);
+    throw new Error(`Unknown data layer type: ${config.type}`);
   }
 
   await dataLayerInstance.initialize();

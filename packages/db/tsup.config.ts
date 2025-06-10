@@ -5,6 +5,7 @@ export default defineConfig({
     'src/index.ts',
     'src/core/index.ts',
     'src/pouch/index.ts',
+    'src/impl/static/index.ts',
     'src/util/packer/index.ts'
   ],
   format: ['cjs', 'esm'],
