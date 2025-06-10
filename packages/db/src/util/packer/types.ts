@@ -1,11 +1,13 @@
 // packages/db/src/util/packer/types.ts
 
+import { CourseConfig } from '@vue-skuilder/common';
 import { DocType } from '../../core/types/types-legacy';
 
 export interface StaticCourseManifest {
   version: string;
   courseId: string;
   courseName: string;
+  courseConfig: CourseConfig | null; // Full CourseConfig object
   lastUpdated: string;
   documentCount: number;
   chunks: ChunkMetadata[];

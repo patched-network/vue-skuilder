@@ -1,19 +1,17 @@
 // packages/db/src/util/packer/CouchDBToStaticPacker.ts
 
-import { logger } from '../logger';
 import { CardData, DocType, Tag } from '../../core/types/types-legacy';
+import { logger } from '../logger';
 // CourseConfig interface - simplified for packer use
-interface CourseConfig {
-  name: string;
-  [key: string]: any;
-}
-import { 
-  StaticCourseManifest, 
-  ChunkMetadata, 
-  IndexMetadata, 
-  DesignDocument, 
-  PackerConfig, 
-  PackedCourseData 
+
+import { CourseConfig } from '@vue-skuilder/common';
+import {
+  ChunkMetadata,
+  DesignDocument,
+  IndexMetadata,
+  PackedCourseData,
+  PackerConfig,
+  StaticCourseManifest,
 } from './types';
 
 export class CouchDBToStaticPacker {
@@ -37,6 +35,7 @@ export class CouchDBToStaticPacker {
       version: '1.0.0',
       courseId,
       courseName: '',
+      courseConfig: null,
       lastUpdated: new Date().toISOString(),
       documentCount: 0,
       chunks: [],
@@ -47,6 +46,7 @@ export class CouchDBToStaticPacker {
     // 1. Extract course config
     const courseConfig = await this.extractCourseConfig(sourceDB);
     manifest.courseName = courseConfig.name;
+    manifest.courseConfig = courseConfig;
 
     // 2. Extract and process design documents
     manifest.designDocs = await this.extractDesignDocs(sourceDB);
@@ -138,12 +138,18 @@ export class CouchDBToStaticPacker {
     return chunks;
   }
 
-  private prepareChunkData(chunkMetadata: ChunkMetadata[], docs: any[], chunks: Map<string, any[]>): void {
+  private prepareChunkData(
+    chunkMetadata: ChunkMetadata[],
+    docs: any[],
+    chunks: Map<string, any[]>
+  ): void {
     const sortedDocs = docs.sort((a, b) => a._id.localeCompare(b._id));
 
     for (const chunk of chunkMetadata) {
-      const chunkDocs = sortedDocs.filter((doc) => doc._id >= chunk.startKey && doc._id <= chunk.endKey);
-      
+      const chunkDocs = sortedDocs.filter(
+        (doc) => doc._id >= chunk.startKey && doc._id <= chunk.endKey
+      );
+
       // Clean documents for storage
       const cleanedDocs = chunkDocs.map((doc) => {
         const cleaned = { ...doc };
@@ -167,7 +173,10 @@ export class CouchDBToStaticPacker {
 
     // Build ELO index
     if (docsByType[DocType.CARD]) {
-      const eloIndexMeta = await this.buildEloIndex(docsByType[DocType.CARD] as CardData[], indices);
+      const eloIndexMeta = await this.buildEloIndex(
+        docsByType[DocType.CARD] as CardData[],
+        indices
+      );
       indexMetadata.push(eloIndexMeta);
     }
 
@@ -196,7 +205,10 @@ export class CouchDBToStaticPacker {
     return indexMetadata;
   }
 
-  private async buildEloIndex(cards: CardData[], indices: Map<string, any>): Promise<IndexMetadata> {
+  private async buildEloIndex(
+    cards: CardData[],
+    indices: Map<string, any>
+  ): Promise<IndexMetadata> {
     // Build a B-tree like structure for ELO queries
     const eloIndex: Array<{ elo: number; cardId: string }> = [];
 
