@@ -2,6 +2,7 @@
 
 import { DataLayerProvider } from './core/interfaces';
 import { logger } from './util/logger';
+import { StaticCourseManifest } from './util/packer/types';
 
 interface DBEnv {
   COUCHDB_SERVER_URL: string; // URL of CouchDB server
@@ -21,6 +22,7 @@ export interface DataLayerConfig {
   options: {
     staticContentPath?: string; // Path to static content JSON files
     localStoragePrefix?: string; // Prefix for IndexedDB storage names
+    manifests?: Record<string, StaticCourseManifest>; // Course manifests for static mode
     COUCHDB_SERVER_URL?: string;
     COUCHDB_SERVER_PROTOCOL?: string;
     COUCHDB_USERNAME?: string;
