@@ -29,7 +29,11 @@ export class StaticCourseDB implements CourseDBInterface {
   }
 
   async getCourseConfig(): Promise<CourseConfig> {
-    return this.manifest.courseConfig;
+    if (this.manifest.courseConfig != null) {
+      return this.manifest.courseConfig;
+    } else {
+      throw new Error(`Course config not found for course ${this.courseId}`);
+    }
   }
 
   async updateCourseConfig(_cfg: CourseConfig): Promise<PouchDB.Core.Response> {
