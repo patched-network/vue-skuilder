@@ -8,6 +8,7 @@ import {
   StudySessionReviewItem,
 } from '../../core/interfaces';
 import { StaticDataUnpacker } from './StaticDataUnpacker';
+import { StaticCourseManifest } from '../../util/packer/types';
 import { CourseConfig, CourseElo, DataShape, Status } from '@vue-skuilder/common';
 import { Tag, TagStub, DocType, SkuilderCourseData } from '../../core/types/types-legacy';
 import { DataLayerResult } from '../../core/types/db';
@@ -19,7 +20,8 @@ export class StaticCourseDB implements CourseDBInterface {
   constructor(
     private courseId: string,
     private unpacker: StaticDataUnpacker,
-    private userDB: UserDBInterface
+    private userDB: UserDBInterface,
+    private manifest: StaticCourseManifest
   ) {}
 
   getCourseID(): string {
@@ -27,7 +29,7 @@ export class StaticCourseDB implements CourseDBInterface {
   }
 
   async getCourseConfig(): Promise<CourseConfig> {
-    return this.unpacker.getDocument('CourseConfig');
+    return this.manifest.courseConfig;
   }
 
   async updateCourseConfig(_cfg: CourseConfig): Promise<PouchDB.Core.Response> {

@@ -65,7 +65,8 @@ export class StaticDataLayerProvider implements DataLayerProvider {
     if (!unpacker) {
       throw new Error(`Course ${courseId} not found in static data`);
     }
-    return new StaticCourseDB(courseId, unpacker, this.getUserDB());
+    const manifest = this.config.manifests[courseId];
+    return new StaticCourseDB(courseId, unpacker, this.getUserDB(), manifest);
   }
 
   getCoursesDB(): CoursesDBInterface {
