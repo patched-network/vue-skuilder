@@ -1,18 +1,14 @@
-// packages/db/src/impl/static/StaticDataLayerProvider.ts
+// packages/db/src/impl/static/courseDB.ts
 
 import {
-  AdminDBInterface,
-  ClassroomDBInterface,
-  CoursesDBInterface,
   CourseDBInterface,
-  DataLayerProvider,
   UserDBInterface,
   CourseInfo,
   StudySessionNewItem,
   StudySessionReviewItem,
 } from '../../core/interfaces';
-import { logger } from '../../util/logger';
-import { StaticCourseManifest, StaticDataUnpacker } from './packer';
+import { StaticDataUnpacker } from './StaticDataUnpacker';
+import { StaticCourseManifest } from '../../util/packer/types';
 import { CourseConfig, CourseElo, DataShape, Status } from '@vue-skuilder/common';
 import { Tag, TagStub, DocType, SkuilderCourseData } from '../../core/types/types-legacy';
 import { DataLayerResult } from '../../core/types/db';
@@ -20,81 +16,12 @@ import { ContentNavigationStrategyData } from '../../core/types/contentNavigatio
 import { ScheduledCard } from '../../core/types/user';
 import { Navigators } from '../../core/navigators';
 
-interface StaticDataLayerConfig {
-  staticContentPath: string;
-  localStoragePrefix?: string;
-  manifests: Record<string, StaticCourseManifest>; // courseId -> manifest
-}
-
-export class StaticDataLayerProvider implements DataLayerProvider {
-  private config: StaticDataLayerConfig;
-  private initialized: boolean = false;
-  private courseUnpackers: Map<string, StaticDataUnpacker> = new Map();
-
-  constructor(config: Partial<StaticDataLayerConfig>) {
-    this.config = {
-      staticContentPath: config.staticContentPath || '/static-content',
-      localStoragePrefix: config.localStoragePrefix || 'skuilder-static',
-      manifests: config.manifests || {},
-    };
-  }
-
-  async initialize(): Promise<void> {
-    if (this.initialized) return;
-
-    logger.info('Initializing static data layer provider');
-
-    // Load manifests for all courses
-    for (const [courseId, manifest] of Object.entries(this.config.manifests)) {
-      const unpacker = new StaticDataUnpacker(
-        manifest,
-        `${this.config.staticContentPath}/${courseId}`
-      );
-      this.courseUnpackers.set(courseId, unpacker);
-    }
-
-    this.initialized = true;
-  }
-
-  async teardown(): Promise<void> {
-    this.courseUnpackers.clear();
-    this.initialized = false;
-  }
-
-  getUserDB(): UserDBInterface {
-    return new StaticUserDB(this.config.localStoragePrefix!);
-  }
-
-  getCourseDB(courseId: string): CourseDBInterface {
-    const unpacker = this.courseUnpackers.get(courseId);
-    if (!unpacker) {
-      throw new Error(`Course ${courseId} not found in static data`);
-    }
-    return new StaticCourseDB(courseId, unpacker, this.getUserDB());
-  }
-
-  getCoursesDB(): CoursesDBInterface {
-    return new StaticCoursesDB(this.config.manifests);
-  }
-
-  async getClassroomDB(
-    classId: string,
-    type: 'student' | 'teacher'
-  ): Promise<ClassroomDBInterface> {
-    throw new Error('Classrooms not supported in static mode');
-  }
-
-  getAdminDB(): AdminDBInterface {
-    throw new Error('Admin functions not supported in static mode');
-  }
-}
-
-// Static implementation of CourseDB
-class StaticCourseDB implements CourseDBInterface {
+export class StaticCourseDB implements CourseDBInterface {
   constructor(
     private courseId: string,
     private unpacker: StaticDataUnpacker,
-    private userDB: UserDBInterface
+    private userDB: UserDBInterface,
+    private manifest: StaticCourseManifest
   ) {}
 
   getCourseID(): string {
@@ -102,10 +29,14 @@ class StaticCourseDB implements CourseDBInterface {
   }
 
   async getCourseConfig(): Promise<CourseConfig> {
-    return this.unpacker.getDocument('CourseConfig');
+    if (this.manifest.courseConfig != null) {
+      return this.manifest.courseConfig;
+    } else {
+      throw new Error(`Course config not found for course ${this.courseId}`);
+    }
   }
 
-  async updateCourseConfig(cfg: CourseConfig): Promise<PouchDB.Core.Response> {
+  async updateCourseConfig(_cfg: CourseConfig): Promise<PouchDB.Core.Response> {
     throw new Error('Cannot update course config in static mode');
   }
 
@@ -119,14 +50,14 @@ class StaticCourseDB implements CourseDBInterface {
 
   async getCourseDoc<T extends SkuilderCourseData>(
     id: string,
-    options?: PouchDB.Core.GetOptions
+    _options?: PouchDB.Core.GetOptions
   ): Promise<T> {
     return this.unpacker.getDocument(id);
   }
 
   async getCourseDocs<T extends SkuilderCourseData>(
     ids: string[],
-    options?: PouchDB.Core.AllDocsOptions
+    _options?: PouchDB.Core.AllDocsOptions
   ): Promise<PouchDB.Core.AllDocsWithKeysResponse<{} & T>> {
     const rows = await Promise.all(
       ids.map(async (id) => {
@@ -172,9 +103,8 @@ class StaticCourseDB implements CourseDBInterface {
     return results;
   }
 
-  async updateCardElo(cardId: string, elo: CourseElo): Promise<PouchDB.Core.Response> {
-    // In static mode, ELO updates would be stored locally
-    logger.warn('Card ELO updates are stored locally only in static mode');
+  async updateCardElo(cardId: string, _elo: CourseElo): Promise<PouchDB.Core.Response> {
+    // No updates to card data in static mode - this is a noop
     return { ok: true, id: cardId, rev: '1-static' };
   }
 
@@ -228,7 +158,7 @@ class StaticCourseDB implements CourseDBInterface {
     }));
   }
 
-  async getAppliedTags(cardId: string): Promise<PouchDB.Query.Response<TagStub>> {
+  async getAppliedTags(_cardId: string): Promise<PouchDB.Query.Response<TagStub>> {
     // Would need to query the tag index
     return {
       total_rows: 0,
@@ -237,15 +167,15 @@ class StaticCourseDB implements CourseDBInterface {
     };
   }
 
-  async addTagToCard(cardId: string, tagId: string): Promise<PouchDB.Core.Response> {
+  async addTagToCard(_cardId: string, _tagId: string): Promise<PouchDB.Core.Response> {
     throw new Error('Cannot modify tags in static mode');
   }
 
-  async removeTagFromCard(cardId: string, tagId: string): Promise<PouchDB.Core.Response> {
+  async removeTagFromCard(_cardId: string, _tagId: string): Promise<PouchDB.Core.Response> {
     throw new Error('Cannot modify tags in static mode');
   }
 
-  async createTag(tagName: string): Promise<PouchDB.Core.Response> {
+  async createTag(_tagName: string): Promise<PouchDB.Core.Response> {
     throw new Error('Cannot create tags in static mode');
   }
 
@@ -253,7 +183,7 @@ class StaticCourseDB implements CourseDBInterface {
     return this.unpacker.getDocument(`${DocType.TAG}-${tagName}`);
   }
 
-  async updateTag(tag: Tag): Promise<PouchDB.Core.Response> {
+  async updateTag(_tag: Tag): Promise<PouchDB.Core.Response> {
     throw new Error('Cannot update tags in static mode');
   }
 
@@ -267,13 +197,13 @@ class StaticCourseDB implements CourseDBInterface {
   }
 
   async addNote(
-    codeCourse: string,
-    shape: DataShape,
-    data: unknown,
-    author: string,
-    tags: string[],
-    uploads?: { [key: string]: PouchDB.Core.FullAttachment },
-    elo?: CourseElo
+    _codeCourse: string,
+    _shape: DataShape,
+    _data: unknown,
+    _author: string,
+    _tags: string[],
+    _uploads?: { [key: string]: PouchDB.Core.FullAttachment },
+    _elo?: CourseElo
   ): Promise<DataLayerResult> {
     return {
       status: Status.error,
@@ -281,7 +211,7 @@ class StaticCourseDB implements CourseDBInterface {
     };
   }
 
-  async removeCard(cardId: string): Promise<PouchDB.Core.Response> {
+  async removeCard(_cardId: string): Promise<PouchDB.Core.Response> {
     throw new Error('Cannot remove cards in static mode');
   }
 
@@ -291,7 +221,7 @@ class StaticCourseDB implements CourseDBInterface {
   }
 
   // Navigation Strategy Manager implementation
-  async getNavigationStrategy(id: string): Promise<ContentNavigationStrategyData> {
+  async getNavigationStrategy(_id: string): Promise<ContentNavigationStrategyData> {
     return {
       id: 'ELO',
       docType: DocType.NAVIGATION_STRATEGY,
@@ -307,11 +237,11 @@ class StaticCourseDB implements CourseDBInterface {
     return [await this.getNavigationStrategy('ELO')];
   }
 
-  async addNavigationStrategy(data: ContentNavigationStrategyData): Promise<void> {
+  async addNavigationStrategy(_data: ContentNavigationStrategyData): Promise<void> {
     throw new Error('Cannot add navigation strategies in static mode');
   }
 
-  async updateNavigationStrategy(id: string, data: ContentNavigationStrategyData): Promise<void> {
+  async updateNavigationStrategy(_id: string, _data: ContentNavigationStrategyData): Promise<void> {
     throw new Error('Cannot update navigation strategies in static mode');
   }
 
@@ -323,66 +253,5 @@ class StaticCourseDB implements CourseDBInterface {
   async getPendingReviews(): Promise<(StudySessionReviewItem & ScheduledCard)[]> {
     // In static mode, reviews would be stored locally
     return [];
-  }
-}
-
-// Simplified static user DB using localStorage
-class StaticUserDB implements UserDBInterface {
-  constructor(private prefix: string) {}
-
-  isLoggedIn(): boolean {
-    return false; // Always guest in static mode
-  }
-
-  getUsername(): string {
-    return 'Guest';
-  }
-
-  // Implement other required methods...
-  // Most would use localStorage for persistence
-  // This is a stub - full implementation would be needed
-
-  async createAccount(username: string, password: string): Promise<any> {
-    throw new Error('Cannot create accounts in static mode');
-  }
-
-  async login(username: string, password: string): Promise<any> {
-    throw new Error('Cannot login in static mode');
-  }
-
-  async logout(): Promise<any> {
-    return { ok: true };
-  }
-
-  // ... other methods would follow similar patterns
-}
-
-// Static implementation of CoursesDB
-class StaticCoursesDB implements CoursesDBInterface {
-  constructor(private manifests: Record<string, StaticCourseManifest>) {}
-
-  async getCourseConfig(courseId: string): Promise<CourseConfig> {
-    if (!this.manifests[courseId]) {
-      throw new Error(`Course ${courseId} not found`);
-    }
-
-    // Would need to fetch the course config from static files
-    return {} as CourseConfig;
-  }
-
-  async getCourseList(): Promise<CourseConfig[]> {
-    // Return configs for all available courses
-    return Object.keys(this.manifests).map(
-      (courseId) =>
-        ({
-          courseID: courseId,
-          name: this.manifests[courseId].courseName,
-          // ... other config fields
-        }) as CourseConfig
-    );
-  }
-
-  async disambiguateCourse(courseId: string, disambiguator: string): Promise<void> {
-    logger.warn('Cannot disambiguate courses in static mode');
   }
 }

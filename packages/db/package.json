@@ -28,6 +28,11 @@
             "types": "./dist/util/packer/index.d.ts",
             "import": "./dist/util/packer/index.mjs",
             "require": "./dist/util/packer/index.js"
+        },
+        "./static": {
+            "types": "./dist/impl/static/index.d.ts",
+            "import": "./dist/impl/static/index.mjs",
+            "require": "./dist/impl/static/index.js"
         }
     },
     "scripts": {

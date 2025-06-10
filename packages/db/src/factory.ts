@@ -2,6 +2,7 @@
 
 import { DataLayerProvider } from './core/interfaces';
 import { logger } from './util/logger';
+import { StaticCourseManifest } from './util/packer/types';
 
 interface DBEnv {
   COUCHDB_SERVER_URL: string; // URL of CouchDB server
@@ -21,6 +22,7 @@ export interface DataLayerConfig {
   options: {
     staticContentPath?: string; // Path to static content JSON files
     localStoragePrefix?: string; // Prefix for IndexedDB storage names
+    manifests?: Record<string, StaticCourseManifest>; // Course manifests for static mode
     COUCHDB_SERVER_URL?: string;
     COUCHDB_SERVER_PROTOCOL?: string;
     COUCHDB_USERNAME?: string;
@@ -54,10 +56,11 @@ export async function initializeDataLayer(config: DataLayerConfig): Promise<Data
     // Dynamic import to avoid loading both implementations when only one is needed
     const { PouchDataLayerProvider } = await import('./impl/pouch/PouchDataLayerProvider');
     dataLayerInstance = new PouchDataLayerProvider(config.options.COURSE_IDS);
+  } else if (config.type === 'static') {
+    const { StaticDataLayerProvider } = await import('./impl/static/StaticDataLayerProvider');
+    dataLayerInstance = new StaticDataLayerProvider(config.options);
   } else {
-    throw new Error('static data layer not implemented');
-    // const { StaticDataLayerProvider } = await import('./impl/static/StaticDataLayerProvider');
-    // dataLayerInstance = new StaticDataLayerProvider(config.options);
+    throw new Error(`Unknown data layer type: ${config.type}`);
   }
 
   await dataLayerInstance.initialize();
