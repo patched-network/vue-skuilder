@@ -33,6 +33,8 @@ export async function addNote55(
 ): Promise<PouchDB.Core.Response> {
   const db = getCourseDB(courseID);
   const payload = prepareNote55(courseID, codeCourse, shape, data, author, tags, uploads);
+  // [ ] NAMESPACING: consider put( _id: "displayable_data-uuid")
+  //     consider also semantic hashing
   const result = await db.post<DisplayableData>(payload);
 
   const dataShapeId = NameSpacer.getDataShapeString({
@@ -139,6 +141,7 @@ async function addCard(
   elo: CourseElo,
   tags: string[]
 ): Promise<PouchDB.Core.Response> {
+  // [ ] NAMESPACING: consider put( _id: "card-uuid")
   const card = await getCourseDB(courseID).post<CardData>({
     course,
     id_displayable_data,
