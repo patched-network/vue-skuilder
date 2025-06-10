@@ -2,7 +2,9 @@
 
 import { StaticCourseManifest, ChunkMetadata } from '../../util/packer/types';
 import { logger } from '../../util/logger';
-import { DocType } from '../../core/types/types-legacy';
+import * as fs from 'fs';
+import * as path from 'path';
+import { DocType } from '@/core';
 
 interface EloIndexEntry {
   elo: number;
@@ -48,6 +50,10 @@ export class StaticDataUnpacker {
     // Find which chunk contains this document
     const chunk = this.findChunkForDocument(id);
     if (!chunk) {
+      logger.error(
+        `Document ${id} not found in any chunk. Available chunks:`,
+        this.manifest.chunks.map((c) => `${c.id} (${c.docType}): ${c.startKey} - ${c.endKey}`)
+      );
       throw new Error(`Document ${id} not found in any chunk`);
     }
 
@@ -66,8 +72,8 @@ export class StaticDataUnpacker {
    * Query cards by ELO score, returning card IDs sorted by ELO
    */
   async queryByElo(targetElo: number, limit: number = 25): Promise<string[]> {
-    const eloIndex = await this.loadIndex('elo') as EloIndex;
-    
+    const eloIndex = (await this.loadIndex('elo')) as EloIndex;
+
     if (!eloIndex || !eloIndex.sorted) {
       logger.warn('ELO index not found or malformed, returning empty results');
       return [];
@@ -93,12 +99,16 @@ export class StaticDataUnpacker {
     // Collect cards around the target ELO
     const result: string[] = [];
     const halfLimit = Math.floor(limit / 2);
-    
+
     // Get cards below target ELO
-    for (let i = Math.max(0, startIndex - halfLimit); i < startIndex && result.length < limit; i++) {
+    for (
+      let i = Math.max(0, startIndex - halfLimit);
+      i < startIndex && result.length < limit;
+      i++
+    ) {
       result.push(sorted[i].cardId);
     }
-    
+
     // Get cards at or above target ELO
     for (let i = startIndex; i < sorted.length && result.length < limit; i++) {
       result.push(sorted[i].cardId);
@@ -111,35 +121,80 @@ export class StaticDataUnpacker {
    * Get all tag names mapped to their card arrays
    */
   async getTagsIndex(): Promise<TagsIndex> {
-    return await this.loadIndex('tags') as TagsIndex;
+    return (await this.loadIndex('tags')) as TagsIndex;
   }
 
   /**
    * Find which chunk contains a specific document ID
    */
   private findChunkForDocument(docId: string): ChunkMetadata | undefined {
-    // Determine document type from ID prefix
-    let docType: DocType;
+    // Determine document type from ID pattern by checking all DocType enum members
+    let expectedDocType: DocType | undefined = undefined;
     
-    if (docId.startsWith('card-')) {
-      docType = DocType.CARD;
-    } else if (docId.startsWith('tag-')) {
-      docType = DocType.TAG;
-    } else if (docId.includes('displayable_data')) {
-      docType = DocType.DISPLAYABLE_DATA;
-    } else {
-      // Try to find by checking document type in chunk metadata
-      // For now, assume it's in the first chunk of each type
-      for (const chunk of this.manifest.chunks) {
+    // Check for ID prefixes matching any DocType enum value
+    for (const docType of Object.values(DocType)) {
+      if (docId.startsWith(`${docType}-`)) {
+        expectedDocType = docType;
+        break;
+      }
+    }
+
+    if (expectedDocType !== undefined) {
+      // Use chunk filtering by docType for documents with recognized prefixes
+      const typeChunks = this.manifest.chunks.filter((c) => c.docType === expectedDocType);
+      for (const chunk of typeChunks) {
         if (docId >= chunk.startKey && docId <= chunk.endKey) {
+          logger.debug(`Found document ${docId} in ${expectedDocType} chunk ${chunk.id}`);
           return chunk;
         }
       }
+
+      logger.debug(
+        `Document ${docId} not found in any ${expectedDocType} chunk range. Available chunks:`,
+        this.manifest.chunks.map((c) => `${c.id} (${c.docType}): ${c.startKey} - ${c.endKey}`)
+      );
+      return undefined;
+    } else {
+      // Fall back to the original method for documents without recognized prefixes
+      // Since card IDs and displayable data IDs can overlap in range, we need to try each type
+
+      // First try CARD chunks (most common for ELO queries)
+      const cardChunks = this.manifest.chunks.filter((c) => c.docType === 'CARD');
+      for (const chunk of cardChunks) {
+        if (docId >= chunk.startKey && docId <= chunk.endKey) {
+          logger.debug(`Found document ${docId} in CARD chunk ${chunk.id}`);
+          return chunk;
+        }
+      }
+
+      // Then try DISPLAYABLE_DATA chunks
+      const displayableChunks = this.manifest.chunks.filter(
+        (c) => c.docType === 'DISPLAYABLE_DATA'
+      );
+      for (const chunk of displayableChunks) {
+        if (docId >= chunk.startKey && docId <= chunk.endKey) {
+          logger.debug(`Found document ${docId} in DISPLAYABLE_DATA chunk ${chunk.id}`);
+          return chunk;
+        }
+      }
+
+      // Finally try any other chunk types
+      const otherChunks = this.manifest.chunks.filter(
+        (c) => c.docType !== 'CARD' && c.docType !== 'DISPLAYABLE_DATA' && c.docType !== 'TAG'
+      );
+      for (const chunk of otherChunks) {
+        if (docId >= chunk.startKey && docId <= chunk.endKey) {
+          logger.debug(`Found document ${docId} in ${chunk.docType} chunk ${chunk.id}`);
+          return chunk;
+        }
+      }
+
+      logger.debug(
+        `Document ${docId} not found in any chunk range. Available chunks:`,
+        this.manifest.chunks.map((c) => `${c.id} (${c.docType}): ${c.startKey} - ${c.endKey}`)
+      );
       return undefined;
     }
-
-    // Find the chunk for this document type
-    return this.manifest.chunks.find(chunk => chunk.docType === docType);
   }
 
   /**
@@ -150,7 +205,7 @@ export class StaticDataUnpacker {
       return; // Already loaded
     }
 
-    const chunk = this.manifest.chunks.find(c => c.id === chunkId);
+    const chunk = this.manifest.chunks.find((c) => c.id === chunkId);
     if (!chunk) {
       throw new Error(`Chunk ${chunkId} not found in manifest`);
     }
@@ -158,13 +213,25 @@ export class StaticDataUnpacker {
     try {
       const chunkPath = `${this.basePath}/${chunk.path}`;
       logger.debug(`Loading chunk from ${chunkPath}`);
-      
-      const response = await fetch(chunkPath);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch chunk ${chunkId}: ${response.status} ${response.statusText}`);
+
+      let documents: any[];
+
+      // Check if we're in a Node.js environment with local files
+      if (this.isLocalPath(chunkPath)) {
+        // Use fs for local file access (e.g., in tests)
+        const fileContent = await fs.promises.readFile(chunkPath, 'utf8');
+        documents = JSON.parse(fileContent);
+      } else {
+        // Use fetch for URL-based access (e.g., in browser)
+        const response = await fetch(chunkPath);
+        if (!response.ok) {
+          throw new Error(
+            `Failed to fetch chunk ${chunkId}: ${response.status} ${response.statusText}`
+          );
+        }
+        documents = await response.json();
       }
-      
-      const documents = await response.json();
+
       this.chunkCache.set(chunkId, documents);
 
       // Cache individual documents for quick lookup
@@ -189,7 +256,7 @@ export class StaticDataUnpacker {
       return this.indexCache.get(indexName);
     }
 
-    const indexMeta = this.manifest.indices.find(idx => idx.name === indexName);
+    const indexMeta = this.manifest.indices.find((idx) => idx.name === indexName);
     if (!indexMeta) {
       throw new Error(`Index ${indexName} not found in manifest`);
     }
@@ -197,13 +264,25 @@ export class StaticDataUnpacker {
     try {
       const indexPath = `${this.basePath}/${indexMeta.path}`;
       logger.debug(`Loading index from ${indexPath}`);
-      
-      const response = await fetch(indexPath);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch index ${indexName}: ${response.status} ${response.statusText}`);
+
+      let indexData: any;
+
+      // Check if we're in a Node.js environment with local files
+      if (this.isLocalPath(indexPath)) {
+        // Use fs for local file access (e.g., in tests)
+        const fileContent = await fs.promises.readFile(indexPath, 'utf8');
+        indexData = JSON.parse(fileContent);
+      } else {
+        // Use fetch for URL-based access (e.g., in browser)
+        const response = await fetch(indexPath);
+        if (!response.ok) {
+          throw new Error(
+            `Failed to fetch index ${indexName}: ${response.status} ${response.statusText}`
+          );
+        }
+        indexData = await response.json();
       }
-      
-      const indexData = await response.json();
+
       this.indexCache.set(indexName, indexData);
 
       logger.debug(`Loaded index ${indexName}`);
@@ -236,5 +315,17 @@ export class StaticDataUnpacker {
       chunks: this.chunkCache.size,
       indices: this.indexCache.size,
     };
+  }
+
+  /**
+   * Check if a path is a local file path (vs URL)
+   */
+  private isLocalPath(filePath: string): boolean {
+    // Check if it's an absolute path or doesn't start with http/https
+    return (
+      !filePath.startsWith('http://') &&
+      !filePath.startsWith('https://') &&
+      (path.isAbsolute(filePath) || filePath.startsWith('./') || filePath.startsWith('../'))
+    );
   }
 }
