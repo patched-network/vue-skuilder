@@ -81,8 +81,8 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import CourseEditor from '@/components/Courses/CourseEditor.vue';
-import CourseStubCard from '@/components/Courses/CourseStubCard.vue';
+import CourseEditor from '@pui/components/Courses/CourseEditor.vue';
+import CourseStubCard from '@pui/components/Courses/CourseStubCard.vue';
 import _ from 'lodash';
 import serverRequest from '../server';
 import { ServerRequestType, CourseConfig, Status } from '@vue-skuilder/common';

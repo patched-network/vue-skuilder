@@ -19,10 +19,10 @@
 </template>
 
 <script lang="ts">
-import TextSwap from '@/components/TextSwap.vue';
+import TextSwap from '@pui/components/TextSwap.vue';
 import { defineComponent } from 'vue';
 import { useDisplay } from 'vuetify';
-import { ITextSwap } from '@/components/TextSwap.vue';
+import { ITextSwap } from '@pui/components/TextSwap.vue';
 
 interface Data {
   swapIntervalID: number | null;

@@ -16,7 +16,7 @@
 import { defineComponent, computed } from 'vue';
 import { integerValidator } from './typeValidators';
 import FieldInput from '../OptionsFieldInput';
-import { ValidatingFunction } from '@/base-course/Interfaces/ValidatingFunction';
+import { ValidatingFunction } from '@pui/base-course/Interfaces/ValidatingFunction';
 
 export default defineComponent({
   name: 'IntegerInput',

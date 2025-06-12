@@ -116,7 +116,7 @@
 
 <script lang="ts">
 import { displayableDataToViewData } from '@vue-skuilder/common';
-import TagsInput from '@/components/Edit/TagsInput.vue';
+import TagsInput from '@pui/components/Edit/TagsInput.vue';
 import { PaginatingToolbar, ViewComponent, CardLoader, alertUser } from '@vue-skuilder/common-ui';
 import { allCourses } from '@vue-skuilder/courses';
 import { getDataLayer, CourseDBInterface, CardData, DisplayableData, Tag } from '@vue-skuilder/db';
@@ -354,7 +354,9 @@ export default defineComponent({
   max-height: auto;
   transform: scale(1, 1);
   transform-origin: top;
-  transition: transform 0.3s ease, max-height 0.3s ease;
+  transition:
+    transform 0.3s ease,
+    max-height 0.3s ease;
 }
 .component-scale-enter,
 .component-fade-leave-to {

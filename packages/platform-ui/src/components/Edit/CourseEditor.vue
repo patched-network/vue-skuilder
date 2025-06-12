@@ -44,13 +44,12 @@
             <component-registration :course="course" class="mt-4" />
           </v-container>
         </v-window-item>
-        
+
         <v-window-item value="navigation">
           <v-container fluid>
-            <navigation-strategy-editor :course-id="course" />    
+            <navigation-strategy-editor :course-id="course" />
           </v-container>
         </v-window-item>
-        
       </v-window>
     </div>
   </div>
@@ -58,15 +57,15 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import ComponentRegistration from '@/components/Edit/ComponentRegistration/ComponentRegistration.vue';
-import NavigationStrategyEditor from '@/components/Edit/NavigationStrategy/NavigationStrategyEditor.vue';
+import ComponentRegistration from '@pui/components/Edit/ComponentRegistration/ComponentRegistration.vue';
+import NavigationStrategyEditor from '@pui/components/Edit/NavigationStrategy/NavigationStrategyEditor.vue';
 import { allCourses } from '@vue-skuilder/courses';
 import { BlanksCard, BlanksCardDataShapes } from '@vue-skuilder/courses';
 import { CourseConfig, NameSpacer, DataShape } from '@vue-skuilder/common';
 import DataInputForm from './ViewableDataInputForm/DataInputForm.vue';
 import BulkImportView from './BulkImportView.vue'; // Added import
 import { getDataLayer } from '@vue-skuilder/db';
-import { useDataInputFormStore } from '@/stores/useDataInputFormStore';
+import { useDataInputFormStore } from '@pui/stores/useDataInputFormStore';
 
 export default defineComponent({
   name: 'CourseEditor',
