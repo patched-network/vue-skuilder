@@ -2,6 +2,8 @@ import { resolve } from 'path';
 
 const isDev = process.env.NODE_ENV !== 'production';
 
+console.info(`[VITE] shared config loaded in ${isDev ? 'development' : 'production'} mode`);
+
 /**
  * Creates shared alias mappings for monorepo packages
  * @param {string} rootDir - Path to the monorepo root directory
