@@ -1,4 +1,4 @@
-import { Token, MarkedToken, Tokens } from 'marked';
+import { MarkedToken, Tokens } from 'marked';
 import * as marked from 'marked';
 
 /**
@@ -41,7 +41,7 @@ export function splitTextToken(token: Tokens.Text): Tokens.Text[] {
     const rawChunks = splitByDelimiters(token.raw, '{{', '}}');
 
     if (textChunks.length === rawChunks.length) {
-      return textChunks.map((c, i) => {
+      return textChunks.map((_c, i) => {
         return {
           type: 'text',
           text: textChunks[i],
