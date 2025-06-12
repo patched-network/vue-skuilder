@@ -1,7 +1,8 @@
+// packages/common-ui/vite.config.js
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
-import { fileURLToPath, URL } from 'node:url';
 import { resolve } from 'path';
+import { createBaseResolve } from '../../vite.config.base.js';
 
 export default defineConfig({
   build: {
@@ -18,7 +19,14 @@ export default defineConfig({
     },
     rollupOptions: {
       // External packages that shouldn't be bundled
-      external: ['vue', 'vue-router', 'vuetify', 'pinia', '@vue-skuilder/db', '@vue-skuilder/common'],
+      external: [
+        'vue',
+        'vue-router',
+        'vuetify',
+        'pinia',
+        '@vue-skuilder/db',
+        '@vue-skuilder/common',
+      ],
       output: {
         // Global variables to use in UMD build for externalized deps
         globals: {
@@ -29,7 +37,7 @@ export default defineConfig({
           '@vue-skuilder/db': 'VueSkuilderDb',
           '@vue-skuilder/common': 'VueSkuilderCommon',
         },
-        // Preserve CSS in the output bundle
+        // Preserve CSS in the output bundlest
         assetFileNames: (assetInfo) => {
           return `assets/[name][extname]`;
         },
@@ -40,10 +48,7 @@ export default defineConfig({
     cssCodeSplit: true,
   },
   plugins: [vue()],
-  resolve: {
-    alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url)),
-    },
-    extensions: ['.js', '.ts', '.json', '.vue'],
-  },
+  resolve: createBaseResolve(resolve(__dirname, '../..'), {
+    '@cui': resolve(__dirname, 'src'), // Override for self-imports during build
+  }),
 });
