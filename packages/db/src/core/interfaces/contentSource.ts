@@ -2,7 +2,6 @@ import { getDataLayer } from '@db/factory';
 import { UserDBInterface } from '..';
 import { StudentClassroomDB } from '../../impl/pouch/classroomDB';
 import { ScheduledCard } from '@db/core/types/user';
-import { logger } from '@db/util/logger';
 
 export type StudySessionFailedItem = StudySessionFailedNewItem | StudySessionFailedReviewItem;
 
@@ -61,11 +60,7 @@ export async function getStudySource(
     // return new CourseDB(source.id, async () => {
     //   return user;
     // });
-    logger.info(`[cs]getting content source:`);
-    logger.info(`[cs]\t${JSON.stringify(source)}`);
-    logger.info(`[cs]\t${JSON.stringify(user)}`);
 
-    //
-    return getDataLayer().getCourseDB(source as unknown as string) as unknown as StudyContentSource;
+    return getDataLayer().getCourseDB(source.id) as unknown as StudyContentSource;
   }
 }
