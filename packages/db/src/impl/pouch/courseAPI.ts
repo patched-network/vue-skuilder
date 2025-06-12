@@ -1,6 +1,6 @@
 import pouch from './pouchdb-setup';
 import { pouchDBincludeCredentialsConfig } from '.';
-import { ENV } from '@/factory';
+import { ENV } from '@db/factory';
 // import { DataShape } from '../..base-course/Interfaces/DataShape';
 import { NameSpacer, ShapeDescriptor } from '@vue-skuilder/common';
 import { CourseConfig, DataShape } from '@vue-skuilder/common';
@@ -9,7 +9,7 @@ import { CourseDB, createTag, updateCardElo } from './courseDB';
 import { CardData, DisplayableData, DocType, Tag } from '../../core/types/types-legacy';
 import { prepareNote55 } from '@vue-skuilder/common';
 import { User } from './userDB';
-import { logger } from '@/util/logger';
+import { logger } from '@db/util/logger';
 
 /**
  *

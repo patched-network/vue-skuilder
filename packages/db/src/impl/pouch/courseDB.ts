@@ -1,5 +1,5 @@
-import { CourseDBInterface, CourseInfo, CoursesDBInterface, UserDBInterface } from '@/core';
-import { ScheduledCard } from '@/core/types/user';
+import { CourseDBInterface, CourseInfo, CoursesDBInterface, UserDBInterface } from '@db/core';
+import { ScheduledCard } from '@db/core/types/user';
 import {
   CourseConfig,
   CourseElo,
@@ -21,11 +21,11 @@ import { CardData, DocType, SkuilderCourseData, Tag, TagStub } from '../../core/
 import { logger } from '../../util/logger';
 import { GET_CACHED } from './clientCache';
 import { addNote55, addTagToCard, getCredentialledCourseConfig, getTagID } from './courseAPI';
-import { DataLayerResult } from '@/core/types/db';
+import { DataLayerResult } from '@db/core/types/db';
 import { PouchError } from './types';
 import CourseLookup from './courseLookupDB';
-import { ContentNavigationStrategyData } from '@/core/types/contentNavigationStrategy';
-import { ContentNavigator, Navigators } from '@/core/navigators';
+import { ContentNavigationStrategyData } from '@db/core/types/contentNavigationStrategy';
+import { ContentNavigator, Navigators } from '@db/core/navigators';
 
 export class CoursesDB implements CoursesDBInterface {
   _courseIDs: string[] | undefined;

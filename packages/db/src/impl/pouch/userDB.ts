@@ -1,6 +1,6 @@
-import { getCardHistoryID } from '@/core/util';
+import { getCardHistoryID } from '@db/core/util';
 import { CourseElo, Status } from '@vue-skuilder/common';
-import { ENV } from '@/factory';
+import { ENV } from '@db/factory';
 import moment, { Moment } from 'moment';
 import { GuestUsername } from '../../core/types/types-legacy';
 import pouch from './pouchdb-setup';
@@ -12,15 +12,15 @@ import {
   UserCourseSetting,
   UserDBInterface,
   UsrCrsDataInterface,
-} from '@/core';
+} from '@db/core';
 import {
   ActivityRecord,
   CourseRegistration,
   CourseRegistrationDoc,
   ScheduledCard,
   UserConfig,
-} from '@/core/types/user';
-import { DocumentUpdater } from '@/study';
+} from '@db/core/types/user';
+import { DocumentUpdater } from '@db/study';
 import { CardHistory, CardRecord } from '../../core/types/types-legacy';
 import {
   filterAllDocsByPrefix,

@@ -1,5 +1,5 @@
 import pouch from './pouchdb-setup';
-import { ENV } from '@/factory';
+import { ENV } from '@db/factory';
 import { logger } from '../../util/logger';
 
 const courseLookupDBTitle = 'coursedb-lookup';

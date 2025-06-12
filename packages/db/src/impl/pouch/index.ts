@@ -1,12 +1,12 @@
-import { ENV } from '@/factory';
+import { ENV } from '@db/factory';
 import { DocType, GuestUsername, log, SkuilderCourseData } from '../../core/types/types-legacy';
 // import { getCurrentUser } from '../../stores/useAuthStore';
 import moment, { Moment } from 'moment';
-import { logger } from '@/util/logger';
+import { logger } from '@db/util/logger';
 
 import pouch from './pouchdb-setup';
 
-import { ScheduledCard } from '@/core/types/user';
+import { ScheduledCard } from '@db/core/types/user';
 import process from 'process';
 import { getUserDB } from './userDB';
 

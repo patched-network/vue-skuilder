@@ -3,12 +3,12 @@ import {
   CourseRegistration,
   CourseRegistrationDoc,
   ScheduledCard,
-} from '@/core/types/user';
+} from '@db/core/types/user';
 import { CourseElo, Status } from '@vue-skuilder/common';
 import { Moment } from 'moment';
 import { CardHistory, CardRecord } from '../types/types-legacy';
 import { UserConfig } from '../types/user';
-import { DocumentUpdater } from '@/study';
+import { DocumentUpdater } from '@db/study';
 
 /**
  * User data and authentication

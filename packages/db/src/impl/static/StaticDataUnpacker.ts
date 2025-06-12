@@ -4,7 +4,7 @@ import { StaticCourseManifest, ChunkMetadata } from '../../util/packer/types';
 import { logger } from '../../util/logger';
 import * as fs from 'fs';
 import * as path from 'path';
-import { DocType } from '@/core';
+import { DocType } from '@db/core';
 
 interface EloIndexEntry {
   elo: number;
@@ -130,7 +130,7 @@ export class StaticDataUnpacker {
   private findChunkForDocument(docId: string): ChunkMetadata | undefined {
     // Determine document type from ID pattern by checking all DocType enum members
     let expectedDocType: DocType | undefined = undefined;
-    
+
     // Check for ID prefixes matching any DocType enum value
     for (const docType of Object.values(DocType)) {
       if (docId.startsWith(`${docType}-`)) {

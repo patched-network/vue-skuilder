@@ -1,8 +1,8 @@
-import { getDataLayer } from '@/factory';
+import { getDataLayer } from '@db/factory';
 import { UserDBInterface } from '..';
 import { StudentClassroomDB } from '../../impl/pouch/classroomDB';
-import { ScheduledCard } from '@/core/types/user';
-import { logger } from '@/util/logger';
+import { ScheduledCard } from '@db/core/types/user';
+import { logger } from '@db/util/logger';
 
 export type StudySessionFailedItem = StudySessionFailedNewItem | StudySessionFailedReviewItem;
 
