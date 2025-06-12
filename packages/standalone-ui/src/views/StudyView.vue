@@ -28,13 +28,11 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { ContentSourceID, getDataLayer, UserDBInterface } from '@vue-skuilder/db';
+import { ContentSourceID, getDataLayer } from '@vue-skuilder/db';
 import { StudySession, type StudySessionConfig } from '@vue-skuilder/common-ui';
 import { allCourses } from '@vue-skuilder/courses';
-import { useRouter } from 'vue-router';
 import ENV from '../ENVIRONMENT_VARS';
 
-const router = useRouter();
 const user = getDataLayer().getUserDB();
 const dataLayer = getDataLayer();
 const sessionPrepared = ref(false);
