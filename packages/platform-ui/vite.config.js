@@ -52,11 +52,7 @@ export default defineConfig({
     }),
   ],
   resolve: createBaseResolve(resolve(__dirname, '../..'), {
-    '@pui': resolve(__dirname, 'src'), // Override for self-imports during build
-    // events: 'events-browserify',
     events: 'events',
-    // 'pouchdb': 'pouchdb/lib/index.js',
-    // 'pouchdb-find': 'pouchdb-find/lib/index.js',
   }),
   optimizeDeps: {
     include: ['events'],

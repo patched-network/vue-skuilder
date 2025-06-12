@@ -11,37 +11,49 @@ console.info(`[VITE] shared config loaded in ${isDev ? 'development' : 'producti
  */
 export function createBaseAliases(rootDir = process.cwd()) {
   return {
-    // Package-specific aliases (matching tsconfig.base.json)
-    '@db': isDev
+    // Inter-package aliases using actual package names from imports
+    '@vue-skuilder/db': isDev
       ? resolve(rootDir, './packages/db/src')
       : resolve(rootDir, './packages/db/dist'),
-    '@common': isDev
+    '@vue-skuilder/common': isDev
       ? resolve(rootDir, './packages/common/src')
       : resolve(rootDir, './packages/common/dist'),
-    '@cui': isDev
+    '@vue-skuilder/common-ui': isDev
       ? resolve(rootDir, './packages/common-ui/src')
       : resolve(rootDir, './packages/common-ui/dist'),
-    '@courses': isDev
+    '@vue-skuilder/courses': isDev
       ? resolve(rootDir, './packages/courses/src')
       : resolve(rootDir, './packages/courses/dist'),
-    '@express': isDev
+    '@vue-skuilder/express': isDev
       ? resolve(rootDir, './packages/express/src')
       : resolve(rootDir, './packages/express/dist'),
-    '@pui': isDev
+    '@vue-skuilder/platform-ui': isDev
       ? resolve(rootDir, './packages/platform-ui/src')
       : resolve(rootDir, './packages/platform-ui/dist'),
-    '@sui': isDev
+    '@vue-skuilder/standalone-ui': isDev
       ? resolve(rootDir, './packages/standalone-ui/src')
       : resolve(rootDir, './packages/standalone-ui/dist'),
-    '@e2e-db': isDev
+    '@vue-skuilder/e2e-db': isDev
       ? resolve(rootDir, './packages/e2e-db/src')
       : resolve(rootDir, './packages/e2e-db/dist'),
-    '@cli': isDev
+    '@vue-skuilder/cli': isDev
       ? resolve(rootDir, './packages/cli/src')
       : resolve(rootDir, './packages/cli/dist'),
-    '@client': isDev
+    '@vue-skuilder/client': isDev
       ? resolve(rootDir, './packages/client/src')
       : resolve(rootDir, './packages/client/dist'),
+
+    // Intra-package aliases for internal imports (matching tsconfig.base.json)
+    '@db': resolve(rootDir, './packages/db/src'),
+    '@common': resolve(rootDir, './packages/common/src'),
+    '@cui': resolve(rootDir, './packages/common-ui/src'),
+    '@courses': resolve(rootDir, './packages/courses/src'),
+    '@express': resolve(rootDir, './packages/express/src'),
+    '@pui': resolve(rootDir, './packages/platform-ui/src'),
+    '@sui': resolve(rootDir, './packages/standalone-ui/src'),
+    '@e2e-db': resolve(rootDir, './packages/e2e-db/src'),
+    '@cli': resolve(rootDir, './packages/cli/src'),
+    '@client': resolve(rootDir, './packages/client/src'),
   };
 }
 
