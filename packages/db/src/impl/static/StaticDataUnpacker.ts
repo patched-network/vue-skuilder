@@ -2,9 +2,33 @@
 
 import { StaticCourseManifest, ChunkMetadata } from '../../util/packer/types';
 import { logger } from '../../util/logger';
-import * as fs from 'fs';
-import * as path from 'path';
 import { DocType } from '@db/core';
+
+// Browser-compatible path utilities
+const pathUtils = {
+  isAbsolute: (path: string): boolean => {
+    // Check for Windows absolute paths (C:\ or \\server\)
+    if (/^[a-zA-Z]:[\\/]/.test(path) || /^\\\\/.test(path)) {
+      return true;
+    }
+    // Check for Unix absolute paths (/)
+    if (path.startsWith('/')) {
+      return true;
+    }
+    return false;
+  },
+};
+
+// Check if we're in Node.js environment and fs is available
+let nodeFS: any = null;
+try {
+  // Use eval to prevent bundlers from including fs in browser builds
+  if (typeof window === 'undefined' && typeof process !== 'undefined' && process.versions?.node) {
+    nodeFS = eval('require')('fs');
+  }
+} catch {
+  // fs not available, will use fetch
+}
 
 interface EloIndexEntry {
   elo: number;
@@ -217,9 +241,9 @@ export class StaticDataUnpacker {
       let documents: any[];
 
       // Check if we're in a Node.js environment with local files
-      if (this.isLocalPath(chunkPath)) {
+      if (this.isLocalPath(chunkPath) && nodeFS) {
         // Use fs for local file access (e.g., in tests)
-        const fileContent = await fs.promises.readFile(chunkPath, 'utf8');
+        const fileContent = await nodeFS.promises.readFile(chunkPath, 'utf8');
         documents = JSON.parse(fileContent);
       } else {
         // Use fetch for URL-based access (e.g., in browser)
@@ -268,9 +292,9 @@ export class StaticDataUnpacker {
       let indexData: any;
 
       // Check if we're in a Node.js environment with local files
-      if (this.isLocalPath(indexPath)) {
+      if (this.isLocalPath(indexPath) && nodeFS) {
         // Use fs for local file access (e.g., in tests)
-        const fileContent = await fs.promises.readFile(indexPath, 'utf8');
+        const fileContent = await nodeFS.promises.readFile(indexPath, 'utf8');
         indexData = JSON.parse(fileContent);
       } else {
         // Use fetch for URL-based access (e.g., in browser)
@@ -325,7 +349,7 @@ export class StaticDataUnpacker {
     return (
       !filePath.startsWith('http://') &&
       !filePath.startsWith('https://') &&
-      (path.isAbsolute(filePath) || filePath.startsWith('./') || filePath.startsWith('../'))
+      (pathUtils.isAbsolute(filePath) || filePath.startsWith('./') || filePath.startsWith('../'))
     );
   }
 }
