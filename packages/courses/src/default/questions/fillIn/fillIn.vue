@@ -33,7 +33,7 @@ export default defineComponent({
 
   components: {
     // Previously:
-    // MarkdownRenderer: defineAsyncComponent(() => import('@/base-course/Components/MarkdownRenderer.vue')),
+    // MarkdownRenderer: defineAsyncComponent(() => import('@courses/base-course/Components/MarkdownRenderer.vue')),
     //
     // Another option:
     MarkdownRenderer: defineAsyncComponent(() =>

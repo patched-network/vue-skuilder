@@ -4,7 +4,7 @@
 
 <script lang="ts">
 import Vue from 'vue';
-import Viewable from '@/base-course/Viewable';
+import Viewable from '@courses/base-course/Viewable';
 
 interface AnkiField {
   font: string;

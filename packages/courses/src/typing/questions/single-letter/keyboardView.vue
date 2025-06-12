@@ -40,7 +40,7 @@
 import { defineComponent, onMounted, onUnmounted, computed, PropType } from 'vue';
 import { useViewable, useQuestionView } from '@vue-skuilder/common-ui';
 import { TypeLetterQuestion } from './index';
-import { ViewData } from '@/base-course/Interfaces/ViewData';
+import { ViewData } from '@vue-skuilder/common';
 
 export default defineComponent({
   name: 'KeyboardQuestionView',
@@ -59,7 +59,7 @@ export default defineComponent({
 
   setup(props, { emit }) {
     const viewableUtils = useViewable(props, emit, 'KeyboardQuestionView');
-    const questionUtils = useQuestionView<TypeLetterQuestion>(viewableUtils, props.modifyDifficulty);
+    const questionUtils = useQuestionView<TypeLetterQuestion>(viewableUtils);
 
     // Initialize question immediately
     questionUtils.question.value = new TypeLetterQuestion(props.data);
