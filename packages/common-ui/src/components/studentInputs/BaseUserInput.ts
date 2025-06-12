@@ -4,7 +4,6 @@ import { useCardPreviewModeStore } from '../../stores/useCardPreviewModeStore';
 import { ViewComponent } from '../../composables/Displayable';
 import { isQuestionView } from '../../composables/CompositionViewable';
 import { QuestionRecord } from '@vue-skuilder/db';
-import { Store } from 'pinia';
 
 export default defineComponent({
   name: 'UserInput',

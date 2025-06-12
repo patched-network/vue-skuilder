@@ -36,12 +36,7 @@
         <v-container class="text-center">
           <v-row justify="center" align="center" style="min-height: 50vh">
             <v-col cols="12">
-              <v-progress-circular
-                size="70"
-                width="7"
-                color="primary"
-                indeterminate
-              ></v-progress-circular>
+              <v-progress-circular size="70" width="7" color="primary" indeterminate></v-progress-circular>
               <div class="text-h5 mt-4">Preparing your study session...</div>
               <div class="text-subtitle-1 mt-2">Getting your learning materials ready</div>
             </v-col>
@@ -56,7 +51,9 @@
             <v-col cols="12">
               <v-icon size="64" color="error">mdi-alert-circle</v-icon>
               <div class="text-h5 mt-4 text-error">Session Preparation Failed</div>
-              <div class="text-subtitle-1 mt-2">{{ errorMessage || 'There was a problem preparing your study session.' }}</div>
+              <div class="text-subtitle-1 mt-2">
+                {{ errorMessage || 'There was a problem preparing your study session.' }}
+              </div>
               <v-btn color="primary" class="mt-6" @click="refreshRoute">Try Again</v-btn>
             </v-col>
           </v-row>
@@ -80,9 +77,9 @@
 </template>
 
 <script lang="ts">
-import SessionConfiguration from '@/components/Study/SessionConfiguration.vue';
+import SessionConfiguration from '@pui/components/Study/SessionConfiguration.vue';
 import { getCurrentUser, useConfigStore } from '@vue-skuilder/common-ui';
-import { useDataInputFormStore } from '@/stores/useDataInputFormStore';
+import { useDataInputFormStore } from '@pui/stores/useDataInputFormStore';
 import { CourseConfig } from '@vue-skuilder/common';
 import { StudySession, type StudySessionConfig } from '@vue-skuilder/common-ui';
 import { allCourses } from '@vue-skuilder/courses';
@@ -216,7 +213,7 @@ export default defineComponent({
       this.sessionTimeLimit = timeLimit;
       this.inSession = true;
       this.sessionPrepared = false;
-      
+
       // Adding a console log to debug event handling
       console.log('[Study] Waiting for session-prepared event from StudySession component');
     },

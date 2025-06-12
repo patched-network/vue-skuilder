@@ -38,7 +38,7 @@ image and audio inputs are semi deprecated - not in use right now -
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import { ValidatingFunction } from '@/base-course/Interfaces/ValidatingFunction';
+import { ValidatingFunction } from '@pui/base-course/Interfaces/ValidatingFunction';
 import FieldInput from '../OptionsFieldInput';
 
 // [ ] delete this file ? (Jan 6, 2025)

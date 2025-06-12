@@ -5,11 +5,11 @@ import {
   StudySessionItem,
   StudySessionNewItem,
   StudySessionReviewItem,
-} from '@/impl/pouch';
+} from '@db/impl/pouch';
 
-import { CardRecord } from '@/core';
-import { Loggable } from '@/util';
-import { ScheduledCard } from '@/core/types/user';
+import { CardRecord } from '@db/core';
+import { Loggable } from '@db/util';
+import { ScheduledCard } from '@db/core/types/user';
 
 function randomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;

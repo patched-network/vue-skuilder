@@ -1,4 +1,9 @@
-import { ScheduledCard, UserCourseSetting, UserCourseSettings, UsrCrsDataInterface } from '@/core';
+import {
+  ScheduledCard,
+  UserCourseSetting,
+  UserCourseSettings,
+  UsrCrsDataInterface,
+} from '@db/core';
 import moment, { Moment } from 'moment';
 import { getStartAndEndKeys, REVIEW_PREFIX, REVIEW_TIME_FORMAT } from '.';
 import { CourseDB } from './courseDB';

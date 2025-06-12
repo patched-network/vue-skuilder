@@ -1,6 +1,6 @@
-import { ENV } from '@/factory';
+import { ENV } from '@db/factory';
 import { GuestUsername } from '../../core/types/types-legacy';
-import { logger } from '@/util/logger';
+import { logger } from '@db/util/logger';
 
 interface SessionResponse {
   info: unknown;

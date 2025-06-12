@@ -13,7 +13,6 @@
     // Module resolution
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"],
       "*": ["node_modules/*"]
     },
     "typeRoots": ["./node_modules/@types", "./types"],

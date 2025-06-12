@@ -7,10 +7,10 @@
 <script lang="ts">
 import { defineComponent, computed, PropType } from 'vue';
 import { useViewable, useQuestionView } from '@vue-skuilder/common-ui';
-import { VocabQuestion } from '@/french/questions/vocab';
+import { VocabQuestion } from '@courses/french/questions/vocab';
 import { ViewData } from '@vue-skuilder/common';
-// import AudioAutoPlayer from '@/base-course/Components/AudioAutoPlayer.vue';
-// import UserInputString from '@/base-course/Components/UserInput/UserInputString.vue';
+// import AudioAutoPlayer from '@courses/base-course/Components/AudioAutoPlayer.vue';
+// import UserInputString from '@courses/base-course/Components/UserInput/UserInputString.vue';
 
 export default defineComponent({
   name: 'IdentifyVocab',

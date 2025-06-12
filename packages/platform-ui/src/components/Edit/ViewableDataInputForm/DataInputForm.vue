@@ -82,9 +82,9 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 import { DataShape } from '@vue-skuilder/common';
-import CardBrowser from '@/components/Edit/CardBrowser.vue';
-import TagsInput, { TagsInputInstance } from '@/components/Edit/TagsInput.vue';
-import { FieldInputInstance, isFieldInput } from '@/components/Edit/ViewableDataInputForm/FieldInput.types';
+import CardBrowser from '@pui/components/Edit/CardBrowser.vue';
+import TagsInput, { TagsInputInstance } from '@pui/components/Edit/TagsInput.vue';
+import { FieldInputInstance, isFieldInput } from '@pui/components/Edit/ViewableDataInputForm/FieldInput.types';
 import { alertUser } from '@vue-skuilder/common-ui';
 import { allCourses } from '@vue-skuilder/courses';
 import { getDataLayer, CourseDBInterface } from '@vue-skuilder/db';
@@ -98,7 +98,7 @@ import NumberInput from './FieldInputs/NumberInput.vue';
 import StringInput from './FieldInputs/StringInput.vue';
 import ChessPuzzleInput from './FieldInputs/ChessPuzzleInput.vue';
 import { CourseElo } from '@vue-skuilder/common';
-import { useDataInputFormStore } from '@/stores/useDataInputFormStore';
+import { useDataInputFormStore } from '@pui/stores/useDataInputFormStore';
 import { ViewData } from '@vue-skuilder/common';
 import { Question, getCurrentUser } from '@vue-skuilder/common-ui';
 

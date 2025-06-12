@@ -98,9 +98,9 @@
 import { defineComponent } from 'vue';
 import { Status, ServerRequestType, JoinClassroom, LeaveClassroom, DeleteClassroom } from '@vue-skuilder/common';
 import { getDataLayer, UserDBInterface } from '@vue-skuilder/db';
-import serverRequest from '@/server/index';
+import serverRequest from '@pui/server/index';
 import { alertUser } from '@vue-skuilder/common-ui';
-import ClassroomEditor from '@/components/Classrooms/CreateClassroom.vue';
+import ClassroomEditor from '@pui/components/Classrooms/CreateClassroom.vue';
 import { getCurrentUser } from '@vue-skuilder/common-ui';
 
 interface CourseReg {

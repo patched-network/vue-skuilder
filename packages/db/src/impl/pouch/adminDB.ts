@@ -1,5 +1,5 @@
 import pouch from './pouchdb-setup';
-import { ENV } from '@/factory';
+import { ENV } from '@db/factory';
 import {
   pouchDBincludeCredentialsConfig,
   getStartAndEndKeys,
@@ -9,9 +9,9 @@ import {
 import { TeacherClassroomDB, ClassroomLookupDB } from './classroomDB';
 import { PouchError } from './types';
 
-import { AdminDBInterface } from '@/core';
+import { AdminDBInterface } from '@db/core';
 import CourseLookup from './courseLookupDB';
-import { logger } from '@/util/logger';
+import { logger } from '@db/util/logger';
 
 export class AdminDB implements AdminDBInterface {
   private usersDB!: PouchDB.Database;

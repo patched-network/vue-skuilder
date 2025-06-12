@@ -1,10 +1,10 @@
 // // src/mock/store.ts
 
 // import Vue from 'vue';
-// import { DataShape } from '@/base-course/Interfaces/DataShape';
-// import { ViewData } from '@/base-course/Interfaces/ViewData';
-// import { CourseConfig } from '@/server/types';
-// import { FieldInputInstance } from '@/components/Edit/ViewableDataInputForm/FieldInput.types';
+// import { DataShape } from '@pui/base-course/Interfaces/DataShape';
+// import { ViewData } from '@pui/base-course/Interfaces/ViewData';
+// import { CourseConfig } from '@pui/server/types';
+// import { FieldInputInstance } from '@pui/components/Edit/ViewableDataInputForm/FieldInput.types';
 // import { User } from '@vue-skuilder/db';
 
 // export const GuestUsername: string = 'Guest';

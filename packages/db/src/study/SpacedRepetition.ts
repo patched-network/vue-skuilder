@@ -1,6 +1,6 @@
-import { CardHistory, CardRecord, QuestionRecord } from '@/core/types/types-legacy';
-import { areQuestionRecords } from '@/core/util';
-import { Update } from '@/impl/pouch/updateQueue';
+import { CardHistory, CardRecord, QuestionRecord } from '@db/core/types/types-legacy';
+import { areQuestionRecords } from '@db/core/util';
+import { Update } from '@db/impl/pouch/updateQueue';
 import moment from 'moment';
 import { logger } from '../util/logger';
 

@@ -10,7 +10,9 @@ export class StaticCoursesDB implements CoursesDBInterface {
 
   async getCourseConfig(courseId: string): Promise<CourseConfig> {
     if (!this.manifests[courseId]) {
-      throw new Error(`Course ${courseId} not found`);
+      // throw new Error(`Course ${courseId} not found`);
+      logger.warn(`Course ${courseId} not found`);
+      return {} as CourseConfig; // Return empty config if course not found
     }
 
     // Would need to fetch the course config from static files

@@ -308,7 +308,7 @@ export default defineComponent({
             .map(async (c) => await this.dataLayer.getClassroomDB(c.id, 'student'))
         );
 
-        sessionClassroomDBs.forEach((db) => {
+        sessionClassroomDBs.forEach((_db) => {
           // db.setChangeFcn(this.handleClassroomMessage());
         });
 
@@ -641,7 +641,9 @@ a {
 
 @keyframes varFade {
   0% {
-    box-shadow: rgba(var(--r), var(--g), 0, 0.25) 0px 7px 8px -4px, rgba(var(--r), var(--g), 0, 0.25) 0px 12px 17px 2px,
+    box-shadow:
+      rgba(var(--r), var(--g), 0, 0.25) 0px 7px 8px -4px,
+      rgba(var(--r), var(--g), 0, 0.25) 0px 12px 17px 2px,
       rgba(var(--r), var(--g), 0, 0.25) 0px 5px 22px 4px;
   }
   100% {
@@ -651,7 +653,9 @@ a {
 
 @keyframes greenFade {
   0% {
-    box-shadow: rgba(0, 150, 0, 0.25) 0px 7px 8px -4px, rgba(0, 150, 0, 0.25) 0px 12px 17px 2px,
+    box-shadow:
+      rgba(0, 150, 0, 0.25) 0px 7px 8px -4px,
+      rgba(0, 150, 0, 0.25) 0px 12px 17px 2px,
       rgba(0, 150, 0, 0.25) 0px 5px 22px 4px;
   }
   100% {
@@ -660,7 +664,9 @@ a {
 }
 @keyframes purpleFade {
   0% {
-    box-shadow: rgba(115, 0, 75, 0.25) 0px 7px 8px -4px, rgba(115, 0, 75, 0.25) 0px 12px 17px 2px,
+    box-shadow:
+      rgba(115, 0, 75, 0.25) 0px 7px 8px -4px,
+      rgba(115, 0, 75, 0.25) 0px 12px 17px 2px,
       rgba(115, 0, 75, 0.25) 0px 5px 22px 4px;
   }
   100% {

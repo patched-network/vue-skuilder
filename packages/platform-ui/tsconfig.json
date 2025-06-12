@@ -1,33 +1,18 @@
 {
+    "extends": "../../tsconfig.base.json",
     "compilerOptions": {
         "strictPropertyInitialization": false,
-        "skipLibCheck": true,
         "target": "esnext",
         "module": "esnext",
-        "strict": true,
         "jsx": "preserve",
         "moduleResolution": "node",
         "importHelpers": true,
         "experimentalDecorators": true,
         "emitDecoratorMetadata": true,
-        "allowSyntheticDefaultImports": true,
         "allowJs": true,
-        "esModuleInterop": true,
-        "sourceMap": true,
         "composite": true,
         "baseUrl": ".",
         "types": ["node", "jest", "@types/jest", "vuetify", "vite/client"],
-        "paths": {
-            "@/*": ["src/*"],
-            "@vue-skuilder/common-ui": ["../common-ui/src"],
-            "@vue-skuilder/common-ui/*": ["../common-ui/src/*"],
-            "@vue-skuilder/db": ["../db/src"],
-            "@vue-skuilder/db/*": ["../db/src/*"],
-            "@vue-skuilder/common": ["../common/src"],
-            "@vue-skuilder/common/*": ["../common/src/*"],
-            "@vue-skuilder/courses": ["../courses/src"],
-            "@vue-skuilder/courses/*": ["../courses/src/*"]
-        },
         "lib": ["esnext", "dom", "dom.iterable", "scripthost"]
     },
     "include": [

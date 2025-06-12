@@ -1,10 +1,11 @@
+// packages/platform-ui/vite.config.js
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import { VitePWA } from 'vite-plugin-pwa';
 import eslint from 'vite-plugin-eslint';
-import { fileURLToPath, URL } from 'node:url';
 import injectEnvPlugin from './vite-env-plugin';
 import { resolve } from 'path';
+import { createBaseResolve } from '../../vite.config.base.js';
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -50,19 +51,13 @@ export default defineConfig({
       exclude: ['node_modules'], // Files to exclude
     }),
   ],
-  resolve: {
-    alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url)),
-      // events: 'events-browserify',
-      events: 'events',
-      // 'pouchdb': 'pouchdb/lib/index.js',
-      // 'pouchdb-find': 'pouchdb-find/lib/index.js',
-      '@vue-skuilder/db': resolve(__dirname, '../../packages/db/dist/index.mjs'),
-      '@vue-skuilder/common-ui': resolve(__dirname, '../../packages/common-ui/src/index.ts'),
-    },
-    extensions: ['.js', '.ts', '.json', '.vue'],
-    dedupe: ['vue', 'vuetify', 'vue-router', 'pinia', '@vue-skuilder/db', '@vue-skuilder/common'],
-  },
+  resolve: createBaseResolve(resolve(__dirname, '../..'), {
+    '@pui': resolve(__dirname, 'src'), // Override for self-imports during build
+    // events: 'events-browserify',
+    events: 'events',
+    // 'pouchdb': 'pouchdb/lib/index.js',
+    // 'pouchdb-find': 'pouchdb-find/lib/index.js',
+  }),
   optimizeDeps: {
     include: ['events'],
   },
