@@ -1,7 +1,8 @@
+import { getDataLayer } from '@/factory';
 import { UserDBInterface } from '..';
 import { StudentClassroomDB } from '../../impl/pouch/classroomDB';
-import { CourseDB } from '../../impl/pouch/courseDB';
 import { ScheduledCard } from '@/core/types/user';
+import { logger } from '@/util/logger';
 
 export type StudySessionFailedItem = StudySessionFailedNewItem | StudySessionFailedReviewItem;
 
@@ -57,8 +58,14 @@ export async function getStudySource(
     return await StudentClassroomDB.factory(source.id, user);
   } else {
     // if (source.type === 'course') - removed so tsc is certain something returns
-    return new CourseDB(source.id, async () => {
-      return user;
-    });
+    // return new CourseDB(source.id, async () => {
+    //   return user;
+    // });
+    logger.info(`[cs]getting content source:`);
+    logger.info(`[cs]\t${JSON.stringify(source)}`);
+    logger.info(`[cs]\t${JSON.stringify(user)}`);
+
+    //
+    return getDataLayer().getCourseDB(source as unknown as string) as unknown as StudyContentSource;
   }
 }
