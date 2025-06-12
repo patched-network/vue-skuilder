@@ -28,7 +28,7 @@ export class StaticDataLayerProvider implements DataLayerProvider {
 
   constructor(config: Partial<StaticDataLayerConfig>) {
     this.config = {
-      staticContentPath: config.staticContentPath || '/static-content',
+      staticContentPath: config.staticContentPath || '/static-courses',
       localStoragePrefix: config.localStoragePrefix || 'skuilder-static',
       manifests: config.manifests || {},
     };
@@ -84,5 +84,3 @@ export class StaticDataLayerProvider implements DataLayerProvider {
     throw new Error('Admin functions not supported in static mode');
   }
 }
-
-
