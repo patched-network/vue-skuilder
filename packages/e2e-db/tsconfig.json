@@ -4,9 +4,6 @@
         "module": "CommonJS",
         "moduleResolution": "Node",
         "noEmit": true,
-        "paths": {
-            "@/*": ["./src/*"]
-        },
         "types": ["jest", "node"]
     },
     "include": ["src/**/*"],
