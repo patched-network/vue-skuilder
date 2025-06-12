@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import dts from 'vite-plugin-dts';
 import { resolve } from 'path';
+import { createBaseResolve } from '../../vite.config.base.js';
 
 export default defineConfig({
   plugins: [
@@ -14,11 +15,9 @@ export default defineConfig({
       include: ['src/**/*.ts', 'src/**/*.d.ts', 'src/**/*.vue'],
     }),
   ],
-  resolve: {
-    alias: {
-      '@': resolve(__dirname, 'src'),
-    },
-  },
+  resolve: createBaseResolve(resolve(__dirname, '../..'), {
+    '@courses': resolve(__dirname, 'src'), // Override for self-imports during build
+  }),
   // Add assetsInclude to explicitly handle SVG assets
   assetsInclude: ['**/*.svg'],
   build: {
