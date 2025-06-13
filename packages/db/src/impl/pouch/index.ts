@@ -8,7 +8,6 @@ import pouch from './pouchdb-setup';
 
 import { ScheduledCard } from '@db/core/types/user';
 import process from 'process';
-import { getUserDB } from './userDB';
 
 const isBrowser = typeof window !== 'undefined';
 
@@ -159,6 +158,28 @@ export async function getRandomCards(courseIDs: string[]) {
 export const REVIEW_PREFIX: string = 'card_review_';
 export const REVIEW_TIME_FORMAT: string = 'YYYY-MM-DD--kk:mm:ss-SSS';
 
+export function getCouchUserDB(username: string): PouchDB.Database {
+  const guestAccount: boolean = false;
+  // console.log(`Getting user db: ${username}`);
+
+  const hexName = hexEncode(username);
+  const dbName = `userdb-${hexName}`;
+  log(`Fetching user database: ${dbName} (${username})`);
+
+  // odd construction here the result of a bug in the
+  // interaction between pouch, pouch-auth.
+  // see: https://github.com/pouchdb-community/pouchdb-authentication/issues/239
+  const ret = new pouch(
+    ENV.COUCHDB_SERVER_PROTOCOL + '://' + ENV.COUCHDB_SERVER_URL + dbName,
+    pouchDBincludeCredentialsConfig
+  );
+  if (guestAccount) {
+    updateGuestAccountExpirationDate(ret);
+  }
+
+  return ret;
+}
+
 export function scheduleCardReview(review: {
   user: string;
   course_id: string;
@@ -169,7 +190,7 @@ export function scheduleCardReview(review: {
 }) {
   const now = moment.utc();
   logger.info(`Scheduling for review in: ${review.time.diff(now, 'h') / 24} days`);
-  void getUserDB(review.user).put<ScheduledCard>({
+  void getCouchUserDB(review.user).put<ScheduledCard>({
     _id: REVIEW_PREFIX + review.time.format(REVIEW_TIME_FORMAT),
     cardId: review.card_id,
     reviewTime: review.time,
@@ -178,20 +199,6 @@ export function scheduleCardReview(review: {
     scheduledFor: review.scheduledFor,
     schedulingAgentId: review.schedulingAgentId,
   });
-}
-
-export async function removeScheduledCardReview(user: string, reviewDocID: string) {
-  const db = getUserDB(user);
-  const reviewDoc = await db.get(reviewDocID);
-  db.remove(reviewDoc)
-    .then((res) => {
-      if (res.ok) {
-        log(`Removed Review Doc: ${reviewDocID}`);
-      }
-    })
-    .catch((err) => {
-      log(`Failed to remove Review Doc: ${reviewDocID},\n${JSON.stringify(err)}`);
-    });
 }
 
 export function filterAllDocsByPrefix<T>(
@@ -232,4 +239,4 @@ export * from './adminDB';
 export * from './classroomDB';
 export * from './courseAPI';
 export * from './courseDB';
-export * from './userDB';
+export * from './CouchDBSyncStrategy';
