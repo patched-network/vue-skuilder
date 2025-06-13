@@ -13,7 +13,8 @@ import { StaticCourseManifest } from '../../util/packer/types';
 import { StaticDataUnpacker } from './StaticDataUnpacker';
 import { StaticCourseDB } from './courseDB';
 import { StaticCoursesDB } from './coursesDB';
-import { StaticUserDB } from './userDB';
+import { BaseUser } from '../common';
+import { NoOpSyncStrategy } from './NoOpSyncStrategy';
 
 interface StaticDataLayerConfig {
   staticContentPath: string;
@@ -57,7 +58,9 @@ export class StaticDataLayerProvider implements DataLayerProvider {
   }
 
   getUserDB(): UserDBInterface {
-    return new StaticUserDB(this.config.localStoragePrefix!);
+    const syncStrategy = new NoOpSyncStrategy();
+    // For now, use guest user - local account switching will be added later
+    return BaseUser.Dummy(syncStrategy);
   }
 
   getCourseDB(courseId: string): CourseDBInterface {

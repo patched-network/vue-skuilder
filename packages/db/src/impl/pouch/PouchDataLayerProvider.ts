@@ -16,7 +16,8 @@ import { AdminDB } from './adminDB';
 import { StudentClassroomDB, TeacherClassroomDB } from './classroomDB';
 import { CourseDB, CoursesDB } from './courseDB';
 
-import { User } from './userDB';
+import { BaseUser } from '../common';
+import { CouchDBSyncStrategy } from './CouchDBSyncStrategy';
 
 export class PouchDataLayerProvider implements DataLayerProvider {
   private initialized: boolean = false;
@@ -53,7 +54,8 @@ export class PouchDataLayerProvider implements DataLayerProvider {
 
         // Create the user db instance if a username was found
         if (this.currentUsername) {
-          this.userDB = await User.instance(this.currentUsername);
+          const syncStrategy = new CouchDBSyncStrategy();
+          this.userDB = await BaseUser.instance(syncStrategy, this.currentUsername);
         } else {
           logger.warn('PouchDataLayerProvider: No logged-in username found in session.');
         }
