@@ -5,3 +5,4 @@ export { StaticDataUnpacker } from './StaticDataUnpacker';
 export { StaticCourseDB } from './courseDB';
 export { StaticCoursesDB } from './coursesDB';
 export { StaticUserDB } from './userDB';
+export { NoOpSyncStrategy } from './NoOpSyncStrategy';
