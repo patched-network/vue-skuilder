@@ -7,16 +7,12 @@ import { createBaseResolve } from '../../vite.config.base.js';
 export default defineConfig({
   plugins: [vue()],
   resolve: createBaseResolve(resolve(__dirname, '../..'), {
-    '@sui': resolve(__dirname, 'src'), // Override for self-imports during build
     // Add events alias if needed (often required by dependencies)
     events: 'events',
   }),
   // --- Important for linked source dependencies ---
   optimizeDeps: {
-    // Help Vite pre-bundle dependencies from linked packages
-    include: ['@vue-skuilder/common', '@vue-skuilder/courses'],
-    exclude: ['@vue-skuilder/common-ui', '@vue-skuilder/db'],
-    force: true,
+    include: ['events'],
   },
   server: {
     port: 6173, // distinct from platform-ui

@@ -8,7 +8,7 @@ import router from './router';
 import { createPinia } from 'pinia';
 import vuetify from './plugins/vuetify';
 // `courses` imports - keep style import for initial page rendering
-import '@vue-skuilder/courses/style';
+// import '@vue-skuilder/courses/style';
 // `db` import and initialization
 import { initializeDataLayer } from '@vue-skuilder/db';
 

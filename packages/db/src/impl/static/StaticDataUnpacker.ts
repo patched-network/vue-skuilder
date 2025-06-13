@@ -2,9 +2,33 @@
 
 import { StaticCourseManifest, ChunkMetadata } from '../../util/packer/types';
 import { logger } from '../../util/logger';
-import * as fs from 'fs';
-import * as path from 'path';
 import { DocType } from '@db/core';
+
+// Browser-compatible path utilities
+const pathUtils = {
+  isAbsolute: (path: string): boolean => {
+    // Check for Windows absolute paths (C:\ or \\server\)
+    if (/^[a-zA-Z]:[\\/]/.test(path) || /^\\\\/.test(path)) {
+      return true;
+    }
+    // Check for Unix absolute paths (/)
+    if (path.startsWith('/')) {
+      return true;
+    }
+    return false;
+  },
+};
+
+// Check if we're in Node.js environment and fs is available
+let nodeFS: any = null;
+try {
+  // Use eval to prevent bundlers from including fs in browser builds
+  if (typeof window === 'undefined' && typeof process !== 'undefined' && process.versions?.node) {
+    nodeFS = eval('require')('fs');
+  }
+} catch {
+  // fs not available, will use fetch
+}
 
 interface EloIndexEntry {
   elo: number;
@@ -48,7 +72,7 @@ export class StaticDataUnpacker {
     }
 
     // Find which chunk contains this document
-    const chunk = this.findChunkForDocument(id);
+    const chunk = await this.findChunkForDocument(id);
     if (!chunk) {
       logger.error(
         `Document ${id} not found in any chunk. Available chunks:`,
@@ -65,6 +89,7 @@ export class StaticDataUnpacker {
       return this.documentCache.get(id);
     }
 
+    logger.error(`Document ${id} not found in chunk ${chunk.id}`);
     throw new Error(`Document ${id} not found in chunk ${chunk.id}`);
   }
 
@@ -127,7 +152,7 @@ export class StaticDataUnpacker {
   /**
    * Find which chunk contains a specific document ID
    */
-  private findChunkForDocument(docId: string): ChunkMetadata | undefined {
+  private async findChunkForDocument(docId: string): Promise<ChunkMetadata | undefined> {
     // Determine document type from ID pattern by checking all DocType enum members
     let expectedDocType: DocType | undefined = undefined;
 
@@ -142,39 +167,45 @@ export class StaticDataUnpacker {
     if (expectedDocType !== undefined) {
       // Use chunk filtering by docType for documents with recognized prefixes
       const typeChunks = this.manifest.chunks.filter((c) => c.docType === expectedDocType);
+
       for (const chunk of typeChunks) {
         if (docId >= chunk.startKey && docId <= chunk.endKey) {
-          logger.debug(`Found document ${docId} in ${expectedDocType} chunk ${chunk.id}`);
-          return chunk;
+          // Verify document actually exists in chunk
+          const exists = await this.verifyDocumentInChunk(docId, chunk);
+          if (exists) {
+            return chunk;
+          }
         }
       }
 
-      logger.debug(
-        `Document ${docId} not found in any ${expectedDocType} chunk range. Available chunks:`,
-        this.manifest.chunks.map((c) => `${c.id} (${c.docType}): ${c.startKey} - ${c.endKey}`)
-      );
       return undefined;
     } else {
-      // Fall back to the original method for documents without recognized prefixes
-      // Since card IDs and displayable data IDs can overlap in range, we need to try each type
+      // Fall back to trying all chunk types with strict verification
+      // Since card IDs and displayable data IDs can overlap in range, we need to verify actual existence
 
-      // First try CARD chunks (most common for ELO queries)
-      const cardChunks = this.manifest.chunks.filter((c) => c.docType === 'CARD');
-      for (const chunk of cardChunks) {
-        if (docId >= chunk.startKey && docId <= chunk.endKey) {
-          logger.debug(`Found document ${docId} in CARD chunk ${chunk.id}`);
-          return chunk;
-        }
-      }
-
-      // Then try DISPLAYABLE_DATA chunks
+      // First try DISPLAYABLE_DATA chunks (most likely for documents without prefixes)
       const displayableChunks = this.manifest.chunks.filter(
         (c) => c.docType === 'DISPLAYABLE_DATA'
       );
       for (const chunk of displayableChunks) {
         if (docId >= chunk.startKey && docId <= chunk.endKey) {
-          logger.debug(`Found document ${docId} in DISPLAYABLE_DATA chunk ${chunk.id}`);
-          return chunk;
+          // Verify document actually exists in chunk
+          const exists = await this.verifyDocumentInChunk(docId, chunk);
+          if (exists) {
+            return chunk;
+          }
+        }
+      }
+
+      // Then try CARD chunks (for legacy card IDs without prefixes)
+      const cardChunks = this.manifest.chunks.filter((c) => c.docType === 'CARD');
+      for (const chunk of cardChunks) {
+        if (docId >= chunk.startKey && docId <= chunk.endKey) {
+          // Verify document actually exists in chunk
+          const exists = await this.verifyDocumentInChunk(docId, chunk);
+          if (exists) {
+            return chunk;
+          }
         }
       }
 
@@ -184,16 +215,30 @@ export class StaticDataUnpacker {
       );
       for (const chunk of otherChunks) {
         if (docId >= chunk.startKey && docId <= chunk.endKey) {
-          logger.debug(`Found document ${docId} in ${chunk.docType} chunk ${chunk.id}`);
-          return chunk;
+          // Verify document actually exists in chunk
+          const exists = await this.verifyDocumentInChunk(docId, chunk);
+          if (exists) {
+            return chunk;
+          }
         }
       }
 
-      logger.debug(
-        `Document ${docId} not found in any chunk range. Available chunks:`,
-        this.manifest.chunks.map((c) => `${c.id} (${c.docType}): ${c.startKey} - ${c.endKey}`)
-      );
       return undefined;
+    }
+  }
+
+  /**
+   * Verify that a document actually exists in a specific chunk by loading and checking it
+   */
+  private async verifyDocumentInChunk(docId: string, chunk: ChunkMetadata): Promise<boolean> {
+    try {
+      // Load the chunk if not already cached
+      await this.loadChunk(chunk.id);
+
+      // Check if the document is now in our document cache
+      return this.documentCache.has(docId);
+    } catch (_error) {
+      return false;
     }
   }
 
@@ -217,9 +262,9 @@ export class StaticDataUnpacker {
       let documents: any[];
 
       // Check if we're in a Node.js environment with local files
-      if (this.isLocalPath(chunkPath)) {
+      if (this.isLocalPath(chunkPath) && nodeFS) {
         // Use fs for local file access (e.g., in tests)
-        const fileContent = await fs.promises.readFile(chunkPath, 'utf8');
+        const fileContent = await nodeFS.promises.readFile(chunkPath, 'utf8');
         documents = JSON.parse(fileContent);
       } else {
         // Use fetch for URL-based access (e.g., in browser)
@@ -235,9 +280,11 @@ export class StaticDataUnpacker {
       this.chunkCache.set(chunkId, documents);
 
       // Cache individual documents for quick lookup
+      let cachedCount = 0;
       for (const doc of documents) {
         if (doc._id) {
           this.documentCache.set(doc._id, doc);
+          cachedCount++;
         }
       }
 
@@ -268,9 +315,9 @@ export class StaticDataUnpacker {
       let indexData: any;
 
       // Check if we're in a Node.js environment with local files
-      if (this.isLocalPath(indexPath)) {
+      if (this.isLocalPath(indexPath) && nodeFS) {
         // Use fs for local file access (e.g., in tests)
-        const fileContent = await fs.promises.readFile(indexPath, 'utf8');
+        const fileContent = await nodeFS.promises.readFile(indexPath, 'utf8');
         indexData = JSON.parse(fileContent);
       } else {
         // Use fetch for URL-based access (e.g., in browser)
@@ -325,7 +372,7 @@ export class StaticDataUnpacker {
     return (
       !filePath.startsWith('http://') &&
       !filePath.startsWith('https://') &&
-      (path.isAbsolute(filePath) || filePath.startsWith('./') || filePath.startsWith('../'))
+      (pathUtils.isAbsolute(filePath) || filePath.startsWith('./') || filePath.startsWith('../'))
     );
   }
 }
