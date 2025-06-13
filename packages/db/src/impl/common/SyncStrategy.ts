@@ -1,6 +1,6 @@
 // packages/db/src/impl/common/SyncStrategy.ts
 
-import { AccountCreationResult, AuthenticationResult } from './types';
+import type { AccountCreationResult, AuthenticationResult } from './types';
 
 /**
  * Strategy interface for handling user data synchronization

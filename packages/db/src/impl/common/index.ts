@@ -1,10 +1,23 @@
 // packages/db/src/impl/common/index.ts
 
-export { SyncStrategy, BaseSyncStrategy } from './SyncStrategy';
-export {
+export type { SyncStrategy } from './SyncStrategy';
+export { BaseSyncStrategy } from './SyncStrategy';
+export type {
   AccountCreationResult,
   AuthenticationResult,
   UserSession,
   SyncConfig,
   SyncStatus,
 } from './types';
+export { BaseUser } from './BaseUserDB';
+export {
+  REVIEW_PREFIX,
+  REVIEW_TIME_FORMAT,
+  hexEncode,
+  filterAllDocsByPrefix,
+  getStartAndEndKeys,
+  updateGuestAccountExpirationDate,
+  getLocalUserDB,
+  scheduleCardReviewLocal,
+  removeScheduledCardReviewLocal,
+} from './userDBHelpers';
