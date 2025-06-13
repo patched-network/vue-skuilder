@@ -8,7 +8,7 @@ import { CourseElo, blankCourseElo, toCourseElo } from '@vue-skuilder/common';
 import { CourseDB, createTag, updateCardElo } from './courseDB';
 import { CardData, DisplayableData, DocType, Tag } from '../../core/types/types-legacy';
 import { prepareNote55 } from '@vue-skuilder/common';
-import { User } from './userDB';
+import { BaseUser } from '../common';
 import { logger } from '@db/util/logger';
 
 /**
@@ -190,7 +190,16 @@ export async function addTagToCard(
   // In this case, should be converted to a server-request
   const prefixedTagID = getTagID(tagID);
   const courseDB = getCourseDB(courseID);
-  const courseApi = new CourseDB(courseID, async () => User.Dummy());
+  const courseApi = new CourseDB(courseID, async () => {
+    const dummySyncStrategy = {
+      setupRemoteDB: () => null as any,
+      startSync: () => {},
+      canCreateAccount: () => false,
+      canAuthenticate: () => false,
+      getCurrentUsername: async () => 'DummyUser',
+    };
+    return BaseUser.Dummy(dummySyncStrategy);
+  });
   try {
     logger.info(`Applying tag ${tagID} to card ${courseID + '-' + cardID}...`);
     const tag = await courseDB.get<Tag>(prefixedTagID);
