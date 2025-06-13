@@ -1,13 +1,10 @@
 import { getCardHistoryID } from '@db/core/util';
 import { CourseElo, Status } from '@vue-skuilder/common';
-import { ENV } from '@db/factory';
 import moment, { Moment } from 'moment';
 import { GuestUsername } from '../../core/types/types-legacy';
-import pouch from './pouchdb-setup';
 import { logger } from '../../util/logger';
 
 import {
-  ClassroomRegistrationDesignation,
   ClassroomRegistrationDoc,
   UserCourseSetting,
   UserDBInterface,
@@ -22,21 +19,20 @@ import {
 } from '@db/core/types/user';
 import { DocumentUpdater } from '@db/study';
 import { CardHistory, CardRecord } from '../../core/types/types-legacy';
+import type { SyncStrategy } from './SyncStrategy';
 import {
   filterAllDocsByPrefix,
-  getCredentialledCourseConfig,
   getStartAndEndKeys,
-  hexEncode,
-  pouchDBincludeCredentialsConfig,
-  removeScheduledCardReview,
   REVIEW_PREFIX,
   REVIEW_TIME_FORMAT,
-  scheduleCardReview,
-  updateGuestAccountExpirationDate,
-} from './index';
-import { PouchError } from './types';
-import UpdateQueue, { Update } from './updateQueue';
-import { UsrCrsData } from './user-course-relDB';
+  getLocalUserDB,
+  scheduleCardReviewLocal,
+  removeScheduledCardReviewLocal,
+} from './userDBHelpers';
+import { PouchError } from '../pouch/types';
+import UpdateQueue, { Update } from '../pouch/updateQueue';
+import { UsrCrsData } from '../pouch/user-course-relDB';
+import { getCredentialledCourseConfig } from '../pouch/index';
 
 const log = (s: any) => {
   logger.info(s);
@@ -45,21 +41,6 @@ const log = (s: any) => {
 const cardHistoryPrefix = 'cardH-';
 
 // console.log(`Connecting to remote: ${remoteStr}`);
-
-function getRemoteCouchRootDB(): PouchDB.Database {
-  const remoteStr: string =
-    ENV.COUCHDB_SERVER_PROTOCOL + '://' + ENV.COUCHDB_SERVER_URL + 'skuilder';
-  let remoteCouchRootDB: PouchDB.Database;
-  try {
-    remoteCouchRootDB = new pouch(remoteStr, {
-      skip_setup: true,
-    });
-  } catch (error) {
-    logger.error('Failed to initialize remote CouchDB connection:', error);
-    throw new Error(`Failed to initialize CouchDB: ${JSON.stringify(error)}`);
-  }
-  return remoteCouchRootDB;
-}
 
 interface DesignDoc {
   _id: string;
@@ -71,17 +52,15 @@ interface DesignDoc {
 }
 
 /**
- * The current logged-in user, with pouch / couch functionality.
- *
- * @package This concrete class should not be directly exported from the `db` package,
- * but should be created at runtime by the exported dataLayerProviderFactory.
+ * Base user database implementation that uses a pluggable sync strategy.
+ * Handles local storage operations and delegates sync/remote operations to the strategy.
  */
-export class User implements UserDBInterface, DocumentUpdater {
-  private static _instance: User;
+export class BaseUser implements UserDBInterface, DocumentUpdater {
+  private static _instance: BaseUser;
   private static _initialized: boolean = false;
 
-  public static Dummy(): User {
-    return new User('DummyUser');
+  public static Dummy(syncStrategy: SyncStrategy): BaseUser {
+    return new BaseUser('DummyUser', syncStrategy);
   }
 
   static readonly DOC_IDS = {
@@ -92,6 +71,8 @@ export class User implements UserDBInterface, DocumentUpdater {
 
   // private email: string;
   private _username: string;
+  private syncStrategy: SyncStrategy;
+
   public getUsername(): string {
     return this._username;
   }
@@ -107,82 +88,60 @@ export class User implements UserDBInterface, DocumentUpdater {
   private localDB!: PouchDB.Database;
   private updateQueue!: UpdateQueue;
 
-  public async createAccount(username: string, password: string) {
-    const ret = {
-      status: Status.ok,
-      error: '',
-    };
+  public async createAccount(
+    username: string,
+    password: string
+  ): Promise<{
+    status: Status;
+    error: string;
+  }> {
+    if (!this.syncStrategy.canCreateAccount()) {
+      throw new Error('Account creation not supported by current sync strategy');
+    }
 
     if (!this._username.startsWith(GuestUsername)) {
       throw new Error(
         `Cannot create a new account while logged in:
 Currently logged-in as ${this._username}.`
       );
-    } else {
-      try {
-        const signupRequest = await getRemoteCouchRootDB().signUp(username, password);
-
-        if (signupRequest.ok) {
-          log(`CREATEACCOUNT: logging out of ${this.getUsername()}`);
-          const logoutResult = await getRemoteCouchRootDB().logOut();
-          log(`CREATEACCOUNT: logged out: ${logoutResult.ok}`);
-          const loginResult = await getRemoteCouchRootDB().logIn(username, password);
-          log(`CREATEACCOUNT: logged in as new user: ${loginResult.ok}`);
-          const newLocal = getLocalUserDB(username);
-          const newRemote = getUserDB(username);
-          this._username = username;
-
-          void this.localDB.replicate.to(newLocal).on('complete', () => {
-            void newLocal.replicate.to(newRemote).on('complete', async () => {
-              log('CREATEACCOUNT: Attempting to destroy guest localDB');
-              await clearLocalGuestDB();
-
-              // reset this.local & this.remote DBs
-              void this.init();
-            });
-          });
-        } else {
-          ret.status = Status.error;
-          ret.error = '';
-          logger.warn(`Signup not OK: ${JSON.stringify(signupRequest)}`);
-          // throw signupRequest;
-          return ret;
-        }
-      } catch (e) {
-        const err = e as PouchError;
-        if (err.reason === 'Document update conflict.') {
-          ret.error = 'This username is taken!';
-          ret.status = Status.error;
-        }
-        logger.error(`Error on signup: ${JSON.stringify(e)}`);
-        return ret;
-      }
     }
 
-    return ret;
+    const result = await this.syncStrategy.createAccount!(username, password);
+    return {
+      status: result.status,
+      error: result.error || '',
+    };
   }
   public async login(username: string, password: string) {
+    if (!this.syncStrategy.canAuthenticate()) {
+      throw new Error('Authentication not supported by current sync strategy');
+    }
+
     if (!this._username.startsWith(GuestUsername)) {
       throw new Error(`Cannot change accounts while logged in.
       Log out of account ${this.getUsername()} before logging in as ${username}.`);
     }
 
-    const loginResult = await getRemoteCouchRootDB().logIn(username, password);
+    const loginResult = await this.syncStrategy.authenticate!(username, password);
     if (loginResult.ok) {
       log(`Logged in as ${username}`);
       this._username = username;
       localStorage.removeItem('dbUUID');
       await this.init();
-    } else {
-      log(`Login ERROR as ${username}`);
     }
     return loginResult;
   }
   public async logout() {
-    // end session w/ couchdb
-    const ret = await this.remoteDB.logOut();
+    if (!this.syncStrategy.canAuthenticate()) {
+      // For strategies that don't support authentication, just switch to guest
+      this._username = await this.syncStrategy.getCurrentUsername();
+      await this.init();
+      return { ok: true };
+    }
+
+    const ret = await this.syncStrategy.logout!();
     // return to 'guest' mode
-    this._username = GuestUsername;
+    this._username = await this.syncStrategy.getCurrentUsername();
     await this.init();
 
     return ret;
@@ -200,13 +159,15 @@ Currently logged-in as ${this._username}.`
     let ret;
 
     try {
-      ret = await this.localDB.get<CourseRegistrationDoc>(userCoursesDoc);
+      const regDoc = await this.localDB.get<CourseRegistrationDoc>(
+        BaseUser.DOC_IDS.COURSE_REGISTRATIONS
+      );
+      return regDoc;
     } catch (e) {
       const err = e as PouchError;
       if (err.status === 404) {
-        // doc does not exist. Create it and then run this fcn again.
         await this.localDB.put<CourseRegistrationDoc>({
-          _id: userCoursesDoc,
+          _id: BaseUser.DOC_IDS.COURSE_REGISTRATIONS,
           courses: [],
           studyWeight: {},
         });
@@ -482,13 +443,13 @@ Currently logged-in as ${this._username}.`
 
   public async getConfig(): Promise<UserConfig & PouchDB.Core.IdMeta & PouchDB.Core.GetMeta> {
     const defaultConfig: PouchDB.Core.Document<UserConfig> = {
-      _id: User.DOC_IDS.CONFIG,
+      _id: BaseUser.DOC_IDS.CONFIG,
       darkMode: false,
       likesConfetti: false,
     };
 
     try {
-      const cfg = await this.localDB.get<UserConfig>(User.DOC_IDS.CONFIG);
+      const cfg = await this.localDB.get<UserConfig>(BaseUser.DOC_IDS.CONFIG);
       logger.debug('Raw config from DB:', cfg);
 
       return cfg;
@@ -530,58 +491,53 @@ Currently logged-in as ${this._username}.`
    * exported `getCurrentUser` method.
    *
    */
-  public static async instance(username?: string): Promise<User> {
+  public static async instance(syncStrategy: SyncStrategy, username?: string): Promise<BaseUser> {
     if (username) {
-      User._instance = new User(username);
-      await User._instance.init();
-      return User._instance;
-    } else if (User._instance && User._initialized) {
-      // log(`USER.instance() returning user ${User._instance._username}`);
-      return User._instance;
-    } else if (User._instance) {
+      BaseUser._instance = new BaseUser(username, syncStrategy);
+      await BaseUser._instance.init();
+      return BaseUser._instance;
+    } else if (BaseUser._instance && BaseUser._initialized) {
+      // log(`USER.instance() returning user ${BaseUser._instance._username}`);
+      return BaseUser._instance;
+    } else if (BaseUser._instance) {
       return new Promise((resolve) => {
         (function waitForUser() {
-          if (User._initialized) {
-            return resolve(User._instance);
+          if (BaseUser._initialized) {
+            return resolve(BaseUser._instance);
           } else {
             setTimeout(waitForUser, 50);
           }
         })();
       });
     } else {
-      User._instance = new User(GuestUsername);
-      await User._instance.init();
-      return User._instance;
+      const guestUsername = await syncStrategy.getCurrentUsername();
+      BaseUser._instance = new BaseUser(guestUsername, syncStrategy);
+      await BaseUser._instance.init();
+      return BaseUser._instance;
     }
   }
 
-  private constructor(username: string) {
-    User._initialized = false;
+  private constructor(username: string, syncStrategy: SyncStrategy) {
+    BaseUser._initialized = false;
     this._username = username;
+    this.syncStrategy = syncStrategy;
     this.setDBandQ();
   }
 
   private setDBandQ() {
     this.localDB = getLocalUserDB(this._username);
-    if (this._username === GuestUsername) {
-      this.remoteDB = getLocalUserDB(this._username);
-    } else {
-      this.remoteDB = getUserDB(this._username);
-    }
+    this.remoteDB = this.syncStrategy.setupRemoteDB(this._username);
     this.updateQueue = new UpdateQueue(this.localDB);
   }
 
   private async init() {
-    User._initialized = false;
+    BaseUser._initialized = false;
     this.setDBandQ();
 
-    void pouch.sync(this.localDB, this.remoteDB, {
-      live: true,
-      retry: true,
-    });
+    this.syncStrategy.startSync(this.localDB, this.remoteDB);
     void this.applyDesignDocs();
     void this.deduplicateReviews();
-    User._initialized = true;
+    BaseUser._initialized = true;
   }
 
   private static designDocs: DesignDoc[] = [
@@ -600,7 +556,7 @@ Currently logged-in as ${this._username}.`
   ];
 
   private async applyDesignDocs() {
-    for (const doc of User.designDocs) {
+    for (const doc of BaseUser.designDocs) {
       try {
         // Try to get existing doc
         try {
@@ -676,10 +632,17 @@ Currently logged-in as ${this._username}.`
         }
       );
 
-      momentifyCardHistory<T>(cardHistory);
+      // Convert timestamps to moment objects
+      cardHistory.records = cardHistory.records.map<T>((record) => {
+        const ret: T = {
+          ...(record as object),
+        } as T;
+        ret.timeStamp = moment.utc(record.timeStamp);
+        return ret;
+      });
       return cardHistory;
     } catch (e) {
-      const reason = e as Reason;
+      const reason = e as PouchError;
       if (reason.status === 404) {
         const initCardHistory: CardHistory<T> = {
           _id: cardHistoryID,
@@ -690,13 +653,12 @@ Currently logged-in as ${this._username}.`
           streak: 0,
           bestInterval: 0,
         };
-        void getUserDB(this.getUsername()).put<CardHistory<T>>(initCardHistory);
+        void this.remoteDB.put<CardHistory<T>>(initCardHistory);
         return initCardHistory;
       } else {
         throw new Error(`putCardRecord failed because of:
   name:${reason.name}
   error: ${reason.error}
-  id: ${reason.id}
   message: ${reason.message}`);
       }
     }
@@ -839,13 +801,16 @@ Currently logged-in as ${this._username}.`
     let ret;
 
     try {
-      ret = await getUserDB(this._username).get<ClassroomRegistrationDoc>(userClassroomsDoc);
+      ret = await this.remoteDB.get<ClassroomRegistrationDoc>(
+        BaseUser.DOC_IDS.CLASSROOM_REGISTRATIONS
+      );
     } catch (e) {
       const err = e as PouchError;
+
       if (err.status === 404) {
         // doc does not exist. Create it and then run this fcn again.
-        await getUserDB(this._username).put<ClassroomRegistrationDoc>({
-          _id: userClassroomsDoc,
+        await this.remoteDB.put<ClassroomRegistrationDoc>({
+          _id: BaseUser.DOC_IDS.CLASSROOM_REGISTRATIONS,
           registrations: [],
         });
         ret = await this.getOrCreateClassroomRegistrationsDoc();
@@ -874,17 +839,17 @@ Currently logged-in as ${this._username}.`
     scheduledFor: ScheduledCard['scheduledFor'];
     schedulingAgentId: ScheduledCard['schedulingAgentId'];
   }) {
-    return scheduleCardReview(review);
+    return scheduleCardReviewLocal(this.remoteDB, review);
   }
   public async removeScheduledCardReview(reviewId: string): Promise<void> {
-    return removeScheduledCardReview(this._username, reviewId);
+    return removeScheduledCardReviewLocal(this.remoteDB, reviewId);
   }
 
   public async registerForClassroom(
-    classId: string,
-    registerAs: 'student' | 'teacher' | 'aide' | 'admin'
+    _classId: string,
+    _registerAs: 'student' | 'teacher' | 'aide' | 'admin'
   ): Promise<PouchDB.Core.Response> {
-    return registerUserForClassroom(this._username, classId, registerAs);
+    return registerUserForClassroom(this._username, _classId, _registerAs);
   }
 
   public async dropFromClassroom(classId: string): Promise<PouchDB.Core.Response> {
@@ -899,46 +864,6 @@ Currently logged-in as ${this._username}.`
   }
 }
 
-export function getLocalUserDB(username: string): PouchDB.Database {
-  return new pouch(`userdb-${username}`, {
-    adapter: 'idb',
-  });
-}
-
-async function clearLocalGuestDB() {
-  const docs = await getLocalUserDB(GuestUsername).allDocs({
-    limit: 1000,
-    include_docs: true,
-  });
-
-  docs.rows.forEach((r) => {
-    log(`CREATEACCOUNT: Deleting ${r.id}`);
-    void getLocalUserDB(GuestUsername).remove(r.doc!);
-  });
-  delete localStorage.dbUUID;
-}
-
-export function getUserDB(username: string): PouchDB.Database {
-  const guestAccount: boolean = false;
-  // console.log(`Getting user db: ${username}`);
-
-  const hexName = hexEncode(username);
-  const dbName = `userdb-${hexName}`;
-  log(`Fetching user database: ${dbName} (${username})`);
-
-  // odd construction here the result of a bug in the
-  // interaction between pouch, pouch-auth.
-  // see: https://github.com/pouchdb-community/pouchdb-authentication/issues/239
-  const ret = new pouch(
-    ENV.COUCHDB_SERVER_PROTOCOL + '://' + ENV.COUCHDB_SERVER_URL + dbName,
-    pouchDBincludeCredentialsConfig
-  );
-  if (guestAccount) {
-    updateGuestAccountExpirationDate(ret);
-  }
-
-  return ret;
-}
 
 // function accomodateGuest(): {
 //   username: string;
@@ -987,13 +912,13 @@ async function getOrCreateClassroomRegistrationsDoc(
   let ret;
 
   try {
-    ret = await getUserDB(user).get<ClassroomRegistrationDoc>(userClassroomsDoc);
+    ret = await getLocalUserDB(user).get<ClassroomRegistrationDoc>(userClassroomsDoc);
   } catch (e) {
     const err = e as PouchError;
 
     if (err.status === 404) {
       // doc does not exist. Create it and then run this fcn again.
-      await getUserDB(user).put<ClassroomRegistrationDoc>({
+      await getLocalUserDB(user).put<ClassroomRegistrationDoc>({
         _id: userClassroomsDoc,
         registrations: [],
       });
@@ -1014,12 +939,12 @@ async function getOrCreateCourseRegistrationsDoc(
   let ret;
 
   try {
-    ret = await getUserDB(user).get<CourseRegistrationDoc>(userCoursesDoc);
+    ret = await getLocalUserDB(user).get<CourseRegistrationDoc>(userCoursesDoc);
   } catch (e) {
     const err = e as PouchError;
     if (err.status === 404) {
       // doc does not exist. Create it and then run this fcn again.
-      await getUserDB(user).put<CourseRegistrationDoc>({
+      await getLocalUserDB(user).put<CourseRegistrationDoc>({
         _id: userCoursesDoc,
         courses: [],
         studyWeight: {},
@@ -1039,13 +964,13 @@ export async function updateUserElo(user: string, course_id: string, elo: Course
   const regDoc = await getOrCreateCourseRegistrationsDoc(user);
   const course = regDoc.courses.find((c) => c.courseID === course_id)!;
   course.elo = elo;
-  return getUserDB(user).put(regDoc);
+  return getLocalUserDB(user).put(regDoc);
 }
 
 export async function registerUserForClassroom(
   user: string,
   classID: string,
-  registerAs: ClassroomRegistrationDesignation
+  registerAs: 'student' | 'teacher' | 'aide' | 'admin'
 ) {
   log(`Registering user: ${user} in course: ${classID}`);
   return getOrCreateClassroomRegistrationsDoc(user).then((doc) => {
@@ -1064,7 +989,7 @@ export async function registerUserForClassroom(
       log(`User ${user} is already registered for class ${classID}`);
     }
 
-    return getUserDB(user).put(doc);
+    return getLocalUserDB(user).put(doc);
   });
 }
 
@@ -1081,7 +1006,7 @@ export async function dropUserFromClassroom(user: string, classID: string) {
     if (index !== -1) {
       doc.registrations.splice(index, 1);
     }
-    return getUserDB(user).put(doc);
+    return getLocalUserDB(user).put(doc);
   });
 }
 
@@ -1089,20 +1014,3 @@ export async function getUserClassrooms(user: string) {
   return getOrCreateClassroomRegistrationsDoc(user);
 }
 
-function momentifyCardHistory<T extends CardRecord>(cardHistory: CardHistory<T>) {
-  cardHistory.records = cardHistory.records.map<T>((record) => {
-    const ret: T = {
-      ...(record as object),
-    } as T;
-    ret.timeStamp = moment.utc(record.timeStamp);
-    return ret;
-  });
-}
-
-interface Reason {
-  status: number;
-  name: string;
-  error: string;
-  id: string;
-  message: string;
-}
