@@ -7,6 +7,8 @@ import { ScheduledCard } from '@db/core/types/user';
 export const REVIEW_PREFIX: string = 'card_review_';
 export const REVIEW_TIME_FORMAT: string = 'YYYY-MM-DD--kk:mm:ss-SSS';
 
+import pouch from '../pouch/pouchdb-setup';
+
 const log = (s: any) => {
   logger.info(s);
 };
@@ -78,22 +80,21 @@ export function updateGuestAccountExpirationDate(guestDB: PouchDB.Database<objec
  * Get local user database with appropriate adapter for environment
  */
 export function getLocalUserDB(username: string): PouchDB.Database {
-  // Use dynamic require to avoid bundling issues
-  const pouch = require('../pouch/pouchdb-setup').default;
-  
-  // Choose adapter based on environment
-  let adapter: string;
-  if (typeof window !== 'undefined') {
-    // Browser environment - use IndexedDB
-    adapter = 'idb';
-  } else {
-    // Node.js environment (tests) - use memory adapter
-    adapter = 'memory';
-  }
-  
-  return new pouch(`userdb-${username}`, {
-    adapter,
-  });
+  // // Choose adapter based on environment
+  //
+  // Not certain of this is required. Let's let pouch's auto detection
+  // handle it until we specifically know we need to intervene.
+  //
+  // let adapter: string;
+  // if (typeof window !== 'undefined') {
+  //   // Browser environment - use IndexedDB
+  //   adapter = 'idb';
+  // } else {
+  //   // Node.js environment (tests) - use memory adapter
+  //   adapter = 'memory';
+  // }
+
+  return new pouch(`userdb-${username}`, {});
 }
 
 /**
@@ -130,7 +131,8 @@ export async function removeScheduledCardReviewLocal(
   reviewDocID: string
 ) {
   const reviewDoc = await userDB.get(reviewDocID);
-  userDB.remove(reviewDoc)
+  userDB
+    .remove(reviewDoc)
     .then((res) => {
       if (res.ok) {
         log(`Removed Review Doc: ${reviewDocID}`);
