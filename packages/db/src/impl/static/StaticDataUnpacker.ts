@@ -68,7 +68,8 @@ export class StaticDataUnpacker {
   async getDocument<T = any>(id: string): Promise<T> {
     // Check document cache first
     if (this.documentCache.has(id)) {
-      return this.documentCache.get(id);
+      const doc = this.documentCache.get(id);
+      return await this.hydrateAttachments(doc);
     }
 
     // Find which chunk contains this document
@@ -86,7 +87,8 @@ export class StaticDataUnpacker {
 
     // Try to get the document from cache again
     if (this.documentCache.has(id)) {
-      return this.documentCache.get(id);
+      const doc = this.documentCache.get(id);
+      return await this.hydrateAttachments(doc);
     }
 
     logger.error(`Document ${id} not found in chunk ${chunk.id}`);
@@ -339,6 +341,38 @@ export class StaticDataUnpacker {
   }
 
   /**
+   * Get a document by ID without hydration (raw document access)
+   * Used internally to avoid recursion during attachment hydration
+   */
+  private async getRawDocument<T = any>(id: string): Promise<T> {
+    // Check document cache first
+    if (this.documentCache.has(id)) {
+      return this.documentCache.get(id);
+    }
+
+    // Find which chunk contains this document
+    const chunk = await this.findChunkForDocument(id);
+    if (!chunk) {
+      logger.error(
+        `Document ${id} not found in any chunk. Available chunks:`,
+        this.manifest.chunks.map((c) => `${c.id} (${c.docType}): ${c.startKey} - ${c.endKey}`)
+      );
+      throw new Error(`Document ${id} not found in any chunk`);
+    }
+
+    // Load the chunk if not cached
+    await this.loadChunk(chunk.id);
+
+    // Try to get the document from cache again
+    if (this.documentCache.has(id)) {
+      return this.documentCache.get(id);
+    }
+
+    logger.error(`Document ${id} not found in chunk ${chunk.id}`);
+    throw new Error(`Document ${id} not found in chunk ${chunk.id}`);
+  }
+
+  /**
    * Get attachment URL for a given document and attachment name
    */
   getAttachmentUrl(docId: string, attachmentName: string): string {
@@ -349,10 +383,11 @@ export class StaticDataUnpacker {
 
   /**
    * Load attachment data from the document and get the correct file path
+   * Uses raw document access to avoid recursion with hydration
    */
   async getAttachmentPath(docId: string, attachmentName: string): Promise<string | null> {
     try {
-      const doc = await this.getDocument(docId);
+      const doc = await this.getRawDocument(docId);
       if (doc._attachments && doc._attachments[attachmentName]) {
         const attachment = doc._attachments[attachmentName];
         if (attachment.path) {
@@ -395,6 +430,98 @@ export class StaticDataUnpacker {
       logger.error(`Failed to load attachment ${docId}/${attachmentName}:`, error);
       return null;
     }
+  }
+
+  /**
+   * Hydrate document attachments by converting file paths to blob URLs
+   */
+  private async hydrateAttachments<T = any>(doc: T): Promise<T> {
+    logger.debug(`[hydrateAttachments] Starting hydration for doc: ${JSON.stringify(doc)}`);
+    const typedDoc = doc as any;
+
+    // If no attachments, return document as-is
+    if (!typedDoc._attachments) {
+      logger.debug(
+        `[hydrateAttachments] No attachments found for doc ${typedDoc?._id}. Returning original doc.`
+      );
+      return doc;
+    }
+
+    logger.debug(`[hydrateAttachments] Cloning document ${typedDoc?._id} to avoid mutating cache.`);
+    // Clone the document to avoid mutating the cached version
+    const hydratedDoc = JSON.parse(JSON.stringify(doc));
+
+    logger.debug(
+      `[hydrateAttachments] Processing attachments for doc ${typedDoc?._id}. Found ${Object.keys(typedDoc._attachments).length} attachments.`
+    );
+    // Process each attachment
+    for (const [attachmentName, attachment] of Object.entries(typedDoc._attachments)) {
+      logger.debug(
+        `[hydrateAttachments] Processing attachment: ${attachmentName} for doc ${typedDoc?._id}`
+      );
+      const attachmentData = attachment as any;
+
+      // If attachment has a path, convert it to a blob URL
+      if (attachmentData.path) {
+        logger.debug(
+          `[hydrateAttachments] Attachment ${attachmentName} has path: ${attachmentData.path}. Attempting to get blob.`
+        );
+        try {
+          const blob = await this.getAttachmentBlob(typedDoc._id, attachmentName);
+          if (blob) {
+            logger.debug(
+              `[hydrateAttachments] Successfully retrieved blob for ${typedDoc._id}/${attachmentName}. Size: ${blob instanceof Blob ? blob.size : (blob as Buffer).length}`
+            );
+            // Create blob URL for browser rendering
+            if (typeof window !== 'undefined' && window.URL) {
+              logger.debug(
+                `[hydrateAttachments] In browser environment. Creating blob URL for ${typedDoc._id}/${attachmentName}.`
+              );
+              const blobUrl = URL.createObjectURL(blob as Blob);
+              hydratedDoc._attachments[attachmentName] = {
+                ...attachmentData,
+                blobUrl, // Add blob URL for frontend use
+                blob, // Keep blob data available
+              };
+              logger.debug(
+                `[hydrateAttachments] Added blobUrl and blob to attachment ${attachmentName} for doc ${typedDoc._id}.`
+              );
+            } else {
+              logger.debug(
+                `[hydrateAttachments] In Node.js environment. Attaching buffer for ${typedDoc._id}/${attachmentName}.`
+              );
+              // In Node.js environment, just attach the buffer
+              hydratedDoc._attachments[attachmentName] = {
+                ...attachmentData,
+                buffer: blob, // Attach buffer for Node.js use
+              };
+              logger.debug(
+                `[hydrateAttachments] Added buffer to attachment ${attachmentName} for doc ${typedDoc._id}.`
+              );
+            }
+          } else {
+            logger.warn(
+              `[hydrateAttachments] getAttachmentBlob returned null for ${typedDoc._id}/${attachmentName}. Skipping hydration for this attachment.`
+            );
+          }
+        } catch (error) {
+          logger.warn(
+            `[hydrateAttachments] Failed to hydrate attachment ${typedDoc._id}/${attachmentName}:`,
+            error
+          );
+          // Keep original attachment data if hydration fails
+        }
+      } else {
+        logger.debug(
+          `[hydrateAttachments] Attachment ${attachmentName} for doc ${typedDoc._id} has no path. Skipping blob conversion.`
+        );
+      }
+    }
+
+    logger.debug(
+      `[hydrateAttachments] Finished hydration for doc ${typedDoc?._id}. Returning hydrated doc: ${JSON.stringify(hydratedDoc)}`
+    );
+    return hydratedDoc;
   }
 
   /**
