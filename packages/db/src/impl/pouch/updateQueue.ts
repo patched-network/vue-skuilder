@@ -77,9 +77,13 @@ export default class UpdateQueue extends Loggable {
           }
           return doc;
         } catch (e) {
+          // Clean up queue state before re-throwing
           delete this.inprogressUpdates[id];
+          if (this.pendingUpdates[id]) {
+            delete this.pendingUpdates[id];
+          }
           logger.error(`Error on attemped update: ${JSON.stringify(e)}`);
-          throw e;
+          throw e; // Let caller handle (e.g., putCardRecord's 404 handling)
         }
       } else {
         throw new Error(`Empty Updates Queue Triggered`);

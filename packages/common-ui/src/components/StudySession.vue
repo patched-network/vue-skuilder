@@ -475,12 +475,18 @@ export default defineComponent({
         const eloUpdate = adjustCourseScores(userElo, cardElo, userScore);
         this.userCourseRegDoc!.courses.find((c) => c.courseID === course_id)!.elo = eloUpdate.userElo;
 
-        Promise.all([
+        const results = await Promise.allSettled([
           this.user!.updateUserElo(course_id, eloUpdate.userElo),
           courseDB.updateCardElo(card_id, eloUpdate.cardElo),
-        ]).then((results) => {
-          const user = results[0];
-          const card = results[1];
+        ]);
+
+        // Check the results of each operation
+        const userEloStatus = results[0].status === 'fulfilled';
+        const cardEloStatus = results[1].status === 'fulfilled';
+
+        if (userEloStatus && cardEloStatus) {
+          const user = results[0].value;
+          const card = results[1].value;
 
           if (user.ok && card && card.ok) {
             console.log(
@@ -490,7 +496,22 @@ export default defineComponent({
               `
             );
           }
-        });
+        } else {
+          // Log which operations succeeded and which failed
+          console.log(
+            `[StudySession] Partial ELO update:
+            \tUser ELO update: ${userEloStatus ? 'SUCCESS' : 'FAILED'}
+            \tCard ELO update: ${cardEloStatus ? 'SUCCESS' : 'FAILED'}`
+          );
+
+          if (!userEloStatus && results[0].status === 'rejected') {
+            console.error('[StudySession] User ELO update error:', results[0].reason);
+          }
+
+          if (!cardEloStatus && results[1].status === 'rejected') {
+            console.error('[StudySession] Card ELO update error:', results[1].reason);
+          }
+        }
       }
     },
 
