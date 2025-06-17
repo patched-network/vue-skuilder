@@ -36,7 +36,7 @@ const env: Env = {
 };
 
 initializeDataLayer({
-  type: 'pouch',
+  type: 'couch',
   options: {
     COUCHDB_PASSWORD: env.COUCHDB_PASSWORD,
     COUCHDB_USERNAME: env.COUCHDB_ADMIN,

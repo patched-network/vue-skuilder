@@ -1,4 +1,4 @@
-// db/src/impl/pouch/PouchDataLayerProvider.ts
+// db/src/impl/couch/PouchDataLayerProvider.ts
 
 import {
   AdminDBInterface,
@@ -19,7 +19,7 @@ import { CourseDB, CoursesDB } from './courseDB';
 import { BaseUser } from '../common';
 import { CouchDBSyncStrategy } from './CouchDBSyncStrategy';
 
-export class PouchDataLayerProvider implements DataLayerProvider {
+export class CouchDataLayerProvider implements DataLayerProvider {
   private initialized: boolean = false;
   private userDB!: UserDBInterface;
   private currentUsername: string = '';
@@ -43,7 +43,7 @@ export class PouchDataLayerProvider implements DataLayerProvider {
 
     if (isNodeEnvironment) {
       logger.info(
-        'PouchDataLayerProvider: Running in Node.js environment, creating guest UserDB for testing.'
+        'CouchDataLayerProvider: Running in Node.js environment, creating guest UserDB for testing.'
       );
       // In Node.js (testing) environment, create a guest user instance
       const syncStrategy = new CouchDBSyncStrategy();
@@ -60,11 +60,11 @@ export class PouchDataLayerProvider implements DataLayerProvider {
           const syncStrategy = new CouchDBSyncStrategy();
           this.userDB = await BaseUser.instance(syncStrategy, this.currentUsername);
         } else {
-          logger.warn('PouchDataLayerProvider: No logged-in username found in session.');
+          logger.warn('CouchDataLayerProvider: No logged-in username found in session.');
         }
       } catch (error) {
         logger.error(
-          'PouchDataLayerProvider: Error during user session check or user DB initialization:',
+          'CouchDataLayerProvider: Error during user session check or user DB initialization:',
           error
         );
       }

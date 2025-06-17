@@ -29,10 +29,10 @@ import {
   scheduleCardReviewLocal,
   removeScheduledCardReviewLocal,
 } from './userDBHelpers';
-import { PouchError } from '../pouch/types';
-import UpdateQueue, { Update } from '../pouch/updateQueue';
-import { UsrCrsData } from '../pouch/user-course-relDB';
-import { getCredentialledCourseConfig } from '../pouch/index';
+import { PouchError } from '../couch/types';
+import UpdateQueue, { Update } from '../couch/updateQueue';
+import { UsrCrsData } from '../couch/user-course-relDB';
+import { getCredentialledCourseConfig } from '../couch/index';
 
 const log = (s: any) => {
   logger.info(s);
@@ -823,9 +823,12 @@ Currently logged-in as ${this._username}.`
           reason: err.reason,
           error: err.error,
         };
-        
-        logger.error('Database error in getOrCreateClassroomRegistrationsDoc (private method):', errorDetails);
-        
+
+        logger.error(
+          'Database error in getOrCreateClassroomRegistrationsDoc (private method):',
+          errorDetails
+        );
+
         throw new Error(
           `Database error accessing classroom registrations: ${err.message || err.name || 'Unknown error'} (status: ${err.status})`
         );
@@ -838,10 +841,10 @@ Currently logged-in as ${this._username}.`
 
   /**
    * Retrieves the list of active classroom IDs where the user is registered as a student.
-   * 
-   * @returns Promise<string[]> - Array of classroom IDs, or empty array if classroom 
+   *
+   * @returns Promise<string[]> - Array of classroom IDs, or empty array if classroom
    *                              registration document is unavailable due to database errors
-   * 
+   *
    * @description This method gracefully handles database connectivity issues by returning
    *              an empty array when the classroom registrations document cannot be accessed.
    *              This ensures that users can still access other application features even
@@ -853,7 +856,10 @@ Currently logged-in as ${this._username}.`
         .filter((c) => c.registeredAs === 'student')
         .map((c) => c.classID);
     } catch (error) {
-      logger.warn('Failed to load classroom registrations, continuing without classroom data:', error);
+      logger.warn(
+        'Failed to load classroom registrations, continuing without classroom data:',
+        error
+      );
       // Return empty array so user can still access other features
       return [];
     }
@@ -891,7 +897,6 @@ Currently logged-in as ${this._username}.`
     return updateUserElo(this._username, courseId, elo);
   }
 }
-
 
 // function accomodateGuest(): {
 //   username: string;
@@ -960,9 +965,12 @@ async function getOrCreateClassroomRegistrationsDoc(
         reason: err.reason,
         error: err.error,
       };
-      
-      logger.error('Database error in getOrCreateClassroomRegistrationsDoc (standalone function):', errorDetails);
-      
+
+      logger.error(
+        'Database error in getOrCreateClassroomRegistrationsDoc (standalone function):',
+        errorDetails
+      );
+
       throw new Error(
         `Database error accessing classroom registrations: ${err.message || err.name || 'Unknown error'} (status: ${err.status})`
       );
@@ -1052,4 +1060,3 @@ export async function dropUserFromClassroom(user: string, classID: string) {
 export async function getUserClassrooms(user: string) {
   return getOrCreateClassroomRegistrationsDoc(user);
 }
-

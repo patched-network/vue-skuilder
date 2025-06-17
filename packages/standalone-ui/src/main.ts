@@ -62,7 +62,7 @@ import config from '../skuilder.config.json';
 
   try {
     await initializeDataLayer({
-      type: (config.dataLayerType || 'pouch') as 'pouch' | 'static',
+      type: (config.dataLayerType || 'couch') as 'couch' | 'static',
       options: dataLayerOptions,
     });
     console.log('[DEBUG] Data layer initialized successfully');

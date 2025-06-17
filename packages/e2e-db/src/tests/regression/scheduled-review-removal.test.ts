@@ -21,7 +21,7 @@ describe('Scheduled Review Removal Regression Tests', () => {
 
     // Initialize data layer with test CouchDB
     dataLayer = await initializeDataLayer({
-      type: 'pouch',
+      type: 'couch',
       options: {
         COUCHDB_SERVER_URL: 'localhost:5984/',
         COUCHDB_SERVER_PROTOCOL: 'http',

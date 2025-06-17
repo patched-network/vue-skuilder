@@ -14,7 +14,7 @@ import { initializeDataLayer } from '@vue-skuilder/db';
 
 (async () => {
   await initializeDataLayer({
-    type: 'pouch',
+    type: 'couch',
     options: {
       COUCHDB_SERVER_PROTOCOL: ENV.COUCHDB_SERVER_PROTOCOL,
       COUCHDB_SERVER_URL: ENV.COUCHDB_SERVER_URL,
