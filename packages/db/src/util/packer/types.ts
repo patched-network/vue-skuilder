@@ -40,6 +40,17 @@ export interface DesignDocument {
   };
 }
 
+export interface AttachmentData {
+  docId: string;
+  attachmentName: string;
+  filename: string;
+  path: string;
+  contentType: string;
+  length: number;
+  digest?: string;
+  buffer: Buffer;
+}
+
 export interface PackerConfig {
   chunkSize: number;
   includeAttachments: boolean;
@@ -49,4 +60,5 @@ export interface PackedCourseData {
   manifest: StaticCourseManifest;
   chunks: Map<string, any[]>; // chunkId -> documents
   indices: Map<string, any>; // indexName -> index data
+  attachments?: Map<string, AttachmentData>; // attachmentPath -> attachment data
 }

@@ -254,4 +254,22 @@ export class StaticCourseDB implements CourseDBInterface {
     // In static mode, reviews would be stored locally
     return [];
   }
+
+  // Attachment helper methods (internal use, not part of interface)
+  
+  /**
+   * Get attachment URL for a document and attachment name
+   * Internal helper method for static attachment serving
+   */
+  getAttachmentUrl(docId: string, attachmentName: string): string {
+    return this.unpacker.getAttachmentUrl(docId, attachmentName);
+  }
+
+  /**
+   * Load attachment as blob/buffer
+   * Internal helper method for static attachment serving
+   */
+  async getAttachmentBlob(docId: string, attachmentName: string): Promise<Blob | Buffer | null> {
+    return this.unpacker.getAttachmentBlob(docId, attachmentName);
+  }
 }

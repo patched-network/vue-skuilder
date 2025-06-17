@@ -12,10 +12,12 @@ import {
   PackedCourseData,
   PackerConfig,
   StaticCourseManifest,
+  AttachmentData,
 } from './types';
 
 export class CouchDBToStaticPacker {
   private config: PackerConfig;
+  private sourceDB: PouchDB.Database | null = null;
 
   constructor(config: Partial<PackerConfig> = {}) {
     this.config = {
@@ -30,6 +32,7 @@ export class CouchDBToStaticPacker {
    */
   async packCourse(sourceDB: PouchDB.Database, courseId: string): Promise<PackedCourseData> {
     logger.info(`Starting static pack for course: ${courseId}`);
+    this.sourceDB = sourceDB;
 
     const manifest: StaticCourseManifest = {
       version: '1.0.0',
@@ -54,7 +57,13 @@ export class CouchDBToStaticPacker {
     // 3. Extract all documents by type and create chunks
     const docsByType = await this.extractDocumentsByType(sourceDB);
 
-    // 4. Create chunks and prepare chunk data
+    // 4. Extract attachments if enabled
+    const attachments = new Map<string, AttachmentData>();
+    if (this.config.includeAttachments) {
+      await this.extractAllAttachments(docsByType, attachments);
+    }
+
+    // 5. Create chunks and prepare chunk data
     const chunks = new Map<string, any[]>();
     for (const [docType, docs] of Object.entries(docsByType)) {
       const chunkMetadata = this.createChunks(docs, docType as DocType);
@@ -65,7 +74,7 @@ export class CouchDBToStaticPacker {
       this.prepareChunkData(chunkMetadata, docs, chunks);
     }
 
-    // 5. Build indices
+    // 6. Build indices
     const indices = new Map<string, any>();
     manifest.indices = await this.buildIndices(docsByType, manifest.designDocs, indices);
 
@@ -73,6 +82,7 @@ export class CouchDBToStaticPacker {
       manifest,
       chunks,
       indices,
+      attachments,
     };
   }
 
@@ -154,9 +164,14 @@ export class CouchDBToStaticPacker {
       const cleanedDocs = chunkDocs.map((doc) => {
         const cleaned = { ...doc };
         delete cleaned._rev; // Remove revision info
-        if (!this.config.includeAttachments) {
+        
+        if (this.config.includeAttachments && cleaned._attachments) {
+          // Transform attachment stubs to file paths
+          cleaned._attachments = this.transformAttachmentStubs(cleaned._attachments, cleaned._id);
+        } else if (!this.config.includeAttachments) {
           delete cleaned._attachments;
         }
+        
         return cleaned;
       });
 
@@ -345,5 +360,143 @@ export class CouchDBToStaticPacker {
       logger.error(`Failed to build index for view ${viewName}:`, error);
       return null;
     }
+  }
+
+  /**
+   * Extract all attachments from documents and download binary data
+   */
+  private async extractAllAttachments(
+    docsByType: Record<DocType, any[]>,
+    attachments: Map<string, AttachmentData>
+  ): Promise<void> {
+    logger.info('Extracting attachments...');
+    
+    const allDocs: any[] = [];
+    for (const docs of Object.values(docsByType)) {
+      allDocs.push(...docs);
+    }
+
+    const docsWithAttachments = allDocs.filter(doc => doc._attachments && Object.keys(doc._attachments).length > 0);
+    
+    if (docsWithAttachments.length === 0) {
+      logger.info('No attachments found');
+      return;
+    }
+
+    logger.info(`Found ${docsWithAttachments.length} documents with attachments`);
+
+    // Process attachments concurrently
+    const extractionPromises = docsWithAttachments.map(doc => 
+      this.extractDocumentAttachments(doc, attachments)
+    );
+
+    await Promise.all(extractionPromises);
+    
+    logger.info(`Extracted ${attachments.size} attachment files`);
+  }
+
+  /**
+   * Extract attachments for a single document
+   */
+  private async extractDocumentAttachments(
+    doc: any,
+    attachments: Map<string, AttachmentData>
+  ): Promise<void> {
+    if (!doc._attachments || !this.sourceDB) {
+      return;
+    }
+
+    const docId = doc._id;
+    
+    for (const [attachmentName, metadata] of Object.entries(doc._attachments as Record<string, any>)) {
+      try {
+        // Download attachment binary data
+        const attachmentResponse = await this.sourceDB.getAttachment(docId, attachmentName);
+        
+        // Convert to buffer
+        let buffer: Buffer;
+        if (attachmentResponse instanceof ArrayBuffer) {
+          buffer = Buffer.from(attachmentResponse);
+        } else if (Buffer.isBuffer(attachmentResponse)) {
+          buffer = attachmentResponse;
+        } else {
+          // For browser environments, the response might be a Blob
+          const blob = attachmentResponse as Blob;
+          buffer = Buffer.from(await blob.arrayBuffer());
+        }
+
+        // Generate filename with proper extension
+        const extension = this.getFileExtension(metadata.content_type);
+        const filename = `${attachmentName}${extension}`;
+        const attachmentPath = `attachments/${docId}/${filename}`;
+        
+        // Store attachment data
+        attachments.set(attachmentPath, {
+          docId,
+          attachmentName,
+          filename,
+          path: attachmentPath,
+          contentType: metadata.content_type,
+          length: metadata.length || buffer.length,
+          digest: metadata.digest,
+          buffer,
+        });
+
+        logger.debug(`Extracted attachment: ${attachmentPath}`);
+      } catch (error) {
+        logger.error(`Failed to extract attachment ${docId}/${attachmentName}:`, error);
+        throw new Error(`Failed to extract attachment ${docId}/${attachmentName}: ${error}`);
+      }
+    }
+  }
+
+  /**
+   * Transform attachment stubs to include file paths
+   */
+  private transformAttachmentStubs(
+    attachments: Record<string, any>,
+    docId: string
+  ): Record<string, any> {
+    const transformed: Record<string, any> = {};
+    
+    for (const [attachmentName, metadata] of Object.entries(attachments)) {
+      const extension = this.getFileExtension(metadata.content_type);
+      const filename = `${attachmentName}${extension}`;
+      const attachmentPath = `attachments/${docId}/${filename}`;
+      
+      transformed[attachmentName] = {
+        path: attachmentPath,
+        content_type: metadata.content_type,
+        length: metadata.length,
+        digest: metadata.digest,
+        stub: false, // No longer a stub - we have the actual file
+      };
+    }
+    
+    return transformed;
+  }
+
+  /**
+   * Get file extension from content type
+   */
+  private getFileExtension(contentType: string): string {
+    const extensionMap: Record<string, string> = {
+      'image/jpeg': '.jpg',
+      'image/jpg': '.jpg', 
+      'image/png': '.png',
+      'image/gif': '.gif',
+      'image/webp': '.webp',
+      'audio/mpeg': '.mp3',
+      'audio/mp3': '.mp3',
+      'audio/wav': '.wav',
+      'audio/ogg': '.ogg',
+      'video/mp4': '.mp4',
+      'video/webm': '.webm',
+      'application/pdf': '.pdf',
+      'text/plain': '.txt',
+      'application/json': '.json',
+    };
+    
+    return extensionMap[contentType] || '';
   }
 }

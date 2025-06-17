@@ -3,7 +3,7 @@ import PouchDB from 'pouchdb';
 import fs from 'fs-extra';
 import path from 'path';
 import chalk from 'chalk';
-import { CouchDBToStaticPacker } from '@vue-skuilder/db/packer';
+import { CouchDBToStaticPacker, AttachmentData } from '@vue-skuilder/db/packer';
 
 export function createPackCommand(): Command {
   return new Command('pack')
@@ -94,6 +94,9 @@ async function packCourse(courseId: string, options: PackOptions) {
     console.log(chalk.white(`📄 Documents: ${packedData.manifest.documentCount}`));
     console.log(chalk.white(`🗂️  Chunks: ${packedData.manifest.chunks.length}`));
     console.log(chalk.white(`🗃️  Indices: ${packedData.manifest.indices.length}`));
+    if (packedData.attachments && packedData.attachments.size > 0) {
+      console.log(chalk.white(`📎 Attachments: ${packedData.attachments.size}`));
+    }
     console.log(chalk.white(`📁 Location: ${outputDir}`));
 
   } catch (error: unknown) {
@@ -124,6 +127,7 @@ interface PackedData {
   };
   chunks: Map<string, unknown[]>;
   indices: Map<string, unknown>;
+  attachments?: Map<string, AttachmentData>;
 }
 
 async function writePackedData(
@@ -160,4 +164,23 @@ async function writePackedData(
     indexCount++;
   }
   console.log(chalk.gray(`🗃️  Wrote ${indexCount} indices`));
+
+  // Write attachments
+  if (packedData.attachments && packedData.attachments.size > 0) {
+    console.log(chalk.cyan('📎 Writing attachments...'));
+    
+    let attachmentCount = 0;
+    for (const [attachmentPath, attachmentData] of packedData.attachments) {
+      const fullAttachmentPath = path.join(outputDir, attachmentPath);
+      
+      // Ensure directory exists
+      await fs.ensureDir(path.dirname(fullAttachmentPath));
+      
+      // Write binary file
+      await fs.writeFile(fullAttachmentPath, attachmentData.buffer);
+      attachmentCount++;
+    }
+    
+    console.log(chalk.gray(`📎 Wrote ${attachmentCount} attachment files`));
+  }
 }
