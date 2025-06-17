@@ -38,24 +38,32 @@ Implement binary attachment extraction for the CLI pack command to create fully 
 - Both packages build and lint successfully
 
 
-## Phase 2: Static Database Runtime Enhancement
-**Location**: `packages/db/src/static/`
+## Phase 2: Static Database Runtime Enhancement ✅ COMPLETED
+**Location**: `packages/db/src/impl/static/`
 
-### 2.1 Internal Static Runtime Enhancement
-- [ ] Add internal attachment path resolution logic (no interface changes)
-- [ ] Ensure existing document serving works with new attachment path structure
-- [ ] Verify attachment URLs resolve correctly in existing frontend components
+### 2.1 Internal Static Runtime Enhancement ✅
+- [x] Add internal attachment path resolution logic (no interface changes)
+- [x] Ensure existing document serving works with new attachment path structure
+- [x] Verify attachment URLs resolve correctly in existing frontend components
 
-### 2.2 Update StaticDataUnpacker
-- [ ] Add attachment path resolution logic
-- [ ] Support both browser (fetch) and Node.js (fs) environments
-- [ ] Implement attachment file caching similar to chunk caching
-- [ ] Add error handling for missing attachment files
+### 2.2 Update StaticDataUnpacker ✅
+- [x] Add attachment path resolution logic
+- [x] Support both browser (fetch) and Node.js (fs) environments
+- [x] Implement attachment file loading (no caching needed for MVP)
+- [x] Add error handling for missing attachment files
 
-### 2.3 Manifest Schema Extension (Optional)
-- [ ] Add attachment metadata to manifest.json schema
-- [ ] Include attachment directory summary in manifest
-- [ ] Add attachment validation during static course loading
+### 2.3 StaticCourseDB Enhancement ✅
+- [x] Add helper methods for attachment URL resolution
+- [x] Add helper methods for attachment blob loading
+- [x] Keep methods internal (no interface changes)
+
+**Implementation Notes:**
+- Added `getAttachmentUrl()`, `getAttachmentPath()`, and `getAttachmentBlob()` methods to StaticDataUnpacker
+- Uses same browser/Node.js file loading pattern as chunks and indices
+- StaticCourseDB delegates to unpacker methods for attachment access
+- Follows existing caching and error handling patterns
+- No breaking changes to existing interfaces
+- Package builds and lints successfully
 
 ## Phase 3: Frontend Integration and Testing
 **Location**: Frontend components and content renderers

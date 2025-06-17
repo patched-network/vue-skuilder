@@ -339,6 +339,65 @@ export class StaticDataUnpacker {
   }
 
   /**
+   * Get attachment URL for a given document and attachment name
+   */
+  getAttachmentUrl(docId: string, attachmentName: string): string {
+    // Construct attachment path: attachments/{docId}/{attachmentName}.{ext}
+    // The exact filename will be resolved from the document's _attachments metadata
+    return `${this.basePath}/attachments/${docId}/${attachmentName}`;
+  }
+
+  /**
+   * Load attachment data from the document and get the correct file path
+   */
+  async getAttachmentPath(docId: string, attachmentName: string): Promise<string | null> {
+    try {
+      const doc = await this.getDocument(docId);
+      if (doc._attachments && doc._attachments[attachmentName]) {
+        const attachment = doc._attachments[attachmentName];
+        if (attachment.path) {
+          // Return the full path as stored in the document
+          return `${this.basePath}/${attachment.path}`;
+        }
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Load attachment as a blob (for browser) or buffer (for Node.js)
+   */
+  async getAttachmentBlob(docId: string, attachmentName: string): Promise<Blob | Buffer | null> {
+    const attachmentPath = await this.getAttachmentPath(docId, attachmentName);
+    if (!attachmentPath) {
+      return null;
+    }
+
+    try {
+      // Check if we're in a Node.js environment with local files
+      if (this.isLocalPath(attachmentPath) && nodeFS) {
+        // Use fs for local file access (e.g., in tests)
+        const buffer = await nodeFS.promises.readFile(attachmentPath);
+        return buffer;
+      } else {
+        // Use fetch for URL-based access (e.g., in browser)
+        const response = await fetch(attachmentPath);
+        if (!response.ok) {
+          throw new Error(
+            `Failed to fetch attachment ${docId}/${attachmentName}: ${response.status} ${response.statusText}`
+          );
+        }
+        return await response.blob();
+      }
+    } catch (error) {
+      logger.error(`Failed to load attachment ${docId}/${attachmentName}:`, error);
+      return null;
+    }
+  }
+
+  /**
    * Clear all caches (useful for testing or memory management)
    */
   clearCaches(): void {
