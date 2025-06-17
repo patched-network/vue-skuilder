@@ -69,7 +69,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, PropType } from 'vue';
+import { defineComponent, PropType, markRaw } from 'vue';
 import { isQuestionView } from '../composables/CompositionViewable';
 import { alertUser } from './SnackbarService';
 import { ViewComponent } from '../composables';
@@ -287,18 +287,20 @@ export default defineComponent({
         console.log(`[StudySession] starting study session w/ sources: ${JSON.stringify(this.contentSources)}`);
         console.log('[StudySession] Beginning preparation process');
 
-        this.sessionContentSources = (
-          await Promise.all(
-            this.contentSources.map(async (s) => {
-              try {
-                return await getStudySource(s, this.user);
-              } catch (e) {
-                console.error(`Failed to load study source: ${s.type}/${s.id}`, e);
-                return null;
-              }
-            })
-          )
-        ).filter((s) => s !== null);
+        this.sessionContentSources = markRaw(
+          (
+            await Promise.all(
+              this.contentSources.map(async (s) => {
+                try {
+                  return await getStudySource(s, this.user);
+                } catch (e) {
+                  console.error(`Failed to load study source: ${s.type}/${s.id}`, e);
+                  return null;
+                }
+              })
+            )
+          ).filter((s) => s !== null)
+        );
 
         this.timeRemaining = this.sessionTimeLimit * 60;
 
@@ -312,7 +314,7 @@ export default defineComponent({
           // db.setChangeFcn(this.handleClassroomMessage());
         });
 
-        this.sessionController = new SessionController(this.sessionContentSources, 60 * this.sessionTimeLimit);
+        this.sessionController = markRaw(new SessionController(this.sessionContentSources, 60 * this.sessionTimeLimit));
         this.sessionController.sessionRecord = this.sessionRecord;
 
         await this.sessionController.prepareSession();
