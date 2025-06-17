@@ -69,7 +69,7 @@ export class StaticCourseDB implements CourseDBInterface {
             value: { rev: '1-static' },
             doc,
           };
-        } catch (error) {
+        } catch {
           return {
             key: id,
             error: 'not_found' as const,
