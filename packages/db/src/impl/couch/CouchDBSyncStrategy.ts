@@ -1,4 +1,4 @@
-// packages/db/src/impl/pouch/CouchDBSyncStrategy.ts
+// packages/db/src/impl/couch/CouchDBSyncStrategy.ts
 
 import { ENV } from '@db/factory';
 import { GuestUsername } from '../../core/types/types-legacy';
@@ -82,7 +82,7 @@ export class CouchDBSyncStrategy implements SyncStrategy {
           // Set up databases for the new user:
           // const newLocal = getLocalUserDB(username);
           // const newRemote = this.getUserDB(username);
-          
+
           // For now, just return success
           return {
             status: Status.ok,

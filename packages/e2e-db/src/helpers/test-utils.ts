@@ -19,26 +19,26 @@ export interface UserTestContext {
 export class TestUtils {
   static async initializeTestEnvironment(): Promise<TestEnvironment> {
     await _resetDataLayer();
-    
+
     const dataLayer = await initializeDataLayer({
-      type: 'pouch',
+      type: 'couch',
       options: {
         COUCHDB_SERVER_URL: 'localhost:5984/',
-        COUCHDB_SERVER_PROTOCOL: 'http'
-      }
+        COUCHDB_SERVER_PROTOCOL: 'http',
+      },
     });
 
     const rawCouch = new RawCouchHelper({
       couchUrl: 'http://localhost:5984',
       adminUsername: 'admin',
-      adminPassword: 'password'
+      adminPassword: 'password',
     });
 
     return {
       dataLayer,
       rawCouch,
       testDataFactory: global.testDataFactory,
-      databaseManager: global.databaseManager
+      databaseManager: global.databaseManager,
     };
   }
 
@@ -48,17 +48,17 @@ export class TestUtils {
     usernamePrefix: string = 'testuser'
   ): Promise<UserTestContext> {
     const testUser = global.testDataFactory.createTestUser(usernamePrefix);
-    
+
     // Create user database
     await global.databaseManager.createTestUser(testUser.username);
-    
+
     // Get user interface via public API
     const user = await dataLayer.getUserDB();
 
     return {
       user,
       testUser,
-      rawCouch
+      rawCouch,
     };
   }
 
@@ -68,19 +68,19 @@ export class TestUtils {
     intervalMs: number = 100
   ): Promise<boolean> {
     const startTime = Date.now();
-    
+
     while (Date.now() - startTime < timeoutMs) {
       if (await condition()) {
         return true;
       }
       await this.sleep(intervalMs);
     }
-    
+
     return false;
   }
 
   static sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   static generateUniqueId(prefix: string = 'test'): string {
@@ -94,14 +94,14 @@ export class TestUtils {
       timestamp: new Date().toISOString(),
       response: 'correct',
       timeToAnswer: 1500,
-      difficulty: 0.5
+      difficulty: 0.5,
     };
   }
 
   static createMockUserConfig(): any {
     return {
       darkMode: false,
-      likesConfetti: true
+      likesConfetti: true,
     };
   }
 
@@ -127,22 +127,22 @@ export class TestUtils {
     delayMs: number = 1000
   ): Promise<T> {
     let lastError: Error;
-    
+
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         return await operation();
       } catch (error) {
         lastError = error as Error;
-        
+
         if (attempt === maxRetries) {
           throw lastError;
         }
-        
+
         console.warn(`Operation failed (attempt ${attempt}/${maxRetries}):`, error);
         await this.sleep(delayMs);
       }
     }
-    
+
     throw lastError!;
   }
 }
@@ -150,46 +150,49 @@ export class TestUtils {
 // Global test assertions
 export const customMatchers = {
   toExistInDatabase: async (received: { username: string; documentId: string }) => {
-    const rawCouch = new RawCouchHelper({ 
+    const rawCouch = new RawCouchHelper({
       couchUrl: 'http://localhost:5984',
       adminUsername: 'admin',
-      adminPassword: 'password'
+      adminPassword: 'password',
     });
     const exists = await rawCouch.documentExists(received.username, received.documentId);
-    
+
     return {
-      message: () => `Expected document ${received.documentId} to exist in database for user ${received.username}`,
-      pass: exists
+      message: () =>
+        `Expected document ${received.documentId} to exist in database for user ${received.username}`,
+      pass: exists,
     };
   },
 
   toBeRemovedFromDatabase: async (received: { username: string; documentId: string }) => {
-    const rawCouch = new RawCouchHelper({ 
+    const rawCouch = new RawCouchHelper({
       couchUrl: 'http://localhost:5984',
       adminUsername: 'admin',
-      adminPassword: 'password'
+      adminPassword: 'password',
     });
     const exists = await rawCouch.documentExists(received.username, received.documentId);
-    
+
     return {
-      message: () => `Expected document ${received.documentId} to be removed from database for user ${received.username}`,
-      pass: !exists
+      message: () =>
+        `Expected document ${received.documentId} to be removed from database for user ${received.username}`,
+      pass: !exists,
     };
   },
 
   toHaveScheduledReviewCount: async (received: string, expectedCount: number) => {
-    const rawCouch = new RawCouchHelper({ 
+    const rawCouch = new RawCouchHelper({
       couchUrl: 'http://localhost:5984',
       adminUsername: 'admin',
-      adminPassword: 'password'
+      adminPassword: 'password',
     });
     const actualCount = await rawCouch.getScheduledReviewCount(received);
-    
+
     return {
-      message: () => `Expected user ${received} to have ${expectedCount} scheduled reviews, but found ${actualCount}`,
-      pass: actualCount === expectedCount
+      message: () =>
+        `Expected user ${received} to have ${expectedCount} scheduled reviews, but found ${actualCount}`,
+      pass: actualCount === expectedCount,
     };
-  }
+  },
 };
 
 // Type extensions for Jest

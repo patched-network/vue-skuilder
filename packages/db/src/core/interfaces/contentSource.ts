@@ -1,6 +1,6 @@
 import { getDataLayer } from '@db/factory';
 import { UserDBInterface } from '..';
-import { StudentClassroomDB } from '../../impl/pouch/classroomDB';
+import { StudentClassroomDB } from '../../impl/couch/classroomDB';
 import { ScheduledCard } from '@db/core/types/user';
 
 export type StudySessionFailedItem = StudySessionFailedNewItem | StudySessionFailedReviewItem;

@@ -4,9 +4,9 @@ export default defineConfig({
   entry: [
     'src/index.ts',
     'src/core/index.ts',
-    'src/pouch/index.ts',
+    'src/impl/couch/index.ts',
     'src/impl/static/index.ts',
-    'src/util/packer/index.ts'
+    'src/util/packer/index.ts',
   ],
   format: ['cjs', 'esm'],
   dts: true,
@@ -14,6 +14,6 @@ export default defineConfig({
   sourcemap: true,
   clean: true,
   outExtension: ({ format }) => ({
-    js: format === 'esm' ? '.mjs' : '.js'
-  })
+    js: format === 'esm' ? '.mjs' : '.js',
+  }),
 });

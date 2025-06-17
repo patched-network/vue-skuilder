@@ -7,7 +7,7 @@ import { ScheduledCard } from '@db/core/types/user';
 export const REVIEW_PREFIX: string = 'card_review_';
 export const REVIEW_TIME_FORMAT: string = 'YYYY-MM-DD--kk:mm:ss-SSS';
 
-import pouch from '../pouch/pouchdb-setup';
+import pouch from '../couch/pouchdb-setup';
 
 const log = (s: any) => {
   logger.info(s);

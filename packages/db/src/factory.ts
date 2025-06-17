@@ -18,7 +18,7 @@ export const ENV: DBEnv = {
 
 // Configuration type for data layer initialization
 export interface DataLayerConfig {
-  type: 'pouch' | 'static';
+  type: 'couch' | 'static';
   options: {
     staticContentPath?: string; // Path to static content JSON files
     localStoragePrefix?: string; // Prefix for IndexedDB storage names
@@ -44,7 +44,7 @@ export async function initializeDataLayer(config: DataLayerConfig): Promise<Data
     return dataLayerInstance;
   }
 
-  if (config.type === 'pouch') {
+  if (config.type === 'couch') {
     if (!config.options.COUCHDB_SERVER_URL || !config.options.COUCHDB_SERVER_PROTOCOL) {
       throw new Error('Missing CouchDB server URL or protocol');
     }
@@ -54,8 +54,8 @@ export async function initializeDataLayer(config: DataLayerConfig): Promise<Data
     ENV.COUCHDB_PASSWORD = config.options.COUCHDB_PASSWORD;
 
     // Dynamic import to avoid loading both implementations when only one is needed
-    const { PouchDataLayerProvider } = await import('./impl/pouch/PouchDataLayerProvider');
-    dataLayerInstance = new PouchDataLayerProvider(config.options.COURSE_IDS);
+    const { CouchDataLayerProvider } = await import('./impl/couch/PouchDataLayerProvider');
+    dataLayerInstance = new CouchDataLayerProvider(config.options.COURSE_IDS);
   } else if (config.type === 'static') {
     const { StaticDataLayerProvider } = await import('./impl/static/StaticDataLayerProvider');
     dataLayerInstance = new StaticDataLayerProvider(config.options);
