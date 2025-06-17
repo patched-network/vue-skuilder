@@ -69,7 +69,7 @@ export class CouchDBSyncStrategy implements SyncStrategy {
         try {
           const logoutResult = await this.getRemoteCouchRootDB().logOut();
           log(`CREATEACCOUNT: logged out: ${logoutResult.ok}`);
-        } catch (e) {
+        } catch {
           // Ignore logout errors - might not be logged in
         }
 
@@ -132,11 +132,11 @@ export class CouchDBSyncStrategy implements SyncStrategy {
           error: 'Invalid username or password',
         };
       }
-    } catch (e: any) {
-      logger.error(`Authentication error for ${username}:`, e);
+    } catch (error: any) {
+      logger.error(`Authentication error for ${username}:`, error);
       return {
         ok: false,
-        error: e.message || 'Authentication failed',
+        error: error.message || 'Authentication failed',
       };
     }
   }
@@ -148,11 +148,11 @@ export class CouchDBSyncStrategy implements SyncStrategy {
         ok: result.ok,
         error: result.ok ? undefined : 'Logout failed',
       };
-    } catch (e: any) {
-      logger.error('Logout error:', e);
+    } catch (error: any) {
+      logger.error('Logout error:', error);
       return {
         ok: false,
-        error: e.message || 'Logout failed',
+        error: error.message || 'Logout failed',
       };
     }
   }
@@ -160,7 +160,7 @@ export class CouchDBSyncStrategy implements SyncStrategy {
   async getCurrentUsername(): Promise<string> {
     try {
       return await getLoggedInUsername();
-    } catch (e) {
+    } catch {
       return GuestUsername;
     }
   }

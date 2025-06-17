@@ -237,7 +237,7 @@ export class StaticDataUnpacker {
 
       // Check if the document is now in our document cache
       return this.documentCache.has(docId);
-    } catch (_error) {
+    } catch {
       return false;
     }
   }
@@ -280,11 +280,9 @@ export class StaticDataUnpacker {
       this.chunkCache.set(chunkId, documents);
 
       // Cache individual documents for quick lookup
-      let cachedCount = 0;
       for (const doc of documents) {
         if (doc._id) {
           this.documentCache.set(doc._id, doc);
-          cachedCount++;
         }
       }
 
