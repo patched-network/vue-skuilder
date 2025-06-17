@@ -10,6 +10,7 @@ import { createBaseResolve } from '../../vite.config.base.js';
 // https://vitejs.dev/config/
 export default defineConfig({
   build: {
+    sourcemap: true,
     target: 'es2020',
     minify: 'terser',
     terserOptions: {
