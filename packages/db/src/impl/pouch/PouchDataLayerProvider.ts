@@ -43,8 +43,11 @@ export class PouchDataLayerProvider implements DataLayerProvider {
 
     if (isNodeEnvironment) {
       logger.info(
-        'PouchDataLayerProvider: Running in Node.js environment, skipping user session check and user DB initialization.'
+        'PouchDataLayerProvider: Running in Node.js environment, creating guest UserDB for testing.'
       );
+      // In Node.js (testing) environment, create a guest user instance
+      const syncStrategy = new CouchDBSyncStrategy();
+      this.userDB = await BaseUser.instance(syncStrategy);
     } else {
       // Assume browser-like environment, proceed with user session logic
       try {

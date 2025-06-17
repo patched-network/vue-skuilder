@@ -5,7 +5,7 @@ import { ENV } from '@db/factory';
 import { NameSpacer, ShapeDescriptor } from '@vue-skuilder/common';
 import { CourseConfig, DataShape } from '@vue-skuilder/common';
 import { CourseElo, blankCourseElo, toCourseElo } from '@vue-skuilder/common';
-import { CourseDB, createTag, updateCardElo } from './courseDB';
+import { CourseDB, createTag } from './courseDB';
 import { CardData, DisplayableData, DocType, Tag } from '../../core/types/types-legacy';
 import { prepareNote55 } from '@vue-skuilder/common';
 import { BaseUser } from '../common';
@@ -229,6 +229,17 @@ export async function addTagToCard(
 
     await createTag(courseID, tagID);
     return addTagToCard(courseID, cardID, tagID, updateELO);
+  }
+}
+
+async function updateCardElo(courseID: string, cardID: string, elo: CourseElo) {
+  if (elo) {
+    // checking against null, undefined, NaN
+    const cDB = getCourseDB(courseID);
+    const card = await cDB.get<CardData>(cardID);
+    logger.debug(`Replacing ${JSON.stringify(card.elo)} with ${JSON.stringify(elo)}`);
+    card.elo = elo;
+    return cDB.put(card); // race conditions - is it important? probably not (net-zero effect)
   }
 }
 

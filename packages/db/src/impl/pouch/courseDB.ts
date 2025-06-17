@@ -11,6 +11,7 @@ import {
 } from '@vue-skuilder/common';
 import _ from 'lodash';
 import { filterAllDocsByPrefix, getCourseDB, getCourseDoc, getCourseDocs } from '.';
+import UpdateQueue from './updateQueue';
 import {
   StudyContentSource,
   StudySessionItem,
@@ -92,11 +93,13 @@ export class CourseDB implements StudyContentSource, CourseDBInterface {
   private db: PouchDB.Database;
   private id: string;
   private _getCurrentUser: () => Promise<UserDBInterface>;
+  private updateQueue: UpdateQueue;
 
   constructor(id: string, userLookup: () => Promise<UserDBInterface>) {
     this.id = id;
     this.db = getCourseDB(this.id);
     this._getCurrentUser = userLookup;
+    this.updateQueue = new UpdateQueue(this.db);
   }
 
   public getCourseID(): string {
@@ -305,11 +308,22 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
     }
   }
 
-  async updateCardElo(cardId: string, elo: CourseElo) {
-    const ret = await updateCardElo(this.id, cardId, elo);
-    if (ret) {
-      return ret;
-    } else {
+  async updateCardElo(cardId: string, elo: CourseElo): Promise<PouchDB.Core.Response> {
+    if (!elo) {
+      throw new Error(`Cannot update card elo with null or undefined value for card ID: ${cardId}`);
+    }
+
+    try {
+      const result = await this.updateQueue.update<
+        CardData & PouchDB.Core.GetMeta & PouchDB.Core.IdMeta
+      >(cardId, (card) => {
+        logger.debug(`Replacing ${JSON.stringify(card.elo)} with ${JSON.stringify(elo)}`);
+        card.elo = elo;
+        return card;
+      });
+      return { ok: true, id: cardId, rev: result._rev };
+    } catch (error) {
+      logger.error(`Failed to update card elo for card ID: ${cardId}`, error);
       throw new Error(`Failed to update card elo for card ID: ${cardId}`);
     }
   }
