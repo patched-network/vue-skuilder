@@ -436,68 +436,55 @@ export class StaticDataUnpacker {
    * Hydrate document attachments by converting file paths to blob URLs
    */
   private async hydrateAttachments<T = any>(doc: T): Promise<T> {
-    logger.debug(`[hydrateAttachments] Starting hydration for doc: ${JSON.stringify(doc)}`);
+    // logger.debug(`[hydrateAttachments] Starting hydration for doc: ${JSON.stringify(doc)}`);
     const typedDoc = doc as any;
 
     // If no attachments, return document as-is
     if (!typedDoc._attachments) {
-      logger.debug(
-        `[hydrateAttachments] No attachments found for doc ${typedDoc?._id}. Returning original doc.`
-      );
       return doc;
     }
 
-    logger.debug(`[hydrateAttachments] Cloning document ${typedDoc?._id} to avoid mutating cache.`);
     // Clone the document to avoid mutating the cached version
     const hydratedDoc = JSON.parse(JSON.stringify(doc));
 
-    logger.debug(
-      `[hydrateAttachments] Processing attachments for doc ${typedDoc?._id}. Found ${Object.keys(typedDoc._attachments).length} attachments.`
-    );
     // Process each attachment
     for (const [attachmentName, attachment] of Object.entries(typedDoc._attachments)) {
-      logger.debug(
-        `[hydrateAttachments] Processing attachment: ${attachmentName} for doc ${typedDoc?._id}`
-      );
+      // logger.debug(
+      //   `[hydrateAttachments] Processing attachment: ${attachmentName} for doc ${typedDoc?._id}`
+      // );
       const attachmentData = attachment as any;
 
       // If attachment has a path, convert it to a blob URL
       if (attachmentData.path) {
-        logger.debug(
-          `[hydrateAttachments] Attachment ${attachmentName} has path: ${attachmentData.path}. Attempting to get blob.`
-        );
+        // logger.debug(
+        //   `[hydrateAttachments] Attachment ${attachmentName} has path: ${attachmentData.path}. Attempting to get blob.`
+        // );
         try {
           const blob = await this.getAttachmentBlob(typedDoc._id, attachmentName);
           if (blob) {
-            logger.debug(
-              `[hydrateAttachments] Successfully retrieved blob for ${typedDoc._id}/${attachmentName}. Size: ${blob instanceof Blob ? blob.size : (blob as Buffer).length}`
-            );
+            // logger.debug(
+            //   `[hydrateAttachments] Successfully retrieved blob for ${typedDoc._id}/${attachmentName}. Size: ${blob instanceof Blob ? blob.size : (blob as Buffer).length}`
+            // );
             // Create blob URL for browser rendering
             if (typeof window !== 'undefined' && window.URL) {
-              logger.debug(
-                `[hydrateAttachments] In browser environment. Creating blob URL for ${typedDoc._id}/${attachmentName}.`
-              );
-              const blobUrl = URL.createObjectURL(blob as Blob);
+              // Store attachment data in PouchDB-compatible format
               hydratedDoc._attachments[attachmentName] = {
                 ...attachmentData,
-                blobUrl, // Add blob URL for frontend use
-                blob, // Keep blob data available
+                data: blob,
+                stub: false, // Indicates this contains actual data, not just metadata
               };
-              logger.debug(
-                `[hydrateAttachments] Added blobUrl and blob to attachment ${attachmentName} for doc ${typedDoc._id}.`
-              );
+              // logger.debug(
+              //   `[hydrateAttachments] Added blobUrl and blob to attachment ${attachmentName} for doc ${typedDoc._id}.`
+              // );
             } else {
-              logger.debug(
-                `[hydrateAttachments] In Node.js environment. Attaching buffer for ${typedDoc._id}/${attachmentName}.`
-              );
               // In Node.js environment, just attach the buffer
               hydratedDoc._attachments[attachmentName] = {
                 ...attachmentData,
                 buffer: blob, // Attach buffer for Node.js use
               };
-              logger.debug(
-                `[hydrateAttachments] Added buffer to attachment ${attachmentName} for doc ${typedDoc._id}.`
-              );
+              // logger.debug(
+              //   `[hydrateAttachments] Added buffer to attachment ${attachmentName} for doc ${typedDoc._id}.`
+              // );
             }
           } else {
             logger.warn(
@@ -518,9 +505,9 @@ export class StaticDataUnpacker {
       }
     }
 
-    logger.debug(
-      `[hydrateAttachments] Finished hydration for doc ${typedDoc?._id}. Returning hydrated doc: ${JSON.stringify(hydratedDoc)}`
-    );
+    // logger.debug(
+    //   `[hydrateAttachments] Finished hydration for doc ${typedDoc?._id}. Returning hydrated doc: ${JSON.stringify(hydratedDoc)}`
+    // );
     return hydratedDoc;
   }
 
