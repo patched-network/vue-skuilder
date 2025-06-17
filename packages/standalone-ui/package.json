@@ -20,18 +20,18 @@
         "@vue-skuilder/db": "workspace:*",
         "events": "^3.3.0",
         "pinia": "^2.3.0",
-        "vue": "^3.5.13",
-        "vue-router": "^4.2.0",
-        "vuetify": "^3.7.0"
+        "vue": "^3.5.16",
+        "vue-router": "^4.5.1",
+        "vuetify": "^3.8.9"
     },
     "devDependencies": {
         "@types/cypress": "1.1.6",
         "@types/events": "^3",
-        "@vitejs/plugin-vue": "^5.2.1",
-        "cypress": "14.1.0",
-        "typescript": "^5.7.2",
-        "vite": "^6.0.9",
+        "@vitejs/plugin-vue": "^5.2.4",
+        "cypress": "14.4.1",
+        "typescript": "^5.8.3",
+        "vite": "^6.3.5",
         "vue-tsc": "^1.8.0",
-        "wait-on": "8.0.2"
+        "wait-on": "8.0.3"
     }
 }
