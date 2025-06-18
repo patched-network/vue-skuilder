@@ -107,6 +107,15 @@ Currently logged-in as ${this._username}.`
     }
 
     const result = await this.syncStrategy.createAccount!(username, password);
+    
+    // If account creation was successful, update the username and reinitialize
+    if (result.status === Status.ok) {
+      log(`Account created successfully, updating username to ${username}`);
+      this._username = username;
+      localStorage.removeItem('dbUUID');
+      await this.init();
+    }
+    
     return {
       status: result.status,
       error: result.error || '',
