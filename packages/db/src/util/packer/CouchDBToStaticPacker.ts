@@ -201,18 +201,18 @@ export class CouchDBToStaticPacker {
       indexMetadata.push(tagIndexMeta);
     }
 
-    // Build indices from design documents
+    // Build indices from design documents using CouchDB view queries
     for (const designDoc of designDocs) {
       for (const [viewName, viewDef] of Object.entries(designDoc.views)) {
         if (viewDef.map) {
-          const indexMeta = await this.buildViewIndex(
-            viewName,
-            viewDef.map,
-            docsByType,
-            indices,
-            viewDef.reduce
-          );
-          if (indexMeta) indexMetadata.push(indexMeta);
+          logger.info(`Processing view: ${designDoc._id}/${viewName}`);
+          const indexMeta = await this.buildViewIndex(viewName, designDoc, indices);
+          if (indexMeta) {
+            indexMetadata.push(indexMeta);
+            logger.info(`Successfully built index: ${indexMeta.name}`);
+          } else {
+            logger.warn(`Skipped view index: ${designDoc._id}/${viewName}`);
+          }
         }
       }
     }
@@ -307,59 +307,177 @@ export class CouchDBToStaticPacker {
     };
   }
 
+  /**
+   * Build view index by querying CouchDB views directly instead of parsing map functions
+   */
   private async buildViewIndex(
     viewName: string,
-    mapFunction: string,
-    docsByType: Record<DocType, any[]>,
-    indices: Map<string, any>,
-    _reduceFunction?: string
+    designDoc: DesignDocument,
+    indices: Map<string, any>
   ): Promise<IndexMetadata | null> {
-    try {
-      // Parse and execute the map function in a sandboxed way
-      // This is a simplified version - in production you'd want proper sandboxing
-      const viewResults: Array<{ key: any; value: any; id: string }> = [];
-
-      // Create a safe emit function
-      const emit = (key: any, value: any) => {
-        viewResults.push({ key, value, id: currentDocId });
-      };
-
-      let currentDocId = '';
-
-      // Create the map function
-      // Note: This is simplified and would need proper sandboxing in production
-      const mapFn = new Function('doc', 'emit', mapFunction);
-
-      // Run map function on all documents
-      for (const docs of Object.values(docsByType)) {
-        for (const doc of docs) {
-          currentDocId = doc._id;
-          try {
-            mapFn(doc, emit);
-          } catch (error) {
-            logger.warn(`Map function error for doc ${doc._id}:`, error);
-          }
-        }
-      }
-
-      // Sort by key for efficient querying
-      viewResults.sort((a, b) => {
-        if (a.key < b.key) return -1;
-        if (a.key > b.key) return 1;
-        return 0;
-      });
-
-      indices.set(`view-${viewName}`, viewResults);
-
-      return {
-        name: `view-${viewName}`,
-        type: 'btree',
-        path: `indices/view-${viewName}.json`,
-      };
-    } catch (error) {
-      logger.error(`Failed to build index for view ${viewName}:`, error);
+    if (!this.sourceDB) {
+      logger.error('Source database not available for view querying');
       return null;
     }
+
+    try {
+      const designDocId = designDoc._id; // e.g., "_design/elo"
+      const viewPath = `${designDocId}/${viewName}`;
+      
+      logger.info(`Querying CouchDB view: ${viewPath}`);
+      
+      // Query the view directly from CouchDB
+      const viewResults = await this.sourceDB.query(viewPath, {
+        include_docs: false,
+      });
+
+      if (!viewResults.rows || viewResults.rows.length === 0) {
+        logger.warn(`View ${viewPath} returned no results`);
+        return null;
+      }
+
+      logger.info(`Successfully queried view ${viewPath}: ${viewResults.rows.length} results`);
+
+      // Format the results for static consumption
+      const formattedResults = this.formatViewResults(viewName, viewResults.rows, designDoc);
+      
+      const indexName = `view-${designDoc._id.replace('_design/', '')}-${viewName}`;
+      indices.set(indexName, formattedResults);
+
+      return {
+        name: indexName,
+        type: 'view',
+        path: `indices/${indexName}.json`,
+      };
+    } catch (error) {
+      logger.error(`Failed to query view ${designDoc._id}/${viewName}:`, error);
+      // Return null to gracefully skip this view rather than failing the entire pack
+      return null;
+    }
+  }
+
+  /**
+   * Format CouchDB view results for static consumption
+   */
+  private formatViewResults(
+    viewName: string,
+    viewRows: Array<{ key: any; value: any; id: string }>,
+    designDoc: DesignDocument
+  ): any {
+    const baseResult = {
+      type: 'couchdb-view',
+      viewName,
+      designDoc: designDoc._id,
+      results: viewRows,
+      metadata: {
+        resultCount: viewRows.length,
+        generatedAt: new Date().toISOString(),
+      },
+    };
+
+    // Apply view-specific formatting
+    switch (viewName) {
+      case 'elo':
+        return this.formatEloViewIndex(viewRows, baseResult);
+      case 'getTags':
+        return this.formatTagsViewIndex(viewRows, baseResult);
+      case 'cardsByInexperience':
+        return this.formatInexperienceViewIndex(viewRows, baseResult);
+      default:
+        return this.formatGenericViewIndex(viewRows, baseResult);
+    }
+  }
+
+  /**
+   * Format ELO view results - convert to sorted array format
+   */
+  private formatEloViewIndex(
+    viewRows: Array<{ key: any; value: any; id: string }>,
+    baseResult: any
+  ): any {
+    // Sort by ELO score (key) for efficient range queries
+    const sortedResults = viewRows.sort((a, b) => {
+      if (typeof a.key === 'number' && typeof b.key === 'number') {
+        return a.key - b.key;
+      }
+      return 0;
+    });
+
+    return {
+      ...baseResult,
+      sorted: sortedResults,
+      stats: {
+        min: sortedResults[0]?.key || 0,
+        max: sortedResults[sortedResults.length - 1]?.key || 0,
+        count: sortedResults.length,
+      },
+    };
+  }
+
+  /**
+   * Format tags view results - convert to tag mapping format
+   */
+  private formatTagsViewIndex(
+    viewRows: Array<{ key: any; value: any; id: string }>,
+    baseResult: any
+  ): any {
+    // Group by tag name (key)
+    const tagMap: Record<string, string[]> = {};
+    
+    for (const row of viewRows) {
+      const tagName = row.key;
+      if (typeof tagName === 'string') {
+        if (!tagMap[tagName]) {
+          tagMap[tagName] = [];
+        }
+        tagMap[tagName].push(row.id);
+      }
+    }
+
+    return {
+      ...baseResult,
+      byTag: tagMap,
+      tagCount: Object.keys(tagMap).length,
+    };
+  }
+
+  /**
+   * Format inexperience view results - convert to experience-based format
+   */
+  private formatInexperienceViewIndex(
+    viewRows: Array<{ key: any; value: any; id: string }>,
+    baseResult: any
+  ): any {
+    // Sort by inexperience level (key) - lower numbers = less experience
+    const sortedResults = viewRows.sort((a, b) => {
+      if (typeof a.key === 'number' && typeof b.key === 'number') {
+        return a.key - b.key;
+      }
+      return 0;
+    });
+
+    return {
+      ...baseResult,
+      sorted: sortedResults,
+      stats: {
+        minInexperience: sortedResults[0]?.key || 0,
+        maxInexperience: sortedResults[sortedResults.length - 1]?.key || 0,
+        count: sortedResults.length,
+      },
+    };
+  }
+
+  /**
+   * Format generic view results - fallback for unknown views
+   */
+  private formatGenericViewIndex(
+    _viewRows: Array<{ key: any; value: any; id: string }>,
+    baseResult: any
+  ): any {
+    return {
+      ...baseResult,
+      // Keep results as-is for unknown view types
+    };
   }
 
   /**

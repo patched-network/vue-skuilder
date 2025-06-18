@@ -26,7 +26,7 @@ export interface ChunkMetadata {
 
 export interface IndexMetadata {
   name: string;
-  type: 'btree' | 'hash' | 'spatial';
+  type: 'btree' | 'hash' | 'spatial' | 'view';
   path: string; // Relative path for file writing
 }
 
