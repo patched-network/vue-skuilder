@@ -43,6 +43,7 @@
                 location="left center"
                 transition="slide-x-transition"
                 style="display: flex; flex-direction: row-reverse"
+                persistent
               >
                 <template #activator="{ props }">
                   <v-btn
