@@ -18,12 +18,20 @@ export function createBaseAliases(rootDir = process.cwd()) {
     '@vue-skuilder/common': isDev
       ? resolve(rootDir, './packages/common/src') // Dev: source directory
       : resolve(rootDir, './packages/common/dist/index.mjs'),
+
+    // specific built-style imports must precede the package alias, otherwise
+    // the package prefixes get aliased out before this alias is applied
+
+    '@vue-skuilder/common-ui/style': resolve(rootDir, './packages/common-ui/dist/assets/index.css'),
+    '@vue-skuilder/courses/style': resolve(rootDir, './packages/courses/dist/assets/index.css'),
+
     '@vue-skuilder/common-ui': isDev
       ? resolve(rootDir, './packages/common-ui/src') // Dev: source directory
       : resolve(rootDir, './packages/common-ui/dist/common-ui.es.js'),
     '@vue-skuilder/courses': isDev
       ? resolve(rootDir, './packages/courses/src') // Dev: source directory
       : resolve(rootDir, './packages/courses/dist/index.mjs'),
+
     '@vue-skuilder/express': isDev
       ? resolve(rootDir, './packages/express/src') // Dev: source directory
       : resolve(rootDir, './packages/express/dist/index.mjs'), // Assuming ESM build, adjust if different

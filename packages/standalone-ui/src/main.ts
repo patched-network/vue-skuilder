@@ -19,6 +19,10 @@ import { initializeDataLayer } from '@vue-skuilder/db';
 // auth store
 import { useAuthStore } from '@vue-skuilder/common-ui';
 
+// styles from component library packages
+import '@vue-skuilder/courses/style';
+import '@vue-skuilder/common-ui/style';
+
 // theme configuration
 import config from '../skuilder.config.json';
 
