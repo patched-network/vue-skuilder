@@ -2,7 +2,7 @@
   <v-toolbar density="compact">
     <v-toolbar-title>
       <span>{{ title }}</span>
-      <span v-if="subtitle" class="ms-2 text-subtitle-2">{{ subtitle }}</span>
+      <span v-if="subtitle" class="ms-2 text-subtitle-2" data-cy="paginating-toolbar-subtitle">{{ subtitle }}</span>
     </v-toolbar-title>
     <v-spacer></v-spacer>
     <v-btn variant="text" icon color="secondary" :disabled="page == 1" @click="$emit('first')">
