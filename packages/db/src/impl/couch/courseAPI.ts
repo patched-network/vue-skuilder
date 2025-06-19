@@ -47,14 +47,22 @@ export async function addNote55(
       // create cards
       await createCards(courseID, dataShapeId, result.id, tags, elo);
     } catch (error) {
-      logger.error(
-        `[addNote55] Failed to create cards for note ${result.id}: ${
-          error instanceof Error ? error.message : String(error)
-        }`
-      );
+      // Handle CouchDB errors which often have a 'reason' property
+      let errorMessage = 'Unknown error';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (error && typeof error === 'object' && 'reason' in error) {
+        errorMessage = error.reason as string;
+      } else if (error && typeof error === 'object' && 'message' in error) {
+        errorMessage = error.message as string;
+      } else {
+        errorMessage = String(error);
+      }
+
+      logger.error(`[addNote55] Failed to create cards for note ${result.id}: ${errorMessage}`);
       // Add info to result to indicate card creation failed
       (result as any).cardCreationFailed = true;
-      (result as any).cardCreationError = error instanceof Error ? error.message : String(error);
+      (result as any).cardCreationError = errorMessage;
     }
   } else {
     logger.error(`[addNote55] Error adding note. Result: ${JSON.stringify(result)}`);
