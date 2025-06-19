@@ -45,19 +45,8 @@ export function useAuthUI() {
       const userInternal = user as any; // Type assertion to access private members
       const canCreateAccount = userInternal.syncStrategy?.canCreateAccount?.();
       
-      console.log('Sync strategy detection:', {
-        syncStrategy: userInternal.syncStrategy?.constructor?.name,
-        canCreateAccount,
-        username: user.getUsername()
-      });
-      
       isLocalOnlyMode.value = !canCreateAccount;
       syncStrategyDetected.value = true;
-      
-      console.log('Auth UI mode determined:', {
-        isLocalOnlyMode: isLocalOnlyMode.value,
-        config: config.value
-      });
     } catch (error) {
       console.error('Failed to detect sync strategy:', error);
       // Default to remote sync mode on error
