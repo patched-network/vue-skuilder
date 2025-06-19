@@ -45,7 +45,7 @@ export async function addNote55(
   if (result.ok) {
     try {
       // create cards
-      await createCards(courseID, dataShapeId, result.id, tags, elo);
+      await createCards(courseID, dataShapeId, result.id, tags, elo, author);
     } catch (error) {
       // Handle CouchDB errors which often have a 'reason' property
       let errorMessage = 'Unknown error';
@@ -76,7 +76,8 @@ async function createCards(
   datashapeID: PouchDB.Core.DocumentId,
   noteID: PouchDB.Core.DocumentId,
   tags: string[],
-  elo: CourseElo = blankCourseElo()
+  elo: CourseElo = blankCourseElo(),
+  author: string
 ): Promise<void> {
   const cfg = await getCredentialledCourseConfig(courseID);
   const dsDescriptor = NameSpacer.getDataShapeDescriptor(datashapeID);
@@ -95,7 +96,7 @@ async function createCards(
   }
 
   for (const questionView of questionViewTypes) {
-    await createCard(questionView, courseID, dsDescriptor, noteID, tags, elo);
+    await createCard(questionView, courseID, dsDescriptor, noteID, tags, elo, author);
   }
 }
 
@@ -105,7 +106,8 @@ async function createCard(
   dsDescriptor: ShapeDescriptor,
   noteID: string,
   tags: string[],
-  elo: CourseElo = blankCourseElo()
+  elo: CourseElo = blankCourseElo(),
+  author: string
 ): Promise<void> {
   const qDescriptor = NameSpacer.getQuestionDescriptor(questionViewName);
   const cfg = await getCredentialledCourseConfig(courseID);
@@ -123,7 +125,8 @@ async function createCard(
             view,
           }),
           elo,
-          tags
+          tags,
+          author
         );
       }
     }
@@ -147,15 +150,18 @@ async function addCard(
   id_displayable_data: PouchDB.Core.DocumentId[],
   id_view: PouchDB.Core.DocumentId,
   elo: CourseElo,
-  tags: string[]
+  tags: string[],
+  author: string
 ): Promise<PouchDB.Core.Response> {
   // [ ] NAMESPACING: consider put( _id: "card-uuid")
-  const card = await getCourseDB(courseID).post<CardData>({
+  const db = getCourseDB(courseID);
+  const card = await db.post<CardData>({
     course,
     id_displayable_data,
     id_view,
     docType: DocType.CARD,
     elo: elo || toCourseElo(990 + Math.round(20 * Math.random())),
+    author,
   });
   for (const tag of tags) {
     logger.info(`adding tag: ${tag} to card ${card.id}`);

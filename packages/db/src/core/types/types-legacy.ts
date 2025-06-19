@@ -48,6 +48,7 @@ export interface CardData extends SkuilderCourseData {
   id_displayable_data: PouchDB.Core.DocumentId[];
   id_view: PouchDB.Core.DocumentId;
   elo: CourseElo;
+  author: string;
 }
 
 /** A list of populated courses in the DB */
