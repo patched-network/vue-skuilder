@@ -1,6 +1,6 @@
 <template>
   <transition v-if="userReady && display" name="component-fade" mode="out-in">
-    <div v-if="guestMode">
+    <div v-if="guestMode && authUIConfig.showLoginRegistration">
       <v-dialog v-model="regDialog" width="500px">
         <template #activator="{ props }">
           <v-btn class="mr-2" size="small" color="success" v-bind="props">Sign Up</v-btn>
@@ -19,16 +19,23 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from 'vue';
+import { computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import UserLogin from './UserLogin.vue';
 import UserRegistration from './UserRegistration.vue';
 import UserChip from './UserChip.vue';
 import { useAuthStore } from '../../stores/useAuthStore';
+import { useAuthUI } from '../../composables/useAuthUI';
 import { GuestUsername } from '@vue-skuilder/db';
 
 const route = useRoute();
 const authStore = useAuthStore();
+const authUI = useAuthUI();
+
+// Initialize auth UI detection
+onMounted(async () => {
+  await authUI.detectSyncStrategy();
+});
 
 const display = computed(() => {
   if (!route.name || typeof route.name !== 'string') {
@@ -45,6 +52,14 @@ const guestMode = computed(() => {
     return authStore._user.getUsername().startsWith(GuestUsername);
   }
   return !authStore.loginAndRegistration.loggedIn;
+});
+
+const authUIConfig = computed(() => authUI.config.value || {
+  showLoginRegistration: true,
+  showLogout: true, 
+  showResetData: false,
+  logoutLabel: 'Log out',
+  resetLabel: '',
 });
 
 const regDialog = computed({
