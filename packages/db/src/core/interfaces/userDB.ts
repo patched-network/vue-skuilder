@@ -151,6 +151,11 @@ export interface UserDBInterface extends DocumentUpdater {
    */
   updateUserElo(courseId: string, elo: CourseElo): Promise<PouchDB.Core.Response>;
 
+  /**
+   * Reset all user data (progress, registrations, etc.) while preserving authentication
+   */
+  resetUserData(): Promise<{ status: Status; error?: string }>;
+
   getCourseInterface(courseId: string): Promise<UsrCrsDataInterface>;
 }
 
