@@ -60,7 +60,7 @@ export class BaseUser implements UserDBInterface, DocumentUpdater {
   private static _initialized: boolean = false;
 
   public static Dummy(syncStrategy: SyncStrategy): BaseUser {
-    return new BaseUser('DummyUser', syncStrategy);
+    return new BaseUser('Me', syncStrategy);
   }
 
   static readonly DOC_IDS = {
@@ -107,7 +107,7 @@ Currently logged-in as ${this._username}.`
     }
 
     const result = await this.syncStrategy.createAccount!(username, password);
-    
+
     // If account creation was successful, update the username and reinitialize
     if (result.status === Status.ok) {
       log(`Account created successfully, updating username to ${username}`);
@@ -115,7 +115,7 @@ Currently logged-in as ${this._username}.`
       localStorage.removeItem('dbUUID');
       await this.init();
     }
-    
+
     return {
       status: result.status,
       error: result.error || '',
@@ -140,6 +140,55 @@ Currently logged-in as ${this._username}.`
     }
     return loginResult;
   }
+
+  public async resetUserData(): Promise<{ status: Status; error?: string }> {
+    // Only allow reset for local-only sync strategies
+    if (this.syncStrategy.canAuthenticate()) {
+      return {
+        status: Status.error,
+        error:
+          'Reset user data is only available for local-only mode. Use logout instead for remote sync.',
+      };
+    }
+
+    try {
+      const localDB = await getLocalUserDB(this._username);
+
+      // Get all documents to identify user data to clear
+      const allDocs = await localDB.allDocs({ include_docs: false });
+
+      // Identify documents to delete (preserve authentication and user identity)
+      const docsToDelete = allDocs.rows
+        .filter((row) => {
+          const id = row.id;
+          // Delete user progress data but preserve core user documents
+          return (
+            id.startsWith(cardHistoryPrefix) || // Card interaction history
+            id.startsWith(REVIEW_PREFIX) || // Scheduled reviews
+            id === BaseUser.DOC_IDS.COURSE_REGISTRATIONS || // Course registrations
+            id === BaseUser.DOC_IDS.CLASSROOM_REGISTRATIONS || // Classroom registrations
+            id === BaseUser.DOC_IDS.CONFIG // User config
+          );
+        })
+        .map((row) => ({ _id: row.id, _rev: row.value.rev, _deleted: true }));
+
+      if (docsToDelete.length > 0) {
+        await localDB.bulkDocs(docsToDelete);
+      }
+
+      // Reinitialize to create fresh default documents
+      await this.init();
+
+      return { status: Status.ok };
+    } catch (error) {
+      logger.error('Failed to reset user data:', error);
+      return {
+        status: Status.error,
+        error: error instanceof Error ? error.message : 'Unknown error during reset',
+      };
+    }
+  }
+
   public async logout() {
     if (!this.syncStrategy.canAuthenticate()) {
       // For strategies that don't support authentication, just switch to guest

@@ -74,6 +74,25 @@ export const useAuthStore = () => {
       setRegDialog(open: boolean) {
         this.loginAndRegistration.regDialogOpen = open;
       },
+
+      async resetUserData() {
+        try {
+          if (!this._user) {
+            throw new Error('No user available for data reset');
+          }
+          
+          const result = await this._user.resetUserData();
+          if (result.status !== 'ok') {
+            throw new Error(result.error || 'Reset failed');
+          }
+          
+          console.log('User data reset successfully');
+          return result;
+        } catch (error) {
+          console.error('Failed to reset user data:', error);
+          throw error;
+        }
+      },
     },
 
     getters: {
