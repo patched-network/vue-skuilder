@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { useAuthUI } from '../useAuthUI';
+import type { UserDBInterface } from '@vue-skuilder/db';
 
 // Mock getCurrentUser
 vi.mock('../../stores/useAuthStore', () => ({
@@ -22,7 +23,7 @@ describe('useAuthUI', () => {
         canCreateAccount: vi.fn().mockReturnValue(false),
       },
       getUsername: vi.fn().mockReturnValue('TestUser'),
-    };
+    } as unknown as UserDBInterface;
     mockGetCurrentUser.mockResolvedValue(mockUser);
 
     const { config, detectSyncStrategy, isLocalOnlyMode } = useAuthUI();
@@ -46,7 +47,7 @@ describe('useAuthUI', () => {
         canCreateAccount: vi.fn().mockReturnValue(true),
       },
       getUsername: vi.fn().mockReturnValue('TestUser'),
-    };
+    } as unknown as UserDBInterface;
     mockGetCurrentUser.mockResolvedValue(mockUser);
 
     const { config, detectSyncStrategy, isLocalOnlyMode } = useAuthUI();
@@ -86,7 +87,7 @@ describe('useAuthUI', () => {
         canCreateAccount: vi.fn().mockReturnValue(true),
       },
       getUsername: vi.fn().mockReturnValue('TestUser'),
-    };
+    } as unknown as UserDBInterface;
     mockGetCurrentUser.mockResolvedValue(mockUser);
 
     const { isLoading, detectSyncStrategy } = useAuthUI();
