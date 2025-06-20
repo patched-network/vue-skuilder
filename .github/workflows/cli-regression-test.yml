@@ -7,6 +7,9 @@ on:
   workflow_dispatch:
     # Allow manual trigger for testing
 
+permissions:
+  contents: read
+
 jobs:
   cli-regression:
     runs-on: ubuntu-latest
