@@ -174,8 +174,14 @@ export async function generateSkuilderConfig(
     dataLayerType: config.dataLayerType,
   };
 
-  if (config.course) {
+  // For dynamic data layer, use the specified course ID
+  if (config.dataLayerType === 'couch' && config.course) {
     skuilderConfig.course = config.course;
+  }
+
+  // For static data layer with imported courses, use the first course as primary
+  if (config.dataLayerType === 'static' && config.importCourseIds && config.importCourseIds.length > 0) {
+    skuilderConfig.course = config.importCourseIds[0];
   }
 
   if (config.couchdbUrl) {
@@ -187,6 +193,42 @@ export async function generateSkuilderConfig(
   }
 
   await fs.writeFile(configPath, JSON.stringify(skuilderConfig, null, 2));
+}
+
+/**
+ * Transform tsconfig.json to be standalone (remove base config reference)
+ */
+export async function transformTsConfig(tsconfigPath: string): Promise<void> {
+  const content = await fs.readFile(tsconfigPath, 'utf-8');
+  const tsconfig = JSON.parse(content);
+
+  // Remove the extends reference to the monorepo base config
+  delete tsconfig.extends;
+
+  // Merge in the essential settings from the base config that scaffolded apps need
+  tsconfig.compilerOptions = {
+    ...tsconfig.compilerOptions,
+    // Essential TypeScript settings from base config
+    strict: true,
+    skipLibCheck: true,
+    forceConsistentCasingInFileNames: true,
+    esModuleInterop: true,
+    allowSyntheticDefaultImports: true,
+    // Keep existing Vue/Vite-specific settings
+    target: tsconfig.compilerOptions.target || 'ESNext',
+    useDefineForClassFields: tsconfig.compilerOptions.useDefineForClassFields,
+    module: tsconfig.compilerOptions.module || 'ESNext',
+    moduleResolution: tsconfig.compilerOptions.moduleResolution || 'bundler',
+    jsx: tsconfig.compilerOptions.jsx || 'preserve',
+    resolveJsonModule: tsconfig.compilerOptions.resolveJsonModule,
+    isolatedModules: tsconfig.compilerOptions.isolatedModules,
+    lib: tsconfig.compilerOptions.lib || ['ESNext', 'DOM'],
+    noEmit: tsconfig.compilerOptions.noEmit,
+    baseUrl: tsconfig.compilerOptions.baseUrl || '.',
+    types: tsconfig.compilerOptions.types || ['vite/client'],
+  };
+
+  await fs.writeFile(tsconfigPath, JSON.stringify(tsconfig, null, 2));
 }
 
 /**
@@ -316,10 +358,18 @@ Thumbs.db
  * Generate project README.md
  */
 export async function generateReadme(readmePath: string, config: ProjectConfig): Promise<void> {
-  const dataLayerInfo =
-    config.dataLayerType === 'static'
-      ? 'This project uses a static data layer with JSON files.'
-      : `This project connects to CouchDB at: ${config.couchdbUrl || '[URL not specified]'}`;
+  let dataLayerInfo = '';
+  
+  if (config.dataLayerType === 'static') {
+    dataLayerInfo = 'This project uses a static data layer with JSON files.';
+    
+    if (config.importCourseIds && config.importCourseIds.length > 0) {
+      const courseList = config.importCourseIds.map(id => `- ${id}`).join('\n');
+      dataLayerInfo += `\n\n**Imported Courses:**\n${courseList}\n\nCourse data is stored in \`public/static-courses/\` and loaded automatically.`;
+    }
+  } else {
+    dataLayerInfo = `This project connects to CouchDB at: ${config.couchdbUrl || '[URL not specified]'}`;
+  }
 
   const readme = `# ${config.title}
 
@@ -435,6 +485,12 @@ export async function processTemplate(
   const viteConfigPath = path.join(projectPath, 'vite.config.ts');
   if (existsSync(viteConfigPath)) {
     await createViteConfig(viteConfigPath);
+  }
+
+  console.log(chalk.blue('🔧 Transforming tsconfig.json...'));
+  const tsconfigPath = path.join(projectPath, 'tsconfig.json');
+  if (existsSync(tsconfigPath)) {
+    await transformTsConfig(tsconfigPath);
   }
 
   console.log(chalk.blue('🔧 Generating configuration...'));

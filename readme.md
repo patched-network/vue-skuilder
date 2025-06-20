@@ -1,5 +1,6 @@
 ![`platform-ui` E2E](https://github.com/patched-network/vue-skuilder/actions/workflows/e2e-tests.yml/badge.svg)
 ![`standalone-ui` E2E](https://github.com/patched-network/vue-skuilder/actions/workflows/standalone-e2e-tests.yml/badge.svg)
+![CLI Regression](https://github.com/patched-network/vue-skuilder/actions/workflows/cli-regression-test.yml/badge.svg)
 
 General tooling for interactive tutoring systems, with experimentation toward
 - mass-collaborative authoring

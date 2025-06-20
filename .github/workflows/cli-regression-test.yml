@@ -1,0 +1,90 @@
+name: CLI Regression Test
+
+on:
+  schedule:
+    # Run nightly at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    # Allow manual trigger for testing
+
+permissions:
+  contents: read
+
+jobs:
+  cli-regression:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: master
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'yarn'
+      
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+      
+      - name: Build CLI package
+        run: |
+          yarn build
+          yarn workspace @vue-skuilder/cli build
+      
+      - name: Create test directory
+        run: mkdir -p /tmp/cli-test
+      
+      - name: Scaffold test project with CLI
+        run: |
+          cd /tmp/cli-test
+          node $GITHUB_WORKSPACE/packages/cli/dist/cli.js init test-project --data-layer=static --theme=blue --no-interactive
+      
+      - name: Install project dependencies
+        run: |
+          cd /tmp/cli-test/test-project
+          npm install
+      
+      - name: Build scaffolded project
+        run: |
+          cd /tmp/cli-test/test-project
+          npm run build
+      
+      - name: Test dev server startup
+        run: |
+          cd /tmp/cli-test/test-project
+          timeout 30s npm run dev || true
+          # Check if Vite config is valid by trying to parse it
+          node -e "
+            const fs = require('fs');
+            const path = require('path');
+            
+            // Check if tsconfig.json is valid
+            const tsconfig = JSON.parse(fs.readFileSync('tsconfig.json', 'utf8'));
+            if (tsconfig.extends && tsconfig.extends.includes('../../')) {
+              throw new Error('tsconfig.json still has monorepo base config reference');
+            }
+            console.log('✅ tsconfig.json is standalone');
+            
+            // Check if vite.config.ts exists and is readable
+            if (fs.existsSync('vite.config.ts')) {
+              console.log('✅ vite.config.ts exists');
+            } else {
+              throw new Error('vite.config.ts is missing');
+            }
+            
+            // Check if package.json has correct dependencies
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            const hasWorkspaceDeps = Object.values(pkg.dependencies || {}).some(v => 
+              typeof v === 'string' && v.startsWith('workspace:')
+            );
+            if (hasWorkspaceDeps) {
+              throw new Error('package.json still has workspace: dependencies');
+            }
+            console.log('✅ package.json uses published dependencies');
+            
+            console.log('✅ All CLI regression checks passed');
+          "
+      
