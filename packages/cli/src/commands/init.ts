@@ -10,6 +10,7 @@ import {
   gatherProjectConfig,
 } from '../utils/prompts.js';
 import { processTemplate } from '../utils/template.js';
+import { packCourses } from '../utils/pack-courses.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -82,6 +83,36 @@ async function initCommand(projectName: string, options: InitOptions): Promise<v
     // Process template and create project
     await processTemplate(projectPath, config, cliVersion);
 
+    // Import course data if requested for static data layer
+    if (config.dataLayerType === 'static' && config.importCourseData && config.importCourseIds && config.importCourseIds.length > 0) {
+      console.log(chalk.cyan('\n📦 Importing course data...\n'));
+      
+      try {
+        await packCourses({
+          server: config.importServerUrl!,
+          username: config.importUsername,
+          password: config.importPassword,
+          courseIds: config.importCourseIds,
+          targetProjectDir: projectPath
+        });
+        
+        console.log(chalk.green('✅ Course data imported successfully!'));
+      } catch (error: unknown) {
+        console.error(chalk.red('\n❌ Failed to import course data:'));
+        let errorMessage = 'Unknown error';
+        if (error instanceof Error) {
+          errorMessage = error.message;
+        } else if (typeof error === 'string') {
+          errorMessage = error;
+        } else if (error && typeof error === 'object' && 'message' in error) {
+          errorMessage = String((error as { message: unknown }).message);
+        }
+        console.error(chalk.red(errorMessage));
+        console.log(chalk.yellow('\n⚠️  Project created successfully, but without course data.'));
+        console.log(chalk.yellow('You can import course data later using the pack command.'));
+      }
+    }
+
     // Success message
     console.log(chalk.green('\n🎉 Project created successfully!\n'));
 
@@ -104,11 +135,24 @@ async function initCommand(projectName: string, options: InitOptions): Promise<v
         );
       }
     } else {
-      console.log(
-        chalk.yellow(
-          '📝 Note: This project uses static data. Sample course data has been included.'
-        )
-      );
+      if (config.importCourseIds && config.importCourseIds.length > 0) {
+        console.log(
+          chalk.yellow(
+            `📚 Note: This project uses static data with ${config.importCourseIds.length} imported course(s).`
+          )
+        );
+        console.log(
+          chalk.yellow(
+            `📂 Course data is available in the public/static-courses/ directory.`
+          )
+        );
+      } else {
+        console.log(
+          chalk.yellow(
+            '📝 Note: This project uses static data. No course data has been imported.'
+          )
+        );
+      }
     }
   } catch (error: unknown) {
     console.error(chalk.red('\n❌ Failed to create project:'));

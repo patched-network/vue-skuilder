@@ -174,8 +174,14 @@ export async function generateSkuilderConfig(
     dataLayerType: config.dataLayerType,
   };
 
-  if (config.course) {
+  // For dynamic data layer, use the specified course ID
+  if (config.dataLayerType === 'couch' && config.course) {
     skuilderConfig.course = config.course;
+  }
+
+  // For static data layer with imported courses, use the first course as primary
+  if (config.dataLayerType === 'static' && config.importCourseIds && config.importCourseIds.length > 0) {
+    skuilderConfig.course = config.importCourseIds[0];
   }
 
   if (config.couchdbUrl) {
@@ -316,10 +322,18 @@ Thumbs.db
  * Generate project README.md
  */
 export async function generateReadme(readmePath: string, config: ProjectConfig): Promise<void> {
-  const dataLayerInfo =
-    config.dataLayerType === 'static'
-      ? 'This project uses a static data layer with JSON files.'
-      : `This project connects to CouchDB at: ${config.couchdbUrl || '[URL not specified]'}`;
+  let dataLayerInfo = '';
+  
+  if (config.dataLayerType === 'static') {
+    dataLayerInfo = 'This project uses a static data layer with JSON files.';
+    
+    if (config.importCourseIds && config.importCourseIds.length > 0) {
+      const courseList = config.importCourseIds.map(id => `- ${id}`).join('\n');
+      dataLayerInfo += `\n\n**Imported Courses:**\n${courseList}\n\nCourse data is stored in \`public/static-courses/\` and loaded automatically.`;
+    }
+  } else {
+    dataLayerInfo = `This project connects to CouchDB at: ${config.couchdbUrl || '[URL not specified]'}`;
+  }
 
   const readme = `# ${config.title}
 

@@ -13,6 +13,12 @@ export interface ProjectConfig {
   course?: string;
   couchdbUrl?: string;
   theme: ThemeConfig;
+  // Course import configuration for static data layer
+  importCourseData?: boolean;
+  importServerUrl?: string;
+  importUsername?: string;
+  importPassword?: string;
+  importCourseIds?: string[];
 }
 
 export interface VuetifyThemeDefinition {
