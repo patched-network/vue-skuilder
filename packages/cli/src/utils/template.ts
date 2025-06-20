@@ -196,6 +196,42 @@ export async function generateSkuilderConfig(
 }
 
 /**
+ * Transform tsconfig.json to be standalone (remove base config reference)
+ */
+export async function transformTsConfig(tsconfigPath: string): Promise<void> {
+  const content = await fs.readFile(tsconfigPath, 'utf-8');
+  const tsconfig = JSON.parse(content);
+
+  // Remove the extends reference to the monorepo base config
+  delete tsconfig.extends;
+
+  // Merge in the essential settings from the base config that scaffolded apps need
+  tsconfig.compilerOptions = {
+    ...tsconfig.compilerOptions,
+    // Essential TypeScript settings from base config
+    strict: true,
+    skipLibCheck: true,
+    forceConsistentCasingInFileNames: true,
+    esModuleInterop: true,
+    allowSyntheticDefaultImports: true,
+    // Keep existing Vue/Vite-specific settings
+    target: tsconfig.compilerOptions.target || 'ESNext',
+    useDefineForClassFields: tsconfig.compilerOptions.useDefineForClassFields,
+    module: tsconfig.compilerOptions.module || 'ESNext',
+    moduleResolution: tsconfig.compilerOptions.moduleResolution || 'bundler',
+    jsx: tsconfig.compilerOptions.jsx || 'preserve',
+    resolveJsonModule: tsconfig.compilerOptions.resolveJsonModule,
+    isolatedModules: tsconfig.compilerOptions.isolatedModules,
+    lib: tsconfig.compilerOptions.lib || ['ESNext', 'DOM'],
+    noEmit: tsconfig.compilerOptions.noEmit,
+    baseUrl: tsconfig.compilerOptions.baseUrl || '.',
+    types: tsconfig.compilerOptions.types || ['vite/client'],
+  };
+
+  await fs.writeFile(tsconfigPath, JSON.stringify(tsconfig, null, 2));
+}
+
+/**
  * Generate .gitignore file for the project
  */
 export async function generateGitignore(gitignorePath: string): Promise<void> {
@@ -449,6 +485,12 @@ export async function processTemplate(
   const viteConfigPath = path.join(projectPath, 'vite.config.ts');
   if (existsSync(viteConfigPath)) {
     await createViteConfig(viteConfigPath);
+  }
+
+  console.log(chalk.blue('🔧 Transforming tsconfig.json...'));
+  const tsconfigPath = path.join(projectPath, 'tsconfig.json');
+  if (existsSync(tsconfigPath)) {
+    await transformTsConfig(tsconfigPath);
   }
 
   console.log(chalk.blue('🔧 Generating configuration...'));
