@@ -1,9 +1,9 @@
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
 import { promisify } from 'util';
 import chalk from 'chalk';
 import path from 'path';
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 export interface PackCoursesOptions {
   server: string;
@@ -41,12 +41,21 @@ export async function packCourses(options: PackCoursesOptions): Promise<void> {
       args.push('--password', password);
     }
     
-    const command = `node ${path.join(process.cwd(), 'dist', 'cli.js')} ${args.join(' ')}`;
+    const cliPath = path.join(process.cwd(), 'dist', 'cli.js');
+    const commandArgs = ['pack', courseId, '--server', server, '--output', outputDir];
+    
+    if (username) {
+      commandArgs.push('--username', username);
+    }
+    
+    if (password) {
+      commandArgs.push('--password', password);
+    }
     
     try {
       console.log(chalk.gray(`🔄 Packing course: ${courseId}`));
       
-      const { stdout, stderr } = await execAsync(command, {
+      const { stdout, stderr } = await execFileAsync('node', [cliPath, ...commandArgs], {
         cwd: process.cwd(),
         maxBuffer: 1024 * 1024 * 10 // 10MB buffer for large outputs
       });
