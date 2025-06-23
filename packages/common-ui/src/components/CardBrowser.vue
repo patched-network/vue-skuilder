@@ -17,7 +17,9 @@
 <script lang="ts">
 import { ViewData } from '@vue-skuilder/common';
 import { defineComponent, PropType } from 'vue';
-import { useCardPreviewModeStore, ViewComponent, CardViewer } from '../index';
+import { ViewComponent } from '../composables/Displayable';
+import CardViewer from './cardRendering/CardViewer.vue';
+import { useCardPreviewModeStore } from '../stores/useCardPreviewModeStore';
 
 export default defineComponent({
   name: 'CardBrowser',
