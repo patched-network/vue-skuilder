@@ -116,13 +116,15 @@
 </template>
 
 <script lang="ts">
-import { displayableDataToViewData } from '@vue-skuilder/common';
-import TagsInput from './TagsInput.vue';
-import { PaginatingToolbar, ViewComponent, CardLoader, alertUser } from '@vue-skuilder/common-ui';
-// import { allCourses } from '@vue-skuilder/courses'; // Removed to break circular dependency
-import { getDataLayer, CourseDBInterface, CardData, DisplayableData, Tag } from '@vue-skuilder/db';
 import { defineComponent } from 'vue';
-import { Status } from '@vue-skuilder/common';
+import { displayableDataToViewData, Status } from '@vue-skuilder/common';
+import { getDataLayer, CourseDBInterface, CardData, DisplayableData, Tag } from '@vue-skuilder/db';
+// local imports
+import TagsInput from './TagsInput.vue';
+import PaginatingToolbar from './PaginatingToolbar.vue';
+import { ViewComponent } from '../composables/Displayable';
+import CardLoader from './cardRendering/CardLoader.vue';
+import { alertUser } from './SnackbarService';
 
 function isConstructor(obj: unknown) {
   try {
