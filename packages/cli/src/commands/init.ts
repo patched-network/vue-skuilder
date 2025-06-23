@@ -3,7 +3,7 @@ import { Command } from 'commander';
 import { existsSync, readFileSync } from 'fs';
 import path, { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
-import { CliOptions } from '../types.js';
+import { CliOptions, PREDEFINED_THEMES } from '../types.js';
 import {
   confirmProjectCreation,
   displayThemePreview,
@@ -41,6 +41,18 @@ async function initCommand(projectName: string, options: InitOptions): Promise<v
     if (!isValidProjectName(projectName)) {
       console.error(
         chalk.red('❌ Invalid project name. Use only letters, numbers, hyphens, and underscores.')
+      );
+      process.exit(1);
+    }
+
+    // Validate theme option
+    const validThemes = Object.keys(PREDEFINED_THEMES);
+    if (!validThemes.includes(options.theme)) {
+      console.error(
+        chalk.red(`❌ Invalid theme: "${options.theme}"`)
+      );
+      console.error(
+        chalk.yellow(`Valid themes: ${validThemes.join(', ')}`)
       );
       process.exit(1);
     }
