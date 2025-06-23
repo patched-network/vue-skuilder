@@ -119,7 +119,7 @@
 import { displayableDataToViewData } from '@vue-skuilder/common';
 import TagsInput from './TagsInput.vue';
 import { PaginatingToolbar, ViewComponent, CardLoader, alertUser } from '@vue-skuilder/common-ui';
-import { allCourses } from '@vue-skuilder/courses';
+// import { allCourses } from '@vue-skuilder/courses'; // Removed to break circular dependency
 import { getDataLayer, CourseDBInterface, CardData, DisplayableData, Tag } from '@vue-skuilder/db';
 import { defineComponent } from 'vue';
 import { Status } from '@vue-skuilder/common';
@@ -154,6 +154,14 @@ export default defineComponent({
       required: false,
       default: '',
     },
+    viewLookupFunction: {
+      type: Function,
+      required: true,
+      default: (x: unknown) => {
+        console.warn('No viewLookupFunction provided to CourseCardBrowser');
+        return null;
+      },
+    },
   },
 
   data() {
@@ -170,7 +178,7 @@ export default defineComponent({
       userIsRegistered: false,
       questionCount: 0,
       tags: [] as Tag[],
-      viewLookup: (x: unknown) => allCourses.getView(x),
+      viewLookup: this.viewLookupFunction,
     };
   },
 
@@ -298,7 +306,7 @@ export default defineComponent({
               console.error(`No valid data found for card ${_cardID}`);
               return;
             }
-            const tmpView: ViewComponent = allCourses.getView(
+            const tmpView: ViewComponent = this.viewLookupFunction(
               tmpCardData.id_view || 'default.question.BlanksCard.FillInView'
             );
 

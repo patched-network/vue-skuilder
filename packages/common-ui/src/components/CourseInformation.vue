@@ -32,7 +32,7 @@
         </router-link>
       </div>
     </transition>
-    <midi-config v-if="isPianoCourse" :_id="courseId" :user="user" class="my-3" />
+    <!-- midi-config removed to break circular dependency - should be added by wrapper component -->
 
     <v-card class="my-2">
       <v-toolbar density="compact">
@@ -52,13 +52,13 @@
       </v-card-text>
     </v-card>
 
-    <course-card-browser class="my-3" :course-id="courseId" />
+    <course-card-browser class="my-3" :course-id="courseId" :view-lookup-function="viewLookupFunction" />
   </div>
 </template>
 
 <script lang="ts">
 import { defineComponent, PropType } from 'vue';
-import { MidiConfig } from '@vue-skuilder/courses';
+// import { MidiConfig } from '@vue-skuilder/courses'; // Removed to break circular dependency
 import CourseCardBrowser from './CourseCardBrowser.vue';
 import { log } from '@vue-skuilder/common';
 import { CourseDBInterface, Tag, UserDBInterface, getDataLayer } from '@vue-skuilder/db';
@@ -69,7 +69,7 @@ export default defineComponent({
   name: 'CourseInformation',
 
   components: {
-    MidiConfig,
+    // MidiConfig, // Removed to break circular dependency
     CourseCardBrowser,
   },
 
@@ -77,6 +77,14 @@ export default defineComponent({
     courseId: {
       type: String as PropType<string>,
       required: true,
+    },
+    viewLookupFunction: {
+      type: Function,
+      required: false,
+      default: (x: unknown) => {
+        console.warn('No viewLookupFunction provided to CourseInformation');
+        return null;
+      },
     },
   },
 
@@ -98,9 +106,7 @@ export default defineComponent({
   },
 
   computed: {
-    isPianoCourse(): boolean {
-      return this.courseConfig.name.toLowerCase().includes('piano');
-    },
+    // isPianoCourse removed - piano-specific logic should be in wrapper component
   },
 
   async created() {
