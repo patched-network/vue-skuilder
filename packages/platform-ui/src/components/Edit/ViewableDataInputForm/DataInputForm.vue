@@ -83,7 +83,8 @@
 import { defineComponent } from 'vue';
 import { DataShape } from '@vue-skuilder/common';
 import { CardBrowser } from '@vue-skuilder/common-ui';
-import TagsInput, { TagsInputInstance } from '@pui/components/Edit/TagsInput.vue';
+import { TagsInput } from '@vue-skuilder/common-ui';
+import type { TagsInputInstance } from '@vue-skuilder/common-ui/src/components/TagsInput.vue';
 import { FieldInputInstance, isFieldInput } from '@pui/components/Edit/ViewableDataInputForm/FieldInput.types';
 import { alertUser } from '@vue-skuilder/common-ui';
 import { allCourses } from '@vue-skuilder/courses';
