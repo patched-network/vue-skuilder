@@ -30,6 +30,7 @@ export interface Tag extends SkuilderCourseData {
   snippet: string; // 200 char description of the tag
   wiki: string; // 3000 char md-friendly description
   taggedCards: PouchDB.Core.DocumentId[];
+  author: string;
 }
 export interface TagStub {
   name: string;

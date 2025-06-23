@@ -342,15 +342,15 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
     tagId: string,
     updateELO?: boolean
   ): Promise<PouchDB.Core.Response> {
-    return await addTagToCard(this.id, cardId, tagId, updateELO);
+    return await addTagToCard(this.id, cardId, tagId, (await this._getCurrentUser()).getUsername(), updateELO);
   }
 
   async removeTagFromCard(cardId: string, tagId: string): Promise<PouchDB.Core.Response> {
     return await removeTagFromCard(this.id, cardId, tagId);
   }
 
-  async createTag(name: string): Promise<PouchDB.Core.Response> {
-    return await createTag(this.id, name);
+  async createTag(name: string, author: string): Promise<PouchDB.Core.Response> {
+    return await createTag(this.id, name, author);
   }
 
   async getTag(tagId: string): Promise<PouchDB.Core.GetMeta & PouchDB.Core.Document<Tag>> {
@@ -650,7 +650,7 @@ export async function deleteTag(courseID: string, tagName: string) {
   return resp;
 }
 
-export async function createTag(courseID: string, tagName: string) {
+export async function createTag(courseID: string, tagName: string, author: string) {
   logger.debug(`Creating tag: ${tagName}...`);
   const tagID = getTagID(tagName);
   const courseDB = getCourseDB(courseID);
@@ -661,6 +661,7 @@ export async function createTag(courseID: string, tagName: string) {
     snippet: '',
     taggedCards: [],
     wiki: '',
+    author,
     _id: tagID,
   });
   return resp;

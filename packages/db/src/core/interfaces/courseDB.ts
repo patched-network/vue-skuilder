@@ -96,7 +96,7 @@ export interface CourseDBInterface extends NavigationStrategyManager {
   /**
    * Create a new tag
    */
-  createTag(tagName: string): Promise<PouchDB.Core.Response>;
+  createTag(tagName: string, author: string): Promise<PouchDB.Core.Response>;
 
   /**
    * Get a tag by name
