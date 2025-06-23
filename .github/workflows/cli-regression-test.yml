@@ -40,7 +40,7 @@ jobs:
       - name: Scaffold test project with CLI
         run: |
           cd /tmp/cli-test
-          node $GITHUB_WORKSPACE/packages/cli/dist/cli.js init test-project --data-layer=static --theme=blue --no-interactive
+          node $GITHUB_WORKSPACE/packages/cli/dist/cli.js init test-project --data-layer=static --theme=default --no-interactive
       
       - name: Install project dependencies
         run: |
