@@ -165,7 +165,7 @@ async function addCard(
   });
   for (const tag of tags) {
     logger.info(`adding tag: ${tag} to card ${card.id}`);
-    await addTagToCard(courseID, card.id, tag, false);
+    await addTagToCard(courseID, card.id, tag, author, false);
   }
   return card;
 }
@@ -198,6 +198,7 @@ export async function addTagToCard(
   courseID: string,
   cardID: string,
   tagID: string,
+  author: string,
   updateELO: boolean = true
 ): Promise<PouchDB.Core.Response> {
   // todo: possible future perf. hit if tags have large #s of taggedCards.
@@ -241,8 +242,8 @@ export async function addTagToCard(
       throw e;
     }
 
-    await createTag(courseID, tagID);
-    return addTagToCard(courseID, cardID, tagID, updateELO);
+    await createTag(courseID, tagID, author);
+    return addTagToCard(courseID, cardID, tagID, author, updateELO);
   }
 }
 
