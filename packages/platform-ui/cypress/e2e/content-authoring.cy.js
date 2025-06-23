@@ -1,5 +1,8 @@
 describe('Content Authoring', () => {
   it('should allow adding new course content with proper authentication', () => {
+    // Generate a random tag to avoid conflicts between test runs
+    const testTag = `test-${Math.random().toString(36).substring(2, 8)}`;
+
     // Register user and verify they can login
     cy.registerUser().then((user) => {
       const username = user;
@@ -45,7 +48,12 @@ describe('Content Authoring', () => {
 
       // Type sample content in the textarea
       cy.get('textarea[name="Input"]').type('What is the capital of France? ___');
-      
+
+      // Add a test tag to validate tag creation and authorship
+      cy.log(`Adding test tag: ${testTag}`);
+      cy.get('[data-cy="tags-input"]').type(`${testTag} `);
+      cy.wait(1_000);
+
       // Find and click the Add Card button
       cy.contains('button', 'Add card').click();
       cy.wait(2_000);
@@ -63,6 +71,22 @@ describe('Content Authoring', () => {
             cy.log(`New card count: ${newCardCount}`);
             cy.wrap(newCardCount).should('eq', initialCardCount + 1);
           }
+        });
+
+      // Verify the test tag appears on the course information page
+      cy.log(`Verifying tag exists: ${testTag}`);
+      cy.contains(testTag).should('be.visible');
+
+      // Navigate to the tag page and verify it has exactly 1 card (the one we just created)
+      cy.log(`Navigating to tag page: ${testTag}`);
+      cy.contains(testTag).click();
+      cy.wait(3_000); // Wait for tag page to load
+
+      // Verify the tag page shows exactly 1 card
+      cy.get('[data-cy="paginating-toolbar-subtitle"]')
+        .should('contain.text', '(1)')
+        .then(() => {
+          cy.log(`Tag ${testTag} successfully created with 1 card`);
         });
     });
   });
