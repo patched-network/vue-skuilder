@@ -342,7 +342,7 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
     tagId: string,
     updateELO?: boolean
   ): Promise<PouchDB.Core.Response> {
-    return await addTagToCard(this.id, cardId, tagId, updateELO);
+    return await addTagToCard(this.id, cardId, tagId, (await this._getCurrentUser()).getUsername(), updateELO);
   }
 
   async removeTagFromCard(cardId: string, tagId: string): Promise<PouchDB.Core.Response> {
