@@ -63,7 +63,7 @@ import CourseCardBrowser from './CourseCardBrowser.vue';
 import { log } from '@vue-skuilder/common';
 import { CourseDBInterface, Tag, UserDBInterface, getDataLayer } from '@vue-skuilder/db';
 import { CourseConfig } from '@vue-skuilder/common';
-import { getCurrentUser } from '@vue-skuilder/common-ui';
+import { getCurrentUser } from '../stores/useAuthStore';
 
 export default defineComponent({
   name: 'CourseInformation',
@@ -159,7 +159,9 @@ export default defineComponent({
   max-height: auto;
   transform: scale(1, 1);
   transform-origin: top;
-  transition: transform 0.3s ease, max-height 0.3s ease;
+  transition:
+    transform 0.3s ease,
+    max-height 0.3s ease;
 }
 .component-scale-enter,
 .component-fade-leave-to {
