@@ -23,7 +23,7 @@ import { defineComponent } from 'vue';
 import { Status } from '@vue-skuilder/common';
 import { SnackbarOptions, setInstance } from './SnackbarService';
 
-const SnackbarService = defineComponent({
+export default defineComponent({
   name: 'SnackbarService',
 
   data() {
@@ -66,6 +66,4 @@ const SnackbarService = defineComponent({
     },
   },
 });
-
-export default SnackbarService;
 </script>
