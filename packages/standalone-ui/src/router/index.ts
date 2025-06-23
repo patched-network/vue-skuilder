@@ -2,6 +2,7 @@ import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router';
 import HomeView from '../views/HomeView.vue';
 import StudyView from '../views/StudyView.vue';
 import ProgressView from '../views/ProgressView.vue';
+import BrowseView from '../views/BrowseView.vue';
 import { UserLogin, UserRegistration } from '@vue-skuilder/common-ui';
 
 const routes: Array<RouteRecordRaw> = [
@@ -19,6 +20,11 @@ const routes: Array<RouteRecordRaw> = [
     path: '/progress',
     name: 'progress',
     component: ProgressView,
+  },
+  {
+    path: '/browse',
+    name: 'browse',
+    component: BrowseView,
   },
   {
     path: '/login',

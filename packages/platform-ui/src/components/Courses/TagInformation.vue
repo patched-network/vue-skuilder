@@ -57,7 +57,7 @@
       </template>
     </v-text-field>
 
-    <course-card-browser :course-id="courseId" :tag-id="tagId" />
+    <course-card-browser :course-id="courseId" :tag-id="tagId" :view-lookup-function="viewLookup" />
   </div>
 </template>
 
@@ -65,8 +65,9 @@
 import { defineComponent } from 'vue';
 import { DocType, Tag, getDataLayer, CourseDBInterface } from '@vue-skuilder/db';
 import { Status, CourseConfig } from '@vue-skuilder/common';
-import CourseCardBrowser from './CourseCardBrowser.vue';
+import { CourseCardBrowser } from '@vue-skuilder/common-ui';
 import { alertUser } from '@vue-skuilder/common-ui';
+import { allCourses } from '@vue-skuilder/courses';
 
 export default defineComponent({
   name: 'TagInformation',
@@ -131,6 +132,10 @@ export default defineComponent({
   },
 
   methods: {
+    viewLookup(x: unknown) {
+      return allCourses.getView(x);
+    },
+
     editSnippet() {
       console.log('[TagInformation] EditSnip');
       this.editingSnippet = true;

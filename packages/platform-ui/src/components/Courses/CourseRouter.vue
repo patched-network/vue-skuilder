@@ -1,7 +1,7 @@
 <template>
   <div>
     <div v-if="initComplete">
-      <course-information v-if="courseId !== undefined && courseId !== ''" :course-id="courseId" />
+      <course-information-wrapper v-if="courseId !== undefined && courseId !== ''" :course-id="courseId" />
       <v-container v-else-if="candidates.length === 0">
         <v-row class="text-h4">
           {{ query }}
@@ -47,13 +47,13 @@ import { defineComponent } from 'vue';
 import { getDataLayer } from '@vue-skuilder/db';
 import { CourseConfig } from '@vue-skuilder/common';
 import CourseEditor from './CourseEditor.vue';
-import CourseInformation from './CourseInformation.vue';
+import CourseInformationWrapper from './CourseInformationWrapper.vue';
 
 export default defineComponent({
   name: 'CourseRouter',
 
   components: {
-    CourseInformation,
+    CourseInformationWrapper,
     CourseEditor,
   },
 

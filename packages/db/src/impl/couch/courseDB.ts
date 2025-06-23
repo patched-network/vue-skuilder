@@ -9,7 +9,7 @@ import {
   blankCourseElo,
   toCourseElo,
 } from '@vue-skuilder/common';
-import _ from 'lodash';
+
 import { filterAllDocsByPrefix, getCourseDB, getCourseDoc, getCourseDocs } from '.';
 import UpdateQueue from './updateQueue';
 import {
@@ -687,8 +687,8 @@ export async function removeTagFromCard(courseID: string, cardID: string, tagID:
   tagID = getTagID(tagID);
   const courseDB = getCourseDB(courseID);
   const tag = await courseDB.get<Tag>(tagID);
-  _.remove(tag.taggedCards, (taggedID) => {
-    return cardID === taggedID;
+  tag.taggedCards = tag.taggedCards.filter((taggedID) => {
+    return cardID !== taggedID;
   });
   return courseDB.put<Tag>(tag);
 }

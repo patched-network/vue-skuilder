@@ -26,6 +26,9 @@ export default defineConfig({
         'pinia',
         '@vue-skuilder/db',
         '@vue-skuilder/common',
+        '@vojtechlanka/vue-tags-input',
+        'vuedraggable',
+        'sortablejs',
       ],
       output: {
         // Global variables to use in UMD build for externalized deps
@@ -36,6 +39,9 @@ export default defineConfig({
           pinia: 'Pinia',
           '@vue-skuilder/db': 'VueSkuilderDb',
           '@vue-skuilder/common': 'VueSkuilderCommon',
+          '@vojtechlanka/vue-tags-input': 'VueTagsInput',
+          'vuedraggable': 'VueDraggable',
+          'sortablejs': 'Sortable',
         },
         // Preserve CSS in the output bundlest
         assetFileNames: (assetInfo) => {

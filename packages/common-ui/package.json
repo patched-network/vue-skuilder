@@ -33,6 +33,7 @@
   "dependencies": {
     "@highlightjs/vue-plugin": "^2.1.2",
     "@mdi/font": "^7.3.67",
+    "@vojtechlanka/vue-tags-input": "^3",
     "@vue-skuilder/common": "workspace:*",
     "@vue-skuilder/db": "workspace:*",
     "highlight.js": "^11.0.1",
