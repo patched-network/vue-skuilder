@@ -65,7 +65,7 @@
 import { defineComponent } from 'vue';
 import { DocType, Tag, getDataLayer, CourseDBInterface } from '@vue-skuilder/db';
 import { Status, CourseConfig } from '@vue-skuilder/common';
-import CourseCardBrowser from './CourseCardBrowser.vue';
+import { CourseCardBrowser } from '@vue-skuilder/common-ui';
 import { alertUser } from '@vue-skuilder/common-ui';
 
 export default defineComponent({

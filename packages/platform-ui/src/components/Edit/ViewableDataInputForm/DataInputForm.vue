@@ -82,7 +82,7 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 import { DataShape } from '@vue-skuilder/common';
-import CardBrowser from '@pui/components/Edit/CardBrowser.vue';
+import { CardBrowser } from '@vue-skuilder/common-ui';
 import TagsInput, { TagsInputInstance } from '@pui/components/Edit/TagsInput.vue';
 import { FieldInputInstance, isFieldInput } from '@pui/components/Edit/ViewableDataInputForm/FieldInput.types';
 import { alertUser } from '@vue-skuilder/common-ui';

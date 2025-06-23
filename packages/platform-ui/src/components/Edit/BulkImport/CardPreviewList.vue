@@ -106,7 +106,7 @@
 import { ViewComponent, SkldrMouseTrap, HotKey, SkMouseTrap } from '@vue-skuilder/common-ui';
 import { DataShape, ParsedCard, ViewData } from '@vue-skuilder/common';
 import { defineComponent, PropType } from 'vue';
-import CardBrowser from '../CardBrowser.vue';
+import { CardBrowser } from '@vue-skuilder/common-ui';
 
 export default defineComponent({
   name: 'CardPreviewList',

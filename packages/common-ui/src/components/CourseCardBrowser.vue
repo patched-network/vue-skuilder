@@ -83,12 +83,13 @@
           <div v-if="c.isOpen" class="px-4 py-2 bg-blue-grey-lighten-5">
             <card-loader :qualified_id="c.id" :view-lookup="viewLookup" class="elevation-1" />
 
-            <tags-input
+            <!-- TODO: TagsInput component needs to be moved to common-ui or handled differently -->
+            <!-- <tags-input
               v-show="editMode === 'tags'"
               :course-i-d="courseId"
               :card-i-d="c.id.split('-')[1]"
               class="mt-4"
-            />
+            /> -->
 
             <div v-show="editMode === 'flag'" class="mt-4">
               <v-btn color="error" variant="outlined" @click="c.delBtn = true"> Delete this card </v-btn>
@@ -117,7 +118,7 @@
 
 <script lang="ts">
 import { displayableDataToViewData } from '@vue-skuilder/common';
-import TagsInput from '@pui/components/Edit/TagsInput.vue';
+// import TagsInput from '@pui/components/Edit/TagsInput.vue'; // TODO: Need to handle TagsInput dependency
 import { PaginatingToolbar, ViewComponent, CardLoader, alertUser } from '@vue-skuilder/common-ui';
 import { allCourses } from '@vue-skuilder/courses';
 import { getDataLayer, CourseDBInterface, CardData, DisplayableData, Tag } from '@vue-skuilder/db';
@@ -140,7 +141,7 @@ export default defineComponent({
 
   components: {
     CardLoader,
-    TagsInput,
+    // TagsInput, // TODO: Need to handle TagsInput dependency
     PaginatingToolbar,
   },
 

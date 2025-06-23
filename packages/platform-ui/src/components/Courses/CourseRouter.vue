@@ -47,7 +47,7 @@ import { defineComponent } from 'vue';
 import { getDataLayer } from '@vue-skuilder/db';
 import { CourseConfig } from '@vue-skuilder/common';
 import CourseEditor from './CourseEditor.vue';
-import CourseInformation from './CourseInformation.vue';
+import { CourseInformation } from '@vue-skuilder/common-ui';
 
 export default defineComponent({
   name: 'CourseRouter',
