@@ -152,7 +152,7 @@ Currently logged-in as ${this._username}.`
     }
 
     try {
-      const localDB = await getLocalUserDB(this._username);
+      const localDB = getLocalUserDB(this._username);
 
       // Get all documents to identify user data to clear
       const allDocs = await localDB.allDocs({ include_docs: false });
