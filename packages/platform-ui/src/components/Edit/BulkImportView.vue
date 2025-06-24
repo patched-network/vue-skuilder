@@ -311,7 +311,7 @@ export default defineComponent({
       // Show alert to confirm deletion
       alertUser({
         text: 'Card removed from import list',
-        status: Status.info,
+        status: Status.ok,
       });
     },
 
@@ -357,7 +357,7 @@ export default defineComponent({
       // Show alert to confirm edit
       alertUser({
         text: 'Card updated successfully',
-        status: Status.success,
+        status: Status.ok,
       });
     },
 
@@ -582,7 +582,7 @@ export default defineComponent({
         // this.bulkText = ''; // Clear input text
         // this.parsingComplete = false; // Go back to input stage
         // this.parsedCards = [];
-        alertUser({ text: `${this.results.length} card(s) imported successfully!`, status: Status.success });
+        alertUser({ text: `${this.results.length} card(s) imported successfully!`, status: Status.ok });
       } else if (this.results.some((r) => r.status === 'error')) {
         alertUser({ text: 'Some cards failed to import. Please review the results below.', status: Status.warning });
       }
