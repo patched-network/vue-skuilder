@@ -318,7 +318,7 @@ export default defineComponent({
     handleEditCard(card: ParsedCard, index: number) {
       // Disable keyboard shortcuts while editing
       if (this.$refs.cardPreviewList) {
-        (this.$refs.cardPreviewList as any).toggleShortcuts(false);
+        (this.$refs.cardPreviewList as { toggleShortcuts: (enabled: boolean) => void }).toggleShortcuts(false);
       }
 
       this.editingCard = { ...card }; // Create a copy
@@ -331,7 +331,7 @@ export default defineComponent({
       // Focus the text area after dialog opens
       this.$nextTick(() => {
         if (this.$refs.markdownTextarea) {
-          (this.$refs.markdownTextarea as any).$el.querySelector('textarea')?.focus();
+          (this.$refs.markdownTextarea as { $el: HTMLElement }).$el.querySelector('textarea')?.focus();
         }
       });
     },
@@ -372,7 +372,7 @@ export default defineComponent({
       // Re-enable keyboard shortcuts after editing
       setTimeout(() => {
         if (this.$refs.cardPreviewList) {
-          (this.$refs.cardPreviewList as any).toggleShortcuts(true);
+          (this.$refs.cardPreviewList as { toggleShortcuts: (enabled: boolean) => void }).toggleShortcuts(true);
         }
       }, 100);
     },
