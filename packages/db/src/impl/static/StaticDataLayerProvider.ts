@@ -86,4 +86,8 @@ export class StaticDataLayerProvider implements DataLayerProvider {
   getAdminDB(): AdminDBInterface {
     throw new Error('Admin functions not supported in static mode');
   }
+
+  isReadOnly(): boolean {
+    return true;
+  }
 }

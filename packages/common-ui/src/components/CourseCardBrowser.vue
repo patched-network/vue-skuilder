@@ -39,6 +39,7 @@
 
             <template #append>
               <v-speed-dial
+                v-if="editMode === 'full'"
                 v-model="c.isOpen"
                 location="left center"
                 transition="slide-x-transition"
@@ -59,9 +60,9 @@
                   key="tags"
                   icon
                   size="small"
-                  :variant="editMode !== 'tags' ? 'outlined' : 'elevated'"
-                  :color="editMode === 'tags' ? 'teal' : 'teal-darken-3'"
-                  @click.stop="editMode = 'tags'"
+                  :variant="internalEditMode !== 'tags' ? 'outlined' : 'elevated'"
+                  :color="internalEditMode === 'tags' ? 'teal' : 'teal-darken-3'"
+                  @click.stop="internalEditMode = 'tags'"
                 >
                   <v-icon>mdi-bookmark</v-icon>
                 </v-btn>
@@ -70,9 +71,9 @@
                   key="flag"
                   icon
                   size="small"
-                  :variant="editMode !== 'flag' ? 'outlined' : 'elevated'"
-                  :color="editMode === 'flag' ? 'error' : 'error-darken-3'"
-                  @click.stop="editMode = 'flag'"
+                  :variant="internalEditMode !== 'flag' ? 'outlined' : 'elevated'"
+                  :color="internalEditMode === 'flag' ? 'error' : 'error-darken-3'"
+                  @click.stop="internalEditMode = 'flag'"
                 >
                   <v-icon>mdi-flag</v-icon>
                 </v-btn>
@@ -84,13 +85,13 @@
             <card-loader :qualified_id="c.id" :view-lookup="viewLookup" class="elevation-1" />
 
             <tags-input
-              v-show="editMode === 'tags'"
+              v-show="internalEditMode === 'tags'"
               :course-i-d="courseId"
               :card-i-d="c.id.split('-')[1]"
               class="mt-4"
             />
 
-            <div v-show="editMode === 'flag'" class="mt-4">
+            <div v-show="internalEditMode === 'flag'" class="mt-4">
               <v-btn color="error" variant="outlined" @click="c.delBtn = true"> Delete this card </v-btn>
               <span v-if="c.delBtn" class="ml-4">
                 <span class="mr-2">Are you sure?</span>
@@ -116,7 +117,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue';
+import { defineComponent, PropType } from 'vue';
 import { displayableDataToViewData, Status } from '@vue-skuilder/common';
 import { getDataLayer, CourseDBInterface, CardData, DisplayableData, Tag } from '@vue-skuilder/db';
 // local imports
@@ -164,6 +165,11 @@ export default defineComponent({
         return null;
       },
     },
+    editMode: {
+      type: String as PropType<'none' | 'readonly' | 'full'>,
+      required: false,
+      default: 'full',
+    },
   },
 
   data() {
@@ -174,7 +180,7 @@ export default defineComponent({
       cards: [] as { id: string; isOpen: boolean; delBtn: boolean }[],
       cardData: {} as { [card: string]: string[] },
       cardPreview: {} as { [card: string]: string },
-      editMode: 'none' as 'tags' | 'flag' | 'none',
+      internalEditMode: 'none' as 'tags' | 'flag' | 'none',
       delBtn: false,
       updatePending: true,
       userIsRegistered: false,
@@ -233,7 +239,7 @@ export default defineComponent({
           card.isOpen = false;
         }
       });
-      this.editMode = 'none';
+      this.internalEditMode = 'none';
       this.delBtn = false;
     },
     async deleteCard(c: string) {
