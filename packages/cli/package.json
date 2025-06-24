@@ -3,7 +3,7 @@
     "publishConfig": {
         "access": "public"
     },
-    "version": "0.1.5",
+    "version": "0.1.6",
     "type": "module",
     "description": "CLI scaffolding tool for vue-skuilder projects",
     "bin": {
@@ -34,7 +34,7 @@
     ],
     "dependencies": {
         "@vue-skuilder/db": "workspace:*",
-        "@vue-skuilder/standalone-ui": "^0.1.5",
+        "@vue-skuilder/standalone-ui": "^0.1.6",
         "chalk": "^5.3.0",
         "commander": "^11.0.0",
         "fs-extra": "^11.2.0",

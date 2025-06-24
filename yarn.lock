@@ -5143,7 +5143,7 @@ __metadata:
     "@types/inquirer": "npm:^9.0.0"
     "@types/node": "npm:^20.0.0"
     "@vue-skuilder/db": "workspace:*"
-    "@vue-skuilder/standalone-ui": "npm:^0.1.5"
+    "@vue-skuilder/standalone-ui": "npm:^0.1.6"
     chalk: "npm:^5.3.0"
     commander: "npm:^11.0.0"
     fs-extra: "npm:^11.2.0"
@@ -5416,7 +5416,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@vue-skuilder/standalone-ui@npm:^0.1.5, @vue-skuilder/standalone-ui@workspace:packages/standalone-ui":
+"@vue-skuilder/standalone-ui@npm:^0.1.6, @vue-skuilder/standalone-ui@workspace:packages/standalone-ui":
   version: 0.0.0-use.local
   resolution: "@vue-skuilder/standalone-ui@workspace:packages/standalone-ui"
   dependencies:

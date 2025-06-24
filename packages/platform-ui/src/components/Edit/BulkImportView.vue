@@ -311,14 +311,14 @@ export default defineComponent({
       // Show alert to confirm deletion
       alertUser({
         text: 'Card removed from import list',
-        status: Status.info,
+        status: Status.ok,
       });
     },
 
     handleEditCard(card: ParsedCard, index: number) {
       // Disable keyboard shortcuts while editing
       if (this.$refs.cardPreviewList) {
-        (this.$refs.cardPreviewList as any).toggleShortcuts(false);
+        (this.$refs.cardPreviewList as { toggleShortcuts: (enabled: boolean) => void }).toggleShortcuts(false);
       }
 
       this.editingCard = { ...card }; // Create a copy
@@ -331,7 +331,7 @@ export default defineComponent({
       // Focus the text area after dialog opens
       this.$nextTick(() => {
         if (this.$refs.markdownTextarea) {
-          (this.$refs.markdownTextarea as any).$el.querySelector('textarea')?.focus();
+          (this.$refs.markdownTextarea as { $el: HTMLElement }).$el.querySelector('textarea')?.focus();
         }
       });
     },
@@ -357,7 +357,7 @@ export default defineComponent({
       // Show alert to confirm edit
       alertUser({
         text: 'Card updated successfully',
-        status: Status.success,
+        status: Status.ok,
       });
     },
 
@@ -372,7 +372,7 @@ export default defineComponent({
       // Re-enable keyboard shortcuts after editing
       setTimeout(() => {
         if (this.$refs.cardPreviewList) {
-          (this.$refs.cardPreviewList as any).toggleShortcuts(true);
+          (this.$refs.cardPreviewList as { toggleShortcuts: (enabled: boolean) => void }).toggleShortcuts(true);
         }
       }, 100);
     },
@@ -582,7 +582,7 @@ export default defineComponent({
         // this.bulkText = ''; // Clear input text
         // this.parsingComplete = false; // Go back to input stage
         // this.parsedCards = [];
-        alertUser({ text: `${this.results.length} card(s) imported successfully!`, status: Status.success });
+        alertUser({ text: `${this.results.length} card(s) imported successfully!`, status: Status.ok });
       } else if (this.results.some((r) => r.status === 'error')) {
         alertUser({ text: 'Some cards failed to import. Please review the results below.', status: Status.warning });
       }
