@@ -9,6 +9,12 @@ interface CourseInfo {
   description?: string;
 }
 
+interface CourseDocument {
+  name?: string;
+  title?: string;
+  description?: string;
+}
+
 /**
  * Fetch available courses from a CouchDB server
  */
@@ -48,9 +54,9 @@ async function fetchAvailableCourses(
   try {
     const result = await lookupDB.allDocs({ include_docs: true });
     const courses: CourseInfo[] = result.rows
-      .filter(row => row.doc && !row.id.startsWith('_'))
-      .map(row => {
-        const doc = row.doc as any;
+      .filter((row) => row.doc && !row.id.startsWith('_'))
+      .map((row) => {
+        const doc = row.doc as CourseDocument;
         return {
           id: row.id,
           name: doc.name || doc.title || `Course ${row.id}`,
@@ -60,7 +66,7 @@ async function fetchAvailableCourses(
 
     console.log(chalk.green(`✅ Found ${courses.length} available courses`));
     return courses;
-  } catch (error: unknown) {
+  } catch {
     console.warn(chalk.yellow('⚠️  Could not list courses from lookup database'));
     return [];
   }
@@ -72,14 +78,15 @@ async function fetchAvailableCourses(
 function hexToAnsi(hex: string): string {
   // Remove # if present
   hex = hex.replace('#', '');
-  
+
   // Convert hex to RGB
   const r = parseInt(hex.substr(0, 2), 16);
   const g = parseInt(hex.substr(2, 2), 16);
   const b = parseInt(hex.substr(4, 2), 16);
-  
+
   // Convert to 256-color ANSI
-  const ansiCode = 16 + (36 * Math.round(r / 255 * 5)) + (6 * Math.round(g / 255 * 5)) + Math.round(b / 255 * 5);
+  const ansiCode =
+    16 + 36 * Math.round((r / 255) * 5) + 6 * Math.round((g / 255) * 5) + Math.round((b / 255) * 5);
   return `\x1b[48;5;${ansiCode}m`;
 }
 
@@ -98,11 +105,11 @@ function createColorSwatch(hex: string, label: string): string {
 function createThemePreview(themeName: string): string {
   const theme = PREDEFINED_THEMES[themeName];
   const lightColors = theme.light.colors;
-  
+
   const primarySwatch = createColorSwatch(lightColors.primary, 'Primary');
   const secondarySwatch = createColorSwatch(lightColors.secondary, 'Secondary');
   const accentSwatch = createColorSwatch(lightColors.accent, 'Accent');
-  
+
   return `${primarySwatch} ${secondarySwatch} ${accentSwatch}`;
 }
 
@@ -111,30 +118,34 @@ function createThemePreview(themeName: string): string {
  */
 export function displayThemePreview(themeName: string): void {
   const theme = PREDEFINED_THEMES[themeName];
-  
+
   console.log(chalk.cyan('\n🎨 Theme Color Palette:'));
   console.log(chalk.white(`   ${theme.name.toUpperCase()} THEME`));
-  
+
   // Light theme colors
   console.log(chalk.white('\n   Light Mode:'));
   const lightColors = theme.light.colors;
   console.log(`     ${createColorSwatch(lightColors.primary, `Primary: ${lightColors.primary}`)}`);
-  console.log(`     ${createColorSwatch(lightColors.secondary, `Secondary: ${lightColors.secondary}`)}`);
+  console.log(
+    `     ${createColorSwatch(lightColors.secondary, `Secondary: ${lightColors.secondary}`)}`
+  );
   console.log(`     ${createColorSwatch(lightColors.accent, `Accent: ${lightColors.accent}`)}`);
   console.log(`     ${createColorSwatch(lightColors.success, `Success: ${lightColors.success}`)}`);
   console.log(`     ${createColorSwatch(lightColors.warning, `Warning: ${lightColors.warning}`)}`);
   console.log(`     ${createColorSwatch(lightColors.error, `Error: ${lightColors.error}`)}`);
-  
+
   // Dark theme colors
   console.log(chalk.white('\n   Dark Mode:'));
   const darkColors = theme.dark.colors;
   console.log(`     ${createColorSwatch(darkColors.primary, `Primary: ${darkColors.primary}`)}`);
-  console.log(`     ${createColorSwatch(darkColors.secondary, `Secondary: ${darkColors.secondary}`)}`);
+  console.log(
+    `     ${createColorSwatch(darkColors.secondary, `Secondary: ${darkColors.secondary}`)}`
+  );
   console.log(`     ${createColorSwatch(darkColors.accent, `Accent: ${darkColors.accent}`)}`);
   console.log(`     ${createColorSwatch(darkColors.success, `Success: ${darkColors.success}`)}`);
   console.log(`     ${createColorSwatch(darkColors.warning, `Warning: ${darkColors.warning}`)}`);
   console.log(`     ${createColorSwatch(darkColors.error, `Error: ${darkColors.error}`)}`);
-  
+
   console.log(chalk.gray(`\n   Default mode: ${theme.defaultMode}`));
 }
 
@@ -145,7 +156,7 @@ export async function gatherProjectConfig(
   console.log(chalk.cyan('\n🚀 Creating a new Skuilder course application\n'));
 
   let config: Partial<ProjectConfig> = {
-    projectName
+    projectName,
   };
 
   if (options.interactive) {
@@ -155,7 +166,7 @@ export async function gatherProjectConfig(
         name: 'title',
         message: 'Course title:',
         default: formatProjectName(projectName),
-        validate: (input: string) => input.trim().length > 0 || 'Course title is required'
+        validate: (input: string) => input.trim().length > 0 || 'Course title is required',
       },
       {
         type: 'list',
@@ -164,14 +175,14 @@ export async function gatherProjectConfig(
         choices: [
           {
             name: 'Dynamic (Connect to CouchDB server)',
-            value: 'couch'
+            value: 'couch',
           },
           {
             name: 'Static (Self-contained JSON files)',
-            value: 'static'
-          }
+            value: 'static',
+          },
         ],
-        default: options.dataLayer === 'dynamic' ? 'couch' : 'static'
+        default: options.dataLayer === 'dynamic' ? 'couch' : 'static',
       },
       {
         type: 'input',
@@ -187,20 +198,20 @@ export async function gatherProjectConfig(
           } catch {
             return 'Please enter a valid URL';
           }
-        }
+        },
       },
       {
         type: 'input',
         name: 'courseId',
         message: 'Course ID to import (optional):',
-        when: (answers) => answers.dataLayerType === 'couch'
+        when: (answers) => answers.dataLayerType === 'couch',
       },
       {
         type: 'confirm',
         name: 'importCourseData',
         message: 'Would you like to import course data from a CouchDB server?',
         default: false,
-        when: (answers) => answers.dataLayerType === 'static'
+        when: (answers) => answers.dataLayerType === 'static',
       },
       {
         type: 'input',
@@ -216,19 +227,19 @@ export async function gatherProjectConfig(
           } catch {
             return 'Please enter a valid URL';
           }
-        }
+        },
       },
       {
         type: 'input',
         name: 'importUsername',
         message: 'Username:',
-        when: (answers) => answers.dataLayerType === 'static' && answers.importCourseData
+        when: (answers) => answers.dataLayerType === 'static' && answers.importCourseData,
       },
       {
         type: 'password',
         name: 'importPassword',
         message: 'Password:',
-        when: (answers) => answers.dataLayerType === 'static' && answers.importCourseData
+        when: (answers) => answers.dataLayerType === 'static' && answers.importCourseData,
       },
       {
         type: 'list',
@@ -237,23 +248,23 @@ export async function gatherProjectConfig(
         choices: [
           {
             name: `Default (Material Blue) ${createThemePreview('default')}`,
-            value: 'default'
+            value: 'default',
           },
           {
             name: `Medical (Healthcare Green) ${createThemePreview('medical')}`,
-            value: 'medical'
+            value: 'medical',
           },
           {
             name: `Educational (Academic Orange) ${createThemePreview('educational')}`,
-            value: 'educational'
+            value: 'educational',
           },
           {
             name: `Corporate (Professional Gray) ${createThemePreview('corporate')}`,
-            value: 'corporate'
-          }
+            value: 'corporate',
+          },
         ],
-        default: options.theme
-      }
+        default: options.theme,
+      },
     ]);
 
     config = {
@@ -266,7 +277,7 @@ export async function gatherProjectConfig(
       importCourseData: answers.importCourseData,
       importServerUrl: answers.importServerUrl,
       importUsername: answers.importUsername,
-      importPassword: answers.importPassword
+      importPassword: answers.importPassword,
     };
 
     // If user wants to import course data, fetch available courses and let them select
@@ -285,18 +296,18 @@ export async function gatherProjectConfig(
               type: 'checkbox',
               name: 'selectedCourseIds',
               message: 'Select courses to import:',
-              choices: availableCourses.map(course => ({
+              choices: availableCourses.map((course) => ({
                 name: `${course.name} (${course.id})`,
                 value: course.id,
-                short: course.name
+                short: course.name,
               })),
               validate: (selected: string[]) => {
                 if (selected.length === 0) {
                   return 'Please select at least one course to import';
                 }
                 return true;
-              }
-            }
+              },
+            },
           ]);
 
           config.importCourseIds = courseSelectionAnswers.selectedCourseIds;
@@ -312,8 +323,8 @@ export async function gatherProjectConfig(
                   return 'Please enter at least one course ID';
                 }
                 return true;
-              }
-            }
+              },
+            },
           ]);
 
           config.importCourseIds = manualCourseAnswers.manualCourseIds
@@ -338,8 +349,8 @@ export async function gatherProjectConfig(
             type: 'confirm',
             name: 'continueAnyway',
             message: 'Continue with manual course ID entry?',
-            default: true
-          }
+            default: true,
+          },
         ]);
 
         if (fallbackAnswers.continueAnyway) {
@@ -353,8 +364,8 @@ export async function gatherProjectConfig(
                   return 'Please enter at least one course ID';
                 }
                 return true;
-              }
-            }
+              },
+            },
           ]);
 
           config.importCourseIds = manualCourseAnswers.manualCourseIds
@@ -377,12 +388,14 @@ export async function gatherProjectConfig(
       dataLayerType: options.dataLayer === 'dynamic' ? 'couch' : 'static',
       couchdbUrl: options.couchdbUrl,
       course: options.courseId,
-      theme: PREDEFINED_THEMES[options.theme]
+      theme: PREDEFINED_THEMES[options.theme],
     };
 
     // Validate required fields for non-interactive mode
     if (config.dataLayerType === 'couch' && !config.couchdbUrl) {
-      throw new Error('CouchDB URL is required when using dynamic data layer. Use --couchdb-url option.');
+      throw new Error(
+        'CouchDB URL is required when using dynamic data layer. Use --couchdb-url option.'
+      );
     }
   }
 
@@ -397,16 +410,18 @@ export async function confirmProjectCreation(
   console.log(`   Project Name: ${chalk.white(config.projectName)}`);
   console.log(`   Course Title: ${chalk.white(config.title)}`);
   console.log(`   Data Layer: ${chalk.white(config.dataLayerType)}`);
-  
+
   if (config.couchdbUrl) {
     console.log(`   CouchDB URL: ${chalk.white(config.couchdbUrl)}`);
   }
-  
+
   if (config.course) {
     console.log(`   Course ID: ${chalk.white(config.course)}`);
   }
-  
-  console.log(`   Theme: ${chalk.white(config.theme.name)} ${createThemePreview(config.theme.name)}`);
+
+  console.log(
+    `   Theme: ${chalk.white(config.theme.name)} ${createThemePreview(config.theme.name)}`
+  );
   console.log(`   Directory: ${chalk.white(projectPath)}`);
 
   const { confirmed } = await inquirer.prompt([
@@ -414,19 +429,16 @@ export async function confirmProjectCreation(
       type: 'confirm',
       name: 'confirmed',
       message: 'Create project with these settings?',
-      default: true
-    }
+      default: true,
+    },
   ]);
 
   return confirmed;
 }
 
-
-
 function formatProjectName(projectName: string): string {
   return projectName
     .split(/[-_\s]+/)
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(' ');
 }
-
