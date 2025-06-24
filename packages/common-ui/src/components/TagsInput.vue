@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div data-cy="tags-input">
     <vue-tags-input
       v-model="tag"
       :tags="tags"

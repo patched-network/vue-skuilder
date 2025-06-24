@@ -36,7 +36,7 @@ export default defineComponent({
 
   computed: {
     isPianoCourse(): boolean {
-      return this.courseConfig.name.toLowerCase().includes('piano');
+      return this.courseConfig.name?.toLowerCase().includes('piano') ?? false;
     },
   },
 
