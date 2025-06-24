@@ -1,40 +1,50 @@
 <template>
   <div v-if="!updatePending">
-    <h1 class="text-h4 mb-2"><router-link to="/q">Quilts</router-link> / {{ courseConfig.name }}</h1>
+    <slot name="header" :course-config="courseConfig" :course-id="courseId">
+      <h1 class="text-h4 mb-2">{{ courseConfig.name }}</h1>
+    </slot>
 
     <p class="text-body-2">
       {{ courseConfig.description }}
     </p>
 
-    <transition name="component-fade" mode="out-in">
-      <div v-if="userIsRegistered">
-        <router-link :to="`/study/${courseId}`" class="me-2">
-          <v-btn color="success">Start a study session</v-btn>
-        </router-link>
-        <router-link v-if="editMode === 'full'" :to="`/edit/${courseId}`" class="me-2">
-          <v-btn data-cy="add-content-btn" color="indigo-lighten-1">
+    <slot
+      name="actions"
+      :user-is-registered="userIsRegistered"
+      :course-id="courseId"
+      :edit-mode="editMode"
+      :register="register"
+      :drop="drop"
+    >
+      <!-- Default fallback content if no actions slot provided -->
+      <transition name="component-fade" mode="out-in">
+        <div v-if="userIsRegistered">
+          <v-btn color="success" class="me-2">Start a study session</v-btn>
+          <v-btn v-if="editMode === 'full'" data-cy="add-content-btn" color="indigo-lighten-1" class="me-2">
             <v-icon start>mdi-plus</v-icon>
             Add content
           </v-btn>
-        </router-link>
-        <router-link v-if="editMode === 'full'" :to="`/courses/${courseId}/elo`" class="me-2">
-          <v-btn color="green-darken-2" title="Rank course content for difficulty">
+          <v-btn
+            v-if="editMode === 'full'"
+            color="green-darken-2"
+            title="Rank course content for difficulty"
+            class="me-2"
+          >
             <v-icon start>mdi-format-list-numbered</v-icon>
             Arrange
           </v-btn>
-        </router-link>
-        <v-btn v-if="editMode === 'full'" color="error" size="small" variant="outlined" @click="drop">
-          Drop this course
-        </v-btn>
-      </div>
-      <div v-else>
-        <v-btn data-cy="register-btn" color="primary" class="me-2" @click="register">Register</v-btn>
-        <router-link :to="`/q/${courseId}/preview`">
+          <v-btn v-if="editMode === 'full'" color="error" size="small" variant="outlined" @click="drop">
+            Drop this course
+          </v-btn>
+        </div>
+        <div v-else>
+          <v-btn data-cy="register-btn" color="primary" class="me-2" @click="register">Register</v-btn>
           <v-btn variant="outlined" color="primary" class="me-2">Start a trial study session</v-btn>
-        </router-link>
-      </div>
-    </transition>
-    <!-- midi-config removed to break circular dependency - should be added by wrapper component -->
+        </div>
+      </transition>
+    </slot>
+
+    <slot name="additional-content"></slot>
 
     <v-card class="my-2">
       <v-toolbar density="compact">
@@ -45,11 +55,11 @@
       </v-toolbar>
       <v-card-text>
         <span v-for="(tag, i) in tags" :key="i">
-          <router-link :to="`/q/${courseId}/tags/${tag.name}`">
+          <slot name="tag-link" :tag="tag" :course-id="courseId">
             <v-chip variant="tonal" class="me-2 mb-2">
               {{ tag.name }}
             </v-chip>
-          </router-link>
+          </slot>
         </span>
       </v-card-text>
     </v-card>
