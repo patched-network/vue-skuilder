@@ -1,6 +1,7 @@
 {
     "name": "vue-skuilder",
     "scripts": {
+        "setup": "yarn && git submodule update --init --recursive",
         "dev": "yarn workspace @vue-skuilder/common build && yarn workspace @vue-skuilder/db build && yarn workspace @vue-skuilder/common-ui build && yarn workspace @vue-skuilder/courses build && node scripts/dev-couchdb.js start && concurrently \"yarn dev:platform-ui\" \"yarn dev:express\"",
         "dev:platform-ui": "yarn workspace @vue-skuilder/platform-ui dev",
         "dev:express": "yarn workspace @vue-skuilder/express dev",
