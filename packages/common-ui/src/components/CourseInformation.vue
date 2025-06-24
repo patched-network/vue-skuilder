@@ -11,19 +11,21 @@
         <router-link :to="`/study/${courseId}`" class="me-2">
           <v-btn color="success">Start a study session</v-btn>
         </router-link>
-        <router-link :to="`/edit/${courseId}`" class="me-2">
+        <router-link v-if="editMode === 'full'" :to="`/edit/${courseId}`" class="me-2">
           <v-btn data-cy="add-content-btn" color="indigo-lighten-1">
             <v-icon start>mdi-plus</v-icon>
             Add content
           </v-btn>
         </router-link>
-        <router-link :to="`/courses/${courseId}/elo`" class="me-2">
+        <router-link v-if="editMode === 'full'" :to="`/courses/${courseId}/elo`" class="me-2">
           <v-btn color="green-darken-2" title="Rank course content for difficulty">
             <v-icon start>mdi-format-list-numbered</v-icon>
             Arrange
           </v-btn>
         </router-link>
-        <v-btn color="error" size="small" variant="outlined" @click="drop"> Drop this course </v-btn>
+        <v-btn v-if="editMode === 'full'" color="error" size="small" variant="outlined" @click="drop">
+          Drop this course
+        </v-btn>
       </div>
       <div v-else>
         <v-btn data-cy="register-btn" color="primary" class="me-2" @click="register">Register</v-btn>
@@ -52,7 +54,12 @@
       </v-card-text>
     </v-card>
 
-    <course-card-browser class="my-3" :course-id="courseId" :view-lookup-function="viewLookupFunction" />
+    <course-card-browser
+      class="my-3"
+      :course-id="courseId"
+      :view-lookup-function="viewLookupFunction"
+      :edit-mode="editMode"
+    />
   </div>
 </template>
 
@@ -85,6 +92,11 @@ export default defineComponent({
         console.warn('No viewLookupFunction provided to CourseInformation');
         return null;
       },
+    },
+    editMode: {
+      type: String as PropType<'none' | 'readonly' | 'full'>,
+      required: false,
+      default: 'full',
     },
   },
 

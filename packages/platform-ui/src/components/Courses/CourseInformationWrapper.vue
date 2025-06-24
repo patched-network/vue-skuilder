@@ -1,6 +1,6 @@
 <template>
   <div>
-    <course-information :course-id="courseId" :view-lookup-function="viewLookup" />
+    <course-information :course-id="courseId" :view-lookup-function="viewLookup" :edit-mode="editMode" />
     <midi-config v-if="isPianoCourse" :_id="courseId" :user="user" class="my-3" />
   </div>
 </template>
@@ -31,6 +31,7 @@ export default defineComponent({
     return {
       courseConfig: {} as CourseConfig,
       user: null as UserDBInterface | null,
+      editMode: 'full' as 'none' | 'readonly' | 'full',
     };
   },
 
@@ -40,16 +41,20 @@ export default defineComponent({
     },
   },
 
+  async created() {
+    const dataLayer = getDataLayer();
+    const courseDB = dataLayer.getCourseDB(this.courseId);
+    this.courseConfig = await courseDB.getCourseConfig();
+    this.user = await getCurrentUser();
+
+    // Determine edit mode based on data layer capabilities
+    this.editMode = dataLayer.isReadOnly() ? 'readonly' : 'full';
+  },
+
   methods: {
     viewLookup(x: unknown) {
       return allCourses.getView(x);
     },
-  },
-
-  async created() {
-    const courseDB = getDataLayer().getCourseDB(this.courseId);
-    this.courseConfig = await courseDB.getCourseConfig();
-    this.user = await getCurrentUser();
   },
 });
 </script>
