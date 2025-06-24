@@ -43,4 +43,9 @@ export interface DataLayerProvider {
    * Teardown the data layer
    */
   teardown(): Promise<void>;
+
+  /**
+   * Check if this data layer is read-only
+   */
+  isReadOnly(): boolean;
 }

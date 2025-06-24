@@ -104,4 +104,8 @@ export class CouchDataLayerProvider implements DataLayerProvider {
   getAdminDB(): AdminDBInterface {
     return new AdminDB();
   }
+
+  isReadOnly(): boolean {
+    return false;
+  }
 }
