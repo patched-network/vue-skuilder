@@ -12,6 +12,7 @@ export interface MigrationResult {
   documentsRestored: number;
   attachmentsRestored: number;
   designDocsRestored: number;
+  courseConfigRestored: number;
   errors: string[];
   warnings: string[];
   migrationTime: number;
@@ -28,7 +29,7 @@ export interface ValidationResult {
 
 export interface ValidationIssue {
   type: 'error' | 'warning';
-  category: 'documents' | 'attachments' | 'views' | 'metadata';
+  category: 'documents' | 'attachments' | 'views' | 'metadata' | 'course_config';
   message: string;
   details?: any;
 }
@@ -38,7 +39,7 @@ export interface DocumentCounts {
 }
 
 export interface RestoreProgress {
-  phase: 'manifest' | 'design_docs' | 'documents' | 'attachments' | 'validation';
+  phase: 'manifest' | 'design_docs' | 'course_config' | 'documents' | 'attachments' | 'validation';
   current: number;
   total: number;
   message: string;
@@ -60,6 +61,12 @@ export interface AggregatedDocument {
   _attachments?: Record<string, any>;
   docType: string;
   [key: string]: any;
+}
+
+export interface RestoreResults {
+  restored: number;
+  errors: string[];
+  warnings: string[];
 }
 
 export interface AttachmentUploadResult {

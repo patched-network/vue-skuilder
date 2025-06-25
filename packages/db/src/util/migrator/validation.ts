@@ -20,7 +20,7 @@ try {
  * Validate that a static course directory contains all required files
  */
 export async function validateStaticCourse(
-  staticPath: string, 
+  staticPath: string,
   fs?: FileSystemAdapter
 ): Promise<StaticCourseValidation> {
   const validation: StaticCourseValidation = {
@@ -65,7 +65,7 @@ export async function validateStaticCourse(
         manifestPath = fs.joinPath(staticPath, 'manifest.json');
         if (await fs.exists(manifestPath)) {
           validation.manifestExists = true;
-          
+
           // Parse manifest to get course info
           const manifestContent = await fs.readFile(manifestPath);
           const manifest: StaticCourseManifest = JSON.parse(manifestContent);
@@ -110,9 +110,10 @@ export async function validateStaticCourse(
         }
       }
     } catch (error) {
-      const errorMessage = error instanceof FileSystemError 
-        ? error.message 
-        : `Manifest not found or invalid: ${manifestPath}`;
+      const errorMessage =
+        error instanceof FileSystemError
+          ? error.message
+          : `Manifest not found or invalid: ${manifestPath}`;
       validation.errors.push(errorMessage);
       validation.valid = false;
     }
@@ -147,9 +148,10 @@ export async function validateStaticCourse(
         }
       }
     } catch (error) {
-      const errorMessage = error instanceof FileSystemError 
-        ? error.message 
-        : `Chunks directory not found: ${chunksPath}`;
+      const errorMessage =
+        error instanceof FileSystemError
+          ? error.message
+          : `Chunks directory not found: ${chunksPath}`;
       validation.errors.push(errorMessage);
       validation.valid = false;
     }
@@ -182,9 +184,10 @@ export async function validateStaticCourse(
     } catch (error) {
       // Attachments directory is optional
       attachmentsPath = attachmentsPath! || `${staticPath}/attachments`;
-      const warningMessage = error instanceof FileSystemError 
-        ? error.message 
-        : `Attachments directory not found: ${attachmentsPath} (this is OK if course has no attachments)`;
+      const warningMessage =
+        error instanceof FileSystemError
+          ? error.message
+          : `Attachments directory not found: ${attachmentsPath} (this is OK if course has no attachments)`;
       validation.warnings.push(warningMessage);
     }
   } catch (error) {
@@ -224,10 +227,13 @@ export async function validateMigration(
       validation.issues
     );
 
-    // 2. Validate design documents and views
+    // 2. Validate CourseConfig document
+    await validateCourseConfig(targetDB, manifest, validation.issues);
+
+    // 3. Validate design documents and views
     validation.viewFunctionality = await validateViews(targetDB, manifest, validation.issues);
 
-    // 3. Validate attachment integrity (sample check)
+    // 4. Validate attachment integrity (sample check)
     validation.attachmentIntegrity = await validateAttachmentIntegrity(targetDB, validation.issues);
 
     // Overall validation result
@@ -326,6 +332,62 @@ function compareDocumentCounts(
   }
 
   return countsMatch;
+}
+
+/**
+ * Validate that CourseConfig document exists and is properly structured
+ */
+async function validateCourseConfig(
+  db: PouchDB.Database,
+  manifest: StaticCourseManifest,
+  issues: ValidationIssue[]
+): Promise<void> {
+  try {
+    // Check if CourseConfig document exists
+    const courseConfig = await db.get('CourseConfig');
+    if (!courseConfig) {
+      issues.push({
+        type: 'error',
+        category: 'course_config',
+        message: 'CourseConfig document not found after migration',
+      });
+      return;
+    }
+
+    // Verify courseID field is present
+    if (!(courseConfig as any).courseID) {
+      issues.push({
+        type: 'warning',
+        category: 'course_config',
+        message: 'CourseConfig document missing courseID field',
+      });
+    }
+
+    // Verify courseID matches manifest
+    if ((courseConfig as any).courseID !== manifest.courseId) {
+      issues.push({
+        type: 'warning',
+        category: 'course_config',
+        message: `CourseConfig courseID mismatch: expected ${manifest.courseId}, got ${(courseConfig as any).courseID}`,
+      });
+    }
+
+    logger.debug('CourseConfig document validation passed');
+  } catch (error) {
+    if ((error as any).status === 404) {
+      issues.push({
+        type: 'error',
+        category: 'course_config',
+        message: 'CourseConfig document not found in database',
+      });
+    } else {
+      issues.push({
+        type: 'error',
+        category: 'course_config',
+        message: `Failed to validate CourseConfig document: ${error instanceof Error ? error.message : String(error)}`,
+      });
+    }
+  }
 }
 
 /**

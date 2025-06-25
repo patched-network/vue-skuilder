@@ -9,7 +9,8 @@ import {
   DocumentCounts,
   RestoreProgress,
   AggregatedDocument,
-  AttachmentUploadResult
+  RestoreResults,
+  AttachmentUploadResult,
 } from './types';
 import { validateStaticCourse, validateMigration } from './validation';
 import { FileSystemAdapter, FileSystemError } from './FileSystemAdapter';
@@ -32,13 +33,10 @@ export class StaticToCouchDBMigrator {
   private progressCallback?: (progress: RestoreProgress) => void;
   private fs?: FileSystemAdapter;
 
-  constructor(
-    options: Partial<MigrationOptions> = {},
-    fileSystemAdapter?: FileSystemAdapter
-  ) {
+  constructor(options: Partial<MigrationOptions> = {}, fileSystemAdapter?: FileSystemAdapter) {
     this.options = {
       ...DEFAULT_MIGRATION_OPTIONS,
-      ...options
+      ...options,
     };
     this.fs = fileSystemAdapter;
   }
@@ -53,19 +51,17 @@ export class StaticToCouchDBMigrator {
   /**
    * Migrate a static course to CouchDB
    */
-  async migrateCourse(
-    staticPath: string,
-    targetDB: PouchDB.Database
-  ): Promise<MigrationResult> {
+  async migrateCourse(staticPath: string, targetDB: PouchDB.Database): Promise<MigrationResult> {
     const startTime = Date.now();
     const result: MigrationResult = {
       success: false,
       documentsRestored: 0,
       attachmentsRestored: 0,
       designDocsRestored: 0,
+      courseConfigRestored: 0,
       errors: [] as string[],
       warnings: [] as string[],
-      migrationTime: 0
+      migrationTime: 0,
     };
 
     try {
@@ -86,27 +82,64 @@ export class StaticToCouchDBMigrator {
       logger.info(`Loaded manifest for course: ${manifest.courseId} (${manifest.courseName})`);
 
       // Phase 3: Restore design documents
-      this.reportProgress('design_docs', 0, manifest.designDocs.length, 'Restoring design documents...');
+      this.reportProgress(
+        'design_docs',
+        0,
+        manifest.designDocs.length,
+        'Restoring design documents...'
+      );
       const designDocResults = await this.restoreDesignDocuments(manifest.designDocs, targetDB);
       result.designDocsRestored = designDocResults.restored;
       result.errors.push(...designDocResults.errors);
       result.warnings.push(...designDocResults.warnings);
 
+      // Phase 3.5: Restore CourseConfig
+      this.reportProgress('course_config', 0, 1, 'Restoring CourseConfig document...');
+      const courseConfigResults = await this.restoreCourseConfig(manifest, targetDB);
+      result.courseConfigRestored = courseConfigResults.restored;
+      result.errors.push(...courseConfigResults.errors);
+      result.warnings.push(...courseConfigResults.warnings);
+      this.reportProgress('course_config', 1, 1, 'CourseConfig document restored');
+
       // Phase 4: Aggregate and restore documents
       const expectedCounts = this.calculateExpectedCounts(manifest);
-      this.reportProgress('documents', 0, manifest.documentCount, 'Aggregating documents from chunks...');
+      this.reportProgress(
+        'documents',
+        0,
+        manifest.documentCount,
+        'Aggregating documents from chunks...'
+      );
       const documents = await this.aggregateDocuments(staticPath, manifest);
-      
-      this.reportProgress('documents', documents.length, manifest.documentCount, 'Uploading documents to CouchDB...');
-      const docResults = await this.uploadDocuments(documents, targetDB);
+
+      // Filter out CourseConfig documents to prevent conflicts with Phase 3.5
+      const filteredDocuments = documents.filter((doc) => doc._id !== 'CourseConfig');
+      if (documents.length !== filteredDocuments.length) {
+        result.warnings.push(
+          `Filtered out ${documents.length - filteredDocuments.length} CourseConfig document(s) from chunks to prevent conflicts`
+        );
+      }
+
+      this.reportProgress(
+        'documents',
+        filteredDocuments.length,
+        manifest.documentCount,
+        'Uploading documents to CouchDB...'
+      );
+      const docResults = await this.uploadDocuments(filteredDocuments, targetDB);
       result.documentsRestored = docResults.restored;
       result.errors.push(...docResults.errors);
       result.warnings.push(...docResults.warnings);
 
       // Phase 5: Upload attachments
-      const docsWithAttachments = documents.filter(doc => doc._attachments && Object.keys(doc._attachments).length > 0);
+      const docsWithAttachments = documents.filter(
+        (doc) => doc._attachments && Object.keys(doc._attachments).length > 0
+      );
       this.reportProgress('attachments', 0, docsWithAttachments.length, 'Uploading attachments...');
-      const attachmentResults = await this.uploadAttachments(staticPath, docsWithAttachments, targetDB);
+      const attachmentResults = await this.uploadAttachments(
+        staticPath,
+        docsWithAttachments,
+        targetDB
+      );
       result.attachmentsRestored = attachmentResults.restored;
       result.errors.push(...attachmentResults.errors);
       result.warnings.push(...attachmentResults.warnings);
@@ -117,7 +150,7 @@ export class StaticToCouchDBMigrator {
         const validationResult = await validateMigration(targetDB, expectedCounts, manifest);
         if (!validationResult.valid) {
           result.warnings.push('Migration validation found issues');
-          validationResult.issues.forEach(issue => {
+          validationResult.issues.forEach((issue) => {
             if (issue.type === 'error') {
               result.errors.push(`Validation: ${issue.message}`);
             } else {
@@ -136,14 +169,14 @@ export class StaticToCouchDBMigrator {
       logger.info(`Documents restored: ${result.documentsRestored}`);
       logger.info(`Attachments restored: ${result.attachmentsRestored}`);
       logger.info(`Design docs restored: ${result.designDocsRestored}`);
-      
+      logger.info(`CourseConfig restored: ${result.courseConfigRestored}`);
+
       if (result.errors.length > 0) {
         logger.error(`Migration completed with ${result.errors.length} errors`);
       }
       if (result.warnings.length > 0) {
         logger.warn(`Migration completed with ${result.warnings.length} warnings`);
       }
-
     } catch (error) {
       result.success = false;
       result.migrationTime = Date.now() - startTime;
@@ -179,8 +212,11 @@ export class StaticToCouchDBMigrator {
         manifestContent = await this.fs.readFile(manifestPath);
       } else {
         // Fallback to legacy behavior for backward compatibility
-        manifestPath = (nodeFS && nodePath) ? nodePath.join(staticPath, 'manifest.json') : `${staticPath}/manifest.json`;
-        
+        manifestPath =
+          nodeFS && nodePath
+            ? nodePath.join(staticPath, 'manifest.json')
+            : `${staticPath}/manifest.json`;
+
         if (nodeFS && this.isLocalPath(staticPath)) {
           // Node.js file system access
           manifestContent = await nodeFS.promises.readFile(manifestPath, 'utf8');
@@ -195,7 +231,7 @@ export class StaticToCouchDBMigrator {
       }
 
       const manifest: StaticCourseManifest = JSON.parse(manifestContent);
-      
+
       // Basic validation
       if (!manifest.version || !manifest.courseId || !manifest.chunks) {
         throw new Error('Invalid manifest structure');
@@ -203,9 +239,10 @@ export class StaticToCouchDBMigrator {
 
       return manifest;
     } catch (error) {
-      const errorMessage = error instanceof FileSystemError 
-        ? error.message 
-        : `Failed to load manifest: ${error instanceof Error ? error.message : String(error)}`;
+      const errorMessage =
+        error instanceof FileSystemError
+          ? error.message
+          : `Failed to load manifest: ${error instanceof Error ? error.message : String(error)}`;
       throw new Error(errorMessage);
     }
   }
@@ -235,7 +272,7 @@ export class StaticToCouchDBMigrator {
         // Prepare the document for insertion
         const docToInsert: any = {
           _id: designDoc._id,
-          views: designDoc.views
+          views: designDoc.views,
         };
 
         // If document exists, include the revision for update
@@ -248,7 +285,6 @@ export class StaticToCouchDBMigrator {
 
         await db.put(docToInsert);
         result.restored++;
-
       } catch (error) {
         const errorMessage = `Failed to restore design document ${designDoc._id}: ${error instanceof Error ? error.message : String(error)}`;
         result.errors.push(errorMessage);
@@ -256,7 +292,12 @@ export class StaticToCouchDBMigrator {
       }
     }
 
-    this.reportProgress('design_docs', designDocs.length, designDocs.length, `Restored ${result.restored} design documents`);
+    this.reportProgress(
+      'design_docs',
+      designDocs.length,
+      designDocs.length,
+      `Restored ${result.restored} design documents`
+    );
     return result;
   }
 
@@ -272,11 +313,16 @@ export class StaticToCouchDBMigrator {
 
     for (let i = 0; i < manifest.chunks.length; i++) {
       const chunk = manifest.chunks[i];
-      this.reportProgress('documents', allDocuments.length, manifest.documentCount, `Loading chunk ${chunk.id}...`);
+      this.reportProgress(
+        'documents',
+        allDocuments.length,
+        manifest.documentCount,
+        `Loading chunk ${chunk.id}...`
+      );
 
       try {
         const documents = await this.loadChunk(staticPath, chunk);
-        
+
         for (const doc of documents) {
           if (!doc._id) {
             logger.warn(`Document without _id found in chunk ${chunk.id}, skipping`);
@@ -290,16 +336,19 @@ export class StaticToCouchDBMigrator {
 
           documentMap.set(doc._id, doc);
         }
-
       } catch (error) {
-        throw new Error(`Failed to load chunk ${chunk.id}: ${error instanceof Error ? error.message : String(error)}`);
+        throw new Error(
+          `Failed to load chunk ${chunk.id}: ${error instanceof Error ? error.message : String(error)}`
+        );
       }
     }
 
     // Convert map to array
     allDocuments.push(...documentMap.values());
 
-    logger.info(`Aggregated ${allDocuments.length} unique documents from ${manifest.chunks.length} chunks`);
+    logger.info(
+      `Aggregated ${allDocuments.length} unique documents from ${manifest.chunks.length} chunks`
+    );
     return allDocuments;
   }
 
@@ -317,7 +366,10 @@ export class StaticToCouchDBMigrator {
         chunkContent = await this.fs.readFile(chunkPath);
       } else {
         // Fallback to legacy behavior for backward compatibility
-        chunkPath = (nodeFS && nodePath) ? nodePath.join(staticPath, chunk.path) : `${staticPath}/${chunk.path}`;
+        chunkPath =
+          nodeFS && nodePath
+            ? nodePath.join(staticPath, chunk.path)
+            : `${staticPath}/${chunk.path}`;
 
         if (nodeFS && this.isLocalPath(staticPath)) {
           // Node.js file system access
@@ -333,16 +385,17 @@ export class StaticToCouchDBMigrator {
       }
 
       const documents = JSON.parse(chunkContent);
-      
+
       if (!Array.isArray(documents)) {
         throw new Error('Chunk file does not contain an array of documents');
       }
 
       return documents;
     } catch (error) {
-      const errorMessage = error instanceof FileSystemError 
-        ? error.message 
-        : `Failed to load chunk: ${error instanceof Error ? error.message : String(error)}`;
+      const errorMessage =
+        error instanceof FileSystemError
+          ? error.message
+          : `Failed to load chunk: ${error instanceof Error ? error.message : String(error)}`;
       throw new Error(errorMessage);
     }
   }
@@ -359,15 +412,20 @@ export class StaticToCouchDBMigrator {
 
     for (let i = 0; i < documents.length; i += batchSize) {
       const batch = documents.slice(i, i + batchSize);
-      this.reportProgress('documents', i, documents.length, `Uploading batch ${Math.floor(i / batchSize) + 1}...`);
+      this.reportProgress(
+        'documents',
+        i,
+        documents.length,
+        `Uploading batch ${Math.floor(i / batchSize) + 1}...`
+      );
 
       try {
         // Prepare documents for bulk insert
-        const docsToInsert = batch.map(doc => {
+        const docsToInsert = batch.map((doc) => {
           const cleanDoc = { ...doc };
           // Remove _rev if present (CouchDB will assign new revision)
           delete cleanDoc._rev;
-          
+
           return cleanDoc;
         });
 
@@ -386,7 +444,6 @@ export class StaticToCouchDBMigrator {
             result.restored++;
           }
         }
-
       } catch (error) {
         let errorMessage: string;
         if (error instanceof Error) {
@@ -401,7 +458,12 @@ export class StaticToCouchDBMigrator {
       }
     }
 
-    this.reportProgress('documents', documents.length, documents.length, `Uploaded ${result.restored} documents`);
+    this.reportProgress(
+      'documents',
+      documents.length,
+      documents.length,
+      `Uploaded ${result.restored} documents`
+    );
     return result;
   }
 
@@ -417,7 +479,12 @@ export class StaticToCouchDBMigrator {
     let processedDocs = 0;
 
     for (const doc of documents) {
-      this.reportProgress('attachments', processedDocs, documents.length, `Processing attachments for ${doc._id}...`);
+      this.reportProgress(
+        'attachments',
+        processedDocs,
+        documents.length,
+        `Processing attachments for ${doc._id}...`
+      );
       processedDocs++;
 
       if (!doc._attachments) {
@@ -439,7 +506,6 @@ export class StaticToCouchDBMigrator {
           } else {
             result.errors.push(uploadResult.error || 'Unknown attachment upload error');
           }
-
         } catch (error) {
           const errorMessage = `Failed to upload attachment ${doc._id}/${attachmentName}: ${error instanceof Error ? error.message : String(error)}`;
           result.errors.push(errorMessage);
@@ -448,7 +514,12 @@ export class StaticToCouchDBMigrator {
       }
     }
 
-    this.reportProgress('attachments', documents.length, documents.length, `Uploaded ${result.restored} attachments`);
+    this.reportProgress(
+      'attachments',
+      documents.length,
+      documents.length,
+      `Uploaded ${result.restored} attachments`
+    );
     return result;
   }
 
@@ -465,7 +536,7 @@ export class StaticToCouchDBMigrator {
     const result: AttachmentUploadResult = {
       success: false,
       attachmentName,
-      docId
+      docId,
     };
 
     try {
@@ -485,7 +556,10 @@ export class StaticToCouchDBMigrator {
         attachmentData = await this.fs.readBinary(attachmentPath);
       } else {
         // Fallback to legacy behavior for backward compatibility
-        attachmentPath = (nodeFS && nodePath) ? nodePath.join(staticPath, attachmentMeta.path) : `${staticPath}/${attachmentMeta.path}`;
+        attachmentPath =
+          nodeFS && nodePath
+            ? nodePath.join(staticPath, attachmentMeta.path)
+            : `${staticPath}/${attachmentMeta.path}`;
 
         if (nodeFS && this.isLocalPath(staticPath)) {
           // Node.js file system access
@@ -510,12 +584,55 @@ export class StaticToCouchDBMigrator {
       );
 
       result.success = true;
-
     } catch (error) {
       result.error = error instanceof Error ? error.message : String(error);
     }
 
     return result;
+  }
+
+  /**
+   * Restore CourseConfig document from manifest
+   */
+  private async restoreCourseConfig(
+    manifest: StaticCourseManifest,
+    targetDB: PouchDB.Database
+  ): Promise<RestoreResults> {
+    const results: RestoreResults = {
+      restored: 0,
+      errors: [],
+      warnings: [],
+    };
+
+    try {
+      // Validate courseConfig exists
+      if (!manifest.courseConfig) {
+        results.warnings.push(
+          'No courseConfig found in manifest, skipping CourseConfig document creation'
+        );
+        return results;
+      }
+
+      // Create CourseConfig document
+      const courseConfigDoc: { [key: string]: any; _id: string; _rev?: string } = {
+        _id: 'CourseConfig',
+        ...manifest.courseConfig,
+        courseID: manifest.courseId,
+      };
+      delete courseConfigDoc._rev;
+
+      // Upload to CouchDB
+      await targetDB.put(courseConfigDoc);
+      results.restored = 1;
+
+      logger.info(`CourseConfig document created for course: ${manifest.courseId}`);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
+      results.errors.push(`Failed to restore CourseConfig: ${errorMessage}`);
+      logger.error('CourseConfig restoration failed:', error);
+    }
+
+    return results;
   }
 
   /**
@@ -546,10 +663,10 @@ export class StaticToCouchDBMigrator {
     try {
       // Get all documents and delete them
       const allDocs = await db.allDocs();
-      const docsToDelete = allDocs.rows.map(row => ({
+      const docsToDelete = allDocs.rows.map((row) => ({
         _id: row.id,
         _rev: row.value.rev,
-        _deleted: true
+        _deleted: true,
       }));
 
       if (docsToDelete.length > 0) {
@@ -576,7 +693,7 @@ export class StaticToCouchDBMigrator {
         phase,
         current,
         total,
-        message
+        message,
       });
     }
   }
