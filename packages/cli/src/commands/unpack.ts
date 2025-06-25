@@ -13,6 +13,7 @@ export function createUnpackCommand(): Command {
     .option('-u, --username <username>', 'CouchDB username')
     .option('-p, --password <password>', 'CouchDB password')
     .option('-d, --database <name>', 'Target database name (auto-generated if not provided)')
+    .option('--as <name>', 'Set a custom name for the unpacked course')
     .option('--chunk-size <size>', 'Documents per batch', '100')
     .option('--validate', 'Run migration validation')
     .option('--cleanup-on-error', 'Clean up database if migration fails')
@@ -24,6 +25,7 @@ interface UnpackOptions {
   username?: string;
   password?: string;
   database?: string;
+  as?: string;
   chunkSize: string;
   validate: boolean;
   cleanupOnError: boolean;
@@ -166,12 +168,28 @@ async function unpackCourse(coursePath: string, options: UnpackOptions) {
       process.exit(1);
     }
 
+    const courseName = options.as || validation.courseName || 'Unknown Course';
+
+    // Update CourseConfig with new name if provided
+    if (options.as) {
+      try {
+        console.log(chalk.cyan(`🔄 Updating course name to "${courseName}"...`));
+        const courseConfig: any = await targetDB.get('CourseConfig');
+        courseConfig.name = courseName;
+        await targetDB.put(courseConfig);
+        console.log(chalk.green('✅ Course name updated.'));
+      } catch (error) {
+        console.log(chalk.yellow('⚠️  Warning: Failed to update course name in CourseConfig.'));
+        console.log(chalk.yellow(`   ${error instanceof Error ? error.message : String(error)}`));
+      }
+    }
+
     // Success! Register course in lookup and display results
     console.log(chalk.green('\n✅ Successfully unpacked course!'));
     
     try {
       console.log(chalk.cyan('🔄 Registering course in course lookup...'));
-      await CourseLookup.addWithId(studioCourseId, validation.courseName || 'Unknown Course');
+      await CourseLookup.addWithId(studioCourseId, courseName);
       console.log(chalk.green('✅ Course registered in course lookup'));
     } catch (lookupError) {
       console.log(chalk.yellow('⚠️  Warning: Failed to register course in lookup database'));
@@ -179,7 +197,7 @@ async function unpackCourse(coursePath: string, options: UnpackOptions) {
       console.log(chalk.yellow('   The unpacked course data is still available, but may not appear in the course browser.'));
     }
     console.log('');
-    console.log(chalk.white(`📊 Course: ${validation.courseName || 'Unknown'}`));
+    console.log(chalk.white(`📊 Course: ${courseName}`));
     console.log(chalk.white(`📄 Documents: ${result.documentsRestored}`));
     console.log(chalk.white(`🗃️  Design Docs: ${result.designDocsRestored}`));
     console.log(chalk.white(`📎 Attachments: ${result.attachmentsRestored}`));
