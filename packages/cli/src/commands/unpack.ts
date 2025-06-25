@@ -14,7 +14,6 @@ export function createUnpackCommand(): Command {
     .option('-p, --password <password>', 'CouchDB password')
     .option('-d, --database <name>', 'Target database name (auto-generated if not provided)')
     .option('--chunk-size <size>', 'Documents per batch', '100')
-    .option('--skip-attachments', 'Skip attachment uploads')
     .option('--validate', 'Run migration validation')
     .option('--cleanup-on-error', 'Clean up database if migration fails')
     .action(unpackCourse);
@@ -26,7 +25,6 @@ interface UnpackOptions {
   password?: string;
   database?: string;
   chunkSize: string;
-  skipAttachments: boolean;
   validate: boolean;
   cleanupOnError: boolean;
 }
@@ -105,13 +103,11 @@ async function unpackCourse(coursePath: string, options: UnpackOptions) {
     // Configure migrator
     const migratorOptions = {
       chunkBatchSize: parseInt(options.chunkSize),
-      skipAttachments: options.skipAttachments,
       validateRoundTrip: options.validate,
       cleanupOnFailure: options.cleanupOnError,
     };
 
     console.log(chalk.gray(`📦 Batch size: ${migratorOptions.chunkBatchSize} documents`));
-    console.log(chalk.gray(`📎 Include attachments: ${!migratorOptions.skipAttachments}`));
     console.log(chalk.gray(`🔍 Validation enabled: ${migratorOptions.validateRoundTrip}`));
 
     // Setup progress reporting

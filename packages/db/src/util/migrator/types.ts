@@ -2,7 +2,6 @@
 
 export interface MigrationOptions {
   chunkBatchSize: number;
-  skipAttachments: boolean;
   validateRoundTrip: boolean;
   cleanupOnFailure: boolean;
   timeout: number; // milliseconds
@@ -72,7 +71,6 @@ export interface AttachmentUploadResult {
 
 export const DEFAULT_MIGRATION_OPTIONS: MigrationOptions = {
   chunkBatchSize: 100,
-  skipAttachments: false,
   validateRoundTrip: false,
   cleanupOnFailure: true,
   timeout: 300000, // 5 minutes

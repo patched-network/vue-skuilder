@@ -103,15 +103,13 @@ export class StaticToCouchDBMigrator {
       result.errors.push(...docResults.errors);
       result.warnings.push(...docResults.warnings);
 
-      // Phase 5: Upload attachments (if not skipped)
-      if (!this.options.skipAttachments) {
-        const docsWithAttachments = documents.filter(doc => doc._attachments && Object.keys(doc._attachments).length > 0);
-        this.reportProgress('attachments', 0, docsWithAttachments.length, 'Uploading attachments...');
-        const attachmentResults = await this.uploadAttachments(staticPath, docsWithAttachments, targetDB);
-        result.attachmentsRestored = attachmentResults.restored;
-        result.errors.push(...attachmentResults.errors);
-        result.warnings.push(...attachmentResults.warnings);
-      }
+      // Phase 5: Upload attachments
+      const docsWithAttachments = documents.filter(doc => doc._attachments && Object.keys(doc._attachments).length > 0);
+      this.reportProgress('attachments', 0, docsWithAttachments.length, 'Uploading attachments...');
+      const attachmentResults = await this.uploadAttachments(staticPath, docsWithAttachments, targetDB);
+      result.attachmentsRestored = attachmentResults.restored;
+      result.errors.push(...attachmentResults.errors);
+      result.warnings.push(...attachmentResults.warnings);
 
       // Phase 6: Validation (if enabled)
       if (this.options.validateRoundTrip) {
@@ -369,6 +367,7 @@ export class StaticToCouchDBMigrator {
           const cleanDoc = { ...doc };
           // Remove _rev if present (CouchDB will assign new revision)
           delete cleanDoc._rev;
+          
           return cleanDoc;
         });
 
