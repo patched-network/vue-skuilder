@@ -76,7 +76,7 @@ async function unpackCourse(coursePath: string, options: UnpackOptions) {
     if (!targetDbName) {
       const timestamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
       const random = Math.random().toString(36).substring(2, 8);
-      studioCourseId = `unpack-${validation.courseId || 'unknown'}-${timestamp}-${random}`;
+      studioCourseId = `unpacked_${validation.courseId || 'unknown'}_${timestamp}_${random}`;
       targetDbName = `coursedb-${studioCourseId}`;
     } else {
       // If user provided custom database name, extract studio course ID from it
