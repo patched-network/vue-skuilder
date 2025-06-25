@@ -6,6 +6,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { createInitCommand } from './commands/init.js';
 import { createPackCommand } from './commands/pack.js';
+import { createUnpackCommand } from './commands/unpack.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -24,6 +25,7 @@ program
 // Add commands
 program.addCommand(createInitCommand());
 program.addCommand(createPackCommand());
+program.addCommand(createUnpackCommand());
 
 program.on('--help', () => {
   console.log('');
@@ -33,6 +35,8 @@ program.on('--help', () => {
   console.log('  $ skuilder init physics --no-interactive --data-layer=dynamic');
   console.log('  $ skuilder pack sample-course-id');
   console.log('  $ skuilder pack biology-101 --server http://localhost:5984 --username admin');
+  console.log('  $ skuilder unpack ./static-courses/biology-101');
+  console.log('  $ skuilder unpack ./my-course --database test-migration --validate');
 });
 
 program.parse();
