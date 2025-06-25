@@ -2,7 +2,8 @@
 
 export { StaticToCouchDBMigrator } from './StaticToCouchDBMigrator';
 export { validateStaticCourse, validateMigration } from './validation';
-export { FileSystemAdapter, FileStats, FileSystemError } from './FileSystemAdapter';
+export type { FileSystemAdapter, FileStats } from './FileSystemAdapter';
+export { FileSystemError } from './FileSystemAdapter';
 export type {
   MigrationOptions,
   MigrationResult,

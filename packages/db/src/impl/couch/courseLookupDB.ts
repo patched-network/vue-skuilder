@@ -98,6 +98,30 @@ export default class CourseLookup {
   }
 
   /**
+   * Adds a new course to the lookup database with a specific courseID
+   * @param courseId The specific course ID to use
+   * @param courseName The course name
+   * @param disambiguator Optional disambiguator
+   * @returns Promise<void>
+   */
+  static async addWithId(
+    courseId: string, 
+    courseName: string, 
+    disambiguator?: string
+  ): Promise<void> {
+    const doc: Omit<CourseLookupDoc, '_rev'> = {
+      _id: courseId,
+      name: courseName,
+    };
+    
+    if (disambiguator) {
+      doc.disambiguator = disambiguator;
+    }
+
+    await CourseLookup._db.put(doc);
+  }
+
+  /**
    * Removes a course from the index
    * @param courseID
    */
