@@ -3,6 +3,7 @@ import PouchDB from 'pouchdb';
 import path from 'path';
 import chalk from 'chalk';
 import { StaticToCouchDBMigrator, validateStaticCourse } from '@vue-skuilder/db';
+import { NodeFileSystemAdapter } from '../utils/NodeFileSystemAdapter.js';
 
 export function createUnpackCommand(): Command {
   return new Command('unpack')
@@ -35,9 +36,12 @@ async function unpackCourse(coursePath: string, options: UnpackOptions) {
     console.log(chalk.cyan(`🔧 Unpacking static course to CouchDB...`));
     console.log(chalk.gray(`📁 Source: ${path.resolve(coursePath)}`));
 
+    // Create file system adapter
+    const fileSystemAdapter = new NodeFileSystemAdapter();
+
     // Validate static course directory
     console.log(chalk.cyan('🔍 Validating static course...'));
-    const validation = await validateStaticCourse(coursePath);
+    const validation = await validateStaticCourse(coursePath, fileSystemAdapter);
     
     if (!validation.valid) {
       console.log(chalk.red('❌ Static course validation failed:'));
@@ -111,7 +115,7 @@ async function unpackCourse(coursePath: string, options: UnpackOptions) {
     console.log(chalk.gray(`🔍 Validation enabled: ${migratorOptions.validateRoundTrip}`));
 
     // Setup progress reporting
-    const migrator = new StaticToCouchDBMigrator(migratorOptions);
+    const migrator = new StaticToCouchDBMigrator(migratorOptions, fileSystemAdapter);
     migrator.setProgressCallback((progress: any) => {
       const percentage = progress.total > 0 ? Math.round((progress.current / progress.total) * 100) : 0;
       console.log(chalk.cyan(`🔄 ${progress.phase}: ${progress.message} (${progress.current}/${progress.total} - ${percentage}%)`));

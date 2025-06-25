@@ -3,6 +3,7 @@
 import { logger } from '../logger';
 import { StaticCourseValidation, ValidationResult, DocumentCounts, ValidationIssue } from './types';
 import { StaticCourseManifest } from '../packer/types';
+import { FileSystemAdapter, FileSystemError } from './FileSystemAdapter';
 
 // Check if we're in Node.js environment and fs is available
 let nodeFS: any = null;
@@ -18,7 +19,10 @@ try {
 /**
  * Validate that a static course directory contains all required files
  */
-export async function validateStaticCourse(staticPath: string): Promise<StaticCourseValidation> {
+export async function validateStaticCourse(
+  staticPath: string, 
+  fs?: FileSystemAdapter
+): Promise<StaticCourseValidation> {
   const validation: StaticCourseValidation = {
     valid: true,
     manifestExists: false,
@@ -30,73 +34,158 @@ export async function validateStaticCourse(staticPath: string): Promise<StaticCo
 
   try {
     // Check if path exists and is directory
-    if (!nodeFS) {
+    if (fs) {
+      // Use injected file system adapter (preferred)
+      const stats = await fs.stat(staticPath);
+      if (!stats.isDirectory()) {
+        validation.errors.push(`Path is not a directory: ${staticPath}`);
+        validation.valid = false;
+        return validation;
+      }
+    } else if (!nodeFS) {
+      // Fallback validation failed
       validation.errors.push('File system access not available - validation skipped');
       validation.valid = false;
       return validation;
-    }
-
-    const stats = await nodeFS.promises.stat(staticPath);
-    if (!stats.isDirectory()) {
-      validation.errors.push(`Path is not a directory: ${staticPath}`);
-      validation.valid = false;
-      return validation;
+    } else {
+      // Legacy fallback
+      const stats = await nodeFS.promises.stat(staticPath);
+      if (!stats.isDirectory()) {
+        validation.errors.push(`Path is not a directory: ${staticPath}`);
+        validation.valid = false;
+        return validation;
+      }
     }
 
     // Check for manifest.json
-    const manifestPath = `${staticPath}/manifest.json`;
+    let manifestPath: string = `${staticPath}/manifest.json`;
     try {
-      await nodeFS.promises.access(manifestPath);
-      validation.manifestExists = true;
+      if (fs) {
+        // Use injected file system adapter (preferred)
+        manifestPath = fs.joinPath(staticPath, 'manifest.json');
+        if (await fs.exists(manifestPath)) {
+          validation.manifestExists = true;
+          
+          // Parse manifest to get course info
+          const manifestContent = await fs.readFile(manifestPath);
+          const manifest: StaticCourseManifest = JSON.parse(manifestContent);
+          validation.courseId = manifest.courseId;
+          validation.courseName = manifest.courseName;
 
-      // Parse manifest to get course info
-      const manifestContent = await nodeFS.promises.readFile(manifestPath, 'utf8');
-      const manifest: StaticCourseManifest = JSON.parse(manifestContent);
-      validation.courseId = manifest.courseId;
-      validation.courseName = manifest.courseName;
+          // Validate manifest structure
+          if (
+            !manifest.version ||
+            !manifest.courseId ||
+            !manifest.chunks ||
+            !Array.isArray(manifest.chunks)
+          ) {
+            validation.errors.push('Invalid manifest structure');
+            validation.valid = false;
+          }
+        } else {
+          validation.errors.push(`Manifest not found: ${manifestPath}`);
+          validation.valid = false;
+        }
+      } else {
+        // Legacy fallback
+        manifestPath = `${staticPath}/manifest.json`;
+        await nodeFS.promises.access(manifestPath);
+        validation.manifestExists = true;
 
-      // Validate manifest structure
-      if (
-        !manifest.version ||
-        !manifest.courseId ||
-        !manifest.chunks ||
-        !Array.isArray(manifest.chunks)
-      ) {
-        validation.errors.push('Invalid manifest structure');
-        validation.valid = false;
+        // Parse manifest to get course info
+        const manifestContent = await nodeFS.promises.readFile(manifestPath, 'utf8');
+        const manifest: StaticCourseManifest = JSON.parse(manifestContent);
+        validation.courseId = manifest.courseId;
+        validation.courseName = manifest.courseName;
+
+        // Validate manifest structure
+        if (
+          !manifest.version ||
+          !manifest.courseId ||
+          !manifest.chunks ||
+          !Array.isArray(manifest.chunks)
+        ) {
+          validation.errors.push('Invalid manifest structure');
+          validation.valid = false;
+        }
       }
     } catch (error) {
-      validation.errors.push(`Manifest not found or invalid: ${manifestPath}`);
+      const errorMessage = error instanceof FileSystemError 
+        ? error.message 
+        : `Manifest not found or invalid: ${manifestPath}`;
+      validation.errors.push(errorMessage);
       validation.valid = false;
     }
 
     // Check for chunks directory
-    const chunksPath = `${staticPath}/chunks`;
+    let chunksPath: string = `${staticPath}/chunks`;
     try {
-      const chunksStats = await nodeFS.promises.stat(chunksPath);
-      if (chunksStats.isDirectory()) {
-        validation.chunksExist = true;
+      if (fs) {
+        // Use injected file system adapter (preferred)
+        chunksPath = fs.joinPath(staticPath, 'chunks');
+        if (await fs.exists(chunksPath)) {
+          const chunksStats = await fs.stat(chunksPath);
+          if (chunksStats.isDirectory()) {
+            validation.chunksExist = true;
+          } else {
+            validation.errors.push(`Chunks path is not a directory: ${chunksPath}`);
+            validation.valid = false;
+          }
+        } else {
+          validation.errors.push(`Chunks directory not found: ${chunksPath}`);
+          validation.valid = false;
+        }
       } else {
-        validation.errors.push(`Chunks path is not a directory: ${chunksPath}`);
-        validation.valid = false;
+        // Legacy fallback
+        chunksPath = `${staticPath}/chunks`;
+        const chunksStats = await nodeFS.promises.stat(chunksPath);
+        if (chunksStats.isDirectory()) {
+          validation.chunksExist = true;
+        } else {
+          validation.errors.push(`Chunks path is not a directory: ${chunksPath}`);
+          validation.valid = false;
+        }
       }
     } catch (error) {
-      validation.errors.push(`Chunks directory not found: ${chunksPath}`);
+      const errorMessage = error instanceof FileSystemError 
+        ? error.message 
+        : `Chunks directory not found: ${chunksPath}`;
+      validation.errors.push(errorMessage);
       validation.valid = false;
     }
 
     // Check for attachments directory (optional - course might not have attachments)
-    const attachmentsPath = `${staticPath}/attachments`;
+    let attachmentsPath: string;
     try {
-      const attachmentsStats = await nodeFS.promises.stat(attachmentsPath);
-      if (attachmentsStats.isDirectory()) {
-        validation.attachmentsExist = true;
+      if (fs) {
+        // Use injected file system adapter (preferred)
+        attachmentsPath = fs.joinPath(staticPath, 'attachments');
+        if (await fs.exists(attachmentsPath)) {
+          const attachmentsStats = await fs.stat(attachmentsPath);
+          if (attachmentsStats.isDirectory()) {
+            validation.attachmentsExist = true;
+          }
+        } else {
+          // Attachments directory is optional
+          validation.warnings.push(
+            `Attachments directory not found: ${attachmentsPath} (this is OK if course has no attachments)`
+          );
+        }
+      } else {
+        // Legacy fallback
+        attachmentsPath = `${staticPath}/attachments`;
+        const attachmentsStats = await nodeFS.promises.stat(attachmentsPath);
+        if (attachmentsStats.isDirectory()) {
+          validation.attachmentsExist = true;
+        }
       }
     } catch (error) {
       // Attachments directory is optional
-      validation.warnings.push(
-        `Attachments directory not found: ${attachmentsPath} (this is OK if course has no attachments)`
-      );
+      attachmentsPath = attachmentsPath! || `${staticPath}/attachments`;
+      const warningMessage = error instanceof FileSystemError 
+        ? error.message 
+        : `Attachments directory not found: ${attachmentsPath} (this is OK if course has no attachments)`;
+      validation.warnings.push(warningMessage);
     }
   } catch (error) {
     validation.errors.push(

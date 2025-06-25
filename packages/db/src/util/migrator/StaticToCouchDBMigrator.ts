@@ -12,8 +12,9 @@ import {
   AttachmentUploadResult
 } from './types';
 import { validateStaticCourse, validateMigration } from './validation';
+import { FileSystemAdapter, FileSystemError } from './FileSystemAdapter';
 
-// Check if we're in Node.js environment and fs is available
+// Fallback for environments without FileSystemAdapter (backward compatibility)
 let nodeFS: any = null;
 let nodePath: any = null;
 try {
@@ -29,12 +30,17 @@ try {
 export class StaticToCouchDBMigrator {
   private options: MigrationOptions;
   private progressCallback?: (progress: RestoreProgress) => void;
+  private fs?: FileSystemAdapter;
 
-  constructor(options: Partial<MigrationOptions> = {}) {
+  constructor(
+    options: Partial<MigrationOptions> = {},
+    fileSystemAdapter?: FileSystemAdapter
+  ) {
     this.options = {
       ...DEFAULT_MIGRATION_OPTIONS,
       ...options
     };
+    this.fs = fileSystemAdapter;
   }
 
   /**
@@ -67,7 +73,7 @@ export class StaticToCouchDBMigrator {
 
       // Phase 1: Validate static course
       this.reportProgress('manifest', 0, 1, 'Validating static course...');
-      const validation = await validateStaticCourse(staticPath);
+      const validation = await validateStaticCourse(staticPath, this.fs);
       if (!validation.valid) {
         result.errors.push(...validation.errors);
         throw new Error(`Static course validation failed: ${validation.errors.join(', ')}`);
@@ -165,21 +171,29 @@ export class StaticToCouchDBMigrator {
    * Load and parse the manifest file
    */
   private async loadManifest(staticPath: string): Promise<StaticCourseManifest> {
-    const manifestPath = (nodeFS && nodePath) ? nodePath.join(staticPath, 'manifest.json') : `${staticPath}/manifest.json`;
-    
     try {
       let manifestContent: string;
-      
-      if (nodeFS && this.isLocalPath(staticPath)) {
-        // Node.js file system access
-        manifestContent = await nodeFS.promises.readFile(manifestPath, 'utf8');
+      let manifestPath: string;
+
+      if (this.fs) {
+        // Use injected file system adapter (preferred)
+        manifestPath = this.fs.joinPath(staticPath, 'manifest.json');
+        manifestContent = await this.fs.readFile(manifestPath);
       } else {
-        // Browser/fetch access
-        const response = await fetch(manifestPath);
-        if (!response.ok) {
-          throw new Error(`Failed to fetch manifest: ${response.status} ${response.statusText}`);
+        // Fallback to legacy behavior for backward compatibility
+        manifestPath = (nodeFS && nodePath) ? nodePath.join(staticPath, 'manifest.json') : `${staticPath}/manifest.json`;
+        
+        if (nodeFS && this.isLocalPath(staticPath)) {
+          // Node.js file system access
+          manifestContent = await nodeFS.promises.readFile(manifestPath, 'utf8');
+        } else {
+          // Browser/fetch access
+          const response = await fetch(manifestPath);
+          if (!response.ok) {
+            throw new Error(`Failed to fetch manifest: ${response.status} ${response.statusText}`);
+          }
+          manifestContent = await response.text();
         }
-        manifestContent = await response.text();
       }
 
       const manifest: StaticCourseManifest = JSON.parse(manifestContent);
@@ -191,7 +205,10 @@ export class StaticToCouchDBMigrator {
 
       return manifest;
     } catch (error) {
-      throw new Error(`Failed to load manifest from ${manifestPath}: ${error instanceof Error ? error.message : String(error)}`);
+      const errorMessage = error instanceof FileSystemError 
+        ? error.message 
+        : `Failed to load manifest: ${error instanceof Error ? error.message : String(error)}`;
+      throw new Error(errorMessage);
     }
   }
 
@@ -292,21 +309,29 @@ export class StaticToCouchDBMigrator {
    * Load documents from a single chunk file
    */
   private async loadChunk(staticPath: string, chunk: ChunkMetadata): Promise<any[]> {
-    const chunkPath = (nodeFS && nodePath) ? nodePath.join(staticPath, chunk.path) : `${staticPath}/${chunk.path}`;
-
     try {
       let chunkContent: string;
+      let chunkPath: string;
 
-      if (nodeFS && this.isLocalPath(staticPath)) {
-        // Node.js file system access
-        chunkContent = await nodeFS.promises.readFile(chunkPath, 'utf8');
+      if (this.fs) {
+        // Use injected file system adapter (preferred)
+        chunkPath = this.fs.joinPath(staticPath, chunk.path);
+        chunkContent = await this.fs.readFile(chunkPath);
       } else {
-        // Browser/fetch access
-        const response = await fetch(chunkPath);
-        if (!response.ok) {
-          throw new Error(`Failed to fetch chunk: ${response.status} ${response.statusText}`);
+        // Fallback to legacy behavior for backward compatibility
+        chunkPath = (nodeFS && nodePath) ? nodePath.join(staticPath, chunk.path) : `${staticPath}/${chunk.path}`;
+
+        if (nodeFS && this.isLocalPath(staticPath)) {
+          // Node.js file system access
+          chunkContent = await nodeFS.promises.readFile(chunkPath, 'utf8');
+        } else {
+          // Browser/fetch access
+          const response = await fetch(chunkPath);
+          if (!response.ok) {
+            throw new Error(`Failed to fetch chunk: ${response.status} ${response.statusText}`);
+          }
+          chunkContent = await response.text();
         }
-        chunkContent = await response.text();
       }
 
       const documents = JSON.parse(chunkContent);
@@ -317,7 +342,10 @@ export class StaticToCouchDBMigrator {
 
       return documents;
     } catch (error) {
-      throw new Error(`Failed to load chunk from ${chunkPath}: ${error instanceof Error ? error.message : String(error)}`);
+      const errorMessage = error instanceof FileSystemError 
+        ? error.message 
+        : `Failed to load chunk: ${error instanceof Error ? error.message : String(error)}`;
+      throw new Error(errorMessage);
     }
   }
 
@@ -361,7 +389,14 @@ export class StaticToCouchDBMigrator {
         }
 
       } catch (error) {
-        const errorMessage = `Failed to upload document batch starting at index ${i}: ${error instanceof Error ? error.message : String(error)}`;
+        let errorMessage: string;
+        if (error instanceof Error) {
+          errorMessage = `Failed to upload document batch starting at index ${i}: ${error.message}`;
+        } else if (error && typeof error === 'object' && 'message' in error) {
+          errorMessage = `Failed to upload document batch starting at index ${i}: ${(error as any).message}`;
+        } else {
+          errorMessage = `Failed to upload document batch starting at index ${i}: ${JSON.stringify(error)}`;
+        }
         result.errors.push(errorMessage);
         logger.error(errorMessage);
       }
@@ -441,22 +476,30 @@ export class StaticToCouchDBMigrator {
         return result;
       }
 
-      const attachmentPath = (nodeFS && nodePath) ? nodePath.join(staticPath, attachmentMeta.path) : `${staticPath}/${attachmentMeta.path}`;
-
       // Load the attachment data
       let attachmentData: ArrayBuffer | Buffer;
+      let attachmentPath: string;
 
-      if (nodeFS && this.isLocalPath(staticPath)) {
-        // Node.js file system access
-        attachmentData = await nodeFS.promises.readFile(attachmentPath);
+      if (this.fs) {
+        // Use injected file system adapter (preferred)
+        attachmentPath = this.fs.joinPath(staticPath, attachmentMeta.path);
+        attachmentData = await this.fs.readBinary(attachmentPath);
       } else {
-        // Browser/fetch access
-        const response = await fetch(attachmentPath);
-        if (!response.ok) {
-          result.error = `Failed to fetch attachment: ${response.status} ${response.statusText}`;
-          return result;
+        // Fallback to legacy behavior for backward compatibility
+        attachmentPath = (nodeFS && nodePath) ? nodePath.join(staticPath, attachmentMeta.path) : `${staticPath}/${attachmentMeta.path}`;
+
+        if (nodeFS && this.isLocalPath(staticPath)) {
+          // Node.js file system access
+          attachmentData = await nodeFS.promises.readFile(attachmentPath);
+        } else {
+          // Browser/fetch access
+          const response = await fetch(attachmentPath);
+          if (!response.ok) {
+            result.error = `Failed to fetch attachment: ${response.status} ${response.statusText}`;
+            return result;
+          }
+          attachmentData = await response.arrayBuffer();
         }
-        attachmentData = await response.arrayBuffer();
       }
 
       // Upload to CouchDB
