@@ -213,6 +213,9 @@ export class CouchDBManager extends EventEmitter {
       this.log('Waiting for CouchDB to be ready...');
       await this.waitForReady();
 
+      // Configure CORS for browser access
+      await this.configureCORS();
+
       this.emit('ready');
     } catch (error: any) {
       this.error(`Failed to start CouchDB: ${error.message}`);
@@ -295,5 +298,55 @@ export class CouchDBManager extends EventEmitter {
       password: this.config.password,
       url: this.getConnectionUrl(),
     };
+  }
+
+  /**
+   * Configure CORS settings for browser access
+   */
+  private async configureCORS(): Promise<void> {
+    try {
+      this.log('Configuring CORS for browser access...');
+      
+      const baseUrl = `http://localhost:${this.config.port}`;
+      const auth = `${this.config.username}:${this.config.password}`;
+      
+      // Enable CORS with comprehensive PouchDB-compatible headers
+      // Note: CouchDB requires BOTH chttpd/enable_cors AND cors section settings
+      const corsCommands = [
+        // First: Enable CORS globally in chttpd section (CRITICAL!)
+        `curl -X PUT "${baseUrl}/_node/_local/_config/chttpd/enable_cors" -d '"true"' -H "Content-Type: application/json" -u "${auth}"`,
+        // Then: Configure CORS settings in cors section
+        `curl -X PUT "${baseUrl}/_node/_local/_config/cors/enable" -d '"true"' -H "Content-Type: application/json" -u "${auth}"`,
+        `curl -X PUT "${baseUrl}/_node/_local/_config/cors/origins" -d '"*"' -H "Content-Type: application/json" -u "${auth}"`,
+        `curl -X PUT "${baseUrl}/_node/_local/_config/cors/methods" -d '"GET,POST,PUT,DELETE,OPTIONS,HEAD"' -H "Content-Type: application/json" -u "${auth}"`,
+        `curl -X PUT "${baseUrl}/_node/_local/_config/cors/headers" -d '"accept,authorization,content-type,origin,referer,x-csrf-token,cache-control,if-none-match,x-requested-with,pragma,expires,x-couch-request-id,x-couch-update-newrev"' -H "Content-Type: application/json" -u "${auth}"`,
+        `curl -X PUT "${baseUrl}/_node/_local/_config/cors/credentials" -d '"true"' -H "Content-Type: application/json" -u "${auth}"`,
+      ];
+
+      for (const cmd of corsCommands) {
+        try {
+          const result = execSync(cmd, { stdio: 'pipe' }).toString();
+          this.log(`CORS command success: ${result.trim()}`);
+        } catch (error: any) {
+          this.error(`CORS command failed: ${cmd} - ${error.message}`);
+          throw error;
+        }
+      }
+      
+      // Verify CORS configuration took effect
+      try {
+        this.log('Verifying CORS configuration...');
+        const verifyCmd = `curl -s "${baseUrl}/_node/_local/_config/cors" -u "${auth}"`;
+        const corsSettings = execSync(verifyCmd, { stdio: 'pipe' }).toString();
+        this.log(`CORS verification result: ${corsSettings.trim()}`);
+      } catch (error: any) {
+        this.log(`Warning: CORS verification failed: ${error.message}`);
+      }
+      
+      this.log('CORS configuration completed');
+    } catch (error: any) {
+      this.log(`Warning: CORS configuration failed: ${error.message}`);
+      // Don't throw - CORS failure shouldn't prevent container startup
+    }
   }
 }
