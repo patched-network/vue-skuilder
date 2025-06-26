@@ -648,7 +648,7 @@ Currently logged-in as ${this._username}.`
           }
         }
       } catch (error: unknown) {
-        if (error instanceof Error && error.name === 'conflict') {
+        if ((error as any).name && (error as any).name === 'conflict') {
           logger.warn(`Design doc ${doc._id} update conflict - will retry`);
           // Wait a bit and try again
           await new Promise((resolve) => setTimeout(resolve, 1000));
