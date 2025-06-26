@@ -15,3 +15,6 @@ export * from './interfaces/index.js';
 
 // enums
 export * from './enums/index.js';
+
+// docker utilities
+export * from './docker/index.js';
