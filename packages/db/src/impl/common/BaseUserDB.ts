@@ -126,9 +126,12 @@ Currently logged-in as ${this._username}.`
       throw new Error('Authentication not supported by current sync strategy');
     }
 
-    if (!this._username.startsWith(GuestUsername)) {
-      throw new Error(`Cannot change accounts while logged in.
-      Log out of account ${this.getUsername()} before logging in as ${username}.`);
+    if (!this._username.startsWith(GuestUsername) && this._username != username) {
+      if (this._username != username) {
+        throw new Error(`Cannot change accounts while logged in.
+        Log out of account ${this.getUsername()} before logging in as ${username}.`);
+      }
+      logger.warn(`User ${this._username} is already logged in, but executing login again.`);
     }
 
     const loginResult = await this.syncStrategy.authenticate!(username, password);
