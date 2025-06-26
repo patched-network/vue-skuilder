@@ -13,6 +13,10 @@ import '@mdi/font/css/materialdesignicons.css';
 import '@vue-skuilder/courses/style';
 import '@vue-skuilder/common-ui/style';
 
+// style imports from component libs
+import '@vue-skuilder/courses/style';
+import '@vue-skuilder/common-ui/style';
+
 // Data layer initialization
 import { initializeDataLayer } from '@vue-skuilder/db';
 
@@ -23,8 +27,8 @@ const vuetify = createVuetify({
   components,
   directives,
   theme: {
-    defaultTheme: 'light'
-  }
+    defaultTheme: 'light',
+  },
 });
 
 // Simple router for studio mode
@@ -34,21 +38,34 @@ const router = createRouter({
     {
       path: '/',
       name: 'studio',
-      component: App
-    }
-  ]
+      component: App,
+    },
+  ],
 });
 
 (async () => {
-  // Initialize data layer for studio mode with admin credentials
-  // TODO: Get these values from CLI-provided configuration
+  // Get CouchDB connection details from CLI-injected configuration
+  const studioConfig = (window as any).STUDIO_CONFIG;
+
+  if (!studioConfig?.couchdb) {
+    throw new Error('Studio configuration not found. Please run via skuilder CLI studio command.');
+  }
+
+  // Parse the CLI-provided CouchDB URL (format: http://localhost:5985)
+  const couchUrl = new URL(studioConfig.couchdb.url);
+  const serverUrl = `${couchUrl.hostname}:${couchUrl.port}/`;
+
+  console.log('🎨 Studio Mode: Initializing data layer with CLI-provided CouchDB connection');
+  console.log(`   Server: ${couchUrl.protocol}//${serverUrl}`);
+  console.log(`   Username: ${studioConfig.couchdb.username}`);
+
   await initializeDataLayer({
     type: 'couch',
     options: {
-      COUCHDB_SERVER_PROTOCOL: 'http',
-      COUCHDB_SERVER_URL: 'localhost:5984/', // Use monorepo CouchDB port
-      COUCHDB_USERNAME: 'admin',
-      COUCHDB_PASSWORD: 'password',
+      COUCHDB_SERVER_PROTOCOL: couchUrl.protocol.replace(':', ''),
+      COUCHDB_SERVER_URL: serverUrl,
+      COUCHDB_USERNAME: studioConfig.couchdb.username,
+      COUCHDB_PASSWORD: studioConfig.couchdb.password,
     },
   });
 

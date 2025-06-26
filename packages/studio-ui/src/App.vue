@@ -23,11 +23,7 @@
         </div>
 
         <div v-else-if="courseId">
-          <course-information
-            :course-id="courseId"
-            :view-lookup-function="allCourses.getView"
-            :edit-mode="'full'"
-          >
+          <course-information :course-id="courseId" :view-lookup-function="allCourses.getView" :edit-mode="'full'">
             <template #header>
               <div class="studio-header">
                 <h1>Course Editor</h1>
@@ -63,22 +59,25 @@ const courseId = ref<string | null>(null);
 // Initialize studio environment
 onMounted(async () => {
   try {
-    // TODO: Get course ID and database connection from CLI parameters
-    // For now, simulate course detection
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    // Get studio configuration from CLI injection
+    const studioConfig = (window as any).STUDIO_CONFIG;
 
-    // TODO: Parse URL parameters or CLI-provided configuration
-    courseId.value = '2aeb8315ef78f3e89ca386992d00825b';
-    
+    if (!studioConfig?.database) {
+      throw new Error('Studio database configuration not found. Please run via skuilder CLI studio command.');
+    }
+
+    // Use the actual course ID from the unpacked database
+    courseId.value = studioConfig.database.name;
+
     // Debug: Check if course database is accessible
     console.log('Studio: Course ID set to', courseId.value);
     console.log('Studio: Data layer initialized, checking course access...');
-    
+
     try {
       const dataLayer = (await import('@vue-skuilder/db')).getDataLayer();
-      const courseDB = dataLayer.getCourseDB(courseId.value);
+      const courseDB = dataLayer.getCourseDB(studioConfig.database.name);
       console.log('Studio: CourseDB obtained:', courseDB);
-      
+
       const courseConfig = await courseDB.getCourseConfig();
       console.log('Studio: Course config loaded:', courseConfig);
     } catch (dbError) {
