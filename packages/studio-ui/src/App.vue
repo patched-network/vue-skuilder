@@ -1,0 +1,103 @@
+<template>
+  <v-app>
+    <v-app-bar app color="primary">
+      <v-toolbar-title>
+        <v-icon left>mdi-palette</v-icon>
+        Skuilder Studio
+      </v-toolbar-title>
+      <v-spacer />
+      <studio-flush v-if="courseId" :course-id="courseId" />
+    </v-app-bar>
+
+    <v-main>
+      <v-container fluid>
+        <div v-if="loading" class="text-center pa-4">
+          <v-progress-circular indeterminate />
+          <p class="mt-2">Loading studio environment...</p>
+        </div>
+
+        <div v-else-if="error" class="text-center pa-4">
+          <v-icon color="error" size="48">mdi-alert-circle</v-icon>
+          <h2 class="mt-2">Studio Error</h2>
+          <p>{{ error }}</p>
+        </div>
+
+        <div v-else-if="courseId">
+          <course-information
+            :course-id="courseId"
+            :view-lookup-function="allCourses.getView"
+            :edit-mode="'full'"
+          >
+            <template #header>
+              <div class="studio-header">
+                <h1>Course Editor</h1>
+                <p class="text-subtitle-1">
+                  Editing course: <strong>{{ courseId }}</strong>
+                </p>
+              </div>
+            </template>
+          </course-information>
+        </div>
+
+        <div v-else class="text-center pa-4">
+          <v-icon size="48">mdi-school</v-icon>
+          <h2 class="mt-2">No Course Loaded</h2>
+          <p>Studio is waiting for course data...</p>
+        </div>
+      </v-container>
+    </v-main>
+  </v-app>
+</template>
+
+<script setup lang="ts">
+import { ref, onMounted } from 'vue';
+import { CourseInformation } from '@vue-skuilder/common-ui';
+import { allCourses } from '@vue-skuilder/courses';
+import StudioFlush from './components/StudioFlush.vue';
+
+// Studio state
+const loading = ref(true);
+const error = ref<string | null>(null);
+const courseId = ref<string | null>(null);
+
+// Initialize studio environment
+onMounted(async () => {
+  try {
+    // TODO: Get course ID and database connection from CLI parameters
+    // For now, simulate course detection
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    // TODO: Parse URL parameters or CLI-provided configuration
+    courseId.value = '2aeb8315ef78f3e89ca386992d00825b';
+    
+    // Debug: Check if course database is accessible
+    console.log('Studio: Course ID set to', courseId.value);
+    console.log('Studio: Data layer initialized, checking course access...');
+    
+    try {
+      const dataLayer = (await import('@vue-skuilder/db')).getDataLayer();
+      const courseDB = dataLayer.getCourseDB(courseId.value);
+      console.log('Studio: CourseDB obtained:', courseDB);
+      
+      const courseConfig = await courseDB.getCourseConfig();
+      console.log('Studio: Course config loaded:', courseConfig);
+    } catch (dbError) {
+      console.error('Studio: Course database error:', dbError);
+    }
+
+    loading.value = false;
+  } catch (err) {
+    console.error('Studio: Initialization error:', err);
+    error.value = err instanceof Error ? err.message : 'Unknown error';
+    loading.value = false;
+  }
+});
+</script>
+
+<style scoped>
+.studio-header {
+  padding: 16px 0;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 16px;
+}
+</style>
