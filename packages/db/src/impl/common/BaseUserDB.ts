@@ -593,6 +593,13 @@ Currently logged-in as ${this._username}.`
 
   private async init() {
     BaseUser._initialized = false;
+
+    // Skip admin user
+    if (this._username === 'admin') {
+      BaseUser._initialized = true;
+      return;
+    }
+
     this.setDBandQ();
 
     this.syncStrategy.startSync(this.localDB, this.remoteDB);
@@ -617,6 +624,11 @@ Currently logged-in as ${this._username}.`
   ];
 
   private async applyDesignDocs() {
+    if (this._username === 'admin') {
+      // Skip admin user
+      return;
+    }
+
     for (const doc of BaseUser.designDocs) {
       try {
         // Try to get existing doc
