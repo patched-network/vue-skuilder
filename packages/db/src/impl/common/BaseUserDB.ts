@@ -126,9 +126,12 @@ Currently logged-in as ${this._username}.`
       throw new Error('Authentication not supported by current sync strategy');
     }
 
-    if (!this._username.startsWith(GuestUsername)) {
-      throw new Error(`Cannot change accounts while logged in.
-      Log out of account ${this.getUsername()} before logging in as ${username}.`);
+    if (!this._username.startsWith(GuestUsername) && this._username != username) {
+      if (this._username != username) {
+        throw new Error(`Cannot change accounts while logged in.
+        Log out of account ${this.getUsername()} before logging in as ${username}.`);
+      }
+      logger.warn(`User ${this._username} is already logged in, but executing login again.`);
     }
 
     const loginResult = await this.syncStrategy.authenticate!(username, password);
@@ -590,6 +593,13 @@ Currently logged-in as ${this._username}.`
 
   private async init() {
     BaseUser._initialized = false;
+
+    // Skip admin user
+    if (this._username === 'admin') {
+      BaseUser._initialized = true;
+      return;
+    }
+
     this.setDBandQ();
 
     this.syncStrategy.startSync(this.localDB, this.remoteDB);
@@ -614,6 +624,11 @@ Currently logged-in as ${this._username}.`
   ];
 
   private async applyDesignDocs() {
+    if (this._username === 'admin') {
+      // Skip admin user
+      return;
+    }
+
     for (const doc of BaseUser.designDocs) {
       try {
         // Try to get existing doc
@@ -633,7 +648,7 @@ Currently logged-in as ${this._username}.`
           }
         }
       } catch (error: unknown) {
-        if (error instanceof Error && error.name === 'conflict') {
+        if ((error as any).name && (error as any).name === 'conflict') {
           logger.warn(`Design doc ${doc._id} update conflict - will retry`);
           // Wait a bit and try again
           await new Promise((resolve) => setTimeout(resolve, 1000));

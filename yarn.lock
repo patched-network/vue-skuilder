@@ -5144,6 +5144,7 @@ __metadata:
     "@types/node": "npm:^20.0.0"
     "@vue-skuilder/db": "workspace:*"
     "@vue-skuilder/standalone-ui": "npm:^0.1.6"
+    "@vue-skuilder/studio-ui": "workspace:*"
     chalk: "npm:^5.3.0"
     commander: "npm:^11.0.0"
     fs-extra: "npm:^11.2.0"
@@ -5437,6 +5438,26 @@ __metadata:
     vue-tsc: "npm:^1.8.0"
     vuetify: "npm:^3.7.0"
     wait-on: "npm:8.0.2"
+  languageName: unknown
+  linkType: soft
+
+"@vue-skuilder/studio-ui@workspace:*, @vue-skuilder/studio-ui@workspace:packages/studio-ui":
+  version: 0.0.0-use.local
+  resolution: "@vue-skuilder/studio-ui@workspace:packages/studio-ui"
+  dependencies:
+    "@mdi/font": "npm:^7.3.67"
+    "@vitejs/plugin-vue": "npm:^5.2.1"
+    "@vue-skuilder/common": "workspace:*"
+    "@vue-skuilder/common-ui": "workspace:*"
+    "@vue-skuilder/courses": "workspace:*"
+    "@vue-skuilder/db": "workspace:*"
+    pinia: "npm:^2.3.0"
+    typescript: "npm:^5.7.2"
+    vite: "npm:^6.0.9"
+    vue: "npm:^3.5.13"
+    vue-router: "npm:^4.2.0"
+    vue-tsc: "npm:^1.8.0"
+    vuetify: "npm:^3.7.0"
   languageName: unknown
   linkType: soft
 

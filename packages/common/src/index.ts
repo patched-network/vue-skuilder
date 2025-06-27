@@ -15,3 +15,6 @@ export * from './interfaces/index.js';
 
 // enums
 export * from './enums/index.js';
+
+// docker utilities (Node.js only - not exported in main index for browser compatibility)
+// Use explicit import: import { CouchDBManager } from '@vue-skuilder/common/docker'

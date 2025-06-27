@@ -13,6 +13,11 @@
             "types": "./dist/index.d.ts",
             "import": "./dist/index.mjs",
             "require": "./dist/index.js"
+        },
+        "./docker": {
+            "types": "./dist/docker/index.d.ts",
+            "import": "./dist/docker/index.mjs",
+            "require": "./dist/docker/index.js"
         }
     },
     "scripts": {
