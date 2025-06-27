@@ -4,21 +4,23 @@ import LoginView from './components/LoginView.js';
 import SignupView from './components/SignupView.js';
 import LoadingSpinner from './components/Spinner.js';
 import StudyView from './components/StudyView.js';
+import SessionConfigView from './components/SessionConfigView.js';
 import * as auth from './services/auth.js';
 import { StudyConfig } from './types/study.js';
 
-type View = 'loading' | 'login' | 'signup' | 'study' | 'complete' | 'error';
+type View = 'loading' | 'login' | 'signup' | 'session-config' | 'study' | 'complete' | 'error';
 
 const App = () => {
   const [view, setView] = useState<View>('loading');
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [completionReport, setCompletionReport] = useState<string>('');
+  const [studyConfig, setStudyConfig] = useState<StudyConfig | null>(null);
 
   useEffect(() => {
     const checkSession = async () => {
       await auth.initialize();
       if (await auth.isLoggedIn()) {
-        setView('study');
+        setView('session-config');
       } else {
         setView('login');
       }
@@ -30,7 +32,7 @@ const App = () => {
     setView('loading');
     const success = await auth.login(user, pass);
     if (success) {
-      setView('study');
+      setView('session-config');
     } else {
       setView('login'); // Or show an error message
     }
@@ -40,10 +42,20 @@ const App = () => {
     setView('loading');
     const success = await auth.signup(user, pass);
     if (success) {
-      setView('study');
+      setView('session-config');
     } else {
       setView('signup'); // Or show an error message
     }
+  };
+
+  const handleSessionConfig = (config: StudyConfig) => {
+    setStudyConfig(config);
+    setView('study');
+  };
+
+  const handleBackToLogin = () => {
+    auth.logout();
+    setView('login');
   };
 
   const handleStudyComplete = (report: string) => {
@@ -68,12 +80,21 @@ const App = () => {
     return <SignupView onSignup={handleSignup} />;
   }
 
+  if (view === 'session-config') {
+    return (
+      <SessionConfigView 
+        onConfigComplete={handleSessionConfig} 
+        onBack={handleBackToLogin} 
+      />
+    );
+  }
+
   if (view === 'study') {
-    const studyConfig: StudyConfig = {
-      durationSeconds: 1200, // 20 minutes
-      maxNewCards: 10,
-      courseIds: ['default'], // TODO: get from user preferences
-    };
+    if (!studyConfig) {
+      // This shouldn't happen, but fallback to session config
+      setView('session-config');
+      return <LoadingSpinner />;
+    }
 
     return (
       <StudyView config={studyConfig} onComplete={handleStudyComplete} onError={handleStudyError} />

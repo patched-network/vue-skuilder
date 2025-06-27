@@ -33,3 +33,8 @@ export async function signup(username: string, password: string): Promise<boolea
   const response = await db.getUserDB().createAccount(username, password);
   return response.status === 'ok';
 }
+
+export async function logout(): Promise<void> {
+  const db = getDataLayer();
+  await db.getUserDB().logout();
+}
