@@ -1,8 +1,7 @@
 import { getDataLayer } from '@vue-skuilder/db';
 import { SessionController } from '@vue-skuilder/db';
 import { StudyContentSource, StudySessionItem, getStudySource } from '@vue-skuilder/db';
-// Temporarily removing courses dependency due to ESM/CSS conflicts
-// import { BlanksCard, gradeSpellingAttempt } from '@vue-skuilder/courses';
+import { BlanksCard, gradeSpellingAttempt } from '@vue-skuilder/courses/logic';
 // import { Answer } from '@vue-skuilder/common';
 
 import {
@@ -103,23 +102,39 @@ export class StudyService {
     let isCorrect = false;
     let spellingFeedback: string | undefined;
 
-    // Simplified grading logic without BlanksCard dependency
-    if (answer.type === 'text') {
-      isCorrect = question.answers.includes(answer.response as string);
-      
-      // Simple spelling feedback without gradeSpellingAttempt
-      if (!isCorrect && question.answers.length > 0) {
-        const correctAnswer = question.answers[0];
-        const userAnswer = answer.response as string;
-        if (userAnswer.toLowerCase() === correctAnswer.toLowerCase()) {
-          spellingFeedback = `Close! Check your capitalization.`;
-        } else {
-          spellingFeedback = `The correct answer is: ${correctAnswer}`;
-        }
+    try {
+      // Create BlanksCard instance to use its grading logic
+      const blanksCard = new BlanksCard(question.viewData);
+
+      // Convert TUI answer to format expected by BlanksCard
+      let formattedAnswer;
+      if (answer.type === 'choice' && typeof answer.response === 'number') {
+        // Multiple choice answer
+        formattedAnswer = {
+          choiceList: question.options || [],
+          selection: answer.response,
+        };
+      } else {
+        // Text answer
+        formattedAnswer = answer.response as string;
       }
-    } else if (answer.type === 'choice' && question.options) {
-      const selectedOption = question.options[answer.response as number];
-      isCorrect = question.answers.includes(selectedOption);
+
+      isCorrect = blanksCard.isCorrect(formattedAnswer);
+
+      // For text answers, provide spelling feedback if incorrect
+      if (!isCorrect && answer.type === 'text' && question.answers.length > 0) {
+        const correctAnswer = question.answers[0];
+        spellingFeedback = gradeSpellingAttempt(answer.response as string, correctAnswer);
+      }
+    } catch (error) {
+      console.error('Error grading answer:', error);
+      // Fallback to simple string comparison
+      if (answer.type === 'text') {
+        isCorrect = question.answers.includes(answer.response as string);
+      } else if (answer.type === 'choice' && question.options) {
+        const selectedOption = question.options[answer.response as number];
+        isCorrect = question.answers.includes(selectedOption);
+      }
     }
 
     // Update session progress
@@ -193,38 +208,19 @@ export class StudyService {
       }, {}),
     ];
 
-    // Simple question parsing without BlanksCard
-    // Look for multiple choice options in the content
-    const content = String(viewData[0]?.content || '');
-    const hasOptions = content.includes('{{') && content.includes('||');
-    const questionType = hasOptions ? 'multiple-choice' : 'fill-in-blank';
-    
-    // Extract basic answers from content
-    let answers: string[] = [];
-    let options: string[] | null = null;
-    
-    if (hasOptions) {
-      // Extract options from {{option1||option2||option3}} format
-      const optionMatch = content.match(/\{\{([^}]+)\}\}/);
-      if (optionMatch) {
-        options = optionMatch[1].split('||').map((opt: string) => opt.trim());
-        answers = options ? [options[0]] : []; // First option is usually correct
-      }
-    } else {
-      // Extract answer from {{answer}} format
-      const answerMatch = content.match(/\{\{([^}]+)\}\}/);
-      if (answerMatch) {
-        answers = [answerMatch[1].trim()];
-      }
-    }
+    // Create BlanksCard to parse the question
+    const blanksCard = new BlanksCard(viewData);
+
+    // Determine question type
+    const questionType = blanksCard.options ? 'multiple-choice' : 'fill-in-blank';
 
     return {
       id: sessionItem.cardID,
       courseId: sessionItem.courseID,
       type: questionType,
-      content: content,
-      options: options,
-      answers: answers,
+      content: blanksCard.mdText,
+      options: blanksCard.options,
+      answers: blanksCard.answers || [],
       isNew: sessionItem.status === 'new',
       sessionItem,
       viewData,
