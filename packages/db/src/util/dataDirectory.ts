@@ -45,5 +45,7 @@ export function getDbPath(dbName: string): string {
  */
 export async function initializeDataDirectory(): Promise<void> {
   await ensureAppDataDirectory();
+  
+  // Log to console (will be redirected to file in Node.js by tuiLogger)
   console.log(`PouchDB data directory initialized: ${getAppDataDirectory()}`);
 }

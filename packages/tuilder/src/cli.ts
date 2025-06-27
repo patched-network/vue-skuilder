@@ -2,7 +2,10 @@
 
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
-import { initializeDataDirectory } from '@vue-skuilder/db';
+import { initializeDataDirectory, initializeTuiLogging } from '@vue-skuilder/db';
+
+// Initialize TUI logging first (redirects console to log file)
+initializeTuiLogging();
 
 // Initialize PouchDB data directory before starting app
 await initializeDataDirectory();
@@ -13,7 +16,6 @@ import './App.js';
 yargs(hideBin(process.argv))
   .command('study', 'Start a study session', () => {},
     (_argv) => {
-      console.log('Starting study session...');
       // The App.tsx will be rendered by the import above
     }
   )
