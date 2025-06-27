@@ -136,10 +136,16 @@ export default defineComponent({
     this.user = await getCurrentUser();
 
     const userCourses = await this.user.getCourseRegistrationsDoc();
-    this.userIsRegistered =
-      userCourses.courses.filter((c) => {
-        return c.courseID === this.courseId && (c.status === 'active' || c.status === undefined);
-      }).length === 1;
+
+    // Admin users always have edit access (for studio mode)
+    if (this.user.getUsername() === 'admin') {
+      this.userIsRegistered = true;
+    } else {
+      this.userIsRegistered =
+        userCourses.courses.filter((c) => {
+          return c.courseID === this.courseId && (c.status === 'active' || c.status === undefined);
+        }).length === 1;
+    }
 
     this.courseConfig = (await this.courseDB!.getCourseConfig())!;
     this.tags = (await this.courseDB!.getCourseTagStubs()).rows.map((r) => r.doc!);
