@@ -7,6 +7,7 @@ import { dirname, join } from 'path';
 import { createInitCommand } from './commands/init.js';
 import { createPackCommand } from './commands/pack.js';
 import { createUnpackCommand } from './commands/unpack.js';
+import { createStudioCommand } from './commands/studio.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -26,6 +27,7 @@ program
 program.addCommand(createInitCommand());
 program.addCommand(createPackCommand());
 program.addCommand(createUnpackCommand());
+program.addCommand(createStudioCommand());
 
 program.on('--help', () => {
   console.log('');
@@ -37,6 +39,8 @@ program.on('--help', () => {
   console.log('  $ skuilder pack biology-101 --server http://localhost:5984 --username admin');
   console.log('  $ skuilder unpack ./static-courses/biology-101');
   console.log('  $ skuilder unpack ./my-course --database test-migration --validate');
+  console.log('  $ skuilder studio ./my-sui-course');
+  console.log('  $ skuilder studio . --port 5985 --no-browser');
 });
 
 program.parse();

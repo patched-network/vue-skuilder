@@ -1,6 +1,7 @@
 // db/src/factory.ts
 
 import { DataLayerProvider } from './core/interfaces';
+import { BaseUser } from './impl/common';
 import { logger } from './util/logger';
 import { StaticCourseManifest } from './util/packer/types';
 
@@ -52,6 +53,30 @@ export async function initializeDataLayer(config: DataLayerConfig): Promise<Data
     ENV.COUCHDB_SERVER_URL = config.options.COUCHDB_SERVER_URL;
     ENV.COUCHDB_USERNAME = config.options.COUCHDB_USERNAME;
     ENV.COUCHDB_PASSWORD = config.options.COUCHDB_PASSWORD;
+
+    if (
+      config.options.COUCHDB_PASSWORD &&
+      config.options.COUCHDB_USERNAME &&
+      typeof window !== 'undefined'
+    ) {
+      // Dynamic import to avoid loading both implementations when only one is needed
+      const { CouchDBSyncStrategy } = await import('./impl/couch/CouchDBSyncStrategy');
+
+      // Create a sync strategy instance and authenticate
+      const syncStrategy = new CouchDBSyncStrategy();
+
+      const user = await BaseUser.instance(syncStrategy, config.options.COUCHDB_USERNAME);
+      const authResult = await user.login(
+        config.options.COUCHDB_USERNAME,
+        config.options.COUCHDB_PASSWORD
+      );
+
+      if (authResult.ok) {
+        logger.info(`Successfully authenticated as ${config.options.COUCHDB_USERNAME}`);
+      } else {
+        logger.warn(`Authentication failed: ${authResult.error}`);
+      }
+    }
 
     // Dynamic import to avoid loading both implementations when only one is needed
     const { CouchDataLayerProvider } = await import('./impl/couch/PouchDataLayerProvider');

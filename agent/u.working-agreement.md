@@ -5,9 +5,15 @@ This folder is the working scratchpad for user+assistant development.
 files prefixed with `u.` are user-authored.
 files prefixed with `a.` are assistant-authored.
 
-Other files are sourced as general context or informtion relevant to the current mission.
+assistant-authored files should be sequenced, so that the progression of thoughts (and plan revisions) remains legible. - eg, create `a.1.assessment.md` `a.2.plan.md` `a.3.todo.md`, or whatever working documents are required.
+
+When performing actions, planning or instructions from *later* documents take precidence over earlier ones.
+
+Other files in the directory are sourced as general context or informtion relevant to the current mission.
 
 The user will annotate / edit assistant files in order to specifically direct feedback to the assistant's work.
+
+Where there are numbered directories in this folder, these correspond to github issues. Feel free also to use `gh` to reference the issue itself if need be.
 
 # General Expected Workflow
 
