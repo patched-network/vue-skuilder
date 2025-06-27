@@ -2,6 +2,10 @@
 
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
+import { initializeDataDirectory } from '@vue-skuilder/db';
+
+// Initialize PouchDB data directory before starting app
+await initializeDataDirectory();
 
 // This is a placeholder for the main app rendering
 import './App.js';

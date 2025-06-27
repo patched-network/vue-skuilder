@@ -8,6 +8,7 @@ export const REVIEW_PREFIX: string = 'card_review_';
 export const REVIEW_TIME_FORMAT: string = 'YYYY-MM-DD--kk:mm:ss-SSS';
 
 import pouch from '../couch/pouchdb-setup';
+import { getDbPath } from '../../util/dataDirectory';
 
 const log = (s: any) => {
   logger.info(s);
@@ -94,7 +95,16 @@ export function getLocalUserDB(username: string): PouchDB.Database {
   //   adapter = 'memory';
   // }
 
-  return new pouch(`userdb-${username}`, {});
+  const dbName = `userdb-${username}`;
+  
+  // Use proper data directory in Node.js, browser will use IndexedDB
+  if (typeof window === 'undefined') {
+    // Node.js environment - use filesystem with proper app data directory
+    return new pouch(getDbPath(dbName), {});
+  } else {
+    // Browser environment - use default (IndexedDB)
+    return new pouch(dbName, {});
+  }
 }
 
 /**
