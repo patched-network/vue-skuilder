@@ -112,7 +112,11 @@ Currently logged-in as ${this._username}.`
     if (result.status === Status.ok) {
       log(`Account created successfully, updating username to ${username}`);
       this._username = username;
-      localStorage.removeItem('dbUUID');
+      try {
+        localStorage.removeItem('dbUUID');
+      } catch (e) {
+        console.warn('localStorage not available (Node.js environment):', e.message);
+      }
       await this.init();
     }
 
@@ -138,7 +142,11 @@ Currently logged-in as ${this._username}.`
     if (loginResult.ok) {
       log(`Logged in as ${username}`);
       this._username = username;
-      localStorage.removeItem('dbUUID');
+      try {
+        localStorage.removeItem('dbUUID');
+      } catch (e) {
+        console.warn('localStorage not available (Node.js environment):', e.message);
+      }
       await this.init();
     }
     return loginResult;
