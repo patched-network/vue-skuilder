@@ -65,7 +65,7 @@ import { CourseConfig, NameSpacer, DataShape } from '@vue-skuilder/common';
 import DataInputForm from './ViewableDataInputForm/DataInputForm.vue';
 import BulkImportView from './BulkImportView.vue'; // Added import
 import { getDataLayer } from '@vue-skuilder/db';
-// import { useDataInputFormStore } from '@vue-skuilder/platform-ui/src/stores/useDataInputFormStore';
+import { useDataInputFormStore } from '../stores/useDataInputFormStore';
 
 export default defineComponent({
   name: 'CourseEditor',
@@ -93,7 +93,7 @@ export default defineComponent({
       dataShape: BlanksCardDataShapes[0] as DataShape,
       loading: true,
       currentTab: 'single',
-      // dataInputFormStore: useDataInputFormStore(),
+      dataInputFormStore: useDataInputFormStore(),
     };
   },
 
