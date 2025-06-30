@@ -39,9 +39,9 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import FieldInput from '../OptionsFieldInput';
+import FieldInput from './OptionsFieldInput';
 import { Status } from '@vue-skuilder/common';
-import { FieldInputSetupReturn } from '../OptionsFieldInput';
+import { FieldInputSetupReturn } from './OptionsFieldInput';
 
 export interface MediaItem {
   type: 'image' | 'audio';

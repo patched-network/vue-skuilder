@@ -3,7 +3,7 @@
     ref="inputField"
     v-model="modelValue"
     variant="filled"
-    type="text"
+    type="number"
     :name="field.name"
     :label="field.name"
     :rules="vuetifyRules()"
@@ -14,18 +14,18 @@
 
 <script lang="ts">
 import { defineComponent, computed } from 'vue';
-import FieldInput from '../OptionsFieldInput';
-import { ValidatingFunction } from '../../../../base-course/Interfaces/ValidatingFunction';
+import { numberValidator } from './typeValidators';
+import FieldInput from './OptionsFieldInput';
+import { ValidatingFunction } from '@vue-skuilder/common';
 
 export default defineComponent({
-  name: 'StringInput',
+  name: 'NumberInput',
   extends: FieldInput,
 
   setup(props, ctx) {
     // Get all the setup logic from parent
     const parentSetup = FieldInput.setup?.(props, ctx);
 
-    // [ ] Test datashape-field-custom validators
     const validators = computed<ValidatingFunction[]>(() => {
       const baseValidators = FieldInput.validators.call(this);
 
@@ -34,9 +34,9 @@ export default defineComponent({
       }
 
       if (baseValidators) {
-        return baseValidators;
+        return [numberValidator, ...baseValidators];
       } else {
-        return [];
+        return [numberValidator];
       }
     });
 

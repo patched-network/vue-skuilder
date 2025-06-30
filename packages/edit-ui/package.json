@@ -1,0 +1,67 @@
+{
+  "name": "@vue-skuilder/edit-ui",
+  "publishConfig": {
+    "access": "public"
+  },
+  "version": "0.1.0",
+  "main": "./dist/edit-ui.umd.js",
+  "module": "./dist/edit-ui.es.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/edit-ui.es.js",
+      "require": "./dist/edit-ui.umd.js"
+    },
+    "./style": "./dist/assets/index.css",
+    "./styles": "./dist/assets/index.css"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "dev": "vite build --watch",
+    "build": "vite build && yarn build-types",
+    "build-types": "tsc --project tsconfig.types.json",
+    "lint": "eslint . --fix",
+    "lint:check": "eslint .",
+    "test:unit": "vitest run",
+    "cypress:open": "cypress open --component",
+    "cypress:run": "cypress run --component"
+  },
+  "dependencies": {
+    "@vue-skuilder/common": "workspace:*",
+    "@vue-skuilder/common-ui": "workspace:*",
+    "@vue-skuilder/db": "workspace:*",
+    "pinia": "^2.3.0",
+    "vue": "^3.5.13",
+    "vuetify": "^3.7.0"
+  },
+  "peerDependencies": {
+    "vue": "^3.2.0",
+    "vue-router": "^4.0.0",
+    "vuetify": "^3.0.0"
+  },
+  "devDependencies": {
+    "@cypress/vite-dev-server": "^6.0.3",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/vue": "^8.1.0",
+    "@types/pouchdb": "^6.4.2",
+    "@typescript-eslint/eslint-plugin": "^8.25.0",
+    "@typescript-eslint/parser": "^8.25.0",
+    "@vitejs/plugin-vue": "^5.2.1",
+    "@vue/eslint-config-typescript": "^14.4.0",
+    "@vue/test-utils": "^2.4.6",
+    "cypress": "^14.2.1",
+    "cypress-vite": "^1.6.0",
+    "eslint": "^9.21.0",
+    "eslint-config-prettier": "^10.0.2",
+    "eslint-plugin-vue": "^9.32.0",
+    "jsdom": "^25.0.1",
+    "sass": "^1.83.0",
+    "typescript": "~5.7.2",
+    "vite": "^6.0.9",
+    "vitest": "^3.0.5"
+  }
+}

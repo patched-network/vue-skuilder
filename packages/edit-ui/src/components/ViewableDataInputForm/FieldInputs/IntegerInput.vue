@@ -14,12 +14,12 @@
 
 <script lang="ts">
 import { defineComponent, computed } from 'vue';
-import { numberValidator } from './typeValidators';
-import FieldInput from '../OptionsFieldInput';
-import { ValidatingFunction } from '@pui/base-course/Interfaces/ValidatingFunction';
+import { integerValidator } from './typeValidators';
+import FieldInput from './OptionsFieldInput';
+import { ValidatingFunction } from '@vue-skuilder/common';
 
 export default defineComponent({
-  name: 'NumberInput',
+  name: 'IntegerInput',
   extends: FieldInput,
 
   setup(props, ctx) {
@@ -34,9 +34,9 @@ export default defineComponent({
       }
 
       if (baseValidators) {
-        return [numberValidator, ...baseValidators];
+        return [integerValidator, ...baseValidators];
       } else {
-        return [numberValidator];
+        return [integerValidator];
       }
     });
 

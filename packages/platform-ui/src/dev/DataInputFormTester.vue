@@ -31,7 +31,7 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import DataInputForm from '../../src/components/Edit/ViewableDataInputForm/DataInputForm.vue';
+import { DataInputForm } from '@vue-skuilder/edit-ui';
 import { DataShape } from '../../src/base-course/Interfaces/DataShape';
 import { useRoute } from 'vue-router';
 import { Question } from '@vue-skuilder/common-ui';

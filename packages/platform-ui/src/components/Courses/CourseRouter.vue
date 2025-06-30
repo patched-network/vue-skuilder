@@ -14,7 +14,7 @@
             <template #activator="{ props }">
               <v-btn color="primary" v-bind="props">Start a new Quilt</v-btn>
             </template>
-            <course-editor :name="query" @course-editing-complete="newCourseDialog = false" />
+            <new-course-dialog :name="query" @course-editing-complete="newCourseDialog = false" />
           </v-dialog>
         </v-row>
       </v-container>
@@ -46,7 +46,7 @@
 import { defineComponent } from 'vue';
 import { getDataLayer } from '@vue-skuilder/db';
 import { CourseConfig } from '@vue-skuilder/common';
-import CourseEditor from './CourseEditor.vue';
+import NewCourseDialog from './NewCourseDialog.vue';
 import CourseInformationWrapper from './CourseInformationWrapper.vue';
 
 export default defineComponent({
@@ -54,7 +54,7 @@ export default defineComponent({
 
   components: {
     CourseInformationWrapper,
-    CourseEditor,
+    NewCourseDialog,
   },
 
   props: {

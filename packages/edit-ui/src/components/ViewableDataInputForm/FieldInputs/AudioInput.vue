@@ -41,7 +41,7 @@ image and audio inputs are semi deprecated - not in use right now -
 
 <script lang="ts">
 import { defineComponent, PropType } from 'vue';
-import { ValidatingFunction } from '@pui/base-course/Interfaces/ValidatingFunction';
+import { ValidatingFunction } from '@vue-skuilder/common';
 import WaveSurfer from 'wavesurfer.js';
 import FieldInput from '../OptionsFieldInput';
 import MediaStreamRecorder from 'msr';

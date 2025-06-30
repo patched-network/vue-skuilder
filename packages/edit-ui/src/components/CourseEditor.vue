@@ -57,23 +57,23 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import ComponentRegistration from '@pui/components/Edit/ComponentRegistration/ComponentRegistration.vue';
-import NavigationStrategyEditor from '@pui/components/Edit/NavigationStrategy/NavigationStrategyEditor.vue';
+// import ComponentRegistration from '@vue-skuilder/platform-ui/src/components/Edit/ComponentRegistration/ComponentRegistration.vue';
+// import NavigationStrategyEditor from '@vue-skuilder/platform-ui/src/components/Edit/NavigationStrategy/NavigationStrategyEditor.vue';
 import { allCourses } from '@vue-skuilder/courses';
 import { BlanksCard, BlanksCardDataShapes } from '@vue-skuilder/courses';
 import { CourseConfig, NameSpacer, DataShape } from '@vue-skuilder/common';
 import DataInputForm from './ViewableDataInputForm/DataInputForm.vue';
 import BulkImportView from './BulkImportView.vue'; // Added import
 import { getDataLayer } from '@vue-skuilder/db';
-import { useDataInputFormStore } from '@pui/stores/useDataInputFormStore';
+import { useDataInputFormStore } from '../stores/useDataInputFormStore';
 
 export default defineComponent({
   name: 'CourseEditor',
 
   components: {
     DataInputForm,
-    ComponentRegistration,
-    NavigationStrategyEditor,
+    // ComponentRegistration,
+    // NavigationStrategyEditor,
     BulkImportView,
   },
 

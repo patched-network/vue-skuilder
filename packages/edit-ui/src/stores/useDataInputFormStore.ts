@@ -1,9 +1,9 @@
 import { defineStore } from 'pinia';
-import { DataShape } from '@pui/base-course/Interfaces/DataShape';
-import { CourseConfig } from '@pui/server/types';
-import { FieldInputInstance } from '@pui/components/Edit/ViewableDataInputForm/FieldInput.types';
+import { DataShape } from '@vue-skuilder/common';
+import { CourseConfig } from '@vue-skuilder/common';
+import { FieldInputInstance } from '../components/ViewableDataInputForm/FieldInput.types';
 import { useFieldInputStore } from './useFieldInputStore';
-import { ViewComponent } from '@pui/base-course/Displayable';
+import { ViewComponent } from '@vue-skuilder/common-ui';
 
 interface DataInputForm {
   // current props

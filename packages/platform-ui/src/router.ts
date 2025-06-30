@@ -5,7 +5,7 @@ import JoinCode from './components/Classrooms/JoinCode.vue';
 import CourseRouter from './components/Courses/CourseRouter.vue';
 import ELOModerator from './components/Courses/EloModeration.vue';
 import TagInformation from './components/Courses/TagInformation.vue';
-import CourseEditor from './components/Edit/CourseEditor.vue';
+import { CourseEditor } from '@vue-skuilder/edit-ui';
 import Stats from './components/User/UserStats.vue';
 import About from './views/About.vue';
 import Admin from './views/Admin.vue';

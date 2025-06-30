@@ -13,7 +13,7 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import FieldInput from '../OptionsFieldInput';
+import FieldInput from './OptionsFieldInput';
 
 export default defineComponent({
   name: 'MarkdownInput',

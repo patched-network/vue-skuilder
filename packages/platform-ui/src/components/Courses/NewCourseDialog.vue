@@ -64,7 +64,7 @@ import { CourseConfig, CreateCourse, DataShape55, QuestionType55, ServerRequestT
 import { alertUser, getCurrentUser } from '@vue-skuilder/common-ui';
 
 export default defineComponent({
-  name: 'CourseEditor',
+  name: 'NewCourseDialog',
 
   props: {
     name: {

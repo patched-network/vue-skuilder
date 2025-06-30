@@ -4,7 +4,7 @@
 // import { DataShape } from '@pui/base-course/Interfaces/DataShape';
 // import { ViewData } from '@pui/base-course/Interfaces/ViewData';
 // import { CourseConfig } from '@pui/server/types';
-// import { FieldInputInstance } from '@pui/components/Edit/ViewableDataInputForm/FieldInput.types';
+// import { FieldInputInstance } from '@vue-skuilder/edit-ui';
 // import { User } from '@vue-skuilder/db';
 
 // export const GuestUsername: string = 'Guest';

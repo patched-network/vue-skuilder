@@ -17,7 +17,7 @@ import {
   Status,
   CourseElo,
 } from '@vue-skuilder/common';
-import { useFieldInputStore } from '@pui/stores/useFieldInputStore';
+import { useFieldInputStore } from '../../../stores/useFieldInputStore';
 
 export interface FieldInputSetupReturn {
   inputField: Ref<HTMLInputElement | null>;
