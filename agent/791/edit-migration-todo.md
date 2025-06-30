@@ -4,12 +4,12 @@
 **Goal**: Establish @vue-skuilder/edit-ui package with essential editing components
 
 ### 1.1 Package Setup
-- [ ] Create `packages/edit-ui/` directory structure
-- [ ] Configure package.json with proper dependencies
-- [ ] Set up TypeScript configuration extending base
-- [ ] Configure Vite build for library output
-- [ ] Add to monorepo build pipeline
-- [ ] Update root package.json workspace dependencies
+- [x] Create `packages/edit-ui/` directory structure
+- [x] Configure package.json with proper dependencies
+- [x] Set up TypeScript configuration extending base
+- [x] Configure Vite build for library output
+- [x] Add to monorepo build pipeline
+- [x] Update root package.json workspace dependencies
 
 ### 1.2 Core Component Migration (Priority 1)
 **Target**: 4 high-value components (~2,400 lines)

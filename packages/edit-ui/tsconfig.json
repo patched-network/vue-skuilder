@@ -1,0 +1,18 @@
+{
+    "extends": "../../tsconfig.base.json",
+    "compilerOptions": {
+        "target": "ES2020",
+        "module": "ESNext",
+        "moduleResolution": "node",
+        "jsx": "preserve",
+        "isolatedModules": true,
+        "resolveJsonModule": true,
+        "useDefineForClassFields": true,
+        "sourceMap": true,
+        "baseUrl": ".",
+        "lib": ["ESNext", "DOM", "DOM.Iterable"],
+        "types": ["vite/client", "vitest/globals", "cypress", "pouchdb"]
+    },
+    "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.vue"],
+    "exclude": ["node_modules", "dist"]
+}
