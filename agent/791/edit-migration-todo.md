@@ -14,10 +14,10 @@
 ### 1.2 Core Component Migration (Priority 1)
 **Target**: 4 high-value components (~2,400 lines)
 
-- [ ] `git mv` CourseEditor.vue from platform-ui to edit-ui
-- [ ] `git mv` DataInputForm.vue from platform-ui to edit-ui  
-- [ ] `git mv` BulkImportView.vue from platform-ui to edit-ui
-- [ ] `git mv` FieldInputs/ directory (9 components) from platform-ui to edit-ui
+- [x] `git mv` CourseEditor.vue from platform-ui to edit-ui
+- [x] `git mv` DataInputForm.vue from platform-ui to edit-ui  
+- [x] `git mv` BulkImportView.vue from platform-ui to edit-ui
+- [x] `git mv` FieldInputs/ directory (9 components) from platform-ui to edit-ui
 
 ### 1.3 Dependency Resolution
 - [ ] Audit and resolve platform-ui specific imports
