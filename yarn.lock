@@ -4189,12 +4189,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:18":
-  version: 18.19.75
-  resolution: "@types/node@npm:18.19.75"
+"@types/node@npm:24, @types/node@npm:^24.0.7":
+  version: 24.0.7
+  resolution: "@types/node@npm:24.0.7"
   dependencies:
-    undici-types: "npm:~5.26.4"
-  checksum: 10c0/6a78833071d23dcd4010507d0a232da1cb6e939eb5b62023a01ab5f91eecb90223bda3e34aa536f02cd5c3bdf7962c754b7e2a051a8224aed5886788fce88fbf
+    undici-types: "npm:~7.8.0"
+  checksum: 10c0/be3849816dafc54ec79e6be6dafcf60bdb6466beaf0081b941142d260e2b2864855210dfe5b4395c59b276468528695aefcf4f060ac95cc433b2968e80a311f9
   languageName: node
   linkType: hard
 
@@ -4202,24 +4202,6 @@ __metadata:
   version: 10.17.60
   resolution: "@types/node@npm:10.17.60"
   checksum: 10c0/0742294912a6e79786cdee9ed77cff6ee8ff007b55d8e21170fc3e5994ad3a8101fea741898091876f8dc32b0a5ae3d64537b7176799e92da56346028d2cbcd2
-  languageName: node
-  linkType: hard
-
-"@types/node@npm:^20.0.0":
-  version: 20.17.57
-  resolution: "@types/node@npm:20.17.57"
-  dependencies:
-    undici-types: "npm:~6.19.2"
-  checksum: 10c0/c04f3b6c4f335ad50bd3af62cd9e64a86c355cb6b363cb0e618511db4c6801c8539781c3786076eca6f56e999d6c7fc4748e43393a107aad57e65e3ffd1f73bf
-  languageName: node
-  linkType: hard
-
-"@types/node@npm:^20.2.5":
-  version: 20.17.17
-  resolution: "@types/node@npm:20.17.17"
-  dependencies:
-    undici-types: "npm:~6.19.2"
-  checksum: 10c0/6aebc8053b96f1b6d82c3a3fe5fc20d9f7eeb507d79d967221bbecaa2b26665fa1c9efe460be2a2f4aaae4e98f37797df7d5a4189f2b6edf8abf9f82f7fd8b1f
   languageName: node
   linkType: hard
 
@@ -5185,7 +5167,7 @@ __metadata:
   dependencies:
     "@types/fs-extra": "npm:^11.0.0"
     "@types/inquirer": "npm:^9.0.0"
-    "@types/node": "npm:^20.0.0"
+    "@types/node": "npm:^24.0.7"
     "@vue-skuilder/db": "workspace:*"
     "@vue-skuilder/standalone-ui": "npm:^0.1.6"
     "@vue-skuilder/studio-ui": "workspace:*"
@@ -5208,7 +5190,7 @@ __metadata:
     "@rollup/plugin-node-resolve": "npm:^15.2.3"
     "@rollup/plugin-typescript": "npm:^11.1.6"
     "@types/jest": "npm:^29.5.12"
-    "@types/node": "npm:^20.2.5"
+    "@types/node": "npm:^24.0.7"
     "@typescript-eslint/eslint-plugin": "npm:^7.4.0"
     "@typescript-eslint/parser": "npm:^7.4.0"
     axios: "npm:^1.7.4"
@@ -5347,7 +5329,7 @@ __metadata:
     "@types/hashids": "npm:^1.0.30"
     "@types/jest": "npm:^29.5.14"
     "@types/morgan": "npm:^1.9.9"
-    "@types/node": "npm:18"
+    "@types/node": "npm:24"
     "@types/pouchdb": "npm:^6.4.2"
     "@typescript-eslint/eslint-plugin": "npm:^8.25.0"
     "@typescript-eslint/parser": "npm:^8.25.0"
@@ -5509,7 +5491,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@vue-skuilder/tuilder@workspace:packages/tuilder"
   dependencies:
-    "@types/node": "npm:^20.0.0"
+    "@types/node": "npm:^24.0.7"
     "@types/react": "npm:^18.3.3"
     "@types/yargs": "npm:^17.0.32"
     "@vue-skuilder/common": "workspace:*"
@@ -16009,24 +15991,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"undici-types@npm:~5.26.4":
-  version: 5.26.5
-  resolution: "undici-types@npm:5.26.5"
-  checksum: 10c0/bb673d7876c2d411b6eb6c560e0c571eef4a01c1c19925175d16e3a30c4c428181fb8d7ae802a261f283e4166a0ac435e2f505743aa9e45d893f9a3df017b501
-  languageName: node
-  linkType: hard
-
-"undici-types@npm:~6.19.2":
-  version: 6.19.8
-  resolution: "undici-types@npm:6.19.8"
-  checksum: 10c0/078afa5990fba110f6824823ace86073b4638f1d5112ee26e790155f481f2a868cc3e0615505b6f4282bdf74a3d8caad715fd809e870c2bb0704e3ea6082f344
-  languageName: node
-  linkType: hard
-
 "undici-types@npm:~6.20.0":
   version: 6.20.0
   resolution: "undici-types@npm:6.20.0"
   checksum: 10c0/68e659a98898d6a836a9a59e6adf14a5d799707f5ea629433e025ac90d239f75e408e2e5ff086afc3cace26f8b26ee52155293564593fbb4a2f666af57fc59bf
+  languageName: node
+  linkType: hard
+
+"undici-types@npm:~7.8.0":
+  version: 7.8.0
+  resolution: "undici-types@npm:7.8.0"
+  checksum: 10c0/9d9d246d1dc32f318d46116efe3cfca5a72d4f16828febc1918d94e58f6ffcf39c158aa28bf5b4fc52f410446bc7858f35151367bd7a49f21746cab6497b709b
   languageName: node
   linkType: hard
 
