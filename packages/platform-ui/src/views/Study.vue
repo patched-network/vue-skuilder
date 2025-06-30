@@ -79,7 +79,7 @@
 <script lang="ts">
 import SessionConfiguration from '@pui/components/Study/SessionConfiguration.vue';
 import { getCurrentUser, useConfigStore } from '@vue-skuilder/common-ui';
-import { useDataInputFormStore } from '@pui/stores/useDataInputFormStore';
+import { useDataInputFormStore } from '@vue-skuilder/edit-ui';
 import { CourseConfig } from '@vue-skuilder/common';
 import { StudySession, type StudySessionConfig } from '@vue-skuilder/common-ui';
 import { allCourses } from '@vue-skuilder/courses';

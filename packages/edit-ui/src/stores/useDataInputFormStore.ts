@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { DataShape } from '@vue-skuilder/common';
 import { CourseConfig } from '@vue-skuilder/common';
-import { FieldInputInstance } from '@vue-skuilder/edit-ui';
+import { FieldInputInstance } from '../components/ViewableDataInputForm/FieldInput.types';
 import { useFieldInputStore } from './useFieldInputStore';
 import { ViewComponent } from '@vue-skuilder/common';
 
