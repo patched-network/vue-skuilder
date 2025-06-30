@@ -74,14 +74,14 @@
 
     <!-- New Course Dialog -->
     <v-dialog v-model="newCourseDialog" fullscreen transition="dialog-bottom-transition" :scrim="false">
-      <course-editor @course-editing-complete="processResponse()" />
+      <new-course-dialog @course-editing-complete="processResponse()" />
     </v-dialog>
   </v-container>
 </template>
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import CourseEditor from '@pui/components/Courses/CourseEditor.vue';
+import NewCourseDialog from '@pui/components/Courses/NewCourseDialog.vue';
 import CourseStubCard from '@pui/components/Courses/CourseStubCard.vue';
 import _ from 'lodash';
 import serverRequest from '../server';
@@ -97,7 +97,7 @@ export default defineComponent({
   name: 'CoursesView',
 
   components: {
-    CourseEditor,
+    NewCourseDialog,
     CourseStubCard,
   },
 
