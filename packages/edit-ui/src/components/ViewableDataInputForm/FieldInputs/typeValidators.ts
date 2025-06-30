@@ -1,5 +1,5 @@
 import { Status } from '@vue-skuilder/common';
-import { ValidationResult } from '../../../../base-course/Interfaces/ValidationResult';
+import { ValidationResult } from '@vue-skuilder/common';
 
 const okResult: ValidationResult = {
   status: Status.ok,
