@@ -5505,6 +5505,29 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@vue-skuilder/tuilder@workspace:packages/tuilder":
+  version: 0.0.0-use.local
+  resolution: "@vue-skuilder/tuilder@workspace:packages/tuilder"
+  dependencies:
+    "@types/node": "npm:^20.0.0"
+    "@types/react": "npm:^18.3.3"
+    "@types/yargs": "npm:^17.0.32"
+    "@vue-skuilder/common": "workspace:*"
+    "@vue-skuilder/courses": "workspace:*"
+    "@vue-skuilder/db": "workspace:*"
+    ink: "npm:^5.0.1"
+    ink-markdown: "npm:^1.0.4"
+    ink-select-input: "npm:^6.2.0"
+    ink-spinner: "npm:^5.0.0"
+    ink-text-input: "npm:^6.0.0"
+    react: "npm:^18.3.1"
+    typescript: "npm:~5.7.2"
+    yargs: "npm:^17.7.2"
+  bin:
+    tuilder: ./dist/cli.js
+  languageName: unknown
+  linkType: soft
+
 "@vue/compiler-core@npm:3.5.13":
   version: 3.5.13
   resolution: "@vue/compiler-core@npm:3.5.13"
