@@ -85,7 +85,7 @@ import { DataShape } from '@vue-skuilder/common';
 import { CardBrowser } from '@vue-skuilder/common-ui';
 import { TagsInput } from '@vue-skuilder/common-ui';
 import type { TagsInputInstance } from '@vue-skuilder/common-ui/src/components/TagsInput.vue';
-import { FieldInputInstance, isFieldInput } from '@pui/components/Edit/ViewableDataInputForm/FieldInput.types';
+import { FieldInputInstance, isFieldInput } from './FieldInput.types';
 import { alertUser } from '@vue-skuilder/common-ui';
 import { allCourses } from '@vue-skuilder/courses';
 import { getDataLayer, CourseDBInterface } from '@vue-skuilder/db';
@@ -99,7 +99,7 @@ import NumberInput from './FieldInputs/NumberInput.vue';
 import StringInput from './FieldInputs/StringInput.vue';
 import ChessPuzzleInput from './FieldInputs/ChessPuzzleInput.vue';
 import { CourseElo } from '@vue-skuilder/common';
-import { useDataInputFormStore } from '@pui/stores/useDataInputFormStore';
+// import { useDataInputFormStore } from '@vue-skuilder/platform-ui/src/stores/useDataInputFormStore';
 import { ViewData } from '@vue-skuilder/common';
 import { Question, getCurrentUser } from '@vue-skuilder/common-ui';
 
@@ -112,7 +112,7 @@ export interface ComponentData {
   tags: string[];
   autoCompleteSuggestions: string[];
   timer?: NodeJS.Timeout;
-  dataInputFormStore: ReturnType<typeof useDataInputFormStore>;
+  // dataInputFormStore: ReturnType<typeof useDataInputFormStore>;
   fieldInputRefs: (FieldInputInstance | null)[];
   courseDB: CourseDBInterface | null;
 }
@@ -159,7 +159,7 @@ export default defineComponent({
       tags: [],
       autoCompleteSuggestions: [],
       timer: undefined,
-      dataInputFormStore: useDataInputFormStore(),
+      // dataInputFormStore: useDataInputFormStore(),
       fieldInputRefs: [] as (FieldInputInstance | null)[],
       courseDB: null as CourseDBInterface | null,
     };

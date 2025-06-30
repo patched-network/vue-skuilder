@@ -12,7 +12,7 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import FieldInput from '../OptionsFieldInput';
+import FieldInput from './OptionsFieldInput';
 import { CourseElo } from '@vue-skuilder/common';
 // import { FieldDefinition } from '../../../../base-course/Interfaces/FieldDefinition';
 

@@ -20,10 +20,10 @@
 - [x] `git mv` FieldInputs/ directory (9 components) from platform-ui to edit-ui
 
 ### 1.3 Dependency Resolution
-- [ ] Audit and resolve platform-ui specific imports
-- [ ] Update component imports to use @vue-skuilder/common-ui
-- [ ] Extract any platform-ui utilities needed by edit components
-- [ ] Create edit-ui specific composables/utilities as needed
+- [x] Audit and resolve platform-ui specific imports
+- [x] Update component imports to use @vue-skuilder/common-ui
+- [x] Extract any platform-ui utilities needed by edit components
+- [x] Create edit-ui specific composables/utilities as needed
 
 ## Phase 2: Consumer Integration
 **Goal**: Update studio-ui and platform-ui to consume edit-ui

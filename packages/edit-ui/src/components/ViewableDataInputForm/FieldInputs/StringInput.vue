@@ -14,7 +14,7 @@
 
 <script lang="ts">
 import { defineComponent, computed } from 'vue';
-import FieldInput from '../OptionsFieldInput';
+import FieldInput from './OptionsFieldInput';
 import { ValidatingFunction } from '../../../../base-course/Interfaces/ValidatingFunction';
 
 export default defineComponent({

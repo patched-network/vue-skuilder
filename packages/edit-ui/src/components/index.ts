@@ -12,9 +12,10 @@ export { default as IntegerInput } from './ViewableDataInputForm/FieldInputs/Int
 export { default as MediaDragDropUploader } from './ViewableDataInputForm/FieldInputs/MediaDragDropUploader.vue';
 export { default as ChessPuzzleInput } from './ViewableDataInputForm/FieldInputs/ChessPuzzleInput.vue';
 export { default as MidiInput } from './ViewableDataInputForm/FieldInputs/MidiInput.vue';
-export { default as AudioInput } from './ViewableDataInputForm/FieldInputs/AudioInput.vue';
-export { default as ImageInput } from './ViewableDataInputForm/FieldInputs/ImageInput.vue';
+// export { default as AudioInput } from './ViewableDataInputForm/FieldInputs/AudioInput.vue'; // Commented out - file is deprecated
+// export { default as ImageInput } from './ViewableDataInputForm/FieldInputs/ImageInput.vue'; // Commented out - file is deprecated
 
 // Field Input Base and Utilities
 export { default as OptionsFieldInput } from './ViewableDataInputForm/FieldInputs/OptionsFieldInput';
 export * from './ViewableDataInputForm/FieldInputs/typeValidators';
+export * from './ViewableDataInputForm/FieldInput.types';

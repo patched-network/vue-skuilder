@@ -5330,7 +5330,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@vue-skuilder/edit-ui@workspace:packages/edit-ui":
+"@vue-skuilder/edit-ui@workspace:*, @vue-skuilder/edit-ui@workspace:packages/edit-ui":
   version: 0.0.0-use.local
   resolution: "@vue-skuilder/edit-ui@workspace:packages/edit-ui"
   dependencies:
@@ -5445,6 +5445,7 @@ __metadata:
     "@vue-skuilder/common-ui": "workspace:*"
     "@vue-skuilder/courses": "workspace:*"
     "@vue-skuilder/db": "workspace:*"
+    "@vue-skuilder/edit-ui": "workspace:*"
     "@vue/compiler-sfc": "npm:^3.5.13"
     "@vue/eslint-config-typescript": "npm:^14.4.0"
     "@vue/runtime-dom": "npm:^3.5.13"
