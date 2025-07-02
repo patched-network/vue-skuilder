@@ -133,13 +133,16 @@ export default defineComponent({
       });
     });
 
-    this.courseConfig.dataShapes.forEach((ds) => {
-      this.registeredDataShapes.push(
-        this.dataShapes.find((shape) => {
-          return shape.name === NameSpacer.getDataShapeDescriptor(ds.name).dataShape;
-        })!
-      );
-    });
+    // Defensive check: handle loading states where courseConfig might not be ready
+    if (this.courseConfig && this.courseConfig.dataShapes) {
+      this.courseConfig.dataShapes.forEach((ds) => {
+        this.registeredDataShapes.push(
+          this.dataShapes.find((shape) => {
+            return shape.name === NameSpacer.getDataShapeDescriptor(ds.name).dataShape;
+          })!
+        );
+      });
+    }
 
     this.loading = false;
   },
