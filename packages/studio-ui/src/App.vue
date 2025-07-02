@@ -72,11 +72,15 @@
         </div>
       </v-container>
     </v-main>
+    
+    <!-- Global services -->
+    <snackbar-service id="SnackbarService" />
   </v-app>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
+import { SnackbarService } from '@vue-skuilder/common-ui';
 import StudioFlush from './components/StudioFlush.vue';
 import { getStudioConfig, getConfigErrorMessage } from './config/development';
 
