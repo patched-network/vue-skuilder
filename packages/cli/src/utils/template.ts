@@ -62,7 +62,8 @@ export async function copyDirectory(
 export async function transformPackageJson(
   packageJsonPath: string,
   projectName: string,
-  cliVersion: string
+  cliVersion: string,
+  config: ProjectConfig
 ): Promise<void> {
   const content = await fs.readFile(packageJsonPath, 'utf-8');
   const packageJson = JSON.parse(content);
@@ -85,6 +86,20 @@ export async function transformPackageJson(
   // Add missing terser devDependency for build minification
   if (packageJson.devDependencies && !packageJson.devDependencies['terser']) {
     packageJson.devDependencies['terser'] = '^5.39.0';
+  }
+
+  // Add CLI as devDependency for all projects
+  if (!packageJson.devDependencies) {
+    packageJson.devDependencies = {};
+  }
+  packageJson.devDependencies['@vue-skuilder/cli'] = `^${cliVersion}`;
+
+  // Add studio script for static data layer projects
+  if (config.dataLayerType === 'static') {
+    if (!packageJson.scripts) {
+      packageJson.scripts = {};
+    }
+    packageJson.scripts['studio'] = 'skuilder studio';
   }
 
   // Remove CLI-specific fields that don't belong in generated projects
@@ -180,7 +195,11 @@ export async function generateSkuilderConfig(
   }
 
   // For static data layer with imported courses, use the first course as primary
-  if (config.dataLayerType === 'static' && config.importCourseIds && config.importCourseIds.length > 0) {
+  if (
+    config.dataLayerType === 'static' &&
+    config.importCourseIds &&
+    config.importCourseIds.length > 0
+  ) {
     skuilderConfig.course = config.importCourseIds[0];
   }
 
@@ -359,12 +378,12 @@ Thumbs.db
  */
 export async function generateReadme(readmePath: string, config: ProjectConfig): Promise<void> {
   let dataLayerInfo = '';
-  
+
   if (config.dataLayerType === 'static') {
     dataLayerInfo = 'This project uses a static data layer with JSON files.';
-    
+
     if (config.importCourseIds && config.importCourseIds.length > 0) {
-      const courseList = config.importCourseIds.map(id => `- ${id}`).join('\n');
+      const courseList = config.importCourseIds.map((id) => `- ${id}`).join('\n');
       dataLayerInfo += `\n\n**Imported Courses:**\n${courseList}\n\nCourse data is stored in \`public/static-courses/\` and loaded automatically.`;
     }
   } else {
@@ -408,7 +427,7 @@ Course configuration is managed in \`skuilder.config.json\`. You can modify:
 
 Current theme: **${config.theme.name}** (${config.theme.defaultMode} mode)
 - Primary: ${config.theme.light.colors.primary}
-- Secondary: ${config.theme.light.colors.secondary}  
+- Secondary: ${config.theme.light.colors.secondary}
 - Accent: ${config.theme.light.colors.accent}
 
 This theme includes both light and dark variants. The application will use the ${config.theme.defaultMode} theme by default, but users can toggle between light and dark modes in their settings.
@@ -479,7 +498,7 @@ export async function processTemplate(
 
   console.log(chalk.blue('⚙️  Configuring package.json...'));
   const packageJsonPath = path.join(projectPath, 'package.json');
-  await transformPackageJson(packageJsonPath, config.projectName, cliVersion);
+  await transformPackageJson(packageJsonPath, config.projectName, cliVersion, config);
 
   console.log(chalk.blue('🔧 Creating vite.config.ts...'));
   const viteConfigPath = path.join(projectPath, 'vite.config.ts');
