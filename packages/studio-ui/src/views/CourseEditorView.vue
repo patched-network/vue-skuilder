@@ -13,10 +13,7 @@
 
     <div v-else-if="courseId">
       <!-- Course Editor from edit-ui package -->
-      <course-editor 
-        :course-id="courseId"
-        :view-lookup-function="allCourses.getView"
-      />
+      <course-editor :course="courseId" :view-lookup-function="allCourses.getView" />
     </div>
 
     <div v-else class="text-center pa-4">
