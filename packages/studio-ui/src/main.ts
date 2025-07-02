@@ -12,15 +12,13 @@ import '@mdi/font/css/materialdesignicons.css';
 // Component library styles
 import '@vue-skuilder/courses/style';
 import '@vue-skuilder/common-ui/style';
-
-// style imports from component libs
-import '@vue-skuilder/courses/style';
-import '@vue-skuilder/common-ui/style';
+import '@vue-skuilder/edit-ui/style';
 
 // Data layer initialization
 import { initializeDataLayer } from '@vue-skuilder/db';
 
 import App from './App.vue';
+import router from './router';
 
 // Initialize Vuetify with all components and directives
 const vuetify = createVuetify({
@@ -29,18 +27,6 @@ const vuetify = createVuetify({
   theme: {
     defaultTheme: 'light',
   },
-});
-
-// Simple router for studio mode
-const router = createRouter({
-  history: createWebHistory(),
-  routes: [
-    {
-      path: '/',
-      name: 'studio',
-      component: App,
-    },
-  ],
 });
 
 (async () => {

@@ -6,6 +6,32 @@
         Skuilder Studio
       </v-toolbar-title>
       <v-spacer />
+      
+      <!-- Navigation buttons -->
+      <v-btn-group v-if="courseId" class="mr-4">
+        <v-btn 
+          :color="$route.name === 'course-editor' ? 'secondary' : 'transparent'"
+          @click="$router.push('/')"
+        >
+          <v-icon left>mdi-pencil</v-icon>
+          Course Editor
+        </v-btn>
+        <v-btn 
+          :color="$route.name === 'create-card' ? 'secondary' : 'transparent'"
+          @click="$router.push('/create-card')"
+        >
+          <v-icon left>mdi-card-plus</v-icon>
+          Create Card
+        </v-btn>
+        <v-btn 
+          :color="$route.name === 'bulk-import' ? 'secondary' : 'transparent'"
+          @click="$router.push('/bulk-import')"
+        >
+          <v-icon left>mdi-file-import</v-icon>
+          Bulk Import
+        </v-btn>
+      </v-btn-group>
+      
       <studio-flush v-if="courseId" :course-id="courseId" />
     </v-app-bar>
 
@@ -23,16 +49,20 @@
         </div>
 
         <div v-else-if="courseId">
-          <course-information :course-id="courseId" :view-lookup-function="allCourses.getView" :edit-mode="'full'">
-            <template #header>
+          <!-- Course information header -->
+          <v-card class="mb-4" flat>
+            <v-card-text>
               <div class="studio-header">
                 <h1>Course Editor</h1>
                 <p class="text-subtitle-1">
                   Editing course: <strong>{{ courseId }}</strong>
                 </p>
               </div>
-            </template>
-          </course-information>
+            </v-card-text>
+          </v-card>
+          
+          <!-- Router view for different editing modes -->
+          <router-view />
         </div>
 
         <div v-else class="text-center pa-4">
@@ -47,8 +77,6 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { CourseInformation } from '@vue-skuilder/common-ui';
-import { allCourses } from '@vue-skuilder/courses';
 import StudioFlush from './components/StudioFlush.vue';
 
 // Studio state
