@@ -265,7 +265,7 @@ export class StaticToCouchDBMigrator {
         let existingDoc;
         try {
           existingDoc = await db.get(designDoc._id);
-        } catch (error) {
+        } catch {
           // Document doesn't exist, which is fine
         }
 

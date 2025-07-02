@@ -126,7 +126,7 @@ async function unpackCourse(coursePath: string, options: UnpackOptions) {
       ENV.COUCHDB_SERVER_URL = serverUrl.host;
       if (options.username) ENV.COUCHDB_USERNAME = options.username;
       if (options.password) ENV.COUCHDB_PASSWORD = options.password;
-    } catch (urlError) {
+    } catch {
       throw new Error(`Invalid server URL: ${options.server}`);
     }
 
@@ -142,7 +142,7 @@ async function unpackCourse(coursePath: string, options: UnpackOptions) {
 
     // Setup progress reporting
     const migrator = new StaticToCouchDBMigrator(migratorOptions, fileSystemAdapter);
-    migrator.setProgressCallback((progress: any) => {
+    migrator.setProgressCallback((progress: { phase: string; message: string; current: number; total: number }) => {
       const percentage = progress.total > 0 ? Math.round((progress.current / progress.total) * 100) : 0;
       console.log(chalk.cyan(`🔄 ${progress.phase}: ${progress.message} (${progress.current}/${progress.total} - ${percentage}%)`));
     });
@@ -174,7 +174,7 @@ async function unpackCourse(coursePath: string, options: UnpackOptions) {
     if (options.as) {
       try {
         console.log(chalk.cyan(`🔄 Updating course name to "${courseName}"...`));
-        const courseConfig: any = await targetDB.get('CourseConfig');
+        const courseConfig = await targetDB.get('CourseConfig') as { _id: string; _rev: string; name: string };
         courseConfig.name = courseName;
         await targetDB.put(courseConfig);
         console.log(chalk.green('✅ Course name updated.'));

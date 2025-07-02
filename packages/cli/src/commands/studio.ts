@@ -86,17 +86,21 @@ async function launchStudio(coursePath: string, options: StudioOptions) {
     console.log(chalk.gray(`   Press Ctrl+C to stop studio session`));
 
     // Keep process alive and handle cleanup
-    process.on('SIGINT', async () => {
-      console.log(chalk.cyan(`\n🔄 Stopping studio session...`));
-      await stopStudioSession();
-      console.log(chalk.green(`✅ Studio session stopped`));
-      process.exit(0);
+    process.on('SIGINT', () => {
+      void (async () => {
+        console.log(chalk.cyan(`\n🔄 Stopping studio session...`));
+        await stopStudioSession();
+        console.log(chalk.green(`✅ Studio session stopped`));
+        process.exit(0);
+      })();
     });
 
-    process.on('SIGTERM', async () => {
-      console.log(chalk.cyan(`\n🔄 Stopping studio session...`));
-      await stopStudioSession();
-      process.exit(0);
+    process.on('SIGTERM', () => {
+      void (async () => {
+        console.log(chalk.cyan(`\n🔄 Stopping studio session...`));
+        await stopStudioSession();
+        process.exit(0);
+      })();
     });
 
     // Keep process alive
@@ -150,7 +154,7 @@ async function validateSuiCourse(coursePath: string): Promise<boolean> {
     }
 
     return true;
-  } catch (error) {
+  } catch {
     return false;
   }
 }
@@ -190,8 +194,9 @@ async function startStudioCouchDB(_databaseName: string, port: number): Promise<
     console.log(chalk.gray(`   Password: ${connectionDetails.password}`));
 
     return manager;
-  } catch (error: any) {
-    console.error(chalk.red(`Failed to start CouchDB: ${error.message}`));
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error(chalk.red(`Failed to start CouchDB: ${errorMessage}`));
     throw error;
   }
 }
@@ -205,8 +210,9 @@ async function stopStudioSession(): Promise<void> {
     try {
       studioUIServer.close();
       console.log(chalk.green(`✅ Studio-UI server stopped`));
-    } catch (error: any) {
-      console.error(chalk.red(`Error stopping studio-ui server: ${error.message}`));
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(chalk.red(`Error stopping studio-ui server: ${errorMessage}`));
     }
     studioUIServer = null;
   }
@@ -216,8 +222,9 @@ async function stopStudioSession(): Promise<void> {
     try {
       await couchDBManager.remove(); // This stops and removes the container
       console.log(chalk.green(`✅ CouchDB studio instance cleaned up`));
-    } catch (error: any) {
-      console.error(chalk.red(`Error cleaning up CouchDB: ${error.message}`));
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(chalk.red(`Error cleaning up CouchDB: ${errorMessage}`));
     }
     couchDBManager = null;
   }
@@ -226,7 +233,18 @@ async function stopStudioSession(): Promise<void> {
 /**
  * Phase 7: Start studio-ui static file server
  */
-async function startStudioUIServer(connectionDetails: any, unpackResult: any): Promise<number> {
+interface ConnectionDetails {
+  url: string;
+  username: string;
+  password: string;
+}
+
+interface UnpackResult {
+  databaseName: string;
+  courseId: string;
+}
+
+async function startStudioUIServer(connectionDetails: ConnectionDetails, unpackResult: UnpackResult): Promise<number> {
   const studioAssetsPath = path.join(__dirname, '..', 'studio-ui-assets');
 
   if (!fs.existsSync(studioAssetsPath)) {
@@ -306,7 +324,7 @@ async function startStudioUIServer(connectionDetails: any, unpackResult: any): P
           resolve();
         });
 
-        server.on('error', (err: any) => {
+        server.on('error', (err: NodeJS.ErrnoException) => {
           if (err.code === 'EADDRINUSE') {
             reject(err);
           } else {
@@ -318,8 +336,8 @@ async function startStudioUIServer(connectionDetails: any, unpackResult: any): P
       // Port is available
       console.log(chalk.green(`✅ Studio-UI server running on port ${port}`));
       return port;
-    } catch (error: any) {
-      if (error.code === 'EADDRINUSE') {
+    } catch (error: unknown) {
+      if (error instanceof Error && 'code' in error && error.code === 'EADDRINUSE') {
         port++;
         continue;
       } else {
@@ -357,7 +375,7 @@ async function openBrowser(url: string): Promise<void> {
 
   try {
     spawn(command, args, { detached: true, stdio: 'ignore' });
-  } catch (error) {
+  } catch {
     console.log(chalk.yellow(`⚠️  Could not automatically open browser. Please visit: ${url}`));
   }
 }
@@ -367,7 +385,7 @@ async function openBrowser(url: string): Promise<void> {
  */
 async function unpackCourseToStudio(
   coursePath: string,
-  connectionDetails: any
+  connectionDetails: ConnectionDetails
 ): Promise<{ databaseName: string; courseId: string }> {
   return new Promise((resolve, reject) => {
     // Find the course data directory (static-data OR public/static-courses)
