@@ -13,15 +13,7 @@
 
     <div v-else-if="courseId">
       <course-information :course-id="courseId" :view-lookup-function="allCourses.getView" :edit-mode="'full'">
-        <template #header>
-          <div class="studio-header">
-            <h1>Course Editor</h1>
-            <p class="text-subtitle-1">
-              Editing course: <strong>{{ courseId }}</strong>
-            </p>
-          </div>
-        </template>
-        <template #actions></template>
+        <template #actions>&nbsp;</template>
       </course-information>
     </div>
 
