@@ -115,3 +115,25 @@ export function showUserError(message: string): void {
     console.error(message);
   }
 }
+
+/**
+ * Logger object with standard log levels
+ */
+export const logger = {
+  debug: (message: string, ...args: any[]) => {
+    // eslint-disable-next-line no-console
+    console.log(`[DEBUG] ${message}`, ...args);
+  },
+  info: (message: string, ...args: any[]) => {
+    // eslint-disable-next-line no-console
+    console.info(`[INFO] ${message}`, ...args);
+  },
+  warn: (message: string, ...args: any[]) => {
+    // eslint-disable-next-line no-console
+    console.warn(`[WARN] ${message}`, ...args);
+  },
+  error: (message: string, ...args: any[]) => {
+    // eslint-disable-next-line no-console
+    console.error(`[ERROR] ${message}`, ...args);
+  },
+};
