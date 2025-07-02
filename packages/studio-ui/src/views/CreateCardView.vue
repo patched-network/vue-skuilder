@@ -18,13 +18,34 @@
         </div>
 
         <div v-else-if="courseId && courseConfig">
+          <!-- Card type selector -->
+          <v-select
+            v-if="availableDataShapes.length > 1"
+            v-model="selectedDataShapeIndex"
+            :items="
+              availableDataShapes.map((shape, index) => ({
+                title: shape.name.replace(/^.*\./, ''),
+                value: index,
+              }))
+            "
+            label="Card Type"
+            class="mb-4"
+          />
+
           <!-- Data Input Form from edit-ui package -->
           <data-input-form
+            v-if="selectedDataShape"
             :course-id="courseId"
             :course-cfg="courseConfig"
+            :data-shape="selectedDataShape"
             :view-lookup-function="allCourses.getView"
             @card-created="onCardCreated"
           />
+
+          <div v-else-if="availableDataShapes.length === 0" class="text-center pa-4">
+            <v-icon color="warning" size="24">mdi-alert</v-icon>
+            <p class="mt-2">No card types available in this course</p>
+          </div>
         </div>
 
         <div v-else>
@@ -36,18 +57,47 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { DataInputForm } from '@vue-skuilder/edit-ui';
 import { allCourses } from '@vue-skuilder/courses';
 import { getStudioConfig, getConfigErrorMessage } from '../config/development';
 import { getDataLayer } from '@vue-skuilder/db';
-import type { CourseConfig } from '@vue-skuilder/common';
+import type { CourseConfig, DataShape } from '@vue-skuilder/common';
 
 // Create card state
 const loading = ref(true);
 const error = ref<string | null>(null);
 const courseId = ref<string | null>(null);
 const courseConfig = ref<CourseConfig | null>(null);
+const selectedDataShapeIndex = ref<number>(0);
+
+// Get available data shapes
+const availableDataShapes = computed(() => {
+  if (!courseConfig.value?.dataShapes) return [];
+  return courseConfig.value.dataShapes;
+});
+
+// Get currently selected data shape
+const selectedDataShape = computed((): DataShape | null => {
+  const shapes = availableDataShapes.value;
+  if (shapes.length === 0) return null;
+
+  // Find the corresponding DataShape from allCourses
+  const shapeName = shapes[selectedDataShapeIndex.value]?.name;
+  if (!shapeName) return null;
+
+  // Search through all courses to find the DataShape
+  for (const course of allCourses.courses) {
+    for (const question of course.questions) {
+      for (const dataShape of question.dataShapes) {
+        if (dataShape.name === shapeName.split('.').pop()) {
+          return dataShape;
+        }
+      }
+    }
+  }
+  return null;
+});
 
 // Initialize create card view
 onMounted(async () => {
