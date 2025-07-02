@@ -112,8 +112,8 @@ export class CouchDBManager extends EventEmitter {
         this.log('Removing container...');
         execSync(`docker rm ${this.config.containerName}`, { stdio: 'pipe' });
         this.log('Container removed.');
-      } catch (error: any) {
-        this.error(`Error during cleanup: ${error.message}`);
+      } catch (error: unknown) {
+        this.error(`Error during cleanup: ${error instanceof Error ? error.message : String(error)}`);
         throw error;
       }
     }
@@ -217,8 +217,8 @@ export class CouchDBManager extends EventEmitter {
       await this.configureCORS();
 
       this.emit('ready');
-    } catch (error: any) {
-      this.error(`Failed to start CouchDB: ${error.message}`);
+    } catch (error: unknown) {
+      this.error(`Failed to start CouchDB: ${error instanceof Error ? error.message : String(error)}`);
       this.emit('error', error);
       throw error;
     } finally {
@@ -239,8 +239,8 @@ export class CouchDBManager extends EventEmitter {
       } else {
         this.log('CouchDB container is not running');
       }
-    } catch (error: any) {
-      this.error(`Failed to stop CouchDB: ${error.message}`);
+    } catch (error: unknown) {
+      this.error(`Failed to stop CouchDB: ${error instanceof Error ? error.message : String(error)}`);
       throw error;
     }
   }
@@ -258,8 +258,8 @@ export class CouchDBManager extends EventEmitter {
         this.log('CouchDB container removed');
         this.emit('removed');
       }
-    } catch (error: any) {
-      this.error(`Failed to remove CouchDB: ${error.message}`);
+    } catch (error: unknown) {
+      this.error(`Failed to remove CouchDB: ${error instanceof Error ? error.message : String(error)}`);
       throw error;
     }
   }
@@ -327,8 +327,8 @@ export class CouchDBManager extends EventEmitter {
         try {
           const result = execSync(cmd, { stdio: 'pipe' }).toString();
           this.log(`CORS command success: ${result.trim()}`);
-        } catch (error: any) {
-          this.error(`CORS command failed: ${cmd} - ${error.message}`);
+        } catch (error: unknown) {
+          this.error(`CORS command failed: ${cmd} - ${error instanceof Error ? error.message : String(error)}`);
           throw error;
         }
       }
@@ -339,13 +339,13 @@ export class CouchDBManager extends EventEmitter {
         const verifyCmd = `curl -s "${baseUrl}/_node/_local/_config/cors" -u "${auth}"`;
         const corsSettings = execSync(verifyCmd, { stdio: 'pipe' }).toString();
         this.log(`CORS verification result: ${corsSettings.trim()}`);
-      } catch (error: any) {
-        this.log(`Warning: CORS verification failed: ${error.message}`);
+      } catch (error: unknown) {
+        this.log(`Warning: CORS verification failed: ${error instanceof Error ? error.message : String(error)}`);
       }
       
       this.log('CORS configuration completed');
-    } catch (error: any) {
-      this.log(`Warning: CORS configuration failed: ${error.message}`);
+    } catch (error: unknown) {
+      this.log(`Warning: CORS configuration failed: ${error instanceof Error ? error.message : String(error)}`);
       // Don't throw - CORS failure shouldn't prevent container startup
     }
   }

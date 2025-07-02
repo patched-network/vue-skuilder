@@ -4,6 +4,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
+import { logger } from './tuiLogger';
 
 /**
  * Get the application data directory for the current platform
@@ -46,6 +47,6 @@ export function getDbPath(dbName: string): string {
 export async function initializeDataDirectory(): Promise<void> {
   await ensureAppDataDirectory();
   
-  // Log to console (will be redirected to file in Node.js by tuiLogger)
-  console.log(`PouchDB data directory initialized: ${getAppDataDirectory()}`);
+  // Log initialization
+  logger.info(`PouchDB data directory initialized: ${getAppDataDirectory()}`);
 }
