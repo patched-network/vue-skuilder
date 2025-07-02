@@ -239,6 +239,14 @@ export default defineComponent({
     },
 
     datashapeDescriptor(): ShapeDescriptor {
+      // Defensive check: handle loading states where courseCfg might not be ready
+      if (!this.courseCfg || !this.courseCfg.dataShapes) {
+        return {
+          course: '',
+          dataShape: '',
+        };
+      }
+
       for (const ds of this.courseCfg.dataShapes) {
         const descriptor = NameSpacer.getDataShapeDescriptor(ds.name);
         if (descriptor.dataShape === this.dataShape.name) {
