@@ -70,6 +70,9 @@ jobs:
           echo "Building common-ui package..."
           yarn workspace @vue-skuilder/common-ui build
           
+          echo "Building edit-ui package..."
+          yarn workspace @vue-skuilder/edit-ui build
+          
           echo "Building courses package..."
           yarn workspace @vue-skuilder/courses build
           
