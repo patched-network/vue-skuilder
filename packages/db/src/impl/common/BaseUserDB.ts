@@ -115,7 +115,7 @@ Currently logged-in as ${this._username}.`
       try {
         localStorage.removeItem('dbUUID');
       } catch (e) {
-        console.warn('localStorage not available (Node.js environment):', e.message);
+        logger.warn('localStorage not available (Node.js environment):', e);
       }
       await this.init();
     }
@@ -145,7 +145,7 @@ Currently logged-in as ${this._username}.`
       try {
         localStorage.removeItem('dbUUID');
       } catch (e) {
-        console.warn('localStorage not available (Node.js environment):', e.message);
+        logger.warn('localStorage not available (Node.js environment):', e);
       }
       await this.init();
     }
