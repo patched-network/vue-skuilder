@@ -78,6 +78,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import StudioFlush from './components/StudioFlush.vue';
+import { getStudioConfig, getConfigErrorMessage } from './config/development';
 
 // Studio state
 const loading = ref(true);
@@ -87,14 +88,14 @@ const courseId = ref<string | null>(null);
 // Initialize studio environment
 onMounted(async () => {
   try {
-    // Get studio configuration from CLI injection
-    const studioConfig = (window as any).STUDIO_CONFIG;
+    // Get studio configuration (CLI-injected or environment variables)
+    const studioConfig = getStudioConfig();
 
-    if (!studioConfig?.database) {
-      throw new Error('Studio database configuration not found. Please run via skuilder CLI studio command.');
+    if (!studioConfig) {
+      throw new Error(getConfigErrorMessage());
     }
 
-    // Use the actual course ID from the unpacked database
+    // Use the actual course ID from the configuration
     courseId.value = studioConfig.database.name;
 
     // Debug: Check if course database is accessible

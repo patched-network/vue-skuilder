@@ -19,6 +19,7 @@ import { initializeDataLayer } from '@vue-skuilder/db';
 
 import App from './App.vue';
 import router from './router';
+import { getStudioConfig, getConfigErrorMessage } from './config/development';
 
 // Initialize Vuetify with all components and directives
 const vuetify = createVuetify({
@@ -30,11 +31,11 @@ const vuetify = createVuetify({
 });
 
 (async () => {
-  // Get CouchDB connection details from CLI-injected configuration
-  const studioConfig = (window as any).STUDIO_CONFIG;
+  // Get studio configuration (CLI-injected or environment variables)
+  const studioConfig = getStudioConfig();
 
-  if (!studioConfig?.couchdb) {
-    throw new Error('Studio configuration not found. Please run via skuilder CLI studio command.');
+  if (!studioConfig) {
+    throw new Error(getConfigErrorMessage());
   }
 
   // Parse the CLI-provided CouchDB URL (format: http://localhost:5985)

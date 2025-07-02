@@ -17,10 +17,10 @@
           <p class="mt-2 text-error">{{ error }}</p>
         </div>
 
-        <div v-else-if="courseId">
+        <div v-else-if="courseId && courseConfig">
           <!-- Bulk Import View from edit-ui package -->
           <bulk-import-view 
-            :course-id="courseId"
+            :course-cfg="courseConfig"
             :view-lookup-function="allCourses.getView"
             @import-completed="onImportCompleted"
           />
@@ -38,22 +38,33 @@
 import { ref, onMounted } from 'vue';
 import { BulkImportView } from '@vue-skuilder/edit-ui';
 import { allCourses } from '@vue-skuilder/courses';
+import { getStudioConfig, getConfigErrorMessage } from '../config/development';
+import { getDataLayer } from '@vue-skuilder/db';
+import type { CourseConfig } from '@vue-skuilder/common';
 
 // Bulk import state
 const loading = ref(true);
 const error = ref<string | null>(null);
 const courseId = ref<string | null>(null);
+const courseConfig = ref<CourseConfig | null>(null);
 
 // Initialize bulk import view
 onMounted(async () => {
   try {
-    const studioConfig = (window as any).STUDIO_CONFIG;
+    // Get studio configuration (CLI-injected or environment variables)
+    const studioConfig = getStudioConfig();
 
-    if (!studioConfig?.database) {
-      throw new Error('Studio database configuration not found.');
+    if (!studioConfig) {
+      throw new Error(getConfigErrorMessage());
     }
 
     courseId.value = studioConfig.database.name;
+
+    // Load course configuration
+    const dataLayer = getDataLayer();
+    const courseDB = dataLayer.getCourseDB(courseId.value);
+    courseConfig.value = await courseDB.getCourseConfig();
+
     loading.value = false;
   } catch (err) {
     console.error('Bulk import initialization error:', err);

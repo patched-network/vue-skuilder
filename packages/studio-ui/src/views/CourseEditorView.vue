@@ -31,6 +31,7 @@
 import { ref, onMounted } from 'vue';
 import { CourseEditor } from '@vue-skuilder/edit-ui';
 import { allCourses } from '@vue-skuilder/courses';
+import { getStudioConfig, getConfigErrorMessage } from '../config/development';
 
 // Course editor state
 const loading = ref(true);
@@ -40,11 +41,11 @@ const courseId = ref<string | null>(null);
 // Initialize course editor
 onMounted(async () => {
   try {
-    // Get studio configuration from CLI injection
-    const studioConfig = (window as any).STUDIO_CONFIG;
+    // Get studio configuration (CLI-injected or environment variables)
+    const studioConfig = getStudioConfig();
 
-    if (!studioConfig?.database) {
-      throw new Error('Studio database configuration not found.');
+    if (!studioConfig) {
+      throw new Error(getConfigErrorMessage());
     }
 
     courseId.value = studioConfig.database.name;
