@@ -4,6 +4,11 @@ import type { RouteRecordRaw } from 'vue-router';
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
+    name: 'browse',
+    component: () => import('../views/BrowseView.vue'),
+  },
+  {
+    path: '/course-editor',
     name: 'course-editor',
     component: () => import('../views/CourseEditorView.vue'),
   },

@@ -6,24 +6,21 @@
         Skuilder Studio
       </v-toolbar-title>
       <v-spacer />
-      
+
       <!-- Navigation buttons -->
       <v-btn-group v-if="courseId" class="mr-4">
-        <v-btn 
-          :color="$route.name === 'course-editor' ? 'secondary' : 'transparent'"
-          @click="$router.push('/')"
-        >
-          <v-icon left>mdi-pencil</v-icon>
-          Course Editor
+        <v-btn :color="$route.name === 'browse' ? 'secondary' : 'transparent'" @click="$router.push('/')">
+          <v-icon left>mdi-magnify</v-icon>
+          Browse Course
         </v-btn>
-        <v-btn 
+        <v-btn
           :color="$route.name === 'create-card' ? 'secondary' : 'transparent'"
           @click="$router.push('/create-card')"
         >
           <v-icon left>mdi-card-plus</v-icon>
           Create Card
         </v-btn>
-        <v-btn 
+        <v-btn
           :color="$route.name === 'bulk-import' ? 'secondary' : 'transparent'"
           @click="$router.push('/bulk-import')"
         >
@@ -31,7 +28,7 @@
           Bulk Import
         </v-btn>
       </v-btn-group>
-      
+
       <studio-flush v-if="courseId" :course-id="courseId" />
     </v-app-bar>
 
@@ -60,7 +57,7 @@
               </div>
             </v-card-text>
           </v-card>
-          
+
           <!-- Router view for different editing modes -->
           <router-view />
         </div>
@@ -72,7 +69,7 @@
         </div>
       </v-container>
     </v-main>
-    
+
     <!-- Global services -->
     <snackbar-service id="SnackbarService" />
   </v-app>
