@@ -32,9 +32,13 @@ export function initializeTuiLogging(): void {
     
     // Redirect console methods to file
     const originalConsole = {
+      // eslint-disable-next-line no-console
       log: console.log,
+      // eslint-disable-next-line no-console
       error: console.error,
+      // eslint-disable-next-line no-console
       warn: console.warn,
+      // eslint-disable-next-line no-console
       info: console.info
     };
     
@@ -56,17 +60,23 @@ export function initializeTuiLogging(): void {
     };
     
     // Override console methods
+    // eslint-disable-next-line no-console
     console.log = (...args) => writeToLog('INFO', args);
+    // eslint-disable-next-line no-console
     console.info = (...args) => writeToLog('INFO', args);
+    // eslint-disable-next-line no-console
     console.warn = (...args) => writeToLog('WARN', args);
+    // eslint-disable-next-line no-console
     console.error = (...args) => writeToLog('ERROR', args);
     
     // Store original methods for potential restoration
     (console as any)._originalMethods = originalConsole;
     
+    // eslint-disable-next-line no-console
     console.log('TUI logging initialized - logs redirected to', logFile);
     
   } catch (err) {
+    // eslint-disable-next-line no-console
     console.error('Failed to initialize TUI logging:', err);
   }
 }
@@ -87,6 +97,7 @@ export function showUserMessage(message: string): void {
     process.stdout.write(message + '\n');
   } else {
     // In browser, use normal console
+    // eslint-disable-next-line no-console
     console.log(message);
   }
 }
@@ -100,6 +111,7 @@ export function showUserError(message: string): void {
     process.stderr.write('Error: ' + message + '\n');
   } else {
     // In browser, use normal console
+    // eslint-disable-next-line no-console
     console.error(message);
   }
 }
