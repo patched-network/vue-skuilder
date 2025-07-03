@@ -4462,6 +4462,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/serve-static@npm:^1.15.0":
+  version: 1.15.8
+  resolution: "@types/serve-static@npm:1.15.8"
+  dependencies:
+    "@types/http-errors": "npm:*"
+    "@types/node": "npm:*"
+    "@types/send": "npm:*"
+  checksum: 10c0/8ad86a25b87da5276cb1008c43c74667ff7583904d46d5fcaf0355887869d859d453d7dc4f890788ae04705c23720e9b6b6f3215e2d1d2a4278bbd090a9268dd
+  languageName: node
+  linkType: hard
+
 "@types/sinonjs__fake-timers@npm:8.1.1":
   version: 8.1.1
   resolution: "@types/sinonjs__fake-timers@npm:8.1.1"
@@ -5186,6 +5197,7 @@ __metadata:
     "@types/fs-extra": "npm:^11.0.0"
     "@types/inquirer": "npm:^9.0.0"
     "@types/node": "npm:^20.0.0"
+    "@types/serve-static": "npm:^1.15.0"
     "@vue-skuilder/db": "workspace:*"
     "@vue-skuilder/standalone-ui": "npm:^0.1.7"
     "@vue-skuilder/studio-ui": "workspace:*"
@@ -5194,6 +5206,7 @@ __metadata:
     fs-extra: "npm:^11.2.0"
     inquirer: "npm:^9.2.0"
     pouchdb: "npm:^9.0.0"
+    serve-static: "npm:^1.15.0"
     typescript: "npm:~5.7.2"
   bin:
     skuilder: ./dist/cli.js
@@ -14518,7 +14531,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"serve-static@npm:1.16.2":
+"serve-static@npm:1.16.2, serve-static@npm:^1.15.0":
   version: 1.16.2
   resolution: "serve-static@npm:1.16.2"
   dependencies:
