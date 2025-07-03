@@ -159,7 +159,7 @@ export class CouchDBManager extends EventEmitter {
   }
 
   /**
-   * Wait for CouchDB to be ready
+   * Wait for CouchDB to be ready with admin credentials working
    */
   private async waitForReady(): Promise<void> {
     const maxAttempts = Math.floor(this.config.maxStartupWaitMs / 1000);
@@ -169,10 +169,26 @@ export class CouchDBManager extends EventEmitter {
       const checkInterval = setInterval(() => {
         attempts++;
         try {
+          // First check basic connectivity
           execSync(`curl -s http://localhost:${this.config.port}/`, { stdio: 'pipe' });
-          clearInterval(checkInterval);
-          this.log('CouchDB is ready!');
-          resolve();
+          
+          // Then verify admin credentials work by checking _up endpoint
+          const auth = `${this.config.username}:${this.config.password}`;
+          const result = execSync(`curl -s http://${auth}@localhost:${this.config.port}/_up`, { stdio: 'pipe' }).toString();
+          
+          // _up endpoint should return {"status":"ok"} when admin is ready
+          if (result.includes('"status":"ok"')) {
+            clearInterval(checkInterval);
+            this.log('CouchDB is ready with admin credentials!');
+            resolve();
+          } else {
+            // CouchDB responds but admin not ready yet
+            this.log(`CouchDB responding but admin not ready (attempt ${attempts}/${maxAttempts})`);
+            if (attempts >= maxAttempts) {
+              clearInterval(checkInterval);
+              reject(new Error('CouchDB admin credentials failed to become ready within timeout period'));
+            }
+          }
         } catch {
           if (attempts >= maxAttempts) {
             clearInterval(checkInterval);
@@ -301,52 +317,79 @@ export class CouchDBManager extends EventEmitter {
   }
 
   /**
-   * Configure CORS settings for browser access
+   * Configure CORS settings for browser access with retry logic
    */
   private async configureCORS(): Promise<void> {
-    try {
-      this.log('Configuring CORS for browser access...');
-      
-      const baseUrl = `http://localhost:${this.config.port}`;
-      const auth = `${this.config.username}:${this.config.password}`;
-      
-      // Enable CORS with comprehensive PouchDB-compatible headers
-      // Note: CouchDB requires BOTH chttpd/enable_cors AND cors section settings
-      const corsCommands = [
-        // First: Enable CORS globally in chttpd section (CRITICAL!)
-        `curl -X PUT "${baseUrl}/_node/_local/_config/chttpd/enable_cors" -d '"true"' -H "Content-Type: application/json" -u "${auth}"`,
-        // Then: Configure CORS settings in cors section
-        `curl -X PUT "${baseUrl}/_node/_local/_config/cors/enable" -d '"true"' -H "Content-Type: application/json" -u "${auth}"`,
-        `curl -X PUT "${baseUrl}/_node/_local/_config/cors/origins" -d '"*"' -H "Content-Type: application/json" -u "${auth}"`,
-        `curl -X PUT "${baseUrl}/_node/_local/_config/cors/methods" -d '"GET,POST,PUT,DELETE,OPTIONS,HEAD"' -H "Content-Type: application/json" -u "${auth}"`,
-        `curl -X PUT "${baseUrl}/_node/_local/_config/cors/headers" -d '"accept,authorization,content-type,origin,referer,x-csrf-token,cache-control,if-none-match,x-requested-with,pragma,expires,x-couch-request-id,x-couch-update-newrev"' -H "Content-Type: application/json" -u "${auth}"`,
-        `curl -X PUT "${baseUrl}/_node/_local/_config/cors/credentials" -d '"true"' -H "Content-Type: application/json" -u "${auth}"`,
-      ];
+    const maxRetries = 3;
+    let attempt = 0;
+    
+    while (attempt < maxRetries) {
+      try {
+        attempt++;
+        this.log(`Configuring CORS for browser access (attempt ${attempt}/${maxRetries})...`);
+        
+        const baseUrl = `http://localhost:${this.config.port}`;
+        const auth = `${this.config.username}:${this.config.password}`;
+        
+        // Enable CORS with comprehensive PouchDB-compatible headers
+        // Note: CouchDB requires BOTH chttpd/enable_cors AND cors section settings
+        const corsCommands = [
+          // First: Enable CORS globally in chttpd section (CRITICAL!)
+          `curl -X PUT "${baseUrl}/_node/_local/_config/chttpd/enable_cors" -d '"true"' -H "Content-Type: application/json" -u "${auth}"`,
+          // Then: Configure CORS settings in cors section
+          `curl -X PUT "${baseUrl}/_node/_local/_config/cors/enable" -d '"true"' -H "Content-Type: application/json" -u "${auth}"`,
+          `curl -X PUT "${baseUrl}/_node/_local/_config/cors/origins" -d '"*"' -H "Content-Type: application/json" -u "${auth}"`,
+          `curl -X PUT "${baseUrl}/_node/_local/_config/cors/methods" -d '"GET,POST,PUT,DELETE,OPTIONS,HEAD"' -H "Content-Type: application/json" -u "${auth}"`,
+          `curl -X PUT "${baseUrl}/_node/_local/_config/cors/headers" -d '"accept,authorization,content-type,origin,referer,x-csrf-token,cache-control,if-none-match,x-requested-with,pragma,expires,x-couch-request-id,x-couch-update-newrev"' -H "Content-Type: application/json" -u "${auth}"`,
+          `curl -X PUT "${baseUrl}/_node/_local/_config/cors/credentials" -d '"true"' -H "Content-Type: application/json" -u "${auth}"`,
+        ];
 
-      for (const cmd of corsCommands) {
+        for (const cmd of corsCommands) {
+          const result = execSync(cmd, { stdio: 'pipe' }).toString().trim();
+          
+          // Check for CouchDB error responses
+          if (result.includes('"error":"unauthorized"')) {
+            this.error(`CORS command failed with unauthorized: ${cmd}`);
+            this.error(`Response: ${result}`);
+            throw new Error(`CORS configuration failed: unauthorized access. Admin credentials may not be ready.`);
+          } else if (result.includes('"error":')) {
+            this.error(`CORS command failed with error: ${cmd}`);
+            this.error(`Response: ${result}`);
+            throw new Error(`CORS configuration failed: ${result}`);
+          } else {
+            this.log(`CORS command success: ${result || 'OK'}`);
+          }
+        }
+        
+        // Verify CORS configuration took effect
         try {
-          const result = execSync(cmd, { stdio: 'pipe' }).toString();
-          this.log(`CORS command success: ${result.trim()}`);
+          this.log('Verifying CORS configuration...');
+          const verifyCmd = `curl -s "${baseUrl}/_node/_local/_config/cors" -u "${auth}"`;
+          const corsSettings = execSync(verifyCmd, { stdio: 'pipe' }).toString();
+          this.log(`CORS verification result: ${corsSettings.trim()}`);
         } catch (error: unknown) {
-          this.error(`CORS command failed: ${cmd} - ${error instanceof Error ? error.message : String(error)}`);
-          throw error;
+          this.log(`Warning: CORS verification failed: ${error instanceof Error ? error.message : String(error)}`);
+        }
+        
+        this.log('CORS configuration completed successfully');
+        return; // Success - exit retry loop
+        
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        
+        if (attempt < maxRetries && errorMessage.includes('unauthorized')) {
+          // Retry with exponential backoff for auth issues
+          const delay = Math.pow(2, attempt - 1) * 1000; // 1s, 2s, 4s
+          this.log(`CORS configuration failed (attempt ${attempt}/${maxRetries}), retrying in ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          continue;
+        } else {
+          // Final attempt failed or non-auth error
+          this.error(`CORS configuration failed after ${attempt} attempts: ${errorMessage}`);
+          // Don't throw - CORS failure shouldn't prevent container startup
+          return;
         }
       }
-      
-      // Verify CORS configuration took effect
-      try {
-        this.log('Verifying CORS configuration...');
-        const verifyCmd = `curl -s "${baseUrl}/_node/_local/_config/cors" -u "${auth}"`;
-        const corsSettings = execSync(verifyCmd, { stdio: 'pipe' }).toString();
-        this.log(`CORS verification result: ${corsSettings.trim()}`);
-      } catch (error: unknown) {
-        this.log(`Warning: CORS verification failed: ${error instanceof Error ? error.message : String(error)}`);
-      }
-      
-      this.log('CORS configuration completed');
-    } catch (error: unknown) {
-      this.log(`Warning: CORS configuration failed: ${error instanceof Error ? error.message : String(error)}`);
-      // Don't throw - CORS failure shouldn't prevent container startup
     }
   }
 }

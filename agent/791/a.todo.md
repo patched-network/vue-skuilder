@@ -35,13 +35,15 @@
 - [x] CourseInformation component rendering successfully with admin authentication
 - [x] Clean UI without debug elements
 
-## Phase 6: Studio-UI Features 🚧 IN PROGRESS
-- [ ] **CURRENT**: Add StudioFlush component with "Flush to Static" functionality
-- [ ] Implement flush functionality that calls existing `pack` CLI command or reuses `db` pack utils
-- [ ] Add flush status/progress feedback in studio-ui
-- [ ] Handle flush errors gracefully with user feedback
-- [ ] Integrate StudioFlush into studio-ui App.vue
-- [ ] Fix Material Design Icons font loading issues (cosmetic)
+## Phase 6: Studio-UI Features ⚠️ BLOCKED (Requires Express Integration)
+- [x] Add StudioFlush component with "Flush to Static" functionality
+- [ ] **BLOCKED**: Update StudioFlush.vue to use Express HTTP API instead of CLI exec
+- [ ] **BLOCKED**: Add progress reporting via HTTP streaming or polling
+- [ ] **BLOCKED**: Implement proper error handling for HTTP flush operations
+- [x] Add flush status/progress feedback in studio-ui (UI complete)
+- [x] Handle flush errors gracefully with user feedback (UI complete)
+- [x] Integrate StudioFlush into studio-ui App.vue
+- [x] Fix Material Design Icons font loading issues (cosmetic)
 
 ## Phase 7: Studio-UI Integration ✅ COMPLETED
 - [x] Implement build-time embedding of studio-ui in CLI package
@@ -56,17 +58,30 @@
 - [x] Fix database name parsing (remove coursedb- prefix for studio-ui)
 - [x] Implement source maps for better debugging experience
 
-## Phase 8: SUI Package Integration
-- [ ] Add studio-ui as devDependency to sui package template (lighter than platform-ui)
-- [ ] Add `yarn studio` script to sui package template
+## Phase 8: SUI Package Integration ✅ COMPLETED (Alternative Approach)
+- [x] Add CLI as devDependency to generated sui projects (via template system)
+- [x] Add `npm run studio` script to generated sui projects (via template system)  
+- [x] CLI studio command serves embedded studio-ui instead of separate package dependency
 - [ ] Update sui documentation with studio mode instructions
-- [ ] Add studio mode to sui development workflow
-- [ ] Test studio mode with existing sui courses
+- [x] Add studio mode to sui development workflow (via project templates)
+- [x] Test studio mode with existing sui courses (confirmed working via CLI command)
 
-## Phase 9: Developer Experience
+## Phase 9: Developer Experience ⚠️ MOSTLY COMPLETED
 - [ ] Add studio command help/documentation
 - [ ] Create basic studio mode documentation
-- [ ] Add studio-ui package to monorepo build system
+- [x] Add studio-ui package to monorepo build system
+
+## Phase 9.5: Express Backend Integration **CURRENT PRIORITY**
+- [ ] **CURRENT**: Add mandatory express backend service to `skuilder studio` command
+- [ ] Configure express environment variables to connect to studio CouchDB instance
+- [ ] Enable audio normalization processing for studio content (FFMPEG pipeline)
+- [ ] Add express service shutdown handling for graceful studio exit
+- [ ] Extend wire-format.ts with `FLUSH_COURSE` ServerRequestType
+- [ ] Create `FlushCourse` interface in wire-format.ts
+- [ ] Add express route for flush operations using `CouchDBToStaticPacker` directly
+- [ ] Implement automatic content monitoring and processing for studio sessions
+- [ ] Create MCP integration points for content authoring and browsing
+- [ ] Document express integration benefits (audio processing, API endpoints, MCP)
 
 ## Phase 10: Testing & Validation
 - [ ] Test studio mode with various sui course structures

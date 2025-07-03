@@ -2,13 +2,11 @@ import { Command } from 'commander';
 import path from 'path';
 import fs from 'fs';
 import chalk from 'chalk';
-import { spawn } from 'child_process';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import http from 'http';
 import { CouchDBManager } from '@vue-skuilder/common/docker';
-// TODO: Re-enable once module import issues are resolved
-// import { StaticToCouchDBMigrator, validateStaticCourse } from '@vue-skuilder/db';
+import serveStatic from 'serve-static';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -246,6 +244,20 @@ interface UnpackResult {
 
 async function startStudioUIServer(connectionDetails: ConnectionDetails, unpackResult: UnpackResult): Promise<number> {
   const studioAssetsPath = path.join(__dirname, '..', 'studio-ui-assets');
+  const serve = serveStatic(studioAssetsPath, { 
+    index: ['index.html'],
+    setHeaders: (res, path) => {
+      if (path.endsWith('.woff2')) {
+        res.setHeader('Content-Type', 'font/woff2');
+      } else if (path.endsWith('.woff')) {
+        res.setHeader('Content-Type', 'font/woff');
+      } else if (path.endsWith('.ttf')) {
+        res.setHeader('Content-Type', 'font/ttf');
+      } else if (path.endsWith('.eot')) {
+        res.setHeader('Content-Type', 'application/vnd.ms-fontobject');
+      }
+    }
+  });
 
   if (!fs.existsSync(studioAssetsPath)) {
     throw new Error('Studio-UI assets not found. Please rebuild the CLI package.');
@@ -257,44 +269,12 @@ async function startStudioUIServer(connectionDetails: ConnectionDetails, unpackR
     try {
       await new Promise<void>((resolve, reject) => {
         const server = http.createServer((req, res) => {
-          let filePath = path.join(
-            studioAssetsPath,
-            req.url === '/' ? 'index.html' : req.url || ''
-          );
+          const url = new URL(req.url || '/', `http://${req.headers.host}`);
 
-          // Security: prevent directory traversal
-          if (!filePath.startsWith(studioAssetsPath)) {
-            res.writeHead(403);
-            res.end('Forbidden');
-            return;
-          }
-
-          // Check if file exists
-          if (!fs.existsSync(filePath)) {
-            // If it's not a file, serve index.html for SPA routing
-            filePath = path.join(studioAssetsPath, 'index.html');
-          }
-
-          // Determine content type
-          const ext = path.extname(filePath);
-          const contentType =
-            {
-              '.html': 'text/html',
-              '.js': 'text/javascript',
-              '.css': 'text/css',
-              '.woff2': 'font/woff2',
-              '.woff': 'font/woff',
-              '.ttf': 'font/ttf',
-              '.eot': 'application/vnd.ms-fontobject',
-            }[ext] || 'application/octet-stream';
-
-          res.writeHead(200, { 'Content-Type': contentType });
-
-          // For HTML files, inject CouchDB connection details
-          if (ext === '.html') {
-            let html = fs.readFileSync(filePath, 'utf8');
-
-            // Inject connection details as script tag before </head>
+          // Inject config for index.html
+          if (url.pathname === '/' || url.pathname === '/index.html') {
+            const indexPath = path.join(studioAssetsPath, 'index.html');
+            let html = fs.readFileSync(indexPath, 'utf8');
             const connectionScript = `
               <script>
                 window.STUDIO_CONFIG = {
@@ -311,12 +291,36 @@ async function startStudioUIServer(connectionDetails: ConnectionDetails, unpackR
               </script>
             `;
             html = html.replace('</head>', connectionScript + '</head>');
+            res.setHeader('Content-Type', 'text/html');
             res.end(html);
-          } else {
-            // Serve static files
-            const stream = fs.createReadStream(filePath);
-            stream.pipe(res);
+            return;
           }
+
+          // Fallback to serve-static for all other assets
+          serve(req, res, () => {
+            // If serve-static doesn't find the file, it calls next().
+            // We can treat this as a 404, but for SPAs, we should serve index.html.
+            const indexPath = path.join(studioAssetsPath, 'index.html');
+            let html = fs.readFileSync(indexPath, 'utf8');
+            const connectionScript = `
+              <script>
+                window.STUDIO_CONFIG = {
+                  couchdb: {
+                    url: '${connectionDetails.url}',
+                    username: '${connectionDetails.username}',
+                    password: '${connectionDetails.password}'
+                  },
+                  database: {
+                    name: '${unpackResult.databaseName}',
+                    courseId: '${unpackResult.courseId}'
+                  }
+                };
+              </script>
+            `;
+            html = html.replace('</head>', connectionScript + '</head>');
+            res.setHeader('Content-Type', 'text/html');
+            res.end(html);
+          });
         });
 
         server.listen(port, '127.0.0.1', () => {
@@ -387,7 +391,7 @@ async function unpackCourseToStudio(
   coursePath: string,
   connectionDetails: ConnectionDetails
 ): Promise<{ databaseName: string; courseId: string }> {
-  return new Promise((resolve, reject) => {
+  try {
     // Find the course data directory (static-data OR public/static-courses)
     let courseDataPath = path.join(coursePath, 'static-data');
     if (!fs.existsSync(courseDataPath)) {
@@ -403,95 +407,67 @@ async function unpackCourseToStudio(
         if (courses.length > 0) {
           courseDataPath = path.join(publicStaticPath, courses[0]);
         } else {
-          reject(new Error('No course directories found in public/static-courses/'));
-          return;
+          throw new Error('No course directories found in public/static-courses/');
         }
       } else {
-        reject(new Error('No course data found in static-data/ or public/static-courses/'));
-        return;
+        throw new Error('No course data found in static-data/ or public/static-courses/');
       }
     }
 
     console.log(chalk.gray(`   Course data path: ${courseDataPath}`));
 
-    // Build the unpack command arguments
-    const args = [
-      'unpack',
-      courseDataPath,
-      '--server',
-      connectionDetails.url,
-      '--username',
-      connectionDetails.username,
-      '--password',
-      connectionDetails.password,
-    ];
+    console.log(chalk.gray(`   Running unpack directly...`));
 
-    console.log(chalk.gray(`   Running: skuilder ${args.join(' ')}`));
+    // Generate database name the same way unpack command does
+    const timestamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    const random = Math.random().toString(36).substring(2, 8);
+    
+    // We need the course ID from the static course data first
+    const { validateStaticCourse } = await import('@vue-skuilder/db');
+    const { NodeFileSystemAdapter } = await import('../utils/NodeFileSystemAdapter.js');
+    const fileSystemAdapter = new NodeFileSystemAdapter();
+    const validation = await validateStaticCourse(courseDataPath, fileSystemAdapter);
+    
+    if (!validation.valid) {
+      throw new Error('Static course validation failed');
+    }
 
-    // Spawn the unpack command as a child process
-    const unpackProcess = spawn('node', [path.join(__dirname, '..', 'cli.js'), ...args], {
-      stdio: ['pipe', 'pipe', 'pipe'],
-      cwd: process.cwd(),
-    });
+    const studioCourseId = `unpacked_${validation.courseId || 'unknown'}_${timestamp}_${random}`;
+    const targetDbName = `coursedb-${studioCourseId}`;
 
-    let stdout = '';
-    let stderr = '';
+    // Import and call the existing unpack command
+    const { unpackCourse } = await import('./unpack.js');
+    
+    try {
+      await unpackCourse(courseDataPath, {
+        server: connectionDetails.url,
+        username: connectionDetails.username,
+        password: connectionDetails.password,
+        database: targetDbName,
+        chunkSize: '100',
+        validate: false,
+        cleanupOnError: true
+      });
 
-    unpackProcess.stdout?.on('data', (data) => {
-      const output = data.toString();
-      stdout += output;
-      // Forward output with indentation
-      process.stdout.write(chalk.gray(`   ${output.replace(/\n/g, '\n   ')}`));
-    });
+      console.log(chalk.green(`✅ Course data unpacked successfully`));
 
-    unpackProcess.stderr?.on('data', (data) => {
-      const output = data.toString();
-      stderr += output;
-      // Forward error output with indentation
-      process.stderr.write(chalk.gray(`   ${output.replace(/\n/g, '\n   ')}`));
-    });
+      // Return the database name and course ID for studio use
+      const databaseName = studioCourseId;
+      const courseId = validation.courseId || '';
 
-    unpackProcess.on('close', (code) => {
-      if (code === 0) {
-        console.log(chalk.green(`✅ Course data unpacked successfully`));
+      console.log(
+        chalk.gray(
+          `   Debug: Extracted - Full DB: "${targetDbName}", Course DB ID: "${databaseName}", Course ID: "${courseId}"`
+        )
+      );
 
-        // Parse the output to extract database name and course ID
-        console.log(chalk.gray(`   Debug: Parsing unpack output...`));
-
-        const databaseMatch = stdout.match(/Database: ([\w-_]+)/);
-        const courseIdMatch = stdout.match(/Course: .* \(([a-f0-9]+)\)/);
-
-        const fullDatabaseName = databaseMatch ? databaseMatch[1] : '';
-        const courseId = courseIdMatch ? courseIdMatch[1] : '';
-
-        // Extract the course database ID by removing 'coursedb-' prefix
-        const databaseName = fullDatabaseName.startsWith('coursedb-')
-          ? fullDatabaseName.substring('coursedb-'.length)
-          : fullDatabaseName;
-
-        console.log(
-          chalk.gray(
-            `   Debug: Parsed - Full DB: "${fullDatabaseName}", Course DB ID: "${databaseName}", Course ID: "${courseId}"`
-          )
-        );
-
-        if (!databaseName || !courseId) {
-          console.warn(
-            chalk.yellow(`⚠️  Could not parse database name or course ID from unpack output`)
-          );
-          console.log(chalk.gray(`   Raw stdout length: ${stdout.length} chars`));
-        }
-
-        resolve({ databaseName, courseId });
-      } else {
-        console.error(chalk.red(`❌ Failed to unpack course data (exit code: ${code})`));
-        reject(new Error(`Unpack failed with code ${code}\nstdout: ${stdout}\nstderr: ${stderr}`));
-      }
-    });
-
-    unpackProcess.on('error', (error) => {
-      console.error(chalk.red(`❌ Failed to start unpack process: ${error.message}`));
-      reject(error);
-    });
-  });
+      return { databaseName, courseId };
+    } catch (innerError) {
+      console.error(chalk.red(`❌ Failed to unpack course: ${innerError instanceof Error ? innerError.message : String(innerError)}`));
+      throw innerError;
+    }
+  } catch (error) {
+    console.error(chalk.red(`❌ Studio unpack failed: ${error instanceof Error ? error.message : String(error)}`));
+    throw error;
+  }
 }

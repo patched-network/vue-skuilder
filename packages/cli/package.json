@@ -24,7 +24,8 @@
         "dev": "tsc --watch",
         "lint": "npx eslint .",
         "lint:fix": "npx eslint . --fix",
-        "lint:check": "npx eslint . --max-warnings 0"
+        "lint:check": "npx eslint . --max-warnings 0",
+        "try:init": "node dist/cli.js init testproject --dangerously-clobber --no-interactive --data-layer static --import-course-data --import-server-url http://localhost:5984 --import-username admin --import-password password --import-course-ids 2aeb8315ef78f3e89ca386992d00825b && cd testproject && npm i && npm install --save-dev @vue-skuilder/cli@file:.. && npm install @vue-skuilder/db@file:../../db && npm install @vue-skuilder/courses@file:../../courses && npm install @vue-skuilder/common-ui@file:../../common-ui"
     },
     "keywords": [
         "cli",
@@ -41,12 +42,14 @@
         "commander": "^11.0.0",
         "fs-extra": "^11.2.0",
         "inquirer": "^9.2.0",
-        "pouchdb": "^9.0.0"
+        "pouchdb": "^9.0.0",
+        "serve-static": "^1.15.0"
     },
     "devDependencies": {
         "@types/fs-extra": "^11.0.0",
         "@types/inquirer": "^9.0.0",
         "@types/node": "^20.0.0",
+        "@types/serve-static": "^1.15.0",
         "@vue-skuilder/studio-ui": "workspace:*",
         "typescript": "~5.7.2"
     },

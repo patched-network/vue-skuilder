@@ -31,7 +31,7 @@ interface UnpackOptions {
   cleanupOnError: boolean;
 }
 
-async function unpackCourse(coursePath: string, options: UnpackOptions) {
+export async function unpackCourse(coursePath: string, options: UnpackOptions) {
   // Store original ENV values for cleanup
   const originalEnv = {
     COUCHDB_SERVER_PROTOCOL: ENV.COUCHDB_SERVER_PROTOCOL,

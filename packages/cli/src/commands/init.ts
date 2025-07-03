@@ -1,6 +1,6 @@
 import chalk from 'chalk';
 import { Command } from 'commander';
-import { existsSync, readFileSync } from 'fs';
+import { existsSync, readFileSync, rmSync } from 'fs';
 import path, { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { CliOptions, PREDEFINED_THEMES } from '../types.js';
@@ -24,6 +24,12 @@ export function createInitCommand(): Command {
     .option('--no-interactive', 'skip interactive prompts')
     .option('--couchdb-url <url>', 'CouchDB server URL (for dynamic data layer)')
     .option('--course-id <id>', 'course ID to import (for dynamic data layer)')
+    .option('--import-course-data', 'import course data from CouchDB (for static data layer)')
+    .option('--import-server-url <url>', 'CouchDB server URL for course import (for static data layer)')
+    .option('--import-username <username>', 'username for course import server')
+    .option('--import-password <password>', 'password for course import server')
+    .option('--import-course-ids <ids>', 'comma-separated course IDs to import')
+    .option('--dangerously-clobber', 'overwrite existing directory')
     .action(initCommand);
 }
 
@@ -33,6 +39,12 @@ interface InitOptions {
   interactive: boolean;
   couchdbUrl?: string;
   courseId?: string;
+  importCourseData?: boolean;
+  importServerUrl?: string;
+  importUsername?: string;
+  importPassword?: string;
+  importCourseIds?: string;
+  dangerouslyClobber?: boolean;
 }
 
 async function initCommand(projectName: string, options: InitOptions): Promise<void> {
@@ -41,6 +53,29 @@ async function initCommand(projectName: string, options: InitOptions): Promise<v
     if (!isValidProjectName(projectName)) {
       console.error(
         chalk.red('❌ Invalid project name. Use only letters, numbers, hyphens, and underscores.')
+      );
+      process.exit(1);
+    }
+
+    // Validate that import-* options require --import-course-data flag
+    const importOptions = [
+      { flag: '--import-server-url', value: options.importServerUrl },
+      { flag: '--import-username', value: options.importUsername },
+      { flag: '--import-password', value: options.importPassword },
+      { flag: '--import-course-ids', value: options.importCourseIds }
+    ];
+
+    const usedImportOptions = importOptions.filter(opt => opt.value !== undefined);
+    
+    if (usedImportOptions.length > 0 && !options.importCourseData) {
+      console.error(
+        chalk.red('❌ Import options require the --import-course-data flag.')
+      );
+      console.error(
+        chalk.yellow(`Used options: ${usedImportOptions.map(opt => opt.flag).join(', ')}`)
+      );
+      console.error(
+        chalk.yellow('Add --import-course-data to enable course data import.')
       );
       process.exit(1);
     }
@@ -60,8 +95,13 @@ async function initCommand(projectName: string, options: InitOptions): Promise<v
     // Check if directory already exists
     const projectPath = path.resolve(process.cwd(), projectName);
     if (existsSync(projectPath)) {
-      console.error(chalk.red(`❌ Directory "${projectName}" already exists.`));
-      process.exit(1);
+      if (options.dangerouslyClobber) {
+        console.log(chalk.yellow(`--dangerously-clobber specified, removing existing directory: ${projectPath}`));
+        rmSync(projectPath, { recursive: true, force: true });
+      } else {
+        console.error(chalk.red(`❌ Directory "${projectName}" already exists.`));
+        process.exit(1);
+      }
     }
 
     // Get CLI version for dependency transformation
@@ -76,6 +116,11 @@ async function initCommand(projectName: string, options: InitOptions): Promise<v
       interactive: options.interactive,
       couchdbUrl: options.couchdbUrl,
       courseId: options.courseId,
+      importCourseData: options.importCourseData,
+      importServerUrl: options.importServerUrl,
+      importUsername: options.importUsername,
+      importPassword: options.importPassword,
+      importCourseIds: options.importCourseIds,
     };
 
     // Gather project configuration

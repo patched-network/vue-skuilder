@@ -87,7 +87,7 @@
             <tags-input
               v-show="internalEditMode === 'tags'"
               :course-i-d="courseId"
-              :card-i-d="c.id.split('-')[1]"
+              :card-i-d="c.id.includes('-') ? c.id.split('-')[1] : c.id"
               class="mt-4"
             />
 
@@ -160,7 +160,7 @@ export default defineComponent({
     viewLookupFunction: {
       type: Function,
       required: true,
-      default: (x: unknown) => {
+      default: () => {
         console.warn('No viewLookupFunction provided to CourseCardBrowser');
         return null;
       },
@@ -242,11 +242,11 @@ export default defineComponent({
       this.internalEditMode = 'none';
       this.delBtn = false;
     },
-    async deleteCard(c: string) {
-      console.log(`Deleting card ${c}`);
-      const res = await this.courseDB!.removeCard(c.split('-')[1]);
+    async deleteCard(cID: string) {
+      console.log(`Deleting card ${cID}`);
+      const res = await this.courseDB!.removeCard(idParse(cID));
       if (res.ok) {
-        this.cards = this.cards.filter((card) => card.id != c);
+        this.cards = this.cards.filter((card) => card.id != cID);
         this.clearSelections();
       } else {
         console.error(`Failed to delete card:\n\n${JSON.stringify(res)}`);
@@ -276,7 +276,7 @@ export default defineComponent({
       const toRemove: string[] = [];
       const hydratedCardData = (
         await this.courseDB!.getCourseDocs<CardData>(
-          this.cards.map((c) => c.id.split('-')[1]),
+          this.cards.map((c) => idParse(c.id)),
           {
             include_docs: true,
           }
@@ -296,7 +296,7 @@ export default defineComponent({
         })
         .map((r) => r.doc!);
 
-      this.cards = this.cards.filter((c) => !toRemove.includes(c.id.split('-')[1]));
+      this.cards = this.cards.filter((c) => !toRemove.includes(idParse(c.id)));
 
       hydratedCardData.forEach((c) => {
         if (c && c.id_displayable_data) {
@@ -307,7 +307,7 @@ export default defineComponent({
       try {
         await Promise.all(
           this.cards.map(async (c) => {
-            const _cardID: string = c.id.split('-')[1];
+            const _cardID: string = idParse(c.id);
 
             const tmpCardData = hydratedCardData.find((c) => c._id == _cardID);
             if (!tmpCardData || !tmpCardData.id_displayable_data) {
@@ -354,6 +354,15 @@ export default defineComponent({
     },
   },
 });
+
+function idParse(id: string): string {
+  const delimiters = id.includes('-');
+  if (delimiters) {
+    return id.split('-')[1];
+  } else {
+    return id;
+  }
+}
 </script>
 
 <style scoped>

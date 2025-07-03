@@ -389,13 +389,47 @@ export async function gatherProjectConfig(
       couchdbUrl: options.couchdbUrl,
       course: options.courseId,
       theme: PREDEFINED_THEMES[options.theme],
+      // Handle import options for static data layer
+      importCourseData: options.importCourseData,
+      importServerUrl: options.importServerUrl,
+      importUsername: options.importUsername,
+      importPassword: options.importPassword,
     };
+
+    // Parse comma-separated course IDs if provided
+    if (options.importCourseIds) {
+      config.importCourseIds = options.importCourseIds
+        .split(',')
+        .map((id: string) => id.trim())
+        .filter((id: string) => id.length > 0);
+    }
 
     // Validate required fields for non-interactive mode
     if (config.dataLayerType === 'couch' && !config.couchdbUrl) {
       throw new Error(
         'CouchDB URL is required when using dynamic data layer. Use --couchdb-url option.'
       );
+    }
+
+    // Validate required fields for static data layer course import
+    if (config.importCourseData) {
+      if (config.dataLayerType !== 'static') {
+        throw new Error(
+          'Course import is only available for static data layer. Use --data-layer static.'
+        );
+      }
+      
+      if (!config.importServerUrl) {
+        throw new Error(
+          'Import server URL is required when importing course data. Use --import-server-url option.'
+        );
+      }
+
+      if (!config.importCourseIds || config.importCourseIds.length === 0) {
+        throw new Error(
+          'Course IDs are required when importing course data. Use --import-course-ids option.'
+        );
+      }
     }
   }
 
