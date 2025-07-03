@@ -35,11 +35,11 @@
 - [x] CourseInformation component rendering successfully with admin authentication
 - [x] Clean UI without debug elements
 
-## Phase 6: Studio-UI Features ⚠️ BLOCKED (Requires Express Integration)
+## Phase 6: Studio-UI Features ✅ COMPLETED
 - [x] Add StudioFlush component with "Flush to Static" functionality
-- [ ] **BLOCKED**: Update StudioFlush.vue to use Express HTTP API instead of CLI exec
-- [ ] **BLOCKED**: Add progress reporting via HTTP streaming or polling
-- [ ] **BLOCKED**: Implement proper error handling for HTTP flush operations
+- [x] Update StudioFlush.vue to use Express HTTP API instead of CLI exec
+- [x] Add progress reporting via HTTP streaming or polling
+- [x] Implement proper error handling for HTTP flush operations
 - [x] Add flush status/progress feedback in studio-ui (UI complete)
 - [x] Handle flush errors gracefully with user feedback (UI complete)
 - [x] Integrate StudioFlush into studio-ui App.vue
@@ -71,20 +71,20 @@
 - [ ] Create basic studio mode documentation
 - [x] Add studio-ui package to monorepo build system
 
-## Phase 9.5: Express Backend Integration **CURRENT PRIORITY** (Option A: Bundle Express Subprocess)
+## Phase 9.5: Express Backend Integration ✅ COMPLETED (Option A: Bundle Express Subprocess)
 - [x] Add express build integration to CLI package.json (similar to studio-ui pattern)
 - [x] Create express bundling/embedding process in CLI build scripts
 - [x] Create `ExpressManager` class for subprocess management (similar to `CouchDBManager`)
 - [x] Add express startup to `launchStudio()` function with dynamic port assignment
 - [x] Configure express environment variables to connect to studio CouchDB instance
 - [x] Add express to cleanup process in CLI signal handlers (SIGINT/SIGTERM)
-- [ ] **CURRENT**: Enable audio normalization processing for studio content (FFMPEG pipeline)
-- [ ] Extend wire-format.ts with `FLUSH_COURSE` ServerRequestType
-- [ ] Create `FlushCourse` interface in wire-format.ts
-- [ ] Add express route for flush operations using `CouchDBToStaticPacker` directly
-- [ ] Implement automatic content monitoring and processing for studio sessions
-- [ ] Create MCP integration points for content authoring and browsing
-- [ ] Document express integration benefits (audio processing, API endpoints, MCP)
+- [x] Extend wire-format.ts with `PACK_COURSE` ServerRequestType (renamed from FLUSH_COURSE)
+- [x] Create `PackCourse` interface in wire-format.ts (renamed from FlushCourse)
+- [x] Add express route for pack operations using `CouchDBToStaticPacker` directly
+- [x] Enable audio normalization processing for studio content (FFMPEG pipeline)
+- [x] Implement automatic content monitoring and processing for studio sessions
+- [ ] **DEFERRED** Create MCP integration points for content authoring and browsing
+- [ ] **DEFERRED** Document express integration benefits (audio processing, API endpoints, MCP)
 
 ## Phase 10: Testing & Validation
 - [ ] Test studio mode with various sui course structures
