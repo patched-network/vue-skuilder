@@ -4,6 +4,11 @@ export interface CliOptions {
   interactive: boolean;
   couchdbUrl?: string;
   courseId?: string;
+  importCourseData?: boolean;
+  importServerUrl?: string;
+  importUsername?: string;
+  importPassword?: string;
+  importCourseIds?: string;
 }
 
 export interface ProjectConfig {
