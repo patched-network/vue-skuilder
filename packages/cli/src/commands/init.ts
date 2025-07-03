@@ -29,6 +29,7 @@ export function createInitCommand(): Command {
     .option('--import-username <username>', 'username for course import server')
     .option('--import-password <password>', 'password for course import server')
     .option('--import-course-ids <ids>', 'comma-separated course IDs to import')
+    .option('--dangerously-clobber', 'overwrite existing directory')
     .action(initCommand);
 }
 
@@ -43,6 +44,7 @@ interface InitOptions {
   importUsername?: string;
   importPassword?: string;
   importCourseIds?: string;
+  dangerouslyClobber?: boolean;
 }
 
 async function initCommand(projectName: string, options: InitOptions): Promise<void> {
@@ -93,8 +95,13 @@ async function initCommand(projectName: string, options: InitOptions): Promise<v
     // Check if directory already exists
     const projectPath = path.resolve(process.cwd(), projectName);
     if (existsSync(projectPath)) {
-      console.error(chalk.red(`❌ Directory "${projectName}" already exists.`));
-      process.exit(1);
+      if (options.dangerouslyClobber) {
+        console.log(chalk.yellow(`--dangerously-clobber specified, removing existing directory: ${projectPath}`));
+        fs.rmSync(projectPath, { recursive: true, force: true });
+      } else {
+        console.error(chalk.red(`❌ Directory "${projectName}" already exists.`));
+        process.exit(1);
+      }
     }
 
     // Get CLI version for dependency transformation
