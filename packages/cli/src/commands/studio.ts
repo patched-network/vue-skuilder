@@ -7,6 +7,7 @@ import { dirname } from 'path';
 import http from 'http';
 import { CouchDBManager } from '@vue-skuilder/common/docker';
 import serveStatic from 'serve-static';
+import { ExpressManager } from '../utils/ExpressManager.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -27,6 +28,7 @@ interface StudioOptions {
 
 // Global references for cleanup
 let couchDBManager: CouchDBManager | null = null;
+let expressManager: ExpressManager | null = null;
 let studioUIServer: http.Server | null = null;
 
 async function launchStudio(coursePath: string, options: StudioOptions) {
@@ -62,6 +64,10 @@ async function launchStudio(coursePath: string, options: StudioOptions) {
       couchDBManager.getConnectionDetails()
     );
 
+    // Phase 9.5: Launch Express backend
+    console.log(chalk.cyan(`⚡ Starting Express backend server...`));
+    expressManager = await startExpressBackend(couchDBManager.getConnectionDetails());
+
     // Phase 7: Launch studio-ui server
     console.log(chalk.cyan(`🌐 Starting studio-ui server...`));
     console.log(
@@ -77,6 +83,7 @@ async function launchStudio(coursePath: string, options: StudioOptions) {
     console.log(chalk.green(`✅ Studio session ready!`));
     console.log(chalk.white(`🎨 Studio URL: http://localhost:${studioUIPort}`));
     console.log(chalk.gray(`   Database: ${studioDatabaseName} on port ${options.port}`));
+    console.log(chalk.gray(`   Express API: ${expressManager.getConnectionDetails().url}`));
     if (options.browser) {
       console.log(chalk.cyan(`🌐 Opening browser...`));
       await openBrowser(`http://localhost:${studioUIPort}`);
@@ -200,7 +207,7 @@ async function startStudioCouchDB(_databaseName: string, port: number): Promise<
 }
 
 /**
- * Stop entire studio session (CouchDB + UI server)
+ * Stop entire studio session (CouchDB + Express + UI server)
  */
 async function stopStudioSession(): Promise<void> {
   // Stop studio-ui server
@@ -213,6 +220,18 @@ async function stopStudioSession(): Promise<void> {
       console.error(chalk.red(`Error stopping studio-ui server: ${errorMessage}`));
     }
     studioUIServer = null;
+  }
+
+  // Stop Express backend
+  if (expressManager) {
+    try {
+      await expressManager.stop();
+      console.log(chalk.green(`✅ Express backend stopped`));
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(chalk.red(`Error stopping Express backend: ${errorMessage}`));
+    }
+    expressManager = null;
   }
 
   // Stop CouchDB
@@ -381,6 +400,39 @@ async function openBrowser(url: string): Promise<void> {
     spawn(command, args, { detached: true, stdio: 'ignore' });
   } catch {
     console.log(chalk.yellow(`⚠️  Could not automatically open browser. Please visit: ${url}`));
+  }
+}
+
+/**
+ * Phase 9.5: Start Express backend server
+ */
+async function startExpressBackend(couchDbConnectionDetails: ConnectionDetails): Promise<ExpressManager> {
+  const expressManager = new ExpressManager(
+    {
+      port: 3001, // Start from 3001 to avoid conflicts
+      couchdbUrl: couchDbConnectionDetails.url,
+      couchdbUsername: couchDbConnectionDetails.username,
+      couchdbPassword: couchDbConnectionDetails.password
+    },
+    {
+      onLog: (message) => console.log(chalk.gray(`   Express: ${message}`)),
+      onError: (error) => console.error(chalk.red(`   Express Error: ${error}`))
+    }
+  );
+
+  try {
+    await expressManager.start();
+    
+    const connectionDetails = expressManager.getConnectionDetails();
+    console.log(chalk.green(`✅ Express backend ready`));
+    console.log(chalk.gray(`   URL: ${connectionDetails.url}`));
+    console.log(chalk.gray(`   Port: ${connectionDetails.port}`));
+    
+    return expressManager;
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error(chalk.red(`Failed to start Express backend: ${errorMessage}`));
+    throw error;
   }
 }
 

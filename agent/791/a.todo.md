@@ -75,10 +75,10 @@
 - [x] Add express build integration to CLI package.json (similar to studio-ui pattern)
 - [x] Create express bundling/embedding process in CLI build scripts
 - [x] Create `ExpressManager` class for subprocess management (similar to `CouchDBManager`)
-- [ ] **CURRENT**: Add express startup to `launchStudio()` function with dynamic port assignment
-- [ ] Configure express environment variables to connect to studio CouchDB instance
-- [ ] Add express to cleanup process in CLI signal handlers (SIGINT/SIGTERM)
-- [ ] Enable audio normalization processing for studio content (FFMPEG pipeline)
+- [x] Add express startup to `launchStudio()` function with dynamic port assignment
+- [x] Configure express environment variables to connect to studio CouchDB instance
+- [x] Add express to cleanup process in CLI signal handlers (SIGINT/SIGTERM)
+- [ ] **CURRENT**: Enable audio normalization processing for studio content (FFMPEG pipeline)
 - [ ] Extend wire-format.ts with `FLUSH_COURSE` ServerRequestType
 - [ ] Create `FlushCourse` interface in wire-format.ts
 - [ ] Add express route for flush operations using `CouchDBToStaticPacker` directly
