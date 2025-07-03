@@ -37,6 +37,7 @@ logger.info(`Express app running version: ${ENV.VERSION}`);
 
 const port = 3000;
 import { classroomDbDesignDoc } from './design-docs.js';
+import PouchDb from 'pouchdb-http';
 const app = express();
 
 app.use(cookieParser());
@@ -188,17 +189,17 @@ async function postHandler(
         logger.info(`Packing course ${body.courseId} from ${dbName} to ${outputPath}`);
         
         // Initialize packer and perform pack operation
-        const packer = new CouchDBToStaticPacker(dbUrl, dbName);
-        const result = await packer.packToDirectory(outputPath);
+        const packer = new CouchDBToStaticPacker();
+        const packResult = await packer.packCourse(new PouchDb(dbUrl), dbName);
         
         const duration = Date.now() - startTime;
         
         const response = {
           status: 'ok' as const,
           ok: true,
-          packedFiles: result.files || [],
+          packedFiles: packResult.attachments ? Array.from(packResult.attachments.keys()) : [],
           outputPath: outputPath,
-          totalFiles: result.files?.length || 0,
+          totalFiles: packResult.attachments ? packResult.attachments.size : 0,
           duration: duration
         };
         
