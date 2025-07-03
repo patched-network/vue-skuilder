@@ -276,7 +276,14 @@ export default defineComponent({
       const toRemove: string[] = [];
       const hydratedCardData = (
         await this.courseDB!.getCourseDocs<CardData>(
-          this.cards.map((c) => c.id.split('-')[1]),
+          this.cards.map((c) => {
+            const delimiters = c.id.includes('-');
+            if (delimiters) {
+              return c.id.split('-')[1];
+            } else {
+              return c.id;
+            }
+          }),
           {
             include_docs: true,
           }
