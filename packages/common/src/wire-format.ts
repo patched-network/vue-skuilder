@@ -139,6 +139,21 @@ export interface AddCourseData extends IServerRequest {
   };
 }
 
+export interface PackCourse extends IServerRequest {
+  type: ServerRequestType.PACK_COURSE;
+  courseId: string;
+  outputPath?: string;
+  response: {
+    status: Status;
+    ok: boolean;
+    errorText?: string;
+    packedFiles?: string[];
+    outputPath?: string;
+    totalFiles?: number;
+    duration?: number;
+  } | null;
+}
+
 export type ServerRequest =
   | CreateClassroom
   | DeleteClassroom
@@ -146,7 +161,8 @@ export type ServerRequest =
   | LeaveClassroom
   | CreateCourse
   | DeleteCourse
-  | AddCourseData;
+  | AddCourseData
+  | PackCourse;
 
 export enum ServerRequestType {
   CREATE_CLASSROOM = 'CREATE_CLASSROOM',
@@ -156,4 +172,5 @@ export enum ServerRequestType {
   CREATE_COURSE = 'CREATE_COURSE',
   DELETE_COURSE = 'DELETE_COURSE',
   ADD_COURSE_DATA = 'ADD_COURSE_DATA',
+  PACK_COURSE = 'PACK_COURSE',
 }

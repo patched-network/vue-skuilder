@@ -169,6 +169,51 @@ async function postHandler(
           logger.info(`\t\t\tCouchDB insert error: ${JSON.stringify(e)}`);
           res.json(e);
         });
+    } else if (body.type === RequestEnum.PACK_COURSE) {
+      logger.info(`Starting PACK_COURSE for ${body.courseId}...`);
+      
+      try {
+        const startTime = Date.now();
+        
+        // Use CouchDBToStaticPacker directly from db package
+        const { CouchDBToStaticPacker } = await import('@vue-skuilder/db');
+        
+        // Create database connection URL
+        const dbUrl = `${ENV.COUCHDB_PROTOCOL}://${ENV.COUCHDB_ADMIN}:${ENV.COUCHDB_PASSWORD}@${ENV.COUCHDB_SERVER}`;
+        const dbName = `coursedb-${body.courseId}`;
+        
+        // Determine output path (use provided path or current working directory)
+        const outputPath = body.outputPath || process.cwd();
+        
+        logger.info(`Packing course ${body.courseId} from ${dbName} to ${outputPath}`);
+        
+        // Initialize packer and perform pack operation
+        const packer = new CouchDBToStaticPacker(dbUrl, dbName);
+        const result = await packer.packToDirectory(outputPath);
+        
+        const duration = Date.now() - startTime;
+        
+        const response = {
+          status: 'ok' as const,
+          ok: true,
+          packedFiles: result.files || [],
+          outputPath: outputPath,
+          totalFiles: result.files?.length || 0,
+          duration: duration
+        };
+        
+        logger.info(`Pack completed in ${duration}ms. Files: ${response.totalFiles}`);
+        res.json(response);
+        
+      } catch (error) {
+        logger.error('Pack operation failed:', error);
+        const response = {
+          status: 'error' as const,
+          ok: false,
+          errorText: error instanceof Error ? error.message : 'Pack operation failed'
+        };
+        res.status(500).json(response);
+      }
     }
   } else {
     logger.info(`\tREQUEST UNAUTHORIZED!`);
