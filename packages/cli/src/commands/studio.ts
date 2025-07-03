@@ -6,6 +6,7 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import http from 'http';
 import { CouchDBManager } from '@vue-skuilder/common/docker';
+import serveStatic from 'serve-static';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -243,6 +244,20 @@ interface UnpackResult {
 
 async function startStudioUIServer(connectionDetails: ConnectionDetails, unpackResult: UnpackResult): Promise<number> {
   const studioAssetsPath = path.join(__dirname, '..', 'studio-ui-assets');
+  const serve = serveStatic(studioAssetsPath, { 
+    index: ['index.html'],
+    setHeaders: (res, path) => {
+      if (path.endsWith('.woff2')) {
+        res.setHeader('Content-Type', 'font/woff2');
+      } else if (path.endsWith('.woff')) {
+        res.setHeader('Content-Type', 'font/woff');
+      } else if (path.endsWith('.ttf')) {
+        res.setHeader('Content-Type', 'font/ttf');
+      } else if (path.endsWith('.eot')) {
+        res.setHeader('Content-Type', 'application/vnd.ms-fontobject');
+      }
+    }
+  });
 
   if (!fs.existsSync(studioAssetsPath)) {
     throw new Error('Studio-UI assets not found. Please rebuild the CLI package.');
@@ -254,44 +269,12 @@ async function startStudioUIServer(connectionDetails: ConnectionDetails, unpackR
     try {
       await new Promise<void>((resolve, reject) => {
         const server = http.createServer((req, res) => {
-          let filePath = path.join(
-            studioAssetsPath,
-            req.url === '/' ? 'index.html' : req.url || ''
-          );
+          const url = new URL(req.url || '/', `http://${req.headers.host}`);
 
-          // Security: prevent directory traversal
-          if (!filePath.startsWith(studioAssetsPath)) {
-            res.writeHead(403);
-            res.end('Forbidden');
-            return;
-          }
-
-          // Check if file exists
-          if (!fs.existsSync(filePath)) {
-            // If it's not a file, serve index.html for SPA routing
-            filePath = path.join(studioAssetsPath, 'index.html');
-          }
-
-          // Determine content type
-          const ext = path.extname(filePath);
-          const contentType =
-            {
-              '.html': 'text/html',
-              '.js': 'text/javascript',
-              '.css': 'text/css',
-              '.woff2': 'font/woff2',
-              '.woff': 'font/woff',
-              '.ttf': 'font/ttf',
-              '.eot': 'application/vnd.ms-fontobject',
-            }[ext] || 'application/octet-stream';
-
-          res.writeHead(200, { 'Content-Type': contentType });
-
-          // For HTML files, inject CouchDB connection details
-          if (ext === '.html') {
-            let html = fs.readFileSync(filePath, 'utf8');
-
-            // Inject connection details as script tag before </head>
+          // Inject config for index.html
+          if (url.pathname === '/' || url.pathname === '/index.html') {
+            const indexPath = path.join(studioAssetsPath, 'index.html');
+            let html = fs.readFileSync(indexPath, 'utf8');
             const connectionScript = `
               <script>
                 window.STUDIO_CONFIG = {
@@ -308,12 +291,36 @@ async function startStudioUIServer(connectionDetails: ConnectionDetails, unpackR
               </script>
             `;
             html = html.replace('</head>', connectionScript + '</head>');
+            res.setHeader('Content-Type', 'text/html');
             res.end(html);
-          } else {
-            // Serve static files
-            const stream = fs.createReadStream(filePath);
-            stream.pipe(res);
+            return;
           }
+
+          // Fallback to serve-static for all other assets
+          serve(req, res, () => {
+            // If serve-static doesn't find the file, it calls next().
+            // We can treat this as a 404, but for SPAs, we should serve index.html.
+            const indexPath = path.join(studioAssetsPath, 'index.html');
+            let html = fs.readFileSync(indexPath, 'utf8');
+            const connectionScript = `
+              <script>
+                window.STUDIO_CONFIG = {
+                  couchdb: {
+                    url: '${connectionDetails.url}',
+                    username: '${connectionDetails.username}',
+                    password: '${connectionDetails.password}'
+                  },
+                  database: {
+                    name: '${unpackResult.databaseName}',
+                    courseId: '${unpackResult.courseId}'
+                  }
+                };
+              </script>
+            `;
+            html = html.replace('</head>', connectionScript + '</head>');
+            res.setHeader('Content-Type', 'text/html');
+            res.end(html);
+          });
         });
 
         server.listen(port, '127.0.0.1', () => {
