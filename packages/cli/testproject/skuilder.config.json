@@ -1,0 +1,57 @@
+{
+  "title": "Testproject",
+  "dataLayerType": "static",
+  "course": "2aeb8315ef78f3e89ca386992d00825b",
+  "theme": {
+    "name": "default",
+    "defaultMode": "light",
+    "light": {
+      "dark": false,
+      "colors": {
+        "primary": "#1976D2",
+        "secondary": "#424242",
+        "accent": "#82B1FF",
+        "error": "#F44336",
+        "info": "#2196F3",
+        "success": "#4CAF50",
+        "warning": "#FF9800",
+        "background": "#FFFFFF",
+        "surface": "#FFFFFF",
+        "surface-bright": "#FFFFFF",
+        "surface-light": "#EEEEEE",
+        "surface-variant": "#E3F2FD",
+        "on-surface-variant": "#1976D2",
+        "primary-darken-1": "#1565C0",
+        "secondary-darken-1": "#212121",
+        "on-primary": "#FFFFFF",
+        "on-secondary": "#FFFFFF",
+        "on-background": "#212121",
+        "on-surface": "#212121"
+      }
+    },
+    "dark": {
+      "dark": true,
+      "colors": {
+        "primary": "#2196F3",
+        "secondary": "#90A4AE",
+        "accent": "#82B1FF",
+        "error": "#FF5252",
+        "info": "#2196F3",
+        "success": "#4CAF50",
+        "warning": "#FFC107",
+        "background": "#121212",
+        "surface": "#1E1E1E",
+        "surface-bright": "#2C2C2C",
+        "surface-light": "#2C2C2C",
+        "surface-variant": "#1A237E",
+        "on-surface-variant": "#82B1FF",
+        "primary-darken-1": "#1976D2",
+        "secondary-darken-1": "#546E7A",
+        "on-primary": "#000000",
+        "on-secondary": "#000000",
+        "on-background": "#FFFFFF",
+        "on-surface": "#FFFFFF"
+      }
+    }
+  }
+}
