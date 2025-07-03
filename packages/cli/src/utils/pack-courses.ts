@@ -1,9 +1,5 @@
-import { execFile } from 'child_process';
-import { promisify } from 'util';
 import chalk from 'chalk';
 import path from 'path';
-
-const execFileAsync = promisify(execFile);
 
 export interface PackCoursesOptions {
   server: string;
@@ -25,43 +21,22 @@ export async function packCourses(options: PackCoursesOptions): Promise<void> {
 
   console.log(chalk.cyan(`\n📦 Packing ${courseIds.length} course(s) to ${outputDir}...`));
 
+  // Import the pack command function
+  const { packCourse } = await import('../commands/pack.js');
+
   for (const courseId of courseIds) {
-    const args = ['pack', courseId, '--server', server, '--output', outputDir];
-
-    if (username) {
-      args.push('--username', username);
-    }
-
-    if (password) {
-      args.push('--password', password);
-    }
-
-    const cliPath = path.join(process.cwd(), 'dist', 'cli.js');
-    const commandArgs = ['pack', courseId, '--server', server, '--output', outputDir];
-
-    if (username) {
-      commandArgs.push('--username', username);
-    }
-
-    if (password) {
-      commandArgs.push('--password', password);
-    }
-
     try {
       console.log(chalk.gray(`🔄 Packing course: ${courseId}`));
 
-      const { stdout, stderr } = await execFileAsync('node', [cliPath, ...commandArgs], {
-        cwd: process.cwd(),
-        maxBuffer: 1024 * 1024 * 10, // 10MB buffer for large outputs
+      // Call the existing pack command directly instead of subprocess
+      await packCourse(courseId, {
+        server,
+        username,
+        password,
+        output: outputDir,
+        chunkSize: '1000',
+        noAttachments: false
       });
-
-      if (stdout) {
-        console.log(stdout);
-      }
-
-      if (stderr) {
-        console.error(chalk.yellow(stderr));
-      }
 
       console.log(chalk.green(`✅ Successfully packed course: ${courseId}`));
     } catch (error: unknown) {
