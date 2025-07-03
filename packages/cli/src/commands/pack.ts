@@ -27,7 +27,7 @@ interface PackOptions {
   noAttachments: boolean;
 }
 
-async function packCourse(courseId: string, options: PackOptions) {
+export async function packCourse(courseId: string, options: PackOptions) {
   try {
     console.log(chalk.cyan(`🔧 Packing course: ${courseId}`));
     
