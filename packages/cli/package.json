@@ -24,7 +24,8 @@
         "dev": "tsc --watch",
         "lint": "npx eslint .",
         "lint:fix": "npx eslint . --fix",
-        "lint:check": "npx eslint . --max-warnings 0"
+        "lint:check": "npx eslint . --max-warnings 0",
+        "try:init": "node dist/cli.js init testproject --no-interactive --data-layer static --import-course-data --import-server-url http://localhost:5984 --import-username admin --import-password password --import-course-ids 2aeb8315ef78f3e89ca386992d00825b"
     },
     "keywords": [
         "cli",
