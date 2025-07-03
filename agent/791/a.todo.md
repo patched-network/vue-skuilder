@@ -71,11 +71,14 @@
 - [ ] Create basic studio mode documentation
 - [x] Add studio-ui package to monorepo build system
 
-## Phase 9.5: Express Backend Integration **CURRENT PRIORITY**
-- [ ] **CURRENT**: Add mandatory express backend service to `skuilder studio` command
+## Phase 9.5: Express Backend Integration **CURRENT PRIORITY** (Option A: Bundle Express Subprocess)
+- [x] Add express build integration to CLI package.json (similar to studio-ui pattern)
+- [x] Create express bundling/embedding process in CLI build scripts
+- [x] Create `ExpressManager` class for subprocess management (similar to `CouchDBManager`)
+- [ ] **CURRENT**: Add express startup to `launchStudio()` function with dynamic port assignment
 - [ ] Configure express environment variables to connect to studio CouchDB instance
+- [ ] Add express to cleanup process in CLI signal handlers (SIGINT/SIGTERM)
 - [ ] Enable audio normalization processing for studio content (FFMPEG pipeline)
-- [ ] Add express service shutdown handling for graceful studio exit
 - [ ] Extend wire-format.ts with `FLUSH_COURSE` ServerRequestType
 - [ ] Create `FlushCourse` interface in wire-format.ts
 - [ ] Add express route for flush operations using `CouchDBToStaticPacker` directly
