@@ -1,8 +1,8 @@
 <template>
   <v-app>
-    <v-app-bar app color="primary">
+    <v-app-bar color="primary">
       <v-toolbar-title>
-        <v-icon left>mdi-palette</v-icon>
+        <v-icon start>mdi-palette</v-icon>
         Skuilder Studio
       </v-toolbar-title>
       <v-spacer />
@@ -10,21 +10,21 @@
       <!-- Navigation buttons -->
       <v-btn-group v-if="courseId" class="mr-4">
         <v-btn :color="$route.name === 'browse' ? 'secondary' : 'transparent'" @click="$router.push('/')">
-          <v-icon left>mdi-magnify</v-icon>
+          <v-icon start>mdi-magnify</v-icon>
           Browse Course
         </v-btn>
         <v-btn
           :color="$route.name === 'create-card' ? 'secondary' : 'transparent'"
           @click="$router.push('/create-card')"
         >
-          <v-icon left>mdi-card-plus</v-icon>
+          <v-icon start>mdi-card-plus</v-icon>
           Create Card
         </v-btn>
         <v-btn
           :color="$route.name === 'bulk-import' ? 'secondary' : 'transparent'"
           @click="$router.push('/bulk-import')"
         >
-          <v-icon left>mdi-file-import</v-icon>
+          <v-icon start>mdi-file-import</v-icon>
           Bulk Import
         </v-btn>
       </v-btn-group>

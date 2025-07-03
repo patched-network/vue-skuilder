@@ -20,7 +20,7 @@ export interface StudioConfig {
  */
 export function getStudioConfig(): StudioConfig | null {
   // First try CLI-injected configuration (production studio mode)
-  const cliConfig = (window as any).STUDIO_CONFIG;
+  const cliConfig = (window as unknown as { STUDIO_CONFIG: StudioConfig | undefined }).STUDIO_CONFIG;
   if (cliConfig?.couchdb) {
     return cliConfig as StudioConfig;
   }
