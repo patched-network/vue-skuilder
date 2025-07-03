@@ -1,6 +1,6 @@
 import chalk from 'chalk';
 import { Command } from 'commander';
-import { existsSync, readFileSync } from 'fs';
+import { existsSync, readFileSync, rmSync } from 'fs';
 import path, { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { CliOptions, PREDEFINED_THEMES } from '../types.js';
@@ -97,7 +97,7 @@ async function initCommand(projectName: string, options: InitOptions): Promise<v
     if (existsSync(projectPath)) {
       if (options.dangerouslyClobber) {
         console.log(chalk.yellow(`--dangerously-clobber specified, removing existing directory: ${projectPath}`));
-        fs.rmSync(projectPath, { recursive: true, force: true });
+        rmSync(projectPath, { recursive: true, force: true });
       } else {
         console.error(chalk.red(`❌ Directory "${projectName}" already exists.`));
         process.exit(1);
