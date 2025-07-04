@@ -37,7 +37,7 @@ logger.info(`Express app running version: ${ENV.VERSION}`);
 
 const port = 3000;
 import { classroomDbDesignDoc } from './design-docs.js';
-import PouchDb from 'pouchdb-http';
+import PouchDb from 'pouchdb';
 const app = express();
 
 app.use(cookieParser());
