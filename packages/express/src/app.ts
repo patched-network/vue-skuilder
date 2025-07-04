@@ -171,6 +171,16 @@ async function postHandler(
           res.json(e);
         });
     } else if (body.type === RequestEnum.PACK_COURSE) {
+      if (process.env.NODE_ENV !== 'studio') {
+        logger.info(
+          `\tPACK_COURSE request received in production mode, but this is not supported!`
+        );
+        res.status(400);
+        res.statusMessage = 'Packing courses is not supported in production mode.';
+        res.send();
+        return;
+      }
+      
       body.response = await packCourse({
         courseId: body.courseId,
         outputPath: body.outputPath
