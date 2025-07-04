@@ -91,7 +91,7 @@ export class ExpressManager {
       // Handle stdout
       this.process.stdout?.on('data', (data: Buffer) => {
         const message = data.toString().trim();
-        if (message.includes('Server running on port') && !started) {
+        if (message.includes('listening on port') && !started) {
           started = true;
           this.options.port = availablePort; // Update with actual port
           resolve();
