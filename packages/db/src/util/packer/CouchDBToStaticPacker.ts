@@ -322,11 +322,12 @@ export class CouchDBToStaticPacker {
 
     try {
       const designDocId = designDoc._id; // e.g., "_design/elo"
-      const viewPath = `${designDocId}/${viewName}`;
+      const designDocName = designDocId.replace('_design/', ''); // Extract just "elo"
+      const viewPath = `${designDocName}/${viewName}`;
       
       logger.info(`Querying CouchDB view: ${viewPath}`);
       
-      // Query the view directly from CouchDB
+      // Query the view directly from CouchDB using PouchDB format: "designDocName/viewName"
       const viewResults = await this.sourceDB.query(viewPath, {
         include_docs: false,
       });
