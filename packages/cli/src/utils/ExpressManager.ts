@@ -94,7 +94,7 @@ export class ExpressManager {
       this.process.on('exit', (code) => {
         this.process = null;
         if (code !== 0 && code !== null) {
-          this.callbacks.onError?.(Express process exited with code ${code});
+          this.callbacks.onError?.(`Express process exited with code ${code}`);
         }
       });
 
@@ -104,7 +104,7 @@ export class ExpressManager {
         if (!started) {
           reject(error);
         } else {
-          this.callbacks.onError?.(Express process error: ${error.message});
+          this.callbacks.onError?.(`Express process error: ${error.message}`);
         }
       });
 
@@ -150,7 +150,7 @@ export class ExpressManager {
 
   getConnectionDetails() {
     return {
-      url: http://localhost:${this.options.port},
+      url: `http://localhost:${this.options.port}`,
       port: this.options.port
     };
   }
@@ -164,7 +164,7 @@ export class ExpressManager {
       }
     }
     
-    throw new Error(No available port found starting from ${startPort});
+    throw new Error(`No available port found starting from ${startPort}`);
   }
 
   private isPortAvailable(port: number, net: any): Promise<boolean> {
