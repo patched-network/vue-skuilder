@@ -4538,6 +4538,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/uuid@npm:^10.0.0":
+  version: 10.0.0
+  resolution: "@types/uuid@npm:10.0.0"
+  checksum: 10c0/9a1404bf287164481cb9b97f6bb638f78f955be57c40c6513b7655160beb29df6f84c915aaf4089a1559c216557dc4d2f79b48d978742d3ae10b937420ddac60
+  languageName: node
+  linkType: hard
+
 "@types/wavesurfer.js@npm:^5.1.0":
   version: 5.2.2
   resolution: "@types/wavesurfer.js@npm:5.2.2"
@@ -5315,6 +5322,7 @@ __metadata:
   resolution: "@vue-skuilder/db@workspace:packages/db"
   dependencies:
     "@nilock2/pouchdb-authentication": "npm:^1.0.2"
+    "@types/uuid": "npm:^10.0.0"
     "@vue-skuilder/common": "workspace:*"
     moment: "npm:^2.29.4"
     pouchdb: "npm:^9.0.0"

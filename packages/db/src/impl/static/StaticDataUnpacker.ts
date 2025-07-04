@@ -2,7 +2,7 @@
 
 import { StaticCourseManifest, ChunkMetadata } from '../../util/packer/types';
 import { logger } from '../../util/logger';
-import { DocType } from '@db/core';
+import { DocType, DocTypePrefixes } from '@db/core';
 
 // Browser-compatible path utilities
 const pathUtils = {
@@ -151,57 +151,38 @@ export class StaticDataUnpacker {
     return (await this.loadIndex('tags')) as TagsIndex;
   }
 
+  private getDocTypeFromId(id: string): DocType | undefined {
+    for (const docTypeKey in DocTypePrefixes) {
+      const prefix = DocTypePrefixes[docTypeKey as DocType];
+      if (id.startsWith(`${prefix}-`)) {
+        return docTypeKey as DocType;
+      }
+    }
+    return undefined;
+  }
+
   /**
    * Find which chunk contains a specific document ID
    */
   private async findChunkForDocument(docId: string): Promise<ChunkMetadata | undefined> {
-    // Determine document type from ID pattern by checking all DocType enum members
-    let expectedDocType: DocType | undefined = undefined;
+    const expectedDocType = this.getDocTypeFromId(docId);
 
-    // Check for ID prefixes matching any DocType enum value
-    for (const docType of Object.values(DocType)) {
-      if (docId.startsWith(`${docType}-`)) {
-        expectedDocType = docType;
-        break;
-      }
-    }
-
-    if (expectedDocType !== undefined) {
-      // Use chunk filtering by docType for documents with recognized prefixes
+    if (expectedDocType) {
       const typeChunks = this.manifest.chunks.filter((c) => c.docType === expectedDocType);
 
       for (const chunk of typeChunks) {
         if (docId >= chunk.startKey && docId <= chunk.endKey) {
-          // Verify document actually exists in chunk
           const exists = await this.verifyDocumentInChunk(docId, chunk);
           if (exists) {
             return chunk;
           }
         }
       }
-
-      return undefined;
     } else {
-      // Fall back to trying all chunk types with strict verification
-      // Since card IDs and displayable data IDs can overlap in range, we need to verify actual existence
-
-      // First try DISPLAYABLE_DATA chunks (most likely for documents without prefixes)
-      const displayableChunks = this.manifest.chunks.filter(
-        (c) => c.docType === 'DISPLAYABLE_DATA'
-      );
-      for (const chunk of displayableChunks) {
-        if (docId >= chunk.startKey && docId <= chunk.endKey) {
-          // Verify document actually exists in chunk
-          const exists = await this.verifyDocumentInChunk(docId, chunk);
-          if (exists) {
-            return chunk;
-          }
-        }
-      }
-
-      // Then try CARD chunks (for legacy card IDs without prefixes)
-      const cardChunks = this.manifest.chunks.filter((c) => c.docType === 'CARD');
-      for (const chunk of cardChunks) {
+      // Fallback for documents without recognized prefixes (e.g., CourseConfig, or old documents)
+      // This part remains for backward compatibility and non-prefixed documents.
+      // It's less efficient but necessary if not all document types are prefixed.
+      for (const chunk of this.manifest.chunks) {
         if (docId >= chunk.startKey && docId <= chunk.endKey) {
           // Verify document actually exists in chunk
           const exists = await this.verifyDocumentInChunk(docId, chunk);
@@ -227,6 +208,7 @@ export class StaticDataUnpacker {
 
       return undefined;
     }
+    return undefined;
   }
 
   /**

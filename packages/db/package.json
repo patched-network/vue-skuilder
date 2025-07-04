@@ -51,6 +51,7 @@
         "pouchdb-find": "^9.0.0"
     },
     "devDependencies": {
+        "@types/uuid": "^10.0.0",
         "tsup": "^8.0.2",
         "typescript": "~5.7.2"
     }

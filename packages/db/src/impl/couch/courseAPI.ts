@@ -6,10 +6,11 @@ import { NameSpacer, ShapeDescriptor } from '@vue-skuilder/common';
 import { CourseConfig, DataShape } from '@vue-skuilder/common';
 import { CourseElo, blankCourseElo, toCourseElo } from '@vue-skuilder/common';
 import { CourseDB, createTag } from './courseDB';
-import { CardData, DisplayableData, DocType, Tag } from '../../core/types/types-legacy';
+import { CardData, DisplayableData, DocType, Tag, DocTypePrefixes } from '../../core/types/types-legacy';
 import { prepareNote55 } from '@vue-skuilder/common';
 import { BaseUser } from '../common';
 import { logger } from '@db/util/logger';
+import { v4 as uuidv4 } from 'uuid';
 
 /**
  *
@@ -33,9 +34,8 @@ export async function addNote55(
 ): Promise<PouchDB.Core.Response> {
   const db = getCourseDB(courseID);
   const payload = prepareNote55(courseID, codeCourse, shape, data, author, tags, uploads);
-  // [ ] NAMESPACING: consider put( _id: "displayable_data-uuid")
-  //     consider also semantic hashing
-  const result = await db.post<DisplayableData>(payload);
+  const _id = `${DocTypePrefixes[DocType.DISPLAYABLE_DATA]}-${uuidv4()}`;
+  const result = await db.put<DisplayableData>({ ...payload, _id });
 
   const dataShapeId = NameSpacer.getDataShapeString({
     course: codeCourse,
@@ -153,9 +153,10 @@ async function addCard(
   tags: string[],
   author: string
 ): Promise<PouchDB.Core.Response> {
-  // [ ] NAMESPACING: consider put( _id: "card-uuid")
   const db = getCourseDB(courseID);
-  const card = await db.post<CardData>({
+  const _id = `${DocTypePrefixes[DocType.CARD]}-${uuidv4()}`;
+  const card = await db.put<CardData>({
+    _id,
     course,
     id_displayable_data,
     id_view,
