@@ -2,7 +2,7 @@
   <div class="bulk-import-view">
     <v-card>
       <v-card-title>
-        <v-icon left>mdi-file-import</v-icon>
+        <v-icon start>mdi-file-import</v-icon>
         Bulk Import Cards
       </v-card-title>
       
@@ -74,7 +74,7 @@ onMounted(async () => {
 });
 
 // Handle import completion
-const onImportCompleted = (result: any) => {
+const onImportCompleted = (result: unknown) => {
   console.log('Import completed:', result);
   // Could add success notification here
 };

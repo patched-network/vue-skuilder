@@ -49,6 +49,12 @@ function logRequest(req: VueClientRequest) {
 export async function requestIsAuthenticated(req: VueClientRequest) {
   logRequest(req);
 
+  // Studio mode bypass: skip authentication for local development
+  if (process.env.NODE_ENV === 'studio') {
+    logger.info('Studio mode: bypassing authentication for local development');
+    return true;
+  }
+
   if (req.headers.authorization) {
     const auth = Buffer.from(req.headers.authorization.split(' ')[1], 'base64')
       .toString('ascii')

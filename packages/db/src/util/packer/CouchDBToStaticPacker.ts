@@ -14,6 +14,7 @@ import {
   StaticCourseManifest,
   AttachmentData,
 } from './types';
+import { FileSystemAdapter } from '../migrator/FileSystemAdapter';
 
 export class CouchDBToStaticPacker {
   private config: PackerConfig;
@@ -84,6 +85,94 @@ export class CouchDBToStaticPacker {
       indices,
       attachments,
     };
+  }
+
+  /**
+   * Pack a CouchDB course database and write the static files to disk
+   */
+  async packCourseToFiles(
+    sourceDB: PouchDB.Database, 
+    courseId: string, 
+    outputDir: string, 
+    fsAdapter: FileSystemAdapter
+  ): Promise<{ 
+    manifest: StaticCourseManifest; 
+    filesWritten: number; 
+    attachmentsFound: number; 
+  }> {
+    logger.info(`Packing course ${courseId} to files in ${outputDir}`);
+    
+    // First, pack the course data
+    const packedData = await this.packCourse(sourceDB, courseId);
+    
+    // Write the files using the FileSystemAdapter
+    const filesWritten = await this.writePackedDataToFiles(packedData, outputDir, fsAdapter);
+    
+    return {
+      manifest: packedData.manifest,
+      filesWritten,
+      attachmentsFound: packedData.attachments ? packedData.attachments.size : 0,
+    };
+  }
+
+  /**
+   * Write packed course data to files using FileSystemAdapter
+   */
+  private async writePackedDataToFiles(
+    packedData: PackedCourseData,
+    outputDir: string,
+    fsAdapter: FileSystemAdapter
+  ): Promise<number> {
+    let totalFiles = 0;
+    
+    // Ensure output directory exists
+    await fsAdapter.ensureDir(outputDir);
+    
+    // Write manifest
+    const manifestPath = fsAdapter.joinPath(outputDir, 'manifest.json');
+    await fsAdapter.writeJson(manifestPath, packedData.manifest, { spaces: 2 });
+    totalFiles++;
+    logger.info(`Wrote manifest: ${manifestPath}`);
+    
+    // Create subdirectories
+    const chunksDir = fsAdapter.joinPath(outputDir, 'chunks');
+    const indicesDir = fsAdapter.joinPath(outputDir, 'indices');
+    await fsAdapter.ensureDir(chunksDir);
+    await fsAdapter.ensureDir(indicesDir);
+    
+    // Write chunks
+    for (const [chunkId, chunkData] of packedData.chunks) {
+      const chunkPath = fsAdapter.joinPath(chunksDir, `${chunkId}.json`);
+      await fsAdapter.writeJson(chunkPath, chunkData);
+      totalFiles++;
+    }
+    logger.info(`Wrote ${packedData.chunks.size} chunk files`);
+    
+    // Write indices
+    for (const [indexName, indexData] of packedData.indices) {
+      const indexPath = fsAdapter.joinPath(indicesDir, `${indexName}.json`);
+      await fsAdapter.writeJson(indexPath, indexData, { spaces: 2 });
+      totalFiles++;
+    }
+    logger.info(`Wrote ${packedData.indices.size} index files`);
+    
+    // Write attachments
+    if (packedData.attachments && packedData.attachments.size > 0) {
+      for (const [attachmentPath, attachmentData] of packedData.attachments) {
+        const fullAttachmentPath = fsAdapter.joinPath(outputDir, attachmentPath);
+        
+        // Ensure attachment directory exists
+        const attachmentDir = fsAdapter.dirname(fullAttachmentPath);
+        await fsAdapter.ensureDir(attachmentDir);
+        
+        // Write binary file
+        await fsAdapter.writeFile(fullAttachmentPath, attachmentData.buffer);
+        totalFiles++;
+      }
+      logger.info(`Wrote ${packedData.attachments.size} attachment files`);
+    }
+    
+    return totalFiles;
   }
 
   private async extractCourseConfig(db: PouchDB.Database): Promise<CourseConfig> {
@@ -322,11 +411,12 @@ export class CouchDBToStaticPacker {
 
     try {
       const designDocId = designDoc._id; // e.g., "_design/elo"
-      const viewPath = `${designDocId}/${viewName}`;
+      const designDocName = designDocId.replace('_design/', ''); // Extract just "elo"
+      const viewPath = `${designDocName}/${viewName}`;
       
       logger.info(`Querying CouchDB view: ${viewPath}`);
       
-      // Query the view directly from CouchDB
+      // Query the view directly from CouchDB using PouchDB format: "designDocName/viewName"
       const viewResults = await this.sourceDB.query(viewPath, {
         include_docs: false,
       });

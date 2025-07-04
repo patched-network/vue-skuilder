@@ -20,6 +20,7 @@ import {
   CourseCreationQueue,
   initCourseDBDesignDocInsert,
 } from './client-requests/course-requests.js';
+import { packCourse } from './client-requests/pack-requests.js';
 import { requestIsAuthenticated } from './couchdb/authentication.js';
 import CouchDB, {
   useOrCreateCourseDB,
@@ -169,6 +170,22 @@ async function postHandler(
           logger.info(`\t\t\tCouchDB insert error: ${JSON.stringify(e)}`);
           res.json(e);
         });
+    } else if (body.type === RequestEnum.PACK_COURSE) {
+      if (process.env.NODE_ENV !== 'studio') {
+        logger.info(
+          `\tPACK_COURSE request received in production mode, but this is not supported!`
+        );
+        res.status(400);
+        res.statusMessage = 'Packing courses is not supported in production mode.';
+        res.send();
+        return;
+      }
+      
+      body.response = await packCourse({
+        courseId: body.courseId,
+        outputPath: body.outputPath
+      });
+      res.json(body.response);
     }
   } else {
     logger.info(`\tREQUEST UNAUTHORIZED!`);

@@ -18,9 +18,11 @@
         }
     },
     "scripts": {
-        "build": "rm -rf dist && npm run build:studio-ui && tsc && npm run embed:studio-ui",
+        "build": "rm -rf dist && npm run build:studio-ui && npm run build:express && tsc && npm run embed:studio-ui && npm run embed:express",
         "build:studio-ui": "cd ../studio-ui && npm run build",
+        "build:express": "cd ../express && npm run build",
         "embed:studio-ui": "mkdir -p dist/studio-ui-assets && cp -r ../studio-ui/dist/* dist/studio-ui-assets/",
+        "embed:express": "mkdir -p dist/express-assets && cp -r ../express/dist/* dist/express-assets/ && cp -r ../express/assets dist/express-assets/",
         "dev": "tsc --watch",
         "lint": "npx eslint .",
         "lint:fix": "npx eslint . --fix",
@@ -50,6 +52,7 @@
         "@types/inquirer": "^9.0.0",
         "@types/node": "^20.0.0",
         "@types/serve-static": "^1.15.0",
+        "@vue-skuilder/express": "workspace:*",
         "@vue-skuilder/studio-ui": "workspace:*",
         "typescript": "~5.7.2"
     },

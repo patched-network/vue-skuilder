@@ -2,7 +2,7 @@
   <div class="create-card-view">
     <v-card>
       <v-card-title>
-        <v-icon left>mdi-card-plus</v-icon>
+        <v-icon start>mdi-card-plus</v-icon>
         Create New Card
       </v-card-title>
 
@@ -125,7 +125,7 @@ onMounted(async () => {
 });
 
 // Handle card creation
-const onCardCreated = (cardData: any) => {
+const onCardCreated = (cardData: unknown) => {
   console.log('Card created:', cardData);
   // Could add success notification or redirect here
 };

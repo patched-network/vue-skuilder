@@ -54,6 +54,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
+import { flushCourse } from '../api';
 
 interface Props {
   courseId: string;
@@ -88,16 +89,12 @@ async function handleFlush() {
   
   try {
     flushStatus.value = 'Connecting to CLI...';
-    
-    // TODO: Implement actual flush functionality
-    // This will need to communicate with the CLI process to trigger packing
-    // Options:
-    // 1. HTTP endpoint in CLI
-    // 2. File-based communication
-    // 3. WebSocket connection
-    
-    // Simulate flush process for now
-    await simulateFlush();
+
+    const result = await flushCourse(props.courseId);
+
+    if (!result.ok) {
+      throw new Error(result.errorText ?? 'Unknown error');
+    }
     
   } catch (error) {
     console.error('Flush failed:', error);
@@ -107,19 +104,5 @@ async function handleFlush() {
   }
 }
 
-// Temporary simulation of flush process
-async function simulateFlush() {
-  const steps = [
-    'Validating course data...',
-    'Exporting from database...',
-    'Processing attachments...',
-    'Generating static files...',
-    'Writing to course directory...'
-  ];
-  
-  for (const step of steps) {
-    flushStatus.value = step;
-    await new Promise(resolve => setTimeout(resolve, 800));
-  }
-}
+
 </script>

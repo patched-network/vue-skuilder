@@ -4,6 +4,7 @@ import { normalize } from './normalize.js';
 import AsyncProcessQueue, { Result } from '../utils/processQueue.js';
 import logger from '../logger.js';
 import { CourseLookup } from '@vue-skuilder/db';
+import ENV from '../utils/env.js';
 
 // @ts-expect-error [todo]
 const Q = new AsyncProcessQueue<AttachmentProcessingRequest, Result>(
@@ -65,14 +66,49 @@ export default async function postProcess(): Promise<void> {
   try {
     logger.info(`Following all course databases for changes...`);
 
+    // Existing behavior for platform-ui courses
     const courses = await CourseLookup.allCourses();
+    const processedCourseIds = new Set<string>();
 
     for (const course of courses) {
       try {
         postProcessCourse(course._id);
+        processedCourseIds.add(`coursedb-${course._id}`);
       } catch (e) {
         logger.error(`Error processing course ${course._id}: ${e}`);
         throw e;
+      }
+    }
+
+    // Studio mode: discover additional databases not in coursedb-lookup
+    if (ENV.NODE_ENV === 'studio') {
+      logger.info('Studio mode detected: scanning for additional course databases...');
+      
+      try {
+        const allDbs = await CouchDB.db.list();
+        const studioDbs = allDbs.filter(db => 
+          db.startsWith('coursedb-') && 
+          !processedCourseIds.has(db)
+        );
+
+        logger.info(`Found ${studioDbs.length} potential studio databases`);
+
+        for (const studioDb of studioDbs) {
+          const courseId = studioDb.replace('coursedb-', '');
+          
+          try {
+            if (await hasCourseConfig(studioDb)) {
+              logger.info(`Starting postprocessing for studio database: ${studioDb}`);
+              postProcessCourse(courseId);
+            } else {
+              logger.debug(`Skipping ${studioDb}: no course config found`);
+            }
+          } catch (e) {
+            logger.error(`Error processing studio database ${studioDb}: ${e}`);
+          }
+        }
+      } catch (e) {
+        logger.error(`Error discovering studio databases: ${e}`);
       }
     }
   } catch (e) {
@@ -201,4 +237,32 @@ interface ProcessingField {
   name: string;
   mimetype: string;
   returnData?: string;
+}
+
+/**
+ * Check if a database contains course configuration (indicating it's a valid course database)
+ */
+async function hasCourseConfig(databaseName: string): Promise<boolean> {
+  try {
+    const db = CouchDB.use(databaseName);
+    
+    // Try to find a course configuration document
+    // Course databases should have documents with course metadata
+    const result = await db.find({
+      selector: {
+        $or: [
+          { 'type': 'course' },
+          { 'shape': { $exists: true } },
+          { 'course_id': { $exists: true } },
+          { 'courseID': { $exists: true } }
+        ]
+      },
+      limit: 1
+    });
+
+    return result.docs && result.docs.length > 0;
+  } catch (e) {
+    logger.debug(`Error checking course config for ${databaseName}: ${e}`);
+    return false;
+  }
 }

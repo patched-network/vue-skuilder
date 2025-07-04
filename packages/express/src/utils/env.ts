@@ -17,6 +17,7 @@ type Env = {
   COUCHDB_ADMIN: string;
   COUCHDB_PASSWORD: string;
   VERSION: string;
+  NODE_ENV: string;
 };
 
 function getVar(name: string): string {
@@ -33,6 +34,7 @@ const env: Env = {
   COUCHDB_ADMIN: getVar('COUCHDB_ADMIN'),
   COUCHDB_PASSWORD: getVar('COUCHDB_PASSWORD'),
   VERSION: getVar('VERSION'),
+  NODE_ENV: getVar('NODE_ENV'),
 };
 
 initializeDataLayer({
