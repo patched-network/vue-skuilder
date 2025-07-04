@@ -188,9 +188,12 @@ async function postHandler(
         
         logger.info(`Packing course ${body.courseId} from ${dbName} to ${outputPath}`);
         
+        // Create course database connection
+        const courseDbUrl = `${dbUrl}/${dbName}`;
+        
         // Initialize packer and perform pack operation
         const packer = new CouchDBToStaticPacker();
-        const packResult = await packer.packCourse(new PouchDb(dbUrl), dbName);
+        const packResult = await packer.packCourse(new PouchDb(courseDbUrl), dbName);
         
         const duration = Date.now() - startTime;
         
