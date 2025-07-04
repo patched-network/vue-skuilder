@@ -58,6 +58,20 @@ export async function packCourse(data: PackCourseData): Promise<PackCourseRespon
     
     logger.info(`Packing course ${data.courseId} from ${dbName} to ${outputPath}`);
     
+    // Clean up existing output directory for replace-in-place functionality
+    const fsExtra = await import('fs-extra');
+    const fs = fsExtra.default || fsExtra;
+    
+    try {
+      if (await fs.pathExists(outputPath)) {
+        logger.info(`Removing existing directory: ${outputPath}`);
+        await fs.remove(outputPath);
+      }
+    } catch (cleanupError) {
+      logger.warn(`Warning: Could not clean up existing directory ${outputPath}:`, cleanupError);
+      // Continue anyway - the write operation might still succeed
+    }
+    
     // Create course database connection
     const courseDbUrl = `${dbUrl}/${dbName}`;
     

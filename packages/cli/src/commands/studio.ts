@@ -304,7 +304,8 @@ async function startStudioUIServer(connectionDetails: ConnectionDetails, unpackR
                   },
                   database: {
                     name: '${unpackResult.databaseName}',
-                    courseId: '${unpackResult.courseId}'
+                    courseId: '${unpackResult.courseId}',
+                    originalCourseId: '${unpackResult.courseId}'
                   }
                 };
               </script>
@@ -331,7 +332,8 @@ async function startStudioUIServer(connectionDetails: ConnectionDetails, unpackR
                   },
                   database: {
                     name: '${unpackResult.databaseName}',
-                    courseId: '${unpackResult.courseId}'
+                    courseId: '${unpackResult.courseId}',
+                    originalCourseId: '${unpackResult.courseId}'
                   }
                 };
               </script>

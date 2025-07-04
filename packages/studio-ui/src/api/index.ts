@@ -17,9 +17,14 @@ async function postWithResult<T extends ServerRequest>(request: Omit<T, 'respons
 }
 
 export async function flushCourse(courseId: string, outputPath?: string) {
+    // Get the original course ID for the output path
+    // courseId here is the decorated database name, we need the original ID for the path
+    const studioConfig = (window as any).STUDIO_CONFIG;
+    const originalCourseId = studioConfig?.database?.originalCourseId || courseId;
+    
     return await postWithResult<PackCourse>({
         type: ServerRequestType.PACK_COURSE,
         courseId,
-        outputPath: outputPath ? outputPath : `./public/static-courses/${courseId}`,
+        outputPath: outputPath ? outputPath : `./public/static-courses/${originalCourseId}`,
     });
 }
