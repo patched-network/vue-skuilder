@@ -413,7 +413,33 @@ npm run dev
 Build for production:
 \`\`\`bash
 npm run build
+\`\`\`${
+    config.dataLayerType === 'static'
+      ? `
+
+## Studio Mode (Content Editing)
+
+This project supports **Studio Mode** - a content editing web interface for modifying course data:
+
+\`\`\`bash
+npm run studio
 \`\`\`
+
+Studio mode provides:
+- **Visual Course Editor**: Interactive interface for editing course content
+- **Live Preview**: See changes immediately in the browser
+- **Hot Reload**: Changes are saved automatically to your course files
+- **No Setup Required**: Built into the Skuilder CLI - just run the command
+
+When you run \`npm run studio\`, it will:
+1. Start a local CouchDB instance for temporary editing
+2. Load your course data from \`public/static-courses/\`
+3. Launch the studio interface at http://localhost:7174
+4. Save changes back to your static course files when you flush
+
+**Important**: Studio mode **overwrites** existing static data source files in \`public/static-courses/\`. Make sure to commit or backup your course data before making major edits.`
+      : ''
+  }
 
 ## Configuration
 
