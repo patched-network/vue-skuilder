@@ -22,7 +22,7 @@
         "build:studio-ui": "cd ../studio-ui && npm run build",
         "build:express": "cd ../express && npm run build",
         "embed:studio-ui": "mkdir -p dist/studio-ui-assets && cp -r ../studio-ui/dist/* dist/studio-ui-assets/",
-        "embed:express": "mkdir -p dist/express-assets && cp -r ../express/dist/* dist/express-assets/",
+        "embed:express": "mkdir -p dist/express-assets && cp -r ../express/dist/* dist/express-assets/ && cp -r ../express/assets dist/express-assets/",
         "dev": "tsc --watch",
         "lint": "npx eslint .",
         "lint:fix": "npx eslint . --fix",
