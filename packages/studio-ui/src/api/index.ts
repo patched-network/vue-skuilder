@@ -1,4 +1,4 @@
-import { ServerRequest, ServerRequestType } from '@vue-skuilder/common';
+import { ServerRequest, ServerRequestType, PackCourse } from '@vue-skuilder/common';
 
 async function postWithResult<T extends ServerRequest>(request: Omit<T, 'response' | 'user'>): Promise<T['response']> {
     const response = await fetch('http://localhost:3000/', {
