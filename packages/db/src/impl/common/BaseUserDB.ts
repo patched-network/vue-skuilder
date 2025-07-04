@@ -172,8 +172,8 @@ Currently logged-in as ${this._username}.`
           const id = row.id;
           // Delete user progress data but preserve core user documents
           return (
-            id.startsWith(cardHistoryPrefix) || // Card interaction history
-            id.startsWith(REVIEW_PREFIX) || // Scheduled reviews
+            id.startsWith(DocTypePrefixes[DocType.CARDRECORD]) || // Card interaction history
+            id.startsWith(DocTypePrefixes[DocType.SCHEDULED_CARD]) || // Scheduled reviews
             id === BaseUser.DOC_IDS.COURSE_REGISTRATIONS || // Course registrations
             id === BaseUser.DOC_IDS.CLASSROOM_REGISTRATIONS || // Classroom registrations
             id === BaseUser.DOC_IDS.CONFIG // User config
@@ -372,8 +372,11 @@ Currently logged-in as ${this._username}.`
     );
     return reviews.rows
       .filter((r) => {
-        if (r.id.startsWith(REVIEW_PREFIX)) {
-          const date = moment.utc(r.id.substr(REVIEW_PREFIX.length), REVIEW_TIME_FORMAT);
+        if (r.id.startsWith(DocTypePrefixes[DocType.SCHEDULED_CARD])) {
+          const date = moment.utc(
+            r.id.substr(DocTypePrefixes[DocType.SCHEDULED_CARD].length),
+            REVIEW_TIME_FORMAT
+          );
           if (targetDate.isAfter(date)) {
             if (course_id === undefined || r.doc!.courseId === course_id) {
               return true;
@@ -814,7 +817,7 @@ Currently logged-in as ${this._username}.`
    * @param course_id optional specification of individual course
    */
   async getSeenCards(course_id?: string) {
-    let prefix = cardHistoryPrefix;
+    let prefix = DocTypePrefixes[DocType.CARDRECORD];
     if (course_id) {
       prefix += course_id;
     }
@@ -824,8 +827,8 @@ Currently logged-in as ${this._username}.`
     // const docs = await this.localDB.allDocs({});
     const ret: PouchDB.Core.DocumentId[] = [];
     docs.rows.forEach((row) => {
-      if (row.id.startsWith(cardHistoryPrefix)) {
-        ret.push(row.id.substr(cardHistoryPrefix.length));
+      if (row.id.startsWith(DocTypePrefixes[DocType.CARDRECORD])) {
+        ret.push(row.id.substr(DocTypePrefixes[DocType.CARDRECORD].length));
       }
     });
     return ret;
@@ -838,7 +841,7 @@ Currently logged-in as ${this._username}.`
   async getHistory() {
     const cards = await filterAllDocsByPrefix<CardHistory<CardRecord>>(
       this.remoteDB,
-      cardHistoryPrefix,
+      DocTypePrefixes[DocType.CARDRECORD],
       {
         include_docs: true,
         attachments: false,

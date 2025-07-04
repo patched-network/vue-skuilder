@@ -11,7 +11,6 @@ export type {
 } from './types';
 export { BaseUser } from './BaseUserDB';
 export {
-  REVIEW_PREFIX,
   REVIEW_TIME_FORMAT,
   hexEncode,
   filterAllDocsByPrefix,

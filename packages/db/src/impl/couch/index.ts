@@ -1,5 +1,11 @@
 import { ENV } from '@db/factory';
-import { DocType, GuestUsername, log, SkuilderCourseData } from '../../core/types/types-legacy';
+import {
+  DocType,
+  DocTypePrefixes,
+  GuestUsername,
+  log,
+  SkuilderCourseData,
+} from '../../core/types/types-legacy';
 // import { getCurrentUser } from '../../stores/useAuthStore';
 import moment, { Moment } from 'moment';
 import { logger } from '@db/util/logger';
@@ -155,7 +161,6 @@ export async function getRandomCards(courseIDs: string[]) {
   }
 }
 
-export const REVIEW_PREFIX: string = 'card_review_';
 export const REVIEW_TIME_FORMAT: string = 'YYYY-MM-DD--kk:mm:ss-SSS';
 
 export function getCouchUserDB(username: string): PouchDB.Database {
@@ -191,7 +196,7 @@ export function scheduleCardReview(review: {
   const now = moment.utc();
   logger.info(`Scheduling for review in: ${review.time.diff(now, 'h') / 24} days`);
   void getCouchUserDB(review.user).put<ScheduledCard>({
-    _id: REVIEW_PREFIX + review.time.format(REVIEW_TIME_FORMAT),
+    _id: DocTypePrefixes[DocType.SCHEDULED_CARD] + review.time.format(REVIEW_TIME_FORMAT),
     cardId: review.card_id,
     reviewTime: review.time,
     courseId: review.course_id,
