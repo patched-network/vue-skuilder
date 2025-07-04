@@ -2,6 +2,9 @@ import { spawn, ChildProcess } from 'child_process';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import fs from 'fs';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -48,6 +51,17 @@ export class ExpressManager {
     // Find available port starting from requested port
     const availablePort = await this.findAvailablePort(this.options.port);
 
+    // Get version from package.json
+    let version = '0.0.0';
+    try {
+      const packageJsonPath = join(__dirname, '..', '..', 'package.json');
+      const packageJson = require(packageJsonPath);
+      version = packageJson.version || '0.0.0';
+    } catch (error) {
+      // Fallback version if package.json not found
+      version = '0.0.0';
+    }
+
     // Set environment variables for express
     const env = {
       ...process.env,
@@ -56,6 +70,7 @@ export class ExpressManager {
       COUCHDB_PROTOCOL: this.extractProtocolFromUrl(this.options.couchdbUrl),
       COUCHDB_ADMIN: this.options.couchdbUsername,
       COUCHDB_PASSWORD: this.options.couchdbPassword,
+      VERSION: version,
       NODE_ENV: 'studio'
     };
 
