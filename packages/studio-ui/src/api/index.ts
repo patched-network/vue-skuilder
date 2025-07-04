@@ -20,6 +20,6 @@ export async function flushCourse(courseId: string, outputPath?: string) {
     return await postWithResult<PackCourse>({
         type: ServerRequestType.PACK_COURSE,
         courseId,
-        outputPath,
+        outputPath: outputPath ? outputPath : `./public/static-courses/${courseId}`,
     });
 }

@@ -183,8 +183,10 @@ async function postHandler(
         const dbUrl = `${ENV.COUCHDB_PROTOCOL}://${ENV.COUCHDB_ADMIN}:${ENV.COUCHDB_PASSWORD}@${ENV.COUCHDB_SERVER}`;
         const dbName = `coursedb-${body.courseId}`;
         
-        // Determine output path (use provided path or current working directory)
-        const outputPath = body.outputPath || process.cwd();
+        // Determine output path - for studio mode, use a more appropriate directory
+        const outputPath = body.outputPath || (ENV.NODE_ENV === 'studio' ? 
+          '/tmp/skuilder-studio-output' : 
+          process.cwd());
         
         logger.info(`Packing course ${body.courseId} from ${dbName} to ${outputPath}`);
         
