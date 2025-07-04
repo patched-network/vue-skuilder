@@ -193,22 +193,79 @@ async function postHandler(
         // Create course database connection
         const courseDbUrl = `${dbUrl}/${dbName}`;
         
-        // Initialize packer and perform pack operation
+        // Initialize packer and perform pack operation with file writing
         const packer = new CouchDBToStaticPacker();
-        const packResult = await packer.packCourse(new PouchDb(courseDbUrl), dbName);
+        
+        // For Express, we create a simple FileSystemAdapter using dynamic imports
+        const createFsAdapter = async () => {
+          const fsExtra = await import('fs-extra');
+          const pathModule = await import('path');
+          
+          // Access the default export for fs-extra
+          const fs = fsExtra.default || fsExtra;
+          const path = pathModule.default || pathModule;
+          
+          return {
+            async readFile(filePath: string): Promise<string> {
+              return await fs.readFile(filePath, 'utf8');
+            },
+            async readBinary(filePath: string): Promise<Buffer> {
+              return await fs.readFile(filePath);
+            },
+            async exists(filePath: string): Promise<boolean> {
+              try {
+                await fs.access(filePath);
+                return true;
+              } catch {
+                return false;
+              }
+            },
+            async stat(filePath: string): Promise<any> {
+              const stats = await fs.stat(filePath);
+              return {
+                isDirectory: () => stats.isDirectory(),
+                isFile: () => stats.isFile(),
+                size: stats.size
+              };
+            },
+            async writeFile(filePath: string, data: string | Buffer): Promise<void> {
+              await fs.writeFile(filePath, data);
+            },
+            async writeJson(filePath: string, data: any, options?: { spaces?: number }): Promise<void> {
+              await fs.writeJson(filePath, data, options);
+            },
+            async ensureDir(dirPath: string): Promise<void> {
+              await fs.ensureDir(dirPath);
+            },
+            joinPath(...segments: string[]): string {
+              return path.join(...segments);
+            },
+            dirname(filePath: string): string {
+              return path.dirname(filePath);
+            },
+            isAbsolute(filePath: string): boolean {
+              return path.isAbsolute(filePath);
+            }
+          };
+        };
+        
+        const fsAdapter = await createFsAdapter();
+        const packResult = await packer.packCourseToFiles(new PouchDb(courseDbUrl), body.courseId, outputPath, fsAdapter);
         
         const duration = Date.now() - startTime;
         
         const response = {
           status: 'ok' as const,
           ok: true,
-          packedFiles: packResult.attachments ? Array.from(packResult.attachments.keys()) : [],
+          packedFiles: [], // No longer relevant since we're writing to files
           outputPath: outputPath,
-          totalFiles: packResult.attachments ? packResult.attachments.size : 0,
+          attachmentsFound: packResult.attachmentsFound,
+          filesWritten: packResult.filesWritten,
+          totalFiles: packResult.filesWritten, // Updated to reflect actual files written
           duration: duration
         };
         
-        logger.info(`Pack completed in ${duration}ms. Files: ${response.totalFiles}`);
+        logger.info(`Pack completed in ${duration}ms. Attachments: ${response.attachmentsFound}, Files written: ${response.filesWritten}`);
         res.json(response);
         
       } catch (error) {
