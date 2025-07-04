@@ -5484,6 +5484,7 @@ __metadata:
     express: "npm:^4.21.2"
     express-rate-limit: "npm:^7.5.0"
     ffmpeg-static: "npm:^5.2.0"
+    fs-extra: "npm:^11.2.0"
     hashids: "npm:^2.3.0"
     jest: "npm:^29.6.1"
     jest-environment-node: "npm:^29.7.0"
