@@ -66,7 +66,7 @@ async function launchStudio(coursePath: string, options: StudioOptions) {
 
     // Phase 9.5: Launch Express backend
     console.log(chalk.cyan(`⚡ Starting Express backend server...`));
-    expressManager = await startExpressBackend(couchDBManager.getConnectionDetails());
+    expressManager = await startExpressBackend(couchDBManager.getConnectionDetails(), resolvedPath);
 
     // Phase 7: Launch studio-ui server
     console.log(chalk.cyan(`🌐 Starting studio-ui server...`));
@@ -406,13 +406,14 @@ async function openBrowser(url: string): Promise<void> {
 /**
  * Phase 9.5: Start Express backend server
  */
-async function startExpressBackend(couchDbConnectionDetails: ConnectionDetails): Promise<ExpressManager> {
+async function startExpressBackend(couchDbConnectionDetails: ConnectionDetails, projectPath: string): Promise<ExpressManager> {
   const expressManager = new ExpressManager(
     {
       port: 3001, // Start from 3001 to avoid conflicts
       couchdbUrl: couchDbConnectionDetails.url,
       couchdbUsername: couchDbConnectionDetails.username,
-      couchdbPassword: couchDbConnectionDetails.password
+      couchdbPassword: couchDbConnectionDetails.password,
+      projectPath: projectPath
     },
     {
       onLog: (message) => console.log(chalk.gray(`   Express: ${message}`)),

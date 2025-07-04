@@ -33,10 +33,28 @@ export async function packCourse(data: PackCourseData): Promise<PackCourseRespon
     const dbUrl = `${ENV.COUCHDB_PROTOCOL}://${ENV.COUCHDB_ADMIN}:${ENV.COUCHDB_PASSWORD}@${ENV.COUCHDB_SERVER}`;
     const dbName = `coursedb-${data.courseId}`;
     
-    // Determine output path - for studio mode, use a more appropriate directory
-    const outputPath = data.outputPath || (ENV.NODE_ENV === 'studio' ?
-      '/tmp/skuilder-studio-output' :
-      process.cwd());
+    // Determine output path based on environment and provided path
+    let outputPath: string;
+    
+    if (data.outputPath) {
+      // If output path is provided, check if it's absolute or relative
+      const pathModule = await import('path');
+      const path = pathModule.default || pathModule;
+      
+      if (path.isAbsolute(data.outputPath)) {
+        // Use absolute path as-is
+        outputPath = data.outputPath;
+      } else {
+        // Relative path - combine with project path in studio mode
+        const projectPath = process.env.PROJECT_PATH || process.cwd();
+        outputPath = path.join(projectPath, data.outputPath);
+      }
+    } else {
+      // No output path provided - use default
+      outputPath = ENV.NODE_ENV === 'studio' ?
+        '/tmp/skuilder-studio-output' :
+        process.cwd();
+    }
     
     logger.info(`Packing course ${data.courseId} from ${dbName} to ${outputPath}`);
     

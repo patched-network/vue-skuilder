@@ -14,6 +14,7 @@ export interface ExpressManagerOptions {
   couchdbUrl: string;
   couchdbUsername: string;
   couchdbPassword: string;
+  projectPath?: string; // Path to the project for studio mode
 }
 
 export interface ExpressManagerCallbacks {
@@ -71,7 +72,8 @@ export class ExpressManager {
       COUCHDB_ADMIN: this.options.couchdbUsername,
       COUCHDB_PASSWORD: this.options.couchdbPassword,
       VERSION: version,
-      NODE_ENV: 'studio'
+      NODE_ENV: 'studio',
+      PROJECT_PATH: this.options.projectPath || process.cwd()
     };
 
     return new Promise((resolve, reject) => {
