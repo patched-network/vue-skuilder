@@ -86,7 +86,19 @@ export interface QuestionData extends SkuilderCourseData {
   dataShapeList: PouchDB.Core.DocumentId[];
 }
 
-export const cardHistoryPrefix = 'cardH';
+export const DocTypePrefixes: Record<string, string> = {
+  [DocType.CARD]: 'c',
+  [DocType.DISPLAYABLE_DATA]: 'dd',
+  [DocType.TAG]: 'TAG',
+  [DocType.CARDRECORD]: 'cardH',
+  [DocType.SCHEDULED_CARD]: 'card_review_',
+  // Add other doctypes here as they get prefixed IDs
+  [DocType.DATASHAPE]: 'DATASHAPE',
+  [DocType.QUESTIONTYPE]: 'QUESTION',
+  [DocType.VIEW]: 'VIEW',
+  [DocType.PEDAGOGY]: 'PEDAGOGY',
+  [DocType.NAVIGATION_STRATEGY]: 'NAVIGATION_STRATEGY',
+};
 
 export interface CardHistory<T extends CardRecord> {
   _id: PouchDB.Core.DocumentId;

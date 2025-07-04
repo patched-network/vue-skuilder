@@ -4,20 +4,18 @@ import {
   UserCourseSettings,
   UsrCrsDataInterface,
 } from '@db/core';
+
 import moment, { Moment } from 'moment';
-import { getStartAndEndKeys, REVIEW_PREFIX, REVIEW_TIME_FORMAT } from '.';
-import { CourseDB } from './courseDB';
-import { User } from './userDB';
+
+import { UserDBInterface } from '@db/core';
 import { logger } from '../../util/logger';
 
 export class UsrCrsData implements UsrCrsDataInterface {
-  private user: User;
-  private course: CourseDB;
+  private user: UserDBInterface;
   private _courseId: string;
 
-  constructor(user: User, courseId: string) {
+  constructor(user: UserDBInterface, courseId: string) {
     this.user = user;
-    this.course = new CourseDB(courseId, async () => this.user);
     this._courseId = courseId;
   }
 
@@ -47,32 +45,24 @@ export class UsrCrsData implements UsrCrsDataInterface {
     }
   }
   public updateCourseSettings(updates: UserCourseSetting[]): void {
-    void this.user.updateCourseSettings(this._courseId, updates);
+    // TODO: Add updateCourseSettings method to UserDBInterface
+    // For now, we'll need to cast to access the concrete implementation
+    if ('updateCourseSettings' in this.user) {
+      void (this.user as any).updateCourseSettings(this._courseId, updates);
+    }
   }
 
   private async getReviewstoDate(targetDate: Moment) {
-    const keys = getStartAndEndKeys(REVIEW_PREFIX);
-
-    const reviews = await this.user.remote().allDocs<ScheduledCard>({
-      startkey: keys.startkey,
-      endkey: keys.endkey,
-      include_docs: true,
-    });
+    // Use the interface method instead of direct database access
+    const allReviews = await this.user.getPendingReviews(this._courseId);
 
     logger.debug(
       `Fetching ${this.user.getUsername()}'s scheduled reviews for course ${this._courseId}.`
     );
-    return reviews.rows
-      .filter((r) => {
-        if (r.id.startsWith(REVIEW_PREFIX)) {
-          const date = moment.utc(r.id.substr(REVIEW_PREFIX.length), REVIEW_TIME_FORMAT);
-          if (targetDate.isAfter(date)) {
-            if (this._courseId === undefined || r.doc!.courseId === this._courseId) {
-              return true;
-            }
-          }
-        }
-      })
-      .map((r) => r.doc!);
+
+    return allReviews.filter((review: ScheduledCard) => {
+      const reviewTime = moment.utc(review.reviewTime);
+      return targetDate.isAfter(reviewTime);
+    });
   }
 }
