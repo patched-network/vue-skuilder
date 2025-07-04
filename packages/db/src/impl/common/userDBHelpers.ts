@@ -1,10 +1,10 @@
 // packages/db/src/impl/common/userDBHelpers.ts
 
 import moment from 'moment';
+import { DocType, DocTypePrefixes } from '@db/core';
 import { logger } from '../../util/logger';
 import { ScheduledCard } from '@db/core/types/user';
 
-export const REVIEW_PREFIX: string = 'card_review_';
 export const REVIEW_TIME_FORMAT: string = 'YYYY-MM-DD--kk:mm:ss-SSS';
 
 import pouch from '../couch/pouchdb-setup';
@@ -123,7 +123,7 @@ export function scheduleCardReviewLocal(
   const now = moment.utc();
   logger.info(`Scheduling for review in: ${review.time.diff(now, 'h') / 24} days`);
   void userDB.put<ScheduledCard>({
-    _id: REVIEW_PREFIX + review.time.format(REVIEW_TIME_FORMAT),
+    _id: DocTypePrefixes[DocType.SCHEDULED_CARD] + review.time.format(REVIEW_TIME_FORMAT),
     cardId: review.card_id,
     reviewTime: review.time,
     courseId: review.course_id,

@@ -1,3 +1,4 @@
+import { DocType, DocTypePrefixes } from '@db/core';
 import { getCardHistoryID } from '@db/core/util';
 import { CourseElo, Status } from '@vue-skuilder/common';
 import moment, { Moment } from 'moment';
@@ -23,7 +24,6 @@ import type { SyncStrategy } from './SyncStrategy';
 import {
   filterAllDocsByPrefix,
   getStartAndEndKeys,
-  REVIEW_PREFIX,
   REVIEW_TIME_FORMAT,
   getLocalUserDB,
   scheduleCardReviewLocal,
@@ -37,8 +37,6 @@ import { getCredentialledCourseConfig } from '../couch/index';
 const log = (s: any) => {
   logger.info(s);
 };
-
-const cardHistoryPrefix = 'cardH-';
 
 // console.log(`Connecting to remote: ${remoteStr}`);
 
@@ -264,7 +262,7 @@ Currently logged-in as ${this._username}.`
    *
    */
   public async getActiveCards() {
-    const keys = getStartAndEndKeys(REVIEW_PREFIX);
+    const keys = getStartAndEndKeys(DocTypePrefixes[DocType.SCHEDULED_CARD]);
 
     const reviews = await this.remoteDB.allDocs<ScheduledCard>({
       startkey: keys.startkey,
@@ -359,7 +357,7 @@ Currently logged-in as ${this._username}.`
   }
 
   private async getReviewstoDate(targetDate: Moment, course_id?: string) {
-    const keys = getStartAndEndKeys(REVIEW_PREFIX);
+    const keys = getStartAndEndKeys(DocTypePrefixes[DocType.SCHEDULED_CARD]);
 
     const reviews = await this.remoteDB.allDocs<ScheduledCard>({
       startkey: keys.startkey,
