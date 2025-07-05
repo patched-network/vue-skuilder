@@ -14,11 +14,35 @@ const __dirname = dirname(__filename);
 
 export function createStudioCommand(): Command {
   return new Command('studio')
-    .description('Launch studio mode for editing a static course')
+    .description('Launch studio mode: a complete course editing environment with CouchDB, Express API, and web editor')
     .argument('[coursePath]', 'Path to static course directory', '.')
     .option('-p, --port <port>', 'CouchDB port for studio session', '5985')
     .option('--no-browser', 'Skip automatic browser launch')
-    .action(launchStudio);
+    .action(launchStudio)
+    .addHelpText('after', `
+Studio Mode creates a full editing environment for static courses:
+
+  Services Started:
+    • CouchDB instance (Docker) on port 5985+ for temporary editing
+    • Express API server on port 3001+ for backend operations  
+    • Studio web interface on port 7174+ for visual editing
+
+  Workflow:
+    1. Loads course data from public/static-courses/ into CouchDB
+    2. Opens web editor for visual course content editing
+    3. Use "Flush to Static" to save changes back to your course files
+    4. Studio mode overwrites source files - backup before major edits
+
+  Requirements:
+    • Docker (for CouchDB instance)
+    • Valid static course project (with package.json)
+    • Course data in public/static-courses/ directory
+
+  Example:
+    skuilder studio                    # Launch in current directory
+    skuilder studio ./my-course        # Launch for specific course
+    skuilder studio --port 6000        # Use custom CouchDB port
+    skuilder studio --no-browser       # Don't auto-open browser`);
 }
 
 interface StudioOptions {
