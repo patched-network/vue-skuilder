@@ -59,7 +59,7 @@ main() {
 
 You are running an automated nightly CI health check. Your task is to:
 
-1. **Analyze CI Status**: Use `gh` to check recent workflow runs and identify failures
+1. **Analyze CI Status**: Use `gh` to check recent schedule-triggered workflow runs and identify failures
 2. **Per-Failure Processing**: For EACH failed workflow, create a separate worktree and analysis:
    - Use `nt cc-resolve-$(date +%Y%m%d)-<workflow-name>` for each failure
    - Find the last known-good run of the same workflow
@@ -69,9 +69,9 @@ You are running an automated nightly CI health check. Your task is to:
 
 ## Analysis Framework
 
-### Step 1: Get CI Status
+### Step 1: Get CI Status (Schedule-triggered runs only)
 ```bash
-gh run list --limit 20 --json status,conclusion,workflowName,createdAt,headSha,url
+gh run list --limit 20 --json status,conclusion,workflowName,createdAt,headSha,url,event --jq '.[] | select(.event == "schedule")'
 ```
 
 ### Step 2: For Each Failure (Separate Worktrees)
@@ -83,7 +83,7 @@ cd ../cc-resolve-$(date +%Y%m%d)-<workflow-name>
 # Get detailed run info
 gh run view <run-id> --json jobs,conclusion,workflowName,headSha,url
 gh run view <run-id> --log
-gh run list --workflow=<workflow-name> --status=success --limit 1
+gh run list --workflow=<workflow-name> --status=success --limit 1 --json status,conclusion,workflowName,createdAt,headSha,url,event --jq '.[] | select(.event == "schedule")'
 ```
 
 ### Step 3: Root Cause Analysis
