@@ -32,7 +32,7 @@
                   {{ cardPreview[c.id] }}
                 </v-list-item-title>
                 <v-list-item-subtitle>
-                  {{ c.id.split('-').length === 3 ? c.id.split('-')[2] : '' }}
+                  ELO: {{ cardElos[idParse(c.id)]?.global.score || '(unknown)' }}
                 </v-list-item-subtitle>
               </div>
             </template>
@@ -118,7 +118,7 @@
 
 <script lang="ts">
 import { defineComponent, PropType } from 'vue';
-import { displayableDataToViewData, Status } from '@vue-skuilder/common';
+import { displayableDataToViewData, Status, CourseElo } from '@vue-skuilder/common';
 import { getDataLayer, CourseDBInterface, CardData, DisplayableData, Tag } from '@vue-skuilder/db';
 // local imports
 import TagsInput from './TagsInput.vue';
@@ -127,16 +127,7 @@ import { ViewComponent } from '../composables/Displayable';
 import CardLoader from './cardRendering/CardLoader.vue';
 import { alertUser } from './SnackbarService';
 
-function isConstructor(obj: unknown) {
-  try {
-    // @ts-expect-error - we are specifically probing an unknown object
-    new obj();
-    return true;
-  } catch (e) {
-    console.warn(`not a constructor: ${obj}, err: ${e}`);
-    return false;
-  }
-}
+// Legacy isConstructor function removed - no longer needed for Vue 3 components
 
 export default defineComponent({
   name: 'CourseCardBrowser',
@@ -180,6 +171,7 @@ export default defineComponent({
       cards: [] as { id: string; isOpen: boolean; delBtn: boolean }[],
       cardData: {} as { [card: string]: string[] },
       cardPreview: {} as { [card: string]: string },
+      cardElos: {} as Record<string, CourseElo>,
       internalEditMode: 'none' as 'tags' | 'flag' | 'none',
       delBtn: false,
       updatePending: true,
@@ -213,6 +205,15 @@ export default defineComponent({
   },
 
   methods: {
+    idParse(id: string): string {
+      const delimiters = id.includes('-');
+      if (delimiters) {
+        return id.split('-')[1];
+      } else {
+        return id;
+      }
+    },
+
     first() {
       this.page = 1;
       this.populateTableData();
@@ -244,7 +245,7 @@ export default defineComponent({
     },
     async deleteCard(cID: string) {
       console.log(`Deleting card ${cID}`);
-      const res = await this.courseDB!.removeCard(idParse(cID));
+      const res = await this.courseDB!.removeCard(this.idParse(cID));
       if (res.ok) {
         this.cards = this.cards.filter((card) => card.id != cID);
         this.clearSelections();
@@ -276,7 +277,7 @@ export default defineComponent({
       const toRemove: string[] = [];
       const hydratedCardData = (
         await this.courseDB!.getCourseDocs<CardData>(
-          this.cards.map((c) => idParse(c.id)),
+          this.cards.map((c) => this.idParse(c.id)),
           {
             include_docs: true,
           }
@@ -296,7 +297,7 @@ export default defineComponent({
         })
         .map((r) => r.doc!);
 
-      this.cards = this.cards.filter((c) => !toRemove.includes(idParse(c.id)));
+      this.cards = this.cards.filter((c) => !toRemove.includes(this.idParse(c.id)));
 
       hydratedCardData.forEach((c) => {
         if (c && c.id_displayable_data) {
@@ -307,7 +308,7 @@ export default defineComponent({
       try {
         await Promise.all(
           this.cards.map(async (c) => {
-            const _cardID: string = idParse(c.id);
+            const _cardID: string = this.idParse(c.id);
 
             const tmpCardData = hydratedCardData.find((c) => c._id == _cardID);
             if (!tmpCardData || !tmpCardData.id_displayable_data) {
@@ -331,20 +332,24 @@ export default defineComponent({
                 const tmpData = [];
                 tmpData.unshift(displayableDataToViewData(doc));
 
-                // [ ] remove/replace this after the vue 3 migration is complete
-                // see PR #510
-                if (isConstructor(tmpView)) {
-                  const view = new tmpView();
-                  view.data = tmpData;
-
-                  this.cardPreview[c.id] = view.toString();
-                } else {
-                  this.cardPreview[c.id] = tmpView.name ? tmpView.name : 'Unknown';
-                }
+                // Vue 3: Use component name for preview (legacy constructor code removed)
+                this.cardPreview[c.id] = tmpView.name ? tmpView.name : 'Unknown';
               })
             );
           })
         );
+
+        // Load ELO data for all cards
+        const cardIds = this.cards.map((c) => this.idParse(c.id));
+        const eloData =
+          this.cards[0].id.split('-').length === 3
+            ? this.cards.map((c) => c.id.split('-')[2]) // for platform-ui crs-card-elo IDs
+            : await this.courseDB!.getCardEloData(cardIds); // general case lookup
+
+        // Store ELO data indexed by card ID
+        cardIds.forEach((cardId, index) => {
+          this.cardElos[cardId] = eloData[index];
+        });
       } catch (error) {
         console.error('Error populating table data:', error);
       } finally {
@@ -354,15 +359,6 @@ export default defineComponent({
     },
   },
 });
-
-function idParse(id: string): string {
-  const delimiters = id.includes('-');
-  if (delimiters) {
-    return id.split('-')[1];
-  } else {
-    return id;
-  }
-}
 </script>
 
 <style scoped>
