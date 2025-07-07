@@ -164,14 +164,55 @@ export class StaticCourseDB implements CourseDBInterface {
     }));
   }
 
-  async getAppliedTags(_cardId: string): Promise<PouchDB.Query.Response<TagStub>> {
-    // Would need to query the tag index
-    logger.warn(`getAppliedTags not implemented`);
-    return {
-      total_rows: 0,
-      offset: 0,
-      rows: [],
-    };
+  async getAppliedTags(cardId: string): Promise<PouchDB.Query.Response<TagStub>> {
+    try {
+      const tagsIndex = await this.unpacker.getTagsIndex();
+      const cardTags = tagsIndex.byCard[cardId] || [];
+      
+      const rows = await Promise.all(
+        cardTags.map(async (tagName) => {
+          const tagId = `${DocType.TAG}-${tagName}`;
+          
+          try {
+            // Try to get the full tag document
+            const tagDoc = await this.unpacker.getDocument(tagId);
+            return {
+              id: tagId,
+              key: cardId,
+              value: {
+                name: tagDoc.name,
+                snippet: tagDoc.snippet,
+                count: tagDoc.taggedCards?.length || 0,
+              },
+            };
+          } catch (error) {
+            // If tag document not found, create a minimal stub
+            return {
+              id: tagId,
+              key: cardId,
+              value: {
+                name: tagName,
+                snippet: `Tag: ${tagName}`,
+                count: tagsIndex.byTag[tagName]?.length || 0,
+              },
+            };
+          }
+        })
+      );
+
+      return {
+        total_rows: rows.length,
+        offset: 0,
+        rows,
+      };
+    } catch (error) {
+      logger.error(`Error getting applied tags for card ${cardId}:`, error);
+      return {
+        total_rows: 0,
+        offset: 0,
+        rows: [],
+      };
+    }
   }
 
   async addTagToCard(_cardId: string, _tagId: string): Promise<PouchDB.Core.Response> {
