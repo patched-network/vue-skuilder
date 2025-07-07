@@ -83,7 +83,7 @@
           </v-list-item>
 
           <div v-if="c.isOpen" class="px-4 py-2 bg-blue-grey-lighten-5">
-            <card-loader :qualified_id="c.id" :view-lookup="viewLookup" class="elevation-1" />
+            <card-loader :qualified_id="idQualify(c.id)" :view-lookup="viewLookup" class="elevation-1" />
 
             <tags-input
               v-show="internalEditMode === 'tags' && editMode === 'full'"
@@ -212,6 +212,15 @@ export default defineComponent({
         return id.split('-')[1];
       } else {
         return id;
+      }
+    },
+
+    idQualify(id: string): string {
+      const delimiters = id.includes('-');
+      if (delimiters) {
+        return id;
+      } else {
+        return `${this.courseId}-${id}`;
       }
     },
 
