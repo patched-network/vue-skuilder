@@ -15,6 +15,7 @@ import { DataLayerResult } from '../../core/types/db';
 import { ContentNavigationStrategyData } from '../../core/types/contentNavigationStrategy';
 import { ScheduledCard } from '../../core/types/user';
 import { Navigators } from '../../core/navigators';
+import { logger } from '../../util/logger';
 
 export class StaticCourseDB implements CourseDBInterface {
   constructor(
@@ -41,10 +42,15 @@ export class StaticCourseDB implements CourseDBInterface {
   }
 
   async getCourseInfo(): Promise<CourseInfo> {
-    // This would need to be pre-computed in the manifest
+    // Count only cards, not all documents
+    // Use chunks metadata to count card documents specifically
+    const cardCount = this.manifest.chunks
+      .filter(chunk => chunk.docType === DocType.CARD)
+      .reduce((total, chunk) => total + chunk.documentCount, 0);
+    
     return {
-      cardCount: 0, // Would come from manifest
-      registeredUsers: 0,
+      cardCount,
+      registeredUsers: 0, // Always 0 in static mode
     };
   }
 
@@ -160,6 +166,7 @@ export class StaticCourseDB implements CourseDBInterface {
 
   async getAppliedTags(_cardId: string): Promise<PouchDB.Query.Response<TagStub>> {
     // Would need to query the tag index
+    logger.warn(`getAppliedTags not implemented`);
     return {
       total_rows: 0,
       offset: 0,
@@ -188,12 +195,71 @@ export class StaticCourseDB implements CourseDBInterface {
   }
 
   async getCourseTagStubs(): Promise<PouchDB.Core.AllDocsResponse<Tag>> {
-    // Would query all tag documents
-    return {
-      total_rows: 0,
-      offset: 0,
-      rows: [],
-    };
+    try {
+      const tagsIndex = await this.unpacker.getTagsIndex();
+      
+      if (!tagsIndex || !tagsIndex.byTag) {
+        logger.warn('Tags index not found or empty');
+        return {
+          total_rows: 0,
+          offset: 0,
+          rows: [],
+        };
+      }
+
+      // Create tag stubs from the index
+      const tagNames = Object.keys(tagsIndex.byTag);
+      const rows = await Promise.all(
+        tagNames.map(async (tagName) => {
+          const cardIds = tagsIndex.byTag[tagName] || [];
+          const tagId = `${DocType.TAG}-${tagName}`;
+          
+          try {
+            // Try to get the full tag document
+            const tagDoc = await this.unpacker.getDocument(tagId);
+            return {
+              id: tagId,
+              key: tagId,
+              value: { rev: '1-static' },
+              doc: tagDoc,
+            };
+          } catch (error) {
+            // If tag document not found, create a minimal stub
+            logger.warn(`Tag document not found for ${tagName}, creating stub`);
+            const stubDoc = {
+              _id: tagId,
+              _rev: '1-static',
+              course: this.courseId,
+              docType: DocType.TAG,
+              name: tagName,
+              snippet: `Tag: ${tagName}`,
+              wiki: '',
+              taggedCards: cardIds,
+              author: 'system',
+            };
+            return {
+              id: tagId,
+              key: tagId,
+              value: { rev: '1-static' },
+              doc: stubDoc,
+            };
+          }
+        })
+      );
+
+      return {
+        total_rows: rows.length,
+        offset: 0,
+        rows,
+      };
+    } catch (error) {
+      logger.error('Failed to get course tag stubs:', error);
+      return {
+        total_rows: 0,
+        offset: 0,
+        rows: [],
+      };
+    }
   }
 
   async addNote(
@@ -256,7 +322,7 @@ export class StaticCourseDB implements CourseDBInterface {
   }
 
   // Attachment helper methods (internal use, not part of interface)
-  
+
   /**
    * Get attachment URL for a document and attachment name
    * Internal helper method for static attachment serving
