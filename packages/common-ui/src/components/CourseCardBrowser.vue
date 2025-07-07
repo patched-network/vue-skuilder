@@ -39,7 +39,6 @@
 
             <template #append>
               <v-speed-dial
-                v-if="editMode === 'full'"
                 v-model="c.isOpen"
                 location="left center"
                 transition="slide-x-transition"
@@ -57,6 +56,7 @@
                 </template>
 
                 <v-btn
+                  v-if="editMode === 'full'"
                   key="tags"
                   icon
                   size="small"
@@ -68,6 +68,7 @@
                 </v-btn>
 
                 <v-btn
+                  v-if="editMode === 'full'"
                   key="flag"
                   icon
                   size="small"
@@ -85,13 +86,13 @@
             <card-loader :qualified_id="c.id" :view-lookup="viewLookup" class="elevation-1" />
 
             <tags-input
-              v-show="internalEditMode === 'tags'"
+              v-show="internalEditMode === 'tags' && editMode === 'full'"
               :course-i-d="courseId"
               :card-i-d="c.id.includes('-') ? c.id.split('-')[1] : c.id"
               class="mt-4"
             />
 
-            <div v-show="internalEditMode === 'flag'" class="mt-4">
+            <div v-show="internalEditMode === 'flag' && editMode === 'full'" class="mt-4">
               <v-btn color="error" variant="outlined" @click="c.delBtn = true"> Delete this card </v-btn>
               <span v-if="c.delBtn" class="ml-4">
                 <span class="mr-2">Are you sure?</span>
