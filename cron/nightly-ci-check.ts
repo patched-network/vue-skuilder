@@ -77,56 +77,61 @@ function cleanWorkflowName(name: string): string {
 async function getScheduledFailures(): Promise<FailureInfo[]> {
   log("Checking for scheduled workflow failures...");
   
-  // Get recent scheduled runs
-  const runsJson = execCommand(
-    'gh run list --limit 50 --json status,conclusion,workflowName,createdAt,headSha,url,event,databaseId',
-    { silent: true }
-  );
-  
-  const allRuns: WorkflowRun[] = JSON.parse(runsJson);
-  const scheduledRuns = allRuns.filter(run => run.event === 'schedule');
-  
-  log(`DEBUG: Found ${scheduledRuns.length} scheduled runs`);
-  
-  // Group by workflow and find most recent run per workflow
-  const workflowGroups = new Map<string, WorkflowRun[]>();
-  scheduledRuns.forEach(run => {
-    if (!workflowGroups.has(run.workflowName)) {
-      workflowGroups.set(run.workflowName, []);
-    }
-    workflowGroups.get(run.workflowName)!.push(run);
-  });
-  
-  const failures: FailureInfo[] = [];
-  
-  for (const [workflowName, runs] of workflowGroups) {
-    // Sort by creation date (newest first)
-    runs.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    const mostRecent = runs[0];
+  try {
+    // Get recent scheduled runs
+    const runsJson = execCommand(
+      'gh run list --limit 50 --json status,conclusion,workflowName,createdAt,headSha,url,event,databaseId',
+      { silent: true }
+    );
     
-    log(`DEBUG: Processing workflow: ${workflowName}`);
-    log(`DEBUG: Latest run has conclusion: ${mostRecent.conclusion}`);
+    const allRuns: WorkflowRun[] = JSON.parse(runsJson);
+    const scheduledRuns = allRuns.filter(run => run.event === 'schedule');
+  
+    log(`DEBUG: Found ${scheduledRuns.length} scheduled runs`);
     
-    if (mostRecent.conclusion === 'failure' || mostRecent.conclusion === 'cancelled') {
-      log(`DEBUG: Adding ${workflowName} to failures list`);
-      failures.push({
-        runId: mostRecent.databaseId,
-        workflowName: mostRecent.workflowName,
-        headSha: mostRecent.headSha,
-        url: mostRecent.url
-      });
+    // Group by workflow and find most recent run per workflow
+    const workflowGroups = new Map<string, WorkflowRun[]>();
+    scheduledRuns.forEach(run => {
+      if (!workflowGroups.has(run.workflowName)) {
+        workflowGroups.set(run.workflowName, []);
+      }
+      workflowGroups.get(run.workflowName)!.push(run);
+    });
+    
+    const failures: FailureInfo[] = [];
+    
+    for (const [workflowName, runs] of workflowGroups) {
+      // Sort by creation date (newest first)
+      runs.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      const mostRecent = runs[0];
+      
+      log(`DEBUG: Processing workflow: ${workflowName}`);
+      log(`DEBUG: Latest run has conclusion: ${mostRecent.conclusion}`);
+      
+      if (mostRecent.conclusion === 'failure' || mostRecent.conclusion === 'cancelled') {
+        log(`DEBUG: Adding ${workflowName} to failures list`);
+        failures.push({
+          runId: mostRecent.databaseId,
+          workflowName: mostRecent.workflowName,
+          headSha: mostRecent.headSha,
+          url: mostRecent.url
+        });
+      }
     }
-  }
-  
-  log(`DEBUG: Final failures list has ${failures.length} entries`);
-  
-  if (failures.length === 0) {
-    log("No unresolved scheduled workflow failures found");
+    
+    log(`DEBUG: Final failures list has ${failures.length} entries`);
+    
+    if (failures.length === 0) {
+      log("No unresolved scheduled workflow failures found");
+      return [];
+    }
+    
+    log(`Found ${failures.length} unresolved scheduled workflow failures`);
+    return failures;
+  } catch (error: any) {
+    log(`ERROR: Failed to get scheduled failures: ${error.message}`);
     return [];
   }
-  
-  log(`Found ${failures.length} unresolved scheduled workflow failures`);
-  return failures;
 }
 
 // Setup worktree for a specific failure
@@ -139,7 +144,15 @@ async function setupWorktreeForFailure(runId: number, workflowName: string): Pro
   try {
     // Create worktree using git worktree command directly (force override if exists)
     const worktreePath = join('..', worktreeName);
-    execCommand(`git worktree add -f "${worktreePath}"`, { silent: true });
+    
+    // Remove existing worktree if it exists
+    try {
+      execCommand(`git worktree remove -f "${worktreePath}"`, { silent: true });
+    } catch (e) {
+      // Ignore errors if worktree doesn't exist
+    }
+    
+    execCommand(`git worktree add "${worktreePath}"`, { silent: true });
     
     // Create reports directory in worktree
     mkdirSync(join(worktreePath, 'cron', 'reports'), { recursive: true });
@@ -317,102 +330,109 @@ async function invokeClaudeAnalysis(workflowName: string, worktreePath: string):
   const cleanWorkflow = cleanWorkflowName(workflowName);
   log(`Invoking Claude analysis for ${workflowName} in ${worktreePath}`);
   
-  const claudePrompt = `# Automated CI Failure Analysis
+  const claudePrompt = `# CI Failure Analysis Task
 
-You are analyzing a CI failure in a dedicated worktree. The failure data has been pre-collected in ./cron/reports/.
+You are in a dedicated worktree for analyzing a GitHub Actions workflow failure.
 
-Your task is to:
-1. **Analyze the failure** using the pre-collected data:
-   - Read failure-logs-${cleanWorkflow}-${CONFIG.DATE_STAMP}.txt for error details
-   - Read failure-details-${cleanWorkflow}-${CONFIG.DATE_STAMP}.json for run metadata
-   - Read commit-range-${cleanWorkflow}-${CONFIG.DATE_STAMP}.txt for basic commit list
-   - Read detailed-commits-${cleanWorkflow}-${CONFIG.DATE_STAMP}.txt for full commit messages
-   - Read diff-stat-${cleanWorkflow}-${CONFIG.DATE_STAMP}.txt for file change summary
-   - Read diff-name-status-${cleanWorkflow}-${CONFIG.DATE_STAMP}.txt for specific file changes
-   - Read full-diff-${cleanWorkflow}-${CONFIG.DATE_STAMP}.txt for complete code changes
-   - Read pr-info-${cleanWorkflow}-${CONFIG.DATE_STAMP}.json for PR context
-   - Read last-good-run-${cleanWorkflow}-${CONFIG.DATE_STAMP}.txt for baseline reference
+## Your Task
 
-2. **Perform root cause analysis** and assess fix confidence (0-100%):
-   - **High confidence (80-100%)**: Simple dependency updates, lint fixes, obvious typos
-   - **Medium confidence (60-79%)**: Test failures with clear fixes, build config issues
-   - **Low confidence (0-59%)**: Complex logic errors, environmental issues
+1. **Analyze the failure data** in the cron/reports/ directory
+2. **Identify the root cause** of the ${workflowName} workflow failure
+3. **Create a detailed assessment** report
+4. **Suggest concrete fixes** if the confidence level is high
+5. **Write your findings** to a file called "analysis-${cleanWorkflow}-${CONFIG.DATE_STAMP}.md"
 
-3. **Create analysis report** in ./cron/reports/:
-   - **Always create**: assessment-${cleanWorkflow}-${CONFIG.DATE_STAMP}.md
-   - **If attempting fix**: resolution-${cleanWorkflow}-${CONFIG.DATE_STAMP}.md
-   - **If deferring**: status-${cleanWorkflow}-${CONFIG.DATE_STAMP}.md
+## Available Data
 
-4. **If confidence >75%**: Implement fix, test, and commit with clear message
+The cron/reports/ directory contains:
+- failure-logs-*.txt: Full workflow failure logs
+- failure-details-*.json: Structured failure information
+- commit-range-*.txt: Commits between last success and failure
+- detailed-commits-*.txt: Full commit messages and details
+- diff-stat-*.txt: Files changed summary
+- full-diff-*.txt: Complete code changes
+- pr-info-*.json: Related pull request information
+- metadata-*.json: Run metadata
 
-**Important**: Work only with the pre-collected data. Focus on analysis and solution, not data gathering.
+## Analysis Framework
 
-Begin analysis now.`;
+Please structure your analysis as follows:
+
+### 1. Executive Summary
+- Brief description of the failure
+- Impact assessment
+- Confidence level in diagnosis (High/Medium/Low)
+
+### 2. Root Cause Analysis
+- Primary cause of failure
+- Contributing factors
+- Timeline of events
+
+### 3. Code Analysis
+- Specific changes that triggered the failure
+- Code quality issues identified
+- Test coverage gaps
+
+### 4. Recommendations
+- Immediate fixes needed
+- Long-term improvements
+- Prevention strategies
+
+### 5. Implementation Plan
+- Step-by-step fix instructions
+- Testing recommendations
+- Risk assessment
+
+Focus on actionable insights that will help prevent similar failures.`;
 
   try {
+    // Test write permissions in worktree
+    try {
+      writeFileSync(join(worktreePath, 'write-test.tmp'), 'test');
+      execCommand(`rm -f "${join(worktreePath, 'write-test.tmp')}"`, { silent: true });
+      log(`DEBUG: Write permissions confirmed in ${worktreePath}`);
+    } catch (permError) {
+      log(`WARNING: Write permission issues in ${worktreePath}: ${permError}`);
+    }
+    
     // Write prompt to file for debugging
     writeFileSync(join(worktreePath, 'claude-prompt.txt'), claudePrompt);
     log(`DEBUG: Wrote Claude prompt to ${join(worktreePath, 'claude-prompt.txt')}`);
     
-    // Use Claude in print mode (-p) which is better for programmatic usage
-    const claude = spawn('claude', ['-p', claudePrompt], {
-      cwd: worktreePath,
-      stdio: 'pipe',
-      env: process.env  // Pass full environment including auth configs
-    });
+    // Invoke Claude for actual CI analysis
+    log(`Starting CI failure analysis for ${workflowName}...`);
     
-    let claudeOutput = '';
-    let claudeError = '';
-    
-    claude.stdout.on('data', (data) => {
-      const chunk = data.toString();
-      claudeOutput += chunk;
-      log(`DEBUG: Claude stdout chunk: ${chunk.slice(0, 200)}...`);
-    });
-    
-    claude.stderr.on('data', (data) => {
-      const chunk = data.toString();
-      claudeError += chunk;
-      log(`DEBUG: Claude stderr chunk: ${chunk.slice(0, 200)}...`);
-    });
-    
-    // Wait for Claude to complete with timeout
-    const result = await new Promise<number>((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        claude.kill();
-        reject(new Error('Claude analysis timed out'));
-      }, CONFIG.CLAUDE_TIMEOUT);
+    try {
+      // Use Claude CLI to analyze the failure with all collected data
+      const analysisResult = execSync(`claude -p "${claudePrompt.replace(/"/g, '\\"')}"`, {
+        encoding: 'utf8',
+        cwd: worktreePath,
+        env: { ...process.env },
+        stdio: 'pipe',
+        timeout: CONFIG.CLAUDE_TIMEOUT
+      }).trim();
       
-      claude.on('close', (code) => {
-        clearTimeout(timeout);
-        resolve(code || 0);
-      });
+      log(`Claude analysis completed for ${workflowName}`);
+      log(`Analysis result length: ${analysisResult.length} characters`);
       
-      claude.on('error', (error) => {
-        clearTimeout(timeout);
-        reject(error);
-      });
-    });
-    
-    if (result === 0) {
-      log(`Claude analysis completed successfully for ${workflowName}`);
+      // Write the analysis result to a file
+      const analysisFile = join(worktreePath, 'cron', 'reports', `claude-analysis-${cleanWorkflow}-${CONFIG.DATE_STAMP}.md`);
+      writeFileSync(analysisFile, analysisResult);
+      log(`Analysis written to: ${analysisFile}`);
+      
       return true;
-    } else {
-      log(`ERROR: Claude analysis failed for ${workflowName} with exit code ${result}`);
-      if (claudeError) {
-        log(`Claude stderr: ${claudeError}`);
+    } catch (claudeError: any) {
+      log(`ERROR: Claude analysis failed: ${claudeError.message}`);
+      if (claudeError.stderr) {
+        log(`ERROR: Claude stderr: ${claudeError.stderr}`);
       }
-      if (claudeOutput) {
-        log(`Claude stdout: ${claudeOutput}`);
+      if (claudeError.stdout) {
+        log(`ERROR: Claude stdout: ${claudeError.stdout}`);
       }
       return false;
     }
   } catch (error: any) {
-    if (error.message.includes('timed out')) {
-      log(`WARNING: Claude analysis timed out for ${workflowName} after ${CONFIG.CLAUDE_TIMEOUT / 1000}s`);
-    } else {
-      log(`ERROR: Claude analysis failed for ${workflowName}: ${error.message}`);
-    }
+    log(`ERROR: Claude analysis failed for ${workflowName}: ${error.message}`);
     return false;
   }
 }
@@ -495,6 +515,15 @@ async function main(): Promise<void> {
     
     log(`Nightly CI check completed. Processed ${failureCount} failures, ${successCount} successful analyses.`);
     log(`See full log at: ${CONFIG.LOG_FILE}`);
+    
+    if (successCount > 0) {
+      log(`Analysis reports generated in worktree directories:`);
+      for (const failure of failures) {
+        const cleanWorkflow = cleanWorkflowName(failure.workflowName);
+        const worktreePath = join('..', `cc-resolve-${CONFIG.DATE_STAMP}-${cleanWorkflow}`);
+        log(`  - ${worktreePath}/cron/reports/`);
+      }
+    }
   } catch (error: any) {
     log(`ERROR: Main execution failed: ${error.message}`);
     process.exit(1);
