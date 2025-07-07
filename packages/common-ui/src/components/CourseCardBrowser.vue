@@ -85,6 +85,21 @@
           <div v-if="c.isOpen" class="px-4 py-2 bg-blue-grey-lighten-5">
             <card-loader :qualified_id="idQualify(c.id)" :view-lookup="viewLookup" class="elevation-1" />
 
+            <!-- Tags display for readonly mode -->
+            <div v-if="editMode === 'readonly' && cardTags[idParse(c.id)]" class="mt-4">
+              <v-chip-group>
+                <v-chip
+                  v-for="tag in cardTags[idParse(c.id)]"
+                  :key="tag.name"
+                  size="small"
+                  color="primary"
+                  variant="outlined"
+                >
+                  {{ tag.name }}
+                </v-chip>
+              </v-chip-group>
+            </div>
+
             <tags-input
               v-show="internalEditMode === 'tags' && editMode === 'full'"
               :course-i-d="courseId"
@@ -120,7 +135,7 @@
 <script lang="ts">
 import { defineComponent, PropType } from 'vue';
 import { displayableDataToViewData, Status, CourseElo } from '@vue-skuilder/common';
-import { getDataLayer, CourseDBInterface, CardData, DisplayableData, Tag } from '@vue-skuilder/db';
+import { getDataLayer, CourseDBInterface, CardData, DisplayableData, Tag, TagStub } from '@vue-skuilder/db';
 // local imports
 import TagsInput from './TagsInput.vue';
 import PaginatingToolbar from './PaginatingToolbar.vue';
@@ -173,6 +188,7 @@ export default defineComponent({
       cardData: {} as { [card: string]: string[] },
       cardPreview: {} as { [card: string]: string },
       cardElos: {} as Record<string, CourseElo>,
+      cardTags: {} as Record<string, TagStub[]>,
       internalEditMode: 'none' as 'tags' | 'flag' | 'none',
       delBtn: false,
       updatePending: true,
@@ -243,6 +259,32 @@ export default defineComponent({
     setPage(n: number) {
       this.page = n;
       this.populateTableData();
+    },
+    async loadCardTags(cardIds: string[]) {
+      try {
+        // Get all tags for the course
+        const allTags = await this.courseDB!.getCourseTagStubs();
+        
+        // For each card, find tags that include this card
+        cardIds.forEach(cardId => {
+          const cardTags: TagStub[] = [];
+          
+          // Check each tag to see if it contains this card
+          allTags.rows.forEach(tagRow => {
+            if (tagRow.doc && tagRow.doc.taggedCards.includes(cardId)) {
+              cardTags.push({
+                name: tagRow.doc.name,
+                snippet: tagRow.doc.snippet,
+                count: tagRow.doc.taggedCards.length
+              });
+            }
+          });
+          
+          this.cardTags[cardId] = cardTags;
+        });
+      } catch (error) {
+        console.error('Error loading card tags:', error);
+      }
     },
     clearSelections(exception: string = '') {
       this.cards.forEach((card) => {
@@ -360,6 +402,9 @@ export default defineComponent({
         cardIds.forEach((cardId, index) => {
           this.cardElos[cardId] = eloData[index];
         });
+
+        // Load tags for each card
+        await this.loadCardTags(cardIds);
       } catch (error) {
         console.error('Error populating table data:', error);
       } finally {
