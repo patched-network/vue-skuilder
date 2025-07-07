@@ -42,8 +42,14 @@ export class StaticCourseDB implements CourseDBInterface {
   }
 
   async getCourseInfo(): Promise<CourseInfo> {
+    // Count only cards, not all documents
+    // Use chunks metadata to count card documents specifically
+    const cardCount = this.manifest.chunks
+      .filter(chunk => chunk.docType === DocType.CARD)
+      .reduce((total, chunk) => total + chunk.documentCount, 0);
+    
     return {
-      cardCount: this.manifest.documentCount || 0,
+      cardCount,
       registeredUsers: 0, // Always 0 in static mode
     };
   }
