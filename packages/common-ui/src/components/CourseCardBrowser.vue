@@ -271,12 +271,24 @@ export default defineComponent({
           
           // Check each tag to see if it contains this card
           allTags.rows.forEach(tagRow => {
-            if (tagRow.doc && tagRow.doc.taggedCards.includes(cardId)) {
-              cardTags.push({
-                name: tagRow.doc.name,
-                snippet: tagRow.doc.snippet,
-                count: tagRow.doc.taggedCards.length
-              });
+            if (tagRow.doc) {
+              // Debug problematic tag structures
+              if (!tagRow.doc.taggedCards) {
+                console.warn(`Tag ${tagRow.doc.name} has no taggedCards property:`, tagRow.doc);
+                return;
+              }
+              if (!Array.isArray(tagRow.doc.taggedCards)) {
+                console.warn(`Tag ${tagRow.doc.name} has non-array taggedCards:`, typeof tagRow.doc.taggedCards, tagRow.doc.taggedCards);
+                return;
+              }
+              
+              if (tagRow.doc.taggedCards.includes(cardId)) {
+                cardTags.push({
+                  name: tagRow.doc.name,
+                  snippet: tagRow.doc.snippet,
+                  count: tagRow.doc.taggedCards.length
+                });
+              }
             }
           });
           
