@@ -79,11 +79,14 @@ export class BaseUser implements UserDBInterface, DocumentUpdater {
     return !this._username.startsWith(GuestUsername);
   }
 
-  private remoteDB!: PouchDB.Database;
   public remote(): PouchDB.Database {
     return this.remoteDB;
   }
+
   private localDB!: PouchDB.Database;
+  private remoteDB!: PouchDB.Database;
+  private writeDB!: PouchDB.Database; // Database to use for write operations (local-first approach)
+
   private updateQueue!: UpdateQueue;
 
   public async createAccount(
@@ -597,7 +600,11 @@ Currently logged-in as ${this._username}.`
   private setDBandQ() {
     this.localDB = getLocalUserDB(this._username);
     this.remoteDB = this.syncStrategy.setupRemoteDB(this._username);
-    this.updateQueue = new UpdateQueue(this.localDB);
+    // writeDB follows local-first pattern: static mode writes to local, CouchDB writes to remote/local as appropriate
+    this.writeDB = this.syncStrategy.getWriteDB
+      ? this.syncStrategy.getWriteDB(this._username)
+      : this.localDB;
+    this.updateQueue = new UpdateQueue(this.localDB, this.writeDB);
   }
 
   private async init() {
@@ -697,7 +704,9 @@ Currently logged-in as ${this._username}.`
    * @returns The updated state of the card's CardHistory data
    */
 
-  public async putCardRecord<T extends CardRecord>(record: T): Promise<CardHistory<CardRecord>> {
+  public async putCardRecord<T extends CardRecord>(
+    record: T
+  ): Promise<CardHistory<CardRecord> & PouchDB.Core.RevisionIdMeta> {
     const cardHistoryID = getCardHistoryID(record.courseID, record.cardID);
     // stringify the current record to make it writable to couchdb
     record.timeStamp = moment.utc(record.timeStamp).toString() as unknown as Moment;
@@ -735,8 +744,8 @@ Currently logged-in as ${this._username}.`
           streak: 0,
           bestInterval: 0,
         };
-        void this.remoteDB.put<CardHistory<T>>(initCardHistory);
-        return initCardHistory;
+        const putResult = await this.writeDB.put<CardHistory<T>>(initCardHistory);
+        return { ...initCardHistory, _rev: putResult.rev };
       } else {
         throw new Error(`putCardRecord failed because of:
   name:${reason.name}
@@ -793,7 +802,7 @@ Currently logged-in as ${this._username}.`
         const deletePromises = duplicateDocIds.map(async (docId) => {
           try {
             const doc = await this.remoteDB.get(docId);
-            await this.remoteDB.remove(doc);
+            await this.writeDB.remove(doc);
             log(`Successfully removed duplicate review: ${docId}`);
           } catch (error) {
             log(`Failed to remove duplicate review ${docId}: ${error}`);
@@ -891,7 +900,7 @@ Currently logged-in as ${this._username}.`
 
       if (err.status === 404) {
         // doc does not exist. Create it and then run this fcn again.
-        await this.remoteDB.put<ClassroomRegistrationDoc>({
+        await this.writeDB.put<ClassroomRegistrationDoc>({
           _id: BaseUser.DOC_IDS.CLASSROOM_REGISTRATIONS,
           registrations: [],
         });

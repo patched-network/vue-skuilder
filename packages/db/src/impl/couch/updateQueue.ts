@@ -12,7 +12,8 @@ export default class UpdateQueue extends Loggable {
     [index: string]: boolean;
   } = {};
 
-  private db: PouchDB.Database;
+  private readDB: PouchDB.Database; // Database for read operations
+  private writeDB: PouchDB.Database; // Database for write operations (local-first)
 
   public update<T extends PouchDB.Core.Document<object>>(
     id: PouchDB.Core.DocumentId,
@@ -27,21 +28,24 @@ export default class UpdateQueue extends Loggable {
     return this.applyUpdates<T>(id);
   }
 
-  constructor(db: PouchDB.Database) {
+  constructor(readDB: PouchDB.Database, writeDB?: PouchDB.Database) {
     super();
     // PouchDB.debug.enable('*');
-    this.db = db;
+    this.readDB = readDB;
+    this.writeDB = writeDB || readDB; // Default to readDB if writeDB not provided
     logger.debug(`UpdateQ initialized...`);
-    void this.db.info().then((i) => {
+    void this.readDB.info().then((i) => {
       logger.debug(`db info: ${JSON.stringify(i)}`);
     });
   }
 
-  private async applyUpdates<T extends PouchDB.Core.Document<object>>(id: string): Promise<T> {
+  private async applyUpdates<T extends PouchDB.Core.Document<object>>(
+    id: string
+  ): Promise<T & PouchDB.Core.GetMeta & PouchDB.Core.RevisionIdMeta> {
     logger.debug(`Applying updates on doc: ${id}`);
     if (this.inprogressUpdates[id]) {
       // console.log(`Updates in progress...`);
-      await this.db.info(); // stall for a round trip
+      await this.readDB.info(); // stall for a round trip
       // console.log(`Retrying...`);
       return this.applyUpdates<T>(id);
     } else {
@@ -49,7 +53,7 @@ export default class UpdateQueue extends Loggable {
         this.inprogressUpdates[id] = true;
 
         try {
-          let doc = await this.db.get<T>(id);
+          let doc = await this.readDB.get<T>(id);
           logger.debug(`Retrieved doc: ${id}`);
           while (this.pendingUpdates[id].length !== 0) {
             const update = this.pendingUpdates[id].splice(0, 1)[0];
@@ -66,7 +70,7 @@ export default class UpdateQueue extends Loggable {
           //   console.log(`${k}: ${typeof k}`);
           // }
           // console.log(`Applied updates to doc: ${JSON.stringify(doc)}`);
-          await this.db.put<T>(doc);
+          await this.writeDB.put<T>(doc);
           logger.debug(`Put doc: ${id}`);
 
           if (this.pendingUpdates[id].length === 0) {
