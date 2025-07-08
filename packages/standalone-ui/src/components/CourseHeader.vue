@@ -50,6 +50,6 @@ const menuItems = ref([
   { text: 'Home', path: '/' },
   { text: 'Study', path: '/study' },
   { text: 'Browse', path: '/browse' },
-  { text: 'Progress', path: '/progress' },
+  // Progress view not implemented - will be accessible via UserChip->Stats
 ]);
 </script>
