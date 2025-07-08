@@ -13,7 +13,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, PropType } from 'vue';
+import { defineComponent, PropType, markRaw } from 'vue';
 import { getDataLayer, CardData, CardRecord, DisplayableData } from '@vue-skuilder/db';
 import { log, displayableDataToViewData, ViewData, ViewDescriptor } from '@vue-skuilder/common';
 import { ViewComponent } from '../../composables';
@@ -92,7 +92,7 @@ export default defineComponent({
         }
 
         this.data = tmpData;
-        this.view = tmpView as ViewComponent;
+        this.view = markRaw(tmpView as ViewComponent);
         this.cardID = _cardID;
         this.courseID = _courseID;
       } catch (e) {

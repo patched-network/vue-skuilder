@@ -32,6 +32,16 @@ export class CouchDBSyncStrategy implements SyncStrategy {
     }
   }
 
+  getWriteDB(username: string): PouchDB.Database {
+    if (username === GuestUsername || username.startsWith(GuestUsername)) {
+      // Guest users write to local database
+      return getLocalUserDB(username);
+    } else {
+      // Authenticated users write to remote (which will sync to local)
+      return this.getUserDB(username);
+    }
+  }
+
   startSync(localDB: PouchDB.Database, remoteDB: PouchDB.Database): void {
     // Only sync if local and remote are different instances
     if (localDB !== remoteDB) {

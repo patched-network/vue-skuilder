@@ -36,6 +36,12 @@ import { ref, computed } from 'vue';
 import { useDisplay } from 'vuetify';
 import { UserLoginAndRegistrationContainer } from '@vue-skuilder/common-ui';
 
+// Define props
+defineProps<{
+  title?: string;
+  logo?: string;
+}>();
+
 const { mobile } = useDisplay();
 const isMobile = computed(() => mobile.value);
 const drawer = ref(false);
@@ -44,6 +50,6 @@ const menuItems = ref([
   { text: 'Home', path: '/' },
   { text: 'Study', path: '/study' },
   { text: 'Browse', path: '/browse' },
-  { text: 'Progress', path: '/progress' },
+  // Progress view not implemented - will be accessible via UserChip->Stats
 ]);
 </script>

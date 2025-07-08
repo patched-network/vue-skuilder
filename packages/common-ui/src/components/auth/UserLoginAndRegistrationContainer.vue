@@ -1,21 +1,25 @@
 <template>
-  <transition v-if="userReady && display" name="component-fade" mode="out-in">
-    <div v-if="guestMode && authUIConfig.showLoginRegistration">
-      <v-dialog v-model="regDialog" width="500px">
-        <template #activator="{ props }">
-          <v-btn class="mr-2" size="small" color="success" v-bind="props">Sign Up</v-btn>
-        </template>
-        <UserRegistration @toggle="toggle" />
-      </v-dialog>
-      <v-dialog v-model="loginDialog" width="500px">
-        <template #activator="{ props }">
-          <v-btn size="small" color="success" v-bind="props">Log In</v-btn>
-        </template>
-        <UserLogin @toggle="toggle" />
-      </v-dialog>
-    </div>
-    <user-chip v-else />
-  </transition>
+  <div v-if="userReady && display">
+    <transition name="component-fade" mode="out-in">
+      <div v-if="guestMode && authUIConfig.showLoginRegistration" key="login-buttons">
+        <v-dialog v-model="regDialog" width="500px">
+          <template #activator="{ props }">
+            <v-btn class="mr-2" size="small" color="success" v-bind="props">Sign Up</v-btn>
+          </template>
+          <UserRegistration @toggle="toggle" />
+        </v-dialog>
+        <v-dialog v-model="loginDialog" width="500px">
+          <template #activator="{ props }">
+            <v-btn size="small" color="success" v-bind="props">Log In</v-btn>
+          </template>
+          <UserLogin @toggle="toggle" />
+        </v-dialog>
+      </div>
+      <div v-else key="user-chip">
+        <user-chip />
+      </div>
+    </transition>
+  </div>
 </template>
 
 <script lang="ts" setup>
@@ -27,6 +31,12 @@ import UserChip from './UserChip.vue';
 import { useAuthStore } from '../../stores/useAuthStore';
 import { useAuthUI } from '../../composables/useAuthUI';
 import { GuestUsername } from '@vue-skuilder/db';
+
+// Define props
+const props = defineProps<{
+  showLoginButton?: boolean;
+  redirectToPath?: string;
+}>();
 
 const route = useRoute();
 const authStore = useAuthStore();

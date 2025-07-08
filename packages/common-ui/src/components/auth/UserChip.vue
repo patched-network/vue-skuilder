@@ -97,6 +97,12 @@ import { getCurrentUser, useAuthStore } from '../../stores/useAuthStore';
 import { useConfigStore } from '../../stores/useConfigStore';
 import { useAuthUI } from '../../composables/useAuthUI';
 
+// Define props (even if not used, prevents warnings)
+defineProps<{
+  showLoginButton?: boolean;
+  redirectToPath?: string;
+}>();
+
 const router = useRouter();
 const authStore = useAuthStore();
 const configStore = useConfigStore();

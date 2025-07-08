@@ -262,26 +262,19 @@ export default defineComponent({
     },
     async loadCardTags(cardIds: string[]) {
       try {
-        // Get all tags for the course
-        const allTags = await this.courseDB!.getCourseTagStubs();
-        
-        // For each card, find tags that include this card
-        cardIds.forEach(cardId => {
-          const cardTags: TagStub[] = [];
-          
-          // Check each tag to see if it contains this card
-          allTags.rows.forEach(tagRow => {
-            if (tagRow.doc && tagRow.doc.taggedCards.includes(cardId)) {
-              cardTags.push({
-                name: tagRow.doc.name,
-                snippet: tagRow.doc.snippet,
-                count: tagRow.doc.taggedCards.length
-              });
-            }
-          });
-          
-          this.cardTags[cardId] = cardTags;
-        });
+        // Use the proper API method to get tags for each card
+        await Promise.all(
+          cardIds.map(async (cardId) => {
+            const appliedTags = await this.courseDB!.getAppliedTags(cardId);
+            
+            // Convert to TagStub format
+            this.cardTags[cardId] = appliedTags.rows.map(row => ({
+              name: row.value.name,
+              snippet: row.value.snippet,
+              count: row.value.count
+            }));
+          })
+        );
       } catch (error) {
         console.error('Error loading card tags:', error);
       }

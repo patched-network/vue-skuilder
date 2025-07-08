@@ -17,6 +17,11 @@ export class NoOpSyncStrategy implements SyncStrategy {
     return getLocalUserDB(username);
   }
 
+  getWriteDB(username: string): PouchDB.Database {
+    // In static mode, always write to local database
+    return getLocalUserDB(username);
+  }
+
   startSync(_localDB: PouchDB.Database, _remoteDB: PouchDB.Database): void {
     // No-op - in static mode, local and remote are the same database instance
     // PouchDB sync with itself is harmless and efficient

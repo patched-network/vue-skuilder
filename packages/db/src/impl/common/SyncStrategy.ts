@@ -15,6 +15,13 @@ export interface SyncStrategy {
   setupRemoteDB(username: string): PouchDB.Database;
 
   /**
+   * Get the database to use for write operations (local-first approach)
+   * @param username The username to get write DB for
+   * @returns PouchDB database instance for write operations
+   */
+  getWriteDB?(username: string): PouchDB.Database;
+
+  /**
    * Start synchronization between local and remote databases
    * @param localDB The local PouchDB instance
    * @param remoteDB The remote PouchDB instance
