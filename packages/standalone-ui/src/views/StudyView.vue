@@ -27,17 +27,18 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { ContentSourceID, getDataLayer } from '@vue-skuilder/db';
-import { StudySession, type StudySessionConfig } from '@vue-skuilder/common-ui';
+import { StudySession, type StudySessionConfig, useConfigStore } from '@vue-skuilder/common-ui';
 import { allCourses } from '@vue-skuilder/courses';
 import ENV from '../ENVIRONMENT_VARS';
 
 const user = getDataLayer().getUserDB();
 const dataLayer = getDataLayer();
+const configStore = useConfigStore();
 const sessionPrepared = ref(false);
-const sessionTimeLimit = ref(5); // 5 minutes
+const sessionTimeLimit = ref(configStore.config.sessionTimeLimit);
 const sessionContentSources = ref<ContentSourceID[]>([]);
 const studySessionConfig = ref<StudySessionConfig>({
-  likesConfetti: true,
+  likesConfetti: configStore.config.likesConfetti,
 });
 
 // Function to get view component from courses
