@@ -48,13 +48,19 @@ export interface ScheduledCard {
    *
    * (Should probably be UTC adjusted so that performance is
    * not wonky across time zones)
+   * 
+   * Note: Stored as ISO string for PouchDB serialization compatibility,
+   * but can be consumed as Moment objects via moment.utc(reviewTime)
    */
-  reviewTime: Moment;
+  reviewTime: string | Moment;
 
   /**
    * The time at which this scheduled event was created.
+   * 
+   * Note: Stored as ISO string for PouchDB serialization compatibility,
+   * but can be consumed as Moment objects via moment.utc(scheduledAt)
    */
-  scheduledAt: Moment;
+  scheduledAt: string | Moment;
 
   /**
    * Classifying whether this card is scheduled on behalf of a

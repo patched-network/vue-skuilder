@@ -125,9 +125,9 @@ export function scheduleCardReviewLocal(
   void userDB.put<ScheduledCard>({
     _id: DocTypePrefixes[DocType.SCHEDULED_CARD] + review.time.format(REVIEW_TIME_FORMAT),
     cardId: review.card_id,
-    reviewTime: review.time,
+    reviewTime: review.time.toISOString(),
     courseId: review.course_id,
-    scheduledAt: now,
+    scheduledAt: now.toISOString(),
     scheduledFor: review.scheduledFor,
     schedulingAgentId: review.schedulingAgentId,
   });
