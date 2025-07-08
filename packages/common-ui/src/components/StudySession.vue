@@ -595,7 +595,7 @@ export default defineComponent({
 
         this.cardCount++;
         this.data = tmpData;
-        this.view = tmpView;
+        this.view = markRaw(tmpView);
         this.cardID = _cardID;
         this.courseID = _courseID;
         this.card_elo = tmpCardData.elo.global.score;
