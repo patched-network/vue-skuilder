@@ -14,7 +14,7 @@ import * as directives from 'vuetify/directives';
 import { aliases, mdi } from 'vuetify/iconsets/mdi';
 
 // data layer
-import { initializeDataLayer } from '@vue-skuilder/db';
+import { initializeDataLayer, getDataLayer } from '@vue-skuilder/db';
 
 // auth store
 import { useAuthStore } from '@vue-skuilder/common-ui';
@@ -162,6 +162,29 @@ import config from '../skuilder.config.json';
   app.use(piniaPlugin, { pinia });
 
   await useAuthStore().init();
+
+  // Auto-register user for the course in standalone mode
+  if (config.course) {
+    try {
+      const authStore = useAuthStore();
+      const user = getDataLayer().getUserDB();
+      
+      // Check if user is already registered for the course
+      const courseRegistrations = await user.getCourseRegistrationsDoc();
+      const isRegistered = courseRegistrations.courses.some(c => c.courseID === config.course);
+      
+      if (!isRegistered) {
+        console.log(`[Standalone] Auto-registering user for course: ${config.course}`);
+        await user.registerForCourse(config.course, false); // non-preview mode
+        console.log(`[Standalone] Auto-registration completed for course: ${config.course}`);
+      } else {
+        console.log(`[Standalone] User already registered for course: ${config.course}`);
+      }
+    } catch (error) {
+      console.warn(`[Standalone] Failed to auto-register for course ${config.course}:`, error);
+      // Don't block app startup on registration failure
+    }
+  }
 
   app.mount('#app');
 })();
