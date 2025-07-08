@@ -425,6 +425,8 @@ export class StaticToCouchDBMigrator {
           const cleanDoc = { ...doc };
           // Remove _rev if present (CouchDB will assign new revision)
           delete cleanDoc._rev;
+          // Remove _attachments - these are uploaded separately in Phase 5
+          delete cleanDoc._attachments;
 
           return cleanDoc;
         });
@@ -575,10 +577,14 @@ export class StaticToCouchDBMigrator {
         }
       }
 
+      // Get current document revision (needed for putAttachment)
+      const doc = await db.get(docId);
+      
       // Upload to CouchDB
       await db.putAttachment(
         docId,
         attachmentName,
+        doc._rev,
         attachmentData as any, // PouchDB accepts both ArrayBuffer and Buffer
         attachmentMeta.content_type
       );
