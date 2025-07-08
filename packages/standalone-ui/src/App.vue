@@ -1,5 +1,5 @@
 <template>
-  <v-app :theme="theme">
+  <v-app>
     <course-header :title="courseConfig.title" :logo="courseConfig.logo" />
 
     <v-main>
@@ -21,14 +21,30 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue';
+import { computed, onMounted, watch } from 'vue';
+import { useTheme } from 'vuetify';
 import { useCourseConfig } from './composables/useCourseConfig';
 import CourseHeader from './components/CourseHeader.vue';
 import CourseFooter from './components/CourseFooter.vue';
-import { SkMouseTrap, SkldrMouseTrap } from '@vue-skuilder/common-ui';
+import { SkMouseTrap, SkldrMouseTrap, useConfigStore } from '@vue-skuilder/common-ui';
 
 const { courseConfig } = useCourseConfig();
-const theme = computed(() => (courseConfig.darkMode ? 'dark' : 'light'));
+const configStore = useConfigStore();
+const theme = useTheme();
+
+// Use the configStore dark mode instead of courseConfig
+const dark = computed(() => {
+  return configStore.config.darkMode;
+});
+
+// Watch for dark mode changes and update Vuetify theme
+watch(
+  dark,
+  (newVal) => {
+    theme.global.name.value = newVal ? 'dark' : 'light';
+  },
+  { immediate: true }
+);
 
 onMounted(() => {
   // Add a global shortcut to show the keyboard shortcuts dialog
