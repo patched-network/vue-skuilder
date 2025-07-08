@@ -4,6 +4,7 @@ import { Moment } from 'moment';
 export interface UserConfig {
   darkMode: boolean;
   likesConfetti: boolean;
+  sessionTimeLimit: number; // Session time limit in minutes
 }
 
 export interface ActivityRecord {

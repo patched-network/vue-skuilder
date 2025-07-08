@@ -519,6 +519,7 @@ Currently logged-in as ${this._username}.`
       _id: BaseUser.DOC_IDS.CONFIG,
       darkMode: false,
       likesConfetti: false,
+      sessionTimeLimit: 5,
     };
 
     try {
