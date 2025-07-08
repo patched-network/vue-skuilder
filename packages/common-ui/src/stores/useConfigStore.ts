@@ -17,6 +17,7 @@ export const useConfigStore = () => {
       config: {
         darkMode: false,
         likesConfetti: false,
+        sessionTimeLimit: 5, // Default 5 minutes
       } as UserConfig,
     }),
 
@@ -40,6 +41,14 @@ export const useConfigStore = () => {
         });
       },
 
+      async updateSessionTimeLimit(sessionTimeLimit: number) {
+        this.config.sessionTimeLimit = sessionTimeLimit;
+        const user = await getCurrentUser();
+        await user.setConfig({
+          sessionTimeLimit,
+        });
+      },
+
       async hydrate() {
         const user = await getCurrentUser();
         const cfg = await user.getConfig();
@@ -53,6 +62,7 @@ export const useConfigStore = () => {
         this.config = {
           darkMode: false,
           likesConfetti: false,
+          sessionTimeLimit: 5,
         };
       },
     },
