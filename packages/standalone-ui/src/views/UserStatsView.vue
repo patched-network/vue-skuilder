@@ -57,8 +57,8 @@ onMounted(async () => {
     const courseDB = dataLayer.getCourseDB(courseId);
     
     // Try to get user's ELO profile for this course
-    const userRegistrations = await dataLayer.getUserDB(user.getUsername()).getCourseRegistrations();
-    const courseReg = userRegistrations.find(reg => reg.courseID === courseId);
+    const userDB = dataLayer.getUserDB();
+    const courseReg = await userDB.getCourseRegDoc(courseId);
     
     if (courseReg && courseReg.elo) {
       userElo.value = courseReg.elo;

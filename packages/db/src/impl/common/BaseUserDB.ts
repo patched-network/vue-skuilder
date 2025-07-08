@@ -964,10 +964,10 @@ Currently logged-in as ${this._username}.`
     scheduledFor: ScheduledCard['scheduledFor'];
     schedulingAgentId: ScheduledCard['schedulingAgentId'];
   }) {
-    return scheduleCardReviewLocal(this.remoteDB, review);
+    return scheduleCardReviewLocal(this.writeDB, review);
   }
   public async removeScheduledCardReview(reviewId: string): Promise<void> {
-    return removeScheduledCardReviewLocal(this.remoteDB, reviewId);
+    return removeScheduledCardReviewLocal(this.writeDB, reviewId);
   }
 
   public async registerForClassroom(
