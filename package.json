@@ -13,6 +13,7 @@
         "couchdb:remove": "node scripts/dev-couchdb.js remove",
         "postdev": "node scripts/dev-couchdb.js stop",
         "build": "yarn workspace @vue-skuilder/common build && yarn workspace @vue-skuilder/db build && yarn workspace @vue-skuilder/common-ui build && yarn workspace @vue-skuilder/courses build && yarn workspace @vue-skuilder/edit-ui build && yarn workspace @vue-skuilder/platform-ui build && yarn workspace @vue-skuilder/express build",
+        "build:lib": "yarn workspace @vue-skuilder/common build && yarn workspace @vue-skuilder/db build && yarn workspace @vue-skuilder/common-ui build && yarn workspace @vue-skuilder/courses build && yarn workspace @vue-skuilder/edit-ui build",
         "clean": "yarn clean:dist && yarn clean:node_modules",
         "clean:dist": "find packages -name 'dist' -type d -exec rm -rf {} +",
         "clean:node_modules": "find . -name 'node_modules' -type d -exec rm -rf {} +",
