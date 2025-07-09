@@ -48,7 +48,8 @@
         "@vue-skuilder/common": "workspace:*",
         "moment": "^2.29.4",
         "pouchdb": "^9.0.0",
-        "pouchdb-find": "^9.0.0"
+        "pouchdb-find": "^9.0.0",
+        "uuid": "^11.1.0"
     },
     "devDependencies": {
         "@types/uuid": "^10.0.0",
