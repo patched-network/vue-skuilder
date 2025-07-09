@@ -12,7 +12,7 @@
     </div>
 
     <div v-else-if="courseId">
-      <course-information :course-id="courseId" :view-lookup-function="allCourses.getView" :edit-mode="'full'">
+      <course-information :course-id="courseId" :view-lookup-function="viewLookupFunction" :edit-mode="'full'">
         <template #actions>&nbsp;</template>
       </course-information>
     </div>
@@ -35,6 +35,11 @@ import { getStudioConfig, getConfigErrorMessage } from '../config/development';
 const loading = ref(true);
 const error = ref<string | null>(null);
 const courseId = ref<string | null>(null);
+
+// View lookup function with proper context binding
+const viewLookupFunction = (viewDescription: any) => {
+  return allCourses.getView(viewDescription);
+};
 
 // Initialize browse view
 onMounted(async () => {
