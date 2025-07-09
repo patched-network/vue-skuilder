@@ -1,0 +1,12 @@
+# test db courseIDs
+
+2aeb8315ef78f3e89ca386992d00825b	Go (Programming Language)
+4a3bf3a147365a47ab8ab097b300028d	Ethereum
+641e9a99d9d21303c9a0b0fa24000b82	Linux Command Line
+787bc0d25821da0abb503a3b8b027f8d	JavaScript
+a9fae15687220aa6ce6201800502a3fd	TypeScript
+a9fae15687220aa6ce62018005040a8f	HTTP Status Codes
+a9fae15687220aa6ce62018005087c95	Emily
+e833171dd37e2945964962457700fb72	Word Work
+e92135c6c3ba6fba79367e7f26001ef3	Anatomy
+ed1d504ee2aa71872a7088db6c01fa6f	Piano (by ear)

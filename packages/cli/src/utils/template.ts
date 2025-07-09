@@ -1,8 +1,10 @@
 import { promises as fs, existsSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { randomUUID } from 'crypto';
 import chalk from 'chalk';
 import { ProjectConfig, SkuilderConfig } from '../types.js';
+import { CourseConfig } from '@vue-skuilder/common';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -182,7 +184,8 @@ export default defineConfig({
  */
 export async function generateSkuilderConfig(
   configPath: string,
-  config: ProjectConfig
+  config: ProjectConfig,
+  outputPath?: string
 ): Promise<void> {
   const skuilderConfig: SkuilderConfig = {
     title: config.title,
@@ -194,13 +197,14 @@ export async function generateSkuilderConfig(
     skuilderConfig.course = config.course;
   }
 
-  // For static data layer with imported courses, use the first course as primary
-  if (
-    config.dataLayerType === 'static' &&
-    config.importCourseIds &&
-    config.importCourseIds.length > 0
-  ) {
-    skuilderConfig.course = config.importCourseIds[0];
+  // For static data layer, use imported course ID or generate new one
+  if (config.dataLayerType === 'static') {
+    if (config.importCourseIds && config.importCourseIds.length > 0) {
+      skuilderConfig.course = config.importCourseIds[0];
+    } else {
+      // Generate UUID for new static courses without imports
+      skuilderConfig.course = randomUUID();
+    }
   }
 
   if (config.couchdbUrl) {
@@ -212,6 +216,11 @@ export async function generateSkuilderConfig(
   }
 
   await fs.writeFile(configPath, JSON.stringify(skuilderConfig, null, 2));
+
+  // For static data layer without imports, create empty course structure
+  if (config.dataLayerType === 'static' && (!config.importCourseIds || config.importCourseIds.length === 0) && outputPath) {
+    await createEmptyCourseStructure(outputPath, skuilderConfig.course!, config.title);
+  }
 }
 
 /**
@@ -248,6 +257,72 @@ export async function transformTsConfig(tsconfigPath: string): Promise<void> {
   };
 
   await fs.writeFile(tsconfigPath, JSON.stringify(tsconfig, null, 2));
+}
+
+/**
+ * Create empty course structure for new static courses
+ */
+async function createEmptyCourseStructure(
+  projectPath: string,
+  courseId: string,
+  title: string
+): Promise<void> {
+  const staticCoursesPath = path.join(projectPath, 'public', 'static-courses');
+  const coursePath = path.join(staticCoursesPath, courseId);
+  
+  // Create directory structure
+  await fs.mkdir(coursePath, { recursive: true });
+  await fs.mkdir(path.join(coursePath, 'chunks'), { recursive: true });
+  await fs.mkdir(path.join(coursePath, 'indices'), { recursive: true });
+  
+  // Create minimal CourseConfig
+  const courseConfig: CourseConfig = {
+    courseID: courseId,
+    name: title,
+    description: '',
+    public: false,
+    deleted: false,
+    creator: 'system',
+    admins: [],
+    moderators: [],
+    dataShapes: [],
+    questionTypes: []
+  };
+  
+  // Create manifest.json with proper structure
+  const manifest = {
+    version: '1.0.0',
+    courseId,
+    courseName: title,
+    courseConfig,
+    lastUpdated: new Date().toISOString(),
+    documentCount: 0,
+    chunks: [],
+    indices: [],
+    designDocs: []
+  };
+  
+  await fs.writeFile(
+    path.join(coursePath, 'manifest.json'),
+    JSON.stringify(manifest, null, 2)
+  );
+  
+  // Create empty tags index
+  await fs.writeFile(
+    path.join(coursePath, 'indices', 'tags.json'),
+    JSON.stringify({ tags: [] }, null, 2)
+  );
+  
+  // Create CourseConfig chunk
+  await fs.writeFile(
+    path.join(coursePath, 'chunks', 'CourseConfig.json'),
+    JSON.stringify([{
+      _id: 'CourseConfig',
+      ...courseConfig
+    }], null, 2)
+  );
+  
+  console.log(chalk.green(`✅ Created empty course structure for ${courseId}`));
 }
 
 /**
@@ -540,7 +615,7 @@ export async function processTemplate(
 
   console.log(chalk.blue('🔧 Generating configuration...'));
   const configPath = path.join(projectPath, 'skuilder.config.json');
-  await generateSkuilderConfig(configPath, config);
+  await generateSkuilderConfig(configPath, config, projectPath);
 
   console.log(chalk.blue('📝 Creating README...'));
   const readmePath = path.join(projectPath, 'README.md');
