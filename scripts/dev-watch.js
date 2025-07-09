@@ -13,6 +13,9 @@ const excludedPackages = [
   'standalone-ui',
   'studio-ui',
   'express',
+  'tuilder',
+  // cli tool - depends on app packages
+  'cli',
 ];
 
 const commands = [];
@@ -27,7 +30,7 @@ for (const pkg of packages) {
     const pkgJson = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
     if (pkgJson.scripts && pkgJson.scripts.dev) {
       commands.push(`"yarn workspace ${pkgJson.name} dev"`);
-      names.push(pkg.replace(/-ui$/, ''));
+      names.push(pkg);
     }
   }
 }
