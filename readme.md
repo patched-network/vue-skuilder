@@ -11,15 +11,19 @@ Modular toolkit for the construction of interactive tutoring systems, with exper
 
 Think: the FOSS lovechild of Anki, Duolingo, Wikipedia, and MathAcademy, with a more generalized surface area for the types of content and skills that can be exercised.
 
+Also: friendly with local-first and static-deployments.
+
 ## Quick Start
 
-### For Course Creators (building *with* `vue-skuilder`) (start here!)
+### For Course Creators (building *with* `vue-skuilder`) (recommmended start point!)
 
-Install the Skuilder CLI to create your first course:
+Use the Skuilder CLI to create your first course:
 
 ```bash
-npm install -g skuilder # npx ok too!
+npm install -g skuilder
 skuilder init my-course --data-layer=static
+# Or:
+# npx skuilder init my-course --data-layer=static
 cd my-course
 npm run dev # serve your course locally
 npm run studio # edit your course content via web UI
@@ -33,9 +37,19 @@ Clone and develop the full platform:
 git clone https://github.com/patched-network/vue-skuilder.git
 cd vue-skuilder
 yarn install
-yarn setup # makes git submodule available - test database
-yarn dev # runs platform-ui, express API, and CouchDB
+yarn setup # makes git submodule available - test database, builds library packages
 ```
+
+After the setup, workflows will differdepending on what you are working on. To explore, I recommend:
+
+```
+yarn dev:platform
+```
+
+Which will build the components of the platform version of the software and serve locally.
+- database: `http://localhost:5984`, with admin accound `admin:password`.
+- express backend: `http://localhost:3000`
+- platform UI: `http://localhost:5173`
 
 ## Project Architecture
 
