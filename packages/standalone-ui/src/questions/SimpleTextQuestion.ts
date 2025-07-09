@@ -1,0 +1,41 @@
+import { Question, ViewData, Answer } from '@vue-skuilder/courses';
+import { FieldType, DataShape } from '@vue-skuilder/common';
+import SimpleTextQuestionView from './SimpleTextQuestionView.vue';
+
+export class SimpleTextQuestion extends Question {
+  public static dataShapes: DataShape[] = [
+    {
+      name: 'SimpleTextQuestion',
+      fields: [
+        { name: 'questionText', type: FieldType.STRING },
+        { name: 'correctAnswer', type: FieldType.STRING },
+      ],
+    },
+  ];
+
+  public static views = [
+    { name: 'SimpleTextQuestionView', component: SimpleTextQuestionView },
+  ];
+
+  private questionText: string;
+  private correctAnswer: string;
+
+  constructor(data: ViewData[]) {
+    super(data);
+    this.questionText = data[0].questionText as string;
+    this.correctAnswer = data[0].correctAnswer as string;
+  }
+
+  public dataShapes(): DataShape[] {
+    return SimpleTextQuestion.dataShapes;
+  }
+
+  public views() {
+    // This will be dynamically populated or imported
+    return SimpleTextQuestion.views;
+  }
+
+  protected isCorrect(answer: Answer): boolean {
+    return (answer.response as string).toLowerCase() === this.correctAnswer.toLowerCase();
+  }
+}
