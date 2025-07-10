@@ -1,9 +1,73 @@
 import { markRaw } from 'vue';
 import { Course } from './Course';
-import { Displayable, ViewComponent } from '@vue-skuilder/common-ui';
-import { DataShape, NameSpacer, ShapeDescriptor, ViewDescriptor } from '@vue-skuilder/common';
+import {
+  Displayable,
+  Question,
+  ViewComponent,
+} from '@vue-skuilder/common-ui';
+import {
+  DataShape,
+  NameSpacer,
+  ShapeDescriptor,
+  ViewDescriptor,
+  ViewData,
+  Answer,
+  Evaluation,
+} from '@vue-skuilder/common';
 
 import defaultCourse from './default';
+
+/**
+ * A `Course` is a container for a set of related `Question` types.
+ */
+export { Course };
+
+
+/**
+ * The base class for all interactive course content.
+ * A `Displayable` defines the data it requires and the Vue components used to render it.
+ */
+export { Displayable };
+
+/**
+ * The base class for all questions. It extends `Displayable` and adds
+ * logic for evaluating user answers. This is the primary class developers
+ * will extend to create new question types.
+ */
+export { Question };
+
+/**
+ * A type representing a Vue component that can be used to render a `Displayable`.
+ */
+export type { ViewComponent };
+
+
+
+/**
+ * Represents the actual data passed to a `Displayable`'s constructor.
+ */
+export type { ViewData };
+
+/**
+ * Represents a user's answer to a `Question`.
+ */
+export type { Answer };
+
+/**
+ * Represents the evaluation of a user's `Answer`.
+ */
+export type { Evaluation };
+
+/**
+ * A descriptor that uniquely identifies a `ViewComponent`.
+ */
+export type { ViewDescriptor };
+
+/**
+ * A descriptor that uniquely identifies a `DataShape`.
+ */
+export type { ShapeDescriptor };
+
 
 import chess from './chess';
 import french from './french';
