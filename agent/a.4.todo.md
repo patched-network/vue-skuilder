@@ -50,13 +50,21 @@ Phased implementation plan for enabling studio-ui to discover and use local ques
 
 ## Phase 2: CLI Studio Command Rework
 
-2.1
-- [ ] **Implement Questions Directory Hashing**
-  - [ ] Create hash function for `src/questions/` directory contents
-  - [ ] Handle case where `src/questions/` doesn't exist (treat as "no questions")
-  - [ ] Store hash for comparison between runs
-  - [ ] Update `packages/cli/src/commands/studio.ts` with hashing logic
-  - [ ] Create utility functions for directory hashing
+2.1 ✅ **Implement Questions Directory Hashing**
+  - [x] Create hash function for `src/questions/` directory contents
+  - [x] Handle case where `src/questions/` doesn't exist (treat as "no questions")
+  - [x] ~~Store hash for comparison between runs~~ (directory existence IS the storage)
+  - [x] Update `packages/cli/src/commands/studio.ts` with hashing logic
+  - [x] Create utility functions for directory hashing
+
+**Context added:**
+- Created `packages/cli/src/utils/questions-hash.ts` with comprehensive hashing logic
+- Hash function considers file paths, content, and modification times for consistency
+- Special hash values: `no-questions` (no directory), `empty-questions` (empty directory), `hash-error` (read failure)
+- Only includes relevant source files: `.ts`, `.vue`, `.js`, `.tsx`, `.jsx`
+- Uses 12-character hash for readability: e.g., `119e57650aac`
+- Build existence check via `.skuilder/studio-builds/[hash]/index.html`
+- Integrated into studio command: shows hash and build status during startup
 
 2.2
 - [ ] **Build Cache Management**
