@@ -18,10 +18,9 @@
         }
     },
     "scripts": {
-        "build": "rm -rf dist && npm run build:studio-ui && npm run build:express && tsc && npm run embed:studio-ui && npm run embed:express",
-        "build:studio-ui": "cd ../studio-ui && npm run build",
+        "build": "rm -rf dist && npm run build:express && tsc && npm run embed:studio-ui-src && npm run embed:express",
         "build:express": "cd ../express && npm run build",
-        "embed:studio-ui": "mkdir -p dist/studio-ui-assets && cp -r ../studio-ui/dist/* dist/studio-ui-assets/",
+        "embed:studio-ui-src": "mkdir -p dist/studio-ui-src && cp -r ../studio-ui/src/* dist/studio-ui-src/ && cp ../studio-ui/package.json dist/studio-ui-src/ && cp ../studio-ui/vite.config.ts dist/studio-ui-src/ && cp ../studio-ui/tsconfig.json dist/studio-ui-src/ && cp ../studio-ui/index.html dist/studio-ui-src/",
         "embed:express": "mkdir -p dist/express-assets && cp -r ../express/dist/* dist/express-assets/ && cp -r ../express/assets dist/express-assets/",
         "dev": "tsc --watch",
         "lint": "npx eslint .",
@@ -54,6 +53,9 @@
         "@types/serve-static": "^1.15.0",
         "@vue-skuilder/express": "workspace:*",
         "@vue-skuilder/studio-ui": "workspace:*",
+        "@vitejs/plugin-vue": "^5.2.1",
+        "vite": "^6.0.9",
+        "vue-tsc": "^1.8.0",
         "typescript": "~5.7.2"
     },
     "engines": {

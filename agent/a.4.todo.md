@@ -4,14 +4,20 @@ Phased implementation plan for enabling studio-ui to discover and use local ques
 
 ## Phase 1: CLI Build Infrastructure
 
-1.1
-- [ ] **Bundle Studio-UI Source in CLI**
-  - [ ] Modify CLI package to include `studio-ui/src/` directory
-  - [ ] Update CLI build process to bundle studio-ui source
-  - [ ] Remove pre-built studio-ui bundle from CLI package
-  - [ ] Update `packages/cli/package.json` to add studio-ui source files
-  - [ ] Update `packages/cli/build.config.ts` to include studio-ui source in build
-  - [ ] Update `packages/cli/src/` studio command imports
+1.1 ✅ **Bundle Studio-UI Source in CLI** 
+  - [x] Modify CLI package to include `studio-ui/src/` directory
+  - [x] Update CLI build process to bundle studio-ui source
+  - [x] Remove pre-built studio-ui bundle from CLI package
+  - [x] Update `packages/cli/package.json` to add studio-ui source files
+  - [x] Update `packages/cli/build.config.ts` to include studio-ui source in build
+  - [x] Update `packages/cli/src/` studio command imports
+
+**Context added:**
+- CLI now bundles studio-ui source instead of pre-built assets
+- Build process: `embed:studio-ui-src` copies source files to `dist/studio-ui-src/`
+- Added Vite build dependencies to CLI: `@vitejs/plugin-vue`, `vite`, `vue-tsc`
+- Studio command updated to serve from `studio-ui-src` instead of `studio-ui-assets`
+- **Next:** Still need to implement actual build-on-demand logic for questions integration
 
 1.2
 - [ ] **Bundle Studio-UI Build Dependencies**

@@ -286,8 +286,8 @@ interface UnpackResult {
 }
 
 async function startStudioUIServer(connectionDetails: ConnectionDetails, unpackResult: UnpackResult): Promise<number> {
-  const studioAssetsPath = path.join(__dirname, '..', 'studio-ui-assets');
-  const serve = serveStatic(studioAssetsPath, { 
+  const studioSourcePath = path.join(__dirname, '..', 'studio-ui-src');
+  const serve = serveStatic(studioSourcePath, { 
     index: ['index.html'],
     setHeaders: (res, path) => {
       if (path.endsWith('.woff2')) {
@@ -302,8 +302,8 @@ async function startStudioUIServer(connectionDetails: ConnectionDetails, unpackR
     }
   });
 
-  if (!fs.existsSync(studioAssetsPath)) {
-    throw new Error('Studio-UI assets not found. Please rebuild the CLI package.');
+  if (!fs.existsSync(studioSourcePath)) {
+    throw new Error('Studio-UI source not found. Please rebuild the CLI package.');
   }
 
   // Find available port starting from 7174
@@ -316,7 +316,7 @@ async function startStudioUIServer(connectionDetails: ConnectionDetails, unpackR
 
           // Inject config for index.html
           if (url.pathname === '/' || url.pathname === '/index.html') {
-            const indexPath = path.join(studioAssetsPath, 'index.html');
+            const indexPath = path.join(studioSourcePath, 'index.html');
             let html = fs.readFileSync(indexPath, 'utf8');
             const connectionScript = `
               <script>
@@ -344,7 +344,7 @@ async function startStudioUIServer(connectionDetails: ConnectionDetails, unpackR
           serve(req, res, () => {
             // If serve-static doesn't find the file, it calls next().
             // We can treat this as a 404, but for SPAs, we should serve index.html.
-            const indexPath = path.join(studioAssetsPath, 'index.html');
+            const indexPath = path.join(studioSourcePath, 'index.html');
             let html = fs.readFileSync(indexPath, 'utf8');
             const connectionScript = `
               <script>
