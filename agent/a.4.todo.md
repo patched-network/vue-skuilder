@@ -33,13 +33,20 @@ Phased implementation plan for enabling studio-ui to discover and use local ques
 - Build paths fixed automatically (import paths, HTML script src)
 - **Note:** Full build testing requires scaffolded course context (for monorepo dependencies), but CLI has all needed build tools
 
-1.3
-- [ ] **Create .skuilder Directory Structure**
-  - [ ] Create `.skuilder/studio-builds/` directory structure
-  - [ ] Add `.skuilder/` to default gitignore in scaffolding process
-  - [ ] Create stern README about generated contents
-  - [ ] Create template `.skuilder/README.md` for scaffolded projects
-  - [ ] Update CLI scaffolding to create `.skuilder/` and gitignore entry
+1.3 ✅ **Create .skuilder Directory Structure**
+  - [x] Create `.skuilder/studio-builds/` directory structure
+  - [x] Add `.skuilder/` to default gitignore in scaffolding process
+  - [x] Create stern README about generated contents
+  - [x] Create template `.skuilder/README.md` for scaffolded projects
+  - [x] Update CLI scaffolding to create `.skuilder/` and gitignore entry
+
+**Context added:**
+- Created template directory `packages/cli/templates/.skuilder/README.md` with stern warning about generated content
+- Updated CLI build process to embed templates with `embed:templates` script
+- Modified `generateGitignore()` to include `.skuilder/` in gitignore
+- Added `createSkuilderDirectory()` function to scaffolding process
+- Creates `.skuilder/studio-builds/` subdirectory for caching builds
+- Template README explains purpose: caching studio-ui builds with local question types
 
 ## Phase 2: CLI Studio Command Rework
 

@@ -18,10 +18,11 @@
         }
     },
     "scripts": {
-        "build": "rm -rf dist && npm run build:express && tsc && npm run embed:studio-ui-src && npm run embed:express",
+        "build": "rm -rf dist && npm run build:express && tsc && npm run embed:studio-ui-src && npm run embed:express && npm run embed:templates",
         "build:express": "cd ../express && npm run build",
         "embed:studio-ui-src": "mkdir -p dist/studio-ui-src && cp -r ../studio-ui/src/* dist/studio-ui-src/ && cp ../studio-ui/package.json dist/studio-ui-src/ && cp ../studio-ui/vite.config.ts dist/studio-ui-src/ && cp ../studio-ui/tsconfig.json dist/studio-ui-src/ && cp ../studio-ui/index.html dist/studio-ui-src/ && cp ../../vite.config.base.js dist/studio-ui-src/ && sed -i 's|../../vite.config.base.js|./vite.config.base.js|' dist/studio-ui-src/vite.config.ts && sed -i 's|resolve(__dirname, \\.\\., \\.\\.)|resolve(__dirname)|' dist/studio-ui-src/vite.config.ts && sed -i 's|/src/main.ts|./main.ts|' dist/studio-ui-src/index.html",
         "embed:express": "mkdir -p dist/express-assets && cp -r ../express/dist/* dist/express-assets/ && cp -r ../express/assets dist/express-assets/",
+        "embed:templates": "mkdir -p dist/templates && cp -r templates/.skuilder dist/templates/",
         "dev": "tsc --watch",
         "lint": "npx eslint .",
         "lint:fix": "npx eslint . --fix",
