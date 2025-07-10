@@ -82,13 +82,22 @@ Phased implementation plan for enabling studio-ui to discover and use local ques
 - Build detection via presence of `index.html` in hash directory
 - Cache cleanup moved to deferred tasks (not essential for MVP)
 
-2.3
-- [ ] **Rebuild Logic Implementation**
-  - [ ] Compare current questions hash with cached build hash
-  - [ ] Implement rebuild decision logic
-  - [ ] Handle "no questions" scenario (use default studio-ui behavior)
-  - [ ] Update `packages/cli/src/commands/studio.ts` with rebuild logic
-  - [ ] Create rebuild orchestration functions
+2.3 ✅ **Rebuild Logic Implementation**
+  - [x] Compare current questions hash with cached build hash
+  - [x] Implement rebuild decision logic
+  - [x] Handle "no questions" scenario (use default studio-ui behavior)
+  - [x] Update `packages/cli/src/commands/studio.ts` with rebuild logic
+  - [x] Create rebuild orchestration functions
+
+**Context added:**
+- Added `buildStudioUIWithQuestions()` function to orchestrate builds
+- Implements cache-first logic: use cached build if exists, otherwise build
+- Special case handling for `no-questions`, `empty-questions`, and `hash-error` scenarios
+- Added `buildDefaultStudioUI()` fallback function for error cases
+- Updated `startStudioUIServer()` to accept dynamic studio path parameter
+- Studio command now uses appropriate build (cached or newly built)
+- **Placeholder implementation**: Actual Vite build process reserved for Phase 3
+- Current implementation copies source files as temporary solution
 
 2.4
 - [ ] **Build Error Handling and Fallback**
