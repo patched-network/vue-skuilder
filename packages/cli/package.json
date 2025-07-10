@@ -38,13 +38,13 @@
         "course"
     ],
     "dependencies": {
-        "@vue-skuilder/db": "workspace:*",
-        "@vue-skuilder/standalone-ui": "^0.1.7",
         "@mdi/font": "^7.3.67",
         "@vue-skuilder/common": "workspace:*",
         "@vue-skuilder/common-ui": "workspace:*",
         "@vue-skuilder/courses": "workspace:*",
+        "@vue-skuilder/db": "workspace:*",
         "@vue-skuilder/edit-ui": "workspace:*",
+        "@vue-skuilder/standalone-ui": "^0.1.7",
         "chalk": "^5.3.0",
         "commander": "^11.0.0",
         "fs-extra": "^11.2.0",
@@ -61,12 +61,12 @@
         "@types/inquirer": "^9.0.0",
         "@types/node": "^20.0.0",
         "@types/serve-static": "^1.15.0",
+        "@vitejs/plugin-vue": "^5.2.1",
         "@vue-skuilder/express": "workspace:*",
         "@vue-skuilder/studio-ui": "workspace:*",
-        "@vitejs/plugin-vue": "^5.2.1",
+        "typescript": "~5.7.2",
         "vite": "^6.0.9",
-        "vue-tsc": "^1.8.0",
-        "typescript": "~5.7.2"
+        "vue-tsc": "^1.8.0"
     },
     "engines": {
         "node": ">=18.0.0"
