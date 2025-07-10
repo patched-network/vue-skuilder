@@ -9,6 +9,7 @@ import { CouchDBManager } from '@vue-skuilder/common/docker';
 import serveStatic from 'serve-static';
 import { ExpressManager } from '../utils/ExpressManager.js';
 import { hashQuestionsDirectory, studioBuildExists, ensureCacheDirectory, getStudioBuildPath, ensureBuildDirectory } from '../utils/questions-hash.js';
+import { reportStudioBuildError, createStudioBuildError, StudioBuildErrorType, withStudioBuildErrorHandling } from '../utils/error-reporting.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -78,26 +79,47 @@ async function launchStudio(coursePath: string, options: StudioOptions) {
 
     // Phase 0.5: Hash questions directory to determine studio-ui build needs
     console.log(chalk.cyan(`🔍 Analyzing local question types...`));
-    const questionsHash = await hashQuestionsDirectory(resolvedPath);
-    
-    // Ensure cache directory exists
-    await ensureCacheDirectory(resolvedPath);
-    
-    const buildExists = studioBuildExists(resolvedPath, questionsHash);
-    const buildPath = getStudioBuildPath(resolvedPath, questionsHash);
-    
-    console.log(chalk.gray(`   Questions hash: ${questionsHash}`));
-    console.log(chalk.gray(`   Cached build exists: ${buildExists ? 'Yes' : 'No'}`));
-    
-    // Determine if we need to rebuild studio-ui
+    let questionsHash: string;
     let studioUIPath: string;
-    if (buildExists) {
-      console.log(chalk.gray(`   Using cached build at: ${buildPath}`));
-      studioUIPath = buildPath;
-    } else {
-      console.log(chalk.cyan(`🔨 Building studio-ui with local question types...`));
-      studioUIPath = await buildStudioUIWithQuestions(resolvedPath, questionsHash);
-      console.log(chalk.green(`✅ Studio-UI build complete: ${studioUIPath}`));
+    
+    try {
+      questionsHash = await withStudioBuildErrorHandling(
+        () => hashQuestionsDirectory(resolvedPath),
+        StudioBuildErrorType.QUESTIONS_HASH_ERROR,
+        { coursePath: resolvedPath }
+      );
+      
+      // Ensure cache directory exists
+      await ensureCacheDirectory(resolvedPath);
+      
+      const buildExists = studioBuildExists(resolvedPath, questionsHash);
+      const buildPath = getStudioBuildPath(resolvedPath, questionsHash);
+      
+      console.log(chalk.gray(`   Questions hash: ${questionsHash}`));
+      console.log(chalk.gray(`   Cached build exists: ${buildExists ? 'Yes' : 'No'}`));
+      
+      // Determine if we need to rebuild studio-ui
+      if (buildExists) {
+        console.log(chalk.gray(`   Using cached build at: ${buildPath}`));
+        studioUIPath = buildPath;
+      } else {
+        console.log(chalk.cyan(`🔨 Building studio-ui with local question types...`));
+        studioUIPath = await buildStudioUIWithQuestions(resolvedPath, questionsHash);
+        console.log(chalk.green(`✅ Studio-UI build complete: ${studioUIPath}`));
+      }
+      
+    } catch (error) {
+      // Handle catastrophic build errors by falling back to embedded source
+      console.log(chalk.yellow(`⚠️  Unable to process questions, using embedded studio-ui`));
+      const embeddedPath = path.join(__dirname, '..', 'studio-ui-src');
+      
+      if (fs.existsSync(embeddedPath)) {
+        studioUIPath = embeddedPath;
+        console.log(chalk.gray(`   Using embedded studio-ui source directly`));
+      } else {
+        console.error(chalk.red(`❌ No viable studio-ui source available`));
+        throw new Error('Critical error: Cannot locate studio-ui source');
+      }
     }
 
     // Phase 1: CouchDB Management
@@ -574,5 +596,154 @@ async function unpackCourseToStudio(
   } catch (error) {
     console.error(chalk.red(`❌ Studio unpack failed: ${error instanceof Error ? error.message : String(error)}`));
     throw error;
+  }
+}
+
+/**
+ * Build studio-ui with local question types integrated
+ */
+async function buildStudioUIWithQuestions(coursePath: string, questionsHash: string): Promise<string> {
+  const buildPath = await ensureBuildDirectory(coursePath, questionsHash);
+  
+  try {
+    // Handle special cases
+    if (questionsHash === 'no-questions') {
+      console.log(chalk.gray(`   No local questions detected, using default studio-ui`));
+      return await buildDefaultStudioUI(buildPath);
+    }
+    
+    if (questionsHash === 'empty-questions') {
+      console.log(chalk.gray(`   Empty questions directory, using default studio-ui`));
+      return await buildDefaultStudioUI(buildPath);
+    }
+    
+    if (questionsHash === 'hash-error') {
+      const hashError = createStudioBuildError(
+        StudioBuildErrorType.QUESTIONS_HASH_ERROR,
+        'Questions directory could not be processed',
+        { 
+          context: { coursePath, questionsHash },
+          recoverable: true,
+          fallbackAvailable: true
+        }
+      );
+      reportStudioBuildError(hashError);
+      return await buildDefaultStudioUI(buildPath);
+    }
+    
+    // TODO: Phase 3 - Implement actual questions integration
+    console.log(chalk.yellow(`   TODO: Questions integration not yet implemented`));
+    console.log(chalk.gray(`   Falling back to default studio-ui for now`));
+    return await buildDefaultStudioUI(buildPath);
+    
+  } catch (error) {
+    const buildError = createStudioBuildError(
+      StudioBuildErrorType.BUILD_FAILURE,
+      'Studio-UI build process failed',
+      {
+        cause: error instanceof Error ? error : undefined,
+        context: { coursePath, questionsHash, buildPath },
+        recoverable: true,
+        fallbackAvailable: true
+      }
+    );
+    
+    reportStudioBuildError(buildError);
+    
+    // Always try fallback to default studio-ui
+    try {
+      return await buildDefaultStudioUI(buildPath);
+    } catch (fallbackError) {
+      // If even the fallback fails, this is critical
+      const criticalError = createStudioBuildError(
+        StudioBuildErrorType.CRITICAL_ERROR,
+        'Both primary and fallback studio-ui builds failed',
+        {
+          cause: fallbackError instanceof Error ? fallbackError : undefined,
+          context: { coursePath, questionsHash, buildPath, originalError: error },
+          recoverable: false,
+          fallbackAvailable: false
+        }
+      );
+      
+      reportStudioBuildError(criticalError);
+      throw criticalError;
+    }
+  }
+}
+
+/**
+ * Build default studio-ui (without local questions integration)
+ */
+async function buildDefaultStudioUI(buildPath: string): Promise<string> {
+  const studioSourcePath = path.join(__dirname, '..', 'studio-ui-src');
+  
+  try {
+    // Verify source directory exists
+    if (!fs.existsSync(studioSourcePath)) {
+      const sourceError = createStudioBuildError(
+        StudioBuildErrorType.MISSING_SOURCE,
+        `Studio-UI source directory not found at ${studioSourcePath}`,
+        { 
+          context: { studioSourcePath, buildPath },
+          recoverable: true,
+          fallbackAvailable: true
+        }
+      );
+      reportStudioBuildError(sourceError);
+      throw sourceError;
+    }
+    
+    // For now, just copy the source to the build path as a placeholder
+    // TODO: Phase 3 - Implement actual Vite build process
+    console.log(chalk.gray(`   Copying studio-ui source to build directory...`));
+    
+    // Copy all studio-ui source files
+    const { copyDirectory } = await import('../utils/template.js');
+    await withStudioBuildErrorHandling(
+      () => copyDirectory(studioSourcePath, buildPath),
+      StudioBuildErrorType.COPY_FAILURE,
+      { studioSourcePath, buildPath }
+    );
+    
+    // Verify essential files were copied
+    const indexPath = path.join(buildPath, 'index.html');
+    if (!fs.existsSync(indexPath)) {
+      const copyError = createStudioBuildError(
+        StudioBuildErrorType.COPY_FAILURE,
+        `Essential file missing after copy: ${indexPath}`,
+        { 
+          context: { studioSourcePath, buildPath, indexPath },
+          recoverable: true,
+          fallbackAvailable: true
+        }
+      );
+      reportStudioBuildError(copyError);
+      throw copyError;
+    }
+    
+    console.log(chalk.gray(`   Default studio-ui ready (source files copied)`));
+    return buildPath;
+  } catch (error) {
+    // Ultimate fallback: serve directly from embedded source
+    if (fs.existsSync(studioSourcePath)) {
+      console.log(chalk.yellow(`   Using embedded studio-ui source as final fallback`));
+      return studioSourcePath;
+    }
+    
+    // This should never happen, but provides a last resort
+    const criticalError = createStudioBuildError(
+      StudioBuildErrorType.CRITICAL_ERROR,
+      'No viable studio-ui source available',
+      {
+        cause: error instanceof Error ? error : undefined,
+        context: { studioSourcePath, buildPath },
+        recoverable: false,
+        fallbackAvailable: false
+      }
+    );
+    
+    reportStudioBuildError(criticalError);
+    throw criticalError;
   }
 }

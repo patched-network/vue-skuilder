@@ -99,13 +99,23 @@ Phased implementation plan for enabling studio-ui to discover and use local ques
 - **Placeholder implementation**: Actual Vite build process reserved for Phase 3
 - Current implementation copies source files as temporary solution
 
-2.4
-- [ ] **Build Error Handling and Fallback**
-  - [ ] Implement fallback to basic studio-ui for build failures
-  - [ ] Create error reporting mechanism for failed builds
-  - [ ] Ensure studio command doesn't crash on build errors
-  - [ ] Update `packages/cli/src/commands/studio.ts` with error handling
-  - [ ] Create error reporting utilities
+2.4 ✅ **Build Error Handling and Fallback**
+  - [x] Implement fallback to basic studio-ui for build failures
+  - [x] Create error reporting mechanism for failed builds
+  - [x] Ensure studio command doesn't crash on build errors
+  - [x] Update `packages/cli/src/commands/studio.ts` with error handling
+  - [x] Create error reporting utilities
+
+**Context added:**
+- Created comprehensive error reporting system in `packages/cli/src/utils/error-reporting.ts`
+- Defined structured error types: `StudioBuildErrorType` enum with categories for different failure modes
+- Implemented `createStudioBuildError()` and `reportStudioBuildError()` for consistent error handling
+- Added `withStudioBuildErrorHandling()` wrapper for graceful error capture and reporting
+- Enhanced `buildStudioUIWithQuestions()` with structured error handling and multi-level fallbacks
+- Updated `buildDefaultStudioUI()` with comprehensive error detection and ultimate fallback to embedded source
+- Studio command now has catastrophic error handling with fallback to embedded studio-ui source
+- All error scenarios include helpful guidance and context for debugging
+- Build system tested and confirmed working with new error handling infrastructure
 
 ## Phase 3: Questions Integration Strategy
 
