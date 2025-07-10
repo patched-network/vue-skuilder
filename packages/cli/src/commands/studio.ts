@@ -8,7 +8,7 @@ import http from 'http';
 import { CouchDBManager } from '@vue-skuilder/common/docker';
 import serveStatic from 'serve-static';
 import { ExpressManager } from '../utils/ExpressManager.js';
-import { hashQuestionsDirectory, studioBuildExists } from '../utils/questions-hash.js';
+import { hashQuestionsDirectory, studioBuildExists, ensureCacheDirectory, getStudioBuildPath } from '../utils/questions-hash.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -79,10 +79,18 @@ async function launchStudio(coursePath: string, options: StudioOptions) {
     // Phase 0.5: Hash questions directory to determine studio-ui build needs
     console.log(chalk.cyan(`🔍 Analyzing local question types...`));
     const questionsHash = await hashQuestionsDirectory(resolvedPath);
+    
+    // Ensure cache directory exists
+    await ensureCacheDirectory(resolvedPath);
+    
     const buildExists = studioBuildExists(resolvedPath, questionsHash);
+    const buildPath = getStudioBuildPath(resolvedPath, questionsHash);
     
     console.log(chalk.gray(`   Questions hash: ${questionsHash}`));
     console.log(chalk.gray(`   Cached build exists: ${buildExists ? 'Yes' : 'No'}`));
+    if (buildExists) {
+      console.log(chalk.gray(`   Using cached build at: ${buildPath}`));
+    }
 
     // Phase 1: CouchDB Management
     const studioDatabaseName = generateStudioDatabaseName(resolvedPath);

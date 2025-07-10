@@ -66,13 +66,21 @@ Phased implementation plan for enabling studio-ui to discover and use local ques
 - Build existence check via `.skuilder/studio-builds/[hash]/index.html`
 - Integrated into studio command: shows hash and build status during startup
 
-2.2
-- [ ] **Build Cache Management**
-  - [ ] Implement cache checking logic in `.skuilder/studio-builds/[hash]/`
-  - [ ] Create cache directory structure as needed
-  - [ ] Handle cleanup of old builds (optional optimization)
-  - [ ] Update `packages/cli/src/commands/studio.ts` with cache management
-  - [ ] Create cache utilities for build management
+2.2 ✅ **Build Cache Management**
+  - [x] Implement cache checking logic in `.skuilder/studio-builds/[hash]/`
+  - [x] Create cache directory structure as needed
+  - [x] ~~Handle cleanup of old builds~~ (moved to deferred tasks)
+  - [x] Update `packages/cli/src/commands/studio.ts` with cache management
+  - [x] Create cache utilities for build management
+
+**Context added:**
+- Added `ensureCacheDirectory()` and `ensureBuildDirectory()` utilities to questions-hash.ts
+- Cache management integrated into studio command startup flow
+- Creates `.skuilder/studio-builds/` directory structure automatically
+- Creates hash-specific build directories like `.skuilder/studio-builds/b695ed4bc2b9/`
+- Studio command now shows cached build path when available
+- Build detection via presence of `index.html` in hash directory
+- Cache cleanup moved to deferred tasks (not essential for MVP)
 
 2.3
 - [ ] **Rebuild Logic Implementation**
@@ -174,6 +182,11 @@ Phased implementation plan for enabling studio-ui to discover and use local ques
   - [ ] Handle questions with npm dependencies not in course project
   - [ ] Support questions with custom build steps
   - [ ] Advanced component library integration
+
+- [ ] **Build Cache Cleanup**
+  - [ ] Handle cleanup of old builds (optional optimization)
+  - [ ] Implement cache size limits or age-based cleanup
+  - [ ] Add CLI command for manual cache clearing
 
 ## Success Criteria
 

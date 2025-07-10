@@ -90,3 +90,20 @@ export function studioBuildExists(coursePath: string, questionsHash: string): bo
   const buildPath = getStudioBuildPath(coursePath, questionsHash);
   return existsSync(path.join(buildPath, 'index.html'));
 }
+
+/**
+ * Ensure the cache directory structure exists
+ */
+export async function ensureCacheDirectory(coursePath: string): Promise<void> {
+  const cacheDir = path.join(coursePath, '.skuilder', 'studio-builds');
+  await fs.mkdir(cacheDir, { recursive: true });
+}
+
+/**
+ * Ensure a specific build directory exists
+ */
+export async function ensureBuildDirectory(coursePath: string, questionsHash: string): Promise<string> {
+  const buildPath = getStudioBuildPath(coursePath, questionsHash);
+  await fs.mkdir(buildPath, { recursive: true });
+  return buildPath;
+}
