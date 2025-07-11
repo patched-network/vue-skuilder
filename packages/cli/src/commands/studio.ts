@@ -631,10 +631,17 @@ async function buildStudioUIWithQuestions(coursePath: string, questionsHash: str
       return await buildDefaultStudioUI(buildPath);
     }
     
-    // TODO: Phase 3 - Implement actual questions integration
-    console.log(chalk.yellow(`   TODO: Questions integration not yet implemented`));
-    console.log(chalk.gray(`   Falling back to default studio-ui for now`));
-    return await buildDefaultStudioUI(buildPath);
+    // Phase 4.1 - Build custom questions library and integrate with studio-ui
+    console.log(chalk.cyan(`   Building custom questions library...`));
+    const customQuestionsData = await buildCustomQuestionsLibrary(coursePath, questionsHash);
+    
+    if (customQuestionsData) {
+      console.log(chalk.cyan(`   Integrating custom questions into studio-ui...`));
+      return await buildStudioUIWithCustomQuestions(buildPath, customQuestionsData);
+    } else {
+      console.log(chalk.yellow(`   Failed to build custom questions, falling back to default studio-ui`));
+      return await buildDefaultStudioUI(buildPath);
+    }
     
   } catch (error) {
     const buildError = createStudioBuildError(
@@ -745,5 +752,209 @@ async function buildDefaultStudioUI(buildPath: string): Promise<string> {
     
     reportStudioBuildError(criticalError);
     throw criticalError;
+  }
+}
+
+/**
+ * Interface for custom questions data
+ */
+interface CustomQuestionsData {
+  coursePath: string;
+  questionsHash: string;
+  libraryPath: string;
+  questionsExport: {
+    courses: any[];
+    questionClasses: any[];
+    dataShapes: any[];
+    views: any[];
+    meta: any;
+  };
+}
+
+/**
+ * Build custom questions library from scaffolded course
+ */
+async function buildCustomQuestionsLibrary(coursePath: string, questionsHash: string): Promise<CustomQuestionsData | null> {
+  try {
+    // Check if this is a scaffolded course with dual build system
+    const packageJsonPath = path.join(coursePath, 'package.json');
+    if (!fs.existsSync(packageJsonPath)) {
+      console.log(chalk.gray(`   No package.json found, skipping custom questions build`));
+      return null;
+    }
+
+    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+    
+    // Check if course has the dual build system (build:lib script)
+    if (!packageJson.scripts || !packageJson.scripts['build:lib']) {
+      console.log(chalk.gray(`   Course does not support custom questions library build`));
+      return null;
+    }
+
+    // Check if course has questions directory with our expected structure
+    const questionsIndexPath = path.join(coursePath, 'src', 'questions', 'index.ts');
+    if (!fs.existsSync(questionsIndexPath)) {
+      console.log(chalk.gray(`   No src/questions/index.ts found, skipping custom questions build`));
+      return null;
+    }
+
+    console.log(chalk.cyan(`   Found scaffolded course with custom questions support`));
+    console.log(chalk.gray(`   Building questions library...`));
+
+    // Build the questions library
+    const { spawn } = await import('child_process');
+    
+    const buildProcess = spawn('npm', ['run', 'build:lib'], {
+      cwd: coursePath,
+      stdio: 'pipe',
+      env: { ...process.env, BUILD_MODE: 'library' }
+    });
+
+    let buildOutput = '';
+    let buildError = '';
+
+    buildProcess.stdout?.on('data', (data) => {
+      buildOutput += data.toString();
+    });
+
+    buildProcess.stderr?.on('data', (data) => {
+      buildError += data.toString();
+    });
+
+    const buildExitCode = await new Promise<number>((resolve) => {
+      buildProcess.on('close', resolve);
+    });
+
+    if (buildExitCode !== 0) {
+      const buildFailError = createStudioBuildError(
+        StudioBuildErrorType.BUILD_FAILURE,
+        'Custom questions library build failed',
+        {
+          context: { coursePath, questionsHash, exitCode: buildExitCode, output: buildOutput, error: buildError },
+          recoverable: true,
+          fallbackAvailable: true
+        }
+      );
+      reportStudioBuildError(buildFailError);
+      return null;
+    }
+
+    console.log(chalk.green(`   ✅ Questions library built successfully`));
+
+    // Check that the library build outputs exist
+    const libraryPath = path.join(coursePath, 'dist-lib');
+    const questionsLibPath = path.join(libraryPath, 'questions.mjs');
+    
+    if (!fs.existsSync(questionsLibPath)) {
+      console.log(chalk.yellow(`   Warning: Expected library output not found at ${questionsLibPath}`));
+      return null;
+    }
+
+    // Import and analyze the questions library
+    try {
+      const questionsModule = await import(questionsLibPath);
+      const questionsExport = questionsModule.allCustomQuestions?.() || questionsModule.default?.();
+
+      if (!questionsExport) {
+        console.log(chalk.yellow(`   Warning: No allCustomQuestions export found in library`));
+        return null;
+      }
+
+      console.log(chalk.green(`   ✅ Loaded custom questions:`));
+      console.log(chalk.gray(`      Courses: ${questionsExport.courses?.length || 0}`));
+      console.log(chalk.gray(`      Question types: ${questionsExport.questionClasses?.length || 0}`));
+      console.log(chalk.gray(`      Data shapes: ${questionsExport.dataShapes?.length || 0}`));
+      console.log(chalk.gray(`      Views: ${questionsExport.views?.length || 0}`));
+
+      return {
+        coursePath,
+        questionsHash,
+        libraryPath,
+        questionsExport
+      };
+
+    } catch (importError) {
+      const importFailError = createStudioBuildError(
+        StudioBuildErrorType.BUILD_FAILURE,
+        'Failed to import custom questions library',
+        {
+          cause: importError instanceof Error ? importError : undefined,
+          context: { coursePath, questionsHash, libraryPath: questionsLibPath },
+          recoverable: true,
+          fallbackAvailable: true
+        }
+      );
+      reportStudioBuildError(importFailError);
+      return null;
+    }
+
+  } catch (error) {
+    const generalError = createStudioBuildError(
+      StudioBuildErrorType.BUILD_FAILURE,
+      'Custom questions library build process failed',
+      {
+        cause: error instanceof Error ? error : undefined,
+        context: { coursePath, questionsHash },
+        recoverable: true,
+        fallbackAvailable: true
+      }
+    );
+    reportStudioBuildError(generalError);
+    return null;
+  }
+}
+
+/**
+ * Build studio-ui with custom questions integrated
+ */
+async function buildStudioUIWithCustomQuestions(buildPath: string, customQuestionsData: CustomQuestionsData): Promise<string> {
+  try {
+    // For now, copy the default studio-ui source and inject custom questions data
+    // TODO: Phase 4.2 - Implement actual Vite build with questions integration
+    console.log(chalk.gray(`   Copying studio-ui source with custom questions configuration...`));
+    
+    const studioSourcePath = path.join(__dirname, '..', 'studio-ui-src');
+    const { copyDirectory } = await import('../utils/template.js');
+    await copyDirectory(studioSourcePath, buildPath);
+
+    // Create a runtime configuration file for custom questions
+    const runtimeConfigPath = path.join(buildPath, 'custom-questions-config.json');
+    const runtimeConfig = {
+      hasCustomQuestions: true,
+      questionsHash: customQuestionsData.questionsHash,
+      coursePath: customQuestionsData.coursePath,
+      libraryPath: customQuestionsData.libraryPath,
+      questionsMetadata: customQuestionsData.questionsExport.meta,
+      dataShapes: customQuestionsData.questionsExport.dataShapes,
+      questionCount: customQuestionsData.questionsExport.questionClasses?.length || 0,
+      viewCount: customQuestionsData.questionsExport.views?.length || 0
+    };
+
+    fs.writeFileSync(runtimeConfigPath, JSON.stringify(runtimeConfig, null, 2));
+    console.log(chalk.gray(`   ✅ Custom questions configuration written to studio-ui`));
+
+    // Copy the questions library to the studio-ui build for runtime access
+    const targetLibPath = path.join(buildPath, 'custom-questions-lib');
+    await copyDirectory(customQuestionsData.libraryPath, targetLibPath);
+    console.log(chalk.gray(`   ✅ Questions library copied to studio-ui build`));
+
+    return buildPath;
+
+  } catch (error) {
+    const integrationError = createStudioBuildError(
+      StudioBuildErrorType.BUILD_FAILURE,
+      'Failed to integrate custom questions into studio-ui',
+      {
+        cause: error instanceof Error ? error : undefined,
+        context: { buildPath, customQuestionsData },
+        recoverable: true,
+        fallbackAvailable: true
+      }
+    );
+    reportStudioBuildError(integrationError);
+    
+    // Fallback to default studio-ui
+    console.log(chalk.yellow(`   Falling back to default studio-ui build`));
+    return await buildDefaultStudioUI(buildPath);
   }
 }

@@ -85,9 +85,12 @@ export async function transformPackageJson(
     }
   }
 
-  // Add missing terser devDependency for build minification
+  // Add missing devDependencies for build system
   if (packageJson.devDependencies && !packageJson.devDependencies['terser']) {
     packageJson.devDependencies['terser'] = '^5.39.0';
+  }
+  if (packageJson.devDependencies && !packageJson.devDependencies['vite-plugin-dts']) {
+    packageJson.devDependencies['vite-plugin-dts'] = '^4.3.0';
   }
 
   // Add CLI as devDependency for all projects
@@ -116,19 +119,34 @@ export async function transformPackageJson(
  * // [ ] This should be revised so that it works from the existing vite.config.ts in standalone-ui. As is, it recreates 95% of the same config.
  */
 export async function createViteConfig(viteConfigPath: string): Promise<void> {
-  // Create a clean vite config for standalone projects
-  const transformedContent = `// packages/standalone-ui/vite.config.ts
-import { defineConfig } from 'vite';
+  // Create dual build config similar to standalone-ui but without workspace dependencies
+  const transformedContent = `import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
+import dts from 'vite-plugin-dts';
+import { resolve } from 'path';
 import { fileURLToPath, URL } from 'node:url';
 
+// Determine build mode from environment variable
+const buildMode = process.env.BUILD_MODE || 'webapp';
+
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [
+    vue(),
+    // Only include dts plugin for library builds
+    ...(buildMode === 'library' 
+      ? [dts({
+          insertTypesEntry: true,
+          include: ['src/questions/**/*.ts', 'src/questions/**/*.vue'],
+          exclude: ['**/*.spec.ts', '**/*.test.ts'],
+          outDir: 'dist-lib',
+        })]
+      : []
+    )
+  ],
   resolve: {
     alias: {
       // Alias for internal src paths
       '@': fileURLToPath(new URL('./src', import.meta.url)),
-
       // Add events alias if needed (often required by dependencies)
       events: 'events',
     },
@@ -147,8 +165,8 @@ export default defineConfig({
   },
   // --- Dependencies optimization ---
   optimizeDeps: {
-    // Help Vite pre-bundle dependencies from published packages
     include: [
+      'events',
       '@vue-skuilder/common-ui',
       '@vue-skuilder/db',
       '@vue-skuilder/common',
@@ -158,14 +176,65 @@ export default defineConfig({
   server: {
     port: 5173, // Use standard Vite port for standalone projects
   },
-  build: {
-    sourcemap: true,
-    target: 'es2020',
-    minify: 'terser',
-    terserOptions: {
-      keep_classnames: true,
-    },
-  },
+  build: buildMode === 'library' 
+    ? {
+        // Library build configuration
+        sourcemap: true,
+        target: 'es2020',
+        minify: 'terser',
+        terserOptions: {
+          keep_classnames: true,
+        },
+        lib: {
+          entry: resolve(__dirname, 'src/questions/index.ts'),
+          name: 'VueSkuilderStandaloneQuestions',
+          fileName: (format) => \`questions.\${format === 'es' ? 'mjs' : 'cjs.js'}\`,
+        },
+        rollupOptions: {
+          // External packages that shouldn't be bundled in library mode
+          external: [
+            'vue',
+            'vue-router', 
+            'vuetify',
+            'pinia',
+            '@vue-skuilder/common',
+            '@vue-skuilder/common-ui',
+            '@vue-skuilder/courses',
+            '@vue-skuilder/db',
+          ],
+          output: {
+            // Global variables for UMD build
+            globals: {
+              'vue': 'Vue',
+              'vue-router': 'VueRouter',
+              'vuetify': 'Vuetify',
+              'pinia': 'Pinia',
+              '@vue-skuilder/common': 'VueSkuilderCommon',
+              '@vue-skuilder/common-ui': 'VueSkuilderCommonUI',
+              '@vue-skuilder/courses': 'VueSkuilderCourses',
+              '@vue-skuilder/db': 'VueSkuilderDB',
+            },
+            exports: 'named',
+            // Preserve CSS in the output bundle
+            assetFileNames: 'assets/[name].[ext]',
+          },
+        },
+        // Output to separate directory for library build
+        outDir: 'dist-lib',
+        // Allow CSS code splitting for component libraries
+        cssCodeSplit: true,
+      }
+    : {
+        // Webapp build configuration (existing)
+        sourcemap: true,
+        target: 'es2020', 
+        minify: 'terser',
+        terserOptions: {
+          keep_classnames: true,
+        },
+        // Standard webapp output directory
+        outDir: 'dist',
+      },
   // Add define block for process polyfills
   define: {
     global: 'window',
