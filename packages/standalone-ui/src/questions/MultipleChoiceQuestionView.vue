@@ -16,7 +16,7 @@
 
 <script setup lang="ts">
 import { ref, PropType } from 'vue';
-import { useViewable, useQuestionView } from '@vue-skuilder/common-ui';
+import { useViewable, useQuestionView } from '@vue-skuilder/courses';
 import { MultipleChoiceQuestion } from './MultipleChoiceQuestion';
 import { ViewData } from '@vue-skuilder/common';
 
