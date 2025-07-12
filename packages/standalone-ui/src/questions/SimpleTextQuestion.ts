@@ -1,11 +1,11 @@
-import { Question, ViewData, Answer } from '@vue-skuilder/courses';
-import { FieldType, DataShape } from '@vue-skuilder/common';
+import { ViewData, Answer, Question } from '@vue-skuilder/courses';
+import { FieldType, DataShape, DataShapeName } from '@vue-skuilder/common';
 import SimpleTextQuestionView from './SimpleTextQuestionView.vue';
 
 export class SimpleTextQuestion extends Question {
   public static dataShapes: DataShape[] = [
     {
-      name: 'SimpleTextQuestion',
+      name: 'SimpleTextQuestion' as DataShapeName,
       fields: [
         { name: 'questionText', type: FieldType.STRING },
         { name: 'correctAnswer', type: FieldType.STRING },
@@ -17,6 +17,7 @@ export class SimpleTextQuestion extends Question {
     { name: 'SimpleTextQuestionView', component: SimpleTextQuestionView },
   ];
 
+  // @ts-expect-error TS6133: Used in Vue template
   private questionText: string;
   private correctAnswer: string;
 

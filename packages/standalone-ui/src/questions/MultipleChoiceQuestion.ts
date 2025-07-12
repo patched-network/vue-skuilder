@@ -1,11 +1,11 @@
-import { Question, ViewData, Answer } from '@vue-skuilder/courses';
-import { FieldType, DataShape } from '@vue-skuilder/common';
+import { ViewData, Answer, Question } from '@vue-skuilder/courses';
+import { FieldType, DataShape, DataShapeName } from '@vue-skuilder/common';
 import MultipleChoiceQuestionView from './MultipleChoiceQuestionView.vue';
 
 export class MultipleChoiceQuestion extends Question {
   public static dataShapes: DataShape[] = [
     {
-      name: 'MultipleChoiceQuestion',
+      name: 'MultipleChoiceQuestion' as DataShapeName,
       fields: [
         { name: 'questionText', type: FieldType.STRING },
         { name: 'options', type: FieldType.STRING }, // Comma-separated string of options
@@ -18,13 +18,15 @@ export class MultipleChoiceQuestion extends Question {
     { name: 'MultipleChoiceQuestionView', component: MultipleChoiceQuestionView },
   ];
 
-  private questionText: string;
+  // @ts-expect-error TS6133: Used in Vue template
+  private _questionText: string;
+  // @ts-expect-error TS6133: Used in Vue template
   private options: string[];
   private correctAnswer: string;
 
   constructor(data: ViewData[]) {
     super(data);
-    this.questionText = data[0].questionText as string;
+    this._questionText = data[0].questionText as string;
     this.options = (data[0].options as string).split(',').map(s => s.trim());
     this.correctAnswer = data[0].correctAnswer as string;
   }

@@ -8,7 +8,7 @@
 
 <script setup lang="ts">
 import { ref, PropType } from 'vue';
-import { useViewable, useQuestionView } from '@vue-skuilder/common-ui';
+import { useViewable, useQuestionView } from '@vue-skuilder/courses';
 import { NumberRangeQuestion } from './NumberRangeQuestion';
 import { ViewData } from '@vue-skuilder/common';
 

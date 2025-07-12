@@ -1,11 +1,11 @@
-import { Question, ViewData, Answer } from '@vue-skuilder/courses';
-import { FieldType, DataShape } from '@vue-skuilder/common';
+import { ViewData, Answer, Question } from '@vue-skuilder/courses';
+import { FieldType, DataShape, DataShapeName } from '@vue-skuilder/common';
 import NumberRangeQuestionView from './NumberRangeQuestionView.vue';
 
 export class NumberRangeQuestion extends Question {
   public static dataShapes: DataShape[] = [
     {
-      name: 'NumberRangeQuestion',
+      name: 'NumberRangeQuestion' as DataShapeName,
       fields: [
         { name: 'questionText', type: FieldType.STRING },
         { name: 'min', type: FieldType.NUMBER },
@@ -18,6 +18,7 @@ export class NumberRangeQuestion extends Question {
     { name: 'NumberRangeQuestionView', component: NumberRangeQuestionView },
   ];
 
+  // @ts-expect-error TS6133: Used in Vue template
   private questionText: string;
   private min: number;
   private max: number;
