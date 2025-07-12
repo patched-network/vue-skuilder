@@ -3,3 +3,6 @@ public/static-courses
 # dist folders
 dist
 dist-lib
+
+# .skuilder project metadata folders. created by skuilder cli
+.skuilder
