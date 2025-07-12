@@ -53,15 +53,9 @@ export default defineConfig({
         },
         rollupOptions: {
           // External packages that shouldn't be bundled in library mode
+          // For studio integration, we bundle vue-skuilder packages to avoid npm resolution issues
           external: [
-            'vue',
-            'vue-router', 
-            'vuetify',
-            'pinia',
-            '@vue-skuilder/common',
-            '@vue-skuilder/common-ui',
-            '@vue-skuilder/courses',
-            '@vue-skuilder/db',
+            // Bundle everything for studio integration - no externals
           ],
           output: {
             // Global variables for UMD build
@@ -70,10 +64,11 @@ export default defineConfig({
               'vue-router': 'VueRouter',
               'vuetify': 'Vuetify',
               'pinia': 'Pinia',
-              '@vue-skuilder/common': 'VueSkuilderCommon',
-              '@vue-skuilder/common-ui': 'VueSkuilderCommonUI',
-              '@vue-skuilder/courses': 'VueSkuilderCourses',
-              '@vue-skuilder/db': 'VueSkuilderDB',
+              // Remove globals for bundled packages
+              // '@vue-skuilder/common': 'VueSkuilderCommon',
+              // '@vue-skuilder/common-ui': 'VueSkuilderCommonUI',
+              // '@vue-skuilder/courses': 'VueSkuilderCourses',
+              // '@vue-skuilder/db': 'VueSkuilderDB',
             },
             exports: 'named',
             // Preserve CSS in the output bundle
