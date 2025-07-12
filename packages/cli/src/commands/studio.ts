@@ -1003,7 +1003,7 @@ async function buildStudioUIWithCustomQuestions(
       hasCustomQuestions: true,
       questionsHash: customQuestionsData.questionsHash,
       packageName: customQuestionsData.packageName,
-      importPath: `${customQuestionsData.packageName}/questions`,
+      importPath: './questions.mjs',
     };
 
     fs.writeFileSync(runtimeConfigPath, JSON.stringify(runtimeConfig, null, 2));
@@ -1017,7 +1017,7 @@ async function buildStudioUIWithCustomQuestions(
     console.log(chalk.gray(`   Running Vite build process...`));
     await runViteBuild(buildPath);
 
-    // Step 6: Copy config file to built dist directory
+    // Step 6: Copy config file and questions module to built dist directory
     const distPath = path.join(buildPath, 'dist');
     const sourceConfigPath = path.join(buildPath, 'custom-questions-config.json');
     const distConfigPath = path.join(distPath, 'custom-questions-config.json');
@@ -1025,6 +1025,17 @@ async function buildStudioUIWithCustomQuestions(
     if (fs.existsSync(sourceConfigPath)) {
       fs.copyFileSync(sourceConfigPath, distConfigPath);
       console.log(chalk.gray(`   Custom questions config copied to dist directory`));
+    }
+
+    // Copy the built questions.mjs file to dist for direct import
+    const nodeModulesQuestionsPath = path.join(buildPath, 'node_modules', customQuestionsData.packageName, 'questions.mjs');
+    const distQuestionsPath = path.join(distPath, 'questions.mjs');
+    
+    if (fs.existsSync(nodeModulesQuestionsPath)) {
+      fs.copyFileSync(nodeModulesQuestionsPath, distQuestionsPath);
+      console.log(chalk.gray(`   Built questions.mjs copied to dist directory`));
+    } else {
+      console.log(chalk.yellow(`   Warning: questions.mjs not found at ${nodeModulesQuestionsPath}`));
     }
 
     // Step 7: Verify build output exists
