@@ -75,11 +75,11 @@ export async function transformPackageJson(
   packageJson.description = `Skuilder course application: ${projectName}`;
   packageJson.version = '1.0.0';
 
-  // Transform workspace dependencies to published versions
+  // Transform workspace and file dependencies to published versions
   if (packageJson.dependencies) {
     for (const [depName, version] of Object.entries(packageJson.dependencies)) {
-      if (typeof version === 'string' && version.startsWith('workspace:')) {
-        // Replace workspace references with CLI's version
+      if (typeof version === 'string' && (version.startsWith('workspace:') || version.startsWith('file:'))) {
+        // Replace workspace and file references with CLI's version
         packageJson.dependencies[depName] = `^${cliVersion}`;
       }
     }
