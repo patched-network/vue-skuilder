@@ -353,7 +353,12 @@ async function startStudioUIServer(
   unpackResult: UnpackResult,
   studioPath: string
 ): Promise<number> {
-  const studioSourcePath = studioPath;
+  // Serve from built dist directory if it exists, otherwise fallback to source
+  const distPath = path.join(studioPath, 'dist');
+  const studioSourcePath = fs.existsSync(distPath) ? distPath : studioPath;
+  
+  console.log(chalk.gray(`   Serving studio-ui from: ${studioSourcePath}`));
+  
   const serve = serveStatic(studioSourcePath, {
     index: ['index.html'],
     setHeaders: (res, path) => {
@@ -735,11 +740,9 @@ async function buildDefaultStudioUI(buildPath: string): Promise<string> {
       throw sourceError;
     }
 
-    // For now, just copy the source to the build path as a placeholder
-    // TODO: Phase 3 - Implement actual Vite build process
+    // Copy studio-ui source files to build directory
     console.log(chalk.gray(`   Copying studio-ui source to build directory...`));
 
-    // Copy all studio-ui source files
     const { copyDirectory } = await import('../utils/template.js');
     await withStudioBuildErrorHandling(
       () => copyDirectory(studioSourcePath, buildPath),
@@ -747,23 +750,37 @@ async function buildDefaultStudioUI(buildPath: string): Promise<string> {
       { studioSourcePath, buildPath }
     );
 
-    // Verify essential files were copied
-    const indexPath = path.join(buildPath, 'index.html');
+    // Transform workspace dependencies to published versions
+    console.log(chalk.gray(`   Transforming workspace dependencies...`));
+    const studioPackageJsonPath = path.join(buildPath, 'package.json');
+    await transformPackageJsonForStudioBuild(studioPackageJsonPath);
+
+    // Fix Vite config to use npm packages instead of monorepo paths
+    console.log(chalk.gray(`   Updating Vite configuration for standalone build...`));
+    await fixViteConfigForStandaloneBuild(buildPath);
+
+    // Run Vite build process
+    console.log(chalk.gray(`   Running Vite build process...`));
+    await runViteBuild(buildPath);
+
+    // Verify build output exists
+    const distPath = path.join(buildPath, 'dist');
+    const indexPath = path.join(distPath, 'index.html');
     if (!fs.existsSync(indexPath)) {
-      const copyError = createStudioBuildError(
-        StudioBuildErrorType.COPY_FAILURE,
-        `Essential file missing after copy: ${indexPath}`,
+      const buildError = createStudioBuildError(
+        StudioBuildErrorType.BUILD_FAILURE,
+        `Build output missing: ${indexPath}`,
         {
-          context: { studioSourcePath, buildPath, indexPath },
+          context: { buildPath, distPath, indexPath },
           recoverable: true,
           fallbackAvailable: true,
         }
       );
-      reportStudioBuildError(copyError);
-      throw copyError;
+      reportStudioBuildError(buildError);
+      throw buildError;
     }
 
-    console.log(chalk.gray(`   Default studio-ui ready (source files copied)`));
+    console.log(chalk.gray(`   Default studio-ui built successfully`));
     return buildPath;
   } catch (error) {
     // Ultimate fallback: serve directly from embedded source
@@ -926,13 +943,23 @@ async function buildStudioUIWithCustomQuestions(
   customQuestionsData: CustomQuestionsData
 ): Promise<string> {
   try {
-    console.log(chalk.gray(`   Setting up studio-ui with npm-installed custom questions...`));
+    console.log(chalk.gray(`   Setting up studio-ui with custom questions...`));
 
+    // Step 1: Copy studio-ui source files
     const studioSourcePath = path.join(__dirname, '..', 'studio-ui-src');
     const { copyDirectory } = await import('../utils/template.js');
     await copyDirectory(studioSourcePath, buildPath);
 
-    // Step 1: Copy bundled questions library directly to node_modules
+    // Step 2: Transform workspace dependencies to published versions
+    console.log(chalk.gray(`   Transforming workspace dependencies...`));
+    const studioPackageJsonPath = path.join(buildPath, 'package.json');
+    await transformPackageJsonForStudioBuild(studioPackageJsonPath);
+
+    // Step 2.5: Fix Vite config to use npm packages instead of monorepo paths
+    console.log(chalk.gray(`   Updating Vite configuration for standalone build...`));
+    await fixViteConfigForStandaloneBuild(buildPath);
+
+    // Step 3: Install custom questions package
     console.log(
       chalk.cyan(
         `   Installing bundled course package: ${customQuestionsData.packageName} from ${customQuestionsData.coursePath}`
@@ -970,7 +997,7 @@ async function buildStudioUIWithCustomQuestions(
 
     console.log(chalk.green(`   ✅ Bundled package installed successfully`));
 
-    // Create a runtime configuration file for studio-ui to know about the installed package
+    // Step 4: Create runtime configuration for custom questions
     const runtimeConfigPath = path.join(buildPath, 'custom-questions-config.json');
     const runtimeConfig = {
       hasCustomQuestions: true,
@@ -985,6 +1012,19 @@ async function buildStudioUIWithCustomQuestions(
         `   ✅ Custom questions configuration written for package: ${customQuestionsData.packageName}`
       )
     );
+
+    // Step 5: Run Vite build process
+    console.log(chalk.gray(`   Running Vite build process...`));
+    await runViteBuild(buildPath);
+
+    // Step 6: Verify build output exists
+    const distPath = path.join(buildPath, 'dist');
+    const indexPath = path.join(distPath, 'index.html');
+    if (!fs.existsSync(indexPath)) {
+      throw new Error(`Build output missing: ${indexPath}`);
+    }
+
+    console.log(chalk.gray(`   Studio-ui with custom questions built successfully`));
 
     return buildPath;
   } catch (error) {
@@ -1005,5 +1045,139 @@ async function buildStudioUIWithCustomQuestions(
     process.exit(1);
     return await buildDefaultStudioUI(buildPath);
   }
+}
+
+/**
+ * Transform package.json to replace workspace and file dependencies with published versions
+ */
+async function transformPackageJsonForStudioBuild(packageJsonPath: string): Promise<void> {
+  const content = fs.readFileSync(packageJsonPath, 'utf-8');
+  const packageJson = JSON.parse(content);
+
+  // Version mappings for vue-skuilder packages
+  const vueSkuilderPackageVersions: Record<string, string> = {
+    '@vue-skuilder/common': '0.1.7',
+    '@vue-skuilder/common-ui': '0.1.7',
+    '@vue-skuilder/courses': '0.1.7',
+    '@vue-skuilder/db': '0.1.7',
+    '@vue-skuilder/edit-ui': '0.1.7',
+    '@vue-skuilder/express': '0.1.7',
+    '@vue-skuilder/cli': '0.1.7',
+  };
+
+  // Transform dependencies
+  if (packageJson.dependencies) {
+    for (const [depName, version] of Object.entries(packageJson.dependencies)) {
+      if (
+        typeof version === 'string' &&
+        (version.startsWith('workspace:') || version.startsWith('file:'))
+      ) {
+        const publishedVersion = vueSkuilderPackageVersions[depName];
+        if (publishedVersion) {
+          packageJson.dependencies[depName] = `^${publishedVersion}`;
+          console.log(chalk.gray(`     Transformed ${depName}: ${version} → ^${publishedVersion}`));
+        }
+      }
+    }
+  }
+
+  // Transform devDependencies
+  if (packageJson.devDependencies) {
+    for (const [depName, version] of Object.entries(packageJson.devDependencies)) {
+      if (
+        typeof version === 'string' &&
+        (version.startsWith('workspace:') || version.startsWith('file:'))
+      ) {
+        const publishedVersion = vueSkuilderPackageVersions[depName];
+        if (publishedVersion) {
+          packageJson.devDependencies[depName] = `^${publishedVersion}`;
+          console.log(chalk.gray(`     Transformed ${depName}: ${version} → ^${publishedVersion}`));
+        }
+      }
+    }
+  }
+
+  fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
+}
+
+/**
+ * Run Vite build process in the specified directory
+ */
+async function runViteBuild(buildPath: string): Promise<void> {
+  const { spawn } = await import('child_process');
+
+  return new Promise((resolve, reject) => {
+    const buildProcess = spawn('npm', ['run', 'build'], {
+      cwd: buildPath,
+      stdio: 'pipe',
+    });
+
+    let buildOutput = '';
+    let buildError = '';
+
+    buildProcess.stdout?.on('data', (data) => {
+      buildOutput += data.toString();
+    });
+
+    buildProcess.stderr?.on('data', (data) => {
+      buildError += data.toString();
+    });
+
+    buildProcess.on('close', (code) => {
+      if (code === 0) {
+        console.log(chalk.gray(`   Vite build completed successfully`));
+        resolve();
+      } else {
+        console.log(chalk.yellow(`   Vite build failed with exit code ${code}`));
+        console.log(chalk.yellow(`   Build stdout: ${buildOutput}`));
+        console.log(chalk.yellow(`   Build stderr: ${buildError}`));
+        reject(new Error(`Vite build failed with exit code ${code}: ${buildError}`));
+      }
+    });
+
+    buildProcess.on('error', (error) => {
+      reject(new Error(`Failed to start Vite build process: ${error.message}`));
+    });
+  });
+}
+
+/**
+ * Fix Vite configuration to work in standalone build environment
+ */
+async function fixViteConfigForStandaloneBuild(buildPath: string): Promise<void> {
+  const viteConfigPath = path.join(buildPath, 'vite.config.ts');
+  
+  if (!fs.existsSync(viteConfigPath)) {
+    console.log(chalk.yellow(`   Warning: vite.config.ts not found at ${viteConfigPath}`));
+    return;
+  }
+
+  // Create a simplified vite config that uses standard npm resolution
+  const standaloneViteConfig = `import { defineConfig } from 'vite';
+import vue from '@vitejs/plugin-vue';
+
+export default defineConfig({
+  plugins: [vue()],
+  server: {
+    port: 7173,
+    host: '0.0.0.0'
+  },
+  build: {
+    target: 'es2020',
+    outDir: 'dist',
+    sourcemap: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vue: ['vue', 'vue-router', 'pinia'],
+          vuetify: ['vuetify']
+        }
+      }
+    }
+  }
+});`;
+
+  fs.writeFileSync(viteConfigPath, standaloneViteConfig);
+  console.log(chalk.gray(`   Vite config replaced with standalone version`));
 }
 
