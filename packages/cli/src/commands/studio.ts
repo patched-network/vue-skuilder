@@ -1017,8 +1017,17 @@ async function buildStudioUIWithCustomQuestions(
     console.log(chalk.gray(`   Running Vite build process...`));
     await runViteBuild(buildPath);
 
-    // Step 6: Verify build output exists
+    // Step 6: Copy config file to built dist directory
     const distPath = path.join(buildPath, 'dist');
+    const sourceConfigPath = path.join(buildPath, 'custom-questions-config.json');
+    const distConfigPath = path.join(distPath, 'custom-questions-config.json');
+    
+    if (fs.existsSync(sourceConfigPath)) {
+      fs.copyFileSync(sourceConfigPath, distConfigPath);
+      console.log(chalk.gray(`   Custom questions config copied to dist directory`));
+    }
+
+    // Step 7: Verify build output exists
     const indexPath = path.join(distPath, 'index.html');
     if (!fs.existsSync(indexPath)) {
       throw new Error(`Build output missing: ${indexPath}`);
