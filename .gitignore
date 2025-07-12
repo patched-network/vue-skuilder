@@ -44,3 +44,6 @@ vue/Caddyfile
 
 # specific pattern to place tmp files that should be ignored
 ignore
+
+# node pouchdb userdbs that get popped by `db` package sometimes. nuisance.
+userdb-Guest
