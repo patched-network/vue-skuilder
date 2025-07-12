@@ -1027,16 +1027,22 @@ async function buildStudioUIWithCustomQuestions(
       console.log(chalk.gray(`   Custom questions config copied to dist directory`));
     }
 
-    // Copy the built questions.mjs file to dist for direct import
+    // Copy the built questions.mjs file to dist/assets for proper serving
     const nodeModulesQuestionsPath = path.join(buildPath, 'node_modules', customQuestionsData.packageName, 'questions.mjs');
-    const distQuestionsPath = path.join(distPath, 'questions.mjs');
+    const distAssetsPath = path.join(distPath, 'assets');
+    const distQuestionsPath = path.join(distAssetsPath, 'questions.mjs');
     
     if (fs.existsSync(nodeModulesQuestionsPath)) {
+      // Ensure assets directory exists
+      if (!fs.existsSync(distAssetsPath)) {
+        fs.mkdirSync(distAssetsPath, { recursive: true });
+      }
       fs.copyFileSync(nodeModulesQuestionsPath, distQuestionsPath);
-      console.log(chalk.gray(`   Built questions.mjs copied to dist directory`));
+      console.log(chalk.gray(`   Built questions.mjs copied to dist/assets directory`));
     } else {
       console.log(chalk.yellow(`   Warning: questions.mjs not found at ${nodeModulesQuestionsPath}`));
     }
+
 
     // Step 7: Verify build output exists
     const indexPath = path.join(distPath, 'index.html');
@@ -1173,6 +1179,7 @@ async function fixViteConfigForStandaloneBuild(buildPath: string): Promise<void>
   }
 
   // Create a simplified vite config that uses standard npm resolution
+  // For custom questions builds, we need Vue bundled in the questions.mjs
   const standaloneViteConfig = `import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 
@@ -1187,6 +1194,8 @@ export default defineConfig({
     outDir: 'dist',
     sourcemap: true,
     rollupOptions: {
+      // Don't externalize Vue for custom questions - bundle it in
+      external: [],
       output: {
         manualChunks: {
           vue: ['vue', 'vue-router', 'pinia'],
