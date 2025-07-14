@@ -54,7 +54,7 @@
         "@types/serve-static": "^1.15.0",
         "@vue-skuilder/express": "workspace:*",
         "@vue-skuilder/studio-ui": "workspace:*",
-        "typescript": "~5.7.2"
+        "typescript": "~5.8.3"
     },
     "engines": {
         "node": ">=18.0.0"
