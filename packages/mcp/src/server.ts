@@ -1,6 +1,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import type { CourseDBInterface } from '@vue-skuilder/db';
+import { handleCourseConfigResource, RESOURCE_PATTERNS } from './resources/index.js';
 
 export interface MCPServerOptions {
   enableSourceLinking?: boolean;
@@ -26,9 +27,27 @@ export class MCPServer {
   }
 
   private setupCapabilities(): void {
-    // Basic capabilities - will be expanded in later phases
-    // Resources, tools, and prompts will be registered here
-    
+    // Register course://config resource
+    this.mcpServer.registerResource(
+      'course-config',
+      RESOURCE_PATTERNS.COURSE_CONFIG,
+      {
+        title: 'Course Configuration',
+        description: 'Course configuration with metadata and ELO statistics',
+        mimeType: 'application/json'
+      },
+      async (uri) => {
+        const result = await handleCourseConfigResource(this.courseDB);
+        return {
+          contents: [{
+            uri: uri.href,
+            text: JSON.stringify(result, null, 2),
+            mimeType: 'application/json'
+          }]
+        };
+      }
+    );
+
     // Use options to configure server capabilities
     if (this.options.enableSourceLinking) {
       // Will configure source linking when implemented
