@@ -72,10 +72,17 @@
 - Input schema: `datashape` (string), `data` (object), optional `tags`, `elo`, `sourceRef`
 
 ### 1.5 End-to-End Testing
-- [ ] Create local development example script
-- [ ] Test with hardcoded CourseDBInterface instance
-- [ ] Verify MCP protocol compliance with Claude Desktop
+- [x] Create local development example script
+- [x] Test with hardcoded CourseDBInterface instance
+- [x] Verify MCP protocol compliance with Claude Code
 - [ ] Basic integration smoke tests
+
+**Notes:**
+- ✅ **TESTED & WORKING** with Claude Code MCP integration!
+- Resource `course://config` discoverable and readable
+- Real course data (Go Programming) exposed correctly
+- DataShapes and ELO stats working as expected
+- Ready to test `create_card` tool next
 
 ## Phase 2: Core Resources & Tools
 
