@@ -12,10 +12,11 @@
     "scripts": {
         "build": "tsup",
         "dev": "yarn build && yarn inspector",
-        "inspector": "npx @modelcontextprotocol/inspector node dist/index.js",
-        "test:cli": "npx @modelcontextprotocol/inspector --cli node dist/index.js",
+        "inspector": "npx @modelcontextprotocol/inspector node dist/examples/local-dev.mjs",
+        "test:cli": "npx @modelcontextprotocol/inspector --cli node dist/examples/local-dev.mjs",
         "test:resources": "yarn test:cli --method resources/list",
-        "test:tools": "yarn test:cli --method tools/list"
+        "test:tools": "yarn test:cli --method tools/list",
+        "server": "node dist/examples/local-dev.mjs"
     },
     "dependencies": {
         "@modelcontextprotocol/sdk": "^1.15.1",
