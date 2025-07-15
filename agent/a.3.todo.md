@@ -3,19 +3,26 @@
 ## Phase 1: Foundation (MVP)
 
 ### 1.1 Package Setup
-- [ ] Create `packages/mcp/` directory structure
-- [ ] Setup `package.json` with dependencies (@modelcontextprotocol/sdk, @vue-skuilder/db, @vue-skuilder/common, zod)
-- [ ] Add `@modelcontextprotocol/inspector` as devDependency for testing
-- [ ] Add npm scripts for inspector integration:
-  - [ ] `dev`: Build and run with Inspector UI
-  - [ ] `inspector`: Launch Inspector UI with built server
-  - [ ] `test:cli`: Run Inspector in CLI mode
-  - [ ] `test:resources`: Test resources list via CLI
-  - [ ] `test:tools`: Test tools list via CLI
-- [ ] Configure `tsconfig.json` following monorepo patterns
-- [ ] Setup `tsup` build configuration for dual exports (CommonJS/ESM)
-- [ ] Create basic `CLAUDE.md` documentation
+- [x] Create `packages/mcp/` directory structure
+- [x] Setup `package.json` with dependencies (@modelcontextprotocol/sdk, @vue-skuilder/db, @vue-skuilder/common, zod)
+- [x] Add `@modelcontextprotocol/inspector` as devDependency for testing
+- [x] Add npm scripts for inspector integration:
+  - [x] `dev`: Build and run with Inspector UI
+  - [x] `inspector`: Launch Inspector UI with built server
+  - [x] `test:cli`: Run Inspector in CLI mode
+  - [x] `test:resources`: Test resources list via CLI
+  - [x] `test:tools`: Test tools list via CLI
+- [x] Configure `tsconfig.json` following monorepo patterns
+- [x] Setup `tsup` build configuration for dual exports (CommonJS/ESM)
+- [x] Create basic `CLAUDE.md` documentation
 - [ ] Add package to root workspace and build pipeline
+
+**Notes:** 
+- `tsconfig.base.json` is perfect - ES2022 target, strict mode, path aliases included
+- Added `@mcp/*` alias for internal imports
+- Inspector scripts ready for immediate testing workflow
+- **Dependency versions:** MCP SDK v1.15.1, Inspector v0.16.1, Zod v3.22.0
+- **Zod v3 decision:** Staying with v3 for stable API (v4 has breaking changes, unclear fluency)
 
 ### 1.2 Core Server Implementation
 - [ ] Implement `MCPServer` class with `CourseDBInterface` constructor injection
