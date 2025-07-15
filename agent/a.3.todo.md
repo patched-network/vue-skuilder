@@ -55,13 +55,21 @@
 - Local dev example working with CouchDB connection
 
 ### 1.4 Basic Tools
-- [ ] Implement `create_card` tool
-  - [ ] Accept DataShapeName, data, optional ELO
-  - [ ] Validate against course DataShapes
-  - [ ] Create card via CourseDBInterface
-  - [ ] Return created card ID and initial ELO
-- [ ] Create tools registry and routing system
-- [ ] Add tool input/output validation
+- [x] Implement `create_card` tool
+  - [x] Accept DataShapeName, data, optional ELO
+  - [x] Validate against course DataShapes
+  - [x] Create card via CourseDBInterface
+  - [x] Return created card ID and initial ELO
+- [x] Create tools registry and routing system
+- [x] Add tool input/output validation
+
+**Notes:**
+- ✅ Successful build with `create_card` tool registered
+- Uses proper CourseElo structure with `toCourseElo()` helper
+- Validates datashape against available course DataShapes
+- DataLayerResult API: `result.status` and `result.id` 
+- Tool discoverable via Inspector at `create_card`
+- Input schema: `datashape` (string), `data` (object), optional `tags`, `elo`, `sourceRef`
 
 ### 1.5 End-to-End Testing
 - [ ] Create local development example script

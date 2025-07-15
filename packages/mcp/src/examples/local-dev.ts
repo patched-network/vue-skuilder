@@ -39,6 +39,7 @@ async function main() {
 
     console.error('MCP Server started successfully!');
     console.error('Resources available: course://config');
+    console.error('Tools available: create_card');
   } catch (error) {
     console.error('Failed to start MCP server:', error);
     process.exit(1);

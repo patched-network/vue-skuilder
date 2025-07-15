@@ -2,6 +2,9 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import type { CourseDBInterface } from '@vue-skuilder/db';
 import { handleCourseConfigResource, RESOURCE_PATTERNS } from './resources/index.js';
+import { handleCreateCard, TOOL_PATTERNS } from './tools/index.js';
+import { type CreateCardInput } from './types/tools.js';
+import { z } from 'zod';
 
 export interface MCPServerOptions {
   enableSourceLinking?: boolean;
@@ -43,6 +46,31 @@ export class MCPServer {
             uri: uri.href,
             text: JSON.stringify(result, null, 2),
             mimeType: 'application/json'
+          }]
+        };
+      }
+    );
+
+    // Register create_card tool
+    this.mcpServer.registerTool(
+      TOOL_PATTERNS.CREATE_CARD,
+      {
+        title: 'Create Card',
+        description: 'Create a new course card with specified datashape and content',
+        inputSchema: {
+          datashape: z.string(),
+          data: z.any(),
+          tags: z.array(z.string()).optional(),
+          elo: z.number().optional(),
+          sourceRef: z.string().optional()
+        }
+      },
+      async (input) => {
+        const result = await handleCreateCard(this.courseDB, input as CreateCardInput);
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify(result, null, 2)
           }]
         };
       }
