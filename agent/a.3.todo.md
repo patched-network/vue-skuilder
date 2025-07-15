@@ -25,10 +25,16 @@
 - **Zod v3 decision:** Staying with v3 for stable API (v4 has breaking changes, unclear fluency)
 
 ### 1.2 Core Server Implementation
-- [ ] Implement `MCPServer` class with `CourseDBInterface` constructor injection
-- [ ] Setup MCP server initialization and transport handling
-- [ ] Create basic error handling and logging
-- [ ] Implement graceful startup/shutdown methods
+- [x] Implement `MCPServer` class with `CourseDBInterface` constructor injection
+- [x] Setup MCP server initialization and transport handling
+- [x] Create basic error handling and logging
+- [x] Implement graceful startup/shutdown methods
+
+**Notes:**
+- ✅ Successful `yarn build` with dual CJS/ESM exports
+- Fixed package.json exports order (types first) to resolve tsup warning
+- Basic server structure ready for Phase 1.3 resource implementation
+- Options pattern in place for future configuration (source linking, ELO calibration, etc.)
 
 ### 1.3 Basic Resources
 - [ ] Implement `course://config` resource
