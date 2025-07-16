@@ -10,7 +10,7 @@ on:
       - 'yarn.lock'
 
 jobs:
-  build-express-app:
+  build-and-test-mcp:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
