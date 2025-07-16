@@ -1,0 +1,56 @@
+name: ci-mcp-sanity
+on:
+  pull_request:
+    paths:
+      - 'packages/mcp/**'
+      - 'packages/common/**' # Added common since it's a dependency
+      - 'packages/db/**' # Added common since it's a dependency
+      - '.github/workflows/ci-mcp-sanity.yml'
+      - 'package.json'
+      - 'yarn.lock'
+
+jobs:
+  build-express-app:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Start CouchDB
+        uses: iamssen/couchdb-github-action@master
+        with:
+          couchdb-version: 2.3.1 # match production version
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'yarn'
+
+      - name: Install Yarn
+        run: corepack enable
+
+      - name: Install dependencies
+        run: yarn
+
+      - name: Prepare testdatabase & build library packgaes
+        run: yarn setup
+
+      - name: run test database
+        run: |
+          yarn couchdb:start
+
+      - name: Build mcp package
+        run: yarn workspace @vue-skuilder/mcp build
+
+      - name: list resources
+        run: |
+          yarn workspace @vue-skuilder/mcp test:resources
+
+      - name: list tools
+        run: |
+          yarn workspace @vue-skuilder/mcp test:resources
+
+      - name: list prompts
+        run: |
+          yarn workspace @vue-skuilder/mcp test:prompts

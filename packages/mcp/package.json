@@ -16,6 +16,7 @@
         "test:cli": "npx @modelcontextprotocol/inspector --cli node dist/examples/local-dev.mjs",
         "test:resources": "yarn test:cli --method resources/list",
         "test:tools": "yarn test:cli --method tools/list",
+        "test:prompts": "yarn test:cli --method prompts/list",
         "server": "node dist/examples/local-dev.mjs"
     },
     "dependencies": {
