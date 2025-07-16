@@ -18,8 +18,19 @@ import {
   handleTagsDistributionResource,
   RESOURCE_PATTERNS 
 } from './resources/index.js';
-import { handleCreateCard, TOOL_PATTERNS } from './tools/index.js';
-import { type CreateCardInput } from './types/tools.js';
+import { 
+  handleCreateCard, 
+  handleUpdateCard,
+  handleTagCard,
+  handleDeleteCard,
+  TOOL_PATTERNS 
+} from './tools/index.js';
+import { 
+  type CreateCardInput,
+  type UpdateCardInput,
+  type TagCardInput,
+  type DeleteCardInput
+} from './types/tools.js';
 import { z } from 'zod';
 
 export interface MCPServerOptions {
@@ -378,6 +389,78 @@ export class MCPServer {
       },
       async (input) => {
         const result = await handleCreateCard(this.courseDB, input as CreateCardInput);
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify(result, null, 2)
+          }]
+        };
+      }
+    );
+
+    // Register update_card tool
+    this.mcpServer.registerTool(
+      TOOL_PATTERNS.UPDATE_CARD,
+      {
+        title: 'Update Card',
+        description: 'Update an existing course card (data, tags, ELO, sourceRef)',
+        inputSchema: {
+          cardId: z.string(),
+          data: z.any().optional(),
+          tags: z.array(z.string()).optional(),
+          elo: z.number().optional(),
+          sourceRef: z.string().optional()
+        }
+      },
+      async (input) => {
+        const result = await handleUpdateCard(this.courseDB, input as UpdateCardInput);
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify(result, null, 2)
+          }]
+        };
+      }
+    );
+
+    // Register tag_card tool
+    this.mcpServer.registerTool(
+      TOOL_PATTERNS.TAG_CARD,
+      {
+        title: 'Tag Card',
+        description: 'Add or remove tags from a course card with optional ELO update',
+        inputSchema: {
+          cardId: z.string(),
+          action: z.enum(['add', 'remove']),
+          tags: z.array(z.string()),
+          updateELO: z.boolean().optional().default(false)
+        }
+      },
+      async (input) => {
+        const result = await handleTagCard(this.courseDB, input as TagCardInput);
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify(result, null, 2)
+          }]
+        };
+      }
+    );
+
+    // Register delete_card tool
+    this.mcpServer.registerTool(
+      TOOL_PATTERNS.DELETE_CARD,
+      {
+        title: 'Delete Card',
+        description: 'Safely delete a course card with confirmation requirement',
+        inputSchema: {
+          cardId: z.string(),
+          confirm: z.boolean().default(false),
+          reason: z.string().optional()
+        }
+      },
+      async (input) => {
+        const result = await handleDeleteCard(this.courseDB, input as DeleteCardInput);
         return {
           content: [{
             type: 'text',

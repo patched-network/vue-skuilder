@@ -1,52 +1,58 @@
-import { z } from 'zod';
 import type { CourseDBInterface } from '@vue-skuilder/db';
 import { CreateCardInputSchema, type CreateCardInput, type CreateCardOutput } from '../types/tools.js';
 import { toCourseElo } from '@vue-skuilder/common';
+import { MCP_AGENT_AUTHOR, handleToolError, logToolStart, logToolSuccess, logToolWarning } from '../utils/index.js';
 
 export async function handleCreateCard(
   courseDB: CourseDBInterface,
   input: CreateCardInput
 ): Promise<CreateCardOutput> {
+  const TOOL_NAME = 'create_card';
+  
   try {
-    // Validate input
+    // Validate input and log start
     const validatedInput = CreateCardInputSchema.parse(input);
+    logToolStart(TOOL_NAME, validatedInput);
     
     // Get course config to validate datashape
     const courseConfig = await courseDB.getCourseConfig();
     const availableDataShapes = courseConfig.dataShapes.map(ds => ds.name);
     
     if (!availableDataShapes.includes(validatedInput.datashape)) {
-      throw new Error(`Invalid datashape: ${validatedInput.datashape}. Available: ${availableDataShapes.join(', ')}`);
+      const errorMsg = `Invalid datashape: ${validatedInput.datashape}. Available: ${availableDataShapes.join(', ')}`;
+      logToolWarning(TOOL_NAME, errorMsg);
+      throw new Error(errorMsg);
     }
     
     // Create the card via courseDB
     const result = await courseDB.addNote(
-      courseConfig.courseID!, // Use the course ID from config
-      { name: validatedInput.datashape as any, fields: [] }, // Basic DataShape structure
+      courseConfig.courseID!,
+      { name: validatedInput.datashape as any, fields: [] },
       validatedInput.data,
-      'mcp-agent', // Author - could be configurable
+      MCP_AGENT_AUTHOR,
       validatedInput.tags || [],
       undefined, // No uploads for now
       validatedInput.elo ? toCourseElo(validatedInput.elo) : undefined
     );
     
     if (result.status !== 'ok') {
-      throw new Error(`Failed to create card: ${result.message || 'Unknown error'}`);
+      const errorMsg = `Failed to create card: ${result.message || 'Unknown error'}`;
+      throw new Error(errorMsg);
     }
     
     // Extract initial ELO from result or use default
-    const initialElo = validatedInput.elo || 1500; // Default ELO
+    const initialElo = validatedInput.elo || 1500;
     
-    return {
+    const output = {
       cardId: result.id || 'unknown',
       initialElo,
       created: true
     };
     
+    logToolSuccess(TOOL_NAME, output);
+    return output;
+    
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      throw new Error(`Invalid input: ${error.errors.map(e => e.message).join(', ')}`);
-    }
-    throw error;
+    handleToolError(error, TOOL_NAME);
   }
 }
