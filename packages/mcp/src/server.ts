@@ -64,7 +64,7 @@ export class MCPServer {
   private setupCapabilities(): void {
     // Register course://config resource
     this.mcpServer.registerResource(
-      'course-config',
+      RESOURCE_PATTERNS.COURSE_CONFIG,
       RESOURCE_PATTERNS.COURSE_CONFIG,
       {
         title: 'Course Configuration',
@@ -87,7 +87,7 @@ export class MCPServer {
 
     // Register cards://all resource
     this.mcpServer.registerResource(
-      'cards-all',
+      RESOURCE_PATTERNS.CARDS_ALL,
       RESOURCE_PATTERNS.CARDS_ALL,
       {
         title: 'All Course Cards',
@@ -114,7 +114,7 @@ export class MCPServer {
 
     // Register cards://tag/{tagName} resource
     this.mcpServer.registerResource(
-      'cards-tag',
+      RESOURCE_PATTERNS.CARDS_TAG,
       new ResourceTemplate('cards://tag/{tagName}', { list: undefined }),
       {
         title: 'Cards by Tag',
@@ -146,7 +146,7 @@ export class MCPServer {
 
     // Register cards://shape/{shapeName} resource
     this.mcpServer.registerResource(
-      'cards-shape',
+      RESOURCE_PATTERNS.CARDS_SHAPE,
       new ResourceTemplate('cards://shape/{shapeName}', { list: undefined }),
       {
         title: 'Cards by DataShape',
@@ -178,7 +178,7 @@ export class MCPServer {
 
     // Register cards://elo/{eloRange} resource
     this.mcpServer.registerResource(
-      'cards-elo',
+      RESOURCE_PATTERNS.CARDS_ELO,
       new ResourceTemplate('cards://elo/{eloRange}', { list: undefined }),
       {
         title: 'Cards by ELO Range',
@@ -210,7 +210,7 @@ export class MCPServer {
 
     // Register shapes://all resource
     this.mcpServer.registerResource(
-      'shapes-all',
+      RESOURCE_PATTERNS.SHAPES_ALL,
       RESOURCE_PATTERNS.SHAPES_ALL,
       {
         title: 'All DataShapes',
@@ -233,7 +233,7 @@ export class MCPServer {
 
     // Register shapes://{shapeName} resource
     this.mcpServer.registerResource(
-      'shapes-specific',
+      RESOURCE_PATTERNS.SHAPES_SPECIFIC,
       new ResourceTemplate('shapes://{shapeName}', { list: undefined }),
       {
         title: 'Specific DataShape',
@@ -256,7 +256,7 @@ export class MCPServer {
 
     // Register tags://all resource
     this.mcpServer.registerResource(
-      'tags-all',
+      RESOURCE_PATTERNS.TAGS_ALL,
       RESOURCE_PATTERNS.TAGS_ALL,
       {
         title: 'All Tags',
@@ -279,7 +279,7 @@ export class MCPServer {
 
     // Register tags://stats resource
     this.mcpServer.registerResource(
-      'tags-stats',
+      RESOURCE_PATTERNS.TAGS_STATS,
       RESOURCE_PATTERNS.TAGS_STATS,
       {
         title: 'Tag Statistics',
@@ -302,7 +302,7 @@ export class MCPServer {
 
     // Register tags://{tagName} resource
     this.mcpServer.registerResource(
-      'tags-specific',
+      RESOURCE_PATTERNS.TAGS_SPECIFIC,
       new ResourceTemplate('tags://{tagName}', { list: undefined }),
       {
         title: 'Specific Tag',
@@ -325,7 +325,7 @@ export class MCPServer {
 
     // Register tags://union/{tags} resource
     this.mcpServer.registerResource(
-      'tags-union',
+      RESOURCE_PATTERNS.TAGS_UNION,
       new ResourceTemplate('tags://union/{tags}', { list: undefined }),
       {
         title: 'Tags Union',
@@ -348,7 +348,7 @@ export class MCPServer {
 
     // Register tags://intersect/{tags} resource
     this.mcpServer.registerResource(
-      'tags-intersect',
+      RESOURCE_PATTERNS.TAGS_INTERSECT,
       new ResourceTemplate('tags://intersect/{tags}', { list: undefined }),
       {
         title: 'Tags Intersect',
@@ -371,7 +371,7 @@ export class MCPServer {
 
     // Register tags://exclusive/{tags} resource
     this.mcpServer.registerResource(
-      'tags-exclusive',
+      RESOURCE_PATTERNS.TAGS_EXCLUSIVE,
       new ResourceTemplate('tags://exclusive/{tags}', { list: undefined }),
       {
         title: 'Tags Exclusive',
@@ -394,7 +394,7 @@ export class MCPServer {
 
     // Register tags://distribution resource
     this.mcpServer.registerResource(
-      'tags-distribution',
+      RESOURCE_PATTERNS.TAGS_DISTRIBUTION,
       RESOURCE_PATTERNS.TAGS_DISTRIBUTION,
       {
         title: 'Tag Distribution',
