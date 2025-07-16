@@ -1,0 +1,33 @@
+{
+    "name": "@vue-skuilder/mcp",
+    "version": "0.1.0",
+    "type": "module",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.mjs",
+            "require": "./dist/index.js"
+        }
+    },
+    "scripts": {
+        "build": "tsup",
+        "dev": "yarn build && yarn inspector",
+        "inspector": "npx @modelcontextprotocol/inspector node dist/examples/local-dev.mjs",
+        "test:cli": "npx @modelcontextprotocol/inspector --cli node dist/examples/local-dev.mjs",
+        "test:resources": "yarn test:cli --method resources/list",
+        "test:tools": "yarn test:cli --method tools/list",
+        "test:prompts": "yarn test:cli --method prompts/list",
+        "server": "node dist/examples/local-dev.mjs"
+    },
+    "dependencies": {
+        "@modelcontextprotocol/sdk": "^1.15.1",
+        "@vue-skuilder/common": "workspace:*",
+        "@vue-skuilder/db": "workspace:*",
+        "zod": "^3.22.0"
+    },
+    "devDependencies": {
+        "@modelcontextprotocol/inspector": "^0.16.1",
+        "tsup": "^8.0.0",
+        "typescript": "~5.7.2"
+    }
+}

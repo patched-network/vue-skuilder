@@ -37,6 +37,9 @@ User often uses dictation software, which, in context, mangles things like `vue`
 - Build db: `yarn workspace @vue-skuilder/db build`
 - Build express: `yarn workspace @vue-skuilder/express build`
 - Test express: `yarn workspace @vue-skuilder/express test`
+- Build mcp: `yarn workspace @vue-skuilder/mcp build`
+- Dev mcp: `yarn workspace @vue-skuilder/mcp dev` (build + MCP Inspector UI)
+- Test mcp: `yarn workspace @vue-skuilder/mcp test:cli`
 
 #### Frontend Packages
 - Build platform-ui: `yarn workspace @vue-skuilder/platform-ui build`
@@ -114,6 +117,7 @@ Always resolve to source directories for internal package references:
 - `@e2e-db` → `./packages/e2e-db/src`
 - `@cli` → `./packages/cli/src`
 - `@client` → `./packages/client/src`
+- `@mcp` → `./packages/mcp/src`
 
 ### Shared Configuration Features
 - **Target**: ES2020 for consistency across packages
@@ -135,12 +139,84 @@ Always resolve to source directories for internal package references:
 common → db → common-ui → courses → platform-ui
           ↓       ↓           ↓
          cli    express    standalone-ui
+          ↓
+         mcp
 ```
 
 ### Active Packages
-- **Backend**: `common`, `db`, `express`, `e2e-db`
+- **Backend**: `common`, `db`, `express`, `e2e-db`, `mcp`
 - **Frontend**: `platform-ui`, `common-ui`, `courses`, `standalone-ui`
 - **CLI**: `cli`
 
 ### Legacy/Inactive Packages
 - **client**: Legacy HTTP client library, minimal maintenance
+
+## MCP Package (`@vue-skuilder/mcp`)
+
+Model Context Protocol (MCP) server for Vue-Skuilder course content agent access.
+
+### Architecture
+Course-scoped MCP servers that accept CourseDBInterface injection:
+- **Resources**: Read-only data access (course, cards, tags, elo, shapes)
+- **Tools**: Content generation and management operations
+- **Prompts**: Templates for guided content creation
+
+### Build System
+Uses **tsup** for dual CommonJS/ESM output:
+- **ESM**: `dist/index.mjs` (primary)
+- **CommonJS**: `dist/index.js` (compatibility)
+- **Types**: `dist/index.d.ts`
+
+### Available Resources (14 total)
+- `course://config` - Course configuration with metadata and ELO statistics
+- `cards://all` - All cards with pagination support
+- `cards://tag/{tagName}` - Filter cards by tag name
+- `cards://shape/{shapeName}` - Filter cards by DataShape
+- `cards://elo/{eloRange}` - Filter cards by ELO range (format: min-max)
+- `shapes://all` - List all available DataShapes
+- `shapes://{shapeName}` - Specific DataShape information
+- `tags://all` - List all available tags
+- `tags://stats` - Tag usage statistics
+- `tags://{tagName}` - Specific tag information
+- `tags://union/{tags}` - Cards with ANY of specified tags (format: tag1+tag2)
+- `tags://intersect/{tags}` - Cards with ALL of specified tags (format: tag1+tag2)
+- `tags://exclusive/{tags}` - Cards with first tag but NOT second (format: tag1-tag2)
+- `tags://distribution` - Frequency distribution of all tags
+
+### Available Tools (4 total)
+- `create_card` - Create new course cards with specified datashape and content
+- `update_card` - Update existing course cards (data, tags, ELO, sourceRef)
+- `tag_card` - Add or remove tags from course cards with optional ELO update
+- `delete_card` - Safely delete course cards with confirmation requirement
+
+### Available Prompts (2 total)
+- `fill-in-card-authoring` - Generate fill-in-the-blank or multiple-choice cards using Vue-Skuilder syntax
+- `elo-scoring-guidance` - Guidance for assigning ELO difficulty ratings to flashcard content
+
+### Key Features
+- **ELO-aware**: Native support for Vue-Skuilder's dynamic rating system
+- **DataShape aware**: Supports all Vue-Skuilder question types
+- **Source linking**: Git-based content provenance tracking
+- **Content generation**: Orchestrated courseware creation from source materials
+- **Strongly typed**: All resources, tools, and prompts use TypeScript constants
+
+### Usage
+```typescript
+import { MCPServer } from '@vue-skuilder/mcp';
+import { getDataLayer } from '@vue-skuilder/db';
+
+const courseDB = getDataLayer().getCourseDB('course-id');
+const server = new MCPServer(courseDB);
+```
+
+### Testing
+Use MCP Inspector for interactive testing:
+```bash
+yarn workspace @vue-skuilder/mcp dev  # Opens Inspector UI automatically
+```
+
+### Dependencies
+- `@modelcontextprotocol/sdk` - MCP protocol implementation
+- `@vue-skuilder/db` - Database layer access
+- `@vue-skuilder/common` - Shared types and utilities
+- `zod` - Schema validation
