@@ -1,8 +1,8 @@
 import { McpServer, ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import type { CourseDBInterface } from '@vue-skuilder/db';
-import { 
-  handleCourseConfigResource, 
+import {
+  handleCourseConfigResource,
   handleCardsAllResource,
   handleCardsTagResource,
   handleCardsShapeResource,
@@ -16,23 +16,27 @@ import {
   handleTagsIntersectResource,
   handleTagsExclusiveResource,
   handleTagsDistributionResource,
-  RESOURCE_PATTERNS 
+  RESOURCE_PATTERNS,
 } from './resources/index.js';
-import { 
-  handleCreateCard, 
+import {
+  handleCreateCard,
   handleUpdateCard,
   handleTagCard,
   handleDeleteCard,
-  TOOL_PATTERNS 
+  TOOL_PATTERNS,
 } from './tools/index.js';
-import { 
+import {
   type CreateCardInput,
   type UpdateCardInput,
   type TagCardInput,
-  type DeleteCardInput
+  type DeleteCardInput,
 } from './types/tools.js';
 import { z } from 'zod';
-import { createFillInCardAuthoringPrompt } from './prompts/fill-in-card-authoring.js';
+import {
+  createFillInCardAuthoringPrompt,
+  createEloScoringGuidancePrompt,
+  PROMPT_PATTERNS,
+} from './prompts/index.js';
 
 export interface MCPServerOptions {
   enableSourceLinking?: boolean;
@@ -65,16 +69,18 @@ export class MCPServer {
       {
         title: 'Course Configuration',
         description: 'Course configuration with metadata and ELO statistics',
-        mimeType: 'application/json'
+        mimeType: 'application/json',
       },
       async (uri) => {
         const result = await handleCourseConfigResource(this.courseDB);
         return {
-          contents: [{
-            uri: uri.href,
-            text: JSON.stringify(result, null, 2),
-            mimeType: 'application/json'
-          }]
+          contents: [
+            {
+              uri: uri.href,
+              text: JSON.stringify(result, null, 2),
+              mimeType: 'application/json',
+            },
+          ],
         };
       }
     );
@@ -86,20 +92,22 @@ export class MCPServer {
       {
         title: 'All Course Cards',
         description: 'List all cards in the course with pagination support',
-        mimeType: 'application/json'
+        mimeType: 'application/json',
       },
       async (uri) => {
         const url = new URL(uri.href);
         const limit = parseInt(url.searchParams.get('limit') || '50', 10);
         const offset = parseInt(url.searchParams.get('offset') || '0', 10);
-        
+
         const result = await handleCardsAllResource(this.courseDB, limit, offset);
         return {
-          contents: [{
-            uri: uri.href,
-            text: JSON.stringify(result, null, 2),
-            mimeType: 'application/json'
-          }]
+          contents: [
+            {
+              uri: uri.href,
+              text: JSON.stringify(result, null, 2),
+              mimeType: 'application/json',
+            },
+          ],
         };
       }
     );
@@ -107,24 +115,31 @@ export class MCPServer {
     // Register cards://tag/{tagName} resource
     this.mcpServer.registerResource(
       'cards-tag',
-      new ResourceTemplate("cards://tag/{tagName}", { list: undefined }),
+      new ResourceTemplate('cards://tag/{tagName}', { list: undefined }),
       {
         title: 'Cards by Tag',
         description: 'Filter cards by tag name with pagination support',
-        mimeType: 'application/json'
+        mimeType: 'application/json',
       },
       async (uri, { tagName }) => {
         const url = new URL(uri.href);
         const limit = parseInt(url.searchParams.get('limit') || '50', 10);
         const offset = parseInt(url.searchParams.get('offset') || '0', 10);
-        
-        const result = await handleCardsTagResource(this.courseDB, tagName as string, limit, offset);
+
+        const result = await handleCardsTagResource(
+          this.courseDB,
+          tagName as string,
+          limit,
+          offset
+        );
         return {
-          contents: [{
-            uri: uri.href,
-            text: JSON.stringify(result, null, 2),
-            mimeType: 'application/json'
-          }]
+          contents: [
+            {
+              uri: uri.href,
+              text: JSON.stringify(result, null, 2),
+              mimeType: 'application/json',
+            },
+          ],
         };
       }
     );
@@ -132,50 +147,63 @@ export class MCPServer {
     // Register cards://shape/{shapeName} resource
     this.mcpServer.registerResource(
       'cards-shape',
-      new ResourceTemplate("cards://shape/{shapeName}", { list: undefined }),
+      new ResourceTemplate('cards://shape/{shapeName}', { list: undefined }),
       {
         title: 'Cards by DataShape',
         description: 'Filter cards by DataShape with pagination support',
-        mimeType: 'application/json'
+        mimeType: 'application/json',
       },
       async (uri, { shapeName }) => {
         const url = new URL(uri.href);
         const limit = parseInt(url.searchParams.get('limit') || '50', 10);
         const offset = parseInt(url.searchParams.get('offset') || '0', 10);
-        
-        const result = await handleCardsShapeResource(this.courseDB, shapeName as string, limit, offset);
+
+        const result = await handleCardsShapeResource(
+          this.courseDB,
+          shapeName as string,
+          limit,
+          offset
+        );
         return {
-          contents: [{
-            uri: uri.href,
-            text: JSON.stringify(result, null, 2),
-            mimeType: 'application/json'
-          }]
+          contents: [
+            {
+              uri: uri.href,
+              text: JSON.stringify(result, null, 2),
+              mimeType: 'application/json',
+            },
+          ],
         };
       }
     );
 
-    // Register cards://elo/{eloRange} resource  
+    // Register cards://elo/{eloRange} resource
     this.mcpServer.registerResource(
       'cards-elo',
-      new ResourceTemplate("cards://elo/{eloRange}", { list: undefined }),
+      new ResourceTemplate('cards://elo/{eloRange}', { list: undefined }),
       {
         title: 'Cards by ELO Range',
         description: 'Filter cards by ELO range (format: min-max, e.g., 1200-1800)',
-        mimeType: 'application/json'
+        mimeType: 'application/json',
       },
       async (uri, { eloRange }) => {
-        
         const url = new URL(uri.href);
         const limit = parseInt(url.searchParams.get('limit') || '50', 10);
         const offset = parseInt(url.searchParams.get('offset') || '0', 10);
-        
-        const result = await handleCardsEloResource(this.courseDB, eloRange as string, limit, offset);
+
+        const result = await handleCardsEloResource(
+          this.courseDB,
+          eloRange as string,
+          limit,
+          offset
+        );
         return {
-          contents: [{
-            uri: uri.href,
-            text: JSON.stringify(result, null, 2),
-            mimeType: 'application/json'
-          }]
+          contents: [
+            {
+              uri: uri.href,
+              text: JSON.stringify(result, null, 2),
+              mimeType: 'application/json',
+            },
+          ],
         };
       }
     );
@@ -187,16 +215,18 @@ export class MCPServer {
       {
         title: 'All DataShapes',
         description: 'List all available DataShapes in the course',
-        mimeType: 'application/json'
+        mimeType: 'application/json',
       },
       async (uri) => {
         const result = await handleShapesAllResource(this.courseDB);
         return {
-          contents: [{
-            uri: uri.href,
-            text: JSON.stringify(result, null, 2),
-            mimeType: 'application/json'
-          }]
+          contents: [
+            {
+              uri: uri.href,
+              text: JSON.stringify(result, null, 2),
+              mimeType: 'application/json',
+            },
+          ],
         };
       }
     );
@@ -204,21 +234,22 @@ export class MCPServer {
     // Register shapes://{shapeName} resource
     this.mcpServer.registerResource(
       'shapes-specific',
-      new ResourceTemplate("shapes://{shapeName}", { list: undefined }),
+      new ResourceTemplate('shapes://{shapeName}', { list: undefined }),
       {
         title: 'Specific DataShape',
         description: 'Get detailed information about a specific DataShape',
-        mimeType: 'application/json'
+        mimeType: 'application/json',
       },
       async (uri, { shapeName }) => {
-        
         const result = await handleShapeSpecificResource(this.courseDB, shapeName as string);
         return {
-          contents: [{
-            uri: uri.href,
-            text: JSON.stringify(result, null, 2),
-            mimeType: 'application/json'
-          }]
+          contents: [
+            {
+              uri: uri.href,
+              text: JSON.stringify(result, null, 2),
+              mimeType: 'application/json',
+            },
+          ],
         };
       }
     );
@@ -230,16 +261,18 @@ export class MCPServer {
       {
         title: 'All Tags',
         description: 'List all available tags in the course',
-        mimeType: 'application/json'
+        mimeType: 'application/json',
       },
       async (uri) => {
         const result = await handleTagsAllResource(this.courseDB);
         return {
-          contents: [{
-            uri: uri.href,
-            text: JSON.stringify(result, null, 2),
-            mimeType: 'application/json'
-          }]
+          contents: [
+            {
+              uri: uri.href,
+              text: JSON.stringify(result, null, 2),
+              mimeType: 'application/json',
+            },
+          ],
         };
       }
     );
@@ -251,16 +284,18 @@ export class MCPServer {
       {
         title: 'Tag Statistics',
         description: 'Get usage statistics for tags in the course',
-        mimeType: 'application/json'
+        mimeType: 'application/json',
       },
       async (uri) => {
         const result = await handleTagsStatsResource(this.courseDB);
         return {
-          contents: [{
-            uri: uri.href,
-            text: JSON.stringify(result, null, 2),
-            mimeType: 'application/json'
-          }]
+          contents: [
+            {
+              uri: uri.href,
+              text: JSON.stringify(result, null, 2),
+              mimeType: 'application/json',
+            },
+          ],
         };
       }
     );
@@ -268,21 +303,22 @@ export class MCPServer {
     // Register tags://{tagName} resource
     this.mcpServer.registerResource(
       'tags-specific',
-      new ResourceTemplate("tags://{tagName}", { list: undefined }),
+      new ResourceTemplate('tags://{tagName}', { list: undefined }),
       {
         title: 'Specific Tag',
         description: 'Get detailed information about a specific tag',
-        mimeType: 'application/json'
+        mimeType: 'application/json',
       },
       async (uri, { tagName }) => {
-        
         const result = await handleTagSpecificResource(this.courseDB, tagName as string);
         return {
-          contents: [{
-            uri: uri.href,
-            text: JSON.stringify(result, null, 2),
-            mimeType: 'application/json'
-          }]
+          contents: [
+            {
+              uri: uri.href,
+              text: JSON.stringify(result, null, 2),
+              mimeType: 'application/json',
+            },
+          ],
         };
       }
     );
@@ -290,21 +326,22 @@ export class MCPServer {
     // Register tags://union/{tags} resource
     this.mcpServer.registerResource(
       'tags-union',
-      new ResourceTemplate("tags://union/{tags}", { list: undefined }),
+      new ResourceTemplate('tags://union/{tags}', { list: undefined }),
       {
         title: 'Tags Union',
         description: 'Find cards with ANY of the specified tags (format: tag1+tag2)',
-        mimeType: 'application/json'
+        mimeType: 'application/json',
       },
       async (uri, { tags }) => {
-        
         const result = await handleTagsUnionResource(this.courseDB, tags as string);
         return {
-          contents: [{
-            uri: uri.href,
-            text: JSON.stringify(result, null, 2),
-            mimeType: 'application/json'
-          }]
+          contents: [
+            {
+              uri: uri.href,
+              text: JSON.stringify(result, null, 2),
+              mimeType: 'application/json',
+            },
+          ],
         };
       }
     );
@@ -312,21 +349,22 @@ export class MCPServer {
     // Register tags://intersect/{tags} resource
     this.mcpServer.registerResource(
       'tags-intersect',
-      new ResourceTemplate("tags://intersect/{tags}", { list: undefined }),
+      new ResourceTemplate('tags://intersect/{tags}', { list: undefined }),
       {
         title: 'Tags Intersect',
         description: 'Find cards with ALL of the specified tags (format: tag1+tag2)',
-        mimeType: 'application/json'
+        mimeType: 'application/json',
       },
       async (uri, { tags }) => {
-        
         const result = await handleTagsIntersectResource(this.courseDB, tags as string);
         return {
-          contents: [{
-            uri: uri.href,
-            text: JSON.stringify(result, null, 2),
-            mimeType: 'application/json'
-          }]
+          contents: [
+            {
+              uri: uri.href,
+              text: JSON.stringify(result, null, 2),
+              mimeType: 'application/json',
+            },
+          ],
         };
       }
     );
@@ -334,21 +372,22 @@ export class MCPServer {
     // Register tags://exclusive/{tags} resource
     this.mcpServer.registerResource(
       'tags-exclusive',
-      new ResourceTemplate("tags://exclusive/{tags}", { list: undefined }),
+      new ResourceTemplate('tags://exclusive/{tags}', { list: undefined }),
       {
         title: 'Tags Exclusive',
         description: 'Find cards with first tag but NOT second tag (format: tag1-tag2)',
-        mimeType: 'application/json'
+        mimeType: 'application/json',
       },
       async (uri, { tags }) => {
-        
         const result = await handleTagsExclusiveResource(this.courseDB, tags as string);
         return {
-          contents: [{
-            uri: uri.href,
-            text: JSON.stringify(result, null, 2),
-            mimeType: 'application/json'
-          }]
+          contents: [
+            {
+              uri: uri.href,
+              text: JSON.stringify(result, null, 2),
+              mimeType: 'application/json',
+            },
+          ],
         };
       }
     );
@@ -360,16 +399,18 @@ export class MCPServer {
       {
         title: 'Tag Distribution',
         description: 'Get frequency distribution of all tags in the course',
-        mimeType: 'application/json'
+        mimeType: 'application/json',
       },
       async (uri) => {
         const result = await handleTagsDistributionResource(this.courseDB);
         return {
-          contents: [{
-            uri: uri.href,
-            text: JSON.stringify(result, null, 2),
-            mimeType: 'application/json'
-          }]
+          contents: [
+            {
+              uri: uri.href,
+              text: JSON.stringify(result, null, 2),
+              mimeType: 'application/json',
+            },
+          ],
         };
       }
     );
@@ -385,16 +426,18 @@ export class MCPServer {
           data: z.any(),
           tags: z.array(z.string()).optional(),
           elo: z.number().optional(),
-          sourceRef: z.string().optional()
-        }
+          sourceRef: z.string().optional(),
+        },
       },
       async (input) => {
         const result = await handleCreateCard(this.courseDB, input as CreateCardInput);
         return {
-          content: [{
-            type: 'text',
-            text: JSON.stringify(result, null, 2)
-          }]
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
         };
       }
     );
@@ -410,16 +453,18 @@ export class MCPServer {
           data: z.any().optional(),
           tags: z.array(z.string()).optional(),
           elo: z.number().optional(),
-          sourceRef: z.string().optional()
-        }
+          sourceRef: z.string().optional(),
+        },
       },
       async (input) => {
         const result = await handleUpdateCard(this.courseDB, input as UpdateCardInput);
         return {
-          content: [{
-            type: 'text',
-            text: JSON.stringify(result, null, 2)
-          }]
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
         };
       }
     );
@@ -434,16 +479,18 @@ export class MCPServer {
           cardId: z.string(),
           action: z.enum(['add', 'remove']),
           tags: z.array(z.string()),
-          updateELO: z.boolean().optional().default(false)
-        }
+          updateELO: z.boolean().optional().default(false),
+        },
       },
       async (input) => {
         const result = await handleTagCard(this.courseDB, input as TagCardInput);
         return {
-          content: [{
-            type: 'text',
-            text: JSON.stringify(result, null, 2)
-          }]
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
         };
       }
     );
@@ -457,27 +504,30 @@ export class MCPServer {
         inputSchema: {
           cardId: z.string(),
           confirm: z.boolean().default(false),
-          reason: z.string().optional()
-        }
+          reason: z.string().optional(),
+        },
       },
       async (input) => {
         const result = await handleDeleteCard(this.courseDB, input as DeleteCardInput);
         return {
-          content: [{
-            type: 'text',
-            text: JSON.stringify(result, null, 2)
-          }]
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
         };
       }
     );
 
     // Register fill-in-card-authoring prompt
     this.mcpServer.registerPrompt(
-      'fill-in-card-authoring',
+      PROMPT_PATTERNS.FILL_IN_CARD_AUTHORING,
       {
         title: 'Author Fill-In Card',
-        description: 'Generate a fill-in-the-blank or multiple-choice card using Vue-Skuilder syntax.',
-        argsSchema: {}
+        description:
+          'Generate a fill-in-the-blank or multiple-choice card using Vue-Skuilder syntax.',
+        argsSchema: {},
       },
       () => ({
         messages: [
@@ -485,10 +535,31 @@ export class MCPServer {
             role: 'user',
             content: {
               type: 'text',
-              text: createFillInCardAuthoringPrompt()
-            }
-          }
-        ]
+              text: createFillInCardAuthoringPrompt(),
+            },
+          },
+        ],
+      })
+    );
+
+    // Register elo-scoring-guidance prompt
+    this.mcpServer.registerPrompt(
+      PROMPT_PATTERNS.ELO_SCORING_GUIDANCE,
+      {
+        title: 'ELO Scoring Guidance',
+        description: 'Guidance for assigning ELO difficulty ratings to flashcard content.',
+        argsSchema: {},
+      },
+      () => ({
+        messages: [
+          {
+            role: 'user',
+            content: {
+              type: 'text',
+              text: createEloScoringGuidancePrompt(),
+            },
+          },
+        ],
       })
     );
 
@@ -496,7 +567,7 @@ export class MCPServer {
     if (this.options.enableSourceLinking) {
       // Will configure source linking when implemented
     }
-    
+
     // Configuration ready for Phase 2 implementation
   }
 
