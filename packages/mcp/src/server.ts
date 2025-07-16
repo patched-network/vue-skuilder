@@ -32,6 +32,7 @@ import {
   type DeleteCardInput
 } from './types/tools.js';
 import { z } from 'zod';
+import { createFillInCardAuthoringPrompt } from './prompts/fill-in-card-authoring.js';
 
 export interface MCPServerOptions {
   enableSourceLinking?: boolean;
@@ -468,6 +469,27 @@ export class MCPServer {
           }]
         };
       }
+    );
+
+    // Register fill-in-card-authoring prompt
+    this.mcpServer.registerPrompt(
+      'fill-in-card-authoring',
+      {
+        title: 'Author Fill-In Card',
+        description: 'Generate a fill-in-the-blank or multiple-choice card using Vue-Skuilder syntax.',
+        argsSchema: {}
+      },
+      () => ({
+        messages: [
+          {
+            role: 'user',
+            content: {
+              type: 'text',
+              text: createFillInCardAuthoringPrompt()
+            }
+          }
+        ]
+      })
     );
 
     // Use options to configure server capabilities
