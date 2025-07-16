@@ -16,10 +16,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Start CouchDB
-        uses: iamssen/couchdb-github-action@master
-        with:
-          couchdb-version: 2.3.1 # match production version
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
