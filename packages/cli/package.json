@@ -3,7 +3,7 @@
     "publishConfig": {
         "access": "public"
     },
-    "version": "0.1.7",
+    "version": "0.1.8-0",
     "type": "module",
     "description": "CLI scaffolding tool for vue-skuilder projects",
     "bin": {
@@ -44,7 +44,7 @@
         "@vue-skuilder/courses": "workspace:*",
         "@vue-skuilder/db": "workspace:*",
         "@vue-skuilder/edit-ui": "workspace:*",
-        "@vue-skuilder/standalone-ui": "^0.1.7",
+        "@vue-skuilder/standalone-ui": "^0.1.8-0",
         "chalk": "^5.3.0",
         "commander": "^11.0.0",
         "fs-extra": "^11.2.0",
@@ -71,5 +71,6 @@
     "engines": {
         "node": ">=18.0.0"
     },
-    "packageManager": "yarn@4.6.0"
+    "packageManager": "yarn@4.6.0",
+    "stableVersion": "0.1.7"
 }

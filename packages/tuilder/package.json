@@ -1,6 +1,6 @@
 {
   "name": "@vue-skuilder/tuilder",
-  "version": "0.1.0",
+  "version": "0.1.7-0",
   "publishConfig": {
     "access": "public"
   },
@@ -40,5 +40,6 @@
   "engines": {
     "node": ">=18.0.0"
   },
-  "packageManager": "yarn@4.6.0"
+  "packageManager": "yarn@4.6.0",
+  "stableVersion": "0.1.7"
 }
