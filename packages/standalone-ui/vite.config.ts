@@ -69,7 +69,7 @@ export default defineConfig({
                 // Remove globals for bundled packages
                 // '@vue-skuilder/common': 'VueSkuilderCommon',
                 // '@vue-skuilder/common-ui': 'VueSkuilderCommonUI',
-                // '@vue-skuilder/courseware': 'VueSkuilderCourses',
+                // '@vue-skuilder/courseware': 'VueSkuilderCourseWare',
                 // '@vue-skuilder/db': 'VueSkuilderDB',
               },
               exports: 'named',

@@ -78,7 +78,10 @@ export async function transformPackageJson(
   // Transform workspace and file dependencies to published versions
   if (packageJson.dependencies) {
     for (const [depName, version] of Object.entries(packageJson.dependencies)) {
-      if (typeof version === 'string' && (version.startsWith('workspace:') || version.startsWith('file:'))) {
+      if (
+        typeof version === 'string' &&
+        (version.startsWith('workspace:') || version.startsWith('file:'))
+      ) {
         // Replace workspace and file references with CLI's version
         packageJson.dependencies[depName] = `^${cliVersion}`;
       }
@@ -133,7 +136,7 @@ export default defineConfig({
   plugins: [
     vue(),
     // Only include dts plugin for library builds
-    ...(buildMode === 'library' 
+    ...(buildMode === 'library'
       ? [dts({
           insertTypesEntry: true,
           include: ['src/questions/**/*.ts', 'src/questions/**/*.vue'],
@@ -176,7 +179,7 @@ export default defineConfig({
   server: {
     port: 5173, // Use standard Vite port for standalone projects
   },
-  build: buildMode === 'library' 
+  build: buildMode === 'library'
     ? {
         // Library build configuration
         sourcemap: true,
@@ -194,7 +197,7 @@ export default defineConfig({
           // External packages that shouldn't be bundled in library mode
           external: [
             'vue',
-            'vue-router', 
+            'vue-router',
             'vuetify',
             'pinia',
             '@vue-skuilder/common',
@@ -211,7 +214,7 @@ export default defineConfig({
               'pinia': 'Pinia',
               '@vue-skuilder/common': 'VueSkuilderCommon',
               '@vue-skuilder/common-ui': 'VueSkuilderCommonUI',
-              '@vue-skuilder/courseware': 'VueSkuilderCourses',
+              '@vue-skuilder/courseware': 'VueSkuilderCourseWare',
               '@vue-skuilder/db': 'VueSkuilderDB',
             },
             exports: 'named',
@@ -227,7 +230,7 @@ export default defineConfig({
     : {
         // Webapp build configuration (existing)
         sourcemap: true,
-        target: 'es2020', 
+        target: 'es2020',
         minify: 'terser',
         terserOptions: {
           keep_classnames: true,
@@ -287,7 +290,11 @@ export async function generateSkuilderConfig(
   await fs.writeFile(configPath, JSON.stringify(skuilderConfig, null, 2));
 
   // For static data layer without imports, create empty course structure
-  if (config.dataLayerType === 'static' && (!config.importCourseIds || config.importCourseIds.length === 0) && outputPath) {
+  if (
+    config.dataLayerType === 'static' &&
+    (!config.importCourseIds || config.importCourseIds.length === 0) &&
+    outputPath
+  ) {
     await createEmptyCourseStructure(outputPath, skuilderConfig.course!, config.title);
   }
 }
@@ -338,12 +345,12 @@ async function createEmptyCourseStructure(
 ): Promise<void> {
   const staticCoursesPath = path.join(projectPath, 'public', 'static-courses');
   const coursePath = path.join(staticCoursesPath, courseId);
-  
+
   // Create directory structure
   await fs.mkdir(coursePath, { recursive: true });
   await fs.mkdir(path.join(coursePath, 'chunks'), { recursive: true });
   await fs.mkdir(path.join(coursePath, 'indices'), { recursive: true });
-  
+
   // Create minimal CourseConfig
   const courseConfig: CourseConfig = {
     courseID: courseId,
@@ -355,9 +362,9 @@ async function createEmptyCourseStructure(
     admins: [],
     moderators: [],
     dataShapes: [],
-    questionTypes: []
+    questionTypes: [],
   };
-  
+
   // Create manifest.json with proper structure
   const manifest = {
     version: '1.0.0',
@@ -368,29 +375,32 @@ async function createEmptyCourseStructure(
     documentCount: 0,
     chunks: [],
     indices: [],
-    designDocs: []
+    designDocs: [],
   };
-  
-  await fs.writeFile(
-    path.join(coursePath, 'manifest.json'),
-    JSON.stringify(manifest, null, 2)
-  );
-  
+
+  await fs.writeFile(path.join(coursePath, 'manifest.json'), JSON.stringify(manifest, null, 2));
+
   // Create empty tags index
   await fs.writeFile(
     path.join(coursePath, 'indices', 'tags.json'),
     JSON.stringify({ tags: [] }, null, 2)
   );
-  
+
   // Create CourseConfig chunk
   await fs.writeFile(
     path.join(coursePath, 'chunks', 'CourseConfig.json'),
-    JSON.stringify([{
-      _id: 'CourseConfig',
-      ...courseConfig
-    }], null, 2)
+    JSON.stringify(
+      [
+        {
+          _id: 'CourseConfig',
+          ...courseConfig,
+        },
+      ],
+      null,
+      2
+    )
   );
-  
+
   console.log(chalk.green(`✅ Created empty course structure for ${courseId}`));
 }
 
@@ -659,13 +669,13 @@ Visit the [Skuilder documentation](https://github.com/NiloCK/vue-skuilder) for m
 async function createSkuilderDirectory(projectPath: string): Promise<void> {
   const skuilderPath = path.join(projectPath, '.skuilder');
   const templatesPath = path.join(__dirname, '..', '..', 'templates', '.skuilder');
-  
+
   // Create .skuilder directory
   await fs.mkdir(skuilderPath, { recursive: true });
-  
+
   // Create studio-builds subdirectory
   await fs.mkdir(path.join(skuilderPath, 'studio-builds'), { recursive: true });
-  
+
   // Copy README template if it exists
   if (existsSync(templatesPath)) {
     await copyDirectory(templatesPath, skuilderPath);

@@ -28,7 +28,7 @@ export default defineConfig({
     },
     lib: {
       entry: resolve(__dirname, 'src/index.ts'),
-      name: 'VueSkuilderCourses',
+      name: 'VueSkuilderCourseWare',
       fileName: (format) => `index.${format === 'es' ? 'mjs' : 'cjs.js'}`,
     },
     rollupOptions: {
