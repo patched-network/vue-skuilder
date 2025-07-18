@@ -1,13 +1,13 @@
-# @vue-skuilder/courses Package
+# @vue-skuilder/courseware Package
 
 Vue 3 component library providing specialized course content types and question implementations.
 
 ## Commands
-- Build: `yarn workspace @vue-skuilder/courses build` (Vite library build with assets)
-- Dev: `yarn workspace @vue-skuilder/courses dev` (Vite watch mode)  
-- Test: `yarn workspace @vue-skuilder/courses test` (Vitest)
-- Test (watch): `yarn workspace @vue-skuilder/courses test:watch`
-- Type check: `yarn workspace @vue-skuilder/courses type-check`
+- Build: `yarn workspace @vue-skuilder/courseware build` (Vite library build with assets)
+- Dev: `yarn workspace @vue-skuilder/courseware dev` (Vite watch mode)  
+- Test: `yarn workspace @vue-skuilder/courseware test` (Vitest)
+- Test (watch): `yarn workspace @vue-skuilder/courseware test:watch`
+- Type check: `yarn workspace @vue-skuilder/courseware type-check`
 
 ## Build System
 - **Framework**: Vite with shared configuration (`vite.config.base.js`)

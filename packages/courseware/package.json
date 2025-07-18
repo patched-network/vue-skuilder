@@ -1,5 +1,5 @@
 {
-    "name": "@vue-skuilder/courses",
+    "name": "@vue-skuilder/courseware",
     "publishConfig": {
         "access": "public"
     },

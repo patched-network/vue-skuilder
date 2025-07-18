@@ -1,4 +1,4 @@
-// Type declarations for @vue-skuilder/courses/logic
+// Type declarations for @vue-skuilder/courseware/logic
 // Extracted business logic types for Node.js compatibility
 
 export interface ParsedBlank {
