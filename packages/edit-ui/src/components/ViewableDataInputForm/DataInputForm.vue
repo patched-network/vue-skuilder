@@ -80,14 +80,14 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue';
+import { defineComponent, PropType } from 'vue';
 import { DataShape } from '@vue-skuilder/common';
 import { CardBrowser } from '@vue-skuilder/common-ui';
 import { TagsInput } from '@vue-skuilder/common-ui';
 import type { TagsInputInstance } from '@vue-skuilder/common-ui/src/components/TagsInput.vue';
 import { FieldInputInstance, isFieldInput } from './FieldInput.types';
 import { alertUser } from '@vue-skuilder/common-ui';
-import { allCourseWare } from '@vue-skuilder/courseware';
+import { allCourseWare, AllCourseWare } from '@vue-skuilder/courseware';
 import { getDataLayer, CourseDBInterface } from '@vue-skuilder/db';
 import { FieldType, Status, CourseConfig, NameSpacer, ShapeDescriptor } from '@vue-skuilder/common';
 import _ from 'lodash';
@@ -150,6 +150,10 @@ export default defineComponent({
       type: Object as () => QorNull,
       required: false,
       default: null,
+    },
+    courseWare: {
+      type: Object as PropType<AllCourseWare>,
+      default: () => allCourseWare,
     },
   },
 
@@ -505,7 +509,7 @@ export default defineComponent({
         console.log('[DataInputForm] this.dataShape.name', this.dataShape.name);
 
         if (descriptor.dataShape === this.dataShape.name) {
-          const crs = allCourseWare.getCourse(descriptor.course)!;
+          const crs = this.courseWare.getCourseWare(descriptor.course)!;
 
           this.shapeViews = [];
 
