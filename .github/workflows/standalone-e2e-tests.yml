@@ -47,7 +47,7 @@ jobs:
           yarn workspace @vue-skuilder/common build
           yarn workspace @vue-skuilder/db build
           yarn workspace @vue-skuilder/common-ui build
-          yarn workspace @vue-skuilder/courses build
+          yarn workspace @vue-skuilder/courseware build
 
       - name: Start CouchDB
         run: yarn couchdb:start

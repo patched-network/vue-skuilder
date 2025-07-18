@@ -6,7 +6,7 @@ on:
       - 'packages/common/**'
       - 'packages/db/**'
       - 'packages/common-ui/**'
-      - 'packages/courses/**'
+      - 'packages/courseware/**'
       - '.github/workflows/build-platform-ui.yml'
 jobs:
   build-platform-ui-spa:
