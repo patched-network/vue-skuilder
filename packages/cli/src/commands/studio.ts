@@ -1,26 +1,26 @@
-import { Command } from 'commander';
-import path from 'path';
-import fs from 'fs';
-import chalk from 'chalk';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
-import http from 'http';
 import { CouchDBManager } from '@vue-skuilder/common/docker';
+import chalk from 'chalk';
+import { Command } from 'commander';
+import fs from 'fs';
+import http from 'http';
+import path, { dirname } from 'path';
 import serveStatic from 'serve-static';
-import { ExpressManager } from '../utils/ExpressManager.js';
+import { fileURLToPath } from 'url';
+import { VERSION } from '../cli.js';
 import {
-  hashQuestionsDirectory,
-  studioBuildExists,
-  ensureCacheDirectory,
-  getStudioBuildPath,
-  ensureBuildDirectory,
-} from '../utils/questions-hash.js';
-import {
-  reportStudioBuildError,
   createStudioBuildError,
+  reportStudioBuildError,
   StudioBuildErrorType,
   withStudioBuildErrorHandling,
 } from '../utils/error-reporting.js';
+import { ExpressManager } from '../utils/ExpressManager.js';
+import {
+  ensureBuildDirectory,
+  ensureCacheDirectory,
+  getStudioBuildPath,
+  hashQuestionsDirectory,
+  studioBuildExists,
+} from '../utils/questions-hash.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -356,9 +356,9 @@ async function startStudioUIServer(
   // Serve from built dist directory if it exists, otherwise fallback to source
   const distPath = path.join(studioPath, 'dist');
   const studioSourcePath = fs.existsSync(distPath) ? distPath : studioPath;
-  
+
   console.log(chalk.gray(`   Serving studio-ui from: ${studioSourcePath}`));
-  
+
   const serve = serveStatic(studioSourcePath, {
     index: ['index.html'],
     setHeaders: (res, path) => {
@@ -965,32 +965,36 @@ async function buildStudioUIWithCustomQuestions(
         `   Installing bundled course package: ${customQuestionsData.packageName} from ${customQuestionsData.coursePath}`
       )
     );
-    
+
     const distLibPath = path.join(customQuestionsData.coursePath, 'dist-lib');
     if (!fs.existsSync(distLibPath)) {
-      throw new Error(`dist-lib directory not found at: ${distLibPath}. Run 'npm run build:lib' first.`);
+      throw new Error(
+        `dist-lib directory not found at: ${distLibPath}. Run 'npm run build:lib' first.`
+      );
     }
 
     // Ensure node_modules directory exists in studio-ui
     const nodeModulesPath = path.join(buildPath, 'node_modules');
     const packageInstallPath = path.join(nodeModulesPath, customQuestionsData.packageName);
-    
+
     if (!fs.existsSync(nodeModulesPath)) {
       fs.mkdirSync(nodeModulesPath, { recursive: true });
     }
-    
+
     if (!fs.existsSync(packageInstallPath)) {
       fs.mkdirSync(packageInstallPath, { recursive: true });
     }
 
     // Copy dist-lib contents to node_modules/{packageName}
-    console.log(chalk.gray(`   Copying dist-lib to node_modules/${customQuestionsData.packageName}...`));
+    console.log(
+      chalk.gray(`   Copying dist-lib to node_modules/${customQuestionsData.packageName}...`)
+    );
     await copyDirectory(distLibPath, packageInstallPath);
 
     // Copy package.json for proper npm module structure
     const originalPackageJsonPath = path.join(customQuestionsData.coursePath, 'package.json');
     const targetPackageJsonPath = path.join(packageInstallPath, 'package.json');
-    
+
     if (fs.existsSync(originalPackageJsonPath)) {
       fs.copyFileSync(originalPackageJsonPath, targetPackageJsonPath);
     }
@@ -1021,17 +1025,22 @@ async function buildStudioUIWithCustomQuestions(
     const distPath = path.join(buildPath, 'dist');
     const sourceConfigPath = path.join(buildPath, 'custom-questions-config.json');
     const distConfigPath = path.join(distPath, 'custom-questions-config.json');
-    
+
     if (fs.existsSync(sourceConfigPath)) {
       fs.copyFileSync(sourceConfigPath, distConfigPath);
       console.log(chalk.gray(`   Custom questions config copied to dist directory`));
     }
 
     // Copy the built questions.mjs file to dist/assets for proper serving
-    const nodeModulesQuestionsPath = path.join(buildPath, 'node_modules', customQuestionsData.packageName, 'questions.mjs');
+    const nodeModulesQuestionsPath = path.join(
+      buildPath,
+      'node_modules',
+      customQuestionsData.packageName,
+      'questions.mjs'
+    );
     const distAssetsPath = path.join(distPath, 'assets');
     const distQuestionsPath = path.join(distAssetsPath, 'questions.mjs');
-    
+
     if (fs.existsSync(nodeModulesQuestionsPath)) {
       // Ensure assets directory exists
       if (!fs.existsSync(distAssetsPath)) {
@@ -1040,9 +1049,10 @@ async function buildStudioUIWithCustomQuestions(
       fs.copyFileSync(nodeModulesQuestionsPath, distQuestionsPath);
       console.log(chalk.gray(`   Built questions.mjs copied to dist/assets directory`));
     } else {
-      console.log(chalk.yellow(`   Warning: questions.mjs not found at ${nodeModulesQuestionsPath}`));
+      console.log(
+        chalk.yellow(`   Warning: questions.mjs not found at ${nodeModulesQuestionsPath}`)
+      );
     }
-
 
     // Step 7: Verify build output exists
     const indexPath = path.join(distPath, 'index.html');
@@ -1082,13 +1092,13 @@ async function transformPackageJsonForStudioBuild(packageJsonPath: string): Prom
 
   // Version mappings for vue-skuilder packages
   const vueSkuilderPackageVersions: Record<string, string> = {
-    '@vue-skuilder/common': '0.1.7',
-    '@vue-skuilder/common-ui': '0.1.7',
-    '@vue-skuilder/courses': '0.1.7',
-    '@vue-skuilder/db': '0.1.7',
-    '@vue-skuilder/edit-ui': '0.1.7',
-    '@vue-skuilder/express': '0.1.7',
-    '@vue-skuilder/cli': '0.1.7',
+    '@vue-skuilder/common': VERSION,
+    '@vue-skuilder/common-ui': VERSION,
+    '@vue-skuilder/courses': VERSION,
+    '@vue-skuilder/db': VERSION,
+    '@vue-skuilder/edit-ui': VERSION,
+    '@vue-skuilder/express': VERSION,
+    '@vue-skuilder/cli': VERSION,
   };
 
   // Transform dependencies
@@ -1172,7 +1182,7 @@ async function runViteBuild(buildPath: string): Promise<void> {
  */
 async function fixViteConfigForStandaloneBuild(buildPath: string): Promise<void> {
   const viteConfigPath = path.join(buildPath, 'vite.config.ts');
-  
+
   if (!fs.existsSync(viteConfigPath)) {
     console.log(chalk.yellow(`   Warning: vite.config.ts not found at ${viteConfigPath}`));
     return;
@@ -1209,4 +1219,3 @@ export default defineConfig({
   fs.writeFileSync(viteConfigPath, standaloneViteConfig);
   console.log(chalk.gray(`   Vite config replaced with standalone version`));
 }
-

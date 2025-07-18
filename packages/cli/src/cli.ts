@@ -16,12 +16,14 @@ const __dirname = dirname(__filename);
 const packagePath = join(__dirname, '..', 'package.json');
 const packageJson = JSON.parse(readFileSync(packagePath, 'utf-8'));
 
+export const VERSION: string = packageJson.version;
+
 const program = new Command();
 
 program
   .name('skuilder')
   .description('CLI tool for scaffolding Skuilder course applications')
-  .version(packageJson.version);
+  .version(VERSION);
 
 // Add commands
 program.addCommand(createInitCommand());
