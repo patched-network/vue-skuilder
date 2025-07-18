@@ -22,7 +22,8 @@
         "test:e2e-db": "yarn workspace @vue-skuilder/e2e-db test:e2e",
         "test:e2e-db-watch": "yarn workspace @vue-skuilder/e2e-db test:watch",
         "bump:patch": "yarn workspaces foreach --all --exclude vue-skuilder version patch --immediate",
-        "bump:minor": "yarn workspaces foreach --all --exclude vue-skuilder version minor --immediate"
+        "bump:minor": "yarn workspaces foreach --all --exclude vue-skuilder version minor --immediate",
+        "bump:alpha": "yarn workspaces foreach --all --exclude vue-skuilder version prerelease --immediate"
     },
     "private": true,
     "workspaces": [
