@@ -64,10 +64,12 @@ export function allCustomQuestions() {
     }
   });
 
+  const courses = [exampleCourse];
+
   // Return structured data for studio-ui integration
   return {
     // Course instances with question instances
-    courses: [exampleCourse],
+    courses,
 
     // Question class constructors for registration
     questionClasses,
@@ -83,7 +85,7 @@ export function allCustomQuestions() {
       questionCount: questionClasses.length,
       dataShapeCount: dataShapes.length,
       viewCount: views.length,
-      courseCount: 1,
+      courseCount: courses.length,
       packageName: '@vue-skuilder/standalone-ui',
       sourceDirectory: 'src/questions',
     },
