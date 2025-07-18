@@ -125,7 +125,12 @@ async function launchStudio(coursePath: string, options: StudioOptions) {
       }
     } catch (error) {
       // Handle catastrophic build errors by falling back to embedded source
-      console.log(chalk.yellow(`⚠️  Unable to process questions, using embedded studio-ui`));
+      console.log(
+        chalk.yellow(
+          `⚠️  Unable to process questions due to ${error},\n⚠️  Using embedded studio-ui`
+        )
+      );
+
       const embeddedPath = path.join(__dirname, '..', 'studio-ui-src');
 
       if (fs.existsSync(embeddedPath)) {
