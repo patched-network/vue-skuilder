@@ -23,7 +23,10 @@ export function createBaseAliases(rootDir = process.cwd()) {
     // the package prefixes get aliased out before this alias is applied
 
     '@vue-skuilder/common-ui/style': resolve(rootDir, './packages/common-ui/dist/assets/index.css'),
-    '@vue-skuilder/courseware/style': resolve(rootDir, './packages/courses/dist/assets/index.css'),
+    '@vue-skuilder/courseware/style': resolve(
+      rootDir,
+      './packages/courseware/dist/assets/index.css'
+    ),
     '@vue-skuilder/edit-ui/style': resolve(rootDir, './packages/edit-ui/dist/assets/index.css'),
 
     '@vue-skuilder/common-ui': isDev

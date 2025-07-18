@@ -1,4 +1,4 @@
-// packages/courses/vitest.config.ts
+// packages/courseware/vitest.config.ts
 import { defineConfig } from 'vitest/config';
 import vue from '@vitejs/plugin-vue';
 import { resolve } from 'path';

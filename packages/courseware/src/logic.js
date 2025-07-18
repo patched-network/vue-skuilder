@@ -169,7 +169,7 @@ export class BlanksCard {
 
 /**
  * Grade a spelling attempt and provide visual feedback
- * Extracted from packages/courses/src/default/questions/fillIn/blanksCorrection.ts
+ * Extracted from packages/courseware/src/default/questions/fillIn/blanksCorrection.ts
  */
 export function gradeSpellingAttempt(attempt, answer) {
   const result = new Array(answer.length).fill('_');

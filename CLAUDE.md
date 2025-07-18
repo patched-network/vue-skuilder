@@ -107,7 +107,7 @@ Always resolve to source directories for internal package references:
 - `@db` → `./packages/db/src`
 - `@common` → `./packages/common/src`
 - `@cui` → `./packages/common-ui/src`
-- `@courses` → `./packages/courses/src`
+- `@courseware` → `./packages/courseware/src`
 - `@express` → `./packages/express/src`
 - `@pui` → `./packages/platform-ui/src`
 - `@sui` → `./packages/standalone-ui/src`
