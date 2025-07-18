@@ -89,9 +89,9 @@ export function processCustomQuestionsData(customQuestions: CustomQuestionsData)
     // Determine the course name (use first course or default to meta.packageName)
     const courseName = courseNames.length > 0 ? courseNames[0] : customQuestions.meta.packageName;
 
-    // Process data shapes from this question class
+    // Process data shapes from this question class (static property)
     if (questionClass.dataShapes && Array.isArray(questionClass.dataShapes)) {
-      questionClass.dataShapes().forEach((dataShape) => {
+      questionClass.dataShapes.forEach((dataShape) => {
         processedDataShapes.push({
           name: dataShape.name,
           course: courseName,
@@ -102,11 +102,11 @@ export function processCustomQuestionsData(customQuestions: CustomQuestionsData)
 
     // Process the question itself
     processedQuestions.push({
-      name: questionClass.constructor.name,
+      name: questionClass.name,
       course: courseName,
       questionClass: questionClass,
-      dataShapes: questionClass.dataShapes() || [],
-      views: questionClass.views() || [],
+      dataShapes: questionClass.dataShapes || [],
+      views: questionClass.views || [],
     });
   });
 

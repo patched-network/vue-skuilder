@@ -106,7 +106,32 @@ const vuetify = createVuetify({
     console.log('   ℹ️  No custom questions config available (default studio mode)');
   }
 
+  // Register custom question types in CourseConfig if available
+  if (customQuestions) {
+    console.log('🎨 Studio Mode: Registering custom question types in CourseConfig');
+    try {
+      const { getDataLayer } = await import('@vue-skuilder/db');
+      const courseDB = getDataLayer().getCourseDB(studioConfig.database.name);
+      const courseConfig = await courseDB.getCourseConfig();
+      
+      const { registerCustomQuestionTypes } = await import('./utils/courseConfigRegistration');
+      const registrationResult = await registerCustomQuestionTypes(
+        customQuestions,
+        courseConfig,
+        courseDB
+      );
+      
+      if (registrationResult.success) {
+        console.log(`   ✅ Custom question types registered successfully: ${registrationResult.registeredCount} items`);
+      } else {
+        console.warn(`   ⚠️  Custom question type registration failed: ${registrationResult.errorMessage}`);
+      }
+    } catch (registrationError) {
+      console.warn(`   ⚠️  Failed to register custom question types: ${registrationError instanceof Error ? registrationError.message : String(registrationError)}`);
+    }
+  }
 
+  
   console.log('🎨 Studio Mode: Collecting view components');
   const viewComponents = Courses.allViewsRaw();
   console.log(`   ✅ Collected ${Object.keys(viewComponents).length} base view components`);
