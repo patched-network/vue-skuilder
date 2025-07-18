@@ -28,7 +28,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { CourseInformation } from '@vue-skuilder/common-ui';
-import { allCourses } from '@vue-skuilder/courses';
+import { allCourses } from '@vue-skuilder/courseware';
 import { getStudioConfig, getConfigErrorMessage } from '../config/development';
 
 // Browse view state

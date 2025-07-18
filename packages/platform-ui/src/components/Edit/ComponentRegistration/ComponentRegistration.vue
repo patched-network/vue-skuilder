@@ -30,7 +30,7 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 import { Displayable } from '@vue-skuilder/common-ui';
-import { allCourses } from '@vue-skuilder/courses';
+import { allCourses } from '@vue-skuilder/courseware';
 import { getDataLayer, CourseDBInterface } from '@vue-skuilder/db';
 import {
   NameSpacer,

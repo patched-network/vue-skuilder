@@ -1,4 +1,4 @@
-import { allCourses } from '@vue-skuilder/courses';
+import { allCourses } from '@vue-skuilder/courseware';
 import { log, NameSpacer, CourseConfig, DataShape } from '@vue-skuilder/common';
 import { CardData, DisplayableData } from '@db/core';
 import { getCourseDB } from '@db/impl/couch/courseAPI';

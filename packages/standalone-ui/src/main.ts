@@ -20,11 +20,11 @@ import { initializeDataLayer, getDataLayer } from '@vue-skuilder/db';
 import { useAuthStore } from '@vue-skuilder/common-ui';
 
 // styles from component library packages
-import '@vue-skuilder/courses/style';
+import '@vue-skuilder/courseware/style';
 import '@vue-skuilder/common-ui/style';
 
 // Import allCourses singleton and exampleCourse
-import { allCourses } from '@vue-skuilder/courses';
+import { allCourses } from '@vue-skuilder/courseware';
 import { exampleCourse } from './questions/exampleCourse';
 
 // Add the example course to the allCourses singleton

@@ -8,7 +8,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, PropType } from 'vue';
-import { useViewable, useQuestionView } from '@vue-skuilder/courses';
+import { useViewable, useQuestionView } from '@vue-skuilder/courseware';
 import { SimpleTextQuestion } from './SimpleTextQuestion';
 import { ViewData } from '@vue-skuilder/common';
 

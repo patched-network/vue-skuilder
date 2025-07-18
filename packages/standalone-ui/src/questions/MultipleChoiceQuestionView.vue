@@ -2,12 +2,7 @@
   <div>
     <p>{{ questionText }}</p>
     <div v-for="(option, index) in options" :key="index">
-      <input
-        type="radio"
-        :id="`option-${index}`"
-        :value="option"
-        v-model="selectedAnswer"
-      />
+      <input type="radio" :id="`option-${index}`" :value="option" v-model="selectedAnswer" />
       <label :for="`option-${index}`">{{ option }}</label>
     </div>
     <button @click="submitAnswer">Submit</button>
@@ -16,7 +11,7 @@
 
 <script setup lang="ts">
 import { ref, PropType } from 'vue';
-import { useViewable, useQuestionView } from '@vue-skuilder/courses';
+import { useViewable, useQuestionView } from '@vue-skuilder/courseware';
 import { MultipleChoiceQuestion } from './MultipleChoiceQuestion';
 import { ViewData } from '@vue-skuilder/common';
 

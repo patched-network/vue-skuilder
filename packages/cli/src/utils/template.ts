@@ -160,7 +160,7 @@ export default defineConfig({
       '@vue-skuilder/db',
       '@vue-skuilder/common',
       '@vue-skuilder/common-ui',
-      '@vue-skuilder/courses',
+      '@vue-skuilder/courseware',
     ],
   },
   // --- Dependencies optimization ---
@@ -170,7 +170,7 @@ export default defineConfig({
       '@vue-skuilder/common-ui',
       '@vue-skuilder/db',
       '@vue-skuilder/common',
-      '@vue-skuilder/courses',
+      '@vue-skuilder/courseware',
     ],
   },
   server: {
@@ -199,7 +199,7 @@ export default defineConfig({
             'pinia',
             '@vue-skuilder/common',
             '@vue-skuilder/common-ui',
-            '@vue-skuilder/courses',
+            '@vue-skuilder/courseware',
             '@vue-skuilder/db',
           ],
           output: {
@@ -211,7 +211,7 @@ export default defineConfig({
               'pinia': 'Pinia',
               '@vue-skuilder/common': 'VueSkuilderCommon',
               '@vue-skuilder/common-ui': 'VueSkuilderCommonUI',
-              '@vue-skuilder/courses': 'VueSkuilderCourses',
+              '@vue-skuilder/courseware': 'VueSkuilderCourses',
               '@vue-skuilder/db': 'VueSkuilderDB',
             },
             exports: 'named',

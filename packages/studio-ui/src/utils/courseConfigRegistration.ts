@@ -1,7 +1,7 @@
 import { CourseConfig, DataShape, NameSpacer } from '@vue-skuilder/common';
 import { CourseDBInterface } from '@vue-skuilder/db';
 import { Displayable, getCurrentUser, ViewComponent } from '@vue-skuilder/common-ui';
-import { Course } from '@vue-skuilder/courses';
+import { Course } from '@vue-skuilder/courseware';
 
 /**
  * Interface for custom questions data structure returned by allCustomQuestions()

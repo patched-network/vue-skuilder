@@ -29,7 +29,7 @@ Standalone Vue 3 application for course consumption without the full platform au
 
 ### Vue-Skuilder Packages
 - `@vue-skuilder/common-ui` - Shared UI components
-- `@vue-skuilder/courses` - Course content system
+- `@vue-skuilder/courseware` - Course content system
 - `@vue-skuilder/db` - Database layer
 
 ### Utilities

@@ -54,7 +54,7 @@
 <script lang="ts">
 import { defineComponent, PropType } from 'vue';
 import { CourseInformation, getCurrentUser } from '@vue-skuilder/common-ui';
-import { MidiConfig, allCourses } from '@vue-skuilder/courses';
+import { MidiConfig, allCourses } from '@vue-skuilder/courseware';
 import { UserDBInterface, getDataLayer } from '@vue-skuilder/db';
 import { CourseConfig } from '@vue-skuilder/common';
 

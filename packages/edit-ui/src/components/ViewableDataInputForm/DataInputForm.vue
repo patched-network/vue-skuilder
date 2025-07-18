@@ -87,7 +87,7 @@ import { TagsInput } from '@vue-skuilder/common-ui';
 import type { TagsInputInstance } from '@vue-skuilder/common-ui/src/components/TagsInput.vue';
 import { FieldInputInstance, isFieldInput } from './FieldInput.types';
 import { alertUser } from '@vue-skuilder/common-ui';
-import { allCourses } from '@vue-skuilder/courses';
+import { allCourses } from '@vue-skuilder/courseware';
 import { getDataLayer, CourseDBInterface } from '@vue-skuilder/db';
 import { FieldType, Status, CourseConfig, NameSpacer, ShapeDescriptor } from '@vue-skuilder/common';
 import _ from 'lodash';

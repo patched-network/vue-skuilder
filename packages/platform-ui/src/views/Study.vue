@@ -82,7 +82,7 @@ import { getCurrentUser, useConfigStore } from '@vue-skuilder/common-ui';
 import { useDataInputFormStore } from '@vue-skuilder/edit-ui';
 import { CourseConfig } from '@vue-skuilder/common';
 import { StudySession, type StudySessionConfig } from '@vue-skuilder/common-ui';
-import { allCourses } from '@vue-skuilder/courses';
+import { allCourses } from '@vue-skuilder/courseware';
 import { ContentSourceID, UserDBInterface, getDataLayer } from '@vue-skuilder/db';
 import { defineComponent } from 'vue';
 import { Router } from 'vue-router';

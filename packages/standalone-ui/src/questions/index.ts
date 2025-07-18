@@ -1,7 +1,7 @@
 // Library entry point for custom questions in standalone-ui
 // This file exports question types and components for consumption by studio-ui
 
-import { Course } from '@vue-skuilder/courses';
+import { Course } from '@vue-skuilder/courseware';
 import { DataShape } from '@vue-skuilder/common';
 import { ViewComponent } from '@vue-skuilder/common-ui';
 

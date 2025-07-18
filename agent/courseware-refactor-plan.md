@@ -20,10 +20,14 @@ Refactor the `courses` package to `courseware` with proper abstraction naming an
 **Goal**: Rename package and core classes without breaking existing functionality
 
 ### 1.1 Rename Package Structure
-- [ ] Rename `packages/courses/` → `packages/courseware/`
-- [ ] Update `package.json` name: `@vue-skuilder/courses` → `@vue-skuilder/courseware`
-- [ ] Update workspace references in root `package.json`
-- [ ] Update all `package.json` dependencies across packages
+- [x] Rename `packages/courses/` → `packages/courseware/`
+- [x] Update `package.json` name: `@vue-skuilder/courses` → `@vue-skuilder/courseware`
+- [x] Update workspace references in root `package.json` - No changes needed, uses `packages/*` pattern
+- [x] Update all `package.json` dependencies across packages - Updated 5 packages using sed command
+- [x] Update GitHub workflows (publish-npm.yml, standalone-e2e-tests.yml, courses-test.yml)
+- [x] Update documentation files (CLAUDE.md files)
+- [x] Update CLI references and template utilities
+- [x] Update courseware type declarations and common-ui references
 
 ### 1.2 Rename Core Classes
 - [ ] Rename `Course.ts` → `CourseWare.ts`

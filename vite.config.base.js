@@ -23,13 +23,13 @@ export function createBaseAliases(rootDir = process.cwd()) {
     // the package prefixes get aliased out before this alias is applied
 
     '@vue-skuilder/common-ui/style': resolve(rootDir, './packages/common-ui/dist/assets/index.css'),
-    '@vue-skuilder/courses/style': resolve(rootDir, './packages/courses/dist/assets/index.css'),
+    '@vue-skuilder/courseware/style': resolve(rootDir, './packages/courses/dist/assets/index.css'),
     '@vue-skuilder/edit-ui/style': resolve(rootDir, './packages/edit-ui/dist/assets/index.css'),
 
     '@vue-skuilder/common-ui': isDev
       ? resolve(rootDir, './packages/common-ui/src') // Dev: source directory
       : resolve(rootDir, './packages/common-ui/dist/common-ui.es.js'),
-    '@vue-skuilder/courses': isDev
+    '@vue-skuilder/courseware': isDev
       ? resolve(rootDir, './packages/courses/src') // Dev: source directory
       : resolve(rootDir, './packages/courses/dist/index.mjs'),
     '@vue-skuilder/edit-ui': isDev
@@ -93,7 +93,7 @@ export function createBaseResolve(rootDir = process.cwd(), localAliases = {}) {
       '@vue-skuilder/db',
       '@vue-skuilder/common',
       '@vue-skuilder/common-ui',
-      '@vue-skuilder/courses',
+      '@vue-skuilder/courseware',
       '@vue-skuilder/edit-ui',
     ],
   };

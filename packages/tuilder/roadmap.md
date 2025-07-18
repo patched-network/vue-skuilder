@@ -71,7 +71,7 @@ This document outlines the phased development plan for `tuilder`, a terminal-bas
 
 **Steps**:
 1.  **Add Dependency**:
-    - Add `@vue-skuilder/courses` as a workspace dependency.
+    - Add `@vue-skuilder/courseware` as a workspace dependency.
 2.  **Data Fetching**:
     - After login, use the `@vue-skuilder/db` adapter to fetch the user's course data and queue of questions.
 3.  **Develop Core UI Components**:
@@ -81,7 +81,7 @@ This document outlines the phased development plan for `tuilder`, a terminal-bas
         - Render the appropriate question view.
     - `src/components/QuestionRenderer.tsx`:
         - Takes question data (`ViewData`) as a prop.
-        - Uses the `BlanksCard` class from `@vue-skuilder/courses` to parse the markdown and determine the question type (multiple choice vs. fill-in-the-blank).
+        - Uses the `BlanksCard` class from `@vue-skuilder/courseware` to parse the markdown and determine the question type (multiple choice vs. fill-in-the-blank).
     - `src/components/MarkdownRenderer.tsx`:
         - A component to render the question's text content using the `ink-markdown` library.
     - `src/components/MultipleChoiceInput.tsx`:

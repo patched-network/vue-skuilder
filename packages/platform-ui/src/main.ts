@@ -9,7 +9,7 @@ import { createPinia } from 'pinia';
 import vuetify from './plugins/vuetify';
 
 // styles from component library packages
-import '@vue-skuilder/courses/style';
+import '@vue-skuilder/courseware/style';
 import '@vue-skuilder/common-ui/style';
 
 // `db` import and initialization
@@ -28,7 +28,7 @@ import { initializeDataLayer } from '@vue-skuilder/db';
   const app = createApp(App);
 
   // Dynamically import { allCourses }
-  const { allCourses: Courses } = await import('@vue-skuilder/courses');
+  const { allCourses: Courses } = await import('@vue-skuilder/courseware');
 
   // Register all view components globally
   const viewComponents = Courses.allViewsRaw();

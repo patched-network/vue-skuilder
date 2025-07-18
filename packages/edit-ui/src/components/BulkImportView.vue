@@ -223,7 +223,7 @@ import {
   parseBulkTextToCards,
   isValidBulkFormat,
 } from '@vue-skuilder/common';
-import { BlanksCardDataShapes, allCourses } from '@vue-skuilder/courses';
+import { BlanksCardDataShapes, allCourses } from '@vue-skuilder/courseware';
 import { ViewComponent, getCurrentUser, alertUser } from '@vue-skuilder/common-ui';
 import {
   getDataLayer,

@@ -1,4 +1,4 @@
-import { ViewData, Answer, Question } from '@vue-skuilder/courses';
+import { ViewData, Answer, Question } from '@vue-skuilder/courseware';
 import { FieldType, DataShape, DataShapeName } from '@vue-skuilder/common';
 import MultipleChoiceQuestionView from './MultipleChoiceQuestionView.vue';
 
@@ -27,7 +27,7 @@ export class MultipleChoiceQuestion extends Question {
   constructor(data: ViewData[]) {
     super(data);
     this._questionText = data[0].questionText as string;
-    this.options = (data[0].options as string).split(',').map(s => s.trim());
+    this.options = (data[0].options as string).split(',').map((s) => s.trim());
     this.correctAnswer = data[0].correctAnswer as string;
   }
 

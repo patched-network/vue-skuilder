@@ -9,7 +9,7 @@ import * as directives from 'vuetify/directives';
 import '@mdi/font/css/materialdesignicons.css';
 
 // Component library styles
-import '@vue-skuilder/courses/style';
+import '@vue-skuilder/courseware/style';
 import '@vue-skuilder/common-ui/style';
 import '@vue-skuilder/edit-ui/style';
 
@@ -60,7 +60,7 @@ const vuetify = createVuetify({
 
   // Register all course view components globally (like platform-ui)
   console.log('🎨 Studio Mode: Importing course view components');
-  const { allCourses: Courses } = await import('@vue-skuilder/courses');
+  const { allCourses: Courses } = await import('@vue-skuilder/courseware');
   console.log('   ✅ Course components imported successfully');
 
   // Check for custom questions configuration and import if available
@@ -113,25 +113,30 @@ const vuetify = createVuetify({
       const { getDataLayer } = await import('@vue-skuilder/db');
       const courseDB = getDataLayer().getCourseDB(studioConfig.database.name);
       const courseConfig = await courseDB.getCourseConfig();
-      
+
       const { registerCustomQuestionTypes } = await import('./utils/courseConfigRegistration');
       const registrationResult = await registerCustomQuestionTypes(
         customQuestions,
         courseConfig,
         courseDB
       );
-      
+
       if (registrationResult.success) {
-        console.log(`   ✅ Custom question types registered successfully: ${registrationResult.registeredCount} items`);
+        console.log(
+          `   ✅ Custom question types registered successfully: ${registrationResult.registeredCount} items`
+        );
       } else {
-        console.warn(`   ⚠️  Custom question type registration failed: ${registrationResult.errorMessage}`);
+        console.warn(
+          `   ⚠️  Custom question type registration failed: ${registrationResult.errorMessage}`
+        );
       }
     } catch (registrationError) {
-      console.warn(`   ⚠️  Failed to register custom question types: ${registrationError instanceof Error ? registrationError.message : String(registrationError)}`);
+      console.warn(
+        `   ⚠️  Failed to register custom question types: ${registrationError instanceof Error ? registrationError.message : String(registrationError)}`
+      );
     }
   }
 
-  
   console.log('🎨 Studio Mode: Collecting view components');
   const viewComponents = Courses.allViewsRaw();
   console.log(`   ✅ Collected ${Object.keys(viewComponents).length} base view components`);

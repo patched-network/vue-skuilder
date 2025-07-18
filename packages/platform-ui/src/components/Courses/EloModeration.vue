@@ -28,7 +28,7 @@
 
 <script lang="ts">
 import { CardLoader } from '@vue-skuilder/common-ui';
-import { allCourses } from '@vue-skuilder/courses';
+import { allCourses } from '@vue-skuilder/courseware';
 import { CourseElo, adjustCourseScores, CourseConfig } from '@vue-skuilder/common';
 import { CourseDBInterface, getDataLayer } from '@vue-skuilder/db';
 import { defineComponent } from 'vue';

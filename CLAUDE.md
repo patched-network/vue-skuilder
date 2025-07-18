@@ -25,7 +25,7 @@ User often uses dictation software, which, in context, mangles things like `vue`
 - Database E2E watch: `yarn workspace @vue-skuilder/e2e-db test:watch` // known broken - only used for bespoke manual testing
 - Unit tests (platform-ui): `yarn workspace @vue-skuilder/platform-ui test:unit`
 - Unit tests (common-ui): `yarn workspace @vue-skuilder/common-ui test:unit`
-- Unit tests (courses): `yarn workspace @vue-skuilder/courses test`
+- Unit tests (courses): `yarn workspace @vue-skuilder/courseware test`
 - Run single test: `yarn workspace @vue-skuilder/platform-ui test:unit <test-file-path>`
 - E2E tests (platform-ui): `yarn workspace @vue-skuilder/platform-ui test:e2e:headless`
 - E2E tests (standalone-ui): `yarn workspace @vue-skuilder/standalone-ui test:e2e:headless`
@@ -41,7 +41,7 @@ User often uses dictation software, which, in context, mangles things like `vue`
 #### Frontend Packages
 - Build platform-ui: `yarn workspace @vue-skuilder/platform-ui build`
 - Build common-ui: `yarn workspace @vue-skuilder/common-ui build`
-- Build courses: `yarn workspace @vue-skuilder/courses build`
+- Build courses: `yarn workspace @vue-skuilder/courseware build`
 - Build standalone-ui: `yarn workspace @vue-skuilder/standalone-ui build`
 
 #### CLI & Tools
@@ -58,7 +58,7 @@ User often uses dictation software, which, in context, mangles things like `vue`
 - Lint cli: `yarn workspace @vue-skuilder/cli lint:fix`
 - Type check express: `yarn workspace @vue-skuilder/express type-check`
 - Type check e2e-db: `yarn workspace @vue-skuilder/e2e-db type-check`
-- Type check courses: `yarn workspace @vue-skuilder/courses type-check`
+- Type check courses: `yarn workspace @vue-skuilder/courseware type-check`
 
 ## Style Guidelines
 - Use TypeScript with strict typing

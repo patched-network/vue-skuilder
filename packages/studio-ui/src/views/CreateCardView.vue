@@ -59,7 +59,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
 import { DataInputForm } from '@vue-skuilder/edit-ui';
-import { allCourses } from '@vue-skuilder/courses';
+import { allCourses } from '@vue-skuilder/courseware';
 import { getStudioConfig, getConfigErrorMessage } from '../config/development';
 import { getDataLayer } from '@vue-skuilder/db';
 import type { CourseConfig, DataShape } from '@vue-skuilder/common';

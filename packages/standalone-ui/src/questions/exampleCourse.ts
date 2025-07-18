@@ -1,4 +1,4 @@
-import { Course } from '@vue-skuilder/courses';
+import { Course } from '@vue-skuilder/courseware';
 import { SimpleTextQuestion } from './SimpleTextQuestion';
 import { MultipleChoiceQuestion } from './MultipleChoiceQuestion';
 import { NumberRangeQuestion } from './NumberRangeQuestion';
