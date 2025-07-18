@@ -152,7 +152,7 @@ export default defineComponent({
     async updateAvailableCourseTags() {
       try {
         this.availableCourseTags = (await this.courseDB!.getCourseTagStubs()).rows.map((row) => {
-          console.log(`[TagsInput] available tag: ${JSON.stringify(row)}`);
+          // console.log(`[TagsInput] available tag: ${JSON.stringify(row)}`);
           return row.doc! as Tag;
         });
       } catch (e) {
