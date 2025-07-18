@@ -1,9 +1,9 @@
-import { Course } from '@vue-skuilder/courseware';
+import { CourseWare } from '@vue-skuilder/courseware';
 import { SimpleTextQuestion } from './SimpleTextQuestion';
 import { MultipleChoiceQuestion } from './MultipleChoiceQuestion';
 import { NumberRangeQuestion } from './NumberRangeQuestion';
 
-export const exampleCourse = new Course('ExampleCourse', [
+export const exampleCourse = new CourseWare('ExampleCourse', [
   new SimpleTextQuestion([
     { questionText: 'What is the capital of France?', correctAnswer: 'Paris' },
   ]),

@@ -1,13 +1,13 @@
 import { CourseConfig, DataShape, NameSpacer } from '@vue-skuilder/common';
 import { CourseDBInterface } from '@vue-skuilder/db';
 import { Displayable, getCurrentUser, ViewComponent } from '@vue-skuilder/common-ui';
-import { Course } from '@vue-skuilder/courseware';
+import { CourseWare } from '@vue-skuilder/courseware';
 
 /**
  * Interface for custom questions data structure returned by allCustomQuestions()
  */
 export interface CustomQuestionsData {
-  courses: Course[]; // Course instances with question instances
+  courses: CourseWare[]; // Course instances with question instances
   questionClasses: Displayable[]; // Question class constructors
   dataShapes: DataShape[]; // DataShape definitions for studio-ui
   views: ViewComponent[]; // Vue components for rendering
