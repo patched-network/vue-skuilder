@@ -1,10 +1,6 @@
 import { markRaw } from 'vue';
-import { Course } from './Course';
-import {
-  Displayable,
-  Question,
-  ViewComponent,
-} from '@vue-skuilder/common-ui';
+import { CourseWare } from './CourseWare';
+import { Displayable, Question, ViewComponent } from '@vue-skuilder/common-ui';
 import {
   DataShape,
   NameSpacer,
@@ -22,14 +18,12 @@ export { useViewable } from '@vue-skuilder/common-ui';
 import { useQuestionView as _useQuestionView } from '@vue-skuilder/common-ui';
 export const useQuestionView = _useQuestionView as typeof _useQuestionView;
 
-
 import defaultCourse from './default';
 
 /**
- * A `Course` is a container for a set of related `Question` types.
+ * A `CourseWare` is a container for a set of related `Question` types.
  */
-export { Course };
-
+export { CourseWare };
 
 /**
  * The base class for all interactive course content.
@@ -48,8 +42,6 @@ export { Question };
  * A type representing a Vue component that can be used to render a `Displayable`.
  */
 export type { ViewComponent };
-
-
 
 /**
  * Represents the actual data passed to a `Displayable`'s constructor.
@@ -75,7 +67,6 @@ export type { ViewDescriptor };
  * A descriptor that uniquely identifies a `DataShape`.
  */
 export type { ShapeDescriptor };
-
 
 import chess from './chess';
 import french from './french';
@@ -108,19 +99,19 @@ export {
 export { default as MidiConfig } from './piano/utility/MidiConfig.vue';
 export { default as SyllableSeqVis } from './piano/utility/SyllableSeqVis.vue';
 
-export class CourseList {
-  private readonly courseList: Course[];
+export class AllCourseWare {
+  private readonly courseWareList: CourseWare[];
 
-  public get courses(): Course[] {
-    return this.courseList;
+  public get courses(): CourseWare[] {
+    return this.courseWareList;
   }
 
-  constructor(courses: Course[]) {
-    this.courseList = courses;
+  constructor(courses: CourseWare[]) {
+    this.courseWareList = courses;
   }
 
-  public getCourse(name: string): Course | undefined {
-    return this.courseList.find((course) => {
+  public getCourseWare(name: string): CourseWare | undefined {
+    return this.courseWareList.find((course) => {
       return course.name === name;
     });
   }
@@ -142,8 +133,8 @@ export class CourseList {
   public allViews(): { [index: string]: ViewComponent } {
     const ret: { [index: string]: ViewComponent } = {};
 
-    this.courseList.forEach((course) => {
-      Object.assign(ret, course.allViewsMap);
+    this.courseWareList.forEach((cw) => {
+      Object.assign(ret, cw.allViewsMap);
     });
 
     return ret;
@@ -157,7 +148,7 @@ export class CourseList {
       description = viewDescription;
     }
 
-    const course = this.getCourse(description.course);
+    const course = this.getCourseWare(description.course);
     if (course) {
       const question = course.getQuestion(description.questionType);
       if (question) {
@@ -221,8 +212,8 @@ export class CourseList {
   public allDataShapesRaw(): DataShape[] {
     const ret: DataShape[] = [];
 
-    this.courseList.forEach((course) => {
-      course.questions.forEach((question) => {
+    this.courseWareList.forEach((cw) => {
+      cw.questions.forEach((question) => {
         question.dataShapes.forEach((shape) => {
           if (!ret.includes(shape)) {
             ret.push(shape);
@@ -237,19 +228,19 @@ export class CourseList {
   public allDataShapes(): (ShapeDescriptor & { displayable: typeof Displayable })[] {
     const ret: (ShapeDescriptor & { displayable: typeof Displayable })[] = [];
 
-    this.courseList.forEach((course) => {
-      course.questions.forEach((question) => {
+    this.courseWareList.forEach((cw) => {
+      cw.questions.forEach((question) => {
         question.dataShapes.forEach((shape) => {
           // [ ] need to de-dup shapes here. Currently, if a shape is used in multiple courses
           //     it will be returned multiple times.
           //     `Blanks` shape is is hard coded into new courses, so gets returned many times
           if (
             ret.findIndex((testShape) => {
-              return testShape.course === course.name && testShape.dataShape === shape.name;
+              return testShape.course === cw.name && testShape.dataShape === shape.name;
             }) === -1
           ) {
             ret.push({
-              course: course.name,
+              course: cw.name,
               dataShape: shape.name,
               displayable: question,
             });
@@ -264,7 +255,7 @@ export class CourseList {
   public getDataShape(description: ShapeDescriptor): DataShape {
     let ret: DataShape | undefined;
 
-    this.getCourse(description.course)!.questions.forEach((question) => {
+    this.getCourseWare(description.course)!.questions.forEach((question) => {
       question.dataShapes.forEach((shape) => {
         if (shape.name === description.dataShape) {
           ret = shape;
@@ -280,7 +271,7 @@ export class CourseList {
   }
 }
 
-export const allCourses: CourseList = new CourseList([
+export const allCourseWare: AllCourseWare = new AllCourseWare([
   math,
   wordWork,
   french,

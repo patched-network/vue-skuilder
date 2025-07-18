@@ -59,7 +59,7 @@
 import { defineComponent } from 'vue';
 // import ComponentRegistration from '@vue-skuilder/platform-ui/src/components/Edit/ComponentRegistration/ComponentRegistration.vue';
 // import NavigationStrategyEditor from '@vue-skuilder/platform-ui/src/components/Edit/NavigationStrategy/NavigationStrategyEditor.vue';
-import { allCourses } from '@vue-skuilder/courseware';
+import { allCourseWare } from '@vue-skuilder/courseware';
 import { BlanksCard, BlanksCardDataShapes } from '@vue-skuilder/courseware';
 import { CourseConfig, NameSpacer, DataShape } from '@vue-skuilder/common';
 import DataInputForm from './ViewableDataInputForm/DataInputForm.vue';
@@ -125,7 +125,7 @@ export default defineComponent({
 
     // #55 make all 'programmed' datashapes available, rather than
     // the previous code-based name scoping
-    allCourses.courses.forEach((course) => {
+    allCourseWare.courses.forEach((course) => {
       course.questions.forEach((question) => {
         question.dataShapes.forEach((ds) => {
           this.dataShapes.push(ds);

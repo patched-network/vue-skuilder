@@ -223,7 +223,7 @@ import {
   parseBulkTextToCards,
   isValidBulkFormat,
 } from '@vue-skuilder/common';
-import { BlanksCardDataShapes, allCourses } from '@vue-skuilder/courseware';
+import { BlanksCardDataShapes, allCourseWare } from '@vue-skuilder/courseware';
 import { ViewComponent, getCurrentUser, alertUser } from '@vue-skuilder/common-ui';
 import {
   getDataLayer,
@@ -401,7 +401,7 @@ export default defineComponent({
 
       // Get the code course from the dataShape descriptor
       const descriptor = NameSpacer.getDataShapeDescriptor(configDataShape.name);
-      const course = allCourses.getCourse(descriptor.course);
+      const course = allCourseWare.getCourse(descriptor.course);
 
       if (course) {
         // Get view components for this dataShape

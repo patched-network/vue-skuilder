@@ -60,7 +60,7 @@ const vuetify = createVuetify({
 
   // Register all course view components globally (like platform-ui)
   console.log('🎨 Studio Mode: Importing course view components');
-  const { allCourses: Courses } = await import('@vue-skuilder/courseware');
+  const { allCourseWare: Courses } = await import('@vue-skuilder/courseware');
   console.log('   ✅ Course components imported successfully');
 
   // Check for custom questions configuration and import if available

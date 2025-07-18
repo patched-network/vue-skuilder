@@ -1,4 +1,4 @@
-import { Course } from '../Course';
+import { CourseWare } from '../CourseWare';
 import { SingleDigitAdditionQuestion } from './questions/addition';
 import { SingleDigitDivisionQuestion } from './questions/division';
 import { SingleDigitMultiplicationQuestion } from './questions/multiplication';
@@ -8,7 +8,7 @@ import { AngleCategorize } from './questions/angleCategorize';
 import { SupplementaryAngles } from './questions/supplementaryAngles';
 import { CountBy } from './questions/countBy';
 
-const math: Course = new Course('math', [
+const math: CourseWare = new CourseWare('math', [
   SingleDigitDivisionQuestion,
   SingleDigitMultiplicationQuestion,
   SingleDigitAdditionQuestion,

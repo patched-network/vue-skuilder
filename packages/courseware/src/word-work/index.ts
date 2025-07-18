@@ -1,6 +1,6 @@
-import { Course } from '../Course';
+import { CourseWare } from '../CourseWare';
 import { SpellingQuestion } from './questions/spelling';
 
-const wordWork: Course = new Course('wordWork', [SpellingQuestion]);
+const wordWork: CourseWare = new CourseWare('wordWork', [SpellingQuestion]);
 
 export default wordWork;

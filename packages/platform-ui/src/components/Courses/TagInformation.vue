@@ -67,7 +67,7 @@ import { DocType, Tag, getDataLayer, CourseDBInterface } from '@vue-skuilder/db'
 import { Status, CourseConfig } from '@vue-skuilder/common';
 import { CourseCardBrowser } from '@vue-skuilder/common-ui';
 import { alertUser } from '@vue-skuilder/common-ui';
-import { allCourses } from '@vue-skuilder/courseware';
+import { allCourseWare } from '@vue-skuilder/courseware';
 
 export default defineComponent({
   name: 'TagInformation',
@@ -133,7 +133,7 @@ export default defineComponent({
 
   methods: {
     viewLookup(x: unknown) {
-      return allCourses.getView(x);
+      return allCourseWare.getView(x);
     },
 
     editSnippet() {

@@ -1,7 +1,7 @@
 import { Displayable, ViewComponent } from '@vue-skuilder/common-ui';
 import { BlanksCard } from './default/questions/fillIn/';
 
-export class Course {
+export class CourseWare {
   public get questions(): Array<typeof Displayable> {
     return this.questionList;
   }

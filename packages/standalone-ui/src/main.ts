@@ -23,12 +23,12 @@ import { useAuthStore } from '@vue-skuilder/common-ui';
 import '@vue-skuilder/courseware/style';
 import '@vue-skuilder/common-ui/style';
 
-// Import allCourses singleton and exampleCourse
-import { allCourses } from '@vue-skuilder/courseware';
+// Import allCourseWare singleton and exampleCourse
+import { allCourseWare } from '@vue-skuilder/courseware';
 import { exampleCourse } from './questions/exampleCourse';
 
-// Add the example course to the allCourses singleton
-allCourses.courses.push(exampleCourse);
+// Add the example course to the allCourseWare singleton
+allCourseWare.courses.push(exampleCourse);
 
 // theme configuration
 import config from '../skuilder.config.json';

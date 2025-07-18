@@ -82,7 +82,7 @@ import { getCurrentUser, useConfigStore } from '@vue-skuilder/common-ui';
 import { useDataInputFormStore } from '@vue-skuilder/edit-ui';
 import { CourseConfig } from '@vue-skuilder/common';
 import { StudySession, type StudySessionConfig } from '@vue-skuilder/common-ui';
-import { allCourses } from '@vue-skuilder/courseware';
+import { allCourseWare } from '@vue-skuilder/courseware';
 import { ContentSourceID, UserDBInterface, getDataLayer } from '@vue-skuilder/db';
 import { defineComponent } from 'vue';
 import { Router } from 'vue-router';
@@ -145,7 +145,7 @@ export default defineComponent({
       errorMessage: '',
       sessionContentSources: [] as ContentSourceID[],
       dataInputFormStore: useDataInputFormStore(),
-      getViewComponent: (view_id: string) => allCourses.getView(view_id),
+      getViewComponent: (view_id: string) => allCourseWare.getView(view_id),
       dataLayer: getDataLayer(),
     };
   },
@@ -160,14 +160,14 @@ export default defineComponent({
 
     if (this.randomPreview) {
       const userCourseRegDoc = await this.user.getCourseRegistrationsDoc();
-      const allCourses = (await getDataLayer().getCoursesDB().getCourseList()).map((r) => r.courseID);
-      const unRegisteredCourses = allCourses.filter((c) => {
+      const allCourseWare = (await getDataLayer().getCoursesDB().getCourseList()).map((r) => r.courseID);
+      const unRegisteredCourses = allCourseWare.filter((c) => {
         return !userCourseRegDoc.courses.some((rc) => rc.courseID === c);
       });
       if (unRegisteredCourses.length > 0) {
         singletonStudyCourseID = unRegisteredCourses[randomInt(0, unRegisteredCourses.length)]!;
       } else {
-        singletonStudyCourseID = allCourses[randomInt(0, allCourses.length)]!;
+        singletonStudyCourseID = allCourseWare[randomInt(0, allCourseWare.length)]!;
       }
     }
 

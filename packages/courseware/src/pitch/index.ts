@@ -1,6 +1,6 @@
-import { Course } from '../Course';
+import { CourseWare } from '../CourseWare';
 import { ChromaQuestion } from './questions/indentify';
 
-const pitch: Course = new Course('pitch', [ChromaQuestion]);
+const pitch: CourseWare = new CourseWare('pitch', [ChromaQuestion]);
 
 export default pitch;

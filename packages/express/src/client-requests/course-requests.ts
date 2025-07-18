@@ -51,7 +51,7 @@ function insertDesignDoc(
 }
 
 export async function initCourseDBDesignDocInsert(): Promise<void> {
-  const courses = await CourseLookup.allCourses();
+  const courses = await CourseLookup.allCourseWare();
   courses.forEach((c) => {
     // Insert design docs
     courseDBDesignDocs.forEach((dd) => {

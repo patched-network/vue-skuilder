@@ -40,7 +40,7 @@ export class CoursesDB implements CoursesDBInterface {
   }
 
   public async getCourseList(): Promise<CourseConfig[]> {
-    let crsList = await CourseLookup.allCourses();
+    let crsList = await CourseLookup.allCourseWare();
     logger.debug(`AllCourses: ${crsList.map((c) => c.name + ', ' + c._id + '\n\t')}`);
     if (this._courseIDs) {
       crsList = crsList.filter((c) => this._courseIDs!.includes(c._id));

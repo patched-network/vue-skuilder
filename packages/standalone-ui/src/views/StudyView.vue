@@ -28,7 +28,7 @@
 import { ref, onMounted } from 'vue';
 import { ContentSourceID, getDataLayer } from '@vue-skuilder/db';
 import { StudySession, type StudySessionConfig, useConfigStore } from '@vue-skuilder/common-ui';
-import { allCourses } from '@vue-skuilder/courseware';
+import { allCourseWare } from '@vue-skuilder/courseware';
 import ENV from '../ENVIRONMENT_VARS';
 
 const user = getDataLayer().getUserDB();
@@ -42,7 +42,7 @@ const studySessionConfig = ref<StudySessionConfig>({
 });
 
 // Function to get view component from courses
-const getViewComponent = (view_id: string) => allCourses.getView(view_id);
+const getViewComponent = (view_id: string) => allCourseWare.getView(view_id);
 
 // Initialize study session with course from environment vars
 const initStudySession = async () => {

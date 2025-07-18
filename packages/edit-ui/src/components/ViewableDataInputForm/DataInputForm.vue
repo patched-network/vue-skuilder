@@ -87,7 +87,7 @@ import { TagsInput } from '@vue-skuilder/common-ui';
 import type { TagsInputInstance } from '@vue-skuilder/common-ui/src/components/TagsInput.vue';
 import { FieldInputInstance, isFieldInput } from './FieldInput.types';
 import { alertUser } from '@vue-skuilder/common-ui';
-import { allCourses } from '@vue-skuilder/courseware';
+import { allCourseWare } from '@vue-skuilder/courseware';
 import { getDataLayer, CourseDBInterface } from '@vue-skuilder/db';
 import { FieldType, Status, CourseConfig, NameSpacer, ShapeDescriptor } from '@vue-skuilder/common';
 import _ from 'lodash';
@@ -505,7 +505,7 @@ export default defineComponent({
         console.log('[DataInputForm] this.dataShape.name', this.dataShape.name);
 
         if (descriptor.dataShape === this.dataShape.name) {
-          const crs = allCourses.getCourse(descriptor.course)!;
+          const crs = allCourseWare.getCourse(descriptor.course)!;
 
           this.shapeViews = [];
 

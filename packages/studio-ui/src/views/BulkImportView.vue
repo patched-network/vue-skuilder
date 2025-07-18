@@ -21,7 +21,7 @@
           <!-- Bulk Import View from edit-ui package -->
           <bulk-import-view
             :course-cfg="courseConfig"
-            :view-lookup-function="allCourses.getView"
+            :view-lookup-function="allCourseWare.getView"
             @import-completed="onImportCompleted"
           />
         </div>
@@ -37,7 +37,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { BulkImportView } from '@vue-skuilder/edit-ui';
-import { allCourses } from '@vue-skuilder/courseware';
+import { allCourseWare } from '@vue-skuilder/courseware';
 import { getStudioConfig, getConfigErrorMessage } from '../config/development';
 import { getDataLayer } from '@vue-skuilder/db';
 import type { CourseConfig } from '@vue-skuilder/common';

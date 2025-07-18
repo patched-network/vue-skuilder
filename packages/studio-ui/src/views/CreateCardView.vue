@@ -38,7 +38,7 @@
             :course-id="courseId"
             :course-cfg="courseConfig"
             :data-shape="selectedDataShape"
-            :view-lookup-function="allCourses.getView"
+            :view-lookup-function="allCourseWare.getView"
             @card-created="onCardCreated"
           />
 
@@ -59,7 +59,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
 import { DataInputForm } from '@vue-skuilder/edit-ui';
-import { allCourses } from '@vue-skuilder/courseware';
+import { allCourseWare } from '@vue-skuilder/courseware';
 import { getStudioConfig, getConfigErrorMessage } from '../config/development';
 import { getDataLayer } from '@vue-skuilder/db';
 import type { CourseConfig, DataShape } from '@vue-skuilder/common';
@@ -82,12 +82,12 @@ const selectedDataShape = computed((): DataShape | null => {
   const shapes = availableDataShapes.value;
   if (shapes.length === 0) return null;
 
-  // Find the corresponding DataShape from allCourses
+  // Find the corresponding DataShape from allCourseWare
   const shapeName = shapes[selectedDataShapeIndex.value]?.name;
   if (!shapeName) return null;
 
   // Search through all courses to find the DataShape
-  for (const course of allCourses.courses) {
+  for (const course of allCourseWare.courses) {
     for (const question of course.questions) {
       for (const dataShape of question.dataShapes) {
         if (dataShape.name === shapeName.split('.').pop()) {
