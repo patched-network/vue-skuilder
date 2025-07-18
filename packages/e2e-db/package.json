@@ -1,6 +1,6 @@
 {
     "name": "@vue-skuilder/e2e-db",
-    "version": "0.1.7",
+    "version": "0.1.8-0",
     "private": true,
     "description": "End-to-end tests for database layer public API",
     "scripts": {
@@ -30,5 +30,6 @@
         "jest": "^29.7.0",
         "ts-jest": "^29.1.1",
         "typescript": "~5.7.2"
-    }
+    },
+    "stableVersion": "0.1.7"
 }

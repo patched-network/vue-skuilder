@@ -15,6 +15,14 @@ import {
   Evaluation,
 } from '@vue-skuilder/common';
 
+// Re-export the composables with proper type constraints
+export { useViewable } from '@vue-skuilder/common-ui';
+
+// Re-export useQuestionView but with our re-exported Question type
+import { useQuestionView as _useQuestionView } from '@vue-skuilder/common-ui';
+export const useQuestionView = _useQuestionView as typeof _useQuestionView;
+
+
 import defaultCourse from './default';
 
 /**

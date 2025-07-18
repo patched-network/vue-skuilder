@@ -51,7 +51,7 @@ export class NodeFileSystemAdapter implements FileSystemAdapter {
       return {
         isDirectory: () => stats.isDirectory(),
         isFile: () => stats.isFile(),
-        size: stats.size
+        size: stats.size,
       };
     } catch (error) {
       throw new FileSystemError(
@@ -76,7 +76,7 @@ export class NodeFileSystemAdapter implements FileSystemAdapter {
     }
   }
 
-  async writeJson(filePath: string, data: any, options?: { spaces?: number }): Promise<void> {
+  async writeJson(filePath: string, data: unknown, options?: { spaces?: number }): Promise<void> {
     try {
       await fse.writeJson(filePath, data, options);
     } catch (error) {

@@ -38,13 +38,13 @@ export class ExpressManager {
     }
 
     const expressAssetsPath = join(__dirname, '..', 'express-assets');
-    
+
     if (!fs.existsSync(expressAssetsPath)) {
       throw new Error('Express assets not found. Please rebuild the CLI package.');
     }
 
     const expressMainPath = join(expressAssetsPath, 'app.js');
-    
+
     if (!fs.existsSync(expressMainPath)) {
       throw new Error('Express main file not found at: ' + expressMainPath);
     }
@@ -59,6 +59,7 @@ export class ExpressManager {
       const packageJson = require(packageJsonPath);
       version = packageJson.version || '0.0.0';
     } catch (error) {
+      console.warn('Could not read package.json for version:', error);
       // Fallback version if package.json not found
       version = '0.0.0';
     }
@@ -73,14 +74,14 @@ export class ExpressManager {
       COUCHDB_PASSWORD: this.options.couchdbPassword,
       VERSION: version,
       NODE_ENV: 'studio',
-      PROJECT_PATH: this.options.projectPath || process.cwd()
+      PROJECT_PATH: this.options.projectPath || process.cwd(),
     };
 
     return new Promise((resolve, reject) => {
       this.process = spawn('node', [expressMainPath], {
         env,
         stdio: ['pipe', 'pipe', 'pipe'],
-        cwd: expressAssetsPath
+        cwd: expressAssetsPath,
       });
 
       if (!this.process) {
@@ -128,7 +129,7 @@ export class ExpressManager {
       // Timeout if server doesn't start within 10 seconds
       setTimeout(() => {
         if (!started) {
-          this.stop();
+          void this.stop();
           reject(new Error('Express server failed to start within timeout'));
         }
       }, 10000);
@@ -168,37 +169,37 @@ export class ExpressManager {
   getConnectionDetails() {
     return {
       url: `http://localhost:${this.options.port}`,
-      port: this.options.port
+      port: this.options.port,
     };
   }
 
   private async findAvailablePort(startPort: number): Promise<number> {
     const net = await import('net');
-    
+
     for (let port = startPort; port < startPort + 100; port++) {
       if (await this.isPortAvailable(port, net)) {
         return port;
       }
     }
-    
+
     throw new Error(`No available port found starting from ${startPort}`);
   }
 
-  private isPortAvailable(port: number, net: any): Promise<boolean> {
+  private isPortAvailable(port: number, net: typeof import('net')): Promise<boolean> {
     return new Promise((resolve) => {
       const server = net.createServer();
-      
+
       server.listen(port, '127.0.0.1', () => {
         server.close(() => resolve(true));
       });
-      
+
       server.on('error', () => resolve(false));
     });
   }
 
   private extractServerFromUrl(url: string): string {
     // Extract hostname:port from URL like "http://localhost:5984"
-    const match = url.match(/https?:\/\/([^\/]+)/);
+    const match = url.match(/https?:\/\/([^/]+)/);
     return match ? match[1] : 'localhost:5984';
   }
 

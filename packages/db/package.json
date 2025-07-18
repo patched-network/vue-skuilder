@@ -3,7 +3,7 @@
     "publishConfig": {
         "access": "public"
     },
-    "version": "0.1.7",
+    "version": "0.1.8-0",
     "description": "Database layer for vue-skuilder",
     "main": "dist/index.js",
     "module": "dist/index.mjs",
@@ -55,5 +55,6 @@
         "@types/uuid": "^10.0.0",
         "tsup": "^8.0.2",
         "typescript": "~5.7.2"
-    }
+    },
+    "stableVersion": "0.1.7"
 }

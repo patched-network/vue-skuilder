@@ -45,9 +45,9 @@ export class StaticCourseDB implements CourseDBInterface {
     // Count only cards, not all documents
     // Use chunks metadata to count card documents specifically
     const cardCount = this.manifest.chunks
-      .filter(chunk => chunk.docType === DocType.CARD)
+      .filter((chunk) => chunk.docType === DocType.CARD)
       .reduce((total, chunk) => total + chunk.documentCount, 0);
-    
+
     return {
       cardCount,
       registeredUsers: 0, // Always 0 in static mode
@@ -168,11 +168,11 @@ export class StaticCourseDB implements CourseDBInterface {
     try {
       const tagsIndex = await this.unpacker.getTagsIndex();
       const cardTags = tagsIndex.byCard[cardId] || [];
-      
+
       const rows = await Promise.all(
         cardTags.map(async (tagName) => {
           const tagId = `${DocType.TAG}-${tagName}`;
-          
+
           try {
             // Try to get the full tag document
             const tagDoc = await this.unpacker.getDocument(tagId);
@@ -186,6 +186,12 @@ export class StaticCourseDB implements CourseDBInterface {
               },
             };
           } catch (error) {
+            if (error && (error as PouchDB.Core.Error).status === 404) {
+              logger.warn(`Tag document not found for ${tagName}, creating stub`);
+            } else {
+              logger.error(`Error getting tag document for ${tagName}:`, error);
+              throw error;
+            }
             // If tag document not found, create a minimal stub
             return {
               id: tagId,
@@ -238,7 +244,7 @@ export class StaticCourseDB implements CourseDBInterface {
   async getCourseTagStubs(): Promise<PouchDB.Core.AllDocsResponse<Tag>> {
     try {
       const tagsIndex = await this.unpacker.getTagsIndex();
-      
+
       if (!tagsIndex || !tagsIndex.byTag) {
         logger.warn('Tags index not found or empty');
         return {
@@ -254,7 +260,7 @@ export class StaticCourseDB implements CourseDBInterface {
         tagNames.map(async (tagName) => {
           const cardIds = tagsIndex.byTag[tagName] || [];
           const tagId = `${DocType.TAG}-${tagName}`;
-          
+
           try {
             // Try to get the full tag document
             const tagDoc = await this.unpacker.getDocument(tagId);
@@ -266,24 +272,29 @@ export class StaticCourseDB implements CourseDBInterface {
             };
           } catch (error) {
             // If tag document not found, create a minimal stub
-            logger.warn(`Tag document not found for ${tagName}, creating stub`);
-            const stubDoc = {
-              _id: tagId,
-              _rev: '1-static',
-              course: this.courseId,
-              docType: DocType.TAG,
-              name: tagName,
-              snippet: `Tag: ${tagName}`,
-              wiki: '',
-              taggedCards: cardIds,
-              author: 'system',
-            };
-            return {
-              id: tagId,
-              key: tagId,
-              value: { rev: '1-static' },
-              doc: stubDoc,
-            };
+            if (error && (error as PouchDB.Core.Error).status === 404) {
+              logger.warn(`Tag document not found for ${tagName}, creating stub`);
+              const stubDoc = {
+                _id: tagId,
+                _rev: '1-static',
+                course: this.courseId,
+                docType: DocType.TAG,
+                name: tagName,
+                snippet: `Tag: ${tagName}`,
+                wiki: '',
+                taggedCards: cardIds,
+                author: 'system',
+              };
+              return {
+                id: tagId,
+                key: tagId,
+                value: { rev: '1-static' },
+                doc: stubDoc,
+              };
+            } else {
+              logger.error(`Error getting tag document for ${tagName}:`, error);
+              throw error;
+            }
           }
         })
       );

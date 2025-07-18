@@ -113,7 +113,7 @@ export async function packCourse(data: PackCourseData): Promise<PackCourseRespon
         async writeFile(filePath: string, data: string | Buffer): Promise<void> {
           await fs.writeFile(filePath, data);
         },
-        async writeJson(filePath: string, data: any, options?: { spaces?: number }): Promise<void> {
+        async writeJson(filePath: string, data: unknown, options?: { spaces?: number }): Promise<void> {
           await fs.writeJson(filePath, data, options);
         },
         async ensureDir(dirPath: string): Promise<void> {

@@ -3,11 +3,33 @@
     "publishConfig": {
         "access": "public"
     },
-    "version": "0.1.7",
+    "version": "0.1.8-0",
     "type": "module",
+    "main": "./dist-lib/questions.cjs.js",
+    "module": "./dist-lib/questions.mjs",
+    "types": "./dist-lib/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist-lib/index.d.ts",
+            "import": "./dist-lib/questions.mjs",
+            "require": "./dist-lib/questions.cjs.js"
+        },
+        "./questions": {
+            "types": "./dist-lib/index.d.ts",
+            "import": "./dist-lib/questions.mjs",
+            "require": "./dist-lib/questions.cjs.js"
+        },
+        "./style": "./dist-lib/assets/index.css"
+    },
+    "files": [
+        "dist/",
+        "dist-lib/"
+    ],
     "scripts": {
         "dev": "vite",
-        "build": "vite build",
+        "build": "npm run build:webapp && npm run build:lib",
+        "build:webapp": "vite build",
+        "build:lib": "BUILD_MODE=library vite build",
         "preview": "vite preview",
         "test:e2e": "cypress open",
         "test:e2e:headless": "cypress run",
@@ -31,7 +53,9 @@
         "cypress": "14.1.0",
         "typescript": "^5.7.2",
         "vite": "^6.0.9",
+        "vite-plugin-dts": "^4.3.0",
         "vue-tsc": "^1.8.0",
         "wait-on": "8.0.2"
-    }
+    },
+    "stableVersion": "0.1.7"
 }
