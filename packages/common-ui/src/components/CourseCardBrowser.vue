@@ -32,7 +32,7 @@
                   {{ cardPreview[c.id] }}
                 </v-list-item-title>
                 <v-list-item-subtitle>
-                  ELO: {{ cardElos[idParse(c.id)]?.global.score || '(unknown)' }}
+                  ELO: {{ cardElos[idParse(c.id)]?.global?.score || '(unknown)' }}
                 </v-list-item-subtitle>
               </div>
             </template>
@@ -266,12 +266,12 @@ export default defineComponent({
         await Promise.all(
           cardIds.map(async (cardId) => {
             const appliedTags = await this.courseDB!.getAppliedTags(cardId);
-            
+
             // Convert to TagStub format
-            this.cardTags[cardId] = appliedTags.rows.map(row => ({
+            this.cardTags[cardId] = appliedTags.rows.map((row) => ({
               name: row.value.name,
               snippet: row.value.snippet,
-              count: row.value.count
+              count: row.value.count,
             }));
           })
         );
