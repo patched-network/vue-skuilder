@@ -30,23 +30,24 @@ Refactor the `courses` package to `courseware` with proper abstraction naming an
 - [x] Update courseware type declarations and common-ui references
 
 ### 1.2 Rename Core Classes
-- [ ] Rename `Course.ts` → `CourseWare.ts`
-- [ ] Rename class `Course` → `CourseWare`
-- [ ] Update class references in `courseware/src/index.ts`
-- [ ] Update imports in `courseware/src/default/index.ts`
+- [x] Rename `Course.ts` → `CourseWare.ts`
+- [x] Rename class `Course` → `CourseWare`
+- [x] Update class references in `courseware/src/index.ts` - Updated CourseList class and export
+- [x] Update imports in `courseware/src/default/index.ts` - Updated all domain index.ts files via sed commands
 
 ### 1.3 Update CourseWare Registry
-- [ ] Rename `AllCourses` → `AllCourseWare`
-- [ ] Update method `getCourse()` → `getCourseWare()`
-- [ ] Update property `courseList` → `courseWareList`
-- [ ] Update export `allCourses` → `allCourseWare`
+- [x] Rename `CourseList` → `AllCourseWare`
+- [x] Update method `getCourse()` → `getCourseWare()`
+- [x] Update property `courseList` → `courseWareList`
+- [x] Update export `allCourses` → `allCourseWare`
 
 ### 1.4 Update Import References
-- [ ] Update imports in `packages/platform-ui/`
-- [ ] Update imports in `packages/studio-ui/`
-- [ ] Update imports in `packages/standalone-ui/`
-- [ ] Update imports in `packages/edit-ui/`
-- [ ] Update imports in `packages/common-ui/`
+- [x] Update imports in `packages/platform-ui/` - Updated 5 files with allCourses → allCourseWare
+- [x] Update imports in `packages/studio-ui/` - Updated via sed command
+- [x] Update imports in `packages/standalone-ui/` - Updated via sed command 
+- [x] Update imports in `packages/edit-ui/` - Updated via sed command
+- [x] Update imports in `packages/db/` - Updated via sed command
+- [x] Update imports in `packages/express/` - Updated via sed command
 
 **Validation**: All packages build successfully with new naming
 
