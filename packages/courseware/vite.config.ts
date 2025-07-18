@@ -16,7 +16,7 @@ export default defineConfig({
     }),
   ],
   resolve: createBaseResolve(resolve(__dirname, '../..'), {
-    '@courses': resolve(__dirname, 'src'), // Override for self-imports during build
+    '@courseware': resolve(__dirname, 'src'), // Override for self-imports during build
   }),
   // Add assetsInclude to explicitly handle SVG assets
   assetsInclude: ['**/*.svg'],

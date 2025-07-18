@@ -30,8 +30,8 @@ export function createBaseAliases(rootDir = process.cwd()) {
       ? resolve(rootDir, './packages/common-ui/src') // Dev: source directory
       : resolve(rootDir, './packages/common-ui/dist/common-ui.es.js'),
     '@vue-skuilder/courseware': isDev
-      ? resolve(rootDir, './packages/courses/src') // Dev: source directory
-      : resolve(rootDir, './packages/courses/dist/index.mjs'),
+      ? resolve(rootDir, './packages/courseware/src') // Dev: source directory
+      : resolve(rootDir, './packages/courseware/dist/index.mjs'),
     '@vue-skuilder/edit-ui': isDev
       ? resolve(rootDir, './packages/edit-ui/src') // Dev: source directory
       : resolve(rootDir, './packages/edit-ui/dist/edit-ui.es.js'),
@@ -61,7 +61,7 @@ export function createBaseAliases(rootDir = process.cwd()) {
     '@db': resolve(rootDir, './packages/db/src'),
     '@common': resolve(rootDir, './packages/common/src'),
     '@cui': resolve(rootDir, './packages/common-ui/src'),
-    '@courses': resolve(rootDir, './packages/courses/src'),
+    '@courseware': resolve(rootDir, './packages/courseware/src'),
     '@eui': resolve(rootDir, './packages/edit-ui/src'),
     '@express': resolve(rootDir, './packages/express/src'),
     '@pui': resolve(rootDir, './packages/platform-ui/src'), // App, resolve to src dir

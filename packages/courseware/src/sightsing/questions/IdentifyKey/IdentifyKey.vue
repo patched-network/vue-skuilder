@@ -10,7 +10,7 @@
 
 <script lang="ts">
 import { defineComponent, ref, computed, PropType } from 'vue';
-import MusicScoreRenderer from '@courses/components/MusicScoreRender.vue';
+import MusicScoreRenderer from '@courseware/components/MusicScoreRender.vue';
 import { RadioMultipleChoice, useViewable, useQuestionView } from '@vue-skuilder/common-ui';
 import { ViewData } from '@vue-skuilder/common';
 import { IdentifyKeyQuestion, keys } from './index';
