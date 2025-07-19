@@ -41,7 +41,7 @@ jobs:
           VERSION=${{ steps.extract_version.outputs.VERSION }}
           
           # Verify all packages have the correct version
-          for package in common db common-ui courses client platform-ui standalone-ui express cli; do
+          for package in common db common-ui courseware client platform-ui standalone-ui express cli; do
             PACKAGE_VERSION=$(cd packages/$package && node -p "require('./package.json').version")
             if [ "$PACKAGE_VERSION" != "$VERSION" ]; then
               echo "❌ Version mismatch in packages/$package: expected $VERSION, found $PACKAGE_VERSION"
@@ -70,8 +70,8 @@ jobs:
           echo "Building common-ui package..."
           yarn workspace @vue-skuilder/common-ui build
           
-          echo "Building courses package..."
-          yarn workspace @vue-skuilder/courses build
+          echo "Building courseware package..."
+          yarn workspace @vue-skuilder/courseware build
 
           echo "Building edit-ui package..."
           yarn workspace @vue-skuilder/edit-ui build
@@ -93,7 +93,7 @@ jobs:
 
       - name: Verify build outputs
         run: |
-          for package in common db common-ui courses client platform-ui standalone-ui express cli; do
+          for package in common db common-ui courseware client platform-ui standalone-ui express cli; do
             if [ ! -d "packages/$package/dist" ]; then
               echo "Error: dist directory not found for @vue-skuilder/$package"
               exit 1
@@ -123,8 +123,8 @@ jobs:
           echo "Publishing @vue-skuilder/common-ui..."
           cd packages/common-ui && yarn npm publish --access public && cd ../..
           
-          echo "Publishing @vue-skuilder/courses..."
-          cd packages/courses && yarn npm publish --access public && cd ../..
+          echo "Publishing @vue-skuilder/courseware..."
+          cd packages/courseware && yarn npm publish --access public && cd ../..
           
           echo "Publishing @vue-skuilder/client..."
           cd packages/client && yarn npm publish --access public && cd ../..
@@ -169,7 +169,7 @@ jobs:
           echo "   - @vue-skuilder/common"
           echo "   - @vue-skuilder/db" 
           echo "   - @vue-skuilder/common-ui"
-          echo "   - @vue-skuilder/courses"
+          echo "   - @vue-skuilder/courseware"
           echo "   - @vue-skuilder/client"
           echo "   - @vue-skuilder/platform-ui"
           echo "   - @vue-skuilder/standalone-ui"

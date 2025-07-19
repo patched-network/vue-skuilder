@@ -35,7 +35,7 @@ export class AdminDB implements AdminDBInterface {
   }
 
   public async getCourses() {
-    const list = await CourseLookup.allCourses();
+    const list = await CourseLookup.allCourseWare();
     return await Promise.all(
       list.map((c) => {
         return getCredentialledCourseConfig(c._id);

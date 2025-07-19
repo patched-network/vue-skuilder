@@ -75,7 +75,7 @@
 
 <script lang="ts">
 import { defineComponent, PropType } from 'vue';
-// import { MidiConfig } from '@vue-skuilder/courses'; // Removed to break circular dependency
+// import { MidiConfig } from '@vue-skuilder/courseware'; // Removed to break circular dependency
 import CourseCardBrowser from './CourseCardBrowser.vue';
 import { log } from '@vue-skuilder/common';
 import { CourseDBInterface, Tag, UserDBInterface, getDataLayer } from '@vue-skuilder/db';

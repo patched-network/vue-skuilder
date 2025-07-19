@@ -19,7 +19,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { CourseInformation } from '@vue-skuilder/common-ui';
-import { allCourses } from '@vue-skuilder/courses';
+import { allCourseWare } from '@vue-skuilder/courseware';
 import { getDataLayer } from '@vue-skuilder/db';
 import config from '../../skuilder.config.json';
 
@@ -28,7 +28,7 @@ const editMode = ref<'none' | 'readonly' | 'full'>('full');
 
 // Full view lookup using courses package (same as platform-ui)
 const viewLookup = (x: unknown) => {
-  return allCourses.getView(x);
+  return allCourseWare.getView(x);
 };
 
 onMounted(() => {

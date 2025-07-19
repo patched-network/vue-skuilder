@@ -30,7 +30,7 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 import { Displayable } from '@vue-skuilder/common-ui';
-import { allCourses } from '@vue-skuilder/courses';
+import { allCourseWare } from '@vue-skuilder/courseware';
 import { getDataLayer, CourseDBInterface } from '@vue-skuilder/db';
 import {
   NameSpacer,
@@ -84,9 +84,9 @@ export default defineComponent({
     this.courseDatashapes = this.courseConfig.dataShapes;
     this.courseQuestionTypes = this.courseConfig.questionTypes;
 
-    const dataShapeData = allCourses.allDataShapes();
+    const dataShapeData = allCourseWare.allDataShapes();
 
-    allCourses.allDataShapesRaw().forEach((ds) => {
+    allCourseWare.allDataShapesRaw().forEach((ds) => {
       console.log(`[ComponentRegistration] Datashape:\n${JSON.stringify(ds)}`);
     });
 
@@ -98,7 +98,7 @@ export default defineComponent({
       this.dataShapes.push({
         name: shape.dataShape,
         course: shape.course,
-        dataShape: allCourses.getDataShape(shape),
+        dataShape: allCourseWare.getDataShape(shape),
         registered: index !== undefined,
         displayable: shape.displayable,
       });
@@ -106,11 +106,11 @@ export default defineComponent({
 
     this.dataShapes = _.sortBy(this.dataShapes, ['registered', 'name']);
 
-    const courseNameList = allCourses.courses.map((course) => course.name);
+    const courseNameList = allCourseWare.courses.map((course) => course.name);
     const questionData: Array<[QuestionDescriptor, typeof Displayable]> = [];
 
     courseNameList.forEach((course) => {
-      const courseQs = allCourses.getCourse(course)!.questions;
+      const courseQs = allCourseWare.getCourse(course)!.questions;
 
       courseQs.forEach((courseQ) => {
         questionData.push([

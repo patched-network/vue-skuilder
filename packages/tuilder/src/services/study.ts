@@ -1,7 +1,7 @@
 import { getDataLayer } from '@vue-skuilder/db';
 import { SessionController } from '@vue-skuilder/db';
 import { StudyContentSource, StudySessionItem, getStudySource } from '@vue-skuilder/db';
-import { BlanksCard, gradeSpellingAttempt } from '@vue-skuilder/courses/logic';
+import { BlanksCard, gradeSpellingAttempt } from '@vue-skuilder/courseware/logic';
 // import { Answer } from '@vue-skuilder/common';
 
 import {

@@ -235,7 +235,7 @@ async function validateSuiCourse(coursePath: string): Promise<boolean> {
     const hasRequiredPackages =
       packageJson.dependencies &&
       packageJson.dependencies['@vue-skuilder/common-ui'] &&
-      packageJson.dependencies['@vue-skuilder/courses'] &&
+      packageJson.dependencies['@vue-skuilder/courseware'] &&
       packageJson.dependencies['@vue-skuilder/db'];
 
     if (!hasStandaloneUi && !hasRequiredPackages) {
@@ -1099,7 +1099,7 @@ async function transformPackageJsonForStudioBuild(packageJsonPath: string): Prom
   const vueSkuilderPackageVersions: Record<string, string> = {
     '@vue-skuilder/common': VERSION,
     '@vue-skuilder/common-ui': VERSION,
-    '@vue-skuilder/courses': VERSION,
+    '@vue-skuilder/courseware': VERSION,
     '@vue-skuilder/db': VERSION,
     '@vue-skuilder/edit-ui': VERSION,
     '@vue-skuilder/express': VERSION,

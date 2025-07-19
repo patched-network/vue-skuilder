@@ -130,7 +130,7 @@ export default class CourseLookup {
     return await CourseLookup._db.remove(doc);
   }
 
-  static async allCourses(): Promise<CourseLookupDoc[]> {
+  static async allCourseWare(): Promise<CourseLookupDoc[]> {
     const resp = await CourseLookup._db.allDocs<CourseLookupDoc>({
       include_docs: true,
     });

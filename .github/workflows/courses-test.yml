@@ -1,14 +1,14 @@
 # .github/workflows/courses-test.yml
-name: Courses Package Tests
+name: CourseWare Package Tests
 
 on:
   push:
     paths:
-      - 'packages/courses/**'
+      - 'packages/courseware/**'
       - '.github/workflows/courses-test.yml'
   pull_request:
     paths:
-      - 'packages/courses/**'
+      - 'packages/courseware/**'
       - '.github/workflows/courses-test.yml'
 
 jobs:
@@ -42,17 +42,17 @@ jobs:
           cd packages/common-ui
           yarn build
 
-      - name: Build @vue-skuilder/courses
+      - name: Build @vue-skuilder/courseware
         run: |
-          cd packages/courses
+          cd packages/courseware
           yarn build
 
-      - name: Run tests for @vue-skuilder/courses
+      - name: Run tests for @vue-skuilder/courseware
         run: |
-          cd packages/courses
+          cd packages/courseware
           yarn test
 
       - name: Report test results
         if: always()
         run: |
-          echo "Courses package tests completed with status: ${{ job.status }}"
+          echo "CourseWare package tests completed with status: ${{ job.status }}"

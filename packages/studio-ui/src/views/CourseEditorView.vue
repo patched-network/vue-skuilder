@@ -13,7 +13,7 @@
 
     <div v-else-if="courseId">
       <!-- Course Editor from edit-ui package -->
-      <course-editor :course="courseId" :view-lookup-function="allCourses.getView" />
+      <course-editor :course="courseId" :view-lookup-function="allCourseWare.getView" />
     </div>
 
     <div v-else class="text-center pa-4">
@@ -27,7 +27,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { CourseEditor } from '@vue-skuilder/edit-ui';
-import { allCourses } from '@vue-skuilder/courses';
+import { allCourseWare } from '@vue-skuilder/courseware';
 import { getStudioConfig, getConfigErrorMessage } from '../config/development';
 
 // Course editor state

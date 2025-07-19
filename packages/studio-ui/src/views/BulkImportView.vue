@@ -5,7 +5,7 @@
         <v-icon start>mdi-file-import</v-icon>
         Bulk Import Cards
       </v-card-title>
-      
+
       <v-card-text>
         <div v-if="loading" class="text-center pa-4">
           <v-progress-circular indeterminate />
@@ -19,9 +19,9 @@
 
         <div v-else-if="courseId && courseConfig">
           <!-- Bulk Import View from edit-ui package -->
-          <bulk-import-view 
+          <bulk-import-view
             :course-cfg="courseConfig"
-            :view-lookup-function="allCourses.getView"
+            :view-lookup-function="allCourseWare.getView"
             @import-completed="onImportCompleted"
           />
         </div>
@@ -37,7 +37,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { BulkImportView } from '@vue-skuilder/edit-ui';
-import { allCourses } from '@vue-skuilder/courses';
+import { allCourseWare } from '@vue-skuilder/courseware';
 import { getStudioConfig, getConfigErrorMessage } from '../config/development';
 import { getDataLayer } from '@vue-skuilder/db';
 import type { CourseConfig } from '@vue-skuilder/common';

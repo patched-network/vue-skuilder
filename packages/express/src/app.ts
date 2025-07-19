@@ -62,7 +62,7 @@ export interface VueClientRequest extends express.Request {
 app.get('/courses', (_req: Request, res: Response) => {
   void (async () => {
     try {
-      const courses = await CourseLookup.allCourses();
+      const courses = await CourseLookup.allCourseWare();
       res.send(courses.map((c) => `${c._id} - ${c.name}`));
     } catch (error) {
       logger.error('Error fetching courses:', error);

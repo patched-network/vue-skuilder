@@ -20,11 +20,11 @@ These examples are already integrated into the `exampleCourse.ts` file, which yo
 
 To use your custom questions in a course, you need to:
 
-1.  **Define your Question Class**: Create a new TypeScript file (e.g., `MyCustomQuestion.ts`) that extends the `Question` class from `@vue-skuilder/courses`. Define its `dataShapes` and `views` static properties.
+1.  **Define your Question Class**: Create a new TypeScript file (e.g., `MyCustomQuestion.ts`) that extends the `Question` class from `@vue-skuilder/courseware`. Define its `dataShapes` and `views` static properties.
 
     ```typescript
     // MyCustomQuestion.ts
-    import { Question, DataShape, ViewData, Answer } from '@vue-skuilder/courses';
+    import { Question, DataShape, ViewData, Answer } from '@vue-skuilder/courseware';
     import { FieldType } from '@vue-skuilder/common';
     import MyCustomQuestionView from './MyCustomQuestionView.vue';
 
@@ -97,7 +97,7 @@ To use your custom questions in a course, you need to:
     import { createApp } from 'vue';
     import App from './App.vue';
     import { createPinia } from 'pinia';
-    import { allCourses, Course } from '@vue-skuilder/courses';
+    import { allCourses, Course } from '@vue-skuilder/courseware';
 
     // Import your custom question
     import { MyCustomQuestion } from './questions/MyCustomQuestion';

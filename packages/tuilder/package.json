@@ -1,6 +1,6 @@
 {
   "name": "@vue-skuilder/tuilder",
-  "version": "0.1.8-0",
+  "version": "0.1.8-1",
   "publishConfig": {
     "access": "public"
   },
@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "@vue-skuilder/common": "workspace:*",
-    "@vue-skuilder/courses": "workspace:*",
+    "@vue-skuilder/courseware": "workspace:*",
     "@vue-skuilder/db": "workspace:*",
     "ink": "^5.0.1",
     "ink-markdown": "^1.0.4",

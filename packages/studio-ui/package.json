@@ -3,7 +3,7 @@
   "publishConfig": {
     "access": "public"
   },
-  "version": "0.1.8-0",
+  "version": "0.1.8-1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -16,7 +16,7 @@
     "@mdi/font": "^7.3.67",
     "@vue-skuilder/common": "workspace:*",
     "@vue-skuilder/common-ui": "workspace:*",
-    "@vue-skuilder/courses": "workspace:*",
+    "@vue-skuilder/courseware": "workspace:*",
     "@vue-skuilder/db": "workspace:*",
     "@vue-skuilder/edit-ui": "workspace:*",
     "pinia": "^2.3.0",

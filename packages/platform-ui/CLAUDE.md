@@ -34,7 +34,7 @@ Main platform UI application built with Vue 3, Vuetify, and Vite. Provides the c
 ### Vue-Skuilder Packages
 - `@vue-skuilder/common` - Shared utilities
 - `@vue-skuilder/common-ui` - Shared components
-- `@vue-skuilder/courses` - Course content system
+- `@vue-skuilder/courseware` - Course content system
 - `@vue-skuilder/db` - Database layer
 
 ### Specialized Libraries

@@ -28,7 +28,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { CourseInformation } from '@vue-skuilder/common-ui';
-import { allCourses } from '@vue-skuilder/courses';
+import { allCourseWare } from '@vue-skuilder/courseware';
 import { getStudioConfig, getConfigErrorMessage } from '../config/development';
 
 // Browse view state
@@ -38,7 +38,7 @@ const courseId = ref<string | null>(null);
 
 // View lookup function with proper context binding
 const viewLookupFunction = (viewDescription: any) => {
-  return allCourses.getView(viewDescription);
+  return allCourseWare.getView(viewDescription);
 };
 
 // Initialize browse view

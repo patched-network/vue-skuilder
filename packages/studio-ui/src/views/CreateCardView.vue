@@ -38,7 +38,8 @@
             :course-id="courseId"
             :course-cfg="courseConfig"
             :data-shape="selectedDataShape"
-            :view-lookup-function="allCourses.getView"
+            :view-lookup-function="studioCourseWare.getView"
+            :course-ware="studioCourseWare"
             @card-created="onCardCreated"
           />
 
@@ -57,9 +58,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, inject } from 'vue';
 import { DataInputForm } from '@vue-skuilder/edit-ui';
-import { allCourses } from '@vue-skuilder/courses';
+import { allCourseWare, AllCourseWare } from '@vue-skuilder/courseware';
 import { getStudioConfig, getConfigErrorMessage } from '../config/development';
 import { getDataLayer } from '@vue-skuilder/db';
 import type { CourseConfig, DataShape } from '@vue-skuilder/common';
@@ -70,6 +71,9 @@ const error = ref<string | null>(null);
 const courseId = ref<string | null>(null);
 const courseConfig = ref<CourseConfig | null>(null);
 const selectedDataShapeIndex = ref<number>(0);
+
+// Get custom courseware from app provider
+const studioCourseWare = inject<AllCourseWare>('studioCourseWare', allCourseWare);
 
 // Get available data shapes
 const availableDataShapes = computed(() => {
@@ -82,12 +86,12 @@ const selectedDataShape = computed((): DataShape | null => {
   const shapes = availableDataShapes.value;
   if (shapes.length === 0) return null;
 
-  // Find the corresponding DataShape from allCourses
+  // Find the corresponding DataShape from allCourseWare
   const shapeName = shapes[selectedDataShapeIndex.value]?.name;
   if (!shapeName) return null;
 
-  // Search through all courses to find the DataShape
-  for (const course of allCourses.courses) {
+  // Search through all courses to find the DataShape  
+  for (const course of studioCourseWare.courses) {
     for (const question of course.questions) {
       for (const dataShape of question.dataShapes) {
         if (dataShape.name === shapeName.split('.').pop()) {

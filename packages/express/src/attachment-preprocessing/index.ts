@@ -67,7 +67,7 @@ export default async function postProcess(): Promise<void> {
     logger.info(`Following all course databases for changes...`);
 
     // Existing behavior for platform-ui courses
-    const courses = await CourseLookup.allCourses();
+    const courses = await CourseLookup.allCourseWare();
     const processedCourseIds = new Set<string>();
 
     for (const course of courses) {

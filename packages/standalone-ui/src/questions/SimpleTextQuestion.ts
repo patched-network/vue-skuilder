@@ -1,4 +1,4 @@
-import { ViewData, Answer, Question } from '@vue-skuilder/courses';
+import { ViewData, Answer, Question } from '@vue-skuilder/courseware';
 import { FieldType, DataShape, DataShapeName } from '@vue-skuilder/common';
 import SimpleTextQuestionView from './SimpleTextQuestionView.vue';
 
@@ -13,9 +13,7 @@ export class SimpleTextQuestion extends Question {
     },
   ];
 
-  public static views = [
-    { name: 'SimpleTextQuestionView', component: SimpleTextQuestionView },
-  ];
+  public static views = [{ name: 'SimpleTextQuestionView', component: SimpleTextQuestionView }];
 
   // @ts-expect-error TS6133: Used in Vue template
   private questionText: string;

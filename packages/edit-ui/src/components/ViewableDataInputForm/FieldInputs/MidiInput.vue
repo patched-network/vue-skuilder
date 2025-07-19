@@ -28,7 +28,7 @@ import {
   SyllableSequence,
   transposeSyllableSeq,
   SyllableSeqVis,
-} from '@vue-skuilder/courses';
+} from '@vue-skuilder/courseware';
 
 export default defineComponent({
   name: 'MidiInput',
