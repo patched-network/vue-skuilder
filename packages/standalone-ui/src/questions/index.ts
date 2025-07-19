@@ -1,7 +1,7 @@
 // Library entry point for custom questions in standalone-ui
 // This file exports question types and components for consumption by studio-ui
 
-import { Course } from '@vue-skuilder/courseware';
+import { CourseWare } from '@vue-skuilder/courseware';
 import { DataShape } from '@vue-skuilder/common';
 import { ViewComponent } from '@vue-skuilder/common-ui';
 
@@ -68,7 +68,7 @@ export function allCustomQuestions() {
 
   // Return structured data for studio-ui integration
   return {
-    // Course instances with question instances
+    // CourseWare instances with question instances
     courses,
 
     // Question class constructors for registration
@@ -97,7 +97,7 @@ export function allCustomQuestions() {
  * This provides TypeScript support for CLI and studio-ui integration
  */
 export interface CustomQuestionsExport {
-  courses: Course[];
+  courses: CourseWare[];
   questionClasses: Array<
     typeof SimpleTextQuestion | typeof MultipleChoiceQuestion | typeof NumberRangeQuestion
   >;

@@ -97,6 +97,7 @@ Refactor the `courses` package to `courseware` with proper abstraction naming an
 - [x] Update view components collection to use custom registry
 
 **Validation**: Custom questions appear and render correctly in studio-ui CreateCard ✅
+**END-TO-END CONFIRMED**: Studio-UI via CLI against standalone-ui custom questions fully operational ✅
 
 ---
 
