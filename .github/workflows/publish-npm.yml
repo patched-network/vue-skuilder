@@ -41,7 +41,7 @@ jobs:
           VERSION=${{ steps.extract_version.outputs.VERSION }}
           
           # Verify all packages have the correct version
-          for package in common db common-ui courseware client platform-ui standalone-ui express cli; do
+          for package in common db common-ui courseware edit-ui client platform-ui standalone-ui express mcp cli; do
             PACKAGE_VERSION=$(cd packages/$package && node -p "require('./package.json').version")
             if [ "$PACKAGE_VERSION" != "$VERSION" ]; then
               echo "❌ Version mismatch in packages/$package: expected $VERSION, found $PACKAGE_VERSION"
@@ -88,12 +88,18 @@ jobs:
           echo "Building express package..."
           yarn workspace @vue-skuilder/express build
           
+          # echo "Building tuilder package..."
+          # yarn workspace @vue-skuilder/tuilder build
+          
+          echo "Building mcp package..."
+          yarn workspace @vue-skuilder/mcp build
+          
           echo "Building cli package..."
           yarn workspace @vue-skuilder/cli build
 
       - name: Verify build outputs
         run: |
-          for package in common db common-ui courseware client platform-ui standalone-ui express cli; do
+          for package in common db common-ui courseware edit-ui client platform-ui standalone-ui express mcp cli; do
             if [ ! -d "packages/$package/dist" ]; then
               echo "Error: dist directory not found for @vue-skuilder/$package"
               exit 1
@@ -123,6 +129,9 @@ jobs:
           echo "Publishing @vue-skuilder/common-ui..."
           cd packages/common-ui && yarn npm publish --access public && cd ../..
           
+          echo "Publishing @vue-skuilder/edit-ui..."
+          cd packages/edit-ui && yarn npm publish --access public && cd ../..
+          
           echo "Publishing @vue-skuilder/courseware..."
           cd packages/courseware && yarn npm publish --access public && cd ../..
           
@@ -134,6 +143,12 @@ jobs:
           
           echo "Publishing @vue-skuilder/standalone-ui..."
           cd packages/standalone-ui && yarn npm publish --access public && cd ../..
+          
+          echo "Publishing @vue-skuilder/mcp..."
+          cd packages/mcp && yarn npm publish --access public && cd ../..
+          
+          # echo "Publishing @vue-skuilder/tuilder..."
+          # cd packages/tuilder && yarn npm publish --access public && cd ../..
           
           echo "Publishing @vue-skuilder/express..."
           cd packages/express && yarn npm publish --access public && cd ../..
@@ -170,10 +185,12 @@ jobs:
           echo "   - @vue-skuilder/db" 
           echo "   - @vue-skuilder/common-ui"
           echo "   - @vue-skuilder/courseware"
+          echo "   - @vue-skuilder/edit-ui"
           echo "   - @vue-skuilder/client"
           echo "   - @vue-skuilder/platform-ui"
           echo "   - @vue-skuilder/standalone-ui"
           echo "   - @vue-skuilder/express"
+          echo "   - @vue-skuilder/mcp"
           echo "   - @vue-skuilder/cli"
           echo "   - skuilder (CLI unscoped)"
           echo ""

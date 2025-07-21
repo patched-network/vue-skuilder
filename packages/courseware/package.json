@@ -1,60 +1,60 @@
 {
-    "name": "@vue-skuilder/courseware",
-    "publishConfig": {
-        "access": "public"
+  "name": "@vue-skuilder/courseware",
+  "publishConfig": {
+    "access": "public"
+  },
+  "version": "0.1.8-3",
+  "type": "module",
+  "main": "./dist/index.cjs.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs.js"
     },
-    "version": "0.1.8-1",
-    "type": "module",
-    "main": "./dist/index.cjs.js",
-    "module": "./dist/index.mjs",
-    "types": "./dist/index.d.ts",
-    "exports": {
-        ".": {
-            "types": "./dist/index.d.ts",
-            "import": "./dist/index.mjs",
-            "require": "./dist/index.cjs.js"
-        },
-        "./logic": {
-            "types": "./src/logic.d.ts",
-            "import": "./src/logic.js",
-            "require": "./src/logic.js"
-        },
-        "./style": "./dist/assets/index.css"
+    "./logic": {
+      "types": "./src/logic.d.ts",
+      "import": "./src/logic.js",
+      "require": "./src/logic.js"
     },
-    "files": [
-        "dist",
-        "src/assets",
-        "src/logic.js",
-        "src/logic.d.ts"
-    ],
-    "scripts": {
-        "build": "yarn clean && vite build",
-        "clean": "rm -rf dist",
-        "dev": "vite build --watch",
-        "type-check": "tsc --noEmit",
-        "test": "vitest run",
-        "test:watch": "vitest"
-    },
-    "dependencies": {
-        "@vue-skuilder/common": "workspace:*",
-        "@vue-skuilder/common-ui": "workspace:*",
-        "@vue-skuilder/db": "workspace:*",
-        "lodash": "^4.17.21",
-        "moment": "^2.29.4",
-        "paper": "^0.12.3",
-        "vue": "^3.5.13"
-    },
-    "devDependencies": {
-        "@types/lodash": "^4.14.195",
-        "@vitejs/plugin-vue": "^5.2.1",
-        "jsdom": "^26.0.0",
-        "typescript": "^5.7.2",
-        "vite": "^6.0.9",
-        "vite-plugin-dts": "^4.5.3",
-        "vitest": "^3.0.5"
-    },
-    "peerDependencies": {
-        "vue": "^3.2.0"
-    },
-    "stableVersion": "0.1.7"
+    "./style": "./dist/assets/index.css"
+  },
+  "files": [
+    "dist",
+    "src/assets",
+    "src/logic.js",
+    "src/logic.d.ts"
+  ],
+  "scripts": {
+    "build": "yarn clean && vite build",
+    "clean": "rm -rf dist",
+    "dev": "vite build --watch",
+    "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@vue-skuilder/common": "workspace:*",
+    "@vue-skuilder/common-ui": "workspace:*",
+    "@vue-skuilder/db": "workspace:*",
+    "lodash": "^4.17.21",
+    "moment": "^2.29.4",
+    "paper": "^0.12.3",
+    "vue": "^3.5.13"
+  },
+  "devDependencies": {
+    "@types/lodash": "^4.14.195",
+    "@vitejs/plugin-vue": "^5.2.1",
+    "jsdom": "^26.0.0",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.9",
+    "vite-plugin-dts": "^4.5.3",
+    "vitest": "^3.0.5"
+  },
+  "peerDependencies": {
+    "vue": "^3.2.0"
+  },
+  "stableVersion": "0.1.7"
 }

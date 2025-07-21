@@ -1,38 +1,38 @@
 {
-    "name": "@vue-skuilder/common",
-    "publishConfig": {
-        "access": "public"
+  "name": "@vue-skuilder/common",
+  "publishConfig": {
+    "access": "public"
+  },
+  "version": "0.1.8-3",
+  "type": "module",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
     },
-    "version": "0.1.8-1",
-    "type": "module",
-    "main": "dist/index.js",
-    "module": "dist/index.mjs",
-    "types": "dist/index.d.ts",
-    "exports": {
-        ".": {
-            "types": "./dist/index.d.ts",
-            "import": "./dist/index.mjs",
-            "require": "./dist/index.js"
-        },
-        "./docker": {
-            "types": "./dist/docker/index.d.ts",
-            "import": "./dist/docker/index.mjs",
-            "require": "./dist/docker/index.js"
-        }
-    },
-    "scripts": {
-        "build": "rm -rf dist dist-esm && tsc -p tsconfig.cjs.json && tsc -p tsconfig.esm.json && find dist-esm -name '*.js' -exec sed -i \"s/\\.js'/\\.mjs'/g; s/\\.js\\\"/\\.mjs\\\"/g\" {} \\; && find dist-esm -name '*.js' -exec sh -c 'mv \"$1\" \"${1%.js}.mjs\"' _ {} \\; && cp -r dist-esm/* dist/ && rm -rf dist-esm",
-        "dev": "tsc --watch",
-        "lint": "npx eslint .",
-        "lint:fix": "npx eslint . --fix",
-        "lint:check": "npx eslint . --max-warnings 0"
-    },
-    "packageManager": "yarn@4.6.0",
-    "devDependencies": {
-        "typescript": "~5.7.2"
-    },
-    "dependencies": {
-        "moment": "^2.30.1"
-    },
-    "stableVersion": "0.1.7"
+    "./docker": {
+      "types": "./dist/docker/index.d.ts",
+      "import": "./dist/docker/index.mjs",
+      "require": "./dist/docker/index.js"
+    }
+  },
+  "scripts": {
+    "build": "rm -rf dist dist-esm && tsc -p tsconfig.cjs.json && tsc -p tsconfig.esm.json && find dist-esm -name '*.js' -exec sed -i \"s/\\.js'/\\.mjs'/g; s/\\.js\\\"/\\.mjs\\\"/g\" {} \\; && find dist-esm -name '*.js' -exec sh -c 'mv \"$1\" \"${1%.js}.mjs\"' _ {} \\; && cp -r dist-esm/* dist/ && rm -rf dist-esm",
+    "dev": "tsc --watch",
+    "lint": "npx eslint .",
+    "lint:fix": "npx eslint . --fix",
+    "lint:check": "npx eslint . --max-warnings 0"
+  },
+  "packageManager": "yarn@4.6.0",
+  "devDependencies": {
+    "typescript": "~5.7.2"
+  },
+  "dependencies": {
+    "moment": "^2.30.1"
+  },
+  "stableVersion": "0.1.7"
 }

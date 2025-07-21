@@ -176,6 +176,16 @@ async function launchStudio(coursePath: string, options: StudioOptions) {
     console.log(chalk.white(`🎨 Studio URL: http://localhost:${studioUIPort}`));
     console.log(chalk.gray(`   Database: ${studioDatabaseName} on port ${options.port}`));
     console.log(chalk.gray(`   Express API: ${expressManager.getConnectionDetails().url}`));
+    
+    // Display MCP connection information
+    const mcpInfo = getMCPConnectionInfo(unpackResult, couchDBManager);
+    console.log(chalk.blue(`🔗 MCP Server: ${mcpInfo.command}`));
+    console.log(chalk.gray(`   Connect MCP clients using the command above`));
+    console.log(chalk.gray(`   Environment variables for MCP:`));
+    Object.entries(mcpInfo.env).forEach(([key, value]) => {
+      console.log(chalk.gray(`     ${key}=${value}`));
+    });
+    
     if (options.browser) {
       console.log(chalk.cyan(`🌐 Opening browser...`));
       await openBrowser(`http://localhost:${studioUIPort}`);
@@ -1223,4 +1233,25 @@ export default defineConfig({
 
   fs.writeFileSync(viteConfigPath, standaloneViteConfig);
   console.log(chalk.gray(`   Vite config replaced with standalone version`));
+}
+
+/**
+ * Generate MCP connection information for studio session
+ */
+function getMCPConnectionInfo(
+  unpackResult: UnpackResult,
+  couchDBManager: CouchDBManager
+): { command: string; env: Record<string, string> } {
+  const mcpServerPath = path.join(__dirname, 'mcp-server.js');
+  const couchDetails = couchDBManager.getConnectionDetails();
+
+  return {
+    command: `node ${mcpServerPath} ${unpackResult.courseId}`,
+    env: {
+      COUCHDB_SERVER_URL: couchDetails.url.replace(/^https?:\/\//, ''),
+      COUCHDB_SERVER_PROTOCOL: couchDetails.url.startsWith('https') ? 'https' : 'http',
+      COUCHDB_USERNAME: couchDetails.username,
+      COUCHDB_PASSWORD: couchDetails.password,
+    },
+  };
 }

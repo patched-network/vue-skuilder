@@ -1,315 +1,201 @@
-# Plan: MCP Package for Vue-Skuilder Course Content Agent Access
+# Plan: Intégrer le serveur MCP dans Studio Mode
 
-## Architecture Overview
+## Vue d'ensemble
 
-Créer un nouveau package `@vue-skuilder/mcp` qui expose les données de cours Vue-Skuilder via le protocole Model Context Protocol (MCP), permettant aux agents d'accéder et de générer du contenu de cours de manière structurée avec support natif du système ELO.
+Permettre aux clients MCP (comme Claude Code) de se connecter au cours en cours d'édition dans le mode studio en exposant un exécutable MCP que le client peut lancer.
 
-## Core Design Principles
+## Architecture Choisie
 
-1. **Interface-Based Architecture**: MCP server accepte un `CourseDBInterface` en constructor, découplant la gestion des données
-2. **Course-Scoped Servers**: Un serveur MCP par cours pour isolation et sécurité
-3. **DataShape Aware**: Support natif des types de questions Vue-Skuilder existants et nouveaux
-4. **ELO-Driven Content**: Intégration native du système de rating ELO pour génération et organisation de contenu
-5. **Source Linking**: Tracking des sources avec git commit/milestone references
-6. **Incremental Verification**: Chaque phase est testable et déployable independamment
-
-## Package Structure
+**Bundle MCP Executable** : Le CLI intègre un serveur MCP standalone que les clients MCP peuvent exécuter directement via stdio.
 
 ```
-packages/mcp/
-├── src/
-│   ├── server.ts           # MCPServer class principal
-│   ├── resources/          # MCP Resources implementation
-│   │   ├── course.ts       # course:// - config et métadonnées
-│   │   ├── cards.ts        # cards:// - cartes existantes
-│   │   ├── shapes.ts       # shapes:// - DataShapes disponibles
-│   │   ├── elo.ts          # elo:// - distribution et analytics ELO
-│   │   ├── tags.ts         # tags:// - tag exploration et analytics
-│   │   └── index.ts        # Resource registry
-│   ├── tools/              # MCP Tools implementation
-│   │   ├── content/        # Outils de génération de contenu
-│   │   │   └── explore-and-generate-courseware.ts
-│   │   ├── management/     # Outils de gestion de cours
-│   │   │   ├── create-card.ts
-│   │   │   ├── update-card.ts
-│   │   │   ├── tag-card.ts
-│   │   │   └── rate-content.ts
-│   │   └── index.ts        # Tools registry
-│   ├── prompts/            # MCP Prompts templates
-│   │   ├── quiz-generation.ts
-│   │   ├── content-analysis.ts
-│   │   ├── elo-calibration.ts
-│   │   └── index.ts        # Prompts registry
-│   ├── types/              # Types spécifiques MCP
-│   │   ├── resources.ts    # Resource type definitions
-│   │   ├── tools.ts        # Tool input/output schemas
-│   │   └── index.ts
-│   └── utils/              # Utilitaires
-│       ├── source-linking.ts
-│       ├── datashape-helpers.ts
-│       └── elo-helpers.ts
-├── examples/               # Exemples d'usage
-│   ├── local-dev.ts        # Setup pour développement local
-│   └── express-integration.ts # Exemple d'intégration Express
-├── package.json
-├── tsconfig.json
-├── CLAUDE.md              # Documentation pour Claude Code
-└── README.md              # Documentation générale
+Studio Mode Lance:
+├── CouchDB (Docker)
+├── Express Backend  
+├── Studio-UI Web
+└── Info MCP → 🔗 MCP Server: node dist/mcp-server.mjs <course-id>
+                  (Client MCP lance ce processus)
 ```
 
-## MCP Services Specification
+## Phase 1: Infrastructure de Base
 
-### Resources
+### 1.1 Créer l'Exécutable MCP Standalone
+**Fichier** : `packages/cli/src/mcp-server.ts`
+```typescript
+#!/usr/bin/env node
+import { initializeDataLayer, getDataLayer } from '@vue-skuilder/db';
+import { MCPServer } from '@vue-skuilder/mcp';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 
-#### `course://config`
-- **Description**: Configuration et métadonnées du cours
-- **Data**: CourseConfig + DataShapes disponibles + statistiques + distribution ELO
-- **URI Pattern**: `course://config`
+async function main() {
+  const courseId = process.argv[2];
+  if (!courseId) {
+    console.error('Usage: node mcp-server.mjs <course-id>');
+    process.exit(1);
+  }
+  
+  // Configuration CouchDB depuis variables d'environnement
+  const couchdbConfig = {
+    type: 'couch',
+    options: {
+      COUCHDB_SERVER_URL: process.env.COUCHDB_SERVER_URL || 'localhost:5984',
+      COUCHDB_SERVER_PROTOCOL: process.env.COUCHDB_SERVER_PROTOCOL || 'http',
+      COUCHDB_USERNAME: process.env.COUCHDB_USERNAME || 'admin',
+      COUCHDB_PASSWORD: process.env.COUCHDB_PASSWORD || 'password'
+    }
+  };
+  
+  await initializeDataLayer(couchdbConfig);
+  const dataLayer = getDataLayer();
+  await dataLayer.initialize();
+  
+  const courseDB = dataLayer.getCourseDB(courseId);
+  const server = new MCPServer(courseDB);
+  const transport = new StdioServerTransport();
+  
+  console.error(`MCP Server started for course: ${courseId}`);
+  await server.start(transport);
+}
 
-#### `cards://[filter]`
-- **Description**: Liste des cartes avec filtres optionnels
-- **URI Patterns**: 
-  - `cards://all` - Toutes les cartes
-  - `cards://tag/[tagName]` - Cartes par tag
-  - `cards://shape/[shapeName]` - Cartes par DataShape
-  - `cards://elo/[min]-[max]` - Cartes dans une fourchette ELO
-- **Data**: Liste de cartes avec métadonnées (ID, tags, shape, ELO, etc.)
+main().catch((error) => {
+  console.error('MCP Server failed:', error);
+  process.exit(1);
+});
+```
 
-#### `shapes://[shapeName]`
-- **Description**: Définitions des DataShapes pour génération de contenu
-- **URI Patterns**:
-  - `shapes://all` - Toutes les DataShapes
-  - `shapes://[shapeName]` - DataShape spécifique
-- **Data**: FieldDefinitions, validation rules, exemples
-
-#### `elo://[aspect]`
-- **Description**: Analytics et distribution ELO du cours
-- **URI Patterns**:
-  - `elo://distribution` - Distribution ELO complète du cours
-  - `elo://stats` - Statistiques ELO (moyenne, médiane, quartiles)
-  - `elo://cards/[min]-[max]` - Cartes dans une fourchette ELO
-  - `elo://gaps` - Identification des gaps dans la distribution
-- **Data**: Données ELO pour calibration et génération de contenu
-
-#### `tags://[aspect]`
-- **Description**: Tag exploration et analytics du cours
-- **URI Patterns**:
-  - `tags://all` - Tous les tags disponibles dans le cours
-  - `tags://stats` - Statistiques d'usage des tags
-  - `tags://[tagName]` - Détails d'un tag spécifique + nombre de cartes
-  - `tags://union/[tag1]+[tag2]` - Cartes ayant AU MOINS UN de ces tags
-  - `tags://intersect/[tag1]+[tag2]` - Cartes ayant TOUS ces tags
-  - `tags://exclusive/[tag1]-[tag2]` - Cartes avec tag1 mais PAS tag2
-  - `tags://distribution` - Distribution de fréquence des tags
-- **Data**: Informations sur les tags pour organisation et filtrage de contenu
-
-### Tools
-
-#### Content Generation Tools
-
-**`explore_and_generate_courseware`**
-- **Input**: `{ sourceText?: string, filePath?: string, contentType?: 'markdown'|'code'|'text', targetDataShapes?: DataShapeName[], targetElo?: number, sourceRef?: string, generationMode?: 'analyze' | 'generate' | 'both' }`
-- **Output**: Orchestrated content generation with analysis, suggestions, and created cards
-- **Purpose**: Single orchestrating tool that analyzes source content and generates appropriate courseware using internal prompts and multiple create_card calls
-
-#### Content Management Tools
-
-**`create_card`**
-- **Input**: `{ shape: DataShapeName, data: any, tags?: string[], sourceRef?: string, suggestedElo?: number }`
-- **Output**: Nouvelle carte créée avec ID et ELO initial
-- **Purpose**: Créer du contenu de cours structuré avec rating initial
-
-**`update_card`**
-- **Input**: `{ cardId: string, updates: Partial<CardData> }`
-- **Output**: Carte mise à jour
-- **Purpose**: Modifier le contenu existant
-
-**`rate_content`**
-- **Input**: `{ cardId: string, suggestedElo: number, reasoning?: string, referenceCards?: string[] }`
-- **Output**: ELO mis à jour avec justification
-- **Purpose**: Calibrer la difficulté relative du contenu
-
-**`tag_card`**
-- **Input**: `{ cardId: string, tags: string[] }`
-- **Output**: Tags appliqués
-- **Purpose**: Organiser et catégoriser le contenu
-
-#### ELO Analysis Tools
-
-**`suggest_elo_calibration`**
-- **Input**: `{ cardId: string, similarityContext?: string[] }`
-- **Output**: ELO suggéré basé sur cartes similaires
-- **Purpose**: Aider à calibrer de nouvelles cartes par rapport au contenu existant
-
-**`identify_elo_gaps`**
-- **Input**: `{ targetDistribution?: 'uniform' | 'normal' | 'custom' }`
-- **Output**: Fourchettes ELO sous-représentées avec suggestions
-- **Purpose**: Identifier où générer du contenu pour équilibrer la difficulté
-
-### Prompts
-
-**`quiz_generation`**
-- **Args**: `{ topic: string, sourceType: string, targetElo: number, courseEloContext: { min: number, max: number, mean: number } }`
-- **Template**: Prompt structuré pour génération cohérente de quiz calibrés ELO
-- **Purpose**: Guider l'agent dans la création de contenu éducatif avec difficulté appropriée
-
-**`content_analysis`**
-- **Args**: `{ contentType: string, analysisGoal: string, eloReference?: number }`
-- **Template**: Prompt pour analyse systématique de contenu source avec perspective ELO
-- **Purpose**: Identifier et extraire des éléments éducatifs pertinents avec calibrage difficulté
-
-**`elo_calibration`**
-- **Args**: `{ contentDescription: string, existingEloRange: { min: number, max: number }, referenceCards?: string[] }`
-- **Template**: Prompt pour estimer l'ELO approprié d'un contenu
-- **Purpose**: Aider à situer relativement la difficulté de nouveau contenu
-
-## Technical Implementation
-
-### Dependencies
+### 1.2 Modifier le Build du CLI
+**Fichier** : `packages/cli/package.json` (scripts)
 ```json
 {
-  "@modelcontextprotocol/sdk": "^0.5.0",
-  "@vue-skuilder/db": "workspace:*",
-  "@vue-skuilder/common": "workspace:*",
-  "zod": "^3.22.0"
+  "scripts": {
+    "build": "tsc && npm run build:copy-mcp",
+    "build:copy-mcp": "cp src/mcp-server.ts dist/mcp-server.mjs"
+  }
 }
 ```
 
-### Core Class Structure
+**Ou mieux** : Inclure dans la compilation TypeScript pour avoir les bonnes imports.
+
+### 1.3 Ajouter MCP aux Dépendances CLI
+**Fichier** : `packages/cli/package.json`
+```json
+{
+  "dependencies": {
+    "@vue-skuilder/mcp": "workspace:*",
+    // ... existing deps
+  }
+}
+```
+
+## Phase 2: Intégration Studio
+
+### 2.1 Modifier studio.ts pour Exposer les Infos MCP
+**Fonction** : `launchStudio()` dans `packages/cli/src/commands/studio.ts`
+
 ```typescript
-export class MCPServer {
-  constructor(
-    private courseDB: CourseDBInterface,
-    private options?: MCPServerOptions
-  );
+// Après le démarrage réussi de tous les services
+console.log(chalk.green(`✅ Studio session ready!`));
+console.log(chalk.white(`🎨 Studio URL: http://localhost:${studioUIPort}`));
+console.log(chalk.gray(`   Database: ${studioDatabaseName} on port ${options.port}`));
+console.log(chalk.gray(`   Express API: ${expressManager.getConnectionDetails().url}`));
+
+// NOUVEAU: Info de connexion MCP
+const mcpServerPath = path.join(__dirname, 'mcp-server.mjs');
+const mcpCommand = `node ${mcpServerPath} ${unpackResult.courseId}`;
+console.log(chalk.blue(`🔗 MCP Server: ${mcpCommand}`));
+console.log(chalk.gray(`   Connect MCP clients using the command above`));
+
+// Variables d'environnement pour le serveur MCP
+const couchDetails = couchDBManager.getConnectionDetails();
+console.log(chalk.gray(`   MCP Environment:`));
+console.log(chalk.gray(`     COUCHDB_SERVER_URL=${couchDetails.url.replace('http://', '')}`));
+console.log(chalk.gray(`     COUCHDB_USERNAME=${couchDetails.username}`));
+console.log(chalk.gray(`     COUCHDB_PASSWORD=${couchDetails.password}`));
+```
+
+### 2.2 Helper pour Configuration MCP
+**Nouvelle fonction** dans `studio.ts`:
+```typescript
+function getMCPConnectionInfo(
+  unpackResult: UnpackResult, 
+  couchDBManager: CouchDBManager
+): { command: string; env: Record<string, string> } {
+  const mcpServerPath = path.join(__dirname, 'mcp-server.mjs');
+  const couchDetails = couchDBManager.getConnectionDetails();
   
-  async start(transport: Transport): Promise<void>;
-  async stop(): Promise<void>;
-}
-
-export interface MCPServerOptions {
-  enableSourceLinking?: boolean;
-  maxCardsPerQuery?: number;
-  allowedDataShapes?: DataShapeName[];
-  eloCalibrationMode?: 'strict' | 'adaptive' | 'manual';
-}
-```
-
-### Source Linking Format
-```typescript
-interface SourceReference {
-  type: 'git' | 'file' | 'url';
-  source: string;      // repo URL, file path, etc.
-  reference: string;   // commit hash, line numbers, etc.
-  milestone?: string;  // tag, release, branch
-  timestamp: string;   // ISO date
-}
-```
-
-### ELO Integration Types
-```typescript
-interface ELOContext {
-  current: number;
-  confidence: number;
-  distribution: {
-    min: number;
-    max: number;
-    mean: number;
-    median: number;
-    quartiles: [number, number, number];
+  return {
+    command: `node ${mcpServerPath} ${unpackResult.courseId}`,
+    env: {
+      COUCHDB_SERVER_URL: couchDetails.url.replace(/^https?:\/\//, ''),
+      COUCHDB_SERVER_PROTOCOL: couchDetails.url.startsWith('https') ? 'https' : 'http',
+      COUCHDB_USERNAME: couchDetails.username,
+      COUCHDB_PASSWORD: couchDetails.password
+    }
   };
 }
+```
 
-interface ContentWithELO {
-  content: any;
-  estimatedElo: number;
-  eloConfidence: number;
-  referenceCards?: string[];
+## Phase 3: Testing et Validation
+
+### 3.1 Test Manual avec MCP Inspector
+```bash
+# Terminal 1: Lancer studio
+yarn workspace @vue-skuilder/cli build
+skuilder studio
+
+# Terminal 2: Tester le serveur MCP
+cd packages/cli/dist
+COUCHDB_SERVER_URL=localhost:5985 \
+COUCHDB_USERNAME=admin \
+COUCHDB_PASSWORD=password \
+npx @modelcontextprotocol/inspector node mcp-server.mjs <course-id>
+```
+
+### 3.2 Test avec Claude Code
+1. Lancer studio mode
+2. Copier la commande MCP affichée
+3. Configurer Claude Code avec cette commande
+4. Tester les ressources et outils MCP
+
+## Phase 4: Améliorations (Futures)
+
+### 4.1 Export Configuration MCP
+Option pour exporter la configuration vers un fichier `mcp.json`:
+```typescript
+// Dans studio.ts
+if (options.exportMcpConfig) {
+  const mcpConfig = {
+    mcpServers: {
+      "vue-skuilder-studio": {
+        command: "node",
+        args: [mcpServerPath, unpackResult.courseId],
+        env: mcpConnectionInfo.env
+      }
+    }
+  };
+  
+  fs.writeFileSync('mcp.json', JSON.stringify(mcpConfig, null, 2));
+  console.log(chalk.green('📄 MCP config exported to mcp.json'));
 }
 ```
 
-## Integration Points
+### 4.2 Serveur HTTP MCP (Phase Future)
+Plus tard, ajouter support pour transport HTTP :
+- Serveur MCP intégré dans Express
+- Endpoint `/mcp` pour les clients HTTP
+- Configuration via `--mcp-http` flag
 
-### Local Development
-```typescript
-// Setup pour développement local
-import { getDataLayer } from '@vue-skuilder/db';
-import { MCPServer } from '@vue-skuilder/mcp';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio';
+## Livrables
 
-const courseDB = getDataLayer().getCourseDB('my-course-id');
-const server = new MCPServer(courseDB, {
-  eloCalibrationMode: 'adaptive'
-});
-const transport = new StdioServerTransport();
-await server.start(transport);
-```
+1. **mcp-server.ts** - Exécutable MCP standalone
+2. **studio.ts modifié** - Affichage des infos de connexion MCP
+3. **package.json CLI mis à jour** - Dépendances et build
+4. **Documentation** - Comment utiliser MCP avec studio mode
 
-### Express Integration (Future)
-```typescript
-// Dans Express route handler
-app.all('/api/courses/:courseId/mcp', async (req, res) => {
-  const courseDB = req.courseDB; // Injecté par middleware auth
-  const server = new MCPServer(courseDB, {
-    eloCalibrationMode: 'strict' // Production mode
-  });
-  
-  // Handle MCP over HTTP
-  await handleMCPRequest(server, req, res);
-});
-```
+## Critères de Succès
 
-## Implementation Phases
-
-### Phase 1: Foundation (MVP)
-- [ ] Package setup avec build system (tsup, dual exports)
-- [ ] MCPServer class de base avec CourseDBInterface injection
-- [ ] Resource basique `course://config` avec données ELO
-- [ ] Tool basique `create_card` avec support ELO initial
-- [ ] Tests de bout en bout avec Claude Desktop
-
-### Phase 2: Core Resources & Tools
-- [ ] Resources complètes (cards, shapes, elo basics)
-- [ ] Tools de génération de contenu (fillblank, multiple choice) avec targetElo
-- [ ] Support des DataShapes existants
-- [ ] Tool `analyze_source` pour fichiers markdown avec estimation ELO
-
-### Phase 3: ELO Intelligence & Source Linking
-- [ ] Resource `elo://` complète avec analytics avancées
-- [ ] Tools `rate_content`, `suggest_elo_calibration`, `identify_elo_gaps`
-- [ ] Système de source references avec git tracking
-- [ ] Prompts `elo_calibration` pour rating intelligent
-
-### Phase 4: Advanced Analysis & Integration
-- [ ] Integration avec file system scanning
-- [ ] Tools avancés d'analyse de contenu avec calibrage ELO automatique
-- [ ] Optimisation des performances et caching
-- [ ] Integration helpers pour Express avec gestion auth
-
-## Success Criteria
-
-**Phase 1 Success:**
-- Agent peut lire la configuration d'un cours avec distribution ELO via MCP
-- Agent peut créer une nouvelle carte avec ELO initial estimé
-- Tests passent avec un vrai CourseDBInterface
-
-**Phase 2 Success:**
-- Agent peut générer du contenu calibré à un ELO cible
-- Agent peut analyser la distribution ELO d'un cours
-- Génération de contenu respecte les DataShapes existants
-
-**Final Success:**
-- Agent peut analyser un répertoire source (ex: golang std lib docs)
-- Génère automatiquement du contenu de quiz structuré, source-linked, et calibré ELO
-- Agent peut identifier et combler les gaps dans la distribution ELO
-- Integration transparente avec workflow de développement existant
-
-## Risk Mitigation
-
-1. **Complexité ELO**: Commencer avec ELO basique, élaborer vers analytics avancées
-2. **Calibrage ELO**: Mode adaptatif pour apprentissage progressif du système
-3. **Performance**: Limites sur taille des queries, pagination pour grandes collections
-4. **Data Consistency**: Validation stricte des inputs via Zod schemas incluant ELO ranges
-5. **Integration**: Interface découplée permet testing indépendant de Express
-
-Cette approche assure une **verification incrémentale** à chaque étape et une **integration graduelle** avec l'écosystème Vue-Skuilder existant, en respectant le système ELO comme primitive core.
+- [ ] `skuilder studio` affiche la commande de connexion MCP
+- [ ] MCP Inspector peut se connecter au serveur
+- [ ] Claude Code peut utiliser le serveur MCP
+- [ ] Toutes les ressources/outils MCP fonctionnent
+- [ ] Arrêt propre du studio (pas de processus orphelins)

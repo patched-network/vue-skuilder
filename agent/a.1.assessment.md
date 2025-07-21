@@ -1,174 +1,181 @@
-# Assessment: MCP Package for Vue-Skuilder Course Content Agent Access
+# Assessment: Intégrer le serveur MCP dans Studio Mode
 
-## Context Analysis
+## Contexte Actuel
 
-Vue-Skuilder est un système sophistiqué de gestion de contenu éducatif avec une architecture modulaire bien conçue. Le système actuel comprend :
+Le mode studio (`skuilder studio`) dans `packages/cli` lance actuellement :
+1. **CouchDB** - Base de données temporaire via Docker
+2. **Express Backend** - API backend (port 3001+)  
+3. **Studio-UI** - Interface web de modification (port 7174+)
 
-### Architecture Existante
+Le serveur **MCP** (`packages/mcp`) expose :
+- 14 ressources de lecture (course, cards, tags, shapes, elo)
+- 4 outils d'écriture (create, update, tag, delete cards)
+- 2 prompts de génération (fill-in cards, ELO guidance)
 
-**Backend Core:**
-- `@vue-skuilder/db` - Couche d'abstraction de données supportant CouchDB dynamique et données statiques JSON
-- `@vue-skuilder/express` - Serveur API REST avec authentification, préprocessing de médias, gestion de cours
-- `@vue-skuilder/common` - Types partagés, interfaces, et utilitaires métier
+## Options d'Intégration
 
-**Data Models Clés:**
-- **Courses**: Configuration, cartes, ratings ELO, système de révision espacée
-- **Cards**: Contenu d'apprentissage avec tags, attachments media, données ELO
-- **DataShapes**: Système de types pour différents formats de questions
-- **Study Sessions**: Logique de présentation de contenu avec tracking de progression
-- **Content Sources**: Abstraction pour cours et salles de classe
+### Option 1: Serveur MCP Intégré (RECOMMANDÉ)
+**Architecture**: Le CLI lance le serveur MCP en parallèle avec les autres services
 
-**Patterns Architecturaux:**
-- Interface Provider pattern pour la couche de données
-- Dual export system (CommonJS/ESM) pour compatibilité maximale  
-- Système de registration de composants pour découverte automatique
-- Configuration build partagée avec alias cross-package
-
-## Objectif du Package MCP
-
-Créer un nouveau package `@vue-skuilder/mcp` qui :
-1. Expose les données de cours via le protocole MCP pour accès par des agents
-2. Permettra l'intégration avec le serveur Express existant
-3. Activera la génération automatisée de contenu de quiz annoté et lié aux sources
-4. Supportera l'attachement d'un processus agentique à un répertoire source
-
-## Options d'Architecture
-
-### Option A: Serveur MCP Standalone Intégré
-
-**Approche:** Créer un serveur MCP autonome qui utilise la couche `db` existante et s'intègre comme middleware Express.
-
-**Structure Proposée:**
-```
-packages/mcp/
-├── src/
-│   ├── server/          # Serveur MCP core
-│   ├── resources/       # Ressources MCP (courses, cards, content)
-│   ├── tools/           # Outils MCP (create, update, analyze)
-│   ├── prompts/         # Templates de prompts pour génération de contenu
-│   ├── integrations/    # Intégration Express middleware
-│   └── types/           # Types spécifiques MCP
-└── examples/            # Exemples d'usage
+**Implémentation**:
+```typescript
+// Dans studio.ts
+class MCPManager {
+  private mcpServer: MCPServer;
+  private transport: StdioServerTransport;
+  
+  async start(courseDB: CourseDBInterface): Promise<MCPConnectionInfo> {
+    this.mcpServer = new MCPServer(courseDB);
+    this.transport = new StdioServerTransport();
+    await this.mcpServer.start(this.transport);
+    return { command: 'node', args: [mcpServerPath] };
+  }
+}
 ```
 
-**Avantages:**
-- Réutilise l'infrastructure data layer existante
-- Intégration native avec l'écosystème Vue-Skuilder
-- Peut bénéficier de l'authentification Express existante
-- Support direct des DataShapes et patterns existants
+**Avantages**:
+- Accès direct à la base de données CouchDB du studio
+- Intégration native avec le cycle de vie du studio
+- Configuration automatique (pas de setup utilisateur)
+- Arrêt propre avec le studio
 
-**Inconvénients:**
-- Complexité d'intégration avec l'Express server existant
-- Nécessite coordination avec l'architecture existante
+**Inconvénients**:
+- Plus de complexité dans le gestionnaire du studio
+- Dépendance directe entre CLI et MCP
 
-### Option B: Serveur MCP Hybride avec Accès Direct
+### Option 2: Serveur MCP Externe avec Bundle
+**Architecture**: Le CLI bundle le serveur MCP lors du build et l'expose comme exécutable
 
-**Approche:** Serveur MCP qui peut fonctionner standalone OU comme service intégré, avec accès direct aux APIs data layer.
+**Implémentation**:
+```typescript
+// Dans le build du CLI
+copyDirectory('packages/mcp/dist', 'packages/cli/dist/mcp-assets');
 
-**Structure Proposée:**
-```
-packages/mcp/
-├── src/
-│   ├── core/            # Core MCP functionality
-│   ├── adapters/        # Adaptateurs pour différentes sources (db, files, git)
-│   ├── services/        # Services métier (quiz generation, content analysis)
-│   ├── transports/      # Transports MCP (stdio, http)
-│   ├── middleware/      # Express integration layer
-│   └── cli/             # CLI pour usage standalone
-└── docs/                # Documentation et exemples
+// Dans studio.ts
+const mcpServerPath = path.join(__dirname, 'mcp-assets', 'standalone-server.mjs');
+const mcpProcess = spawn('node', [mcpServerPath, courseId]);
 ```
 
-**Avantages:**
-- Flexibilité maximale (standalone ou intégré)
-- Peut accéder à différents types de sources de contenu
-- Extensible pour futurs cas d'usage
-- Découplage propre des concerns
+**Avantages**:
+- Découplage complet entre CLI et MCP
+- Le serveur MCP peut être utilisé indépendamment
+- Plus simple à déboguer
+- Configuration via variables d'environnement
 
-**Inconvénients:**
-- Plus complexe à implémenter initialement
-- Risque de duplication avec la couche db existante
+**Inconvénients**:
+- Nécessite un build séparé du serveur MCP
+- Plus de taille dans le package CLI
 
-### Option C: Extension MCP de la Couche DB
+### Option 3: Transport HTTP pour MCP
+**Architecture**: Serveur MCP sur HTTP au lieu de stdio
 
-**Approche:** Étendre les interfaces de la couche `db` existante avec des capabilities MCP natives.
-
-**Structure Proposée:**
-```
-packages/mcp/
-├── src/
-│   ├── providers/       # MCP data providers étendant DataLayerProvider
-│   ├── transforms/      # Transformateurs data → MCP resources
-│   ├── generators/      # Générateurs de contenu (quiz, annotations)
-│   └── server.ts        # MCP server factory
-└── integration/         # Helpers d'intégration Express
+**Implémentation**:
+```typescript
+// Serveur MCP avec transport HTTP
+const mcpServer = new MCPServer(courseDB);
+const httpTransport = new StreamableHTTPServerTransport();
+app.use('/mcp', mcpTransport.handler);
 ```
 
-**Avantages:**
-- Réutilisation maximale du code existant
-- Consistency avec les patterns architecturaux
-- Implémentation plus rapide
-- Intégration naturelle avec les types existants
+**Avantages**:
+- Intégration avec l'infrastructure HTTP existante
+- Pas de processus séparé
+- Facile à tester avec des outils HTTP
 
-**Inconvénients:**
-- Couplage plus fort avec l'architecture db
-- Moins de flexibilité pour sources externes
+**Inconvénients**:
+- Les clients MCP doivent supporter HTTP (pas stdio)
+- Plus complexe pour l'usage en développement local
 
-## Services MCP Proposés
+## Détails d'Implémentation
 
-### Resources
-- `course://[courseId]` - Configuration et métadonnées de cours
-- `cards://[courseId]/[filter]` - Cartes de cours avec filtres optionnels
-- `content://[courseId]/[cardId]` - Contenu détaillé d'une carte
-- `tags://[courseId]` - Système de tags et taxonomie
-- `schema://[courseId]` - DataShapes et structure de données
+### Configuration de Connexion
+Pour tous les scénarios, le studio doit communiquer les détails de connexion :
 
-### Tools
-- `analyze_content` - Analyser le contenu source pour opportunités de quiz
-- `generate_quiz` - Générer des questions basées sur le contenu source
-- `annotate_content` - Créer des annotations liées aux sources
-- `validate_quiz` - Valider la qualité des questions générées
-- `link_sources` - Créer des liens entre contenu et sources
+```typescript
+interface MCPConnectionInfo {
+  command: string;        // 'node'
+  args: string[];        // ['path/to/mcp-server.mjs', courseId]
+  env?: Record<string, string>;  // Variables d'environnement
+  cwd?: string;          // Répertoire de travail
+}
+```
 
-### Prompts
-- `quiz_generation` - Template pour génération structurée de quiz
-- `content_analysis` - Template pour analyse de contenu source
-- `annotation_creation` - Template pour création d'annotations
+### Gestion du Cycle de Vie
+```typescript
+// Dans stopStudioSession()
+async function stopStudioSession(): Promise<void> {
+  if (mcpManager) {
+    await mcpManager.stop();
+    mcpManager = null;
+  }
+  // ... autres arrêts
+}
+```
 
-## Phases d'Implémentation
+### Logs et Debugging
+```typescript
+const mcpManager = new MCPManager({
+  onLog: (message) => console.log(chalk.gray(`   MCP: ${message}`)),
+  onError: (error) => console.error(chalk.red(`   MCP Error: ${error}`)),
+});
+```
 
-### Phase 1: Foundation (MVP)
-1. Création du package structure de base
-2. Serveur MCP minimal avec ressources cours read-only
-3. Integration basique avec Express middleware
-4. Tests de bout en bout avec Claude Desktop
+## Considérations pour le Développement Local
 
-### Phase 2: Content Access
-1. Resources complètes (courses, cards, tags, schema)
-2. Tools de lecture et navigation
-3. Support des DataShapes existants
-4. Documentation et exemples
+### MCP Inspector Integration
+Le studio pourrait automatiquement lancer l'inspecteur MCP :
+```typescript
+if (process.env.MCP_INSPECTOR_MODE) {
+  // Lance l'inspecteur sur port 6274
+  spawn('npx', ['@modelcontextprotocol/inspector', ...mcpArgs]);
+}
+```
 
-### Phase 3: Content Generation
-1. Tools de création et modification de contenu
-2. Générateurs de quiz avec templates
-3. Système d'annotations linkées aux sources
-4. Integration avec file system pour source scanning
+### Configuration de Cours
+Le serveur MCP nécessite l'ID du cours et les détails de connexion CouchDB :
+```typescript
+const mcpConfig = {
+  courseId: unpackResult.courseId,
+  couchdb: couchDBManager.getConnectionDetails()
+};
+```
 
-### Phase 4: Advanced Features
-1. Support de différents transports (stdio, HTTP)
-2. Authentication et permissions
-3. Streaming et performance optimization
-4. Analytics et monitoring
+## Patterns Existants
 
-# Recommendation
+Le CLI utilise déjà des patterns similaires :
+- **ExpressManager**: Gère le processus Express backend
+- **CouchDBManager**: Gère le conteneur Docker CouchDB
+- **StudioUIServer**: Gère le serveur de fichiers statiques
 
-**Option B - Serveur MCP Hybride** est l'approche recommandée car elle offre :
+Le **MCPManager** suivrait la même approche.
 
-1. **Flexibilité maximale** pour différents cas d'usage
-2. **Extensibilité** pour futurs besoins
-3. **Découplage propre** des concerns
-4. **Path de migration naturel** vers des fonctionnalités avancées
+# Recommandation
 
-L'implémentation commencerait par un serveur MCP minimal réutilisant la couche `db` existante, puis évolurait vers un système plus sophistiqué avec support de sources multiples et génération de contenu avancée.
+**Option 1: Serveur MCP Intégré** est la meilleure approche pour les raisons suivantes :
 
-Cette approche permet une **verification incrémentale** à chaque phase et une **integration graduelle** avec l'écosystème Vue-Skuilder existant.
+1. **Simplicité d'usage** - L'utilisateur n'a rien à configurer
+2. **Intégration native** - Accès direct aux données du studio
+3. **Consistance** - Suit les patterns existants (ExpressManager, etc.)
+4. **Développement local** - Facile à déboguer et tester
+
+### Étapes d'Implémentation
+
+1. **Créer MCPManager** dans `packages/cli/src/utils/`
+2. **Modifier studio.ts** pour inclure la gestion MCP
+3. **Bundle du serveur MCP** dans le build du CLI
+4. **Tests et validation** avec l'inspecteur MCP
+5. **Documentation** des commandes de connexion MCP
+
+### Output Attendu
+
+À la fin du processus, `skuilder studio` affichera :
+```
+✅ Studio session ready!
+🎨 Studio URL: http://localhost:7174
+🗄️  Database: studio-course-123 on port 5985
+⚡ Express API: http://localhost:3001
+🔗 MCP Server: node dist/mcp-server.mjs course-id
+   Press Ctrl+C to stop studio session
+```
+
+L'utilisateur peut alors connecter des clients MCP (comme Claude Code) en utilisant la commande fournie.
