@@ -21,14 +21,16 @@ async function main() {
     const couchdbConfig = {
       type: 'couch' as const,
       options: {
-        COUCHDB_SERVER_URL: process.env.COUCHDB_SERVER_URL || 'localhost:5984',
+        COUCHDB_SERVER_URL: process.env.COUCHDB_SERVER_URL || 'localhost:5985',
         COUCHDB_SERVER_PROTOCOL: process.env.COUCHDB_SERVER_PROTOCOL || 'http',
         COUCHDB_USERNAME: process.env.COUCHDB_USERNAME || 'admin',
         COUCHDB_PASSWORD: process.env.COUCHDB_PASSWORD || 'password',
       },
     };
 
-    console.error(`Connecting to CouchDB at ${couchdbConfig.options.COUCHDB_SERVER_PROTOCOL}://${couchdbConfig.options.COUCHDB_SERVER_URL}`);
+    console.error(
+      `Connecting to CouchDB at ${couchdbConfig.options.COUCHDB_SERVER_PROTOCOL}://${couchdbConfig.options.COUCHDB_SERVER_URL}`
+    );
 
     // Initialize data layer and get course DB
     await initializeDataLayer(couchdbConfig);
