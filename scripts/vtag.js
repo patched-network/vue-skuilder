@@ -27,6 +27,12 @@ function main() {
     console.error('Example: node vtag.js 0.1.8-3');
     process.exit(1);
   }
+  if (tagString.startsWith('v')) {
+    console.error(
+      'Version string should not start with "v". Please provide a version like "0.1.8-3", "0.2.5", etc.'
+    );
+    process.exit(1);
+  }
 
   console.log(`🏷️  Setting all packages to version: ${tagString}`);
 
@@ -58,11 +64,11 @@ function main() {
   }
 
   console.log(`\n📦 Updating yarn lockfile...`);
-  
+
   // Run yarn to update lockfile
   const yarnProcess = spawn('yarn', ['install'], {
     stdio: 'inherit',
-    cwd: path.join(__dirname, '..')
+    cwd: path.join(__dirname, '..'),
   });
 
   yarnProcess.on('close', (yarnCode) => {
@@ -76,8 +82,8 @@ function main() {
 
     // Commit the changes
     const commitProcess = spawn('git', ['commit', '-am', `bump: version ${tagString}`], {
-      stdio: 'inherit', 
-      cwd: path.join(__dirname, '..')
+      stdio: 'inherit',
+      cwd: path.join(__dirname, '..'),
     });
 
     commitProcess.on('close', (commitCode) => {
@@ -92,7 +98,7 @@ function main() {
       // Create git tag
       const gitProcess = spawn('git', ['tag', `v${tagString}`], {
         stdio: 'inherit',
-        cwd: path.join(__dirname, '..')
+        cwd: path.join(__dirname, '..'),
       });
 
       gitProcess.on('close', (code) => {
