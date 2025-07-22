@@ -2,7 +2,6 @@
     "name": "vue-skuilder",
     "scripts": {
         "setup": "yarn && git submodule update --init --recursive && yarn build:lib",
-        "dev": "yarn workspace @vue-skuilder/common build && yarn workspace @vue-skuilder/db build && yarn workspace @vue-skuilder/common-ui build && yarn workspace @vue-skuilder/courseware build && yarn workspace @vue-skuilder/edit-ui build && node scripts/dev-couchdb.js start && concurrently \"yarn dev:platform-ui\" \"yarn dev:express\"",
         "dev:watch": "node scripts/dev-watch.js",
         "dev:platform": "yarn couchdb:start && yarn workspace @vue-skuilder/express dev & yarn workspace @vue-skuilder/platform-ui dev",
         "couchdb:start": "node scripts/dev-couchdb.js start",

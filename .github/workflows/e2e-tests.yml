@@ -42,7 +42,7 @@ jobs:
       - name: Setup and wait for services
         run: |
           # Start the dev environment in background
-          yarn dev &
+          yarn dev:platform &
           # Wait for the webserver to be ready
           npx wait-on http://localhost:5173
           # Wait for the database to be ready
