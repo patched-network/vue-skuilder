@@ -37,8 +37,10 @@ jobs:
         run: |
           yarn couchdb:start
 
-      - name: Build mcp package
-        run: yarn workspace @vue-skuilder/mcp build
+      - name: Build mcp package and examples
+        run: |
+          yarn workspace @vue-skuilder/mcp build
+          yarn workspace @vue-skuilder/mcp build:examples
 
       - name: list resources
         run: |
@@ -46,7 +48,7 @@ jobs:
 
       - name: list tools
         run: |
-          yarn workspace @vue-skuilder/mcp test:resources
+          yarn workspace @vue-skuilder/mcp test:tools
 
       - name: list prompts
         run: |
