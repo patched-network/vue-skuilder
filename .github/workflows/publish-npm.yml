@@ -35,6 +35,16 @@ jobs:
           VERSION=${GITHUB_REF_NAME#v}
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           echo "📌 Expected version: $VERSION"
+          
+          # Determine npm tag based on version format
+          if [[ "$VERSION" =~ -[0-9]+$ ]]; then
+            NPM_TAG="alpha"
+            echo "🚨 Decorated version detected, using --tag alpha"
+          else
+            NPM_TAG="latest"
+            echo "✅ Stable version, using --tag latest"
+          fi
+          echo "NPM_TAG=$NPM_TAG" >> $GITHUB_OUTPUT
 
       - name: Verify package versions match tag
         run: |
@@ -119,42 +129,43 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           set -e
+          NPM_TAG="${{ steps.extract_version.outputs.NPM_TAG }}"
           
           echo "Publishing @vue-skuilder/common..."
-          cd packages/common && yarn npm publish --access public && cd ../..
+          cd packages/common && yarn npm publish --access public --tag $NPM_TAG && cd ../..
           
           echo "Publishing @vue-skuilder/db..."
-          cd packages/db && yarn npm publish --access public && cd ../..
+          cd packages/db && yarn npm publish --access public --tag $NPM_TAG && cd ../..
           
           echo "Publishing @vue-skuilder/common-ui..."
-          cd packages/common-ui && yarn npm publish --access public && cd ../..
+          cd packages/common-ui && yarn npm publish --access public --tag $NPM_TAG && cd ../..
           
           echo "Publishing @vue-skuilder/edit-ui..."
-          cd packages/edit-ui && yarn npm publish --access public && cd ../..
+          cd packages/edit-ui && yarn npm publish --access public --tag $NPM_TAG && cd ../..
           
           echo "Publishing @vue-skuilder/courseware..."
-          cd packages/courseware && yarn npm publish --access public && cd ../..
+          cd packages/courseware && yarn npm publish --access public --tag $NPM_TAG && cd ../..
           
           echo "Publishing @vue-skuilder/client..."
-          cd packages/client && yarn npm publish --access public && cd ../..
+          cd packages/client && yarn npm publish --access public --tag $NPM_TAG && cd ../..
           
           echo "Publishing @vue-skuilder/platform-ui..."
-          cd packages/platform-ui && yarn npm publish --access public && cd ../..
+          cd packages/platform-ui && yarn npm publish --access public --tag $NPM_TAG && cd ../..
           
           echo "Publishing @vue-skuilder/standalone-ui..."
-          cd packages/standalone-ui && yarn npm publish --access public && cd ../..
+          cd packages/standalone-ui && yarn npm publish --access public --tag $NPM_TAG && cd ../..
           
           echo "Publishing @vue-skuilder/mcp..."
-          cd packages/mcp && yarn npm publish --access public && cd ../..
+          cd packages/mcp && yarn npm publish --access public --tag $NPM_TAG && cd ../..
           
           # echo "Publishing @vue-skuilder/tuilder..."
-          # cd packages/tuilder && yarn npm publish --access public && cd ../..
+          # cd packages/tuilder && yarn npm publish --access public --tag $NPM_TAG && cd ../..
           
           echo "Publishing @vue-skuilder/express..."
-          cd packages/express && yarn npm publish --access public && cd ../..
+          cd packages/express && yarn npm publish --access public --tag $NPM_TAG && cd ../..
           
           echo "Publishing @vue-skuilder/cli (scoped)..."
-          cd packages/cli && yarn npm publish --access public && cd ../..
+          cd packages/cli && yarn npm publish --access public --tag $NPM_TAG && cd ../..
           
           # Dual-publish CLI as unscoped 'skuilder' package
           echo "Publishing CLI as 'skuilder'..."
@@ -171,7 +182,7 @@ jobs:
           "
           
           # Use yarn npm publish to maintain workspace dependency resolution
-          yarn npm publish --access public
+          yarn npm publish --access public --tag $NPM_TAG
           cd ../..
           
           echo "All packages published successfully!"
