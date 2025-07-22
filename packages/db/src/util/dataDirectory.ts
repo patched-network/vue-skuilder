@@ -5,13 +5,18 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import { logger } from './tuiLogger';
+import { ENV } from '@db/factory';
 
 /**
  * Get the application data directory for the current platform
  * Uses ~/.tuilder as requested by user for simplicity
  */
 export function getAppDataDirectory(): string {
-  return path.join(os.homedir(), '.tuilder');
+  if (ENV.LOCAL_STORAGE_PREFIX) {
+    return path.join(os.homedir(), `.tuilder`, ENV.LOCAL_STORAGE_PREFIX);
+  } else {
+    return path.join(os.homedir(), '.tuilder');
+  }
 }
 
 /**

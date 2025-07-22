@@ -10,11 +10,13 @@ interface DBEnv {
   COUCHDB_SERVER_PROTOCOL: string; // Protocol of CouchDB server (http or https)
   COUCHDB_USERNAME?: string;
   COUCHDB_PASSWORD?: string;
+  LOCAL_STORAGE_PREFIX: string; // Prefix for IndexedDB storage names
 }
 
 export const ENV: DBEnv = {
   COUCHDB_SERVER_PROTOCOL: 'NOT_SET',
   COUCHDB_SERVER_URL: 'NOT_SET',
+  LOCAL_STORAGE_PREFIX: '',
 };
 
 // Configuration type for data layer initialization
@@ -43,6 +45,9 @@ export async function initializeDataLayer(config: DataLayerConfig): Promise<Data
   if (dataLayerInstance) {
     logger.warn('Data layer already initialized. Returning existing instance.');
     return dataLayerInstance;
+  }
+  if (config.options.localStoragePrefix) {
+    ENV.LOCAL_STORAGE_PREFIX = config.options.localStoragePrefix;
   }
 
   if (config.type === 'couch') {

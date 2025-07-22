@@ -24,7 +24,9 @@ npx @vue-skuilder/cli pack my-course
 
 ### Project Initialization
 - **init**: Scaffolds new course project structure
+- **studio**: Launches complete editing environment with CouchDB, web UI, and MCP server
 - **pack**: Packages course content for distribution
+- **unpack**: Imports course content from CouchDB to static files
 
 ## Dependencies
 
@@ -49,11 +51,23 @@ npx @vue-skuilder/cli pack my-course
 - **Configuration**: Generates initial course configuration
 - **Dependencies**: Installs required npm packages
 
+### Studio Command (`commands/studio.ts`)
+- **Environment Setup**: Launches CouchDB, Express API, and web interface
+- **Data Loading**: Unpacks course data to temporary database
+- **MCP Server**: Provides Model Context Protocol server for Claude Code integration
+- **Configuration Display**: Shows MCP connection details and .mcp.json content
+
 ### Pack Command (`commands/pack.ts`)
 - **Course Compilation**: Bundles course content for distribution
 - **Static Data**: Converts dynamic course data to static format
 - **Optimization**: Minifies and optimizes course assets
 - **Packaging**: Creates deployable course bundle
+
+### MCP Server (`mcp-server.ts`)
+- **Protocol Implementation**: Full MCP server with 14 resources, 4 tools, 2 prompts
+- **Course Access**: Direct CourseDBInterface integration for real-time data
+- **Content Generation**: AI-powered card creation and content authoring
+- **ELO Integration**: Native support for difficulty rating system
 
 ## Utilities
 
@@ -78,7 +92,8 @@ npx @vue-skuilder/cli pack my-course
 - **Binary Linking**: Automatically creates `skuilder` command alias
 
 ## Use Cases
-- **Course Authors**: Initialize new course projects
-- **Content Creators**: Package courses for distribution
+- **Course Authors**: Initialize new course projects with MCP server support
+- **Content Creators**: Package courses for distribution with AI-enabled authoring
 - **Developers**: Bootstrap vue-skuilder development environment
+- **Claude Code Users**: AI-enabled course content creation and editing via MCP
 - **Deployment**: Automated course packaging for CI/CD

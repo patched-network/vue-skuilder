@@ -8,8 +8,10 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 const TEST_COURSE_ID = '2aeb8315ef78f3e89ca386992d00825b';
 
 async function main() {
+  return;
+
   try {
-    console.error('Starting Vue-Skuilder MCP Server...');
+    console.error('Starting local-dev example Vue-Skuilder MCP Server...');
     console.error(`Using test course: ${TEST_COURSE_ID}`);
 
     // Initialize data layer and get course DB

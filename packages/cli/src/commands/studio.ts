@@ -176,6 +176,21 @@ async function launchStudio(coursePath: string, options: StudioOptions) {
     console.log(chalk.white(`🎨 Studio URL: http://localhost:${studioUIPort}`));
     console.log(chalk.gray(`   Database: ${studioDatabaseName} on port ${options.port}`));
     console.log(chalk.gray(`   Express API: ${expressManager.getConnectionDetails().url}`));
+
+    // Display MCP connection information
+    const mcpInfo = getMCPConnectionInfo(unpackResult, couchDBManager, resolvedPath);
+    console.log(chalk.blue(`🔗 MCP Server: ${mcpInfo.command}`));
+    console.log(chalk.gray(`   Connect MCP clients using the command above`));
+    console.log(chalk.gray(`   Environment variables for MCP:`));
+    Object.entries(mcpInfo.env).forEach(([key, value]) => {
+      console.log(chalk.gray(`     ${key}=${value}`));
+    });
+
+    // Display .mcp.json content for Claude Code integration
+    const mcpJsonContent = generateMCPJson(unpackResult, couchDBManager, resolvedPath);
+    console.log(chalk.blue(`📋 .mcp.json content:`));
+    console.log(chalk.gray(mcpJsonContent));
+
     if (options.browser) {
       console.log(chalk.cyan(`🌐 Opening browser...`));
       await openBrowser(`http://localhost:${studioUIPort}`);
@@ -1223,4 +1238,101 @@ export default defineConfig({
 
   fs.writeFileSync(viteConfigPath, standaloneViteConfig);
   console.log(chalk.gray(`   Vite config replaced with standalone version`));
+}
+
+/**
+ * Determine the correct MCP server executable path/command based on project context
+ */
+function resolveMCPExecutable(projectPath: string): {
+  command: string;
+  args: string[];
+  isNpx: boolean;
+} {
+  // Check if we're in the monorepo (packages/cli exists)
+  const monorepoCliPath = path.join(projectPath, 'packages', 'cli', 'dist', 'mcp-server.js');
+  if (fs.existsSync(monorepoCliPath)) {
+    return {
+      command: './packages/cli/dist/mcp-server.js',
+      args: [],
+      isNpx: false,
+    };
+  }
+
+  // Check if @vue-skuilder/cli is installed as a dependency
+  const scaffoldedCliPath = path.join(projectPath, 'node_modules', '@vue-skuilder', 'cli', 'dist', 'mcp-server.js');
+  if (fs.existsSync(scaffoldedCliPath)) {
+    return {
+      command: './node_modules/@vue-skuilder/cli/dist/mcp-server.js',
+      args: [],
+      isNpx: false,
+    };
+  }
+
+  // Fallback to npx approach
+  return {
+    command: 'npx',
+    args: ['@vue-skuilder/cli', 'mcp-server'],
+    isNpx: true,
+  };
+}
+
+/**
+ * Generate MCP connection information for studio session
+ */
+function getMCPConnectionInfo(
+  unpackResult: UnpackResult,
+  couchDBManager: CouchDBManager,
+  projectPath: string
+): { command: string; env: Record<string, string> } {
+  const couchDetails = couchDBManager.getConnectionDetails();
+  const executable = resolveMCPExecutable(projectPath);
+  
+  // Build command string for display
+  let commandStr: string;
+  if (executable.isNpx) {
+    commandStr = `${executable.command} ${executable.args.join(' ')} ${unpackResult.databaseName} ${couchDetails.port}`;
+  } else {
+    commandStr = `node ${executable.command} ${unpackResult.databaseName} ${couchDetails.port}`;
+  }
+
+  return {
+    command: commandStr,
+    env: {
+      COUCHDB_SERVER_URL: couchDetails.url.replace(/^https?:\/\//, ''),
+      COUCHDB_SERVER_PROTOCOL: couchDetails.url.startsWith('https') ? 'https' : 'http',
+      COUCHDB_USERNAME: couchDetails.username,
+      COUCHDB_PASSWORD: couchDetails.password,
+    },
+  };
+}
+
+/**
+ * Generate .mcp.json content for Claude Code integration
+ */
+function generateMCPJson(
+  unpackResult: UnpackResult,
+  couchDBManager: CouchDBManager,
+  projectPath: string,
+  serverName: string = 'vue-skuilder-studio'
+): string {
+  const couchDetails = couchDBManager.getConnectionDetails();
+  const port = couchDetails.port || 5985;
+  const executable = resolveMCPExecutable(projectPath);
+  
+  const mcpConfig = {
+    mcpServers: {
+      [serverName]: {
+        command: executable.command,
+        args: [...executable.args, unpackResult.databaseName, port.toString()],
+        env: {
+          COUCHDB_SERVER_URL: couchDetails.url.replace(/^https?:\/\//, ''),
+          COUCHDB_SERVER_PROTOCOL: couchDetails.url.startsWith('https') ? 'https' : 'http',
+          COUCHDB_USERNAME: couchDetails.username,
+          COUCHDB_PASSWORD: couchDetails.password,
+        },
+      },
+    },
+  };
+
+  return JSON.stringify(mcpConfig, null, 2);
 }
