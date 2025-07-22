@@ -178,7 +178,7 @@ async function launchStudio(coursePath: string, options: StudioOptions) {
     console.log(chalk.gray(`   Express API: ${expressManager.getConnectionDetails().url}`));
 
     // Display MCP connection information
-    const mcpInfo = getMCPConnectionInfo(unpackResult, couchDBManager);
+    const mcpInfo = getMCPConnectionInfo(unpackResult, couchDBManager, resolvedPath);
     console.log(chalk.blue(`🔗 MCP Server: ${mcpInfo.command}`));
     console.log(chalk.gray(`   Connect MCP clients using the command above`));
     console.log(chalk.gray(`   Environment variables for MCP:`));
@@ -187,7 +187,7 @@ async function launchStudio(coursePath: string, options: StudioOptions) {
     });
 
     // Display .mcp.json content for Claude Code integration
-    const mcpJsonContent = generateMCPJson(unpackResult, couchDBManager);
+    const mcpJsonContent = generateMCPJson(unpackResult, couchDBManager, resolvedPath);
     console.log(chalk.blue(`📋 .mcp.json content:`));
     console.log(chalk.gray(mcpJsonContent));
 
@@ -1241,17 +1241,62 @@ export default defineConfig({
 }
 
 /**
+ * Determine the correct MCP server executable path/command based on project context
+ */
+function resolveMCPExecutable(projectPath: string): {
+  command: string;
+  args: string[];
+  isNpx: boolean;
+} {
+  // Check if we're in the monorepo (packages/cli exists)
+  const monorepoCliPath = path.join(projectPath, 'packages', 'cli', 'dist', 'mcp-server.js');
+  if (fs.existsSync(monorepoCliPath)) {
+    return {
+      command: './packages/cli/dist/mcp-server.js',
+      args: [],
+      isNpx: false,
+    };
+  }
+
+  // Check if @vue-skuilder/cli is installed as a dependency
+  const scaffoldedCliPath = path.join(projectPath, 'node_modules', '@vue-skuilder', 'cli', 'dist', 'mcp-server.js');
+  if (fs.existsSync(scaffoldedCliPath)) {
+    return {
+      command: './node_modules/@vue-skuilder/cli/dist/mcp-server.js',
+      args: [],
+      isNpx: false,
+    };
+  }
+
+  // Fallback to npx approach
+  return {
+    command: 'npx',
+    args: ['@vue-skuilder/cli', 'mcp-server'],
+    isNpx: true,
+  };
+}
+
+/**
  * Generate MCP connection information for studio session
  */
 function getMCPConnectionInfo(
   unpackResult: UnpackResult,
-  couchDBManager: CouchDBManager
+  couchDBManager: CouchDBManager,
+  projectPath: string
 ): { command: string; env: Record<string, string> } {
-  const mcpServerPath = path.join(__dirname, 'mcp-server.js');
   const couchDetails = couchDBManager.getConnectionDetails();
+  const executable = resolveMCPExecutable(projectPath);
+  
+  // Build command string for display
+  let commandStr: string;
+  if (executable.isNpx) {
+    commandStr = `${executable.command} ${executable.args.join(' ')} ${unpackResult.databaseName} ${couchDetails.port}`;
+  } else {
+    commandStr = `node ${executable.command} ${unpackResult.databaseName} ${couchDetails.port}`;
+  }
 
   return {
-    command: `node ${mcpServerPath} ${unpackResult.databaseName} ${couchDetails.port}`,
+    command: commandStr,
     env: {
       COUCHDB_SERVER_URL: couchDetails.url.replace(/^https?:\/\//, ''),
       COUCHDB_SERVER_PROTOCOL: couchDetails.url.startsWith('https') ? 'https' : 'http',
@@ -1267,19 +1312,18 @@ function getMCPConnectionInfo(
 function generateMCPJson(
   unpackResult: UnpackResult,
   couchDBManager: CouchDBManager,
+  projectPath: string,
   serverName: string = 'vue-skuilder-studio'
 ): string {
   const couchDetails = couchDBManager.getConnectionDetails();
   const port = couchDetails.port || 5985;
-  
-  // Use relative path to mcp-server.js for portability
-  const mcpServerRelativePath = './packages/cli/dist/mcp-server.js';
+  const executable = resolveMCPExecutable(projectPath);
   
   const mcpConfig = {
     mcpServers: {
       [serverName]: {
-        command: mcpServerRelativePath,
-        args: [unpackResult.databaseName, port.toString()],
+        command: executable.command,
+        args: [...executable.args, unpackResult.databaseName, port.toString()],
         env: {
           COUCHDB_SERVER_URL: couchDetails.url.replace(/^https?:\/\//, ''),
           COUCHDB_SERVER_PROTOCOL: couchDetails.url.startsWith('https') ? 'https' : 'http',
