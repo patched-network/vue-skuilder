@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 
-import { initializeDataLayer, getDataLayer } from '@vue-skuilder/db';
+import { initializeDataLayer, getDataLayer, initializeTuiLogging } from '@vue-skuilder/db';
 import { MCPServer } from '@vue-skuilder/mcp';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+
+initializeTuiLogging();
 
 async function main() {
   try {
@@ -13,18 +15,22 @@ async function main() {
       console.error('Example: node mcp-server.js 2aeb8315ef78f3e89ca386992d00825b');
       process.exit(1);
     }
+    const port = process.argv[3] ? parseInt(process.argv[3], 10) : 5984;
 
     console.error('Starting Vue-Skuilder MCP Server...');
     console.error(`Using course: ${courseId}`);
 
     // Get CouchDB configuration from environment variables
+    // MCP server runs in a headless Node.js environment, so we skip user DB initialization
     const couchdbConfig = {
       type: 'couch' as const,
       options: {
-        COUCHDB_SERVER_URL: process.env.COUCHDB_SERVER_URL || 'localhost:5985',
+        COUCHDB_SERVER_URL: process.env.COUCHDB_SERVER_URL || `localhost:${port}`,
         COUCHDB_SERVER_PROTOCOL: process.env.COUCHDB_SERVER_PROTOCOL || 'http',
-        COUCHDB_USERNAME: process.env.COUCHDB_USERNAME || 'admin',
-        COUCHDB_PASSWORD: process.env.COUCHDB_PASSWORD || 'password',
+        COUCHDB_USERNAME: 'admin',
+        COUCHDB_PASSWORD: 'password',
+        COURSE_IDS: [courseId], // Limit to specific course
+        localStoragePrefix: 'mcp-server',
       },
     };
 
@@ -34,11 +40,7 @@ async function main() {
 
     // Initialize data layer and get course DB
     await initializeDataLayer(couchdbConfig);
-
-    const dataLayer = getDataLayer();
-    await dataLayer.initialize();
-
-    const courseDB = dataLayer.getCourseDB(courseId);
+    const courseDB = getDataLayer().getCourseDB(courseId);
 
     // Create and start MCP server
     const server = new MCPServer(courseDB, {
@@ -63,5 +65,5 @@ async function main() {
 
 main().catch((error) => {
   console.error('Unhandled error:', error);
-  process.exit(1);
+  // process.exit(1);
 });

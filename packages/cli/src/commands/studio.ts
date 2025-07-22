@@ -1246,7 +1246,7 @@ function getMCPConnectionInfo(
   const couchDetails = couchDBManager.getConnectionDetails();
 
   return {
-    command: `node ${mcpServerPath} ${unpackResult.courseId}`,
+    command: `node ${mcpServerPath} ${unpackResult.databaseName} ${couchDetails.port}`,
     env: {
       COUCHDB_SERVER_URL: couchDetails.url.replace(/^https?:\/\//, ''),
       COUCHDB_SERVER_PROTOCOL: couchDetails.url.startsWith('https') ? 'https' : 'http',
