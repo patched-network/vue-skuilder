@@ -11,7 +11,7 @@
   },
   "scripts": {
     "build": "tsup",
-    "build:examples": "tsup --entry src/examples/local-dev.ts --format cjs,esm --outDir dist --target es2022",
+    "build:examples": "tsup src/examples/local-dev.ts --format cjs,esm --outDir dist/examples --target es2022",
     "dev": "yarn build && yarn build:examples && yarn inspector",
     "inspector": "npx @modelcontextprotocol/inspector node dist/examples/local-dev.mjs",
     "test:cli": "npx @modelcontextprotocol/inspector --cli node dist/examples/local-dev.mjs",
