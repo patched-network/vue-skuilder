@@ -54,7 +54,7 @@
     "@types/hashids": "^1.0.30",
     "@types/jest": "^29.5.14",
     "@types/morgan": "^1.9.9",
-    "@types/node": "18",
+    "@types/node": "24",
     "@types/pouchdb": "^6.4.2",
     "@typescript-eslint/eslint-plugin": "^8.25.0",
     "@typescript-eslint/parser": "^8.25.0",
