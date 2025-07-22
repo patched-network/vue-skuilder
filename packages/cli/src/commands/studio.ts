@@ -176,7 +176,7 @@ async function launchStudio(coursePath: string, options: StudioOptions) {
     console.log(chalk.white(`🎨 Studio URL: http://localhost:${studioUIPort}`));
     console.log(chalk.gray(`   Database: ${studioDatabaseName} on port ${options.port}`));
     console.log(chalk.gray(`   Express API: ${expressManager.getConnectionDetails().url}`));
-    
+
     // Display MCP connection information
     const mcpInfo = getMCPConnectionInfo(unpackResult, couchDBManager);
     console.log(chalk.blue(`🔗 MCP Server: ${mcpInfo.command}`));
@@ -185,7 +185,12 @@ async function launchStudio(coursePath: string, options: StudioOptions) {
     Object.entries(mcpInfo.env).forEach(([key, value]) => {
       console.log(chalk.gray(`     ${key}=${value}`));
     });
-    
+
+    // Display .mcp.json content for Claude Code integration
+    const mcpJsonContent = generateMCPJson(unpackResult, couchDBManager);
+    console.log(chalk.blue(`📋 .mcp.json content:`));
+    console.log(chalk.gray(mcpJsonContent));
+
     if (options.browser) {
       console.log(chalk.cyan(`🌐 Opening browser...`));
       await openBrowser(`http://localhost:${studioUIPort}`);
@@ -1254,4 +1259,36 @@ function getMCPConnectionInfo(
       COUCHDB_PASSWORD: couchDetails.password,
     },
   };
+}
+
+/**
+ * Generate .mcp.json content for Claude Code integration
+ */
+function generateMCPJson(
+  unpackResult: UnpackResult,
+  couchDBManager: CouchDBManager,
+  serverName: string = 'vue-skuilder-studio'
+): string {
+  const couchDetails = couchDBManager.getConnectionDetails();
+  const port = couchDetails.port || 5985;
+  
+  // Use relative path to mcp-server.js for portability
+  const mcpServerRelativePath = './packages/cli/dist/mcp-server.js';
+  
+  const mcpConfig = {
+    mcpServers: {
+      [serverName]: {
+        command: mcpServerRelativePath,
+        args: [unpackResult.databaseName, port.toString()],
+        env: {
+          COUCHDB_SERVER_URL: couchDetails.url.replace(/^https?:\/\//, ''),
+          COUCHDB_SERVER_PROTOCOL: couchDetails.url.startsWith('https') ? 'https' : 'http',
+          COUCHDB_USERNAME: couchDetails.username,
+          COUCHDB_PASSWORD: couchDetails.password,
+        },
+      },
+    },
+  };
+
+  return JSON.stringify(mcpConfig, null, 2);
 }
