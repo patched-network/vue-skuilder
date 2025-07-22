@@ -96,6 +96,12 @@ Studio mode creates a full editing environment by starting multiple services:
    - Create/edit cards, manage tags, bulk import
    - Live preview of changes
 
+4. **MCP Server** (Course Content Agent)
+   - Model Context Protocol server for Claude Code integration
+   - AI-powered course content authoring and editing
+   - Direct access to course data, cards, tags, and ELO ratings
+   - Configuration for MCP clients is output at startup
+
 #### Studio Workflow
 
 1. **Load Course Data**: Unpacks your `public/static-courses/` JSON files into temporary CouchDB
