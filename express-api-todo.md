@@ -28,11 +28,18 @@
 - VueClientRequest interface moved to factory for shared usage
 
 ### 1.2b Refactor Existing App to Use Factory
-- [ ] Refactor `src/app.ts` to use `createExpressApp()` from app-factory
-- [ ] Replace duplicated middleware/routes with factory function call
-- [ ] Use `initializeServices()` instead of inline init() function
-- [ ] Ensure existing platform behavior unchanged
-- [ ] Test that `yarn dev` still works correctly
+- [x] Refactor `src/app.ts` to use `createExpressApp()` from app-factory
+- [x] Replace duplicated middleware/routes with factory function call
+- [x] Use `initializeServices()` instead of inline init() function
+- [x] Ensure existing platform behavior unchanged
+- [x] Test that `yarn dev` still works correctly
+
+**Summary**: Completely refactored standalone app.ts to eliminate duplication:
+- Reduced from ~264 lines to ~32 lines (87% reduction)
+- Uses `createExpressApp(ENV)` with environment config
+- Uses `initializeServices()` for background initialization
+- Preserves original port (3000), logging, and error handling behavior
+- Both modes now guaranteed to use identical Express configuration and routes
 
 **Note**: This eliminates code duplication and ensures both standalone and programmatic modes use identical logic.
 
