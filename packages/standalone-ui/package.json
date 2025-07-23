@@ -37,6 +37,7 @@
   },
   "dependencies": {
     "@mdi/font": "^7.3.67",
+    "@vue-skuilder/common": "workspace:*",
     "@vue-skuilder/common-ui": "workspace:*",
     "@vue-skuilder/courseware": "workspace:*",
     "@vue-skuilder/db": "workspace:*",
