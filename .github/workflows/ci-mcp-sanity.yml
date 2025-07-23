@@ -36,6 +36,7 @@ jobs:
       - name: run test database
         run: |
           yarn couchdb:start
+          npx wait-on --timeout 5m http://localhost:5984
 
       - name: Build mcp package and examples
         run: |
