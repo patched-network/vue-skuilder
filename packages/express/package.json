@@ -3,7 +3,7 @@
   "publishConfig": {
     "access": "public"
   },
-  "version": "0.1.9",
+  "version": "0.1.10",
   "description": "an API",
   "main": "dist/app.js",
   "type": "module",
@@ -72,5 +72,5 @@
     "typescript": "^5.7.2",
     "typescript-eslint": "^8.25.0"
   },
-  "stableVersion": "0.1.9"
+  "stableVersion": "0.1.10"
 }

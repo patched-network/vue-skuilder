@@ -1,6 +1,6 @@
 {
   "name": "@vue-skuilder/mcp",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "type": "module",
   "exports": {
     ".": {
@@ -31,5 +31,5 @@
     "tsup": "^8.0.0",
     "typescript": "~5.7.2"
   },
-  "stableVersion": "0.1.9"
+  "stableVersion": "0.1.10"
 }
