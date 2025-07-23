@@ -53,7 +53,7 @@
     "@vitejs/plugin-vue": "^5.2.1",
     "cypress": "14.1.0",
     "typescript": "^5.7.2",
-    "vite": "^6.0.9",
+    "vite": "^7.0.5",
     "vite-plugin-dts": "^4.3.0",
     "vue-tsc": "^1.8.0",
     "wait-on": "8.0.2"
