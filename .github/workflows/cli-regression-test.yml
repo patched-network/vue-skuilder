@@ -31,7 +31,8 @@ jobs:
       
       - name: Build CLI package
         run: |
-          yarn build
+          yarn build:lib
+          yarn workspace @vue-skuilder/mcp build
           yarn workspace @vue-skuilder/cli build
       
       - name: Create test directory
