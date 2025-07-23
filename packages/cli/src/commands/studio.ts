@@ -34,13 +34,14 @@ async function findAvailablePort(startPort: number): Promise<number> {
     const server = http.createServer();
     
     server.listen(startPort, () => {
-      const actualPort = (server.address() as any)?.port;
+      const address = server.address();
+      const actualPort = address && typeof address === 'object' ? address.port : startPort;
       server.close(() => {
-        resolve(actualPort || startPort);
+        resolve(actualPort);
       });
     });
     
-    server.on('error', (err: any) => {
+    server.on('error', (err: NodeJS.ErrnoException) => {
       if (err.code === 'EADDRINUSE') {
         // Port is in use, try the next one
         resolve(findAvailablePort(startPort + 1));

@@ -166,10 +166,16 @@
 - [ ] Add JSDoc comments to public API methods
 
 ### 5.2 Code Cleanup
-- [ ] Remove old embedded Express assets from CLI dist
-- [ ] Clean up any unused utility files
-- [ ] Update TypeScript build configs if needed
-- [ ] Run linting and fix any issues
+- [x] Remove old embedded Express assets from CLI dist
+- [x] Clean up any unused utility files (`ExpressManager.ts` deleted)
+- [x] Update TypeScript build configs if needed
+- [x] Run linting and fix any issues
+
+**Summary**: Fixed ESLint issues for alpha publish:
+- Fixed `@typescript-eslint/no-explicit-any` warnings in `studio.ts:37` and `studio.ts:43`
+- Replaced `(server.address() as any)?.port` with proper type checking
+- Replaced `(err: any)` with `(err: NodeJS.ErrnoException)`
+- All lint:check commands now pass without warnings
 
 ### 5.3 Version Management
 - [ ] Coordinate version bumps for both Express and CLI packages
