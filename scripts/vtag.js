@@ -14,6 +14,7 @@ const PACKAGES = [
   'client',
   'platform-ui',
   'standalone-ui',
+  'studio-ui',
   'express',
   'mcp',
   'cli',
