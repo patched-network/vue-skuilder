@@ -21,15 +21,15 @@
     "server": "node dist/examples/local-dev.mjs"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.15.1",
+    "@modelcontextprotocol/sdk": "^1.16.0",
     "@vue-skuilder/common": "workspace:*",
     "@vue-skuilder/db": "workspace:*",
     "zod": "^3.22.0"
   },
   "devDependencies": {
     "@modelcontextprotocol/inspector": "^0.16.1",
-    "tsup": "^8.0.0",
-    "typescript": "~5.7.2"
+    "tsup": "^8.5.0",
+    "typescript": "~5.8.3"
   },
   "stableVersion": "0.1.10"
 }
