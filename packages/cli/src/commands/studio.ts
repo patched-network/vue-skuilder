@@ -13,7 +13,8 @@ import {
   StudioBuildErrorType,
   withStudioBuildErrorHandling,
 } from '../utils/error-reporting.js';
-import { ExpressManager } from '../utils/ExpressManager.js';
+import { createExpressApp, initializeServices } from '@vue-skuilder/express';
+import type { ExpressServerConfig } from '@vue-skuilder/express';
 import {
   ensureBuildDirectory,
   ensureCacheDirectory,
@@ -24,6 +25,31 @@ import {
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+/**
+ * Find an available port starting from the given port number
+ */
+async function findAvailablePort(startPort: number): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const server = http.createServer();
+    
+    server.listen(startPort, () => {
+      const actualPort = (server.address() as any)?.port;
+      server.close(() => {
+        resolve(actualPort || startPort);
+      });
+    });
+    
+    server.on('error', (err: any) => {
+      if (err.code === 'EADDRINUSE') {
+        // Port is in use, try the next one
+        resolve(findAvailablePort(startPort + 1));
+      } else {
+        reject(err);
+      }
+    });
+  });
+}
 
 export function createStudioCommand(): Command {
   return new Command('studio')
@@ -70,7 +96,7 @@ interface StudioOptions {
 
 // Global references for cleanup
 let couchDBManager: CouchDBManager | null = null;
-let expressManager: ExpressManager | null = null;
+let expressServer: http.Server | null = null;
 let studioUIServer: http.Server | null = null;
 
 async function launchStudio(coursePath: string, options: StudioOptions) {
@@ -157,7 +183,8 @@ async function launchStudio(coursePath: string, options: StudioOptions) {
 
     // Phase 9.5: Launch Express backend
     console.log(chalk.cyan(`⚡ Starting Express backend server...`));
-    expressManager = await startExpressBackend(couchDBManager.getConnectionDetails(), resolvedPath);
+    const expressResult = await startExpressBackend(couchDBManager.getConnectionDetails(), resolvedPath);
+    expressServer = expressResult.server;
 
     // Phase 7: Launch studio-ui server
     console.log(chalk.cyan(`🌐 Starting studio-ui server...`));
@@ -175,7 +202,7 @@ async function launchStudio(coursePath: string, options: StudioOptions) {
     console.log(chalk.green(`✅ Studio session ready!`));
     console.log(chalk.white(`🎨 Studio URL: http://localhost:${studioUIPort}`));
     console.log(chalk.gray(`   Database: ${studioDatabaseName} on port ${options.port}`));
-    console.log(chalk.gray(`   Express API: ${expressManager.getConnectionDetails().url}`));
+    console.log(chalk.gray(`   Express API: ${expressResult.url}`));
 
     // Display MCP connection information
     const mcpInfo = getMCPConnectionInfo(unpackResult, couchDBManager, resolvedPath);
@@ -330,15 +357,19 @@ async function stopStudioSession(): Promise<void> {
   }
 
   // Stop Express backend
-  if (expressManager) {
+  if (expressServer) {
     try {
-      await expressManager.stop();
-      console.log(chalk.green(`✅ Express backend stopped`));
+      await new Promise<void>((resolve) => {
+        expressServer!.close(() => {
+          console.log(chalk.green(`✅ Express backend stopped`));
+          resolve();
+        });
+      });
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       console.error(chalk.red(`Error stopping Express backend: ${errorMessage}`));
     }
-    expressManager = null;
+    expressServer = null;
   }
 
   // Stop CouchDB
@@ -526,31 +557,54 @@ async function openBrowser(url: string): Promise<void> {
  */
 async function startExpressBackend(
   couchDbConnectionDetails: ConnectionDetails,
-  projectPath: string
-): Promise<ExpressManager> {
-  const expressManager = new ExpressManager(
-    {
-      port: 3001, // Start from 3001 to avoid conflicts
-      couchdbUrl: couchDbConnectionDetails.url,
-      couchdbUsername: couchDbConnectionDetails.username,
-      couchdbPassword: couchDbConnectionDetails.password,
-      projectPath: projectPath,
+  _projectPath: string
+): Promise<{ server: http.Server; port: number; url: string }> {
+  console.log(chalk.blue('⚡ Starting Express backend server...'));
+
+  // Find available port starting from 3001
+  const availablePort = await findAvailablePort(3001);
+
+  // Extract server and protocol from CouchDB URL
+  const couchUrl = new URL(couchDbConnectionDetails.url);
+  const server = `${couchUrl.hostname}:${couchUrl.port}`;
+  const protocol = couchUrl.protocol.replace(':', '');
+
+  // Create Express server configuration
+  const config: ExpressServerConfig = {
+    port: availablePort,
+    couchdb: {
+      protocol: protocol,
+      server: server,
+      username: couchDbConnectionDetails.username,
+      password: couchDbConnectionDetails.password,
     },
-    {
-      onLog: (message) => console.log(chalk.gray(`   Express: ${message}`)),
-      onError: (error) => console.error(chalk.red(`   Express Error: ${error}`)),
-    }
-  );
+    version: VERSION,
+    nodeEnv: 'studio',
+    cors: {
+      credentials: true,
+      origin: true,
+    },
+  };
 
   try {
-    await expressManager.start();
+    // Create Express app using factory
+    const app = createExpressApp(config);
 
-    const connectionDetails = expressManager.getConnectionDetails();
-    console.log(chalk.green(`✅ Express backend ready`));
-    console.log(chalk.gray(`   URL: ${connectionDetails.url}`));
-    console.log(chalk.gray(`   Port: ${connectionDetails.port}`));
+    // Start server
+    const server = app.listen(availablePort, () => {
+      console.log(chalk.green(`✅ Express backend ready`));
+      console.log(chalk.gray(`   URL: http://localhost:${availablePort}`));
+      console.log(chalk.gray(`   Port: ${availablePort}`));
+    });
 
-    return expressManager;
+    // Initialize background services
+    await initializeServices();
+
+    return {
+      server,
+      port: availablePort,
+      url: `http://localhost:${availablePort}`,
+    };
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.error(chalk.red(`Failed to start Express backend: ${errorMessage}`));

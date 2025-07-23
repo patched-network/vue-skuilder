@@ -106,16 +106,34 @@
 - Ready for studio command refactoring
 
 ### 3.2 Refactor Studio Command
-- [ ] Replace `ExpressManager` embedded approach with direct import
-- [ ] Update `src/commands/studio.ts` to use `SkuilderExpressServer`
-- [ ] Pass CouchDB configuration dynamically to Express server
-- [ ] Handle port assignment and URL reporting
+- [x] Replace `ExpressManager` embedded approach with direct import
+- [x] Update `src/commands/studio.ts` to use `createExpressApp` factory function
+- [x] Pass CouchDB configuration dynamically to Express server
+- [x] Handle port assignment and URL reporting
+- [x] Fix TypeScript errors and test build
+
+**Summary**: Successfully refactored studio command to use Express API directly:
+- Removed `ExpressManager` import, added `createExpressApp` and `initializeServices`
+- Added `findAvailablePort()` utility for dynamic port assignment
+- Updated `startExpressBackend()` to use `ExpressServerConfig` and factory functions
+- Updated cleanup handlers to use `http.Server.close()` instead of `ExpressManager.stop()`
+- Fixed all TypeScript errors (duplicate imports, unused parameters, missing references)
+- Build completes successfully with new direct API integration
 
 ### 3.3 Remove Embedding Infrastructure
-- [ ] Remove `embed:express` script from CLI's `package.json`
-- [ ] Remove `build:express` script from CLI's `package.json`
-- [ ] Update main build script to exclude Express embedding
-- [ ] Clean up `ExpressManager.js` utility (if no longer needed)
+- [x] Remove `embed:express` script from CLI's `package.json`
+- [x] Remove `build:express` script from CLI's `package.json`
+- [x] Update main build script to exclude Express embedding
+- [x] Clean up `ExpressManager.ts` utility (no longer needed)
+- [x] Test CLI build without Express embedding infrastructure
+
+**Summary**: Successfully removed all Express embedding infrastructure:
+- Removed `build:express` script that built Express package before CLI build
+- Removed `embed:express` script that copied Express dist files to CLI
+- Updated main build script to exclude Express embedding step
+- Deleted unused `ExpressManager.ts` file completely
+- Verified no `express-assets` directory created in CLI dist
+- Build completes successfully using only direct Express API import
 
 ## Phase 4: Testing & Validation
 
