@@ -11,7 +11,7 @@ dotenv.config({
       : '.env.development',
 });
 
-type Env = {
+export type Env = {
   COUCHDB_SERVER: string;
   COUCHDB_PROTOCOL: string;
   COUCHDB_ADMIN: string;
