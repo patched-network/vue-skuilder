@@ -54,6 +54,15 @@ function main() {
       const oldVersion = packageJson.version;
       packageJson.version = tagString;
 
+      // Update stableVersion if this is a pure semver version (no hyphens)
+      if (!tagString.includes('-')) {
+        const oldStableVersion = packageJson.stableVersion;
+        packageJson.stableVersion = tagString;
+        if (oldStableVersion && oldStableVersion !== tagString) {
+          console.log(`  📌 stableVersion: ${oldStableVersion} → ${tagString}`);
+        }
+      }
+
       // Write back to file
       fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2) + '\n');
 

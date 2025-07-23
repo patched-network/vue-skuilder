@@ -9,7 +9,7 @@ User often uses dictation software, which, in context, mangles things like `vue`
 ## Commands
 
 ### Project Setup & Development
-- Setup: `yarn setup` (install dependencies, git submodules)
+- Setup: `yarn setup` (install dependencies, git submodules, build library packages)
 - Dev: `yarn dev` (starts CouchDB, platform-ui, express)
 - Build: `yarn build` (builds all packages in dependency order)
 - Clean: `yarn clean` (removes dist and node_modules)
