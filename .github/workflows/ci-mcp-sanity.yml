@@ -38,6 +38,9 @@ jobs:
           yarn couchdb:start
           npx wait-on --timeout 5m http://localhost:5984
 
+      - name: Verify databases
+        run: curl http://admin:password@localhost:5984/_all_dbs
+
       - name: Build mcp package and examples
         run: |
           yarn workspace @vue-skuilder/mcp build
