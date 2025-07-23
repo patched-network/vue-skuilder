@@ -10,12 +10,17 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 /**
- * Find the standalone-ui package in node_modules
+ * Find the standalone-ui template (embedded in CLI dist or from node_modules)
  */
 export async function findStandaloneUiPath(): Promise<string> {
-  // Start from CLI package root and work upward
-  let currentDir = path.join(__dirname, '..', '..');
+  // First try to find embedded template in CLI dist
+  const embeddedTemplatePath = path.join(__dirname, '..', 'standalone-ui-template');
+  if (existsSync(embeddedTemplatePath)) {
+    return embeddedTemplatePath;
+  }
 
+  // Fallback: search for standalone-ui package in node_modules (for development)
+  let currentDir = path.join(__dirname, '..', '..');
   while (currentDir !== path.dirname(currentDir)) {
     const nodeModulesPath = path.join(currentDir, 'node_modules', '@vue-skuilder', 'standalone-ui');
     if (existsSync(nodeModulesPath)) {
@@ -25,7 +30,7 @@ export async function findStandaloneUiPath(): Promise<string> {
   }
 
   throw new Error(
-    'Could not find @vue-skuilder/standalone-ui package. Please ensure it is installed.'
+    'Could not find standalone-ui template. Please ensure @vue-skuilder/cli is properly built.'
   );
 }
 

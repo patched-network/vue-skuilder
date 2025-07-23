@@ -3,11 +3,21 @@
   "publishConfig": {
     "access": "public"
   },
-  "version": "0.1.8-7",
+  "version": "0.1.11-0",
   "description": "an API",
-  "main": "dist/app.js",
+  "main": "dist/index.js",
   "type": "module",
-  "types": "dist/app.d.ts",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./app": {
+      "types": "./dist/app.d.ts",
+      "import": "./dist/app.js"
+    }
+  },
   "scripts": {
     "clean": "rimraf dist",
     "dev": "tsx watch src/app.ts",
@@ -72,5 +82,5 @@
     "typescript": "^5.7.2",
     "typescript-eslint": "^8.25.0"
   },
-  "stableVersion": "0.1.7"
+  "stableVersion": "0.1.10"
 }

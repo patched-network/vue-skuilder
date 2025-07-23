@@ -1,6 +1,6 @@
 import Nano from 'nano';
 import { COUCH_URL_WITH_PROTOCOL } from './index.js';
-import { VueClientRequest } from '../app.js';
+import { VueClientRequest } from '../app-factory.js';
 import logger from '../logger.js';
 
 interface CouchSession {
