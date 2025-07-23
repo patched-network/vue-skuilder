@@ -14,10 +14,27 @@
 - Full JSDoc documentation for all interfaces and properties
 
 ### 1.2 Extract App Creation Logic
-- [ ] **Keep existing `src/app.ts` unchanged** (platform usage)
-- [ ] Create `src/app-factory.ts` with shared Express app creation logic
-- [ ] Extract common app setup code from existing `src/app.ts`
-- [ ] Ensure both standalone and programmatic modes use same logic
+- [x] **Keep existing `src/app.ts` unchanged** (platform usage)
+- [x] Create `src/app-factory.ts` with shared Express app creation logic
+- [x] Extract common app setup code from existing `src/app.ts`
+- [x] Ensure both standalone and programmatic modes use same logic
+
+**Summary**: Created `app-factory.ts` with shared Express app creation logic:
+- `createExpressApp(config)` - Accepts both ExpressServerConfig and EnvironmentConfig
+- `initializeServices()` - Extracted async initialization logic for background services
+- Type guards to handle dual configuration formats (programmatic vs env vars)
+- Config conversion utilities to bridge between formats
+- All routes and middleware extracted from original app.ts
+- VueClientRequest interface moved to factory for shared usage
+
+### 1.2b Refactor Existing App to Use Factory
+- [ ] Refactor `src/app.ts` to use `createExpressApp()` from app-factory
+- [ ] Replace duplicated middleware/routes with factory function call
+- [ ] Use `initializeServices()` instead of inline init() function
+- [ ] Ensure existing platform behavior unchanged
+- [ ] Test that `yarn dev` still works correctly
+
+**Note**: This eliminates code duplication and ensures both standalone and programmatic modes use identical logic.
 
 ### 1.3 Create Programmatic Server Class  
 - [ ] Create `src/server.ts` with `SkuilderExpressServer` class
