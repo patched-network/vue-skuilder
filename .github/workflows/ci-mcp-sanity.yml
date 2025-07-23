@@ -46,6 +46,9 @@ jobs:
           yarn workspace @vue-skuilder/mcp build
           yarn workspace @vue-skuilder/mcp build:examples
 
+      - name: Run local-dev script directly
+        run: timeout 90s node packages/mcp/dist/examples/local-dev.mjs || true
+
       - name: list resources
         run: |
           yarn workspace @vue-skuilder/mcp test:resources
