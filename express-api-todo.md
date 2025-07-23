@@ -94,9 +94,16 @@
 ## Phase 3: CLI Integration (Remove Embedding)
 
 ### 3.1 Update CLI Dependencies
-- [ ] Add `@vue-skuilder/express` to CLI's `package.json` dependencies
-- [ ] Remove Express from devDependencies (it was in there for embedding)
-- [ ] Update CLI's TypeScript imports to use new API
+- [x] Add `@vue-skuilder/express` to CLI's `package.json` dependencies
+- [x] Remove Express from devDependencies (moved to runtime dependencies)
+- [x] Update CLI's TypeScript imports to use new API
+- [x] Test CLI build with Express as runtime dependency
+
+**Summary**: Successfully moved Express from devDependencies to runtime dependencies:
+- `@vue-skuilder/express: "workspace:*"` now in dependencies section
+- CLI can now import Express API directly instead of using embedded files
+- Build completes successfully with both embedded assets (legacy) and direct imports available
+- Ready for studio command refactoring
 
 ### 3.2 Refactor Studio Command
 - [ ] Replace `ExpressManager` embedded approach with direct import
