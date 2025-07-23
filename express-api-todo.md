@@ -43,13 +43,20 @@
 
 **Note**: This eliminates code duplication and ensures both standalone and programmatic modes use identical logic.
 
-### 1.3 Create Programmatic Server Class  
-- [ ] Create `src/server.ts` with `SkuilderExpressServer` class
-- [ ] Implement constructor accepting `ExpressServerConfig`
-- [ ] Add `start()` method returning `{ port: number; url: string }`
-- [ ] Add `stop()` method for graceful shutdown
-- [ ] Add `isRunning()` status method
-- [ ] Handle port auto-assignment if not specified
+### 1.3 Révisée: Create Public API with Factory Functions
+- [x] Create `src/index.ts` as main package entry point
+- [x] Export `createExpressApp` and `initializeServices` functions
+- [x] Export type definitions (`ExpressServerConfig`, `VueClientRequest`, etc.)
+- [x] Update `package.json` main/types entries to point to index
+- [x] Add exports map for subpath compatibility (`./app` for standalone usage)
+- [x] Test build and verify API exports work correctly
+
+**Summary**: Created clean factory-based public API:
+- Main entry: `src/index.ts` with `createExpressApp()` and `initializeServices()` 
+- Type exports: `ExpressServerConfig`, `VueClientRequest`, `AppConfig`, `ServerStartResult`
+- Backwards compatibility: `./app` export for direct standalone server access
+- Package.json updated: main/types point to dist/index.js/d.ts
+- Build successful, dev mode still works correctly
 
 ### 1.4 Add Dual Configuration Support
 - [ ] **Keep existing `src/utils/env.ts` unchanged** (platform usage)
