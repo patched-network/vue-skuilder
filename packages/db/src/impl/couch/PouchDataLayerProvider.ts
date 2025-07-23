@@ -9,6 +9,7 @@ import {
   UserDBInterface,
 } from '../../core/interfaces';
 import { logger } from '../../util/logger';
+import { initializeDataDirectory } from '../../util/dataDirectory';
 
 import { getLoggedInUsername } from './auth';
 
@@ -45,6 +46,7 @@ export class CouchDataLayerProvider implements DataLayerProvider {
       logger.info(
         'CouchDataLayerProvider: Running in Node.js environment, creating guest UserDB for testing.'
       );
+      await initializeDataDirectory();
       // In Node.js (testing) environment, create a guest user instance
       const syncStrategy = new CouchDBSyncStrategy();
       this.userDB = await BaseUser.instance(syncStrategy);

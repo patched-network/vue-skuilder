@@ -39,16 +39,19 @@ jobs:
       - name: Install Cypress
         run: yarn workspace @vue-skuilder/platform-ui cypress install
 
+      - name: Build prereqs
+        run: yarn build:lib
+
       - name: Setup and wait for services
         run: |
           # Start the dev environment in background
-          yarn dev &
+          yarn dev:platform &
           # Wait for the webserver to be ready
-          npx wait-on http://localhost:5173
+          npx wait-on --timeout 5m http://localhost:5173
           # Wait for the database to be ready
-          npx wait-on http://localhost:5984
+          npx wait-on --timeout 5m http://localhost:5984
           # Wait for the backend to be ready
-          npx wait-on http://localhost:3000
+          npx wait-on --timeout 5m http://localhost:3000
 
       - name: Run E2E tests
         run: |

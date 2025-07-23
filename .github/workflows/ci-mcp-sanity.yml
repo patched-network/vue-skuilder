@@ -21,7 +21,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'yarn'
 
       - name: Install Yarn
@@ -36,9 +36,15 @@ jobs:
       - name: run test database
         run: |
           yarn couchdb:start
+          npx wait-on --timeout 5m http://localhost:5984
 
-      - name: Build mcp package
-        run: yarn workspace @vue-skuilder/mcp build
+      - name: Verify databases
+        run: curl http://admin:password@localhost:5984/_all_dbs
+
+      - name: Build mcp package and examples
+        run: |
+          yarn workspace @vue-skuilder/mcp build
+          yarn workspace @vue-skuilder/mcp build:examples
 
       - name: list resources
         run: |
@@ -46,7 +52,7 @@ jobs:
 
       - name: list tools
         run: |
-          yarn workspace @vue-skuilder/mcp test:resources
+          yarn workspace @vue-skuilder/mcp test:tools
 
       - name: list prompts
         run: |
