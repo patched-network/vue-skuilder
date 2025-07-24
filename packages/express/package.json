@@ -21,7 +21,7 @@
   "scripts": {
     "clean": "rimraf dist",
     "dev": "tsx watch src/app.ts",
-    "build": "yarn clean && tsc",
+    "build": "yarn clean && tsc && cp -r assets dist/",
     "start": "node dist/app.js",
     "test": "jest --config jest.config.ts",
     "lint": "npx eslint .",
