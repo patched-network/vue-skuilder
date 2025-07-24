@@ -8,10 +8,11 @@ import {
   Status,
 } from '@vue-skuilder/common';
 import { classroomDbDesignDoc } from '../design-docs.js';
-import CouchDB, {
+import {
   SecurityObject,
   docCount,
   useOrCreateDB,
+  getCouchDB,
 } from '../couchdb/index.js';
 import AsyncProcessQueue, { Result } from '../utils/processQueue.js';
 import logger from '../logger.js';
@@ -95,7 +96,7 @@ async function createClassroom(config: ClassroomConfig) {
     ${JSON.stringify(config)}`);
 
   const num = (await docCount(CLASSROOM_DB_LOOKUP)) + 1; //
-  const uuid = (await CouchDB.uuids(1)).uuids[0];
+  const uuid = (await getCouchDB().uuids(1)).uuids[0];
   const hasher = new hashids('', 6, 'abcdefghijklmnopqrstuvwxyz123456789');
   const studentDbName = `classdb-student-${uuid}`;
   const teacherDbName = `classdb-teacher-${uuid}`;

@@ -1,29 +1,39 @@
 import Nano from 'nano';
-import process from 'process';
-import ENV from '../utils/env.js'; 
-import logger from '../logger.js';
+import type { EnvironmentConfig } from '../types.js';
 
-const url = ENV.COUCHDB_SERVER;
-const protocol: string = ENV.COUCHDB_PROTOCOL;
+let CouchDB: Nano.ServerScope;
+let couchURLWithProtocol: string;
 
-const admin = {
-  username: ENV.COUCHDB_ADMIN,
-  password: ENV.COUCHDB_PASSWORD,
-};
-const credentialCouchURL = `${protocol}://${admin.username}:${admin.password}@${url}`;
+export function initializeCouchDB(config: EnvironmentConfig): void {
+  const { 
+    COUCHDB_SERVER: url,
+    COUCHDB_PROTOCOL: protocol,
+    COUCHDB_ADMIN: username,
+    COUCHDB_PASSWORD: password 
+  } = config;
 
-logger.info('WORKING DIRECTORY: ' + process.cwd());
-logger.info(
-  `CouchDB url: ${url}
-    protocol: ${protocol}
-    credentials:
-    \tusername: ${admin.username}
-    \tpassword: *****
-    credUrl: ${protocol}://${admin.username}:*****@${url}
-    `
-);
+  if (!url || !protocol || !username || !password) {
+    throw new Error('Missing CouchDB configuration');
+  }
 
-const CouchDB = Nano(credentialCouchURL);
+  const credentialCouchURL = `${protocol}://${username}:${password}@${url}`;
+  CouchDB = Nano(credentialCouchURL);
+  couchURLWithProtocol = `${protocol}://${url}`;
+}
+
+export function getCouchDB(): Nano.ServerScope {
+  if (!CouchDB) {
+    throw new Error('CouchDB has not been initialized. Call initializeCouchDB first.');
+  }
+  return CouchDB;
+}
+
+export function getCouchURLWithProtocol(): string {
+    if (!couchURLWithProtocol) {
+        throw new Error('CouchDB has not been initialized. Call initializeCouchDB first.');
+    }
+    return couchURLWithProtocol;
+}
 
 export async function useOrCreateCourseDB(courseID: string): Promise<Nano.DocumentScope<unknown>> {
   return useOrCreateDB(`coursedb-${courseID}`);
@@ -34,20 +44,20 @@ interface NanoError extends Error {
 }
 
 export async function useOrCreateDB<T>(dbName: string): Promise<Nano.DocumentScope<T>> {
-  const ret = CouchDB.use<T>(dbName);
+  const db = getCouchDB().use<T>(dbName);
 
   try {
-    await ret.info();
-    return ret;
+    await db.info();
+    return db;
   } catch {
     try {
-      await CouchDB.db.create(dbName);
-      return ret;
+      await getCouchDB().db.create(dbName);
+      return db;
       } catch (error: unknown) {
         const createErr = error as NanoError;
         // If error is "database already exists", return existing db
         if (createErr.statusCode === 412) {
-        return ret;
+        return db;
       }
       throw createErr;
     }
@@ -70,7 +80,3 @@ export interface SecurityObject extends Nano.MaybeDocument {
     roles: string[];
   };
 }
-
-export const COUCH_URL_WITH_PROTOCOL = protocol + '://' + process.env.COUCHDB_SERVER;
-
-export default CouchDB;

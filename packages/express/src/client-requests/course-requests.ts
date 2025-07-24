@@ -1,6 +1,6 @@
 import { log } from 'util';
 import { CreateCourse } from '@vue-skuilder/common';
-import CouchDB, { SecurityObject } from '../couchdb/index.js';
+import { getCouchDB, SecurityObject } from '../couchdb/index.js';
 import { postProcessCourse } from '../attachment-preprocessing/index.js';
 import AsyncProcessQueue, { Result } from '../utils/processQueue.js';
 import nano from 'nano';
@@ -24,7 +24,7 @@ function insertDesignDoc(
     _id: string;
   }
 ): void {
-  const courseDB = CouchDB.use(courseID);
+  const courseDB = getCouchDB().use(courseID);
 
   courseDB
     .get(doc._id)
@@ -59,7 +59,7 @@ export async function initCourseDBDesignDocInsert(): Promise<void> {
     });
 
     // Update security object for public courses
-    const courseDB = CouchDB.use<CourseConfig>(getCourseDBName(c._id));
+    const courseDB = getCouchDB().use<CourseConfig>(getCourseDBName(c._id));
     courseDB
       .get('CourseConfig')
       .then((configDoc) => {
@@ -106,10 +106,10 @@ async function createCourse(cfg: CourseConfig): Promise<Result> {
   }
 
   const courseDBName: string = getCourseDBName(cfg.courseID);
-  const dbCreation = await CouchDB.db.create(courseDBName);
+  const dbCreation = await getCouchDB().db.create(courseDBName);
 
   if (dbCreation.ok) {
-    const courseDB = CouchDB.use(courseDBName);
+    const courseDB = getCouchDB().use(courseDBName);
 
     courseDB
       .insert({

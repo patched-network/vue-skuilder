@@ -1,7 +1,8 @@
-import {
-  ServerRequestType as RequestEnum,
-  ServerRequest,
-  prepareNote55,
+import { initializeDataLayer } from '@vue-skuilder/db';
+import { 
+  ServerRequestType as RequestEnum, 
+  ServerRequest, 
+  prepareNote55, 
 } from '@vue-skuilder/common';
 import { CourseLookup } from '@vue-skuilder/db';
 import cookieParser from 'cookie-parser';
@@ -22,10 +23,7 @@ import {
 } from './client-requests/course-requests.js';
 import { packCourse } from './client-requests/pack-requests.js';
 import { requestIsAuthenticated } from './couchdb/authentication.js';
-import CouchDB, {
-  useOrCreateCourseDB,
-  useOrCreateDB,
-} from './couchdb/index.js';
+import { getCouchDB, initializeCouchDB, useOrCreateCourseDB, useOrCreateDB } from './couchdb/index.js';
 import { classroomDbDesignDoc } from './design-docs.js';
 import logger from './logger.js';
 import logsRouter from './routes/logs.js';
@@ -59,6 +57,7 @@ function convertToEnvConfig(config: ExpressServerConfig): EnvironmentConfig {
     COUCHDB_PASSWORD: config.couchdb.password,
     VERSION: config.version,
     NODE_ENV: config.nodeEnv || 'development',
+    COURSE_IDS: config.courseIDs || [],
   };
 }
 
@@ -73,6 +72,9 @@ export function createExpressApp(config: AppConfig): express.Application {
   const envConfig = isExpressServerConfig(config) 
     ? convertToEnvConfig(config) 
     : config;
+
+  // Initialize CouchDB connection
+  initializeCouchDB(envConfig);
 
   // Configure CORS - use config if available, otherwise defaults
   const corsOptions = isExpressServerConfig(config) && config.cors 
@@ -123,10 +125,7 @@ export function createExpressApp(config: AppConfig): express.Application {
         logger.info(`Delete request made on course ${req.params.courseID}...`);
         const auth = await requestIsAuthenticated(req);
         if (auth) {
-          logger.info(`\tAuthenticated delete request made...`);
-          const dbResp = await CouchDB.db.destroy(
-            `coursedb-${req.params.courseID}`
-          );
+          logger.info(`	Authenticated delete request made...`);          const dbResp = await getCouchDB().db.destroy(            `coursedb-${req.params.courseID}`          );
           if (!dbResp.ok) {
             res.json({ success: false, error: dbResp });
             return;
@@ -192,7 +191,7 @@ export function createExpressApp(config: AppConfig): express.Application {
           body.data.tags,
           body.data.uploads
         );
-        CouchDB.use(`coursedb-${body.data.courseID}`)
+        getCouchDB().use(`coursedb-${body.data.courseID}`)
           .insert(payload as Nano.MaybeDocument)
           .then((r) => {
             logger.info(`\t\t\tCouchDB insert result: ${JSON.stringify(r)}`);
@@ -238,7 +237,7 @@ export function createExpressApp(config: AppConfig): express.Application {
   app.get('/', (_req: Request, res: Response) => {
     let status = `Express service is running.\nVersion: ${envConfig.VERSION}\n`;
 
-    CouchDB.session()
+    getCouchDB().session()
       .then((s) => {
         if (s.ok) {
           status += 'Couchdb is running.\n';
@@ -261,7 +260,27 @@ export function createExpressApp(config: AppConfig): express.Application {
  * Initialize background services and database connections.
  * This should be called after the server starts listening.
  */
-export async function initializeServices(): Promise<void> {
+export async function initializeServices(config: AppConfig): Promise<void> {
+  // Initialize data layer first
+  const envConfig = isExpressServerConfig(config) 
+    ? convertToEnvConfig(config) 
+    : config;
+  
+  
+
+  await initializeDataLayer({
+    type: 'couch',
+    options: {
+      COUCHDB_PASSWORD: envConfig.COUCHDB_PASSWORD,
+      COUCHDB_USERNAME: envConfig.COUCHDB_ADMIN,
+      COUCHDB_SERVER_PROTOCOL: envConfig.COUCHDB_PROTOCOL,
+      COUCHDB_SERVER_URL: envConfig.COUCHDB_SERVER,
+    },
+  }).catch((e) => {
+    logger.error('Error initializing data layer:', e);
+    // In programmatic mode, we shouldn't exit the process, but let the error propagate
+    throw e;
+  });
   try {
     // start the change-listener that does post-processing on user
     // media uploads
