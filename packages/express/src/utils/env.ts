@@ -1,15 +1,4 @@
-import dotenv from 'dotenv';
 import process from 'process';
-
-import { initializeDataLayer } from '@vue-skuilder/db';
-import logger from '../logger.js';
-
-dotenv.config({
-  path:
-    process.argv && process.argv.length == 3
-      ? process.argv[2]
-      : '.env.development',
-});
 
 export type Env = {
   COUCHDB_SERVER: string;
@@ -18,13 +7,16 @@ export type Env = {
   COUCHDB_PASSWORD: string;
   VERSION: string;
   NODE_ENV: string;
+  COURSE_IDS?: string[];
 };
 
 function getVar(name: string): string {
   if (process.env[name]) {
     return process.env[name];
   } else {
-    throw new Error(`${name} not defined in environment`);
+    // For standalone mode, we'll validate these elsewhere.
+    // For programmatic mode, they are provided via config.
+    return '';
   }
 }
 
@@ -36,18 +28,5 @@ const env: Env = {
   VERSION: getVar('VERSION'),
   NODE_ENV: getVar('NODE_ENV'),
 };
-
-initializeDataLayer({
-  type: 'couch',
-  options: {
-    COUCHDB_PASSWORD: env.COUCHDB_PASSWORD,
-    COUCHDB_USERNAME: env.COUCHDB_ADMIN,
-    COUCHDB_SERVER_PROTOCOL: env.COUCHDB_PROTOCOL,
-    COUCHDB_SERVER_URL: env.COUCHDB_SERVER,
-  },
-}).catch((e) => {
-  logger.error('Error initializing data layer:', e);
-  process.exit(1);
-});
 
 export default env;
