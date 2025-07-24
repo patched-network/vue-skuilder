@@ -1,4 +1,4 @@
-import { ENV } from '@db/factory';
+import { ENV, NOT_SET } from '@db/factory';
 import { GuestUsername } from '../../core/types/types-legacy';
 import { logger } from '@db/util/logger';
 import fetch from 'cross-fetch';
@@ -37,7 +37,14 @@ export async function getCurrentSession(): Promise<SessionResponse> {
   // });
   
   try {
+    // Handle case where ENV variables might not be properly set
+    if (ENV.COUCHDB_SERVER_URL === NOT_SET || ENV.COUCHDB_SERVER_PROTOCOL === NOT_SET) {
+      throw new Error('CouchDB server configuration not properly initialized');
+    }
+    
     const url = `${ENV.COUCHDB_SERVER_PROTOCOL}://${ENV.COUCHDB_SERVER_URL}_session`;
+    logger.debug(`Attempting session check at: ${url}`);
+    
     const response = await fetch(url, {
       method: 'GET',
       credentials: 'include',
