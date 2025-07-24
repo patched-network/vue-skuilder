@@ -32,7 +32,7 @@ const __dirname = dirname(__filename);
 async function findAvailablePort(startPort: number): Promise<number> {
   return new Promise((resolve, reject) => {
     const server = http.createServer();
-    
+
     server.listen(startPort, () => {
       const address = server.address();
       const actualPort = address && typeof address === 'object' ? address.port : startPort;
@@ -40,7 +40,7 @@ async function findAvailablePort(startPort: number): Promise<number> {
         resolve(actualPort);
       });
     });
-    
+
     server.on('error', (err: NodeJS.ErrnoException) => {
       if (err.code === 'EADDRINUSE') {
         // Port is in use, try the next one
@@ -184,7 +184,11 @@ async function launchStudio(coursePath: string, options: StudioOptions) {
 
     // Phase 9.5: Launch Express backend
     console.log(chalk.cyan(`⚡ Starting Express backend server...`));
-    const expressResult = await startExpressBackend(couchDBManager.getConnectionDetails(), resolvedPath);
+    const expressResult = await startExpressBackend(
+      couchDBManager.getConnectionDetails(),
+      resolvedPath,
+      unpackResult.courseId
+    );
     expressServer = expressResult.server;
 
     // Phase 7: Launch studio-ui server
@@ -558,7 +562,8 @@ async function openBrowser(url: string): Promise<void> {
  */
 async function startExpressBackend(
   couchDbConnectionDetails: ConnectionDetails,
-  _projectPath: string
+  _projectPath: string,
+  courseId: string
 ): Promise<{ server: http.Server; port: number; url: string }> {
   console.log(chalk.blue('⚡ Starting Express backend server...'));
 
@@ -579,6 +584,7 @@ async function startExpressBackend(
       username: couchDbConnectionDetails.username,
       password: couchDbConnectionDetails.password,
     },
+    courseIDs: [courseId],
     version: VERSION,
     nodeEnv: 'studio',
     cors: {
@@ -599,7 +605,7 @@ async function startExpressBackend(
     });
 
     // Initialize background services
-    await initializeServices();
+    await initializeServices(config);
 
     return {
       server,
@@ -1314,7 +1320,14 @@ function resolveMCPExecutable(projectPath: string): {
   }
 
   // Check if @vue-skuilder/cli is installed as a dependency
-  const scaffoldedCliPath = path.join(projectPath, 'node_modules', '@vue-skuilder', 'cli', 'dist', 'mcp-server.js');
+  const scaffoldedCliPath = path.join(
+    projectPath,
+    'node_modules',
+    '@vue-skuilder',
+    'cli',
+    'dist',
+    'mcp-server.js'
+  );
   if (fs.existsSync(scaffoldedCliPath)) {
     return {
       command: './node_modules/@vue-skuilder/cli/dist/mcp-server.js',
@@ -1341,7 +1354,7 @@ function getMCPConnectionInfo(
 ): { command: string; env: Record<string, string> } {
   const couchDetails = couchDBManager.getConnectionDetails();
   const executable = resolveMCPExecutable(projectPath);
-  
+
   // Build command string for display
   let commandStr: string;
   if (executable.isNpx) {
@@ -1373,7 +1386,7 @@ function generateMCPJson(
   const couchDetails = couchDBManager.getConnectionDetails();
   const port = couchDetails.port || 5985;
   const executable = resolveMCPExecutable(projectPath);
-  
+
   const mcpConfig = {
     mcpServers: {
       [serverName]: {

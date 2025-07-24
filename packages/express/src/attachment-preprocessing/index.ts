@@ -1,4 +1,4 @@
-import CouchDB from '../couchdb/index.js';
+import { getCouchDB } from '../couchdb/index.js';
 import nano from 'nano';
 import { normalize } from './normalize.js';
 import AsyncProcessQueue, { Result } from '../utils/processQueue.js';
@@ -36,7 +36,7 @@ export function postProcessCourse(courseID: string): void {
     const crsString = `coursedb-${courseID}`;
 
     // Get database instance
-    const db = CouchDB.use(crsString);
+    const db = getCouchDB().use(crsString);
 
     const courseFilter = filterFactory(courseID);
 
@@ -62,43 +62,61 @@ export function postProcessCourse(courseID: string): void {
  * Connect to CouchDB, monitor changes to uploaded card data,
  * perform post-processing on uploaded media
  */
-export default async function postProcess(): Promise<void> {
+export default async function postProcess(courseIDs?: string[]): Promise<void> {
   try {
     logger.info(`Following all course databases for changes...`);
 
-    // Existing behavior for platform-ui courses
-    const courses = await CourseLookup.allCourseWare();
-    const processedCourseIds = new Set<string>();
+    let processedCourseIds = new Set<string>();
 
-    for (const course of courses) {
+    if (courseIDs && courseIDs.length > 0) {
+      processedCourseIds = new Set(courseIDs);
+    } else {
+      // Existing behavior for platform-ui courses
       try {
-        postProcessCourse(course._id);
-        processedCourseIds.add(`coursedb-${course._id}`);
-      } catch (e) {
-        logger.error(`Error processing course ${course._id}: ${e}`);
-        throw e;
+        const courses = await CourseLookup.allCourseWare();
+
+        for (const course of courses) {
+          try {
+            postProcessCourse(course._id);
+            processedCourseIds.add(`coursedb-${course._id}`);
+          } catch (e) {
+            logger.error(`Error processing course ${course._id}: ${e}`);
+            throw e;
+          }
+        }
+      } catch (e: unknown) {
+        // Handle CourseLookup.allCourseWare() failure gracefully
+        if (e && typeof e === 'object' && 'error' in e && e.error === 'not_found') {
+          logger.warn('Course lookup database not found - skipping platform course discovery');
+        } else {
+          logger.error(`Error fetching course list from CourseLookup: ${e}`);
+        }
+        // Continue to studio mode discovery even if platform courses fail
       }
     }
 
     // Studio mode: discover additional databases not in coursedb-lookup
     if (ENV.NODE_ENV === 'studio') {
-      logger.info('Studio mode detected: scanning for additional course databases...');
-      
+      logger.info(
+        'Studio mode detected: scanning for additional course databases...'
+      );
+
       try {
-        const allDbs = await CouchDB.db.list();
-        const studioDbs = allDbs.filter(db => 
-          db.startsWith('coursedb-') && 
-          !processedCourseIds.has(db)
+        const allDbs = await getCouchDB().db.list();
+        const studioDbs = allDbs.filter(
+          (db) => db.startsWith('coursedb-') && !processedCourseIds.has(db)
         );
 
         logger.info(`Found ${studioDbs.length} potential studio databases`);
 
         for (const studioDb of studioDbs) {
           const courseId = studioDb.replace('coursedb-', '');
-          
+
           try {
             if (await hasCourseConfig(studioDb)) {
-              logger.info(`Starting postprocessing for studio database: ${studioDb}`);
+              logger.info(
+                `Starting postprocessing for studio database: ${studioDb}`
+              );
               postProcessCourse(courseId);
             } else {
               logger.debug(`Skipping ${studioDb}: no course config found`);
@@ -117,7 +135,9 @@ export default async function postProcess(): Promise<void> {
 }
 
 function filterFactory(courseID: string) {
-  const courseDatabase = CouchDB.use<DocForProcessing>(`coursedb-${courseID}`);
+  const courseDatabase = getCouchDB().use<DocForProcessing>(
+    `coursedb-${courseID}`
+  );
 
   return async function filterChanges(
     changeItem: nano.DatabaseChangesResultItem
@@ -174,7 +194,7 @@ async function processDocAttachments(
       status: 'warning',
     };
   }
-  const courseDatabase = CouchDB.use<DocForProcessing>(
+  const courseDatabase = getCouchDB().use<DocForProcessing>(
     `coursedb-${request.courseID}`
   );
 
@@ -244,24 +264,30 @@ interface ProcessingField {
  */
 async function hasCourseConfig(databaseName: string): Promise<boolean> {
   try {
-    const db = CouchDB.use(databaseName);
-    
+    const db = getCouchDB().use(databaseName);
+
     // Try to find a course configuration document
     // Course databases should have documents with course metadata
     const result = await db.find({
       selector: {
         $or: [
-          { 'type': 'course' },
-          { 'shape': { $exists: true } },
-          { 'course_id': { $exists: true } },
-          { 'courseID': { $exists: true } }
-        ]
+          { type: 'course' },
+          { shape: { $exists: true } },
+          { course_id: { $exists: true } },
+          { courseID: { $exists: true } },
+        ],
       },
-      limit: 1
+      limit: 1,
     });
 
     return result.docs && result.docs.length > 0;
-  } catch (e) {
+  } catch (e: unknown) {
+    // Handle specific database not found errors
+    if (e && typeof e === 'object' && 'error' in e && e.error === 'not_found') {
+      logger.debug(`Database ${databaseName} does not exist`);
+      return false;
+    }
+    
     logger.debug(`Error checking course config for ${databaseName}: ${e}`);
     return false;
   }
