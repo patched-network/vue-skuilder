@@ -183,7 +183,6 @@ async function launchStudio(coursePath: string, options: StudioOptions) {
     );
 
     // Phase 9.5: Launch Express backend
-    console.log(chalk.cyan(`⚡ Starting Express backend server...`));
     const expressResult = await startExpressBackend(
       couchDBManager.getConnectionDetails(),
       resolvedPath,
