@@ -286,7 +286,12 @@ export async function initializeServices(config: AppConfig): Promise<void> {
     // media uploads
     void PostProcess();
 
-    void initCourseDBDesignDocInsert();
+    initCourseDBDesignDocInsert().catch((error) => {
+      logger.error(`Error in initCourseDBDesignDocInsert background task: ${error}`);
+      if (error && typeof error === 'object') {
+        logger.error(`Full error details in initCourseDBDesignDocInsert: ${JSON.stringify(error)}`);
+      }
+    });
 
     void useOrCreateDB('classdb-lookup');
     try {

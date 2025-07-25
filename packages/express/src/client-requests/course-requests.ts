@@ -51,7 +51,10 @@ function insertDesignDoc(
 }
 
 export async function initCourseDBDesignDocInsert(): Promise<void> {
+  logger.info('Starting initCourseDBDesignDocInsert...');
+  logger.debug('Attempting CourseLookup.allCourseWare() for design doc initialization');
   const courses = await CourseLookup.allCourseWare();
+  logger.info(`Found ${courses.length} courses for design doc initialization`);
   courses.forEach((c) => {
     // Insert design docs
     courseDBDesignDocs.forEach((dd) => {
