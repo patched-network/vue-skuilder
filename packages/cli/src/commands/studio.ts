@@ -1269,8 +1269,8 @@ async function fixViteConfigForStandaloneBuild(buildPath: string): Promise<void>
     return;
   }
 
-  // Create a simplified vite config that uses standard npm resolution
-  // For custom questions builds, we need Vue bundled in the questions.mjs
+  // Create a clean standalone vite config for external projects
+  // Relies on standard npm package resolution instead of monorepo paths
   const standaloneViteConfig = `import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 
@@ -1294,6 +1294,15 @@ export default defineConfig({
         }
       }
     }
+  },
+  resolve: {
+    extensions: ['.js', '.ts', '.json', '.vue'],
+    dedupe: [
+      'vue',
+      'vuetify', 
+      'vue-router',
+      'pinia'
+    ]
   }
 });`;
 
