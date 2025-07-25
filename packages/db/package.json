@@ -3,7 +3,7 @@
   "publishConfig": {
     "access": "public"
   },
-  "version": "0.1.11-0",
+  "version": "0.1.11-15",
   "description": "Database layer for vue-skuilder",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -46,6 +46,7 @@
   "dependencies": {
     "@nilock2/pouchdb-authentication": "^1.0.2",
     "@vue-skuilder/common": "workspace:*",
+    "cross-fetch": "^4.1.0",
     "moment": "^2.29.4",
     "pouchdb": "^9.0.0",
     "pouchdb-find": "^9.0.0",

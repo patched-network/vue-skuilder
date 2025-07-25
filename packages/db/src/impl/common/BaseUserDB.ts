@@ -620,8 +620,18 @@ Currently logged-in as ${this._username}.`
     this.setDBandQ();
 
     this.syncStrategy.startSync(this.localDB, this.remoteDB);
-    void this.applyDesignDocs();
-    void this.deduplicateReviews();
+    this.applyDesignDocs().catch((error) => {
+      log(`Error in applyDesignDocs background task: ${error}`);
+      if (error && typeof error === 'object') {
+        log(`Full error details in applyDesignDocs: ${JSON.stringify(error)}`);
+      }
+    });
+    this.deduplicateReviews().catch((error) => {
+      log(`Error in deduplicateReviews background task: ${error}`);
+      if (error && typeof error === 'object') {
+        log(`Full error details in background task: ${JSON.stringify(error)}`);
+      }
+    });
     BaseUser._initialized = true;
   }
 
@@ -641,12 +651,18 @@ Currently logged-in as ${this._username}.`
   ];
 
   private async applyDesignDocs() {
+    log(`Starting applyDesignDocs for user: ${this._username}`);
+    log(`Remote DB name: ${this.remoteDB.name || 'unknown'}`);
+    
     if (this._username === 'admin') {
       // Skip admin user
+      log('Skipping design docs for admin user');
       return;
     }
 
+    log(`Applying ${BaseUser.designDocs.length} design docs`);
     for (const doc of BaseUser.designDocs) {
+      log(`Applying design doc: ${doc._id}`);
       try {
         // Try to get existing doc
         try {
@@ -759,6 +775,8 @@ Currently logged-in as ${this._username}.`
   private async deduplicateReviews() {
     try {
       log('Starting deduplication of scheduled reviews...');
+      log(`Remote DB name: ${this.remoteDB.name || 'unknown'}`);
+      log(`Write DB name: ${this.writeDB.name || 'unknown'}`);
       /**
        * Maps the qualified-id of a scheduled review card to
        * the docId of the same scheduled review.
@@ -770,6 +788,9 @@ Currently logged-in as ${this._username}.`
       const reviewsMap: { [index: string]: string } = {};
       const duplicateDocIds: string[] = [];
 
+      log(
+        `Attempting to query remoteDB for reviewCards/reviewCards. Database: ${this.remoteDB.name || 'unknown'}`
+      );
       const scheduledReviews = await this.remoteDB.query<{
         id: string;
         value: string;
@@ -817,6 +838,18 @@ Currently logged-in as ${this._username}.`
       }
     } catch (error) {
       log(`Error during review deduplication: ${error}`);
+      if (error && typeof error === 'object' && 'status' in error && error.status === 404) {
+        log(
+          `Database not found (404) during review deduplication. Database: ${this.remoteDB.name || 'unknown'}`
+        );
+        log(
+          `This might indicate the user database doesn't exist or the reviewCards view isn't available`
+        );
+      }
+      // Log full error details for debugging
+      if (error && typeof error === 'object') {
+        log(`Full error details: ${JSON.stringify(error)}`);
+      }
     }
   }
 

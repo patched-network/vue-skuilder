@@ -3,12 +3,12 @@
  * Supports CLI studio mode with runtime configuration instead of environment variables.
  */
 export interface ExpressServerConfig {
-  /** 
+  /**
    * Port for Express server. If not provided, will auto-assign available port.
    * @default undefined (auto-assign)
    */
   port?: number;
-  
+
   /** CouchDB connection configuration */
   couchdb: {
     /** CouchDB protocol (http/https) */
@@ -20,20 +20,26 @@ export interface ExpressServerConfig {
     /** CouchDB admin password */
     password: string;
   };
-  
-  /** 
-   * Application version string for Express endpoints 
+
+  /**
+   * Application version string for Express endpoints
    * @example "0.1.11-0"
    */
   version: string;
-  
-  /** 
+
+  /**
+   * Optional list of courseIDs to follow for postprocessing. If empty, server
+   * will use courseDB-lookup to find and process all courses.
+   */
+  courseIDs?: string[];
+
+  /**
    * Node.js environment mode
    * @default "development"
    */
   nodeEnv?: string;
-  
-  /** 
+
+  /**
    * CORS configuration options
    * @default { credentials: true, origin: true }
    */

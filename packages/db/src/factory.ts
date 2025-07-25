@@ -5,6 +5,8 @@ import { BaseUser } from './impl/common';
 import { logger } from './util/logger';
 import { StaticCourseManifest } from './util/packer/types';
 
+const NOT_SET = 'NOT_SET' as const;
+
 interface DBEnv {
   COUCHDB_SERVER_URL: string; // URL of CouchDB server
   COUCHDB_SERVER_PROTOCOL: string; // Protocol of CouchDB server (http or https)
@@ -14,10 +16,12 @@ interface DBEnv {
 }
 
 export const ENV: DBEnv = {
-  COUCHDB_SERVER_PROTOCOL: 'NOT_SET',
-  COUCHDB_SERVER_URL: 'NOT_SET',
+  COUCHDB_SERVER_PROTOCOL: NOT_SET,
+  COUCHDB_SERVER_URL: NOT_SET,
   LOCAL_STORAGE_PREFIX: '',
 };
+
+export { NOT_SET };
 
 // Configuration type for data layer initialization
 export interface DataLayerConfig {

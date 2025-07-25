@@ -6,6 +6,7 @@ import {
   log,
   SkuilderCourseData,
 } from '../../core/types/types-legacy';
+import fetch from 'cross-fetch';
 // import { getCurrentUser } from '../../stores/useAuthStore';
 import moment, { Moment } from 'moment';
 import { logger } from '@db/util/logger';
@@ -82,11 +83,22 @@ export async function getLatestVersion() {
  */
 export async function usernameIsAvailable(username: string): Promise<boolean> {
   log(`Checking availability of ${username}`);
-  const req = new XMLHttpRequest();
-  const url = ENV.COUCHDB_SERVER_URL + 'userdb-' + hexEncode(username);
-  req.open('HEAD', url, false);
-  req.send();
-  return req.status === 404;
+  
+  // Legacy XMLHttpRequest implementation (browser sync)
+  // const req = new XMLHttpRequest();
+  // const url = ENV.COUCHDB_SERVER_URL + 'userdb-' + hexEncode(username);
+  // req.open('HEAD', url, false);
+  // req.send();
+  // return req.status === 404;
+  
+  try {
+    const url = ENV.COUCHDB_SERVER_URL + 'userdb-' + hexEncode(username);
+    const response = await fetch(url, { method: 'HEAD' });
+    return response.status === 404;
+  } catch (error) {
+    log(`Error checking username availability: ${error}`);
+    return false;
+  }
 }
 
 export function updateGuestAccountExpirationDate(guestDB: PouchDB.Database<object>) {
