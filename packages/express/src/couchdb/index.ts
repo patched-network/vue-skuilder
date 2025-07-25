@@ -60,7 +60,7 @@ export async function useOrCreateDB<T>(
     await db.info();
     return db;
   } catch (error: unknown) {
-    logger.debug(`Database ${dbName} does not exist, creating...`);
+    logger.debug(`Lookup failed for Database ${dbName}: `, error);
     try {
       await getCouchDB().db.create(dbName);
       return db;
