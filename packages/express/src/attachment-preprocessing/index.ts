@@ -37,6 +37,15 @@ export function postProcessCourse(courseID: string): void {
 
     // Get database instance
     const db = getCouchDB().use(crsString);
+    
+    // Test database existence before setting up change listener
+    db.info().catch((e: unknown) => {
+      if (e && typeof e === 'object' && 'status' in e && e.status === 404) {
+        logger.error(`Database "${crsString}" does not exist. Expected database name may be incorrect for courseID: ${courseID}`);
+        return;
+      }
+      logger.error(`Error checking database "${crsString}": ${e}`);
+    });
 
     const courseFilter = filterFactory(courseID);
 
@@ -90,6 +99,9 @@ export default async function postProcess(courseIDs?: string[]): Promise<void> {
           logger.warn('Course lookup database not found - skipping platform course discovery');
         } else {
           logger.error(`Error fetching course list from CourseLookup: ${e}`);
+          if (e && typeof e === 'object' && 'status' in e && e.status === 404) {
+            logger.error(`Database connection failed - this might indicate a database name mismatch or connection issue`);
+          }
         }
         // Continue to studio mode discovery even if platform courses fail
       }

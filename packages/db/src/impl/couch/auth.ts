@@ -39,7 +39,7 @@ export async function getCurrentSession(): Promise<SessionResponse> {
   try {
     // Handle case where ENV variables might not be properly set
     if (ENV.COUCHDB_SERVER_URL === NOT_SET || ENV.COUCHDB_SERVER_PROTOCOL === NOT_SET) {
-      throw new Error('CouchDB server configuration not properly initialized');
+      throw new Error(`CouchDB server configuration not properly initialized. Protocol: "${ENV.COUCHDB_SERVER_PROTOCOL}", URL: "${ENV.COUCHDB_SERVER_URL}"`);
     }
     
     const url = `${ENV.COUCHDB_SERVER_PROTOCOL}://${ENV.COUCHDB_SERVER_URL}_session`;
@@ -57,8 +57,9 @@ export async function getCurrentSession(): Promise<SessionResponse> {
     const resp: SessionResponse = await response.json();
     return resp;
   } catch (error) {
-    logger.error(`Session check error: ${error}`);
-    throw new Error(`Session check failed: ${error}`);
+    const url = `${ENV.COUCHDB_SERVER_PROTOCOL}://${ENV.COUCHDB_SERVER_URL}_session`;
+    logger.error(`Session check error attempting to connect to: ${url} - ${error}`);
+    throw new Error(`Session check failed connecting to ${url}: ${error}`);
   }
 }
 
