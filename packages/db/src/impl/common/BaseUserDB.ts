@@ -620,7 +620,12 @@ Currently logged-in as ${this._username}.`
     this.setDBandQ();
 
     this.syncStrategy.startSync(this.localDB, this.remoteDB);
-    void this.applyDesignDocs();
+    this.applyDesignDocs().catch((error) => {
+      log(`Error in applyDesignDocs background task: ${error}`);
+      if (error && typeof error === 'object') {
+        log(`Full error details in applyDesignDocs: ${JSON.stringify(error)}`);
+      }
+    });
     this.deduplicateReviews().catch((error) => {
       log(`Error in deduplicateReviews background task: ${error}`);
       if (error && typeof error === 'object') {
@@ -646,12 +651,18 @@ Currently logged-in as ${this._username}.`
   ];
 
   private async applyDesignDocs() {
+    log(`Starting applyDesignDocs for user: ${this._username}`);
+    log(`Remote DB name: ${this.remoteDB.name || 'unknown'}`);
+    
     if (this._username === 'admin') {
       // Skip admin user
+      log('Skipping design docs for admin user');
       return;
     }
 
+    log(`Applying ${BaseUser.designDocs.length} design docs`);
     for (const doc of BaseUser.designDocs) {
+      log(`Applying design doc: ${doc._id}`);
       try {
         // Try to get existing doc
         try {
