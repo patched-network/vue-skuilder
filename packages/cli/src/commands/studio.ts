@@ -1301,7 +1301,12 @@ export default defineConfig({
       'vue',
       'vuetify', 
       'vue-router',
-      'pinia'
+      'pinia',
+      '@vue-skuilder/db',
+      '@vue-skuilder/common',
+      '@vue-skuilder/common-ui',
+      '@vue-skuilder/courseware',
+      '@vue-skuilder/edit-ui'
     ]
   }
 });`;
