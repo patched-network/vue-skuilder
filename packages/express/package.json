@@ -45,7 +45,7 @@
     "fs-extra": "^11.2.0",
     "hashids": "^2.3.0",
     "morgan": "^1.10.0",
-    "nano": "^9.0.5",
+    "nano": "^10.1.4",
     "pouchdb": "9.0.0",
     "winston": "^3.17.0",
     "winston-daily-rotate-file": "^5.0.0"
