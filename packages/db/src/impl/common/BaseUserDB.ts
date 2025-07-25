@@ -621,7 +621,12 @@ Currently logged-in as ${this._username}.`
 
     this.syncStrategy.startSync(this.localDB, this.remoteDB);
     void this.applyDesignDocs();
-    void this.deduplicateReviews();
+    this.deduplicateReviews().catch((error) => {
+      log(`Error in deduplicateReviews background task: ${error}`);
+      if (error && typeof error === 'object') {
+        log(`Full error details in background task: ${JSON.stringify(error)}`);
+      }
+    });
     BaseUser._initialized = true;
   }
 
