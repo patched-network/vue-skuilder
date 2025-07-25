@@ -1,15 +1,16 @@
 import Nano from 'nano';
 import type { EnvironmentConfig } from '../types.js';
+import logger from 'src/logger.js';
 
 let CouchDB: Nano.ServerScope;
 let couchURLWithProtocol: string;
 
 export function initializeCouchDB(config: EnvironmentConfig): void {
-  const { 
+  const {
     COUCHDB_SERVER: url,
     COUCHDB_PROTOCOL: protocol,
     COUCHDB_ADMIN: username,
-    COUCHDB_PASSWORD: password 
+    COUCHDB_PASSWORD: password,
   } = config;
 
   if (!url || !protocol || !username || !password) {
@@ -23,19 +24,26 @@ export function initializeCouchDB(config: EnvironmentConfig): void {
 
 export function getCouchDB(): Nano.ServerScope {
   if (!CouchDB) {
-    throw new Error('CouchDB has not been initialized. Call initializeCouchDB first.');
+    throw new Error(
+      'CouchDB has not been initialized. Call initializeCouchDB first.'
+    );
   }
   return CouchDB;
 }
 
 export function getCouchURLWithProtocol(): string {
-    if (!couchURLWithProtocol) {
-        throw new Error('CouchDB has not been initialized. Call initializeCouchDB first.');
-    }
-    return couchURLWithProtocol;
+  if (!couchURLWithProtocol) {
+    throw new Error(
+      'CouchDB has not been initialized. Call initializeCouchDB first.'
+    );
+  }
+  return couchURLWithProtocol;
 }
 
-export async function useOrCreateCourseDB(courseID: string): Promise<Nano.DocumentScope<unknown>> {
+export async function useOrCreateCourseDB(
+  courseID: string
+): Promise<Nano.DocumentScope<unknown>> {
+  logger.debug(`Using or creating course DB for course ID: ${courseID}`);
   return useOrCreateDB(`coursedb-${courseID}`);
 }
 
@@ -43,20 +51,23 @@ interface NanoError extends Error {
   statusCode?: number;
 }
 
-export async function useOrCreateDB<T>(dbName: string): Promise<Nano.DocumentScope<T>> {
+export async function useOrCreateDB<T>(
+  dbName: string
+): Promise<Nano.DocumentScope<T>> {
   const db = getCouchDB().use<T>(dbName);
 
   try {
     await db.info();
     return db;
-  } catch {
+  } catch (error: unknown) {
+    logger.debug(`Database ${dbName} does not exist, creating...`);
     try {
       await getCouchDB().db.create(dbName);
       return db;
-      } catch (error: unknown) {
-        const createErr = error as NanoError;
-        // If error is "database already exists", return existing db
-        if (createErr.statusCode === 412) {
+    } catch (error: unknown) {
+      const createErr = error as NanoError;
+      // If error is "database already exists", return existing db
+      if (createErr.statusCode === 412) {
         return db;
       }
       throw createErr;
