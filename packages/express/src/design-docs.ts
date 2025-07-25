@@ -1,5 +1,7 @@
 import { CardData, DocType } from '@vue-skuilder/db';
 import * as fileSystem from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 
 /**
  * Fake fcn to allow usage in couchdb map fcns which, after passing
@@ -9,19 +11,23 @@ function emit(key?: unknown, value?: unknown): [unknown, unknown] {
   return [key, value];
 }
 
-// Load design documents
+// Get directory of this module
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Load design documents with absolute paths
 export const classroomDbDesignDoc = fileSystem.readFileSync(
-  './assets/classroomDesignDoc.js',
+  join(__dirname, 'assets', 'classroomDesignDoc.js'),
   'utf-8'
 );
 
 export const courseDBDesignDoc = fileSystem.readFileSync(
-  './assets/get-tagsDesignDoc.json',
+  join(__dirname, 'assets', 'get-tagsDesignDoc.json'),
   'utf-8'
 );
 
 export const courseValidateDocUpdate = fileSystem.readFileSync(
-  './assets/courseValidateDocUpdate.js',
+  join(__dirname, 'assets', 'courseValidateDocUpdate.js'),
   'utf-8'
 );
 
