@@ -187,7 +187,7 @@ async function launchStudio(coursePath: string, options: StudioOptions) {
     const expressResult = await startExpressBackend(
       couchDBManager.getConnectionDetails(),
       resolvedPath,
-      unpackResult.courseId
+      unpackResult.databaseName
     );
     expressServer = expressResult.server;
 
@@ -563,7 +563,7 @@ async function openBrowser(url: string): Promise<void> {
 async function startExpressBackend(
   couchDbConnectionDetails: ConnectionDetails,
   _projectPath: string,
-  courseId: string
+  databaseName: string
 ): Promise<{ server: http.Server; port: number; url: string }> {
   console.log(chalk.blue('⚡ Starting Express backend server...'));
 
@@ -584,7 +584,7 @@ async function startExpressBackend(
       username: couchDbConnectionDetails.username,
       password: couchDbConnectionDetails.password,
     },
-    courseIDs: [courseId],
+    courseIDs: [databaseName],
     version: VERSION,
     nodeEnv: 'studio',
     cors: {
