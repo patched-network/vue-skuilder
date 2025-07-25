@@ -42,7 +42,11 @@ export async function getCurrentSession(): Promise<SessionResponse> {
       throw new Error(`CouchDB server configuration not properly initialized. Protocol: "${ENV.COUCHDB_SERVER_PROTOCOL}", URL: "${ENV.COUCHDB_SERVER_URL}"`);
     }
     
-    const url = `${ENV.COUCHDB_SERVER_PROTOCOL}://${ENV.COUCHDB_SERVER_URL}_session`;
+    // Ensure URL has proper slash before _session endpoint
+    const baseUrl = ENV.COUCHDB_SERVER_URL.endsWith('/') 
+      ? ENV.COUCHDB_SERVER_URL.slice(0, -1) 
+      : ENV.COUCHDB_SERVER_URL;
+    const url = `${ENV.COUCHDB_SERVER_PROTOCOL}://${baseUrl}/_session`;
     logger.debug(`Attempting session check at: ${url}`);
     
     const response = await fetch(url, {
@@ -57,7 +61,11 @@ export async function getCurrentSession(): Promise<SessionResponse> {
     const resp: SessionResponse = await response.json();
     return resp;
   } catch (error) {
-    const url = `${ENV.COUCHDB_SERVER_PROTOCOL}://${ENV.COUCHDB_SERVER_URL}_session`;
+    // Use same URL construction logic for error reporting
+    const baseUrl = ENV.COUCHDB_SERVER_URL.endsWith('/') 
+      ? ENV.COUCHDB_SERVER_URL.slice(0, -1) 
+      : ENV.COUCHDB_SERVER_URL;
+    const url = `${ENV.COUCHDB_SERVER_PROTOCOL}://${baseUrl}/_session`;
     logger.error(`Session check error attempting to connect to: ${url} - ${error}`);
     throw new Error(`Session check failed connecting to ${url}: ${error}`);
   }
