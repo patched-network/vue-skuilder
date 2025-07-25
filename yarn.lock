@@ -6332,7 +6332,7 @@ __metadata:
     jest: "npm:^29.6.1"
     jest-environment-node: "npm:^29.7.0"
     morgan: "npm:^1.10.0"
-    nano: "npm:^ 9.0.5"
+    nano: "npm:^9.0.5"
     pouchdb: "npm:9.0.0"
     prettier: "npm:^3.0.0"
     rimraf: "npm:*"
@@ -13929,7 +13929,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"nano@npm:^ 9.0.5":
+"nano@npm:^9.0.5":
   version: 9.0.5
   resolution: "nano@npm:9.0.5"
   dependencies:
