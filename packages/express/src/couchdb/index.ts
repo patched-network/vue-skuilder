@@ -1,6 +1,6 @@
 import Nano from 'nano';
 import type { EnvironmentConfig } from '../types.js';
-import logger from 'src/logger.js';
+import logger from '../logger.js';
 
 let CouchDB: Nano.ServerScope;
 let couchURLWithProtocol: string;
