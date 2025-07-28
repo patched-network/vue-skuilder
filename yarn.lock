@@ -4907,10 +4907,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/ffmpeg-static@npm:^2.0.0":
-  version: 2.0.0
-  resolution: "@types/ffmpeg-static@npm:2.0.0"
-  checksum: 10c0/a5aff4cc58d64efbd488b394cee485944366150487ca9cd11c738a874226a75e733cf5dd3cc8e0a87e0dec12fd4366599cbf18f0223a53fbf89c7ca85d4905d9
+"@types/ffmpeg-static@npm:^5.1.0":
+  version: 5.1.0
+  resolution: "@types/ffmpeg-static@npm:5.1.0"
+  dependencies:
+    ffmpeg-static: "npm:*"
+  checksum: 10c0/e59ae941e9d2365ce006677c6ccfc72348deaea7a6c0f9706cf83e40577b2baf62dadee62223503c1a32fae7f3f7dc84a5d156c5e9d19573c02f4f440684c984
   languageName: node
   linkType: hard
 
@@ -6305,7 +6307,7 @@ __metadata:
     "@types/dotenv": "npm:^8.2.3"
     "@types/express": "npm:4.17.21"
     "@types/express-rate-limit": "npm:^6.0.2"
-    "@types/ffmpeg-static": "npm:^2.0.0"
+    "@types/ffmpeg-static": "npm:^5.1.0"
     "@types/hashids": "npm:^1.0.30"
     "@types/jest": "npm:^29.5.14"
     "@types/morgan": "npm:^1.9.9"
@@ -10356,7 +10358,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ffmpeg-static@npm:^5.2.0":
+"ffmpeg-static@npm:*, ffmpeg-static@npm:^5.2.0":
   version: 5.2.0
   resolution: "ffmpeg-static@npm:5.2.0"
   dependencies:
