@@ -1,5 +1,5 @@
-# .github/workflows/courses-test.yml
-name: CourseWare Package Tests
+# .github/workflows/ci-pkg-courseware.yml
+name: ci-pkg-courseware
 
 on:
   push:
