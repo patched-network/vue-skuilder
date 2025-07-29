@@ -200,27 +200,22 @@ export default defineConfig({
         },
         rollupOptions: {
           // External packages that shouldn't be bundled in library mode
+          // For studio integration, we bundle vue-skuilder packages to avoid npm resolution issues
           external: [
-            'vue',
-            'vue-router',
-            'vuetify',
-            'pinia',
-            '@vue-skuilder/common',
-            '@vue-skuilder/common-ui',
-            '@vue-skuilder/courseware',
-            '@vue-skuilder/db',
+            // Bundle everything for studio integration - no externals
           ],
           output: {
             // Global variables for UMD build
             globals: {
-              'vue': 'Vue',
+              vue: 'Vue',
               'vue-router': 'VueRouter',
-              'vuetify': 'Vuetify',
-              'pinia': 'Pinia',
-              '@vue-skuilder/common': 'VueSkuilderCommon',
-              '@vue-skuilder/common-ui': 'VueSkuilderCommonUI',
-              '@vue-skuilder/courseware': 'VueSkuilderCourseWare',
-              '@vue-skuilder/db': 'VueSkuilderDB',
+              vuetify: 'Vuetify',
+              pinia: 'Pinia',
+              // Remove globals for bundled packages
+              // '@vue-skuilder/common': 'VueSkuilderCommon',
+              // '@vue-skuilder/common-ui': 'VueSkuilderCommonUI',
+              // '@vue-skuilder/courseware': 'VueSkuilderCourseWare',
+              // '@vue-skuilder/db': 'VueSkuilderDB',
             },
             exports: 'named',
             // Preserve CSS in the output bundle
@@ -421,6 +416,7 @@ node_modules/
 # Production builds
 /dist
 /build
+/dist-lib
 
 # Local env files
 .env
