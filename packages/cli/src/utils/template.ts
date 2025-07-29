@@ -421,6 +421,7 @@ node_modules/
 # Production builds
 /dist
 /build
+/dist-lib
 
 # Local env files
 .env
