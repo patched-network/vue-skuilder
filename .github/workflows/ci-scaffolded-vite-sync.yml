@@ -1,0 +1,101 @@
+name: Check Scaffolded Vite Config Sync
+
+on:
+  pull_request:
+    paths:
+      - 'packages/standalone-ui/vite.config.ts'
+  push:
+    paths:
+      - 'packages/standalone-ui/vite.config.ts'
+
+jobs:
+  check-vite-config-sync:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Check for standalone-ui vite.config.ts changes
+      id: check_changes
+      run: |
+        # Check if standalone-ui/vite.config.ts was modified
+        if git diff --name-only HEAD~1..HEAD | grep -q "packages/standalone-ui/vite.config.ts"; then
+          echo "standalone_ui_modified=true" >> $GITHUB_OUTPUT
+        else
+          echo "standalone_ui_modified=false" >> $GITHUB_OUTPUT
+        fi
+        
+        # Check if template.ts was also modified in this PR/push
+        if git diff --name-only HEAD~1..HEAD | grep -q "packages/cli/src/utils/template.ts"; then
+          echo "template_modified=true" >> $GITHUB_OUTPUT
+        else
+          echo "template_modified=false" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Display sync documentation and fail
+      if: steps.check_changes.outputs.standalone_ui_modified == 'true'
+      run: |
+        echo "🚨 VITE CONFIG SYNC REQUIRED 🚨"
+        echo ""
+        echo "==============================================="
+        echo "CHANGES DETECTED TO packages/standalone-ui/vite.config.ts"
+        echo "==============================================="
+        echo ""
+        echo "📋 REQUIRED ACTION:"
+        echo "Any changes to the library build configuration in standalone-ui"
+        echo "must be manually synchronized to packages/cli/src/utils/template.ts"
+        echo ""
+        echo "🎯 SPECIFIC SECTIONS TO SYNC:"
+        echo "- rollupOptions.external array"
+        echo "- rollupOptions.output.globals object"
+        echo "- Comments explaining bundling strategy"
+        echo ""
+        echo "🔍 WHY THIS MATTERS:"
+        echo "- standalone-ui builds questions.mjs for monorepo development"
+        echo "- template.ts generates vite.config.ts for scaffolded projects"
+        echo "- Both must produce identical questions.mjs output"
+        echo "- Config drift causes 'bare specifier' import errors in studio mode"
+        echo ""
+        echo "==============================================="
+        echo "CURRENT CHANGES IN THIS PR/PUSH"
+        echo "==============================================="
+        echo ""
+        echo "📄 Changes to standalone-ui/vite.config.ts:"
+        git diff HEAD~1..HEAD -- packages/standalone-ui/vite.config.ts || echo "No diff available"
+        echo ""
+        
+        if [ "${{ steps.check_changes.outputs.template_modified }}" == "true" ]; then
+          echo "✅ Changes detected to template.ts (good!):"
+          git diff HEAD~1..HEAD -- packages/cli/src/utils/template.ts || echo "No diff available"
+        else
+          echo "❌ NO changes detected to packages/cli/src/utils/template.ts"
+          echo ""
+          echo "🔧 TO FIX:"
+          echo "1. Review the standalone-ui vite.config.ts changes above"
+          echo "2. Apply equivalent changes to packages/cli/src/utils/template.ts"
+          echo "3. Focus on the library build rollupOptions section (lines ~200-230)"
+          echo "4. Ensure external array and globals object match exactly"
+          echo "5. Update comments to match bundling strategy"
+          echo "6. Commit and push the template.ts changes"
+        fi
+        echo ""
+        echo "==============================================="
+        echo "REFERENCE LOCATIONS"
+        echo "==============================================="
+        echo ""
+        echo "📁 Source of truth:"
+        echo "   packages/standalone-ui/vite.config.ts (lines ~56-80)"
+        echo ""
+        echo "📁 Template to update:"
+        echo "   packages/cli/src/utils/template.ts (lines ~200-230)"
+        echo "   Look for the rollupOptions section in createViteConfig()"
+        echo ""
+        echo "📚 Context:"
+        echo "   This sync requirement exists because scaffolded projects cannot"
+        echo "   use the monorepo's vite.config.base.js due to path dependencies."
+        echo ""
+        echo "🚨 THIS CHECK WILL ALWAYS FAIL TO FORCE MANUAL REVIEW 🚨"
+        exit 1
