@@ -1,9 +1,10 @@
-name: build-express
+name: ci-pkg-express
 on:
   pull_request:
     paths:
       - 'packages/express/**'
-      - 'packages/common/**' # Added common since it's a dependency
+      - 'packages/common/**'
+      - 'packages/db/**'
       - '.github/workflows/build-express.yml'
       - 'package.json'
       - 'yarn.lock'

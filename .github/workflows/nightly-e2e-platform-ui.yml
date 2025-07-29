@@ -6,7 +6,7 @@ on:
   workflow_dispatch: # Allow manual triggering
   push:
     paths:
-      - '.github/workflows/e2e-tests.yml'
+      - '.github/workflows/nightly-e2e-platform-ui.yml'
 
 jobs:
   e2e-tests:

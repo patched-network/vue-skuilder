@@ -5062,15 +5062,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/nano@npm:^7.0.0":
-  version: 7.0.0
-  resolution: "@types/nano@npm:7.0.0"
-  dependencies:
-    nano: "npm:*"
-  checksum: 10c0/3e930552876d222f178bfd497e9addfe3f78ab86eb4586856befab8153ac7b63030b47e1846940647dd42aca9c268f89d730eb27a8c3330474589b2e4d8d22a0
-  languageName: node
-  linkType: hard
-
 "@types/node@npm:*":
   version: 22.13.1
   resolution: "@types/node@npm:22.13.1"
@@ -5405,13 +5396,6 @@ __metadata:
   dependencies:
     "@types/node": "npm:*"
   checksum: 10c0/6a8edd7f40cd7e197318e86310a40e568cddd380609dde59b30d5cc6c5f8276ddc698905eac4b3b429eb39f2e8ee326bc20dc6e95a2cdc41c4d3fc9a1ebd4929
-  languageName: node
-  linkType: hard
-
-"@types/tough-cookie@npm:^4.0.0":
-  version: 4.0.5
-  resolution: "@types/tough-cookie@npm:4.0.5"
-  checksum: 10c0/68c6921721a3dcb40451543db2174a145ef915bc8bcbe7ad4e59194a0238e776e782b896c7a59f4b93ac6acefca9161fccb31d1ce3b3445cb6faa467297fb473
   languageName: node
   linkType: hard
 
@@ -6228,6 +6212,7 @@ __metadata:
     "@nilock2/pouchdb-authentication": "npm:^1.0.2"
     "@types/uuid": "npm:^10.0.0"
     "@vue-skuilder/common": "workspace:*"
+    cross-fetch: "npm:^4.1.0"
     moment: "npm:^2.29.4"
     pouchdb: "npm:^9.0.0"
     pouchdb-find: "npm:^9.0.0"
@@ -6243,7 +6228,6 @@ __metadata:
   dependencies:
     "@types/fs-extra": "npm:^11.0.1"
     "@types/jest": "npm:^29.5.5"
-    "@types/nano": "npm:^7.0.0"
     "@vue-skuilder/common": "workspace:*"
     "@vue-skuilder/db": "workspace:*"
     fs-extra: "npm:^11.1.1"
@@ -6331,7 +6315,7 @@ __metadata:
     jest: "npm:^29.6.1"
     jest-environment-node: "npm:^29.7.0"
     morgan: "npm:^1.10.0"
-    nano: "npm:^ 9.0.5"
+    nano: "npm:^10.1.4"
     pouchdb: "npm:9.0.0"
     prettier: "npm:^3.0.0"
     rimraf: "npm:*"
@@ -7287,29 +7271,6 @@ __metadata:
   version: 1.12.0
   resolution: "aws4@npm:1.12.0"
   checksum: 10c0/1e39c266f53b04daf88e112de93a6006375b386a1b7ab6197260886e39abd012aa90bdd87949c3bf9c30754846031f6d5d8ac4f8676628097c11065b5d39847a
-  languageName: node
-  linkType: hard
-
-"axios-cookiejar-support@npm:^1.0.1":
-  version: 1.0.1
-  resolution: "axios-cookiejar-support@npm:1.0.1"
-  dependencies:
-    is-redirect: "npm:^1.0.0"
-    pify: "npm:^5.0.0"
-  peerDependencies:
-    "@types/tough-cookie": ">=2.3.3"
-    axios: ">=0.16.2"
-    tough-cookie: ">=2.3.3"
-  checksum: 10c0/1b7c8e261e790b193496e207f7cbd7ed9f3a689bf81fe9446f91e93ee5fc29881e5171fc75d722249984cd3e39ba668d70474869813ee4931eb9b3106901a607
-  languageName: node
-  linkType: hard
-
-"axios@npm:^0.21.1":
-  version: 0.21.4
-  resolution: "axios@npm:0.21.4"
-  dependencies:
-    follow-redirects: "npm:^1.14.0"
-  checksum: 10c0/fbcff55ec68f71f02d3773d467db2fcecdf04e749826c82c2427a232f9eba63242150a05f15af9ef15818352b814257541155de0281f8fb2b7e8a5b79f7f2142
   languageName: node
   linkType: hard
 
@@ -8496,6 +8457,15 @@ __metadata:
   version: 1.1.1
   resolution: "create-require@npm:1.1.1"
   checksum: 10c0/157cbc59b2430ae9a90034a5f3a1b398b6738bf510f713edc4d4e45e169bc514d3d99dd34d8d01ca7ae7830b5b8b537e46ae8f3c8f932371b0875c0151d7ec91
+  languageName: node
+  linkType: hard
+
+"cross-fetch@npm:^4.1.0":
+  version: 4.1.0
+  resolution: "cross-fetch@npm:4.1.0"
+  dependencies:
+    node-fetch: "npm:^2.7.0"
+  checksum: 10c0/628b134ea27cfcada67025afe6ef1419813fffc5d63d175553efa75a2334522d450300a0f3f0719029700da80e96327930709d5551cf6deb39bb62f1d536642e
   languageName: node
   linkType: hard
 
@@ -10552,7 +10522,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"follow-redirects@npm:^1.14.0, follow-redirects@npm:^1.15.6":
+"follow-redirects@npm:^1.15.6":
   version: 1.15.9
   resolution: "follow-redirects@npm:1.15.9"
   peerDependenciesMeta:
@@ -11902,13 +11872,6 @@ __metadata:
   version: 4.0.0
   resolution: "is-promise@npm:4.0.0"
   checksum: 10c0/ebd5c672d73db781ab33ccb155fb9969d6028e37414d609b115cc534654c91ccd061821d5b987eefaa97cf4c62f0b909bb2f04db88306de26e91bfe8ddc01503
-  languageName: node
-  linkType: hard
-
-"is-redirect@npm:^1.0.0":
-  version: 1.0.0
-  resolution: "is-redirect@npm:1.0.0"
-  checksum: 10c0/4fb24eaa61548d276499ec5e2f7efbc4ed823b68c7ee3bdfbf29d0f6c45d19c07f417bf3dd86110285c28a35481b46a9996921739b7b84bb8ba5216f250d40de
   languageName: node
   linkType: hard
 
@@ -13908,7 +13871,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"nano@npm:*, nano@npm:^10.1.3":
+"nano@npm:^10.1.3, nano@npm:^10.1.4":
   version: 10.1.4
   resolution: "nano@npm:10.1.4"
   dependencies:
@@ -13916,19 +13879,6 @@ __metadata:
     node-abort-controller: "npm:^3.1.1"
     qs: "npm:^6.13.0"
   checksum: 10c0/204b129226091828714e203dffc47362acc23b853d3cf681fa0d307beab05021b3c206e0511786d8879de13bb7b5ac049b6b74fdad2eed0043efb67bd5e76749
-  languageName: node
-  linkType: hard
-
-"nano@npm:^ 9.0.5":
-  version: 9.0.5
-  resolution: "nano@npm:9.0.5"
-  dependencies:
-    "@types/tough-cookie": "npm:^4.0.0"
-    axios: "npm:^0.21.1"
-    axios-cookiejar-support: "npm:^1.0.1"
-    qs: "npm:^6.9.4"
-    tough-cookie: "npm:^4.0.0"
-  checksum: 10c0/b68d17fb27056740d4c884756ed3e6e10e25b730461b61c0bd9776d85c3d7186c27e0ce45be8840bd634a070341215a73f11b6505ce043d3826c5f2a86328af5
   languageName: node
   linkType: hard
 
@@ -14008,6 +13958,20 @@ __metadata:
     encoding:
       optional: true
   checksum: 10c0/7a4a0e027e509b741bec4172749103f158da23187ff251cb988dd54ea7267519c3fa11838971da0f5f3c54e79da3174e7bd72aa2179c9f69887511ece16c9c0f
+  languageName: node
+  linkType: hard
+
+"node-fetch@npm:^2.7.0":
+  version: 2.7.0
+  resolution: "node-fetch@npm:2.7.0"
+  dependencies:
+    whatwg-url: "npm:^5.0.0"
+  peerDependencies:
+    encoding: ^0.1.0
+  peerDependenciesMeta:
+    encoding:
+      optional: true
+  checksum: 10c0/b55786b6028208e6fbe594ccccc213cab67a72899c9234eb59dba51062a299ea853210fcf526998eaa2867b0963ad72338824450905679ff0fa304b8c5093ae8
   languageName: node
   linkType: hard
 
@@ -14629,13 +14593,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pify@npm:^5.0.0":
-  version: 5.0.0
-  resolution: "pify@npm:5.0.0"
-  checksum: 10c0/9f6f3cd1f159652692f514383efe401a06473af35a699962230ad1c4c9796df5999961461fc1a3b81eed8e3e74adb8bd032474fb3f93eb6bdbd9f33328da1ed2
-  languageName: node
-  linkType: hard
-
 "pinia@npm:^2.3.0":
   version: 2.3.1
   resolution: "pinia@npm:2.3.1"
@@ -15090,7 +15047,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"qs@npm:6.14.0, qs@npm:^6.13.0, qs@npm:^6.14.0, qs@npm:^6.9.4":
+"qs@npm:6.14.0, qs@npm:^6.13.0, qs@npm:^6.14.0":
   version: 6.14.0
   resolution: "qs@npm:6.14.0"
   dependencies:

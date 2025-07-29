@@ -1,15 +1,18 @@
-# .github/workflows/courses-test.yml
-name: CourseWare Package Tests
+# .github/workflows/ci-pkg-courseware.yml
+name: ci-pkg-courseware
 
 on:
   push:
     paths:
       - 'packages/courseware/**'
-      - '.github/workflows/courses-test.yml'
+      - '.github/workflows/ci-pkg-courseware.yml'
   pull_request:
     paths:
       - 'packages/courseware/**'
-      - '.github/workflows/courses-test.yml'
+      - 'packages/common/**'
+      - 'packages/db/**'
+      - 'packages/common-ui/**'
+      - '.github/workflows/ci-pkg-courseware.yml'
 
 jobs:
   test:
@@ -25,7 +28,7 @@ jobs:
           cache: 'yarn'
 
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: yarn install --immutable
 
       - name: Build @vue-skuilder/common
         run: |

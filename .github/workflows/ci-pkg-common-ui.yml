@@ -1,5 +1,5 @@
 # vue-skuilder/.github/workflows/ci-pkg-common-ui.yml
-name: CI - Common UI Package
+name: ci-pkg-common-ui
 
 on:
   push:

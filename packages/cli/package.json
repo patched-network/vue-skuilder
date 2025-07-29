@@ -3,7 +3,7 @@
   "publishConfig": {
     "access": "public"
   },
-  "version": "0.1.11-0",
+  "version": "0.1.11-15",
   "type": "module",
   "description": "CLI scaffolding tool for vue-skuilder projects",
   "bin": {
@@ -18,17 +18,15 @@
     }
   },
   "scripts": {
-    "build": "rm -rf dist && npm run build:express && tsc && npm run embed:studio-ui-src && npm run embed:express && npm run embed:templates && npm run embed:standalone-ui",
-    "build:express": "cd ../express && npm run build",
+    "build": "rm -rf dist && tsc && npm run embed:studio-ui-src && npm run embed:templates && npm run embed:standalone-ui",
     "embed:studio-ui-src": "mkdir -p dist/studio-ui-src && cp -r ../studio-ui/src/* dist/studio-ui-src/ && cp ../studio-ui/package.json dist/studio-ui-src/ && cp ../studio-ui/vite.config.ts dist/studio-ui-src/ && cp ../studio-ui/tsconfig.json dist/studio-ui-src/ && cp ../studio-ui/index.html dist/studio-ui-src/ && cp ../../vite.config.base.js dist/studio-ui-src/ && sed -i 's|../../vite.config.base.js|./vite.config.base.js|' dist/studio-ui-src/vite.config.ts && sed -i 's|resolve(__dirname, \\.\\., \\.\\.)|resolve(__dirname)|' dist/studio-ui-src/vite.config.ts && sed -i 's|/src/main.ts|./main.ts|' dist/studio-ui-src/index.html",
-    "embed:express": "mkdir -p dist/express-assets && cp -r ../express/dist/* dist/express-assets/ && cp -r ../express/assets dist/express-assets/",
     "embed:templates": "mkdir -p dist/templates && cp -r templates/.skuilder dist/templates/",
     "embed:standalone-ui": "mkdir -p dist/standalone-ui-template && cp -r ../standalone-ui/src dist/standalone-ui-template/ && cp ../standalone-ui/package.json dist/standalone-ui-template/ && cp ../standalone-ui/tsconfig.json dist/standalone-ui-template/ && cp ../standalone-ui/vite.config.ts dist/standalone-ui-template/ && cp ../standalone-ui/index.html dist/standalone-ui-template/ && (cp ../standalone-ui/.gitignore dist/standalone-ui-template/ 2>/dev/null || true)",
     "dev": "tsc --watch",
     "lint": "npx eslint .",
     "lint:fix": "npx eslint . --fix",
     "lint:check": "npx eslint . --max-warnings 0",
-    "try:init": "node dist/cli.js init testproject --dangerously-clobber --no-interactive --data-layer static --import-course-data --import-server-url http://localhost:5984 --import-username admin --import-password password --import-course-ids 2aeb8315ef78f3e89ca386992d00825b && cd testproject && npm i && npm install --save-dev @vue-skuilder/cli@file:.. && npm install @vue-skuilder/db@file:../../db @vue-skuilder/courseware@file:../../courseware @vue-skuilder/common-ui@file:../../common-ui"
+    "try:init": "node dist/cli.js init testproject --dangerously-clobber --no-interactive --data-layer static --import-course-data --import-server-url http://localhost:5984 --import-username admin --import-password password --import-course-ids 2aeb8315ef78f3e89ca386992d00825b && cd testproject && npm i && npm install --save-dev @vue-skuilder/cli@file:.. && npm install @vue-skuilder/db@file:../../db @vue-skuilder/courseware@file:../../courseware @vue-skuilder/common-ui@file:../../common-ui @vue-skuilder/express@file:../../express"
   },
   "keywords": [
     "cli",
@@ -45,6 +43,7 @@
     "@vue-skuilder/courseware": "workspace:*",
     "@vue-skuilder/db": "workspace:*",
     "@vue-skuilder/edit-ui": "workspace:*",
+    "@vue-skuilder/express": "workspace:*",
     "@vue-skuilder/mcp": "workspace:*",
     "chalk": "^5.3.0",
     "commander": "^11.0.0",
@@ -63,7 +62,6 @@
     "@types/node": "^20.0.0",
     "@types/serve-static": "^1.15.0",
     "@vitejs/plugin-vue": "^5.2.1",
-    "@vue-skuilder/express": "workspace:*",
     "@vue-skuilder/studio-ui": "workspace:*",
     "typescript": "~5.7.2",
     "vite": "^6.0.9",

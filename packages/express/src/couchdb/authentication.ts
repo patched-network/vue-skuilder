@@ -1,5 +1,5 @@
 import Nano from 'nano';
-import { COUCH_URL_WITH_PROTOCOL } from './index.js';
+import { getCouchURLWithProtocol } from './index.js';
 import { VueClientRequest } from '../app-factory.js';
 import logger from '../logger.js';
 
@@ -27,7 +27,7 @@ export async function requestIsAdminAuthenticated(req: VueClientRequest) {
   } else {
     return await Nano({
       cookie: 'AuthSession=' + authCookie,
-      url: COUCH_URL_WITH_PROTOCOL,
+      url: getCouchURLWithProtocol(),
     })
       .session()
       .then((s: CouchSession) => {
@@ -63,7 +63,7 @@ export async function requestIsAuthenticated(req: VueClientRequest) {
     const password = auth[1];
 
     const authResult = await Nano({
-      url: COUCH_URL_WITH_PROTOCOL,
+      url: getCouchURLWithProtocol(),
     }).auth(username, password);
 
     return authResult.ok;
@@ -77,7 +77,7 @@ export async function requestIsAuthenticated(req: VueClientRequest) {
   } else {
     return await Nano({
       cookie: 'AuthSession=' + authCookie,
-      url: COUCH_URL_WITH_PROTOCOL,
+      url: getCouchURLWithProtocol(),
     })
       .session()
       .then((s: CouchSession) => {
