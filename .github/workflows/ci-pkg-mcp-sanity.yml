@@ -1,4 +1,4 @@
-name: ci-mcp-sanity
+name: ci-pkg-mcp-sanity
 permissions:
   contents: read
 on:
