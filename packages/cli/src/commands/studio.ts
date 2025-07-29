@@ -835,9 +835,9 @@ async function buildDefaultStudioUI(buildPath: string): Promise<string> {
     const studioPackageJsonPath = path.join(buildPath, 'package.json');
     await transformPackageJsonForStudioBuild(studioPackageJsonPath);
 
-    // Fix Vite config to use npm packages instead of monorepo paths
-    console.log(chalk.gray(`   Updating Vite configuration for standalone build...`));
-    await fixViteConfigForStandaloneBuild(buildPath);
+    // Fix Vite config to use npm packages and resolve custom questions imports
+    console.log(chalk.gray(`   Updating Vite configuration for studio build...`));
+    await createStudioViteConfig(buildPath);
 
     // Run Vite build process
     console.log(chalk.gray(`   Running Vite build process...`));
@@ -1035,9 +1035,9 @@ async function buildStudioUIWithCustomQuestions(
     const studioPackageJsonPath = path.join(buildPath, 'package.json');
     await transformPackageJsonForStudioBuild(studioPackageJsonPath);
 
-    // Step 2.5: Fix Vite config to use npm packages instead of monorepo paths
-    console.log(chalk.gray(`   Updating Vite configuration for standalone build...`));
-    await fixViteConfigForStandaloneBuild(buildPath);
+    // Step 2.5: Fix Vite config to use npm packages and resolve custom questions imports
+    console.log(chalk.gray(`   Updating Vite configuration for studio build...`));
+    await createStudioViteConfig(buildPath);
 
     // Step 3: Install custom questions package
     console.log(
@@ -1258,9 +1258,9 @@ async function runViteBuild(buildPath: string): Promise<void> {
 }
 
 /**
- * Fix Vite configuration to work in standalone build environment
+ * Create Vite configuration for studio-ui build environment
  */
-async function fixViteConfigForStandaloneBuild(buildPath: string): Promise<void> {
+async function createStudioViteConfig(buildPath: string): Promise<void> {
   const viteConfigPath = path.join(buildPath, 'vite.config.ts');
 
   if (!fs.existsSync(viteConfigPath)) {
@@ -1268,9 +1268,9 @@ async function fixViteConfigForStandaloneBuild(buildPath: string): Promise<void>
     return;
   }
 
-  // Create a clean standalone vite config for external projects
-  // Relies on standard npm package resolution instead of monorepo paths
-  const standaloneViteConfig = `import { defineConfig } from 'vite';
+  // Create a clean studio vite config for studio-ui environment
+  // Includes aliases to resolve custom questions imports
+  const studioViteConfig = `import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 
 export default defineConfig({
@@ -1296,6 +1296,14 @@ export default defineConfig({
   },
   resolve: {
     extensions: ['.js', '.ts', '.json', '.vue'],
+    alias: {
+      // Resolve @vue-skuilder packages to npm packages for custom questions import
+      '@vue-skuilder/common': '@vue-skuilder/common',
+      '@vue-skuilder/courseware': '@vue-skuilder/courseware',
+      '@vue-skuilder/db': '@vue-skuilder/db',
+      '@vue-skuilder/common-ui': '@vue-skuilder/common-ui',
+      '@vue-skuilder/edit-ui': '@vue-skuilder/edit-ui'
+    },
     dedupe: [
       'vue',
       'vuetify', 
@@ -1310,8 +1318,8 @@ export default defineConfig({
   }
 });`;
 
-  fs.writeFileSync(viteConfigPath, standaloneViteConfig);
-  console.log(chalk.gray(`   Vite config replaced with standalone version`));
+  fs.writeFileSync(viteConfigPath, studioViteConfig);
+  console.log(chalk.gray(`   Vite config replaced with studio version`));
 }
 
 /**
