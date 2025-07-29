@@ -238,6 +238,68 @@ export async function registerSeedData(
 }
 
 /**
+ * Register BlanksCard (markdown fillIn) question type specifically
+ */
+export async function registerBlanksCard(
+  BlanksCard: any,
+  BlanksCardDataShapes: any[],
+  courseConfig: CourseConfig,
+  courseDB: CourseDBInterface
+): Promise<{ success: boolean; errorMessage?: string }> {
+  try {
+    console.log('   📋 Registering BlanksCard data shapes and question type...');
+
+    let registeredCount = 0;
+    const courseName = 'default'; // BlanksCard comes from the default course
+
+    // Register BlanksCard data shapes
+    for (const dataShapeClass of BlanksCardDataShapes) {
+      const processedDataShape: ProcessedDataShape = {
+        name: dataShapeClass.name,
+        course: courseName,
+        dataShape: dataShapeClass,
+      };
+
+      if (registerDataShape(processedDataShape, courseConfig)) {
+        registeredCount++;
+      }
+    }
+
+    // Register BlanksCard question type
+    const processedQuestion: ProcessedQuestionData = {
+      name: BlanksCard.name,
+      course: courseName,
+      questionClass: BlanksCard,
+      dataShapes: BlanksCardDataShapes,
+      views: BlanksCard.views || [],
+    };
+
+    if (registerQuestionType(processedQuestion, courseConfig)) {
+      registeredCount++;
+    }
+
+    // Update the course config in the database
+    console.log('   💾 Updating course configuration with BlanksCard...');
+    const updateResult = await courseDB.updateCourseConfig(courseConfig);
+
+    if (!updateResult.ok) {
+      throw new Error(`Failed to update course config: ${JSON.stringify(updateResult)}`);
+    }
+
+    // Register seed data if BlanksCard has any
+    await registerSeedData(processedQuestion, courseDB);
+
+    console.log(`   ✅ BlanksCard registration complete: ${registeredCount} items registered`);
+
+    return { success: true };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error(`   ❌ BlanksCard registration failed: ${errorMessage}`);
+    return { success: false, errorMessage };
+  }
+}
+
+/**
  * Main function to register all custom question types and data shapes
  */
 export async function registerCustomQuestionTypes(
