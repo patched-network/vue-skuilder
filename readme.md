@@ -1,7 +1,3 @@
-![`platform-ui` E2E](https://github.com/patched-network/vue-skuilder/actions/workflows/e2e-tests.yml/badge.svg)
-![`standalone-ui` E2E](https://github.com/patched-network/vue-skuilder/actions/workflows/standalone-e2e-tests.yml/badge.svg)
-![CLI Regression](https://github.com/patched-network/vue-skuilder/actions/workflows/cli-regression-test.yml/badge.svg)
-
 Modular toolkit for the construction of interactive tutoring systems, with experimentation toward
 - mass-collaborative authoring
 - mixture-of-expert-systems guided learning
@@ -123,3 +119,11 @@ This project is licensed under:
 
 - **AGPL-3.0** for the core platform: [License](https://opensource.org/licenses/AGPL-3.0)
 - **MIT** for materials in the `courses` package: [License](https://opensource.org/licenses/MIT)
+
+## Nightlies
+
+The following e2e / cypress tests are run nightly on the main branch - a little slow for CI, but good for catching regressions while they are fresh.
+
+![`platform-ui` E2E](https://github.com/patched-network/vue-skuilder/actions/workflows/e2e-tests.yml/badge.svg)
+![`standalone-ui` E2E](https://github.com/patched-network/vue-skuilder/actions/workflows/standalone-e2e-tests.yml/badge.svg)
+![CLI Regression](https://github.com/patched-network/vue-skuilder/actions/workflows/cli-regression-test.yml/badge.svg)
