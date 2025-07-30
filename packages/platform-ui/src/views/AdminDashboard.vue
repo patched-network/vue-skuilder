@@ -167,7 +167,7 @@ export default defineComponent({
     async loadCourses() {
       try {
         // Try efficient lookup-only approach first
-        const coursesDB = this.dataLayer!.getCoursesDB();
+        // const coursesDB = this.dataLayer!.getCoursesDB();
         
         // Get basic course list from lookup DB (lightweight, just IDs and basic names)
         const lookupCourses = await CourseLookup.allCourseWare();
@@ -282,7 +282,7 @@ export default defineComponent({
       return `ID: ${this.selectedCourseId}`;
     },
 
-    viewLookup(viewDescriptor: any) {
+    viewLookup(viewDescriptor: unknown) {
       return allCourseWare.getView(viewDescriptor);
     }
   },
