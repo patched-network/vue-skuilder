@@ -29,8 +29,8 @@ interface CardWithCourse extends CardData {
 export default defineComponent({
   name: 'CardSearchResults',
   emits: {
-    'card-selected': (cardId: string, courseId: string) => 
-      typeof cardId === 'string' && typeof courseId === 'string'
+    'card-selected': (payload: { cardId: string; courseId: string }) => 
+      typeof payload.cardId === 'string' && typeof payload.courseId === 'string'
   },
   props: {
     query: {
@@ -107,7 +107,7 @@ export default defineComponent({
     },
     
     selectCard(card: CardWithCourse) {
-      this.$emit('card-selected', card._id, card.courseId);
+      this.$emit('card-selected', { cardId: card._id, courseId: card.courseId });
     },
   },
 });

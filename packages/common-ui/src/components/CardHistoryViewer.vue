@@ -4,33 +4,21 @@
     <div v-if="loading">Loading...</div>
     <div v-else-if="error" class="error-message">{{ error }}</div>
     <div v-else>
-      <v-data-table
-        :headers="headers"
-        :items="history"
-        class="elevation-1"
-      >
+      <v-data-table :headers="headers" :items="history" class="elevation-1">
         <template v-slot:item.hasNegativeInterval="{ item }">
-          <v-chip
-            :color="item.hasNegativeInterval ? 'error' : 'success'"
-            :text-color="'white'"
-            small
-          >
+          <v-chip :color="item.hasNegativeInterval ? 'error' : 'success'" :text-color="'white'" small>
             {{ item.hasNegativeInterval ? 'INVALID' : 'Valid' }}
           </v-chip>
         </template>
-        
+
         <template v-slot:item.intervalFromPrevious="{ item }">
-          <span 
-            :class="{ 'negative-interval': item.hasNegativeInterval }"
-          >
+          <span :class="{ 'negative-interval': item.hasNegativeInterval }">
             {{ item.intervalFromPrevious !== undefined ? item.intervalFromPrevious : '-' }}
           </span>
         </template>
 
         <template v-slot:item.formattedTimeStamp="{ item }">
-          <span 
-            :class="{ 'invalid-timestamp': item.hasNegativeInterval }"
-          >
+          <span :class="{ 'invalid-timestamp': item.hasNegativeInterval }">
             {{ item.formattedTimeStamp }}
           </span>
         </template>
@@ -108,12 +96,12 @@ export default defineComponent({
       try {
         const cardHistoryID = getCardHistoryID(this.courseId, this.cardId);
         const historyDoc: CardHistory<CardRecord> = await this.userDB.get(cardHistoryID);
-        
+
         // Sort records by timestamp and format them
-        const sortedRecords = [...historyDoc.records].sort((a, b) => 
-          moment(a.timeStamp).valueOf() - moment(b.timeStamp).valueOf()
+        const sortedRecords = [...historyDoc.records].sort(
+          (a, b) => moment(a.timeStamp).valueOf() - moment(b.timeStamp).valueOf()
         );
-        
+
         this.history = sortedRecords.map((record, index) => {
           const currentTime = moment(record.timeStamp);
           const formatted: FormattedRecord = {
@@ -121,7 +109,7 @@ export default defineComponent({
             formattedTimeStamp: currentTime.format('YYYY-MM-DD HH:mm:ss'),
             timeSpentSeconds: Math.round(record.timeSpent / 1000),
           };
-          
+
           // Calculate interval from previous record
           if (index > 0) {
             const previousTime = moment(sortedRecords[index - 1].timeStamp);
@@ -129,7 +117,7 @@ export default defineComponent({
             formatted.intervalFromPrevious = Math.round(intervalMinutes * 100) / 100;
             formatted.hasNegativeInterval = intervalMinutes < 0;
           }
-          
+
           return formatted;
         });
       } catch (e) {
