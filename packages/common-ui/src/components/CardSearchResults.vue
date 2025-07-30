@@ -68,34 +68,36 @@ export default defineComponent({
       this.loading = true;
       this.error = null;
       try {
-        const coursesDB = this.dataLayer.getCoursesDB();
-        let courses = await coursesDB.getCourseList();
+        let courseIds: string[] = [];
         
-        // Apply course filter if specified
+        // Get course IDs efficiently
         if (this.courseFilter) {
-          courses = courses.filter(course => course.courseID === this.courseFilter);
+          // Single course search - no need to fetch all courses
+          courseIds = [this.courseFilter];
           console.log(`Filtering search to course: ${this.courseFilter}`);
         } else {
-          console.log(`Searching across all ${courses.length} courses`);
+          // Get all course IDs without expensive config lookups
+          const { CourseLookup } = await import('@vue-skuilder/db');
+          const lookupCourses = await CourseLookup.allCourseWare();
+          courseIds = lookupCourses.map(c => c._id).filter(Boolean);
+          console.log(`Searching across all ${courseIds.length} courses`);
         }
         
         const allCards: CardWithCourse[] = [];
 
-        for (const course of courses) {
-          if (!course.courseID) continue;
-          
-          const courseDB = this.dataLayer.getCourseDB(course.courseID);
+        for (const courseId of courseIds) {
+          const courseDB = this.dataLayer.getCourseDB(courseId);
           const cards = await courseDB.searchCards(query);
           
           for (const card of cards) {
             allCards.push({
               ...card,
-              courseId: course.courseID,
+              courseId: courseId,
             });
           }
         }
         this.cards = allCards;
-        console.log(`Search completed: found ${allCards.length} cards across ${courses.length} courses`);
+        console.log(`Search completed: found ${allCards.length} cards across ${courseIds.length} courses`);
       } catch (e) {
         this.error = 'Error fetching search results.';
         console.error('Search error:', e);
