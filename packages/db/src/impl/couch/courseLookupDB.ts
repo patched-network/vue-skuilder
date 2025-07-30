@@ -105,15 +105,15 @@ export default class CourseLookup {
    * @returns Promise<void>
    */
   static async addWithId(
-    courseId: string, 
-    courseName: string, 
+    courseId: string,
+    courseName: string,
     disambiguator?: string
   ): Promise<void> {
     const doc: Omit<CourseLookupDoc, '_rev'> = {
       _id: courseId,
       name: courseName,
     };
-    
+
     if (disambiguator) {
       doc.disambiguator = disambiguator;
     }
@@ -130,6 +130,7 @@ export default class CourseLookup {
     return await CourseLookup._db.remove(doc);
   }
 
+  // [ ] rename to allCourses()
   static async allCourseWare(): Promise<CourseLookupDoc[]> {
     const resp = await CourseLookup._db.allDocs<CourseLookupDoc>({
       include_docs: true,
