@@ -49,13 +49,24 @@
 
     <!-- Card Search Section -->
     <card-search @search="onSearch" />
-    <card-search-results 
-      v-if="query" 
-      :query="query" 
-      :data-layer="dataLayer" 
-      :course-filter="selectedCourseId"
-      @card-selected="onCardSelected" 
-    />
+    <v-row>
+      <v-col cols="6">
+        <card-search-results 
+          v-if="query" 
+          :query="query" 
+          :data-layer="dataLayer" 
+          :course-filter="selectedCourseId"
+          @card-selected="onCardSelected" 
+        />
+      </v-col>
+      <v-col cols="6">
+        <card-loader
+          v-if="selectedCard"
+          :qualified_id="selectedCard.courseId + '-' + selectedCard.cardId"
+          :view-lookup="viewLookup"
+        />
+      </v-col>
+    </v-row>
     
     <!-- Card History Section -->
     <card-history-viewer 
@@ -70,8 +81,9 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import { CardSearch, CardSearchResults, CardHistoryViewer, getCurrentUser } from '@vue-skuilder/common-ui';
+import { CardSearch, CardSearchResults, CardHistoryViewer, CardLoader, getCurrentUser } from '@vue-skuilder/common-ui';
 import { getDataLayer, CourseLookup } from '@vue-skuilder/db';
+import { allCourseWare } from '@vue-skuilder/courseware';
 import { UserDBInterface, UserDBReader, DataLayerProvider, AdminDBInterface } from '@vue-skuilder/db';
 
 interface UserOption {
@@ -85,6 +97,7 @@ export default defineComponent({
     CardSearch,
     CardSearchResults,
     CardHistoryViewer,
+    CardLoader,
   },
   data() {
     return {
@@ -268,6 +281,10 @@ export default defineComponent({
       // For now, just return the ID as additional context
       return `ID: ${this.selectedCourseId}`;
     },
+
+    viewLookup(viewDescriptor: any) {
+      return allCourseWare.getView(viewDescriptor);
+    }
   },
 });
 </script>
