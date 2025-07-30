@@ -390,4 +390,20 @@ export class StaticCourseDB implements CourseDBInterface {
   async getAttachmentBlob(docId: string, attachmentName: string): Promise<Blob | Buffer | null> {
     return this.unpacker.getAttachmentBlob(docId, attachmentName);
   }
+
+  // Admin search methods
+  async searchCards(_query: string): Promise<any[]> {
+    // In static mode, return empty results for now
+    // Could be implemented with local search if needed
+    return [];
+  }
+
+  async find(_request: PouchDB.Find.FindRequest<any>): Promise<PouchDB.Find.FindResponse<any>> {
+    // In static mode, return empty results for now
+    // Could be implemented with local search if needed
+    return {
+      docs: [],
+      warning: 'Find operations not supported in static mode'
+    } as any;
+  }
 }

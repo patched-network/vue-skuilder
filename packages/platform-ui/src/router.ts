@@ -1,4 +1,5 @@
-import { MarkdownRenderer } from '@vue-skuilder/common-ui';
+import { MarkdownRenderer, getCurrentUser } from '@vue-skuilder/common-ui';
+import { useAuthRedirectStore } from './stores/useAuthRedirectStore';
 import { createRouter, createWebHistory } from 'vue-router';
 import ClassroomCtrlPanel from './components/Classrooms/ClassroomCtrlPanel.vue';
 import JoinCode from './components/Classrooms/JoinCode.vue';
@@ -8,7 +9,7 @@ import TagInformation from './components/Courses/TagInformation.vue';
 import { CourseEditor } from '@vue-skuilder/edit-ui';
 import Stats from './components/User/UserStats.vue';
 import About from './views/About.vue';
-import Admin from './views/Admin.vue';
+import AdminDashboard from './views/AdminDashboard.vue';
 import Classrooms from './views/Classrooms.vue';
 import Courses from './views/Courses.vue';
 import Home from './views/Home.vue';
@@ -141,7 +142,8 @@ const router = createRouter({
     },
     {
       path: '/admin',
-      component: Admin,
+      component: AdminDashboard,
+      meta: { requiresAdmin: true },
     },
     {
       path: '/user/:username',
@@ -168,7 +170,7 @@ const router = createRouter({
   ],
 });
 
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, _from, next) => {
   // paths that should be handled by the server, not the SPA
   const apiPaths = ['/express', '/couch'];
 
@@ -177,8 +179,56 @@ router.beforeEach((to, from, next) => {
     return false;
   }
 
-  // Continue with navigation for all other routes
-  next();
+  if (to.meta.requiresAdmin) {
+    try {
+      const user = await getCurrentUser();
+      if (user && user.getUsername() === 'admin') {
+        next();
+      } else {
+        const redirectStore = useAuthRedirectStore();
+        let reason: 'admin-required' | 'auth-required' | 'auth-failed';
+        
+        if (user) {
+          // User is logged in but not admin
+          reason = 'admin-required';
+        } else {
+          // User is not logged in
+          reason = 'auth-required';
+        }
+        
+        // Set context in store (fallback for refresh)
+        redirectStore.setPendingRedirect(to.fullPath, reason);
+        
+        // Navigate with history state (primary method)
+        next({ 
+          name: 'login',
+          state: {
+            redirect: to.fullPath,
+            reason,
+            timestamp: Date.now()
+          }
+        });
+      }
+    } catch {
+      const redirectStore = useAuthRedirectStore();
+      const reason = 'auth-failed';
+      
+      // Set context in store (fallback for refresh)
+      redirectStore.setPendingRedirect(to.fullPath, reason);
+      
+      // Navigate with history state (primary method)
+      next({ 
+        name: 'login',
+        state: {
+          redirect: to.fullPath,
+          reason,
+          timestamp: Date.now()
+        }
+      });
+    }
+  } else {
+    next();
+  }
 });
 
 export default router;

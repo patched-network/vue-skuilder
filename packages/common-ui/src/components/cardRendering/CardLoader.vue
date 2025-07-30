@@ -56,6 +56,15 @@ export default defineComponent({
     this.loadCard();
   },
 
+  watch: {
+    qualified_id: {
+      immediate: true,
+      handler() {
+        this.loadCard();
+      },
+    },
+  },
+
   methods: {
     processResponse(r: CardRecord) {
       log(`

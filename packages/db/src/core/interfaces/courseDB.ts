@@ -136,4 +136,18 @@ export interface CourseDBInterface extends NavigationStrategyManager {
       elo: CourseElo;
     }[]
   >;
+
+  /**
+   * Search for cards by text content
+   * @param query Text to search for
+   * @returns Array of matching card data
+   */
+  searchCards(query: string): Promise<any[]>;
+
+  /**
+   * Find documents using PouchDB query syntax  
+   * @param request PouchDB find request
+   * @returns Query response
+   */
+  find(request: PouchDB.Find.FindRequest<any>): Promise<PouchDB.Find.FindResponse<any>>;
 }

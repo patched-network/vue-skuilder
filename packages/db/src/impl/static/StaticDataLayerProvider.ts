@@ -7,6 +7,7 @@ import {
   CourseDBInterface,
   DataLayerProvider,
   UserDBInterface,
+  UserDBReader,
 } from '../../core/interfaces';
 import { logger } from '../../util/logger';
 import { StaticCourseManifest } from '../../util/packer/types';
@@ -85,6 +86,16 @@ export class StaticDataLayerProvider implements DataLayerProvider {
 
   getAdminDB(): AdminDBInterface {
     throw new Error('Admin functions not supported in static mode');
+  }
+
+  async createUserReaderForUser(targetUsername: string): Promise<UserDBReader> {
+    logger.warn(`StaticDataLayerProvider: Multi-user access not supported in static mode`);
+    logger.warn(`Request: trying to access data for ${targetUsername}`);
+    logger.warn(`Returning current user's data instead`);
+    
+    // In static mode, just return the current user's DB as a reader
+    // This is safe since static mode is typically for development/testing
+    return this.getUserDB() as UserDBReader;
   }
 
   isReadOnly(): boolean {
