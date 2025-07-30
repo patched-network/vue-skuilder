@@ -3,26 +3,29 @@
     <h3 v-if="userId">Card History for User: {{ userId }}</h3>
     <div v-if="loading">Loading...</div>
     <div v-else-if="error" class="error-message">{{ error }}</div>
-    <div v-else>
-      <v-data-table :headers="headers" :items="history" class="elevation-1">
-        <template v-slot:item.hasNegativeInterval="{ item }">
-          <v-chip :color="item.hasNegativeInterval ? 'error' : 'success'" :text-color="'white'" small>
-            {{ item.hasNegativeInterval ? 'INVALID' : 'Valid' }}
-          </v-chip>
-        </template>
-
-        <template v-slot:item.intervalFromPrevious="{ item }">
-          <span :class="{ 'negative-interval': item.hasNegativeInterval }">
-            {{ item.intervalFromPrevious !== undefined ? item.intervalFromPrevious : '-' }}
-          </span>
-        </template>
-
-        <template v-slot:item.formattedTimeStamp="{ item }">
-          <span :class="{ 'invalid-timestamp': item.hasNegativeInterval }">
-            {{ item.formattedTimeStamp }}
-          </span>
-        </template>
-      </v-data-table>
+    <div v-else-if="cardHistory">
+      <v-card class="mb-4">
+        <v-card-title>Summary</v-card-title>
+        <v-list-item>
+          <v-list-item-content>
+            <v-list-item-title>Best Interval: {{ cardHistory.bestInterval }}</v-list-item-title>
+            <v-list-item-subtitle>The to-date largest interval between successful card reviews.</v-list-item-subtitle>
+          </v-list-item-content>
+        </v-list-item>
+        <v-list-item>
+          <v-list-item-content>
+            <v-list-item-title>Lapses: {{ cardHistory.lapses }}</v-list-item-title>
+            <v-list-item-subtitle>The number of times that a card has been failed in review.</v-list-item-subtitle>
+          </v-list-item-content>
+        </v-list-item>
+        <v-list-item>
+          <v-list-item-content>
+            <v-list-item-title>Streak: {{ cardHistory.streak }}</v-list-item-title>
+            <v-list-item-subtitle>The number of consecutive successful impressions on this card.</v-list-item-subtitle>
+          </v-list-item-content>
+        </v-list-item>
+      </v-card>
+      <v-data-table :headers="headers" :items="history" class="elevation-1"></v-data-table>
     </div>
   </div>
 </template>
@@ -62,13 +65,16 @@ export default defineComponent({
   data() {
     return {
       history: [] as FormattedRecord[],
+      cardHistory: null as CardHistory<CardRecord> | null,
       loading: false,
       error: null as string | null,
       headers: [
         { title: 'Timestamp', key: 'formattedTimeStamp' },
-        { title: 'Interval (min)', key: 'intervalFromPrevious' },
         { title: 'Time Spent (s)', key: 'timeSpentSeconds' },
-        { title: 'Valid', key: 'hasNegativeInterval' },
+        { title: 'Correct?', key: 'isCorrect' },
+        { title: 'Performance', key: 'performance' },
+        { title: 'Prior Attempts', key: 'priorAttemps' },
+        { title: 'User Answer', key: 'userAnswer' },
       ],
     };
   },
@@ -96,6 +102,7 @@ export default defineComponent({
       try {
         const cardHistoryID = getCardHistoryID(this.courseId, this.cardId);
         const historyDoc: CardHistory<CardRecord> = await this.userDB.get(cardHistoryID);
+        this.cardHistory = historyDoc;
 
         // Sort records by timestamp and format them
         const sortedRecords = [...historyDoc.records].sort(
@@ -108,15 +115,11 @@ export default defineComponent({
             ...record,
             formattedTimeStamp: currentTime.format('YYYY-MM-DD HH:mm:ss'),
             timeSpentSeconds: Math.round(record.timeSpent / 1000),
+            isCorrect: (record as any).isCorrect,
+            performance: (record as any).performance,
+            priorAttemps: (record as any).priorAttemps,
+            userAnswer: (record as any).userAnswer,
           };
-
-          // Calculate interval from previous record
-          if (index > 0) {
-            const previousTime = moment(sortedRecords[index - 1].timeStamp);
-            const intervalMinutes = currentTime.diff(previousTime, 'minutes', true);
-            formatted.intervalFromPrevious = Math.round(intervalMinutes * 100) / 100;
-            formatted.hasNegativeInterval = intervalMinutes < 0;
-          }
 
           return formatted;
         });
