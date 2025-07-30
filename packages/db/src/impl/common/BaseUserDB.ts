@@ -217,6 +217,10 @@ Currently logged-in as ${this._username}.`
     return ret;
   }
 
+  public async get<T>(id: string): Promise<T & PouchDB.Core.RevisionIdMeta> {
+    return this.localDB.get<T>(id);
+  }
+
   public update<T extends PouchDB.Core.Document<object>>(id: string, update: Update<T>) {
     return this.updateQueue.update(id, update);
   }

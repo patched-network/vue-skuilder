@@ -13,7 +13,8 @@ import { DocumentUpdater } from '@db/study';
 /**
  * Read-only user data operations
  */
-export interface UserDBReader extends DocumentUpdater {
+export interface UserDBReader {
+  get<T>(id: string): Promise<T & PouchDB.Core.RevisionIdMeta>;
   getUsername(): string;
   isLoggedIn(): boolean;
   
@@ -71,7 +72,7 @@ export interface UserDBReader extends DocumentUpdater {
 /**
  * User data mutation operations
  */
-export interface UserDBWriter {
+export interface UserDBWriter extends DocumentUpdater {
   /**
    * Update user configuration
    */
