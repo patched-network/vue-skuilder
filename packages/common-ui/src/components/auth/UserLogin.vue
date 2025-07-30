@@ -53,6 +53,21 @@ import { User } from '@vue-skuilder/db';
 import { getCurrentUser, useAuthStore } from '../../stores/useAuthStore';
 import { useConfigStore } from '../../stores/useConfigStore';
 
+// Define props
+interface Props {
+  redirectTo?: string;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  redirectTo: '/study'
+});
+
+// Define emits for toggle and cleanup
+const emit = defineEmits<{
+  toggle: [];
+  loginSuccess: [redirectPath: string];
+}>();
+
 const router = useRouter();
 const route = useRoute();
 const authStore = useAuthStore();
@@ -108,8 +123,12 @@ const login = async () => {
     // set login state
     log('Setting authentication state');
     authStore.loginAndRegistration.loggedIn = true;
-    log('Authentication state set, redirecting to study page');
-    router.push('/study');
+    log(`Authentication state set, redirecting to: ${props.redirectTo}`);
+    
+    // Emit success event for cleanup
+    emit('loginSuccess', props.redirectTo);
+    
+    router.push(props.redirectTo);
     log('Login and redirect complete');
   } catch (e) {
     // entry #186
@@ -126,7 +145,6 @@ const login = async () => {
   awaitingResponse.value = false;
 };
 
-const emit = defineEmits(['toggle']);
 
 const toggle = () => {
   log('Toggling registration / login forms.');

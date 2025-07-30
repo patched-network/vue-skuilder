@@ -1,4 +1,5 @@
 import { MarkdownRenderer, getCurrentUser } from '@vue-skuilder/common-ui';
+import { useAuthRedirectStore } from './stores/useAuthRedirectStore';
 import { createRouter, createWebHistory } from 'vue-router';
 import ClassroomCtrlPanel from './components/Classrooms/ClassroomCtrlPanel.vue';
 import JoinCode from './components/Classrooms/JoinCode.vue';
@@ -184,10 +185,46 @@ router.beforeEach(async (to, _from, next) => {
       if (user && user.getUsername() === 'admin') {
         next();
       } else {
-        next({ name: 'login' });
+        const redirectStore = useAuthRedirectStore();
+        let reason: 'admin-required' | 'auth-required' | 'auth-failed';
+        
+        if (user) {
+          // User is logged in but not admin
+          reason = 'admin-required';
+        } else {
+          // User is not logged in
+          reason = 'auth-required';
+        }
+        
+        // Set context in store (fallback for refresh)
+        redirectStore.setPendingRedirect(to.fullPath, reason);
+        
+        // Navigate with history state (primary method)
+        next({ 
+          name: 'login',
+          state: {
+            redirect: to.fullPath,
+            reason,
+            timestamp: Date.now()
+          }
+        });
       }
     } catch {
-      next({ name: 'login' });
+      const redirectStore = useAuthRedirectStore();
+      const reason = 'auth-failed';
+      
+      // Set context in store (fallback for refresh)
+      redirectStore.setPendingRedirect(to.fullPath, reason);
+      
+      // Navigate with history state (primary method)
+      next({ 
+        name: 'login',
+        state: {
+          redirect: to.fullPath,
+          reason,
+          timestamp: Date.now()
+        }
+      });
     }
   } else {
     next();
