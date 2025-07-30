@@ -8,7 +8,9 @@
         <v-card-title>Summary</v-card-title>
         <v-list-item>
           <v-list-item-content>
-            <v-list-item-title>Best Interval: {{ cardHistory.bestInterval }}</v-list-item-title>
+            <v-list-item-title
+              >Best Interval: {{ cardHistory.bestInterval }} seconds ({{ bestIntervalHumanized }})</v-list-item-title
+            >
             <v-list-item-subtitle>The to-date largest interval between successful card reviews.</v-list-item-subtitle>
           </v-list-item-content>
         </v-list-item>
@@ -38,7 +40,7 @@ import moment, { Moment } from 'moment';
 interface FormattedRecord extends CardRecord {
   formattedTimeStamp: string;
   intervalFromPrevious?: number;
-  hasNegativeInterval?: boolean;
+  userFriendlyInterval?: string;
   timeSpentSeconds: number;
 }
 
@@ -66,10 +68,12 @@ export default defineComponent({
     return {
       history: [] as FormattedRecord[],
       cardHistory: null as CardHistory<CardRecord> | null,
+      bestIntervalHumanized: '',
       loading: false,
       error: null as string | null,
       headers: [
         { title: 'Timestamp', key: 'formattedTimeStamp' },
+        { title: 'Interval', key: 'userFriendlyInterval' },
         { title: 'Time Spent (s)', key: 'timeSpentSeconds' },
         { title: 'Correct?', key: 'isCorrect' },
         { title: 'Performance', key: 'performance' },
@@ -103,6 +107,7 @@ export default defineComponent({
         const cardHistoryID = getCardHistoryID(this.courseId, this.cardId);
         const historyDoc: CardHistory<CardRecord> = await this.userDB.get(cardHistoryID);
         this.cardHistory = historyDoc;
+        this.bestIntervalHumanized = moment.duration(historyDoc.bestInterval, 'seconds').humanize();
 
         // Sort records by timestamp and format them
         const sortedRecords = [...historyDoc.records].sort(
@@ -120,6 +125,14 @@ export default defineComponent({
             priorAttemps: (record as any).priorAttemps,
             userAnswer: (record as any).userAnswer,
           };
+
+          // Calculate interval from previous record
+          if (index > 0) {
+            const previousTime = moment(sortedRecords[index - 1].timeStamp);
+            const intervalSeconds = currentTime.diff(previousTime, 'seconds', true);
+            formatted.intervalFromPrevious = Math.round(intervalSeconds * 100) / 100;
+            formatted.userFriendlyInterval = `${formatted.intervalFromPrevious} sec (${moment.duration(intervalSeconds, 'seconds').humanize()})`;
+          }
 
           return formatted;
         });
