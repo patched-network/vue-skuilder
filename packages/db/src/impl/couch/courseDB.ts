@@ -669,9 +669,9 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
         `[CourseDB ${this.id}] Sample displayable data:`,
         allDisplayableData.docs.map((d) => ({
           id: d._id,
-          docType: d.docType,
-          dataStructure: d.data ? Object.keys(d.data) : 'no data field',
-          dataContent: d.data,
+          docType: (d as any).docType,
+          dataStructure: (d as any).data ? Object.keys((d as any).data) : 'no data field',
+          dataContent: (d as any).data,
           fullDoc: d,
         }))
       );
