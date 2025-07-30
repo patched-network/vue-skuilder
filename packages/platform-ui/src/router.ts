@@ -1,4 +1,4 @@
-import { MarkdownRenderer } from '@vue-skuilder/common-ui';
+import { MarkdownRenderer, getCurrentUser } from '@vue-skuilder/common-ui';
 import { createRouter, createWebHistory } from 'vue-router';
 import ClassroomCtrlPanel from './components/Classrooms/ClassroomCtrlPanel.vue';
 import JoinCode from './components/Classrooms/JoinCode.vue';
@@ -8,7 +8,7 @@ import TagInformation from './components/Courses/TagInformation.vue';
 import { CourseEditor } from '@vue-skuilder/edit-ui';
 import Stats from './components/User/UserStats.vue';
 import About from './views/About.vue';
-import Admin from './views/Admin.vue';
+import AdminDashboard from './views/AdminDashboard.vue';
 import Classrooms from './views/Classrooms.vue';
 import Courses from './views/Courses.vue';
 import Home from './views/Home.vue';
@@ -141,7 +141,8 @@ const router = createRouter({
     },
     {
       path: '/admin',
-      component: Admin,
+      component: AdminDashboard,
+      meta: { requiresAdmin: true },
     },
     {
       path: '/user/:username',
@@ -168,7 +169,7 @@ const router = createRouter({
   ],
 });
 
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, _from, next) => {
   // paths that should be handled by the server, not the SPA
   const apiPaths = ['/express', '/couch'];
 
@@ -177,8 +178,20 @@ router.beforeEach((to, from, next) => {
     return false;
   }
 
-  // Continue with navigation for all other routes
-  next();
+  if (to.meta.requiresAdmin) {
+    try {
+      const user = await getCurrentUser();
+      if (user && user.getUsername() === 'admin') {
+        next();
+      } else {
+        next({ name: 'login' });
+      }
+    } catch {
+      next({ name: 'login' });
+    }
+  } else {
+    next();
+  }
 });
 
 export default router;
