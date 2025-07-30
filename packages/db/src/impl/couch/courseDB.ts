@@ -599,6 +599,35 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
       };
     });
   }
+
+  // Admin search methods
+  public async searchCards(query: string): Promise<any[]> {
+    const displayableData = await this.db.find({
+      selector: {
+        docType: 'DISPLAYABLE_DATA',
+        'data.data': { $regex: query },
+      },
+    });
+
+    const allResults: any[] = [];
+    
+    for (const dd of displayableData.docs) {
+      const cards = await this.db.find({
+        selector: {
+          docType: 'CARD',
+          id_displayable_data: { $in: [dd._id] },
+        },
+      });
+      
+      allResults.push(...cards.docs);
+    }
+
+    return allResults;
+  }
+
+  public async find(request: PouchDB.Find.FindRequest<any>): Promise<PouchDB.Find.FindResponse<any>> {
+    return this.db.find(request);
+  }
 }
 
 /**

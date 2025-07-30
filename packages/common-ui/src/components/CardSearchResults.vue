@@ -41,6 +41,10 @@ export default defineComponent({
       type: Object as PropType<DataLayerProvider>,
       required: true,
     },
+    courseFilter: {
+      type: String as PropType<string | null>,
+      default: null,
+    },
   },
   data() {
     return {
@@ -65,40 +69,36 @@ export default defineComponent({
       this.error = null;
       try {
         const coursesDB = this.dataLayer.getCoursesDB();
-        const courses = await coursesDB.getCourseList();
+        let courses = await coursesDB.getCourseList();
+        
+        // Apply course filter if specified
+        if (this.courseFilter) {
+          courses = courses.filter(course => course.courseID === this.courseFilter);
+          console.log(`Filtering search to course: ${this.courseFilter}`);
+        } else {
+          console.log(`Searching across all ${courses.length} courses`);
+        }
+        
         const allCards: CardWithCourse[] = [];
 
         for (const course of courses) {
           if (!course.courseID) continue;
           
           const courseDB = this.dataLayer.getCourseDB(course.courseID);
-          const displayableData = await courseDB.find({
-            selector: {
-              docType: 'DISPLAYABLE_DATA',
-              'data.data': { $regex: query },
-            },
-          });
-
-          for (const dd of displayableData.docs) {
-            const cards = await courseDB.find({
-              selector: {
-                docType: 'CARD',
-                id_displayable_data: { $elemMatch: { $eq: dd._id } },
-              },
+          const cards = await courseDB.searchCards(query);
+          
+          for (const card of cards) {
+            allCards.push({
+              ...card,
+              courseId: course.courseID,
             });
-            
-            for (const card of cards.docs) {
-              allCards.push({
-                ...card,
-                courseId: course.courseID,
-              });
-            }
           }
         }
         this.cards = allCards;
+        console.log(`Search completed: found ${allCards.length} cards across ${courses.length} courses`);
       } catch (e) {
         this.error = 'Error fetching search results.';
-        console.error(e);
+        console.error('Search error:', e);
       } finally {
         this.loading = false;
       }
