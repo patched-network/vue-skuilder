@@ -136,6 +136,34 @@ const vuetify = createVuetify({
     }
   }
 
+  // Register BlanksCard (markdown fillIn) by default for all studio sessions
+  console.log('🎨 Studio Mode: Registering default BlanksCard question type');
+  try {
+    const { getDataLayer } = await import('@vue-skuilder/db');
+    const courseDB = getDataLayer().getCourseDB(studioConfig.database.name);
+    const courseConfig = await courseDB.getCourseConfig();
+
+    const { BlanksCard, BlanksCardDataShapes } = await import('@vue-skuilder/courseware');
+    const { registerBlanksCard } = await import('./utils/courseConfigRegistration');
+    
+    const blanksRegistrationResult = await registerBlanksCard(
+      BlanksCard,
+      BlanksCardDataShapes,
+      courseConfig,
+      courseDB
+    );
+
+    if (blanksRegistrationResult.success) {
+      console.log('   ✅ BlanksCard question type registered successfully');
+    } else {
+      console.warn(`   ⚠️  BlanksCard registration failed: ${blanksRegistrationResult.errorMessage}`);
+    }
+  } catch (blanksError) {
+    console.warn(
+      `   ⚠️  Failed to register BlanksCard: ${blanksError instanceof Error ? blanksError.message : String(blanksError)}`
+    );
+  }
+
   // Build custom courseware registry
   const { allCourseWare, AllCourseWare } = await import('@vue-skuilder/courseware');
   const studioCourseWare = customQuestions 
