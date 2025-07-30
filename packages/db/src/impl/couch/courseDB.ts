@@ -342,7 +342,13 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
     tagId: string,
     updateELO?: boolean
   ): Promise<PouchDB.Core.Response> {
-    return await addTagToCard(this.id, cardId, tagId, (await this._getCurrentUser()).getUsername(), updateELO);
+    return await addTagToCard(
+      this.id,
+      cardId,
+      tagId,
+      (await this._getCurrentUser()).getUsername(),
+      updateELO
+    );
   }
 
   async removeTagFromCard(cardId: string, tagId: string): Promise<PouchDB.Core.Response> {
@@ -602,15 +608,77 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
 
   // Admin search methods
   public async searchCards(query: string): Promise<any[]> {
-    const displayableData = await this.db.find({
-      selector: {
-        docType: 'DISPLAYABLE_DATA',
-        'data.data': { $regex: query },
-      },
-    });
+    console.log(`[CourseDB ${this.id}] Searching for: "${query}"`);
+
+    // Try multiple search approaches
+    let displayableData;
+
+    try {
+      // Try regex search on the correct data structure: data[0].data
+      displayableData = await this.db.find({
+        selector: {
+          docType: 'DISPLAYABLE_DATA',
+          'data.0.data': { $regex: `.*${query}.*` },
+        },
+      });
+      console.log(`[CourseDB ${this.id}] Regex search on data[0].data successful`);
+    } catch (regexError) {
+      console.log(
+        `[CourseDB ${this.id}] Regex search failed, falling back to manual search:`,
+        regexError
+      );
+
+      // Fallback: get all displayable data and filter manually
+      const allDisplayable = await this.db.find({
+        selector: {
+          docType: 'DISPLAYABLE_DATA',
+        },
+      });
+
+      console.log(
+        `[CourseDB ${this.id}] Retrieved ${allDisplayable.docs.length} documents for manual filtering`
+      );
+
+      displayableData = {
+        docs: allDisplayable.docs.filter((doc) => {
+          // Search entire document as JSON string - inclusive approach for admin tool
+          const docString = JSON.stringify(doc).toLowerCase();
+          const match = docString.includes(query.toLowerCase());
+          if (match) {
+            console.log(`[CourseDB ${this.id}] Manual match found in document: ${doc._id}`);
+          }
+          return match;
+        }),
+      };
+    }
+
+    console.log(
+      `[CourseDB ${this.id}] Found ${displayableData.docs.length} displayable data documents`
+    );
+
+    if (displayableData.docs.length === 0) {
+      // Debug: Let's see what displayable data exists
+      const allDisplayableData = await this.db.find({
+        selector: {
+          docType: 'DISPLAYABLE_DATA',
+        },
+        limit: 5, // Just sample a few
+      });
+
+      console.log(
+        `[CourseDB ${this.id}] Sample displayable data:`,
+        allDisplayableData.docs.map((d) => ({
+          id: d._id,
+          docType: d.docType,
+          dataStructure: d.data ? Object.keys(d.data) : 'no data field',
+          dataContent: d.data,
+          fullDoc: d,
+        }))
+      );
+    }
 
     const allResults: any[] = [];
-    
+
     for (const dd of displayableData.docs) {
       const cards = await this.db.find({
         selector: {
@@ -618,14 +686,20 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
           id_displayable_data: { $in: [dd._id] },
         },
       });
-      
+
+      console.log(
+        `[CourseDB ${this.id}] Displayable data ${dd._id} linked to ${cards.docs.length} cards`
+      );
       allResults.push(...cards.docs);
     }
 
+    console.log(`[CourseDB ${this.id}] Total cards found: ${allResults.length}`);
     return allResults;
   }
 
-  public async find(request: PouchDB.Find.FindRequest<any>): Promise<PouchDB.Find.FindResponse<any>> {
+  public async find(
+    request: PouchDB.Find.FindRequest<any>
+  ): Promise<PouchDB.Find.FindResponse<any>> {
     return this.db.find(request);
   }
 }
