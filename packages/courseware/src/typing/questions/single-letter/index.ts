@@ -71,8 +71,9 @@ export class TypeLetterQuestion extends Question {
       if (t < 3000) {
         return 1.0;
       } else {
-        // scale from 1 at 3s to 0.25 at 10s
-        return 1 - ((t - 3000) / 7000) * 0.75;
+        // scale from 1 at 3s to 0.25 at 10s, clamped to [0.25, 1]
+        const skill = 1 - ((t - 3000) / 7000) * 0.75;
+        return Math.max(0.25, skill);
       }
     }
     return 0;
