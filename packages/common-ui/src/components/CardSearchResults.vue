@@ -8,6 +8,7 @@
           v-for="card in cards" 
           :key="card._id"
           @click="selectCard(card)"
+          :class="{'selected-card': card._id === selectedCardId}"
           class="cursor-pointer"
         >
           <v-list-item-title>{{ card._id }}</v-list-item-title>
@@ -51,6 +52,7 @@ export default defineComponent({
       cards: [] as CardWithCourse[],
       loading: false,
       error: null as string | null,
+      selectedCardId: null as string | null,
     };
   },
   watch: {
@@ -107,8 +109,20 @@ export default defineComponent({
     },
     
     selectCard(card: CardWithCourse) {
+      this.selectedCardId = card._id;
       this.$emit('card-selected', { cardId: card._id, courseId: card.courseId });
     },
   },
 });
 </script>
+
+<style scoped>
+.selected-card {
+  background-color: #e0f2f7; /* Light blue background */
+  border-left: 4px solid #2196f3; /* Blue left border */
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+</style>
