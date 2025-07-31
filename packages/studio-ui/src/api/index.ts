@@ -1,7 +1,11 @@
 import { ServerRequest, ServerRequestType, PackCourse } from '@vue-skuilder/common';
 
 async function postWithResult<T extends ServerRequest>(request: Omit<T, 'response' | 'user'>): Promise<T['response']> {
-    const response = await fetch('http://localhost:3000/', {
+    // Get Express API URL from studio configuration
+    const studioConfig = (window as any).STUDIO_CONFIG;
+    const expressUrl = studioConfig?.express?.url || 'http://localhost:3000/';
+    
+    const response = await fetch(expressUrl, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
