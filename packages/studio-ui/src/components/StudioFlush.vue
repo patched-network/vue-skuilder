@@ -1,10 +1,5 @@
 <template>
-  <v-btn
-    color="success"
-    :loading="flushing"
-    :disabled="flushing"
-    @click="handleFlush"
-  >
+  <v-btn color="success" :loading="flushing" :disabled="flushing" @click="handleFlush">
     <v-icon start>mdi-content-save</v-icon>
     Flush to Static
   </v-btn>
@@ -16,37 +11,29 @@
         <v-icon :color="dialogIcon.color" class="me-2">{{ dialogIcon.icon }}</v-icon>
         {{ dialogTitle }}
       </v-card-title>
-      
+
       <v-card-text>
         <div v-if="flushing">
           <v-progress-linear indeterminate class="mb-4" />
           <p>{{ flushStatus }}</p>
         </div>
-        
+
         <div v-else-if="flushError">
           <v-alert type="error" class="mb-4">
             {{ flushError }}
           </v-alert>
           <p>The flush operation failed. Please check the console for more details.</p>
         </div>
-        
+
         <div v-else>
-          <v-alert type="success" class="mb-4">
-            Course successfully saved to static files!
-          </v-alert>
+          <v-alert type="success" class="mb-4"> Course successfully saved to static files! </v-alert>
           <p>Your changes have been packed and saved to the course directory.</p>
         </div>
       </v-card-text>
-      
+
       <v-card-actions>
         <v-spacer />
-        <v-btn 
-          v-if="!flushing" 
-          color="primary" 
-          @click="showDialog = false"
-        >
-          Close
-        </v-btn>
+        <v-btn v-if="!flushing" color="primary" @click="showDialog = false"> Close </v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
@@ -86,16 +73,17 @@ async function handleFlush() {
   flushing.value = true;
   flushError.value = null;
   showDialog.value = true;
-  
+
   try {
     flushStatus.value = 'Connecting to CLI...';
 
     const result = await flushCourse(props.courseId);
 
-    if (!result.ok) {
+    if (result === null) {
+      throw new Error('null result from flushCourse');
+    } else if (!result.ok) {
       throw new Error(result.errorText ?? 'Unknown error');
     }
-    
   } catch (error) {
     console.error('Flush failed:', error);
     flushError.value = error instanceof Error ? error.message : 'Unknown error occurred';
@@ -103,6 +91,4 @@ async function handleFlush() {
     flushing.value = false;
   }
 }
-
-
 </script>
