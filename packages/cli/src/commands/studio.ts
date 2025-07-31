@@ -601,6 +601,9 @@ async function startExpressBackend(
   };
 
   try {
+    // Set NODE_ENV for studio mode authentication bypass
+    process.env.NODE_ENV = 'studio';
+    
     // Create Express app using factory
     const app = createExpressApp(config);
 
