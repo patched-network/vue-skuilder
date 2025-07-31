@@ -1,7 +1,7 @@
 import { Status } from '@vue-skuilder/common';
 import logger from '../logger.js';
 import ENV from '../utils/env.js';
-import PouchDb from 'pouchdb';
+import PouchDB from '@vue-skuilder/db/pouch';
 
 interface PackCourseData {
   courseId: string;
@@ -132,7 +132,11 @@ export async function packCourse(data: PackCourseData): Promise<PackCourseRespon
     };
     
     const fsAdapter = await createFsAdapter();
-    const packResult = await packer.packCourseToFiles(new PouchDb(courseDbUrl), data.courseId, outputPath, fsAdapter);
+    
+    // Import configured PouchDB from db package
+    const courseDb = new PouchDB.default(courseDbUrl);
+    
+    const packResult = await packer.packCourseToFiles(courseDb, data.courseId, outputPath, fsAdapter);
     
     const duration = Date.now() - startTime;
     

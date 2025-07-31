@@ -8,9 +8,9 @@ PouchDB.plugin(PouchDBAuth);
 
 // Configure PouchDB globally
 PouchDB.defaults({
-  ajax: {
-    timeout: 60000,
-  },
+  // ajax: {
+  //   timeout: 60000,
+  // },
 });
 
 export default PouchDB;
