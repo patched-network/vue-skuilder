@@ -124,6 +124,6 @@ This project is licensed under:
 
 The following e2e / cypress tests are run nightly on the main branch - a little slow for CI, but good for catching regressions while they are fresh.
 
-![`platform-ui` E2E](https://github.com/patched-network/vue-skuilder/actions/workflows/e2e-tests.yml/badge.svg)
-![`standalone-ui` E2E](https://github.com/patched-network/vue-skuilder/actions/workflows/standalone-e2e-tests.yml/badge.svg)
-![CLI Regression](https://github.com/patched-network/vue-skuilder/actions/workflows/cli-regression-test.yml/badge.svg)
+![`platform-ui` E2E](https://github.com/patched-network/vue-skuilder/actions/workflows/nightly-e2e-platform-ui.yml/badge.svg)
+![`standalone-ui` E2E](https://github.com/patched-network/vue-skuilder/actions/workflows/nightly-e2e-standalone-ui.yml/badge.svg)
+![CLI Regression](https://github.com/patched-network/vue-skuilder/actions/workflows/nightly-cli-regression-test.yml/badge.svg)
