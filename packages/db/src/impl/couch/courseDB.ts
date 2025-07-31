@@ -263,7 +263,7 @@ export class CourseDB implements StudyContentSource, CourseDBInterface {
       limit: aboveLimit,
       startkey: elo + 1,
     });
-    // console.log(JSON.stringify(below));
+    // logger.log(JSON.stringify(below));
 
     let cards = below.rows;
     cards = cards.concat(above.rows);
@@ -560,7 +560,7 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
     } else if (options.elo === 'random') {
       const bounds = await GET_CACHED(`elo-bounds-${this.id}`, () => this.getELOBounds());
       targetElo = Math.round(bounds.low + Math.random() * (bounds.high - bounds.low));
-      // console.log(`Picked ${targetElo} from [${bounds.low}, ${bounds.high}]`);
+      // logger.log(`Picked ${targetElo} from [${bounds.low}, ${bounds.high}]`);
     } else {
       targetElo = options.elo;
     }
@@ -608,7 +608,7 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
 
   // Admin search methods
   public async searchCards(query: string): Promise<any[]> {
-    console.log(`[CourseDB ${this.id}] Searching for: "${query}"`);
+    logger.log(`[CourseDB ${this.id}] Searching for: "${query}"`);
 
     // Try multiple search approaches
     let displayableData;
@@ -621,9 +621,9 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
           'data.0.data': { $regex: `.*${query}.*` },
         },
       });
-      console.log(`[CourseDB ${this.id}] Regex search on data[0].data successful`);
+      logger.log(`[CourseDB ${this.id}] Regex search on data[0].data successful`);
     } catch (regexError) {
-      console.log(
+      logger.log(
         `[CourseDB ${this.id}] Regex search failed, falling back to manual search:`,
         regexError
       );
@@ -635,7 +635,7 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
         },
       });
 
-      console.log(
+      logger.log(
         `[CourseDB ${this.id}] Retrieved ${allDisplayable.docs.length} documents for manual filtering`
       );
 
@@ -645,14 +645,14 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
           const docString = JSON.stringify(doc).toLowerCase();
           const match = docString.includes(query.toLowerCase());
           if (match) {
-            console.log(`[CourseDB ${this.id}] Manual match found in document: ${doc._id}`);
+            logger.log(`[CourseDB ${this.id}] Manual match found in document: ${doc._id}`);
           }
           return match;
         }),
       };
     }
 
-    console.log(
+    logger.log(
       `[CourseDB ${this.id}] Found ${displayableData.docs.length} displayable data documents`
     );
 
@@ -665,7 +665,7 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
         limit: 5, // Just sample a few
       });
 
-      console.log(
+      logger.log(
         `[CourseDB ${this.id}] Sample displayable data:`,
         allDisplayableData.docs.map((d) => ({
           id: d._id,
@@ -687,13 +687,13 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
         },
       });
 
-      console.log(
+      logger.log(
         `[CourseDB ${this.id}] Displayable data ${dd._id} linked to ${cards.docs.length} cards`
       );
       allResults.push(...cards.docs);
     }
 
-    console.log(`[CourseDB ${this.id}] Total cards found: ${allResults.length}`);
+    logger.log(`[CourseDB ${this.id}] Total cards found: ${allResults.length}`);
     return allResults;
   }
 
