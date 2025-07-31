@@ -1,11 +1,12 @@
 import { Status } from '@vue-skuilder/common';
 import logger from '../logger.js';
 import ENV from '../utils/env.js';
-import PouchDb from 'pouchdb';
+import PouchDB from 'pouchdb';
 
 interface PackCourseData {
   courseId: string;
   outputPath?: string;
+  couchdbUrl?: string;
 }
 
 interface PackCourseResponse {
@@ -29,9 +30,20 @@ export async function packCourse(data: PackCourseData): Promise<PackCourseRespon
     // Use CouchDBToStaticPacker directly from db package
     const { CouchDBToStaticPacker } = await import('@vue-skuilder/db');
     
-    // Create database connection URL
-    const dbUrl = `${ENV.COUCHDB_PROTOCOL}://${ENV.COUCHDB_ADMIN}:${ENV.COUCHDB_PASSWORD}@${ENV.COUCHDB_SERVER}`;
-    const dbName = `coursedb-${data.courseId}`;
+    // Create database connection URL - use provided couchdbUrl if available (studio mode)
+    logger.info(`Pack request data: ${JSON.stringify(data, null, 2)}`);
+    let courseDbUrl: string;
+    if (data.couchdbUrl) {
+      courseDbUrl = data.couchdbUrl;
+      logger.info(`Using provided CouchDB URL: "${courseDbUrl}"`);
+    } else {
+      // Fallback to ENV configuration for production mode
+      logger.info(`ENV values - Protocol: "${ENV.COUCHDB_PROTOCOL}", Admin: "${ENV.COUCHDB_ADMIN}", Password: "${ENV.COUCHDB_PASSWORD}", Server: "${ENV.COUCHDB_SERVER}"`);
+      const dbUrl = `${ENV.COUCHDB_PROTOCOL}://${ENV.COUCHDB_ADMIN}:${ENV.COUCHDB_PASSWORD}@${ENV.COUCHDB_SERVER}`;
+      const dbName = `coursedb-${data.courseId}`;
+      courseDbUrl = `${dbUrl}/${dbName}`;
+      logger.info(`Constructed dbUrl from ENV: "${courseDbUrl}"`);
+    }
     
     // Determine output path based on environment and provided path
     let outputPath: string;
@@ -56,7 +68,7 @@ export async function packCourse(data: PackCourseData): Promise<PackCourseRespon
         process.cwd();
     }
     
-    logger.info(`Packing course ${data.courseId} from ${dbName} to ${outputPath}`);
+    logger.info(`Packing course ${data.courseId} from ${courseDbUrl} to ${outputPath}`);
     
     // Clean up existing output directory for replace-in-place functionality
     const fsExtra = await import('fs-extra');
@@ -71,9 +83,6 @@ export async function packCourse(data: PackCourseData): Promise<PackCourseRespon
       logger.warn(`Warning: Could not clean up existing directory ${outputPath}:`, cleanupError);
       // Continue anyway - the write operation might still succeed
     }
-    
-    // Create course database connection
-    const courseDbUrl = `${dbUrl}/${dbName}`;
     
     // Initialize packer and perform pack operation with file writing
     const packer = new CouchDBToStaticPacker();
@@ -132,7 +141,16 @@ export async function packCourse(data: PackCourseData): Promise<PackCourseRespon
     };
     
     const fsAdapter = await createFsAdapter();
-    const packResult = await packer.packCourseToFiles(new PouchDb(courseDbUrl), data.courseId, outputPath, fsAdapter);
+    
+    // Use regular PouchDB for simple data reading
+    logger.info(`Creating PouchDB instance with URL: ${courseDbUrl}`);
+    logger.info(`PouchDB constructor available: ${typeof PouchDB}`);
+    logger.info(`PouchDB adapters: ${JSON.stringify(Object.keys((PouchDB as any).adapters || {}))}`);
+    
+    const courseDb = new PouchDB(courseDbUrl);
+    logger.info(`PouchDB instance created, adapter: ${(courseDb as any).adapter}`);
+    
+    const packResult = await packer.packCourseToFiles(courseDb, data.courseId, outputPath, fsAdapter);
     
     const duration = Date.now() - startTime;
     

@@ -143,6 +143,7 @@ export interface PackCourse extends IServerRequest {
   type: ServerRequestType.PACK_COURSE;
   courseId: string;
   outputPath?: string;
+  couchdbUrl?: string; // Optional full CouchDB connection URL for studio mode
   response: {
     status: Status;
     ok: boolean;

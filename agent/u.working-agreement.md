@@ -80,6 +80,23 @@ eg: `a.aside.perf.many-round-trips-in-reviews-lookup.md`, `a.aside.security.addC
 
 The agent should expect the user to review these asides async to the current main workflow.
 
+## Durable vs Ephemeral Content
+
+In conversational flow and working documents, it can be useful to 'refer back' to the context of discussion.
+
+But when writing source code, documentation, or other 'durable' content, please refrain from leaving conversational notes that are particular to the current moment. The below diff illustrates an example of poor behaviour in this respect. The inserted comment informs the current reader of the diff - ok - but it is just noise for future readers of the file.
+
+```diff - poor example
+       85 -      // Create course database connection
+       86 -      const courseDbUrl = `${dbUrl}/${dbName}`;
+       85 +      // courseDbUrl is already defined above
+```
+
+```diff - preferred
+       85 -      // Create course database connection
+       86 -      const courseDbUrl = `${dbUrl}/${dbName}`;
+```
+
 # Coda
 
 This document and flow are experimental. If, experientially, it feels like it is not working, we can change it. Open to suggestions!

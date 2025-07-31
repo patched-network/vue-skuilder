@@ -200,7 +200,8 @@ async function launchStudio(coursePath: string, options: StudioOptions) {
     const studioUIPort = await startStudioUIServer(
       couchDBManager.getConnectionDetails(),
       unpackResult,
-      studioUIPath
+      studioUIPath,
+      expressResult.url
     );
 
     console.log(chalk.green(`✅ Studio session ready!`));
@@ -406,7 +407,8 @@ interface UnpackResult {
 async function startStudioUIServer(
   connectionDetails: ConnectionDetails,
   unpackResult: UnpackResult,
-  studioPath: string
+  studioPath: string,
+  expressApiUrl?: string
 ): Promise<number> {
   // Serve from built dist directory if it exists, otherwise fallback to source
   const distPath = path.join(studioPath, 'dist');
@@ -457,6 +459,9 @@ async function startStudioUIServer(
                     name: '${unpackResult.databaseName}',
                     courseId: '${unpackResult.courseId}',
                     originalCourseId: '${unpackResult.courseId}'
+                  },
+                  express: {
+                    url: '${expressApiUrl || 'http://localhost:3000'}'
                   }
                 };
               </script>
@@ -485,6 +490,9 @@ async function startStudioUIServer(
                     name: '${unpackResult.databaseName}',
                     courseId: '${unpackResult.courseId}',
                     originalCourseId: '${unpackResult.courseId}'
+                  },
+                  express: {
+                    url: '${expressApiUrl || 'http://localhost:3000'}'
                   }
                 };
               </script>
@@ -593,6 +601,9 @@ async function startExpressBackend(
   };
 
   try {
+    // Set NODE_ENV for studio mode authentication bypass
+    process.env.NODE_ENV = 'studio';
+    
     // Create Express app using factory
     const app = createExpressApp(config);
 

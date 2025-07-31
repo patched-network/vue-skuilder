@@ -214,7 +214,8 @@ export function createExpressApp(config: AppConfig): express.Application {
         
         body.response = await packCourse({
           courseId: body.courseId,
-          outputPath: body.outputPath
+          outputPath: body.outputPath,
+          couchdbUrl: body.couchdbUrl
         });
         res.json(body.response);
       }

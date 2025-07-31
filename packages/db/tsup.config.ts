@@ -4,6 +4,7 @@ export default defineConfig({
   entry: [
     'src/index.ts',
     'src/core/index.ts',
+    'src/pouch/index.ts',
     'src/impl/couch/index.ts',
     'src/impl/static/index.ts',
     'src/util/packer/index.ts',
