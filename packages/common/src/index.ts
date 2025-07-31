@@ -6,6 +6,7 @@ export * from './logshim.js';
 export * from './validators.js';
 export * from './fieldConverters.js';
 export * from './db.js';
+export * from './logger.js';
 
 export * from './bulkImport/cardParser.js';
 export * from './bulkImport/types.js';
