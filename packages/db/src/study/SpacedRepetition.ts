@@ -39,7 +39,7 @@ function newQuestionInterval(user: DocumentUpdater, cardHistory: CardHistory<Que
   }
 
   if (currentAttempt.isCorrect) {
-    const skill = currentAttempt.performance as number;
+    const skill = Math.min(1.0, Math.max(0.0, currentAttempt.performance as number));
     logger.debug(`Demontrated skill: \t${skill}`);
     const interval: number = lastInterval * (0.75 + skill);
     cardHistory.lapses = getLapses(cardHistory.records);
