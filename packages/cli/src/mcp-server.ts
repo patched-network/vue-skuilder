@@ -1,4 +1,5 @@
-#!/usr/bin/env node
+// MCP Server for Vue-Skuilder courses
+// This file is bundled into a self-contained executable
 
 import { initializeDataLayer, getDataLayer, initializeTuiLogging } from '@vue-skuilder/db';
 import { MCPServer } from '@vue-skuilder/mcp';
