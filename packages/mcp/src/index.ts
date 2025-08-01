@@ -9,6 +9,3 @@ export * from './resources/index.js';
 
 // Tools
 export * from './tools/index.js';
-
-// Examples
-export * from './examples/index.js';

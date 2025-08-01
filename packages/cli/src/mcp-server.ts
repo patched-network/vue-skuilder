@@ -1,7 +1,9 @@
-#!/usr/bin/env node
+// MCP Server for Vue-Skuilder courses
+// This file is bundled into a self-contained executable
 
 import { initializeDataLayer, getDataLayer, initializeTuiLogging } from '@vue-skuilder/db';
 import { MCPServer } from '@vue-skuilder/mcp';
+import { consoleLogger } from '@vue-skuilder/common';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 
 initializeTuiLogging();
@@ -42,10 +44,11 @@ async function main() {
     await initializeDataLayer(couchdbConfig);
     const courseDB = getDataLayer().getCourseDB(courseId);
 
-    // Create and start MCP server
+    // Create and start MCP server with console logger
     const server = new MCPServer(courseDB, {
       enableSourceLinking: true,
       maxCardsPerQuery: 50,
+      logger: consoleLogger,
     });
 
     const transport = new StdioServerTransport();
