@@ -145,10 +145,10 @@ export async function packCourse(data: PackCourseData): Promise<PackCourseRespon
     // Use regular PouchDB for simple data reading
     logger.info(`Creating PouchDB instance with URL: ${courseDbUrl}`);
     logger.info(`PouchDB constructor available: ${typeof PouchDB}`);
-    logger.info(`PouchDB adapters: ${JSON.stringify(Object.keys((PouchDB as any).adapters || {}))}`);
+    // logger.info(`PouchDB adapters: ${JSON.stringify(Object.keys((PouchDB as any).adapters || {}))}`);
     
     const courseDb = new PouchDB(courseDbUrl);
-    logger.info(`PouchDB instance created, adapter: ${(courseDb as any).adapter}`);
+    // logger.info(`PouchDB instance created, adapter: ${(courseDb as any).adapter}`);
     
     const packResult = await packer.packCourseToFiles(courseDb, data.courseId, outputPath, fsAdapter);
     
