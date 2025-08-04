@@ -3,7 +3,7 @@
   "publishConfig": {
     "access": "public"
   },
-  "version": "0.1.11-22",
+  "version": "0.1.11-23",
   "type": "module",
   "main": "./dist-lib/questions.cjs.js",
   "module": "./dist-lib/questions.mjs",
