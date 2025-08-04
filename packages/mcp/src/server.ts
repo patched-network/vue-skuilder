@@ -1,6 +1,7 @@
 import { McpServer, ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import type { CourseDBInterface } from '@vue-skuilder/db';
+import type { SkLogger } from '@vue-skuilder/common';
 import {
   handleCourseConfigResource,
   handleCardsAllResource,
@@ -43,16 +44,20 @@ export interface MCPServerOptions {
   maxCardsPerQuery?: number;
   allowedDataShapes?: string[];
   eloCalibrationMode?: 'strict' | 'adaptive' | 'manual';
+  logger?: SkLogger;
 }
 
 export class MCPServer {
   private mcpServer: McpServer;
   private transport?: Transport;
+  private logger: SkLogger;
 
   constructor(
     private courseDB: CourseDBInterface,
     private readonly options: MCPServerOptions = {}
   ) {
+    // Use provided logger or no-op logger as default
+    this.logger = options.logger || { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} };
     this.mcpServer = new McpServer({
       name: 'vue-skuilder-mcp',
       version: '0.1.0',
@@ -72,16 +77,23 @@ export class MCPServer {
         mimeType: 'application/json',
       },
       async (uri) => {
-        const result = await handleCourseConfigResource(this.courseDB);
-        return {
-          contents: [
-            {
-              uri: uri.href,
-              text: JSON.stringify(result, null, 2),
-              mimeType: 'application/json',
-            },
-          ],
-        };
+        this.logger.debug('MCP Server: Accessing course config resource');
+        try {
+          const result = await handleCourseConfigResource(this.courseDB);
+          this.logger.info(`MCP Server: Course config accessed - ${result.config.name}`);
+          return {
+            contents: [
+              {
+                uri: uri.href,
+                text: JSON.stringify(result, null, 2),
+                mimeType: 'application/json',
+              },
+            ],
+          };
+        } catch (error) {
+          this.logger.error('MCP Server: Failed to access course config', error);
+          throw error;
+        }
       }
     );
 
@@ -99,7 +111,9 @@ export class MCPServer {
         const limit = parseInt(url.searchParams.get('limit') || '50', 10);
         const offset = parseInt(url.searchParams.get('offset') || '0', 10);
 
+        this.logger.debug(`MCP Server: Fetching cards, limit=${limit}, offset=${offset}`);
         const result = await handleCardsAllResource(this.courseDB, limit, offset);
+        this.logger.info(`MCP Server: Retrieved ${result.cards.length} cards`);
         return {
           contents: [
             {
@@ -126,12 +140,14 @@ export class MCPServer {
         const limit = parseInt(url.searchParams.get('limit') || '50', 10);
         const offset = parseInt(url.searchParams.get('offset') || '0', 10);
 
+        this.logger.debug(`MCP Server: Fetching cards by tag '${tagName}', limit=${limit}, offset=${offset}`);
         const result = await handleCardsTagResource(
           this.courseDB,
           tagName as string,
           limit,
           offset
         );
+        this.logger.info(`MCP Server: Retrieved ${result.cards.length} cards for tag '${tagName}'`);
         return {
           contents: [
             {
@@ -158,12 +174,14 @@ export class MCPServer {
         const limit = parseInt(url.searchParams.get('limit') || '50', 10);
         const offset = parseInt(url.searchParams.get('offset') || '0', 10);
 
+        this.logger.debug(`MCP Server: Fetching cards by shape '${shapeName}', limit=${limit}, offset=${offset}`);
         const result = await handleCardsShapeResource(
           this.courseDB,
           shapeName as string,
           limit,
           offset
         );
+        this.logger.info(`MCP Server: Retrieved ${result.cards.length} cards for shape '${shapeName}'`);
         return {
           contents: [
             {
@@ -190,12 +208,14 @@ export class MCPServer {
         const limit = parseInt(url.searchParams.get('limit') || '50', 10);
         const offset = parseInt(url.searchParams.get('offset') || '0', 10);
 
+        this.logger.debug(`MCP Server: Fetching cards by ELO range '${eloRange}', limit=${limit}, offset=${offset}`);
         const result = await handleCardsEloResource(
           this.courseDB,
           eloRange as string,
           limit,
           offset
         );
+        this.logger.info(`MCP Server: Retrieved ${result.cards.length} cards for ELO range '${eloRange}'`);
         return {
           contents: [
             {
@@ -218,7 +238,9 @@ export class MCPServer {
         mimeType: 'application/json',
       },
       async (uri) => {
+        this.logger.debug('MCP Server: Fetching all shapes');
         const result = await handleShapesAllResource(this.courseDB);
+        this.logger.info(`MCP Server: Retrieved ${result.shapes.length} shapes`);
         return {
           contents: [
             {
@@ -241,7 +263,9 @@ export class MCPServer {
         mimeType: 'application/json',
       },
       async (uri, { shapeName }) => {
+        this.logger.debug(`MCP Server: Fetching shape '${shapeName}'`);
         const result = await handleShapeSpecificResource(this.courseDB, shapeName as string);
+        this.logger.info(`MCP Server: Retrieved shape '${shapeName}'`);
         return {
           contents: [
             {
@@ -264,7 +288,9 @@ export class MCPServer {
         mimeType: 'application/json',
       },
       async (uri) => {
+        this.logger.debug('MCP Server: Fetching all tags');
         const result = await handleTagsAllResource(this.courseDB);
+        this.logger.info(`MCP Server: Retrieved ${result.tags.length} tags`);
         return {
           contents: [
             {
@@ -287,7 +313,9 @@ export class MCPServer {
         mimeType: 'application/json',
       },
       async (uri) => {
+        this.logger.debug('MCP Server: Fetching tag statistics');
         const result = await handleTagsStatsResource(this.courseDB);
+        this.logger.info('MCP Server: Retrieved tag statistics');
         return {
           contents: [
             {
@@ -310,7 +338,9 @@ export class MCPServer {
         mimeType: 'application/json',
       },
       async (uri, { tagName }) => {
+        this.logger.debug(`MCP Server: Fetching tag '${tagName}'`);
         const result = await handleTagSpecificResource(this.courseDB, tagName as string);
+        this.logger.info(`MCP Server: Retrieved tag '${tagName}' with ${result.cardCount} cards`);
         return {
           contents: [
             {
@@ -333,7 +363,9 @@ export class MCPServer {
         mimeType: 'application/json',
       },
       async (uri, { tags }) => {
+        this.logger.debug(`MCP Server: Fetching union of tags '${tags}'`);
         const result = await handleTagsUnionResource(this.courseDB, tags as string);
+        this.logger.info(`MCP Server: Retrieved ${result.cardIds.length} cards for tag union '${tags}'`);
         return {
           contents: [
             {
@@ -356,7 +388,9 @@ export class MCPServer {
         mimeType: 'application/json',
       },
       async (uri, { tags }) => {
+        this.logger.debug(`MCP Server: Fetching intersection of tags '${tags}'`);
         const result = await handleTagsIntersectResource(this.courseDB, tags as string);
+        this.logger.info(`MCP Server: Retrieved ${result.cardIds.length} cards for tag intersection '${tags}'`);
         return {
           contents: [
             {
@@ -379,7 +413,9 @@ export class MCPServer {
         mimeType: 'application/json',
       },
       async (uri, { tags }) => {
+        this.logger.debug(`MCP Server: Fetching exclusive tags '${tags}'`);
         const result = await handleTagsExclusiveResource(this.courseDB, tags as string);
+        this.logger.info(`MCP Server: Retrieved ${result.cardIds.length} cards for tag exclusion '${tags}'`);
         return {
           contents: [
             {
@@ -402,7 +438,9 @@ export class MCPServer {
         mimeType: 'application/json',
       },
       async (uri) => {
+        this.logger.debug('MCP Server: Fetching tag distribution');
         const result = await handleTagsDistributionResource(this.courseDB);
+        this.logger.info(`MCP Server: Retrieved tag distribution with ${result.distribution.length} entries`);
         return {
           contents: [
             {
@@ -430,7 +468,10 @@ export class MCPServer {
         },
       },
       async (input) => {
-        const result = await handleCreateCard(this.courseDB, input as CreateCardInput);
+        const createInput = input as CreateCardInput;
+        this.logger.info(`MCP Server: Creating card with datashape '${createInput.datashape}'`);
+        const result = await handleCreateCard(this.courseDB, createInput);
+        this.logger.info(`MCP Server: Created card ${result.cardId}`);
         return {
           content: [
             {
@@ -457,7 +498,10 @@ export class MCPServer {
         },
       },
       async (input) => {
-        const result = await handleUpdateCard(this.courseDB, input as UpdateCardInput);
+        const updateInput = input as UpdateCardInput;
+        this.logger.info(`MCP Server: Updating card ${updateInput.cardId}`);
+        const result = await handleUpdateCard(this.courseDB, updateInput);
+        this.logger.info(`MCP Server: Updated card ${updateInput.cardId}`);
         return {
           content: [
             {
@@ -483,7 +527,10 @@ export class MCPServer {
         },
       },
       async (input) => {
-        const result = await handleTagCard(this.courseDB, input as TagCardInput);
+        const tagInput = input as TagCardInput;
+        this.logger.info(`MCP Server: ${tagInput.action === 'add' ? 'Adding' : 'Removing'} tags [${tagInput.tags.join(', ')}] ${tagInput.action === 'add' ? 'to' : 'from'} card ${tagInput.cardId}`);
+        const result = await handleTagCard(this.courseDB, tagInput);
+        this.logger.info(`MCP Server: Tag operation completed for card ${tagInput.cardId}`);
         return {
           content: [
             {
@@ -508,7 +555,10 @@ export class MCPServer {
         },
       },
       async (input) => {
-        const result = await handleDeleteCard(this.courseDB, input as DeleteCardInput);
+        const deleteInput = input as DeleteCardInput;
+        this.logger.warn(`MCP Server: Deleting card ${deleteInput.cardId}${deleteInput.reason ? ` (reason: ${deleteInput.reason})` : ''}`);
+        const result = await handleDeleteCard(this.courseDB, deleteInput);
+        this.logger.info(`MCP Server: Card ${deleteInput.cardId} deletion completed`);
         return {
           content: [
             {
@@ -573,14 +623,28 @@ export class MCPServer {
 
   async start(transport: Transport): Promise<void> {
     this.transport = transport;
-    await this.mcpServer.connect(transport);
+    this.logger.info('MCP Server: Starting connection...');
+    try {
+      await this.mcpServer.connect(transport);
+      this.logger.info('MCP Server: Connected successfully');
+    } catch (error) {
+      this.logger.error('MCP Server: Failed to start connection', error);
+      throw error;
+    }
   }
 
   async stop(): Promise<void> {
-    if (this.transport) {
-      await this.transport.close();
+    this.logger.info('MCP Server: Stopping connection...');
+    try {
+      if (this.transport) {
+        await this.transport.close();
+      }
+      await this.mcpServer.close();
+      this.logger.info('MCP Server: Stopped successfully');
+    } catch (error) {
+      this.logger.error('MCP Server: Error during shutdown', error);
+      throw error;
     }
-    await this.mcpServer.close();
   }
 
   // Getter for accessing the underlying MCP server (for testing)

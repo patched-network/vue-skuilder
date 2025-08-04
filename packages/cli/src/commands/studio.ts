@@ -185,7 +185,6 @@ async function launchStudio(coursePath: string, options: StudioOptions) {
     // Phase 9.5: Launch Express backend
     const expressResult = await startExpressBackend(
       couchDBManager.getConnectionDetails(),
-      resolvedPath,
       unpackResult.databaseName
     );
     expressServer = expressResult.server;
@@ -210,7 +209,7 @@ async function launchStudio(coursePath: string, options: StudioOptions) {
     console.log(chalk.gray(`   Express API: ${expressResult.url}`));
 
     // Display MCP connection information
-    const mcpInfo = getMCPConnectionInfo(unpackResult, couchDBManager, resolvedPath);
+    const mcpInfo = getMCPConnectionInfo(unpackResult, couchDBManager);
     console.log(chalk.blue(`🔗 MCP Server: ${mcpInfo.command}`));
     console.log(chalk.gray(`   Connect MCP clients using the command above`));
     console.log(chalk.gray(`   Environment variables for MCP:`));
@@ -219,7 +218,7 @@ async function launchStudio(coursePath: string, options: StudioOptions) {
     });
 
     // Display .mcp.json content for Claude Code integration
-    const mcpJsonContent = generateMCPJson(unpackResult, couchDBManager, resolvedPath);
+    const mcpJsonContent = generateMCPJson(unpackResult, couchDBManager);
     console.log(chalk.blue(`📋 .mcp.json content:`));
     console.log(chalk.gray(mcpJsonContent));
 
@@ -569,7 +568,6 @@ async function openBrowser(url: string): Promise<void> {
  */
 async function startExpressBackend(
   couchDbConnectionDetails: ConnectionDetails,
-  _projectPath: string,
   databaseName: string
 ): Promise<{ server: http.Server; port: number; url: string }> {
   console.log(chalk.blue('⚡ Starting Express backend server...'));
@@ -603,7 +601,7 @@ async function startExpressBackend(
   try {
     // Set NODE_ENV for studio mode authentication bypass
     process.env.NODE_ENV = 'studio';
-    
+
     // Create Express app using factory
     const app = createExpressApp(config);
 
@@ -1317,7 +1315,7 @@ export default defineConfig({
     },
     dedupe: [
       'vue',
-      'vuetify', 
+      'vuetify',
       'vue-router',
       'pinia',
       '@vue-skuilder/db',
@@ -1334,45 +1332,18 @@ export default defineConfig({
 }
 
 /**
- * Determine the correct MCP server executable path/command based on project context
+ * Determine the correct MCP server executable path.
+ * This is now greatly simplified because the bundled server is always
+ * located relative to this `studio.ts` file.
  */
-function resolveMCPExecutable(projectPath: string): {
-  command: string;
-  args: string[];
-  isNpx: boolean;
-} {
-  // Check if we're in the monorepo (packages/cli exists)
-  const monorepoCliPath = path.join(projectPath, 'packages', 'cli', 'dist', 'mcp-server.js');
-  if (fs.existsSync(monorepoCliPath)) {
-    return {
-      command: './packages/cli/dist/mcp-server.js',
-      args: [],
-      isNpx: false,
-    };
-  }
+function resolveMCPExecutable(): { command: string; args: string[] } {
+  // Resolve the path to the bundled server relative to the current file.
+  // __dirname is the `dist/commands` directory.
+  const serverPath = path.resolve(__dirname, '..', 'mcp-server.js');
 
-  // Check if @vue-skuilder/cli is installed as a dependency
-  const scaffoldedCliPath = path.join(
-    projectPath,
-    'node_modules',
-    '@vue-skuilder',
-    'cli',
-    'dist',
-    'mcp-server.js'
-  );
-  if (fs.existsSync(scaffoldedCliPath)) {
-    return {
-      command: './node_modules/@vue-skuilder/cli/dist/mcp-server.js',
-      args: [],
-      isNpx: false,
-    };
-  }
-
-  // Fallback to npx approach
   return {
-    command: 'npx',
-    args: ['@vue-skuilder/cli', 'mcp-server'],
-    isNpx: true,
+    command: 'node',
+    args: [serverPath],
   };
 }
 
@@ -1381,19 +1352,16 @@ function resolveMCPExecutable(projectPath: string): {
  */
 function getMCPConnectionInfo(
   unpackResult: UnpackResult,
-  couchDBManager: CouchDBManager,
-  projectPath: string
+  couchDBManager: CouchDBManager
 ): { command: string; env: Record<string, string> } {
   const couchDetails = couchDBManager.getConnectionDetails();
-  const executable = resolveMCPExecutable(projectPath);
+  const executable = resolveMCPExecutable();
+  const port = couchDetails.port || 5985;
 
   // Build command string for display
-  let commandStr: string;
-  if (executable.isNpx) {
-    commandStr = `${executable.command} ${executable.args.join(' ')} ${unpackResult.databaseName} ${couchDetails.port}`;
-  } else {
-    commandStr = `node ${executable.command} ${unpackResult.databaseName} ${couchDetails.port}`;
-  }
+  const commandStr = `${executable.command} ${executable.args.join(' ')} ${
+    unpackResult.databaseName
+  } ${port}`;
 
   return {
     command: commandStr,
@@ -1412,12 +1380,11 @@ function getMCPConnectionInfo(
 function generateMCPJson(
   unpackResult: UnpackResult,
   couchDBManager: CouchDBManager,
-  projectPath: string,
   serverName: string = 'vue-skuilder-studio'
 ): string {
   const couchDetails = couchDBManager.getConnectionDetails();
   const port = couchDetails.port || 5985;
-  const executable = resolveMCPExecutable(projectPath);
+  const executable = resolveMCPExecutable();
 
   const mcpConfig = {
     mcpServers: {
