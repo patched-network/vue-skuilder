@@ -11,7 +11,7 @@ import pouch from './pouchdb-setup';
 import {
   getCourseDB,
   getStartAndEndKeys,
-  pouchDBincludeCredentialsConfig,
+  createPouchDBConfig,
   REVIEW_TIME_FORMAT,
 } from '.';
 import { CourseDB, getTag } from './courseDB';
@@ -97,7 +97,7 @@ export class StudentClassroomDB
     const dbName = `classdb-student-${this._id}`;
     this._db = new pouch(
       ENV.COUCHDB_SERVER_PROTOCOL + '://' + ENV.COUCHDB_SERVER_URL + dbName,
-      pouchDBincludeCredentialsConfig
+      createPouchDBConfig()
     );
     try {
       const cfg = await this._db.get<ClassroomConfig>(CLASSROOM_CONFIG);
@@ -209,11 +209,11 @@ export class TeacherClassroomDB extends ClassroomDBBase implements TeacherClassr
     const stuDbName = `classdb-student-${this._id}`;
     this._db = new pouch(
       ENV.COUCHDB_SERVER_PROTOCOL + '://' + ENV.COUCHDB_SERVER_URL + dbName,
-      pouchDBincludeCredentialsConfig
+      createPouchDBConfig()
     );
     this._stuDb = new pouch(
       ENV.COUCHDB_SERVER_PROTOCOL + '://' + ENV.COUCHDB_SERVER_URL + stuDbName,
-      pouchDBincludeCredentialsConfig
+      createPouchDBConfig()
     );
     try {
       return this._db
@@ -297,7 +297,7 @@ export function getClassroomDB(classID: string, version: 'student' | 'teacher'):
 
   return new pouch(
     ENV.COUCHDB_SERVER_PROTOCOL + '://' + ENV.COUCHDB_SERVER_URL + dbName,
-    pouchDBincludeCredentialsConfig
+    createPouchDBConfig()
   );
 }
 

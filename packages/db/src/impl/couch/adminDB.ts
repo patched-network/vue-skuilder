@@ -1,7 +1,7 @@
 import pouch from './pouchdb-setup';
 import { ENV } from '@db/factory';
 import {
-  pouchDBincludeCredentialsConfig,
+  createPouchDBConfig,
   getStartAndEndKeys,
   getCredentialledCourseConfig,
   updateCredentialledCourseConfig,
@@ -21,7 +21,7 @@ export class AdminDB implements AdminDBInterface {
     //     if the user is not an admin
     this.usersDB = new pouch(
       ENV.COUCHDB_SERVER_PROTOCOL + '://' + ENV.COUCHDB_SERVER_URL + '_users',
-      pouchDBincludeCredentialsConfig
+      createPouchDBConfig()
     );
   }
 

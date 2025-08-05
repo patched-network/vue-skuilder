@@ -8,7 +8,7 @@ import type { SyncStrategy } from '../common/SyncStrategy';
 import type { AccountCreationResult, AuthenticationResult } from '../common/types';
 import { getLocalUserDB, hexEncode, updateGuestAccountExpirationDate } from '../common';
 import pouch from './pouchdb-setup';
-import { pouchDBincludeCredentialsConfig } from './index';
+import { createPouchDBConfig } from './index';
 import { getLoggedInUsername } from './auth';
 
 const log = (s: any) => {
@@ -207,7 +207,7 @@ export class CouchDBSyncStrategy implements SyncStrategy {
     // see: https://github.com/pouchdb-community/pouchdb-authentication/issues/239
     const ret = new pouch(
       ENV.COUCHDB_SERVER_PROTOCOL + '://' + ENV.COUCHDB_SERVER_URL + dbName,
-      pouchDBincludeCredentialsConfig
+      createPouchDBConfig()
     );
 
     if (guestAccount) {
