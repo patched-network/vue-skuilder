@@ -41,8 +41,8 @@
     "moment": "^2.29.4",
     "mousetrap": "^1.6.5",
     "pinia": "^2.3.0",
-    "vue": "^3.5.13",
-    "vuetify": "^3.7.0"
+    "vue": "^3.5.18",
+    "vuetify": "^3.9.3"
   },
   "peerDependencies": {
     "vue": "^3.2.0",
@@ -51,24 +51,24 @@
   },
   "devDependencies": {
     "@cypress/vite-dev-server": "^6.0.3",
-    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/jest-dom": "^6.6.4",
     "@testing-library/vue": "^8.1.0",
     "@types/pouchdb": "^6.4.2",
     "@typescript-eslint/eslint-plugin": "^8.25.0",
     "@typescript-eslint/parser": "^8.25.0",
     "@vitejs/plugin-vue": "^5.2.1",
-    "@vue/eslint-config-typescript": "^14.4.0",
+    "@vue/eslint-config-typescript": "^14.6.0",
     "@vue/test-utils": "^2.4.6",
-    "cypress": "^14.2.1",
+    "cypress": "^14.5.3",
     "cypress-vite": "^1.6.0",
     "eslint": "^9.21.0",
-    "eslint-config-prettier": "^10.0.2",
+    "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-vue": "^9.32.0",
     "jsdom": "^25.0.1",
-    "sass": "^1.83.0",
-    "typescript": "~5.7.2",
+    "sass": "^1.89.2",
+    "typescript": "~5.9.2",
     "vite": "^6.0.9",
-    "vitest": "^3.0.5"
+    "vitest": "^3.2.4"
   },
   "stableVersion": "0.1.10"
 }
