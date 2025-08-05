@@ -3,7 +3,7 @@ export class NameSpacer {
     const splitArray = shapeStr.split('.');
 
     if (splitArray.length !== 3) {
-      throw new Error('shapeStr not valid');
+      throw new Error(`shapeStr [${shapeStr}] not valid`);
     } else {
       return {
         course: splitArray[0],
