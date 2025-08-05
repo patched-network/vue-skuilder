@@ -562,8 +562,9 @@ export default defineComponent({
       this.cardType = item.status;
 
       const qualified_id = item.qualifiedID;
+      const _courseID = item.courseID;
+      const _cardID = item.cardID;
       this.loading = true;
-      const [_courseID, _cardID] = qualified_id.split('-');
 
       console.log(`[StudySession] Now displaying: ${qualified_id}`);
 
