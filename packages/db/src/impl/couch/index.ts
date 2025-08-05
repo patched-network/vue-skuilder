@@ -38,7 +38,7 @@ export function hexEncode(str: string): string {
 
   return returnStr;
 }
-export const pouchDBincludeCredentialsConfig: PouchDB.Configuration.RemoteDatabaseConfiguration = {
+const pouchDBincludeCredentialsConfig: PouchDB.Configuration.RemoteDatabaseConfiguration = {
   fetch(url: string | Request, opts: RequestInit): Promise<Response> {
     opts.credentials = 'include';
 
@@ -46,10 +46,42 @@ export const pouchDBincludeCredentialsConfig: PouchDB.Configuration.RemoteDataba
   },
 } as PouchDB.Configuration.RemoteDatabaseConfiguration;
 
+/**
+ * Creates PouchDB configuration with appropriate authentication method
+ * - Uses HTTP Basic Auth when credentials are available (Node.js/MCP)
+ * - Falls back to cookie auth for browser environments
+ */
+export function createPouchDBConfig(): PouchDB.Configuration.RemoteDatabaseConfiguration {
+  // Check if running in Node.js with explicit credentials
+  const hasExplicitCredentials = ENV.COUCHDB_USERNAME && ENV.COUCHDB_PASSWORD;
+  const isNodeEnvironment = typeof window === 'undefined';
+  
+  if (hasExplicitCredentials && isNodeEnvironment) {
+    // Use HTTP Basic Auth for Node.js environments (MCP server)
+    return {
+      fetch(url: string | Request, opts: RequestInit = {}): Promise<Response> {
+        const basicAuth = btoa(`${ENV.COUCHDB_USERNAME}:${ENV.COUCHDB_PASSWORD}`);
+        const headers = new Headers(opts.headers || {});
+        headers.set('Authorization', `Basic ${basicAuth}`);
+        
+        const newOpts = {
+          ...opts,
+          headers: headers
+        };
+        
+        return (pouch as any).fetch(url, newOpts);
+      }
+    } as PouchDB.Configuration.RemoteDatabaseConfiguration;
+  }
+  
+  // Use cookie-based auth for browser environments or when no explicit credentials
+  return pouchDBincludeCredentialsConfig;
+}
+
 function getCouchDB(dbName: string): PouchDB.Database {
   return new pouch(
     ENV.COUCHDB_SERVER_PROTOCOL + '://' + ENV.COUCHDB_SERVER_URL + dbName,
-    pouchDBincludeCredentialsConfig
+    createPouchDBConfig()
   );
 }
 
@@ -57,7 +89,7 @@ export function getCourseDB(courseID: string): PouchDB.Database {
   // todo: keep a cache of opened courseDBs? need to benchmark this somehow
   return new pouch(
     ENV.COUCHDB_SERVER_PROTOCOL + '://' + ENV.COUCHDB_SERVER_URL + 'coursedb-' + courseID,
-    pouchDBincludeCredentialsConfig
+    createPouchDBConfig()
   );
 }
 
@@ -188,7 +220,7 @@ export function getCouchUserDB(username: string): PouchDB.Database {
   // see: https://github.com/pouchdb-community/pouchdb-authentication/issues/239
   const ret = new pouch(
     ENV.COUCHDB_SERVER_PROTOCOL + '://' + ENV.COUCHDB_SERVER_URL + dbName,
-    pouchDBincludeCredentialsConfig
+    createPouchDBConfig()
   );
   if (guestAccount) {
     updateGuestAccountExpirationDate(ret);

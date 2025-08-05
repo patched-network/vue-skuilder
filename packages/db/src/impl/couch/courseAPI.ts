@@ -1,5 +1,5 @@
 import pouch from './pouchdb-setup';
-import { pouchDBincludeCredentialsConfig } from '.';
+import { createPouchDBConfig } from '.';
 import { ENV } from '@db/factory';
 // import { DataShape } from '../..base-course/Interfaces/DataShape';
 import { NameSpacer, ShapeDescriptor } from '@vue-skuilder/common';
@@ -279,6 +279,6 @@ export function getCourseDB(courseID: string): PouchDB.Database {
   const dbName = `coursedb-${courseID}`;
   return new pouch(
     ENV.COUCHDB_SERVER_PROTOCOL + '://' + ENV.COUCHDB_SERVER_URL + dbName,
-    pouchDBincludeCredentialsConfig
+    createPouchDBConfig()
   );
 }
