@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
-// Tool input/output schemas - will be expanded in Phase 2
+// Tool input/output schema
+
 export const CreateCardInputSchema = z.object({
   datashape: z.string(),
   // individual datashapes define their own schema
@@ -58,7 +59,7 @@ export interface TagCardOutput {
   currentTags: string[];
 }
 
-// Delete Card Tool  
+// Delete Card Tool
 export const DeleteCardInputSchema = z.object({
   cardId: z.string(),
   confirm: z.boolean().default(false),
