@@ -105,6 +105,8 @@ export default class UpdateQueue extends Loggable {
             }
           }
         }
+        // This should be unreachable, but it satisfies the compiler that a value is always returned or an error thrown.
+        throw new Error(`UpdateQueue failed for doc ${id} after ${MAX_RETRIES} retries.`);
       } else {
         throw new Error(`Empty Updates Queue Triggered`);
       }
