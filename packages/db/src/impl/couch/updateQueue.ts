@@ -52,42 +52,58 @@ export default class UpdateQueue extends Loggable {
       if (this.pendingUpdates[id] && this.pendingUpdates[id].length > 0) {
         this.inprogressUpdates[id] = true;
 
-        try {
-          let doc = await this.readDB.get<T>(id);
-          logger.debug(`Retrieved doc: ${id}`);
-          while (this.pendingUpdates[id].length !== 0) {
-            const update = this.pendingUpdates[id].splice(0, 1)[0];
-            if (typeof update === 'function') {
-              doc = { ...doc, ...update(doc) };
+        const MAX_RETRIES = 5;
+        for (let i = 0; i < MAX_RETRIES; i++) {
+          try {
+            const doc = await this.readDB.get<T>(id);
+            logger.debug(`Retrieved doc: ${id}`);
+
+            // Create a new doc object to apply updates to for this attempt
+            let updatedDoc = { ...doc };
+
+            // Note: This loop is not fully safe if updates are functions that depend on a specific doc state
+            // that might change between retries. But for simple object merges, it's okay.
+            const updatesToApply = [...this.pendingUpdates[id]];
+            for (const update of updatesToApply) {
+              if (typeof update === 'function') {
+                updatedDoc = { ...updatedDoc, ...update(updatedDoc) };
+              } else {
+                updatedDoc = {
+                  ...updatedDoc,
+                  ...update,
+                };
+              }
+            }
+
+            await this.writeDB.put<T>(updatedDoc);
+            logger.debug(`Put doc: ${id}`);
+
+            // Success! Remove the updates we just applied.
+            this.pendingUpdates[id].splice(0, updatesToApply.length);
+
+            if (this.pendingUpdates[id].length === 0) {
+              this.inprogressUpdates[id] = false;
+              delete this.inprogressUpdates[id];
             } else {
-              doc = {
-                ...doc,
-                ...update,
-              };
+              // More updates came in, run again.
+              return this.applyUpdates<T>(id);
+            }
+            return updatedDoc as any; // success, exit loop and function
+          } catch (e: any) {
+            if (e.name === 'conflict' && i < MAX_RETRIES - 1) {
+              logger.warn(`Conflict on update for doc ${id}, retry #${i + 1}`);
+              await new Promise((res) => setTimeout(res, 50 * Math.random()));
+              // continue to next iteration of the loop
+            } else {
+              // Max retries reached or a non-conflict error
+              delete this.inprogressUpdates[id];
+              if (this.pendingUpdates[id]) {
+                delete this.pendingUpdates[id];
+              }
+              logger.error(`Error on attemped update (retry ${i}): ${JSON.stringify(e)}`);
+              throw e; // Let caller handle
             }
           }
-          // for (const k in doc) {
-          //   console.log(`${k}: ${typeof k}`);
-          // }
-          // console.log(`Applied updates to doc: ${JSON.stringify(doc)}`);
-          await this.writeDB.put<T>(doc);
-          logger.debug(`Put doc: ${id}`);
-
-          if (this.pendingUpdates[id].length === 0) {
-            this.inprogressUpdates[id] = false;
-            delete this.inprogressUpdates[id];
-          } else {
-            return this.applyUpdates<T>(id);
-          }
-          return doc;
-        } catch (e) {
-          // Clean up queue state before re-throwing
-          delete this.inprogressUpdates[id];
-          if (this.pendingUpdates[id]) {
-            delete this.pendingUpdates[id];
-          }
-          logger.error(`Error on attemped update: ${JSON.stringify(e)}`);
-          throw e; // Let caller handle (e.g., putCardRecord's 404 handling)
         }
       } else {
         throw new Error(`Empty Updates Queue Triggered`);
