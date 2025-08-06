@@ -5,6 +5,7 @@ import {
   type CreateCardOutput,
 } from '../types/tools.js';
 import { toCourseElo, NameSpacer } from '@vue-skuilder/common';
+import { allCourseWare } from '@vue-skuilder/courseware';
 import {
   MCP_AGENT_AUTHOR,
   handleToolError,
@@ -44,10 +45,39 @@ export async function handleCreateCard(
       throw new Error(errorMsg);
     }
 
+    // Get the complete DataShape definition from course config
+    const matchingDataShape = courseConfig.dataShapes.find(
+      (ds) => ds.name === validatedInput.datashape
+    );
+    if (!matchingDataShape) {
+      const errorMsg = `DataShape not found in course configuration: ${validatedInput.datashape}`;
+      logToolWarning(TOOL_NAME, errorMsg);
+      throw new Error(errorMsg);
+    }
+
+    // Get runtime DataShape definition from courseware
+    const runtimeDataShape = allCourseWare
+      .allDataShapesRaw()
+      .find((ds) => ds.name === shapeDescriptor.dataShape);
+
+    if (!runtimeDataShape) {
+      const errorMsg = `Runtime DataShape not found in courseware: ${shapeDescriptor.dataShape}`;
+      logToolWarning(TOOL_NAME, errorMsg);
+      throw new Error(errorMsg);
+    }
+
+    logToolStart(
+      TOOL_NAME,
+      `Using runtime DataShape with ${runtimeDataShape.fields.length} fields`
+    );
+
+    // Use complete DataShape with field definitions from courseware
+    const dataShape = runtimeDataShape;
+
     // Create the card via courseDB
     const result = await courseDB.addNote(
       shapeDescriptor.course, // Use courseware name, not courseID
-      { name: shapeDescriptor.dataShape as any, fields: [] },
+      dataShape,
       validatedInput.data,
       MCP_AGENT_AUTHOR,
       validatedInput.tags || [],
