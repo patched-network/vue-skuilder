@@ -19,7 +19,7 @@ function fieldTypeToZodSchema(field: FieldDefinition): z.ZodTypeAny {
       if (field.name === 'Input') {
         baseSchema = baseSchema
           .refine(
-            (value) => value.includes('{{') && value.includes('}}'),
+            (value): value is string => typeof value === 'string' && value.includes('{{') && value.includes('}}'),
             'Must contain at least one blank in format {{answer}} or {{answer1|answer2||distractor}}'
           )
           .describe(
