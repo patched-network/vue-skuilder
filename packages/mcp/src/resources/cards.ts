@@ -42,12 +42,12 @@ export async function handleCardsAllResource(
     const courseInfo = await courseDB.getCourseInfo();
     
     // Get cards using ELO-based query (this gives us all cards sorted by ELO)
-    const cardIds = await courseDB.getCardsByELO(1500, limit + offset);
+    const eloCenteredCards = await courseDB.getCardsByELO(1500, limit + offset);
     
     // Skip offset cards and take limit
-    const targetCardIds = cardIds.slice(offset, offset + limit);
+    const targetCards = eloCenteredCards.slice(offset, offset + limit);
     
-    if (targetCardIds.length === 0) {
+    if (targetCards.length === 0) {
       return {
         cards: [],
         total: courseInfo.cardCount,
@@ -58,11 +58,11 @@ export async function handleCardsAllResource(
     }
 
     // Get card documents
-    const cardDocs = await courseDB.getCourseDocs(targetCardIds);
+    const cardDocs = await courseDB.getCourseDocs(targetCards.map(card => card.cardID));
     
     // Get ELO data for these cards  
-    const eloData = await courseDB.getCardEloData(targetCardIds);
-    const eloMap = new Map(eloData.map((elo, index) => [targetCardIds[index], elo.global?.score || 1500]));
+    const eloData = await courseDB.getCardEloData(targetCards.map(card => card.cardID));
+    const eloMap = new Map(eloData.map((elo, index) => [targetCards[index], elo.global?.score || 1500]));
 
     // Transform to CardResourceData format
     const cards: CardResourceData[] = [];
@@ -162,7 +162,7 @@ export async function handleCardsShapeResource(
     }
 
     // Get card documents to check their shapes
-    const cardDocs = await courseDB.getCourseDocs(allCardIds);
+    const cardDocs = await courseDB.getCourseDocs(allCardIds.map(c => c.cardID));
     
     // Filter by shape and collect card IDs
     const filteredCardIds: string[] = [];
@@ -240,9 +240,9 @@ export async function handleCardsEloResource(
 
     // Get cards around the middle of the ELO range
     const targetElo = Math.floor((parsedRange.min + parsedRange.max) / 2);
-    const cardIds = await courseDB.getCardsByELO(targetElo, 1000); // Get more to filter from
+    const cards = await courseDB.getCardsByELO(targetElo, 1000); // Get more to filter from
     
-    if (cardIds.length === 0) {
+    if (cards.length === 0) {
       return {
         cards: [],
         total: 0,
@@ -253,11 +253,11 @@ export async function handleCardsEloResource(
     }
 
     // Get ELO data for all cards
-    const eloData = await courseDB.getCardEloData(cardIds);
+    const eloData = await courseDB.getCardEloData(cards.map(c => c.cardID));
     
     // Filter by ELO range
     const filteredEloData = eloData
-      .map((elo, index) => ({ elo, cardId: cardIds[index] }))
+      .map((elo, index) => ({ elo, cardId: cards[index] }))
       .filter(({ elo }) => {
         const score = elo.global?.score || 1500;
         return score >= parsedRange.min && score <= parsedRange.max;
@@ -265,9 +265,9 @@ export async function handleCardsEloResource(
 
     // Apply pagination
     const paginatedEloData = filteredEloData.slice(offset, offset + limit);
-    const paginatedCardIds = paginatedEloData.map(({ cardId }) => cardId);
+    const paginatedCards = paginatedEloData.map(({ cardId }) => cardId);
 
-    if (paginatedCardIds.length === 0) {
+    if (paginatedCards.length === 0) {
       return {
         cards: [],
         total: filteredEloData.length,
@@ -278,15 +278,15 @@ export async function handleCardsEloResource(
     }
 
     // Get card documents
-    const cardDocs = await courseDB.getCourseDocs(paginatedCardIds);
+    const cardDocs = await courseDB.getCourseDocs(paginatedCards.map(c => c.cardID));
     const eloMap = new Map(paginatedEloData.map(({ elo, cardId }) => [cardId, elo.global?.score || 1500]));
 
     // Transform to CardResourceData format
-    const cards: CardResourceData[] = [];
+    const cardsData: CardResourceData[] = [];
     for (const row of cardDocs.rows) {
       if (isSuccessRow(row)) {
         const doc = row.doc;
-        cards.push({
+        cardsData.push({
           cardId: doc._id,
           datashape: (doc as any).shape?.name || 'unknown',
           data: (doc as any).data || {},
@@ -299,7 +299,7 @@ export async function handleCardsEloResource(
     }
 
     return {
-      cards,
+      cards: cardsData,
       total: filteredEloData.length,
       page: Math.floor(offset / limit) + 1,
       limit,
