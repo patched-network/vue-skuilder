@@ -66,6 +66,7 @@ export interface DataShape55 {
   // [ ] rename this to something else - disambiguate from DataShape in base-course
   name: NamespacedDatashape;
   questionTypes: PouchDB.Core.DocumentId[];
+  serializedZodSchema?: string;
 }
 
 type NamespacedQuestion = string; // ${course}.question.${question}
