@@ -53,7 +53,16 @@ export interface CourseDBInterface extends NavigationStrategyManager {
   /**
    * Get cards sorted by ELO rating
    */
-  getCardsByELO(elo: number, limit?: number): Promise<string[]>;
+  getCardsByELO(
+    elo: number,
+    limit?: number
+  ): Promise<
+    {
+      courseID: string;
+      cardID: string;
+      elo?: number;
+    }[]
+  >;
 
   /**
    * Get ELO data for specific cards
@@ -145,7 +154,7 @@ export interface CourseDBInterface extends NavigationStrategyManager {
   searchCards(query: string): Promise<any[]>;
 
   /**
-   * Find documents using PouchDB query syntax  
+   * Find documents using PouchDB query syntax
    * @param request PouchDB find request
    * @returns Query response
    */

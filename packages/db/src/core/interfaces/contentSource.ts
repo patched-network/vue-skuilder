@@ -31,11 +31,12 @@ export function isReview(item: StudySessionItem): item is StudySessionReviewItem
 
 export interface StudySessionItem {
   status: 'new' | 'review' | 'failed-new' | 'failed-review';
-  qualifiedID: `${string}-${string}` | `${string}-${string}-${number}`;
-  cardID: string;
   contentSourceType: 'course' | 'classroom';
   contentSourceID: string;
+  // qualifiedID: `${string}-${string}` | `${string}-${string}-${number}`;
+  cardID: string;
   courseID: string;
+  elo?: number;
   // reviewID?: string;
 }
 

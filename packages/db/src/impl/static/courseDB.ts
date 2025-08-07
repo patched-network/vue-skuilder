@@ -91,8 +91,20 @@ export class StaticCourseDB implements CourseDBInterface {
     };
   }
 
-  async getCardsByELO(elo: number, limit?: number): Promise<string[]> {
-    return this.unpacker.queryByElo(elo, limit || 25);
+  async getCardsByELO(
+    elo: number,
+    limit?: number
+  ): Promise<
+    {
+      courseID: string;
+      cardID: string;
+      elo?: number;
+    }[]
+  > {
+    return (await this.unpacker.queryByElo(elo, limit || 25)).map((card) => {
+      const [courseID, cardID, elo] = card.split('-');
+      return { courseID, cardID, elo: elo ? parseInt(elo) : undefined };
+    });
   }
 
   async getCardEloData(cardIds: string[]): Promise<CourseElo[]> {
@@ -403,7 +415,7 @@ export class StaticCourseDB implements CourseDBInterface {
     // Could be implemented with local search if needed
     return {
       docs: [],
-      warning: 'Find operations not supported in static mode'
+      warning: 'Find operations not supported in static mode',
     } as any;
   }
 }

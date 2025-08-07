@@ -62,7 +62,8 @@ class ItemQueue<T extends StudySessionItem> {
 
   public get toString(): string {
     return (
-      `${typeof this.q[0]}:\n` + this.q.map((i) => `\t${i.qualifiedID}: ${i.status}`).join('\n')
+      `${typeof this.q[0]}:\n` +
+      this.q.map((i) => `\t${i.courseID}+${i.cardID}: ${i.status}`).join('\n')
     );
   }
 }
@@ -224,7 +225,7 @@ export class SessionController extends Loggable {
     for (let i = 0; i < dueCards.length; i++) {
       const card = dueCards[i];
       this.reviewQ.add(card);
-      report += `\t${card.qualifiedID}}\n`;
+      report += `\t${card.courseID}-${card.cardID}\n`;
     }
     this.log(report);
   }
@@ -244,7 +245,7 @@ export class SessionController extends Loggable {
       for (let i = 0; i < newContent.length; i++) {
         if (newContent[i].length > 0) {
           const item = newContent[i].splice(0, 1)[0];
-          this.log(`Adding new card: ${item.qualifiedID}`);
+          this.log(`Adding new card: ${item.courseID}-${item.cardID}`); // revealed bug here w/ new prefixes.  osbserved log "Adding new card: 5e627b7f630998243834152aa00920f5-c"
           this.newQ.add(item);
           n--;
         }
@@ -264,6 +265,7 @@ export class SessionController extends Loggable {
   }
 
   public nextCard(
+    // [ ] this is often slow. Why?
     action:
       | 'dismiss-success'
       | 'dismiss-failed'
@@ -373,7 +375,6 @@ export class SessionController extends Loggable {
           failedItem = {
             cardID: this._currentCard.cardID,
             courseID: this._currentCard.courseID,
-            qualifiedID: this._currentCard.qualifiedID,
             contentSourceID: this._currentCard.contentSourceID,
             contentSourceType: this._currentCard.contentSourceType,
             status: 'failed-review',
@@ -383,7 +384,6 @@ export class SessionController extends Loggable {
           failedItem = {
             cardID: this._currentCard.cardID,
             courseID: this._currentCard.courseID,
-            qualifiedID: this._currentCard.qualifiedID,
             contentSourceID: this._currentCard.contentSourceID,
             contentSourceType: this._currentCard.contentSourceType,
             status: 'failed-new',

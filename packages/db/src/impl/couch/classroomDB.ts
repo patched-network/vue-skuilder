@@ -8,12 +8,7 @@ import { ENV } from '@db/factory';
 import { logger } from '@db/util/logger';
 import moment from 'moment';
 import pouch from './pouchdb-setup';
-import {
-  getCourseDB,
-  getStartAndEndKeys,
-  createPouchDBConfig,
-  REVIEW_TIME_FORMAT,
-} from '.';
+import { getCourseDB, getStartAndEndKeys, createPouchDBConfig, REVIEW_TIME_FORMAT } from '.';
 import { CourseDB, getTag } from './courseDB';
 
 import { UserDBInterface } from '@db/core';
@@ -181,10 +176,13 @@ export class StudentClassroomDB
       }
     }
 
-    logger.info(`New Cards from classroom ${this._cfg.name}: ${ret.map((c) => c.qualifiedID)}`);
+    logger.info(
+      `New Cards from classroom ${this._cfg.name}: ${ret.map((c) => `${c.courseID}-${c.cardID}`)}`
+    );
 
     return ret.filter((c) => {
-      if (activeCards.some((ac) => c.qualifiedID.includes(ac))) {
+      if (activeCards.some((ac) => c.cardID.includes(ac))) {
+        // [ ] almost certainly broken after removing qualifiedID from StudySessionItem
         return false;
       } else {
         return true;
