@@ -1,4 +1,4 @@
-import { CourseConfig, DataShape, NameSpacer } from '@vue-skuilder/common';
+import { CourseConfig, DataShape, NameSpacer, toZodJSON } from '@vue-skuilder/common';
 import { CourseDBInterface } from '@vue-skuilder/db';
 import { Displayable, getCurrentUser, ViewComponent } from '@vue-skuilder/common-ui';
 import { CourseWare } from '@vue-skuilder/courseware';
@@ -132,9 +132,19 @@ export function registerDataShape(
     course: dataShape.course,
   });
 
+  // Generate JSON Schema for the DataShape
+  let serializedZodSchema: string | undefined;
+  try {
+    serializedZodSchema = toZodJSON(dataShape.dataShape);
+  } catch (error) {
+    console.warn(`   ⚠️  Failed to generate schema for ${namespacedName}:`, error);
+    serializedZodSchema = undefined;
+  }
+
   courseConfig.dataShapes.push({
     name: namespacedName,
     questionTypes: [],
+    serializedZodSchema,
   });
 
   console.log(`   ✅ Registered DataShape: ${namespacedName}`);
