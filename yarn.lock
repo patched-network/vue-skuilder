@@ -6174,7 +6174,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@vue-skuilder/common@npm:^0.1.11-25, @vue-skuilder/common@workspace:*, @vue-skuilder/common@workspace:^, @vue-skuilder/common@workspace:packages/common":
+"@vue-skuilder/common@npm:^0.1.11-26, @vue-skuilder/common@workspace:*, @vue-skuilder/common@workspace:^, @vue-skuilder/common@workspace:packages/common":
   version: 0.0.0-use.local
   resolution: "@vue-skuilder/common@workspace:packages/common"
   dependencies:
@@ -16290,7 +16290,7 @@ __metadata:
     "@types/events": "npm:^3"
     "@vitejs/plugin-vue": "npm:^5.2.1"
     "@vue-skuilder/cli": "npm:^0.1.11-25"
-    "@vue-skuilder/common": "npm:^0.1.11-25"
+    "@vue-skuilder/common": "npm:^0.1.11-26"
     "@vue-skuilder/common-ui": "npm:^0.1.11-25"
     "@vue-skuilder/courseware": "npm:^0.1.11-25"
     "@vue-skuilder/db": "npm:^0.1.11-25"
