@@ -422,6 +422,7 @@ export default defineComponent({
             this.loadCard(this.sessionController!.nextCard('marked-failed'));
           }
         } else {
+          /* !r.isCorrect */
           try {
             if (this.$refs.shadowWrapper) {
               this.$refs.shadowWrapper.classList.add('incorrect');
