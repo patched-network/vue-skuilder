@@ -1,63 +1,63 @@
 {
-  "name": "sk-contributor",
-  "version": "1.0.0",
-  "type": "module",
-  "main": "./dist-lib/questions.cjs.js",
-  "module": "./dist-lib/questions.mjs",
-  "types": "./dist-lib/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist-lib/index.d.ts",
-      "import": "./dist-lib/questions.mjs",
-      "require": "./dist-lib/questions.cjs.js"
+    "name": "sk-contributor",
+    "version": "1.0.0",
+    "type": "module",
+    "main": "./dist-lib/questions.cjs.js",
+    "module": "./dist-lib/questions.mjs",
+    "types": "./dist-lib/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist-lib/index.d.ts",
+            "import": "./dist-lib/questions.mjs",
+            "require": "./dist-lib/questions.cjs.js"
+        },
+        "./questions": {
+            "types": "./dist-lib/index.d.ts",
+            "import": "./dist-lib/questions.mjs",
+            "require": "./dist-lib/questions.cjs.js"
+        },
+        "./style": "./dist-lib/assets/index.css"
     },
-    "./questions": {
-      "types": "./dist-lib/index.d.ts",
-      "import": "./dist-lib/questions.mjs",
-      "require": "./dist-lib/questions.cjs.js"
+    "files": [
+        "dist/",
+        "dist-lib/"
+    ],
+    "scripts": {
+        "dev": "vite",
+        "build": "npm run build:webapp && npm run build:lib",
+        "build:webapp": "vite build",
+        "build:lib": "BUILD_MODE=library vite build",
+        "preview": "vite preview",
+        "test:e2e": "cypress open",
+        "test:e2e:headless": "cypress run",
+        "ci:e2e": "vite dev & wait-on http://localhost:6173 && cypress run",
+        "studio": "skuilder studio"
     },
-    "./style": "./dist-lib/assets/index.css"
-  },
-  "files": [
-    "dist/",
-    "dist-lib/"
-  ],
-  "scripts": {
-    "dev": "vite",
-    "build": "npm run build:webapp && npm run build:lib",
-    "build:webapp": "vite build",
-    "build:lib": "BUILD_MODE=library vite build",
-    "preview": "vite preview",
-    "test:e2e": "cypress open",
-    "test:e2e:headless": "cypress run",
-    "ci:e2e": "vite dev & wait-on http://localhost:6173 && cypress run",
-    "studio": "skuilder studio"
-  },
-  "dependencies": {
-    "@mdi/font": "^7.3.67",
-    "@vue-skuilder/common": "^0.1.11-25",
-    "@vue-skuilder/common-ui": "^0.1.11-25",
-    "@vue-skuilder/courseware": "^0.1.11-25",
-    "@vue-skuilder/db": "^0.1.11-25",
-    "events": "^3.3.0",
-    "pinia": "^2.3.0",
-    "vue": "^3.5.13",
-    "vue-router": "^4.2.0",
-    "vuetify": "^3.7.0"
-  },
-  "devDependencies": {
-    "@types/cypress": "1.1.6",
-    "@types/events": "^3",
-    "@vitejs/plugin-vue": "^5.2.1",
-    "@vue-skuilder/cli": "^0.1.11-25",
-    "cypress": "14.1.0",
-    "terser": "^5.39.0",
-    "typescript": "^5.7.2",
-    "vite": "^6.0.9",
-    "vite-plugin-dts": "^4.3.0",
-    "vue-tsc": "^1.8.0",
-    "wait-on": "8.0.2"
-  },
-  "stableVersion": "0.1.10",
-  "description": "Skuilder course application: sk-contributor"
+    "dependencies": {
+        "@mdi/font": "^7.3.67",
+        "@vue-skuilder/common": "^0.1.11-26",
+        "@vue-skuilder/common-ui": "^0.1.11-25",
+        "@vue-skuilder/courseware": "^0.1.11-25",
+        "@vue-skuilder/db": "^0.1.11-25",
+        "events": "^3.3.0",
+        "pinia": "^2.3.0",
+        "vue": "^3.5.13",
+        "vue-router": "^4.2.0",
+        "vuetify": "^3.7.0"
+    },
+    "devDependencies": {
+        "@types/cypress": "1.1.6",
+        "@types/events": "^3",
+        "@vitejs/plugin-vue": "^5.2.1",
+        "@vue-skuilder/cli": "^0.1.11-25",
+        "cypress": "14.1.0",
+        "terser": "^5.39.0",
+        "typescript": "^5.7.2",
+        "vite": "^6.0.9",
+        "vite-plugin-dts": "^4.3.0",
+        "vue-tsc": "^1.8.0",
+        "wait-on": "8.0.2"
+    },
+    "stableVersion": "0.1.10",
+    "description": "Skuilder course application: sk-contributor"
 }
