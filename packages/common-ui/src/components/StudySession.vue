@@ -310,7 +310,14 @@ export default defineComponent({
           // db.setChangeFcn(this.handleClassroomMessage());
         });
 
-        this.sessionController = markRaw(new SessionController(this.sessionContentSources, 60 * this.sessionTimeLimit));
+        this.sessionController = markRaw(
+          new SessionController(
+            this.sessionContentSources,
+            60 * this.sessionTimeLimit,
+            this.dataLayer,
+            this.getViewComponent
+          )
+        );
         this.sessionController.sessionRecord = this.sessionRecord;
 
         await this.sessionController.prepareSession();

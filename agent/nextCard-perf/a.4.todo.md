@@ -10,16 +10,18 @@ This file breaks down the tasks required to implement the client-side pre-fetchi
 
 ## Phase 2: Pre-fetching Logic
 
--   [ ] **Task 2.1:** Inside `_fillHydratedQueue()`, implement the logic to determine how many cards to fetch (target buffer size is 5).
--   [ ] **Task 2.2:** Inside `_fillHydratedQueue()`, peek at the next items in `reviewQ` and `newQ` to get their card IDs.
--   [ ] **Task 2.3:** For each card ID, implement the necessary calls to fetch the full card document and its associated data document from CouchDB.
--   [ ] **Task 2.4:** Once fetched, create `HydratedCard` objects and enqueue them into `hydratedQ`.
+-   [x] **Task 2.1:** Inside `_fillHydratedQueue()`, implement the logic to determine how many cards to fetch (target buffer size is 5).
+-   [x] **Task 2.2:** Inside `_fillHydratedQueue()`, peek at the next items in `reviewQ` and `newQ` to get their card IDs.
+-   [x] **Task 2.3:** For each card ID, implement the necessary calls to fetch the full card document and its associated data document from CouchDB.
+-   [x] **Task 2.4:** Once fetched, create `HydratedCard` objects and enqueue them into `hydratedQ`.
+
+> **Note:** The data fetching and hydration logic implemented in this phase was adapted directly from the `loadCard()` method in `packages/common-ui/src/components/StudySession.vue`.
 
 ## Phase 3: Update `nextCard()` and `prepareSession()`
 
--   [ ] **Task 3.1:** Modify the `nextCard()` function to dequeue from `hydratedQ` instead of the other queues.
--   [ ] **Task 3.2:** After dequeuing in `nextCard()`, add a non-blocking call to `_fillHydratedQueue()` to trigger the background pre-fetch.
--   [ ] **Task 3.3:** In `prepareSession()`, after the `reviewQ` and `newQ` are populated, add an initial `await this._fillHydratedQueue()` call to ensure the buffer is ready for the first card.
+-   [x] **Task 3.1:** Modify the `nextCard()` function to dequeue from `hydratedQ` instead of the other queues.
+-   [x] **Task 3.2:** After dequeuing in `nextCard()`, add a non-blocking call to `_fillHydratedQueue()` to trigger the background pre-fetch.
+-   [x] **Task 3.3:** In `prepareSession()`, after the `reviewQ` and `newQ` are populated, add an initial `await this._fillHydratedQueue()` call to ensure the buffer is ready for the first card.
 
 ## Phase 4: UI and Verification
 

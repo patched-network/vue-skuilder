@@ -33,6 +33,14 @@ export interface HydratedCard {
   data: ViewData[];
 }
 
+import {
+  CardData,
+  DisplayableData,
+  displayableDataToViewData,
+  isCourseElo,
+  toCourseElo,
+} from '@vue-skuilder/common';
+
 class ItemQueue<T> {
   private q: T[] = [];
   private seenCardIds: string[] = [];
@@ -71,14 +79,20 @@ class ItemQueue<T> {
   public get toString(): string {
     return (
       `${typeof this.q[0]}:\n` +
-      this.q.map((i) => `\t${(i as any).courseID}+${(i as any).cardID}: ${(i as any).status}`).join('\n')
+      this.q
+        .map((i) => `\t${(i as any).courseID}+${(i as any).cardID}: ${(i as any).status}`)
+        .join('\n')
     );
   }
 }
 
+import { DataLayerProvider } from '@db/core';
+
 export class SessionController extends Loggable {
   _className = 'SessionController';
   private sources: StudyContentSource[];
+  private dataLayer: DataLayerProvider;
+  private getViewComponent: (viewId: string) => ViewComponent;
   private _sessionRecord: StudySessionRecord[] = [];
   public set sessionRecord(r: StudySessionRecord[]) {
     this._sessionRecord = r;
@@ -89,11 +103,7 @@ export class SessionController extends Loggable {
   private failedQ: ItemQueue<StudySessionFailedItem> = new ItemQueue<StudySessionFailedItem>();
   private hydratedQ: ItemQueue<HydratedCard> = new ItemQueue<HydratedCard>();
   private _currentCard: StudySessionItem | null = null;
-  /**
-   * Indicates whether the session has been initialized - eg, the
-   * queues have been populated.
-   */
-  private _isInitialized: boolean = false;
+  
 
   private startTime: Date;
   private endTime: Date;
@@ -113,13 +123,20 @@ export class SessionController extends Loggable {
   /**
    *
    */
-  constructor(sources: StudyContentSource[], time: number) {
+  constructor(
+    sources: StudyContentSource[],
+    time: number,
+    dataLayer: DataLayerProvider,
+    getViewComponent: (viewId: string) => ViewComponent
+  ) {
     super();
 
     this.sources = sources;
     this.startTime = new Date();
     this._secondsRemaining = time;
     this.endTime = new Date(this.startTime.valueOf() + 1000 * this._secondsRemaining);
+    this.dataLayer = dataLayer;
+    this.getViewComponent = getViewComponent;
 
     this.log(`Session constructed:
     startTime: ${this.startTime}
@@ -183,7 +200,9 @@ export class SessionController extends Loggable {
       this.error('Error preparing study session:', e);
     }
 
-    this._isInitialized = true;
+    
+
+    void this._fillHydratedQueue();
 
     this._intervalHandle = setInterval(() => {
       this.tick();
@@ -232,6 +251,7 @@ export class SessionController extends Loggable {
 
     let report = 'Review session created with:\n';
     this.reviewQ.addAll(dueCards, (c) => c.cardID);
+    report += dueCards.map((card) => `Card ${card.courseID}::${card.cardID} `).join('\n');
     this.log(report);
   }
 
@@ -258,48 +278,29 @@ export class SessionController extends Loggable {
     }
   }
 
-  private nextNewCard(): StudySessionNewItem | null {
-    const item = this.newQ.dequeue();
+  
 
-    // queue some more content if we are getting low
-    if (this._isInitialized && this.newQ.length < 5) {
-      void this.getNewCards();
-    }
-
-    return item;
-  }
-
-  public nextCard(
-    // [ ] this is often slow. Why?
-    action:
-      | 'dismiss-success'
-      | 'dismiss-failed'
-      | 'marked-failed'
-      | 'dismiss-error' = 'dismiss-success'
-  ): StudySessionItem | null {
-    // dismiss (or sort to failedQ) the current card
-    this.dismissCurrentCard(action);
-
+  private _selectNextItemToHydrate(action: | 'dismiss-success'
+  | 'dismiss-failed'
+  | 'marked-failed'
+  | 'dismiss-error' = 'dismiss-success'): StudySessionItem | null {
     const choice = Math.random();
     let newBound: number = 0.1;
     let reviewBound: number = 0.75;
 
     if (this.reviewQ.length === 0 && this.failedQ.length === 0 && this.newQ.length === 0) {
       // all queues empty - session is over (and course is complete?)
-      this._currentCard = null;
-      return this._currentCard;
+      return null;
     }
 
     if (this._secondsRemaining < 2 && this.failedQ.length === 0) {
       // session is over!
-      this._currentCard = null;
-      return this._currentCard;
+      return null;
     }
 
     // supply new cards at start of session
     if (this.newQ.dequeueCount < this.sources.length && this.newQ.length) {
-      this._currentCard = this.nextNewCard();
-      return this._currentCard;
+      return this.newQ.peek(0);
     }
 
     const cleanupTime = this.estimateCleanupTime();
@@ -340,17 +341,31 @@ export class SessionController extends Loggable {
     }
 
     if (choice < newBound && this.newQ.length) {
-      this._currentCard = this.nextNewCard();
+      return this.newQ.peek(0);
     } else if (choice < reviewBound && this.reviewQ.length) {
-      this._currentCard = this.reviewQ.dequeue();
+      return this.reviewQ.peek(0);
     } else if (this.failedQ.length) {
-      this._currentCard = this.failedQ.dequeue();
+      return this.failedQ.peek(0);
     } else {
       this.log(`No more cards available for the session!`);
-      this._currentCard = null;
+      return null;
     }
+  }
 
-    return this._currentCard;
+  public nextCard(
+    // [ ] this is often slow. Why?
+    action:
+      | 'dismiss-success'
+      | 'dismiss-failed'
+      | 'marked-failed'
+      | 'dismiss-error' = 'dismiss-success'
+  ): HydratedCard | null {
+    // dismiss (or sort to failedQ) the current card
+    this.dismissCurrentCard(action);
+
+    const card = this.hydratedQ.dequeue();
+    void this._fillHydratedQueue();
+    return card;
   }
 
   private dismissCurrentCard(
@@ -390,7 +405,7 @@ export class SessionController extends Loggable {
             cardID: this._currentCard.cardID,
             courseID: this._currentCard.courseID,
             contentSourceID: this._currentCard.contentSourceID,
-            contentSourceType: this._current_card.contentSourceType,
+            contentSourceType: this._currentCard.contentSourceType,
             status: 'failed-new',
           };
         }
@@ -405,6 +420,62 @@ export class SessionController extends Loggable {
   }
 
   private async _fillHydratedQueue() {
-    // TODO: Implement pre-fetching logic here
+    const BATCH_SIZE = 5;
+    while (this.hydratedQ.length < BATCH_SIZE) {
+      const nextItem = this._selectNextItemToHydrate();
+      if (!nextItem) {
+        return; // No more cards to hydrate
+      }
+
+      try {
+        const cardData = await this.dataLayer
+          .getCourseDB(nextItem.courseID)
+          .getCourseDoc<CardData>(nextItem.cardID);
+
+        if (!isCourseElo(cardData.elo)) {
+          cardData.elo = toCourseElo(cardData.elo);
+        }
+
+        const view = this.getViewComponent(cardData.id_view);
+        const dataDocs = await Promise.all(
+          cardData.id_displayable_data.map((id: string) =>
+            this.dataLayer.getCourseDB(nextItem.courseID).getCourseDoc<DisplayableData>(id, {
+              attachments: true,
+              binary: true,
+            })
+          )
+        );
+
+        const data = dataDocs.map(displayableDataToViewData).reverse();
+
+        this.hydratedQ.add(
+          {
+            item: nextItem,
+            view,
+            data,
+          },
+          nextItem.cardID
+        );
+
+        // Remove the item from the original queue
+        if (this.reviewQ.peek(0) === nextItem) {
+          this.reviewQ.dequeue();
+        } else if (this.newQ.peek(0) === nextItem) {
+          this.newQ.dequeue();
+        } else {
+          this.failedQ.dequeue();
+        }
+      } catch (e) {
+        this.error(`Error hydrating card ${nextItem.cardID}:`, e);
+        // Remove the failed item from the queue
+        if (this.reviewQ.peek(0) === nextItem) {
+          this.reviewQ.dequeue();
+        } else if (this.newQ.peek(0) === nextItem) {
+          this.newQ.dequeue();
+        } else {
+          this.failedQ.dequeue();
+        }
+      }
+    }
   }
 }
