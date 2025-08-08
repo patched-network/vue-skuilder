@@ -81,27 +81,17 @@ import {
   StudyContentSource,
   StudySessionItem,
   docIsDeleted,
-  CardData,
   CardHistory,
   CardRecord,
-  DisplayableData,
   isQuestionRecord,
   CourseRegistrationDoc,
   DataLayerProvider,
   UserDBInterface,
   ClassroomDBInterface,
 } from '@vue-skuilder/db';
-import { SessionController, StudySessionRecord } from '@vue-skuilder/db';
+import { HydratedCard, SessionController, StudySessionRecord } from '@vue-skuilder/db';
 import { newInterval } from '@vue-skuilder/db';
-import {
-  adjustCourseScores,
-  CourseElo,
-  toCourseElo,
-  isCourseElo,
-  displayableDataToViewData,
-  ViewData,
-  Status,
-} from '@vue-skuilder/common';
+import { adjustCourseScores, CourseElo, toCourseElo, ViewData, Status } from '@vue-skuilder/common';
 import confetti from 'canvas-confetti';
 import moment from 'moment';
 
@@ -555,78 +545,53 @@ export default defineComponent({
       });
     },
 
-    async loadCard(item: StudySessionItem | null) {
+    async loadCard(card: HydratedCard | null) {
       if (this.loading) {
         console.warn(`Attempted to load card while loading another...`);
         return;
       }
 
-      console.log(`[StudySession] loading: ${JSON.stringify(item)}`);
-      if (item === null) {
+      console.log(`[StudySession] loading: ${JSON.stringify(card)}`);
+      if (card === null) {
         this.sessionFinished = true;
         this.$emit('session-finished', this.sessionRecord);
         return;
       }
-      this.cardType = item.status;
+      this.cardType = card.item.status;
 
       this.loading = true;
-      const _courseID = item.courseID;
-      const _cardID = item.cardID;
-
-      console.log(`[StudySession] Now displaying: ${_courseID}::${_cardID}`);
 
       try {
-        const tmpCardData = await this.dataLayer.getCourseDB(_courseID).getCourseDoc<CardData>(_cardID);
-
-        if (!isCourseElo(tmpCardData.elo)) {
-          tmpCardData.elo = toCourseElo(tmpCardData.elo);
-        }
-
-        const tmpView: ViewComponent = this.getViewComponent(tmpCardData.id_view);
-        const tmpDataDocs = tmpCardData.id_displayable_data.map((id) => {
-          return this.dataLayer.getCourseDB(_courseID).getCourseDoc<DisplayableData>(id, {
-            attachments: true,
-            binary: true,
-          });
-        });
-
-        const tmpData = [];
-
-        for (const docPromise of tmpDataDocs) {
-          const doc = await docPromise;
-          tmpData.unshift(displayableDataToViewData(doc));
-        }
-
         this.cardCount++;
-        this.data = tmpData;
-        this.view = markRaw(tmpView);
-        this.cardID = _cardID;
-        this.courseID = _courseID;
-        this.card_elo = tmpCardData.elo.global.score;
+        this.data = card.data;
+        this.view = markRaw(card.view);
+        this.cardID = card.item.cardID;
+        this.courseID = card.item.courseID;
+        this.card_elo = card.item.elo || 1000;
 
         this.sessionRecord.push({
           card: {
-            course_id: _courseID,
-            card_id: _cardID,
-            card_elo: tmpCardData.elo.global.score,
+            course_id: card.item.courseID,
+            card_id: card.item.cardID,
+            card_elo: this.card_elo,
           },
-          item: item,
+          item: card.item,
           records: [],
         });
 
         this.$emit('card-loaded', {
-          courseID: _courseID,
-          cardID: _cardID,
+          courseID: card.item.courseID,
+          cardID: card.item.cardID,
           cardCount: this.cardCount,
         });
       } catch (e) {
-        console.warn(`[StudySession] Error loading card ${JSON.stringify(item)}:\n\t${JSON.stringify(e)}, ${e}`);
+        console.warn(`[StudySession] Error loading card ${JSON.stringify(card)}:\n\t${JSON.stringify(e)}, ${e}`);
         this.loading = false;
 
         const err = e as Error;
-        if (docIsDeleted(err) && isReview(item)) {
-          console.warn(`Card was deleted: ${_courseID}::${_cardID}`);
-          this.user!.removeScheduledCardReview(item.reviewID);
+        if (docIsDeleted(err) && isReview(card.item)) {
+          console.warn(`Card was deleted: ${card.item.courseID}::${card.item.cardID}`);
+          this.user!.removeScheduledCardReview((card.item as any).reviewID);
         }
 
         this.loadCard(this.sessionController!.nextCard('dismiss-error'));

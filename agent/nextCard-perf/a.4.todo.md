@@ -25,6 +25,6 @@ This file breaks down the tasks required to implement the client-side pre-fetchi
 
 ## Phase 4: UI and Verification
 
--   [ ] **Task 4.1:** Adjust the UI component that calls `nextCard()` to expect the new `HydratedCard` object, removing its own data-fetching logic.
--   [ ] **Task 4.2:** Manually test the study session flow to confirm that cards load quickly and that there are no errors.
--   [ ] **Task 4.3:** Use browser developer tools to verify that network requests for card data are happening *before* a card is displayed, not when it is requested.
+-   [x] **Task 4.1:** Adjust the UI component that calls `nextCard()` to expect the new `HydratedCard` object, removing its own data-fetching logic.
+-   [x] **Task 4.2:** Manually test the study session flow to confirm that cards load quickly and that there are no errors.
+-   [x] **Task 4.3:** Use browser developer tools to verify that network requests for card data are happening *before* a card is displayed, not when it is requested.
