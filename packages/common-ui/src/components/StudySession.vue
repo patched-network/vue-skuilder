@@ -346,7 +346,7 @@ export default defineComponent({
       if (this.sessionController) {
         try {
           this.$emit('session-started');
-          this.loadCard(this.sessionController.nextCard());
+          this.loadCard(await this.sessionController.nextCard());
         } catch (error) {
           console.error('[StudySession] Error loading next card:', error);
           this.$emit('session-error', { message: 'Failed to load study card', error });
@@ -404,7 +404,7 @@ export default defineComponent({
             const item: StudySessionItem = {
               ...this.currentCard.item,
             };
-            this.loadCard(this.sessionController!.nextCard('dismiss-success'));
+            this.loadCard(await this.sessionController!.nextCard('dismiss-success'));
 
             cardHistory.then((history: CardHistory<CardRecord>) => {
               this.scheduleReview(history, item);
@@ -416,7 +416,7 @@ export default defineComponent({
               }
             });
           } else {
-            this.loadCard(this.sessionController!.nextCard('marked-failed'));
+            this.loadCard(await this.sessionController!.nextCard('marked-failed'));
           }
         } else {
           /* !r.isCorrect */
@@ -442,16 +442,16 @@ export default defineComponent({
             if (this.currentCard.records.length >= view.maxAttemptsPerView) {
               const sessionViews: number = this.countCardViews(this.courseID, this.cardID);
               if (sessionViews >= view.maxSessionViews) {
-                this.loadCard(this.sessionController!.nextCard('dismiss-failed'));
+                this.loadCard(await this.sessionController!.nextCard('dismiss-failed'));
                 this.updateUserAndCardElo(0, this.courseID, this.cardID);
               } else {
-                this.loadCard(this.sessionController!.nextCard('marked-failed'));
+                this.loadCard(await this.sessionController!.nextCard('marked-failed'));
               }
             }
           }
         }
       } else {
-        this.loadCard(this.sessionController!.nextCard('dismiss-success'));
+        this.loadCard(await this.sessionController!.nextCard('dismiss-success'));
       }
 
       this.clearFeedbackShadow();
@@ -594,7 +594,7 @@ export default defineComponent({
           this.user!.removeScheduledCardReview((card.item as any).reviewID);
         }
 
-        this.loadCard(this.sessionController!.nextCard('dismiss-error'));
+        this.loadCard(await this.sessionController!.nextCard('dismiss-error'));
       } finally {
         this.loading = false;
       }
