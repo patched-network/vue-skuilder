@@ -30,7 +30,7 @@
 import { CardLoader } from '@vue-skuilder/common-ui';
 import { allCourseWare } from '@vue-skuilder/courseware';
 import { CourseElo, adjustCourseScores, CourseConfig } from '@vue-skuilder/common';
-import { CourseDBInterface, getDataLayer } from '@vue-skuilder/db';
+import { CourseDBInterface, getDataLayer, QualifiedCardID } from '@vue-skuilder/db';
 import { defineComponent } from 'vue';
 
 export default defineComponent({
@@ -58,8 +58,8 @@ export default defineComponent({
         elo: CourseElo;
         count: number;
       }[],
-      id1: '',
-      id2: '',
+      id1: null as QualifiedCardID | null,
+      id2: null as QualifiedCardID | null,
       elo1: null as CourseElo | null,
       elo2: null as CourseElo | null,
       viewLookup: allCourseWare.getView,
@@ -95,11 +95,17 @@ export default defineComponent({
 
       // console.log('Comparing:\n\t' + JSON.stringify(this.cards));
 
-      this.id1 = '';
-      this.id2 = '';
+      this.id1 = null;
+      this.id2 = null;
 
-      this.id1 = `${this.courseId}-${this.cards[0].cardId}`;
-      this.id2 = `${this.courseId}-${this.cards[1].cardId}`;
+      this.id1 = {
+        courseID: this.courseId,
+        cardID: this.cards[0].cardId,
+      };
+      this.id2 = {
+        courseID: this.courseId,
+        cardID: this.cards[1].cardId,
+      };
 
       this.elo1 = this.cards[0].elo;
       this.elo2 = this.cards[1].elo;

@@ -14,8 +14,16 @@
 
 <script lang="ts">
 import { defineComponent, PropType, markRaw } from 'vue';
-import { getDataLayer, CardData, CardRecord, DisplayableData } from '@vue-skuilder/db';
-import { log, displayableDataToViewData, ViewData, ViewDescriptor } from '@vue-skuilder/common';
+import { getDataLayer, QualifiedCardID } from '@vue-skuilder/db';
+import {
+  log,
+  displayableDataToViewData,
+  ViewData,
+  ViewDescriptor,
+  CardData,
+  CardRecord,
+  DisplayableData,
+} from '@vue-skuilder/common';
 import { ViewComponent } from '../../composables';
 import CardViewer from './CardViewer.vue';
 
@@ -33,7 +41,7 @@ export default defineComponent({
       default: 0,
     },
     qualified_id: {
-      type: String,
+      type: Object as PropType<QualifiedCardID>,
       required: true,
     },
     viewLookup: {
@@ -76,18 +84,18 @@ export default defineComponent({
 
     async loadCard() {
       const qualified_id = this.qualified_id;
-      console.log(`Card Loader displaying: ${qualified_id}`);
+      console.log(`Card Loader displaying: ${qualified_id.courseID}-${qualified_id.cardID}`);
 
       this.loading = true;
-      const _courseID = qualified_id.split('-')[0];
-      const _cardID = qualified_id.split('-')[1];
+      const _courseID = qualified_id.courseID;
+      const _cardID = qualified_id.cardID;
       const courseDB = getDataLayer().getCourseDB(_courseID);
 
       try {
-        const tmpCardData = await courseDB.getCourseDoc<CardData>(_cardID);
+        const tmpCardData = (await courseDB.getCourseDoc(_cardID)) as CardData;
         const tmpView = this.viewLookup(tmpCardData.id_view);
         const tmpDataDocs = tmpCardData.id_displayable_data.map((id) => {
-          return courseDB.getCourseDoc<DisplayableData>(id, {
+          return courseDB.getCourseDoc(id, {
             attachments: true,
             binary: true,
           });
@@ -96,7 +104,7 @@ export default defineComponent({
         const tmpData = [];
 
         for (const docPromise of tmpDataDocs) {
-          const doc = await docPromise;
+          const doc = (await docPromise) as DisplayableData;
           tmpData.unshift(displayableDataToViewData(doc));
         }
 

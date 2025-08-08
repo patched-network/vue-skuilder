@@ -18,7 +18,14 @@ import {
   StudySessionNewItem,
   StudySessionReviewItem,
 } from '../../core/interfaces/contentSource';
-import { CardData, DocType, SkuilderCourseData, Tag, TagStub } from '../../core/types/types-legacy';
+import {
+  CardData,
+  DocType,
+  QualifiedCardID,
+  SkuilderCourseData,
+  Tag,
+  TagStub,
+} from '../../core/types/types-legacy';
 import { logger } from '../../util/logger';
 import { GET_CACHED } from './clientCache';
 import { addNote55, addTagToCard, getCredentialledCourseConfig, getTagID } from './courseAPI';
@@ -277,7 +284,13 @@ export class CourseDB implements StudyContentSource, CourseDBInterface {
           return s;
         }
       })
-      .map((c) => `${this.id}-${c.id}-${c.key}`);
+      .map((c) => {
+        return {
+          courseID: this.id,
+          cardID: c.id,
+          elo: c.key,
+        };
+      });
 
     const str = `below:\n${below.rows.map((r) => `\t${r.id}-${r.key}\n`)}
 
@@ -541,7 +554,7 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
       limit: 99,
       elo: 'user',
     },
-    filter?: (a: string) => boolean
+    filter?: (a: QualifiedCardID) => boolean
   ): Promise<StudySessionItem[]> {
     let targetElo: number;
 
@@ -565,7 +578,7 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
       targetElo = options.elo;
     }
 
-    let cards: string[] = [];
+    let cards: (QualifiedCardID & { elo?: number })[] = [];
     let mult: number = 4;
     let previousCount: number = -1;
     let newCount: number = 0;
@@ -585,7 +598,11 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
       mult *= 2;
     }
 
-    const selectedCards: string[] = [];
+    const selectedCards: {
+      courseID: string;
+      cardID: string;
+      elo?: number;
+    }[] = [];
 
     while (selectedCards.length < options.limit && cards.length > 0) {
       const index = randIntWeightedTowardZero(cards.length);
@@ -594,13 +611,12 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
     }
 
     return selectedCards.map((c) => {
-      const split = c.split('-');
       return {
         courseID: this.id,
-        cardID: split[1],
-        qualifiedID: `${split[0]}-${split[1]}`,
+        cardID: c.cardID,
         contentSourceType: 'course',
         contentSourceID: this.id,
+        elo: c.elo,
         status: 'new',
       };
     });

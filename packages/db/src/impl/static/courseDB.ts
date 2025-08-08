@@ -10,7 +10,13 @@ import {
 import { StaticDataUnpacker } from './StaticDataUnpacker';
 import { StaticCourseManifest } from '../../util/packer/types';
 import { CourseConfig, CourseElo, DataShape, Status } from '@vue-skuilder/common';
-import { Tag, TagStub, DocType, SkuilderCourseData } from '../../core/types/types-legacy';
+import {
+  Tag,
+  TagStub,
+  DocType,
+  SkuilderCourseData,
+  QualifiedCardID,
+} from '../../core/types/types-legacy';
 import { DataLayerResult } from '../../core/types/db';
 import { ContentNavigationStrategyData } from '../../core/types/contentNavigationStrategy';
 import { ScheduledCard } from '../../core/types/user';
@@ -91,8 +97,20 @@ export class StaticCourseDB implements CourseDBInterface {
     };
   }
 
-  async getCardsByELO(elo: number, limit?: number): Promise<string[]> {
-    return this.unpacker.queryByElo(elo, limit || 25);
+  async getCardsByELO(
+    elo: number,
+    limit?: number
+  ): Promise<
+    {
+      courseID: string;
+      cardID: string;
+      elo?: number;
+    }[]
+  > {
+    return (await this.unpacker.queryByElo(elo, limit || 25)).map((card) => {
+      const [courseID, cardID, elo] = card.split('-');
+      return { courseID, cardID, elo: elo ? parseInt(elo) : undefined };
+    });
   }
 
   async getCardEloData(cardIds: string[]): Promise<CourseElo[]> {
@@ -129,7 +147,7 @@ export class StaticCourseDB implements CourseDBInterface {
 
   async getCardsCenteredAtELO(
     options: { limit: number; elo: 'user' | 'random' | number },
-    filter?: (id: string) => boolean
+    filter?: (id: QualifiedCardID) => boolean
   ): Promise<StudySessionNewItem[]> {
     let targetElo = typeof options.elo === 'number' ? options.elo : 1000;
 
@@ -148,16 +166,21 @@ export class StaticCourseDB implements CourseDBInterface {
       targetElo = 800 + Math.random() * 400; // Random between 800-1200
     }
 
-    let cardIds = await this.unpacker.queryByElo(targetElo, options.limit * 2);
+    let cardIds = (await this.unpacker.queryByElo(targetElo, options.limit * 2)).map((c) => {
+      return {
+        cardID: c,
+        courseID: this.courseId,
+      };
+    });
 
     if (filter) {
       cardIds = cardIds.filter(filter);
     }
 
-    return cardIds.slice(0, options.limit).map((cardId) => ({
+    return cardIds.slice(0, options.limit).map((card) => ({
       status: 'new' as const,
-      qualifiedID: `${this.courseId}-${cardId}`,
-      cardID: cardId,
+      // qualifiedID: `${this.courseId}-${cardId}`,
+      cardID: card.cardID,
       contentSourceType: 'course' as const,
       contentSourceID: this.courseId,
       courseID: this.courseId,
@@ -403,7 +426,7 @@ export class StaticCourseDB implements CourseDBInterface {
     // Could be implemented with local search if needed
     return {
       docs: [],
-      warning: 'Find operations not supported in static mode'
+      warning: 'Find operations not supported in static mode',
     } as any;
   }
 }

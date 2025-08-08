@@ -10,6 +10,7 @@ import {
 import { CardRecord } from '@db/core';
 import { Loggable } from '@db/util';
 import { ScheduledCard } from '@db/core/types/user';
+import { ViewData } from '@vue-skuilder/common';
 
 function randomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -25,7 +26,21 @@ export interface StudySessionRecord {
   records: CardRecord[];
 }
 
-class ItemQueue<T extends StudySessionItem> {
+export interface HydratedCard<TView = unknown> {
+  item: StudySessionItem;
+  view: TView;
+  data: ViewData[];
+}
+
+import {
+  CardData,
+  DisplayableData,
+  displayableDataToViewData,
+  isCourseElo,
+  toCourseElo,
+} from '@vue-skuilder/common';
+
+class ItemQueue<T> {
   private q: T[] = [];
   private seenCardIds: string[] = [];
   private _dequeueCount: number = 0;
@@ -33,16 +48,16 @@ class ItemQueue<T extends StudySessionItem> {
     return this._dequeueCount;
   }
 
-  public add(item: T) {
-    if (this.seenCardIds.find((d) => d === item.cardID)) {
+  public add(item: T, cardId: string) {
+    if (this.seenCardIds.find((d) => d === cardId)) {
       return; // do not re-add a card to the same queue
     }
 
-    this.seenCardIds.push(item.cardID);
+    this.seenCardIds.push(cardId);
     this.q.push(item);
   }
-  public addAll(items: T[]) {
-    items.forEach((i) => this.add(i));
+  public addAll(items: T[], cardIdExtractor: (item: T) => string) {
+    items.forEach((i) => this.add(i, cardIdExtractor(i)));
   }
   public get length() {
     return this.q.length;
@@ -62,14 +77,21 @@ class ItemQueue<T extends StudySessionItem> {
 
   public get toString(): string {
     return (
-      `${typeof this.q[0]}:\n` + this.q.map((i) => `\t${i.qualifiedID}: ${i.status}`).join('\n')
+      `${typeof this.q[0]}:\n` +
+      this.q
+        .map((i) => `\t${(i as any).courseID}+${(i as any).cardID}: ${(i as any).status}`)
+        .join('\n')
     );
   }
 }
 
-export class SessionController extends Loggable {
+import { DataLayerProvider } from '@db/core';
+
+export class SessionController<TView = unknown> extends Loggable {
   _className = 'SessionController';
   private sources: StudyContentSource[];
+  private dataLayer: DataLayerProvider;
+  private getViewComponent: (viewId: string) => TView;
   private _sessionRecord: StudySessionRecord[] = [];
   public set sessionRecord(r: StudySessionRecord[]) {
     this._sessionRecord = r;
@@ -78,12 +100,9 @@ export class SessionController extends Loggable {
   private reviewQ: ItemQueue<StudySessionReviewItem> = new ItemQueue<StudySessionReviewItem>();
   private newQ: ItemQueue<StudySessionNewItem> = new ItemQueue<StudySessionNewItem>();
   private failedQ: ItemQueue<StudySessionFailedItem> = new ItemQueue<StudySessionFailedItem>();
+  private hydratedQ: ItemQueue<HydratedCard<TView>> = new ItemQueue<HydratedCard<TView>>();
   private _currentCard: StudySessionItem | null = null;
-  /**
-   * Indicates whether the session has been initialized - eg, the
-   * queues have been populated.
-   */
-  private _isInitialized: boolean = false;
+  private hydration_in_progress: boolean = false;
 
   private startTime: Date;
   private endTime: Date;
@@ -103,13 +122,20 @@ export class SessionController extends Loggable {
   /**
    *
    */
-  constructor(sources: StudyContentSource[], time: number) {
+  constructor(
+    sources: StudyContentSource[],
+    time: number,
+    dataLayer: DataLayerProvider,
+    getViewComponent: (viewId: string) => TView
+  ) {
     super();
 
     this.sources = sources;
     this.startTime = new Date();
     this._secondsRemaining = time;
     this.endTime = new Date(this.startTime.valueOf() + 1000 * this._secondsRemaining);
+    this.dataLayer = dataLayer;
+    this.getViewComponent = getViewComponent;
 
     this.log(`Session constructed:
     startTime: ${this.startTime}
@@ -173,7 +199,7 @@ export class SessionController extends Loggable {
       this.error('Error preparing study session:', e);
     }
 
-    this._isInitialized = true;
+    await this._fillHydratedQueue();
 
     this._intervalHandle = setInterval(() => {
       this.tick();
@@ -221,11 +247,8 @@ export class SessionController extends Loggable {
     }
 
     let report = 'Review session created with:\n';
-    for (let i = 0; i < dueCards.length; i++) {
-      const card = dueCards[i];
-      this.reviewQ.add(card);
-      report += `\t${card.qualifiedID}}\n`;
-    }
+    this.reviewQ.addAll(dueCards, (c) => c.cardID);
+    report += dueCards.map((card) => `Card ${card.courseID}::${card.cardID} `).join('\n');
     this.log(report);
   }
 
@@ -244,55 +267,38 @@ export class SessionController extends Loggable {
       for (let i = 0; i < newContent.length; i++) {
         if (newContent[i].length > 0) {
           const item = newContent[i].splice(0, 1)[0];
-          this.log(`Adding new card: ${item.qualifiedID}`);
-          this.newQ.add(item);
+          this.log(`Adding new card: ${item.courseID}::${item.cardID}`);
+          this.newQ.add(item, item.cardID);
           n--;
         }
       }
     }
   }
 
-  private nextNewCard(): StudySessionNewItem | null {
-    const item = this.newQ.dequeue();
-
-    // queue some more content if we are getting low
-    if (this._isInitialized && this.newQ.length < 5) {
-      void this.getNewCards();
-    }
-
-    return item;
-  }
-
-  public nextCard(
+  private _selectNextItemToHydrate(
     action:
       | 'dismiss-success'
       | 'dismiss-failed'
       | 'marked-failed'
       | 'dismiss-error' = 'dismiss-success'
   ): StudySessionItem | null {
-    // dismiss (or sort to failedQ) the current card
-    this.dismissCurrentCard(action);
-
     const choice = Math.random();
     let newBound: number = 0.1;
     let reviewBound: number = 0.75;
 
     if (this.reviewQ.length === 0 && this.failedQ.length === 0 && this.newQ.length === 0) {
       // all queues empty - session is over (and course is complete?)
-      this._currentCard = null;
-      return this._currentCard;
+      return null;
     }
 
     if (this._secondsRemaining < 2 && this.failedQ.length === 0) {
       // session is over!
-      this._currentCard = null;
-      return this._currentCard;
+      return null;
     }
 
     // supply new cards at start of session
     if (this.newQ.dequeueCount < this.sources.length && this.newQ.length) {
-      this._currentCard = this.nextNewCard();
-      return this._currentCard;
+      return this.newQ.peek(0);
     }
 
     const cleanupTime = this.estimateCleanupTime();
@@ -333,17 +339,41 @@ export class SessionController extends Loggable {
     }
 
     if (choice < newBound && this.newQ.length) {
-      this._currentCard = this.nextNewCard();
+      return this.newQ.peek(0);
     } else if (choice < reviewBound && this.reviewQ.length) {
-      this._currentCard = this.reviewQ.dequeue();
+      return this.reviewQ.peek(0);
     } else if (this.failedQ.length) {
-      this._currentCard = this.failedQ.dequeue();
+      return this.failedQ.peek(0);
     } else {
       this.log(`No more cards available for the session!`);
-      this._currentCard = null;
+      return null;
+    }
+  }
+
+  public async nextCard(
+    action:
+      | 'dismiss-success'
+      | 'dismiss-failed'
+      | 'marked-failed'
+      | 'dismiss-error' = 'dismiss-success'
+  ): Promise<HydratedCard<TView> | null> {
+    // dismiss (or sort to failedQ) the current card
+    this.dismissCurrentCard(action);
+
+    let card = this.hydratedQ.dequeue();
+
+    // If no hydrated card but source cards available, wait for hydration
+    if (!card && this.hasAvailableCards()) {
+      void this._fillHydratedQueue(); // Start hydration in background
+      card = await this.nextHydratedCard(); // Wait for first available card
     }
 
-    return this._currentCard;
+    // Trigger background hydration to maintain cache (async, non-blocking)
+    if (this.hydratedQ.length < 3) {
+      void this._fillHydratedQueue();
+    }
+
+    return card;
   }
 
   private dismissCurrentCard(
@@ -373,7 +403,6 @@ export class SessionController extends Loggable {
           failedItem = {
             cardID: this._currentCard.cardID,
             courseID: this._currentCard.courseID,
-            qualifiedID: this._currentCard.qualifiedID,
             contentSourceID: this._currentCard.contentSourceID,
             contentSourceType: this._currentCard.contentSourceType,
             status: 'failed-review',
@@ -383,19 +412,98 @@ export class SessionController extends Loggable {
           failedItem = {
             cardID: this._currentCard.cardID,
             courseID: this._currentCard.courseID,
-            qualifiedID: this._currentCard.qualifiedID,
             contentSourceID: this._currentCard.contentSourceID,
             contentSourceType: this._currentCard.contentSourceType,
             status: 'failed-new',
           };
         }
 
-        this.failedQ.add(failedItem);
+        this.failedQ.add(failedItem, failedItem.cardID);
       } else if (action === 'dismiss-error') {
         // some error logging?
       } else if (action === 'dismiss-failed') {
         // handled by Study.vue
       }
     }
+  }
+
+  private hasAvailableCards(): boolean {
+    return this.reviewQ.length > 0 || this.newQ.length > 0 || this.failedQ.length > 0;
+  }
+
+  private async nextHydratedCard(): Promise<HydratedCard<TView> | null> {
+    // Wait for a card to become available in hydratedQ
+    while (this.hydratedQ.length === 0 && this.hasAvailableCards()) {
+      await new Promise((resolve) => setTimeout(resolve, 25)); // Short polling interval
+    }
+    return this.hydratedQ.dequeue();
+  }
+
+  private async _fillHydratedQueue() {
+    if (this.hydration_in_progress) {
+      return; // Prevent concurrent hydration
+    }
+
+    const BUFFER_SIZE = 5;
+    this.hydration_in_progress = true;
+
+    while (this.hydratedQ.length < BUFFER_SIZE) {
+      const nextItem = this._selectNextItemToHydrate();
+      if (!nextItem) {
+        return; // No more cards to hydrate
+      }
+
+      try {
+        const cardData = await this.dataLayer
+          .getCourseDB(nextItem.courseID)
+          .getCourseDoc<CardData>(nextItem.cardID);
+
+        if (!isCourseElo(cardData.elo)) {
+          cardData.elo = toCourseElo(cardData.elo);
+        }
+
+        const view = this.getViewComponent(cardData.id_view);
+        const dataDocs = await Promise.all(
+          cardData.id_displayable_data.map((id: string) =>
+            this.dataLayer.getCourseDB(nextItem.courseID).getCourseDoc<DisplayableData>(id, {
+              attachments: true,
+              binary: true,
+            })
+          )
+        );
+
+        const data = dataDocs.map(displayableDataToViewData).reverse();
+
+        this.hydratedQ.add(
+          {
+            item: nextItem,
+            view,
+            data,
+          },
+          nextItem.cardID
+        );
+
+        // Remove the item from the original queue
+        if (this.reviewQ.peek(0) === nextItem) {
+          this.reviewQ.dequeue();
+        } else if (this.newQ.peek(0) === nextItem) {
+          this.newQ.dequeue();
+        } else {
+          this.failedQ.dequeue();
+        }
+      } catch (e) {
+        this.error(`Error hydrating card ${nextItem.cardID}:`, e);
+        // Remove the failed item from the queue
+        if (this.reviewQ.peek(0) === nextItem) {
+          this.reviewQ.dequeue();
+        } else if (this.newQ.peek(0) === nextItem) {
+          this.newQ.dequeue();
+        } else {
+          this.failedQ.dequeue();
+        }
+      }
+    }
+
+    this.hydration_in_progress = false;
   }
 }

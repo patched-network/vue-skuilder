@@ -17,7 +17,7 @@
       />
 
       <v-list>
-        <template v-for="c in cards" :key="c.id">
+        <template v-for="c in cards" :key="c.card.cardID">
           <v-list-item
             :class="{
               'bg-blue-grey-lighten-5': c.isOpen,
@@ -29,10 +29,10 @@
             <template #prepend>
               <div>
                 <v-list-item-title :class="{ 'text-blue-grey-darken-1': c.isOpen }" class="font-weight-medium">
-                  {{ cardPreview[c.id] }}
+                  {{ cardPreview[c.card.cardID] }}
                 </v-list-item-title>
                 <v-list-item-subtitle>
-                  ELO: {{ cardElos[idParse(c.id)]?.global?.score || '(unknown)' }}
+                  ELO: {{ cardElos[c.card.cardID]?.global?.score || '(unknown)' }}
                 </v-list-item-subtitle>
               </div>
             </template>
@@ -51,7 +51,7 @@
                     :icon="c.isOpen ? 'mdi-close' : 'mdi-plus'"
                     size="small"
                     variant="text"
-                    @click="clearSelections(c.id)"
+                    @click="clearSelections(c.card.cardID)"
                   />
                 </template>
 
@@ -83,13 +83,13 @@
           </v-list-item>
 
           <div v-if="c.isOpen" class="px-4 py-2 bg-blue-grey-lighten-5">
-            <card-loader :qualified_id="idQualify(c.id)" :view-lookup="viewLookup" class="elevation-1" />
+            <card-loader :qualified_id="c.card" :view-lookup="viewLookup" class="elevation-1" />
 
             <!-- Tags display for readonly mode -->
-            <div v-if="editMode === 'readonly' && cardTags[idParse(c.id)]" class="mt-4">
+            <div v-if="editMode === 'readonly' && cardTags[c.card.cardID]" class="mt-4">
               <v-chip-group>
                 <v-chip
-                  v-for="tag in cardTags[idParse(c.id)]"
+                  v-for="tag in cardTags[c.card.cardID]"
                   :key="tag.name"
                   size="small"
                   color="primary"
@@ -103,7 +103,7 @@
             <tags-input
               v-show="internalEditMode === 'tags' && editMode === 'full'"
               :course-i-d="courseId"
-              :card-i-d="c.id.includes('-') ? c.id.split('-')[1] : c.id"
+              :card-i-d="c.card.cardID"
               class="mt-4"
             />
 
@@ -111,7 +111,7 @@
               <v-btn color="error" variant="outlined" @click="c.delBtn = true"> Delete this card </v-btn>
               <span v-if="c.delBtn" class="ml-4">
                 <span class="mr-2">Are you sure?</span>
-                <v-btn color="error" variant="elevated" @click="deleteCard(c.id)"> Confirm </v-btn>
+                <v-btn color="error" variant="elevated" @click="deleteCard(c.card.cardID)"> Confirm </v-btn>
               </span>
             </div>
           </div>
@@ -135,7 +135,15 @@
 <script lang="ts">
 import { defineComponent, PropType } from 'vue';
 import { displayableDataToViewData, Status, CourseElo } from '@vue-skuilder/common';
-import { getDataLayer, CourseDBInterface, CardData, DisplayableData, Tag, TagStub } from '@vue-skuilder/db';
+import {
+  getDataLayer,
+  CourseDBInterface,
+  CardData,
+  DisplayableData,
+  Tag,
+  TagStub,
+  QualifiedCardID,
+} from '@vue-skuilder/db';
 // local imports
 import TagsInput from './TagsInput.vue';
 import PaginatingToolbar from './PaginatingToolbar.vue';
@@ -184,7 +192,7 @@ export default defineComponent({
       courseDB: null as CourseDBInterface | null,
       page: 1,
       pages: [] as number[],
-      cards: [] as { id: string; isOpen: boolean; delBtn: boolean }[],
+      cards: [] as { card: QualifiedCardID; isOpen: boolean; delBtn: boolean }[],
       cardData: {} as { [card: string]: string[] },
       cardPreview: {} as { [card: string]: string },
       cardElos: {} as Record<string, CourseElo>,
@@ -222,21 +230,28 @@ export default defineComponent({
   },
 
   methods: {
-    idParse(id: string): string {
-      const delimiters = id.includes('-');
-      if (delimiters) {
-        return id.split('-')[1];
-      } else {
-        return id;
-      }
-    },
-
     idQualify(id: string): string {
       const delimiters = id.includes('-');
       if (delimiters) {
         return id;
       } else {
         return `${this.courseId}-${id}`;
+      }
+    },
+
+    idToQualifiedObject(id: string): QualifiedCardID {
+      const delimiters = id.includes('-');
+      if (delimiters) {
+        const parts = id.split('-');
+        return {
+          courseID: parts[0],
+          cardID: parts[1],
+        };
+      } else {
+        return {
+          courseID: this.courseId,
+          cardID: id,
+        };
       }
     },
 
@@ -281,7 +296,7 @@ export default defineComponent({
     },
     clearSelections(exception: string = '') {
       this.cards.forEach((card) => {
-        if (card.id !== exception) {
+        if (card.card.cardID !== exception) {
           card.isOpen = false;
         }
       });
@@ -290,9 +305,9 @@ export default defineComponent({
     },
     async deleteCard(cID: string) {
       console.log(`Deleting card ${cID}`);
-      const res = await this.courseDB!.removeCard(this.idParse(cID));
+      const res = await this.courseDB!.removeCard(cID);
       if (res.ok) {
-        this.cards = this.cards.filter((card) => card.id != cID);
+        this.cards = this.cards.filter((card) => card.card.cardID != cID);
         this.clearSelections();
       } else {
         console.error(`Failed to delete card:\n\n${JSON.stringify(res)}`);
@@ -307,12 +322,12 @@ export default defineComponent({
       if (this.tagId) {
         const tag = await this.courseDB!.getTag(this.tagId);
         this.cards = tag.taggedCards.map((c) => {
-          return { id: `${this.courseId}-${c}`, isOpen: false, delBtn: false };
+          return { card: { cardID: c, courseID: this.courseId }, isOpen: false, delBtn: false };
         });
       } else {
         this.cards = (await this.courseDB!.getCardsByELO(0, 25)).map((c) => {
           return {
-            id: c,
+            card: c,
             isOpen: false,
             delBtn: false,
           };
@@ -322,7 +337,7 @@ export default defineComponent({
       const toRemove: string[] = [];
       const hydratedCardData = (
         await this.courseDB!.getCourseDocs<CardData>(
-          this.cards.map((c) => this.idParse(c.id)),
+          this.cards.map((c) => c.card.cardID),
           {
             include_docs: true,
           }
@@ -342,7 +357,7 @@ export default defineComponent({
         })
         .map((r) => r.doc!);
 
-      this.cards = this.cards.filter((c) => !toRemove.includes(this.idParse(c.id)));
+      this.cards = this.cards.filter((c) => !toRemove.includes(c.card.cardID));
 
       hydratedCardData.forEach((c) => {
         if (c && c.id_displayable_data) {
@@ -353,7 +368,7 @@ export default defineComponent({
       try {
         await Promise.all(
           this.cards.map(async (c) => {
-            const _cardID: string = this.idParse(c.id);
+            const _cardID: string = c.card.cardID;
 
             const tmpCardData = hydratedCardData.find((c) => c._id == _cardID);
             if (!tmpCardData || !tmpCardData.id_displayable_data) {
@@ -378,18 +393,15 @@ export default defineComponent({
                 tmpData.unshift(displayableDataToViewData(doc));
 
                 // Vue 3: Use component name for preview (legacy constructor code removed)
-                this.cardPreview[c.id] = tmpView.name ? tmpView.name : 'Unknown';
+                this.cardPreview[c.card.cardID] = tmpView.name ? tmpView.name : 'Unknown';
               })
             );
           })
         );
 
         // Load ELO data for all cards
-        const cardIds = this.cards.map((c) => this.idParse(c.id));
-        const eloData =
-          this.cards[0].id.split('-').length === 3
-            ? this.cards.map((c) => c.id.split('-')[2]) // for platform-ui crs-card-elo IDs
-            : await this.courseDB!.getCardEloData(cardIds); // general case lookup
+        const cardIds = this.cards.map((c) => c.card.cardID);
+        const eloData = await this.courseDB!.getCardEloData(cardIds); // general case lookup
 
         // Store ELO data indexed by card ID
         cardIds.forEach((cardId, index) => {

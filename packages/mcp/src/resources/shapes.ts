@@ -86,9 +86,9 @@ export async function handleShapeSpecificResource(
     let examples: any[] = [];
     try {
       // Get a few cards that use this shape to provide examples
-      const cardIds = await courseDB.getCardsByELO(1500, 10); // Get some sample cards
-      if (cardIds.length > 0) {
-        const cardDocs = await courseDB.getCourseDocs(cardIds.slice(0, 5)); // Limit to 5 examples
+      const cards = await courseDB.getCardsByELO(1500, 10); // Get some sample cards
+      if (cards.length > 0) {
+        const cardDocs = await courseDB.getCourseDocs(cards.map(c=>c.cardID).slice(0, 5)); // Limit to 5 examples
         examples = [];
         for (const row of cardDocs.rows) {
           if (isSuccessRow(row) && (row.doc as any).shape?.name === shapeName) {

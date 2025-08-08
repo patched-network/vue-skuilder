@@ -1,6 +1,6 @@
 import { CourseConfig, CourseElo, DataShape, SkuilderCourseData } from '@vue-skuilder/common';
 import { StudySessionNewItem, StudySessionItem } from './contentSource';
-import { TagStub, Tag } from '../types/types-legacy';
+import { TagStub, Tag, QualifiedCardID } from '../types/types-legacy';
 import { DataLayerResult } from '../types/db';
 import { NavigationStrategyManager } from './navigationStrategyManager';
 
@@ -53,7 +53,16 @@ export interface CourseDBInterface extends NavigationStrategyManager {
   /**
    * Get cards sorted by ELO rating
    */
-  getCardsByELO(elo: number, limit?: number): Promise<string[]>;
+  getCardsByELO(
+    elo: number,
+    limit?: number
+  ): Promise<
+    {
+      courseID: string;
+      cardID: string;
+      elo?: number;
+    }[]
+  >;
 
   /**
    * Get ELO data for specific cards
@@ -75,7 +84,7 @@ export interface CourseDBInterface extends NavigationStrategyManager {
    */
   getCardsCenteredAtELO(
     options: { limit: number; elo: 'user' | 'random' | number },
-    filter?: (id: string) => boolean
+    filter?: (card: QualifiedCardID) => boolean
   ): Promise<StudySessionItem[]>;
 
   /**
@@ -145,7 +154,7 @@ export interface CourseDBInterface extends NavigationStrategyManager {
   searchCards(query: string): Promise<any[]>;
 
   /**
-   * Find documents using PouchDB query syntax  
+   * Find documents using PouchDB query syntax
    * @param request PouchDB find request
    * @returns Query response
    */
