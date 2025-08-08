@@ -245,7 +245,7 @@ export class SessionController extends Loggable {
       for (let i = 0; i < newContent.length; i++) {
         if (newContent[i].length > 0) {
           const item = newContent[i].splice(0, 1)[0];
-          this.log(`Adding new card: ${item.courseID}-${item.cardID}`); // revealed bug here w/ new prefixes.  osbserved log "Adding new card: 5e627b7f630998243834152aa00920f5-c"
+          this.log(`Adding new card: ${item.courseID}::${item.cardID}`);
           this.newQ.add(item);
           n--;
         }
