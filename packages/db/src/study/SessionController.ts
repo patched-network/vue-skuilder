@@ -103,6 +103,7 @@ export class SessionController extends Loggable {
   private failedQ: ItemQueue<StudySessionFailedItem> = new ItemQueue<StudySessionFailedItem>();
   private hydratedQ: ItemQueue<HydratedCard> = new ItemQueue<HydratedCard>();
   private _currentCard: StudySessionItem | null = null;
+  private hydration_in_progress: boolean = false;
 
   private startTime: Date;
   private endTime: Date;
@@ -350,18 +351,31 @@ export class SessionController extends Loggable {
     }
   }
 
-  public nextCard(
+  public async nextCard(
     action:
       | 'dismiss-success'
       | 'dismiss-failed'
       | 'marked-failed'
       | 'dismiss-error' = 'dismiss-success'
-  ): HydratedCard | null {
+  ): Promise<HydratedCard | null> {
     // dismiss (or sort to failedQ) the current card
     this.dismissCurrentCard(action);
 
-    const card = this.hydratedQ.dequeue();
-    void this._fillHydratedQueue();
+    let card = this.hydratedQ.dequeue();
+
+    // If no hydrated card but source cards available, wait for hydration
+    if (!card && this.hasAvailableCards() && !this.hydration_in_progress) {
+      this.hydration_in_progress = true;
+      await this._fillHydratedQueue();
+      this.hydration_in_progress = false;
+      card = this.hydratedQ.dequeue();
+    }
+
+    // Trigger background hydration to maintain cache (async, non-blocking)
+    if (this.hydratedQ.length < 3) {
+      void this._fillHydratedQueue();
+    }
+
     return card;
   }
 
@@ -416,9 +430,19 @@ export class SessionController extends Loggable {
     }
   }
 
+  private hasAvailableCards(): boolean {
+    return this.reviewQ.length > 0 || this.newQ.length > 0 || this.failedQ.length > 0;
+  }
+
   private async _fillHydratedQueue() {
-    const BATCH_SIZE = 5;
-    while (this.hydratedQ.length < BATCH_SIZE) {
+    if (this.hydration_in_progress) {
+      return; // Prevent concurrent hydration
+    }
+
+    const BUFFER_SIZE = 5;
+    this.hydration_in_progress = true;
+
+    while (this.hydratedQ.length < BUFFER_SIZE) {
       const nextItem = this._selectNextItemToHydrate();
       if (!nextItem) {
         return; // No more cards to hydrate
@@ -474,5 +498,7 @@ export class SessionController extends Loggable {
         }
       }
     }
+
+    this.hydration_in_progress = false;
   }
 }
