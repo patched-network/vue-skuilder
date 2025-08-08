@@ -10,6 +10,8 @@ import {
 import { CardRecord } from '@db/core';
 import { Loggable } from '@db/util';
 import { ScheduledCard } from '@db/core/types/user';
+import { ViewComponent } from '@vue-skuilder/common-ui';
+import { ViewData } from '@vue-skuilder/common';
 
 function randomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -25,7 +27,13 @@ export interface StudySessionRecord {
   records: CardRecord[];
 }
 
-class ItemQueue<T extends StudySessionItem> {
+export interface HydratedCard {
+  item: StudySessionItem;
+  view: ViewComponent;
+  data: ViewData[];
+}
+
+class ItemQueue<T> {
   private q: T[] = [];
   private seenCardIds: string[] = [];
   private _dequeueCount: number = 0;
@@ -33,16 +41,16 @@ class ItemQueue<T extends StudySessionItem> {
     return this._dequeueCount;
   }
 
-  public add(item: T) {
-    if (this.seenCardIds.find((d) => d === item.cardID)) {
+  public add(item: T, cardId: string) {
+    if (this.seenCardIds.find((d) => d === cardId)) {
       return; // do not re-add a card to the same queue
     }
 
-    this.seenCardIds.push(item.cardID);
+    this.seenCardIds.push(cardId);
     this.q.push(item);
   }
-  public addAll(items: T[]) {
-    items.forEach((i) => this.add(i));
+  public addAll(items: T[], cardIdExtractor: (item: T) => string) {
+    items.forEach((i) => this.add(i, cardIdExtractor(i)));
   }
   public get length() {
     return this.q.length;
@@ -63,7 +71,7 @@ class ItemQueue<T extends StudySessionItem> {
   public get toString(): string {
     return (
       `${typeof this.q[0]}:\n` +
-      this.q.map((i) => `\t${i.courseID}+${i.cardID}: ${i.status}`).join('\n')
+      this.q.map((i) => `\t${(i as any).courseID}+${(i as any).cardID}: ${(i as any).status}`).join('\n')
     );
   }
 }
@@ -79,6 +87,7 @@ export class SessionController extends Loggable {
   private reviewQ: ItemQueue<StudySessionReviewItem> = new ItemQueue<StudySessionReviewItem>();
   private newQ: ItemQueue<StudySessionNewItem> = new ItemQueue<StudySessionNewItem>();
   private failedQ: ItemQueue<StudySessionFailedItem> = new ItemQueue<StudySessionFailedItem>();
+  private hydratedQ: ItemQueue<HydratedCard> = new ItemQueue<HydratedCard>();
   private _currentCard: StudySessionItem | null = null;
   /**
    * Indicates whether the session has been initialized - eg, the
@@ -222,11 +231,7 @@ export class SessionController extends Loggable {
     }
 
     let report = 'Review session created with:\n';
-    for (let i = 0; i < dueCards.length; i++) {
-      const card = dueCards[i];
-      this.reviewQ.add(card);
-      report += `\t${card.courseID}-${card.cardID}\n`;
-    }
+    this.reviewQ.addAll(dueCards, (c) => c.cardID);
     this.log(report);
   }
 
@@ -246,7 +251,7 @@ export class SessionController extends Loggable {
         if (newContent[i].length > 0) {
           const item = newContent[i].splice(0, 1)[0];
           this.log(`Adding new card: ${item.courseID}::${item.cardID}`);
-          this.newQ.add(item);
+          this.newQ.add(item, item.cardID);
           n--;
         }
       }
@@ -385,17 +390,21 @@ export class SessionController extends Loggable {
             cardID: this._currentCard.cardID,
             courseID: this._currentCard.courseID,
             contentSourceID: this._currentCard.contentSourceID,
-            contentSourceType: this._currentCard.contentSourceType,
+            contentSourceType: this._current_card.contentSourceType,
             status: 'failed-new',
           };
         }
 
-        this.failedQ.add(failedItem);
+        this.failedQ.add(failedItem, failedItem.cardID);
       } else if (action === 'dismiss-error') {
         // some error logging?
       } else if (action === 'dismiss-failed') {
         // handled by Study.vue
       }
     }
+  }
+
+  private async _fillHydratedQueue() {
+    // TODO: Implement pre-fetching logic here
   }
 }
