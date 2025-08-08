@@ -285,7 +285,7 @@ export default defineComponent({
                 }
               })
             )
-          ).filter((s) => s !== null)
+          ).filter((s: unknown) => s !== null)
         );
 
         this.timeRemaining = this.sessionTimeLimit * 60;
