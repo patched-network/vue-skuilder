@@ -618,7 +618,7 @@ export default defineComponent({
 
         const err = e as Error;
         if (docIsDeleted(err) && isReview(item)) {
-          console.warn(`Card was deleted: ${qualified_id}`);
+          console.warn(`Card was deleted: ${_courseID}::${_cardID}`);
           this.user!.removeScheduledCardReview(item.reviewID);
         }
 
