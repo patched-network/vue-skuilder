@@ -364,11 +364,9 @@ export class SessionController extends Loggable {
     let card = this.hydratedQ.dequeue();
 
     // If no hydrated card but source cards available, wait for hydration
-    if (!card && this.hasAvailableCards() && !this.hydration_in_progress) {
-      this.hydration_in_progress = true;
-      await this._fillHydratedQueue();
-      this.hydration_in_progress = false;
-      card = this.hydratedQ.dequeue();
+    if (!card && this.hasAvailableCards()) {
+      void this._fillHydratedQueue(); // Start hydration in background
+      card = await this.nextHydratedCard(); // Wait for first available card
     }
 
     // Trigger background hydration to maintain cache (async, non-blocking)
@@ -432,6 +430,14 @@ export class SessionController extends Loggable {
 
   private hasAvailableCards(): boolean {
     return this.reviewQ.length > 0 || this.newQ.length > 0 || this.failedQ.length > 0;
+  }
+
+  private async nextHydratedCard(): Promise<HydratedCard | null> {
+    // Wait for a card to become available in hydratedQ
+    while (this.hydratedQ.length === 0 && this.hasAvailableCards()) {
+      await new Promise((resolve) => setTimeout(resolve, 25)); // Short polling interval
+    }
+    return this.hydratedQ.dequeue();
   }
 
   private async _fillHydratedQueue() {
