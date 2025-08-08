@@ -103,7 +103,6 @@ export class SessionController extends Loggable {
   private failedQ: ItemQueue<StudySessionFailedItem> = new ItemQueue<StudySessionFailedItem>();
   private hydratedQ: ItemQueue<HydratedCard> = new ItemQueue<HydratedCard>();
   private _currentCard: StudySessionItem | null = null;
-  
 
   private startTime: Date;
   private endTime: Date;
@@ -200,9 +199,7 @@ export class SessionController extends Loggable {
       this.error('Error preparing study session:', e);
     }
 
-    
-
-    void this._fillHydratedQueue();
+    await this._fillHydratedQueue();
 
     this._intervalHandle = setInterval(() => {
       this.tick();
@@ -255,9 +252,9 @@ export class SessionController extends Loggable {
     this.log(report);
   }
 
-  private async getNewCards(n: number = 10) {
+  private async getNewCards(n: number = 10, filter?: (c: string) => boolean) {
     const perCourse = Math.ceil(n / this.sources.length);
-    const newContent = await Promise.all(this.sources.map((c) => c.getNewCards(perCourse)));
+    const newContent = await Promise.all(this.sources.map((c) => c.getNewCards(perCourse, filter)));
 
     // [ ] is this a noop?
     newContent.forEach((newContentFromSource) => {
@@ -278,12 +275,13 @@ export class SessionController extends Loggable {
     }
   }
 
-  
-
-  private _selectNextItemToHydrate(action: | 'dismiss-success'
-  | 'dismiss-failed'
-  | 'marked-failed'
-  | 'dismiss-error' = 'dismiss-success'): StudySessionItem | null {
+  private _selectNextItemToHydrate(
+    action:
+      | 'dismiss-success'
+      | 'dismiss-failed'
+      | 'marked-failed'
+      | 'dismiss-error' = 'dismiss-success'
+  ): StudySessionItem | null {
     const choice = Math.random();
     let newBound: number = 0.1;
     let reviewBound: number = 0.75;
@@ -353,7 +351,6 @@ export class SessionController extends Loggable {
   }
 
   public nextCard(
-    // [ ] this is often slow. Why?
     action:
       | 'dismiss-success'
       | 'dismiss-failed'
