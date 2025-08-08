@@ -181,7 +181,7 @@ export class StudentClassroomDB
     );
 
     return ret.filter((c) => {
-      if (activeCards.some((ac) => c.cardID.includes(ac))) {
+      if (activeCards.some((ac) => c.cardID === ac.cardID)) {
         // [ ] almost certainly broken after removing qualifiedID from StudySessionItem
         return false;
       } else {

@@ -277,7 +277,12 @@ Currently logged-in as ${this._username}.`
       include_docs: true,
     });
 
-    return reviews.rows.map((r) => `${r.doc!.courseId}-${r.doc!.cardId}`);
+    return reviews.rows.map((r) => {
+      return {
+        courseID: r.doc!.courseId,
+        cardID: r.doc!.cardId,
+      };
+    });
   }
 
   public async getActivityRecords(): Promise<ActivityRecord[]> {
@@ -657,7 +662,7 @@ Currently logged-in as ${this._username}.`
   private async applyDesignDocs() {
     log(`Starting applyDesignDocs for user: ${this._username}`);
     log(`Remote DB name: ${this.remoteDB.name || 'unknown'}`);
-    
+
     if (this._username === 'admin') {
       // Skip admin user
       log('Skipping design docs for admin user');

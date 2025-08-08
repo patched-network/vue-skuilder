@@ -1,7 +1,7 @@
 <template>
   <div class="admin-dashboard">
     <h1>Admin Dashboard</h1>
-    
+
     <!-- User Selection Section -->
     <v-card class="mb-4">
       <v-card-title>User Selection</v-card-title>
@@ -14,9 +14,7 @@
           label="Select User"
           @update:model-value="onUserSelected"
         ></v-select>
-        <v-chip v-if="selectedUserId" color="primary" class="mt-2">
-          Viewing data for: {{ selectedUserId }}
-        </v-chip>
+        <v-chip v-if="selectedUserId" color="primary" class="mt-2"> Viewing data for: {{ selectedUserId }} </v-chip>
       </v-card-text>
     </v-card>
 
@@ -34,9 +32,7 @@
           @update:model-value="onCourseFilterChanged"
         ></v-select>
         <div v-if="selectedCourseId" class="mt-2">
-          <v-chip color="info" class="mb-1">
-            🎯 {{ getCourseNameById(selectedCourseId) }}
-          </v-chip>
+          <v-chip color="info" class="mb-1"> 🎯 {{ getCourseNameById(selectedCourseId) }} </v-chip>
           <div v-if="getSelectedCourseDetails()" class="text-caption text-grey-darken-1">
             {{ getSelectedCourseDetails() }}
           </div>
@@ -51,30 +47,30 @@
     <card-search @search="onSearch" />
     <v-row>
       <v-col cols="6">
-        <card-search-results 
-          v-if="query" 
-          :query="query" 
-          :data-layer="dataLayer" 
+        <card-search-results
+          v-if="query"
+          :query="query"
+          :data-layer="dataLayer"
           :course-filter="selectedCourseId"
-          @card-selected="onCardSelected" 
+          @card-selected="onCardSelected"
         />
       </v-col>
       <v-col cols="6">
         <card-loader
           v-if="selectedCard"
-          :qualified_id="selectedCard.courseId + '-' + selectedCard.cardId"
+          :qualified_id="{ courseID: selectedCard.courseId, cardID: selectedCard.cardId }"
           :view-lookup="viewLookup"
         />
       </v-col>
     </v-row>
-    
+
     <!-- Card History Section -->
-    <card-history-viewer 
-      v-if="selectedCard && selectedUserReader" 
-      :card-id="selectedCard.cardId" 
-      :course-id="selectedCard.courseId" 
-      :user-id="selectedUserId" 
-      :user-d-b="selectedUserReader" 
+    <card-history-viewer
+      v-if="selectedCard && selectedUserReader"
+      :card-id="selectedCard.cardId"
+      :course-id="selectedCard.courseId"
+      :user-id="selectedUserId"
+      :user-d-b="selectedUserReader"
     />
   </div>
 </template>
@@ -119,10 +115,10 @@ export default defineComponent({
     this.userId = this.userDB.getUsername();
     this.dataLayer = await getDataLayer();
     this.adminDB = this.dataLayer.getAdminDB();
-    
+
     // Load user list for selection
     await this.loadUsers();
-    
+
     // Load available courses
     await this.loadCourses();
   },
@@ -131,23 +127,23 @@ export default defineComponent({
       try {
         const users = await this.adminDB!.getUsers();
         this.userOptions = users
-          .filter(user => user.name && !user.name.startsWith('Guest_'))
-          .map(user => ({
+          .filter((user) => user.name && !user.name.startsWith('Guest_'))
+          .map((user) => ({
             label: user.name || 'Unknown User',
             value: user.name || '',
           }))
-          .filter(option => option.value !== '');
+          .filter((option) => option.value !== '');
       } catch (error) {
         console.error('Failed to load users:', error);
       }
     },
-    
+
     async onUserSelected(userId: string) {
       if (!userId) {
         this.selectedUserReader = null;
         return;
       }
-      
+
       try {
         this.selectedUserReader = await this.dataLayer!.createUserReaderForUser(userId);
       } catch (error) {
@@ -155,11 +151,11 @@ export default defineComponent({
         this.selectedUserReader = null;
       }
     },
-    
+
     onSearch(query: string) {
       this.query = query;
     },
-    
+
     onCardSelected(card: { cardId: string; courseId: string }) {
       this.selectedCard = card;
     },
@@ -168,17 +164,17 @@ export default defineComponent({
       try {
         // Try efficient lookup-only approach first
         // const coursesDB = this.dataLayer!.getCoursesDB();
-        
+
         // Get basic course list from lookup DB (lightweight, just IDs and basic names)
         const lookupCourses = await CourseLookup.allCourseWare();
-          
+
         this.courseOptions = lookupCourses
-          .filter(course => course._id)
-          .map(course => {
+          .filter((course) => course._id)
+          .map((course) => {
             const courseName = course.name && course.name.trim();
             let displayName: string;
             let sortKey: string;
-            
+
             if (courseName && courseName !== course._id && courseName !== '') {
               // Has a real name different from ID
               displayName = courseName;
@@ -188,7 +184,7 @@ export default defineComponent({
               displayName = course._id;
               sortKey = course._id.toLowerCase();
             }
-            
+
             // Simple display without expensive metadata lookups
             return {
               label: `📚 ${displayName}`,
@@ -197,7 +193,7 @@ export default defineComponent({
             };
           })
           .sort((a, b) => a.sortKey.localeCompare(b.sortKey));
-          
+
         console.log(`Loaded ${this.courseOptions.length} courses for filtering (lightweight mode)`);
       } catch (error) {
         console.error('Failed to load courses (lightweight):', error);
@@ -211,16 +207,16 @@ export default defineComponent({
         console.log('Using expensive course loading (full configs)...');
         const adminDB = this.dataLayer!.getAdminDB();
         const basicCourseList = await adminDB.getCourses(); // This fetches full configs
-        
+
         this.courseOptions = basicCourseList
-          .filter(course => course.courseID)
-          .map(course => {
-            const courseName = course.courseName && course.courseName.trim();
+          .filter((course) => course.courseID)
+          .map((course) => {
+            const courseName = course.name && course.name.trim();
             const creator = course.creator ? ` (${course.creator})` : '';
-            
+
             let displayName: string;
             let sortKey: string;
-            
+
             if (courseName && courseName !== course.courseID) {
               // Has a real name different from ID
               displayName = courseName;
@@ -230,9 +226,9 @@ export default defineComponent({
               displayName = course.courseID!;
               sortKey = course.courseID!.toLowerCase();
             }
-            
+
             const visibility = course.public ? '🌐' : '🔒';
-            
+
             return {
               label: `${visibility} ${displayName}${creator}`,
               value: course.courseID!,
@@ -240,7 +236,7 @@ export default defineComponent({
             };
           })
           .sort((a, b) => a.sortKey.localeCompare(b.sortKey));
-          
+
         console.log(`Loaded ${this.courseOptions.length} courses for filtering (expensive mode)`);
       } catch (error) {
         console.error('Failed to load courses (expensive):', error);
@@ -255,9 +251,7 @@ export default defineComponent({
         console.log('Using fallback course loading (IDs only)');
         // This would need a new method that just gets the lookup docs without full configs
         // For now, we'll show a basic message
-        this.courseOptions = [
-          { label: '⚠️ Course names not available - using IDs only', value: '', sortKey: '' }
-        ];
+        this.courseOptions = [{ label: '⚠️ Course names not available - using IDs only', value: '' }];
       } catch (error) {
         console.error('Failed to load basic courses:', error);
       }
@@ -271,20 +265,20 @@ export default defineComponent({
     },
 
     getCourseNameById(courseId: string): string {
-      const course = this.courseOptions.find(c => c.value === courseId);
+      const course = this.courseOptions.find((c) => c.value === courseId);
       return course ? course.label : courseId;
     },
 
     getSelectedCourseDetails(): string {
       if (!this.selectedCourseId) return '';
-      
+
       // For now, just return the ID as additional context
       return `ID: ${this.selectedCourseId}`;
     },
 
     viewLookup(viewDescriptor: unknown) {
       return allCourseWare.getView(viewDescriptor);
-    }
+    },
   },
 });
 </script>

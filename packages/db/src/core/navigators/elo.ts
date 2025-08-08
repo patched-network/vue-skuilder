@@ -3,7 +3,8 @@ import { CourseDBInterface } from '../interfaces/courseDB';
 import { UserDBInterface } from '../interfaces/userDB';
 import { ContentNavigator } from './index';
 import { CourseElo } from '@vue-skuilder/common';
-import { StudySessionReviewItem, StudySessionNewItem } from '..';
+import { StudySessionReviewItem, StudySessionNewItem, QualifiedCardID } from '..';
+import { StudySessionItem } from '../interfaces/contentSource';
 
 export default class ELONavigator extends ContentNavigator {
   user: UserDBInterface;
@@ -59,13 +60,16 @@ export default class ELONavigator extends ContentNavigator {
   async getNewCards(limit: number = 99): Promise<StudySessionNewItem[]> {
     const activeCards = await this.user.getActiveCards();
     return (
-      await this.course.getCardsCenteredAtELO({ limit: limit, elo: 'user' }, (c: string) => {
-        if (activeCards.some((ac) => c.includes(ac))) {
-          return false;
-        } else {
-          return true;
+      await this.course.getCardsCenteredAtELO(
+        { limit: limit, elo: 'user' },
+        (c: QualifiedCardID) => {
+          if (activeCards.some((ac) => c.cardID === ac.cardID)) {
+            return false;
+          } else {
+            return true;
+          }
         }
-      })
+      )
     ).map((c) => {
       return {
         ...c,

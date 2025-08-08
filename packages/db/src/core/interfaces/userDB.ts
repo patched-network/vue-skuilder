@@ -6,7 +6,7 @@ import {
 } from '@db/core/types/user';
 import { CourseElo, Status } from '@vue-skuilder/common';
 import { Moment } from 'moment';
-import { CardHistory, CardRecord } from '../types/types-legacy';
+import { CardHistory, CardRecord, QualifiedCardID } from '../types/types-legacy';
 import { UserConfig } from '../types/user';
 import { DocumentUpdater } from '@db/study';
 
@@ -17,55 +17,55 @@ export interface UserDBReader {
   get<T>(id: string): Promise<T & PouchDB.Core.RevisionIdMeta>;
   getUsername(): string;
   isLoggedIn(): boolean;
-  
+
   /**
    * Get user configuration
    */
   getConfig(): Promise<UserConfig>;
-  
+
   /**
    * Get cards that the user has seen
    */
   getSeenCards(courseId?: string): Promise<string[]>;
-  
+
   /**
    * Get cards that are actively scheduled for review
    */
-  getActiveCards(): Promise<string[]>;
-  
+  getActiveCards(): Promise<QualifiedCardID[]>;
+
   /**
    * Get user's course registrations
    */
   getCourseRegistrationsDoc(): Promise<CourseRegistrationDoc>;
-  
+
   /**
    * Get the registration doc for a specific course.
    * @param courseId
    */
   getCourseRegDoc(courseId: string): Promise<CourseRegistration>;
-  
+
   /**
    * Get user's active courses
    */
   getActiveCourses(): Promise<CourseRegistration[]>;
-  
+
   /**
    * Get user's pending reviews
    */
   getPendingReviews(courseId?: string): Promise<ScheduledCard[]>;
-  
+
   getActivityRecords(): Promise<ActivityRecord[]>;
-  
+
   /**
    * Get user's classroom registrations
    */
   getUserClassrooms(): Promise<ClassroomRegistrationDoc>;
-  
+
   /**
    * Get user's active classes
    */
   getActiveClasses(): Promise<string[]>;
-  
+
   getCourseInterface(courseId: string): Promise<UsrCrsDataInterface>;
 }
 
@@ -77,22 +77,22 @@ export interface UserDBWriter extends DocumentUpdater {
    * Update user configuration
    */
   setConfig(config: Partial<UserConfig>): Promise<void>;
-  
+
   /**
    * Record a user's interaction with a card
    */
   putCardRecord<T extends CardRecord>(record: T): Promise<CardHistory<CardRecord>>;
-  
+
   /**
    * Register user for a course
    */
   registerForCourse(courseId: string, previewMode?: boolean): Promise<PouchDB.Core.Response>;
-  
+
   /**
    * Drop a course registration
    */
   dropCourse(courseId: string, dropStatus?: string): Promise<PouchDB.Core.Response>;
-  
+
   /**
    * Schedule a card for review
    */
@@ -104,12 +104,12 @@ export interface UserDBWriter extends DocumentUpdater {
     scheduledFor: 'course' | 'classroom';
     schedulingAgentId: string;
   }): Promise<void>;
-  
+
   /**
    * Remove a scheduled card review
    */
   removeScheduledCardReview(reviewId: string): Promise<void>;
-  
+
   /**
    * Register user for a classroom
    */
@@ -117,17 +117,17 @@ export interface UserDBWriter extends DocumentUpdater {
     classId: string,
     registerAs: 'student' | 'teacher' | 'aide' | 'admin'
   ): Promise<PouchDB.Core.Response>;
-  
+
   /**
    * Drop user from classroom
    */
   dropFromClassroom(classId: string): Promise<PouchDB.Core.Response>;
-  
+
   /**
    * Update user's ELO rating for a course
    */
   updateUserElo(courseId: string, elo: CourseElo): Promise<PouchDB.Core.Response>;
-  
+
   /**
    * Reset all user data (progress, registrations, etc.) while preserving authentication
    */
@@ -173,8 +173,7 @@ export interface UserDBAuthenticator {
  * Complete user database interface - combines all user operations
  * This maintains backward compatibility with existing code
  */
-export interface UserDBInterface extends UserDBReader, UserDBWriter, UserDBAuthenticator {
-}
+export interface UserDBInterface extends UserDBReader, UserDBWriter, UserDBAuthenticator {}
 
 export interface UserCourseSettings {
   [setting: string]: string | number | boolean;

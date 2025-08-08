@@ -18,7 +18,14 @@ import {
   StudySessionNewItem,
   StudySessionReviewItem,
 } from '../../core/interfaces/contentSource';
-import { CardData, DocType, SkuilderCourseData, Tag, TagStub } from '../../core/types/types-legacy';
+import {
+  CardData,
+  DocType,
+  QualifiedCardID,
+  SkuilderCourseData,
+  Tag,
+  TagStub,
+} from '../../core/types/types-legacy';
 import { logger } from '../../util/logger';
 import { GET_CACHED } from './clientCache';
 import { addNote55, addTagToCard, getCredentialledCourseConfig, getTagID } from './courseAPI';
@@ -547,7 +554,7 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
       limit: 99,
       elo: 'user',
     },
-    filter?: (a: string) => boolean
+    filter?: (a: QualifiedCardID) => boolean
   ): Promise<StudySessionItem[]> {
     let targetElo: number;
 
@@ -571,7 +578,7 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
       targetElo = options.elo;
     }
 
-    let cards: { courseID: string; cardID: string; elo?: number }[] = [];
+    let cards: (QualifiedCardID & { elo?: number })[] = [];
     let mult: number = 4;
     let previousCount: number = -1;
     let newCount: number = 0;
@@ -584,20 +591,8 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
       logger.debug(`Found ${cards.length} elo neighbor cards...`);
 
       if (filter) {
-        const filtered = cards
-          .map((card) => {
-            if (card.elo) {
-              return `${card.courseID}-${card.cardID}-${card.elo}`;
-            } else {
-              return `${card.courseID}-${card.cardID}`;
-            }
-          })
-          .filter(filter);
+        cards = cards.filter(filter);
         logger.debug(`Filtered to ${cards.length} cards...`);
-        cards = filtered.map((card) => {
-          const [courseID, cardID, elo] = card.split('-');
-          return { courseID, cardID, elo: elo ? parseInt(elo) : undefined };
-        });
       }
 
       mult *= 2;
