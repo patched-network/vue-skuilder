@@ -562,11 +562,11 @@ export default defineComponent({
       }
       this.cardType = item.status;
 
-      const qualified_id = item.qualifiedID;
       this.loading = true;
-      const [_courseID, _cardID] = qualified_id.split('-');
+      const _courseID = item.courseID;
+      const _cardID = item.cardID;
 
-      console.log(`[StudySession] Now displaying: ${qualified_id}`);
+      console.log(`[StudySession] Now displaying: ${_courseID}::${_cardID}`);
 
       try {
         const tmpCardData = await this.dataLayer.getCourseDB(_courseID).getCourseDoc<CardData>(_cardID);
