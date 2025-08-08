@@ -10,7 +10,6 @@ import {
 import { CardRecord } from '@db/core';
 import { Loggable } from '@db/util';
 import { ScheduledCard } from '@db/core/types/user';
-import { ViewComponent } from '@vue-skuilder/common-ui';
 import { ViewData } from '@vue-skuilder/common';
 
 function randomInt(min: number, max: number): number {
@@ -29,7 +28,7 @@ export interface StudySessionRecord {
 
 export interface HydratedCard {
   item: StudySessionItem;
-  view: ViewComponent;
+  view: any; // Vue component - avoid circular dependency with common-ui
   data: ViewData[];
 }
 
@@ -92,7 +91,7 @@ export class SessionController extends Loggable {
   _className = 'SessionController';
   private sources: StudyContentSource[];
   private dataLayer: DataLayerProvider;
-  private getViewComponent: (viewId: string) => ViewComponent;
+  private getViewComponent: (viewId: string) => any;
   private _sessionRecord: StudySessionRecord[] = [];
   public set sessionRecord(r: StudySessionRecord[]) {
     this._sessionRecord = r;
@@ -127,7 +126,7 @@ export class SessionController extends Loggable {
     sources: StudyContentSource[],
     time: number,
     dataLayer: DataLayerProvider,
-    getViewComponent: (viewId: string) => ViewComponent
+    getViewComponent: (viewId: string) => any // Vue component
   ) {
     super();
 
