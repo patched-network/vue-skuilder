@@ -26,9 +26,9 @@ export interface StudySessionRecord {
   records: CardRecord[];
 }
 
-export interface HydratedCard {
+export interface HydratedCard<TView = unknown> {
   item: StudySessionItem;
-  view: any; // Vue component - avoid circular dependency with common-ui
+  view: TView;
   data: ViewData[];
 }
 
@@ -87,11 +87,11 @@ class ItemQueue<T> {
 
 import { DataLayerProvider } from '@db/core';
 
-export class SessionController extends Loggable {
+export class SessionController<TView = unknown> extends Loggable {
   _className = 'SessionController';
   private sources: StudyContentSource[];
   private dataLayer: DataLayerProvider;
-  private getViewComponent: (viewId: string) => any;
+  private getViewComponent: (viewId: string) => TView;
   private _sessionRecord: StudySessionRecord[] = [];
   public set sessionRecord(r: StudySessionRecord[]) {
     this._sessionRecord = r;
@@ -100,7 +100,7 @@ export class SessionController extends Loggable {
   private reviewQ: ItemQueue<StudySessionReviewItem> = new ItemQueue<StudySessionReviewItem>();
   private newQ: ItemQueue<StudySessionNewItem> = new ItemQueue<StudySessionNewItem>();
   private failedQ: ItemQueue<StudySessionFailedItem> = new ItemQueue<StudySessionFailedItem>();
-  private hydratedQ: ItemQueue<HydratedCard> = new ItemQueue<HydratedCard>();
+  private hydratedQ: ItemQueue<HydratedCard<TView>> = new ItemQueue<HydratedCard<TView>>();
   private _currentCard: StudySessionItem | null = null;
   private hydration_in_progress: boolean = false;
 
@@ -126,7 +126,7 @@ export class SessionController extends Loggable {
     sources: StudyContentSource[],
     time: number,
     dataLayer: DataLayerProvider,
-    getViewComponent: (viewId: string) => any // Vue component
+    getViewComponent: (viewId: string) => TView
   ) {
     super();
 
@@ -356,7 +356,7 @@ export class SessionController extends Loggable {
       | 'dismiss-failed'
       | 'marked-failed'
       | 'dismiss-error' = 'dismiss-success'
-  ): Promise<HydratedCard | null> {
+  ): Promise<HydratedCard<TView> | null> {
     // dismiss (or sort to failedQ) the current card
     this.dismissCurrentCard(action);
 
@@ -431,7 +431,7 @@ export class SessionController extends Loggable {
     return this.reviewQ.length > 0 || this.newQ.length > 0 || this.failedQ.length > 0;
   }
 
-  private async nextHydratedCard(): Promise<HydratedCard | null> {
+  private async nextHydratedCard(): Promise<HydratedCard<TView> | null> {
     // Wait for a card to become available in hydratedQ
     while (this.hydratedQ.length === 0 && this.hasAvailableCards()) {
       await new Promise((resolve) => setTimeout(resolve, 25)); // Short polling interval

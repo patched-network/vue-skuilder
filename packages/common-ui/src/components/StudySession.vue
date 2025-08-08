@@ -165,7 +165,7 @@ export default defineComponent({
       card_elo: 1000,
       courseNames: {} as { [courseID: string]: string },
       cardCount: 1,
-      sessionController: null as SessionController | null,
+      sessionController: null as SessionController<ViewComponent> | null,
       sessionPrepared: false,
       sessionFinished: false,
       sessionRecord: [] as StudySessionRecord[],
@@ -301,7 +301,7 @@ export default defineComponent({
         });
 
         this.sessionController = markRaw(
-          new SessionController(
+          new SessionController<ViewComponent>(
             this.sessionContentSources,
             60 * this.sessionTimeLimit,
             this.dataLayer,
