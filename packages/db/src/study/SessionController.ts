@@ -252,9 +252,9 @@ export class SessionController extends Loggable {
     this.log(report);
   }
 
-  private async getNewCards(n: number = 10, filter?: (c: string) => boolean) {
+  private async getNewCards(n: number = 10) {
     const perCourse = Math.ceil(n / this.sources.length);
-    const newContent = await Promise.all(this.sources.map((c) => c.getNewCards(perCourse, filter)));
+    const newContent = await Promise.all(this.sources.map((c) => c.getNewCards(perCourse)));
 
     // [ ] is this a noop?
     newContent.forEach((newContentFromSource) => {
