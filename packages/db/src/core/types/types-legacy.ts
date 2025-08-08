@@ -21,6 +21,11 @@ export enum DocType {
   NAVIGATION_STRATEGY = 'NAVIGATION_STRATEGY',
 }
 
+export interface QualifiedCardID {
+  courseID: string;
+  cardID: string;
+}
+
 /**
  * Interface for all data on course content and pedagogy stored
  * in the c/pouch database.
