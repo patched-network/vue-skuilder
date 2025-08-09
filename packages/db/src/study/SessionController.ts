@@ -296,6 +296,15 @@ export class SessionController<TView = unknown> extends Loggable {
       return null;
     }
 
+    // If timer expired, only return failed cards
+    if (this._secondsRemaining <= 0) {
+      if (this.failedQ.length > 0) {
+        return this.failedQ.peek(0);
+      } else {
+        return null; // No more failed cards, session over
+      }
+    }
+
     // supply new cards at start of session
     if (this.newQ.dequeueCount < this.sources.length && this.newQ.length) {
       return this.newQ.peek(0);
