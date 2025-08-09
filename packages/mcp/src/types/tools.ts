@@ -1,14 +1,18 @@
 import { z } from 'zod';
 
-// Tool input/output schemas - will be expanded in Phase 2
-export const CreateCardInputSchema = z.object({
+// Tool input/output schema
+
+// Plain object schemas for MCP SDK compatibility
+export const CreateCardInputMCPSchema = {
   datashape: z.string(),
-  // individual datashapes define their own schema
   data: z.any(),
   tags: z.array(z.string()).optional(),
   elo: z.number().optional(),
   sourceRef: z.string().optional(),
-});
+};
+
+// Zod schemas for runtime validation
+export const CreateCardInputSchema = z.object(CreateCardInputMCPSchema);
 
 export type CreateCardInput = z.infer<typeof CreateCardInputSchema>;
 
@@ -18,14 +22,15 @@ export interface CreateCardOutput {
   created: boolean;
 }
 
-// Update Card Tool
-export const UpdateCardInputSchema = z.object({
+export const UpdateCardInputMCPSchema = {
   cardId: z.string(),
   data: z.any().optional(),
   tags: z.array(z.string()).optional(),
   elo: z.number().optional(),
   sourceRef: z.string().optional(),
-});
+};
+// Update Card Tool
+export const UpdateCardInputSchema = z.object(UpdateCardInputMCPSchema);
 
 export type UpdateCardInput = z.infer<typeof UpdateCardInputSchema>;
 
@@ -40,13 +45,15 @@ export interface UpdateCardOutput {
   };
 }
 
-// Tag Card Tool
-export const TagCardInputSchema = z.object({
+export const TagCardInputMCPSchema = {
   cardId: z.string(),
   action: z.enum(['add', 'remove']),
   tags: z.array(z.string()),
   updateELO: z.boolean().optional().default(false),
-});
+};
+
+// Tag Card Tool
+export const TagCardInputSchema = z.object(TagCardInputMCPSchema);
 
 export type TagCardInput = z.infer<typeof TagCardInputSchema>;
 
@@ -58,12 +65,14 @@ export interface TagCardOutput {
   currentTags: string[];
 }
 
-// Delete Card Tool  
-export const DeleteCardInputSchema = z.object({
+export const DeleteCardInputMCPSchema = {
   cardId: z.string(),
   confirm: z.boolean().default(false),
   reason: z.string().optional(),
-});
+};
+
+// Delete Card Tool
+export const DeleteCardInputSchema = z.object(DeleteCardInputMCPSchema);
 
 export type DeleteCardInput = z.infer<typeof DeleteCardInputSchema>;
 

@@ -32,30 +32,32 @@ export async function handleShapesAllResource(
     const dataShapes = courseConfig.dataShapes || [];
 
     // Transform DataShapes to ShapeResource format
-    const shapes: ShapeResource[] = dataShapes.map(shape => ({
+    const shapes: ShapeResource[] = dataShapes.map((shape) => ({
       name: shape.name,
       description: `DataShape for ${shape.name} content type`,
-      fields: (shape as any).fields?.map((field: any) => ({
-        name: field.name,
-        type: field.type || 'string',
-        required: field.required || false,
-        description: field.description || `Field for ${field.name}`
-      })) || [],
+      fields:
+        (shape as any).fields?.map((field: any) => ({
+          name: field.name,
+          type: field.type || 'string',
+          required: field.required || false,
+          description: field.description || `Field for ${field.name}`,
+        })) || [],
       category: 'course-content',
-      examples: [] // Could be populated with example cards
+      examples: [], // Could be populated with example cards
     }));
 
-    const availableShapes = dataShapes.map(shape => shape.name);
+    const availableShapes = dataShapes.map((shape) => shape.name);
 
     return {
       shapes,
       total: shapes.length,
-      availableShapes
+      availableShapes,
     };
-
   } catch (error) {
     console.error('Error fetching all shapes:', error);
-    throw new Error(`Failed to fetch shapes: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(
+      `Failed to fetch shapes: ${error instanceof Error ? error.message : `Unknown error: ${JSON.stringify(error)}`}`
+    );
   }
 }
 
@@ -72,10 +74,12 @@ export async function handleShapeSpecificResource(
     const dataShapes = courseConfig.dataShapes || [];
 
     // Find the specific shape
-    const targetShape = dataShapes.find(shape => shape.name === shapeName);
+    const targetShape = dataShapes.find((shape) => shape.name === shapeName);
     if (!targetShape) {
-      const availableShapes = dataShapes.map(s => s.name);
-      throw new Error(`DataShape not found: ${shapeName}. Available shapes: ${availableShapes.join(', ')}`);
+      const availableShapes = dataShapes.map((s) => s.name);
+      throw new Error(
+        `DataShape not found: ${shapeName}. Available shapes: ${availableShapes.join(', ')}`
+      );
     }
 
     // Get examples by finding cards that use this shape
@@ -104,18 +108,20 @@ export async function handleShapeSpecificResource(
     return {
       name: targetShape.name,
       description: `DataShape definition for ${targetShape.name} content type`,
-      fields: (targetShape as any).fields?.map((field: any) => ({
-        name: field.name,
-        type: field.type || 'string',
-        required: field.required || false,
-        description: field.description || `Field for ${field.name}`
-      })) || [],
+      fields:
+        (targetShape as any).fields?.map((field: any) => ({
+          name: field.name,
+          type: field.type || 'string',
+          required: field.required || false,
+          description: field.description || `Field for ${field.name}`,
+        })) || [],
       category: 'course-content',
-      examples
+      examples,
     };
-
   } catch (error) {
     console.error(`Error fetching shape ${shapeName}:`, error);
-    throw new Error(`Failed to fetch shape ${shapeName}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(
+      `Failed to fetch shape ${shapeName}: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
   }
 }

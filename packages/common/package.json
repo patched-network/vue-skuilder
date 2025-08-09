@@ -3,7 +3,7 @@
   "publishConfig": {
     "access": "public"
   },
-  "version": "0.1.11-25",
+  "version": "0.1.11-26",
   "type": "module",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -32,7 +32,8 @@
     "typescript": "~5.7.2"
   },
   "dependencies": {
-    "moment": "^2.30.1"
+    "moment": "^2.30.1",
+    "zod": "^4.0.0"
   },
   "stableVersion": "0.1.10"
 }

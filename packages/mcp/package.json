@@ -1,6 +1,6 @@
 {
   "name": "@vue-skuilder/mcp",
-  "version": "0.1.11-25",
+  "version": "0.1.11-26",
   "type": "module",
   "exports": {
     ".": {
@@ -23,8 +23,9 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.15.1",
     "@vue-skuilder/common": "workspace:*",
+    "@vue-skuilder/courseware": "workspace:*",
     "@vue-skuilder/db": "workspace:*",
-    "zod": "^3.22.0"
+    "zod": "^4.0.0"
   },
   "devDependencies": {
     "@modelcontextprotocol/inspector": "^0.16.1",

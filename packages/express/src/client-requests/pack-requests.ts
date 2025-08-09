@@ -21,6 +21,21 @@ interface PackCourseResponse {
   errorText?: string;
 }
 
+/**
+ * Extract original courseId from decorated studio database name
+ * Handles formats like: unpacked_originalId_timestamp_random
+ */
+function extractOriginalCourseId(decoratedId: string): string {
+  // Remove unpacked_ prefix if present
+  let courseId = decoratedId.replace(/^unpacked_/, '');
+  
+  // Remove timestamp_random suffix pattern: _YYYYMMDD_abcdef
+  courseId = courseId.replace(/_\d{8}_[a-z0-9]{6}$/, '');
+  
+  // If no changes were made, return original (handles non-decorated IDs)
+  return courseId === decoratedId ? decoratedId : courseId;
+}
+
 export async function packCourse(data: PackCourseData): Promise<PackCourseResponse> {
   logger.info(`Starting PACK_COURSE for ${data.courseId}...`);
   
@@ -150,7 +165,11 @@ export async function packCourse(data: PackCourseData): Promise<PackCourseRespon
     const courseDb = new PouchDB(courseDbUrl);
     // logger.info(`PouchDB instance created, adapter: ${(courseDb as any).adapter}`);
     
-    const packResult = await packer.packCourseToFiles(courseDb, data.courseId, outputPath, fsAdapter);
+    // Extract original courseId from decorated database name for manifest generation
+    const originalCourseId = extractOriginalCourseId(data.courseId);
+    logger.info(`Using originalCourseId "${originalCourseId}" for manifest (extracted from "${data.courseId}")`);
+    
+    const packResult = await packer.packCourseToFiles(courseDb, originalCourseId, outputPath, fsAdapter);
     
     const duration = Date.now() - startTime;
     

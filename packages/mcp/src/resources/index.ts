@@ -3,6 +3,7 @@ export * from './course.js';
 export * from './cards.js';
 export * from './shapes.js';
 export * from './tags.js';
+export * from './schema.js';
 
 // Resource URI patterns
 export const RESOURCE_PATTERNS = {
@@ -20,4 +21,5 @@ export const RESOURCE_PATTERNS = {
   TAGS_INTERSECT: 'tags://intersect/{tags}',
   TAGS_EXCLUSIVE: 'tags://exclusive/{tags}',
   TAGS_DISTRIBUTION: 'tags://distribution',
+  SCHEMA_SPECIFIC: 'schema://{dataShapeName}',
 } as const;

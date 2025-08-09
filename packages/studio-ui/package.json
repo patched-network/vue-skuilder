@@ -3,11 +3,12 @@
   "publishConfig": {
     "access": "public"
   },
-  "version": "0.1.11-25",
+  "version": "0.1.11-26",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "type-check": "vue-tsc --noEmit",
     "preview": "vite preview",
     "lint": "eslint . --fix",
     "lint:check": "eslint ."

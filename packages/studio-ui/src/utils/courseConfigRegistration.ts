@@ -1,4 +1,4 @@
-import { CourseConfig, DataShape, NameSpacer } from '@vue-skuilder/common';
+import { CourseConfig, DataShape, NameSpacer, toZodJSON } from '@vue-skuilder/common';
 import { CourseDBInterface } from '@vue-skuilder/db';
 import { Displayable, getCurrentUser, ViewComponent } from '@vue-skuilder/common-ui';
 import { CourseWare } from '@vue-skuilder/courseware';
@@ -42,7 +42,7 @@ export interface ProcessedDataShape {
 }
 
 /**
- * Check if a data shape is already registered in the course config
+ * Check if a data shape is already registered in the course config with valid schema
  */
 export function isDataShapeRegistered(
   dataShape: ProcessedDataShape,
@@ -53,7 +53,10 @@ export function isDataShapeRegistered(
     course: dataShape.course,
   });
 
-  return courseConfig.dataShapes.some((ds) => ds.name === namespacedName);
+  const existingDataShape = courseConfig.dataShapes.find((ds) => ds.name === namespacedName);
+
+  // Must exist AND have serialized schema to be considered "registered"
+  return existingDataShape !== undefined && existingDataShape.serializedZodSchema !== undefined;
 }
 
 /**
@@ -122,7 +125,7 @@ export function registerDataShape(
 ): boolean {
   if (isDataShapeRegistered(dataShape, courseConfig)) {
     console.log(
-      `   ℹ️  DataShape '${dataShape.name}' from '${dataShape.course}' already registered`
+      `   ℹ️  DataShape '${dataShape.name}' from '${dataShape.course}' already registered with schema`
     );
     return false;
   }
@@ -132,9 +135,26 @@ export function registerDataShape(
     course: dataShape.course,
   });
 
+  // Generate JSON Schema for the DataShape
+  let serializedZodSchema: string | undefined;
+  try {
+    serializedZodSchema = toZodJSON(dataShape.dataShape);
+  } catch (error) {
+    console.warn(`   ⚠️  Failed to generate schema for ${namespacedName}:`, error);
+    serializedZodSchema = undefined;
+  }
+
+  // Check if entry exists but without schema (legacy entry) - remove it
+  const existingIndex = courseConfig.dataShapes.findIndex((ds) => ds.name === namespacedName);
+  if (existingIndex !== -1) {
+    console.log(`   🔧 Replacing legacy DataShape entry: ${namespacedName}`);
+    courseConfig.dataShapes.splice(existingIndex, 1);
+  }
+
   courseConfig.dataShapes.push({
     name: namespacedName,
     questionTypes: [],
+    serializedZodSchema,
   });
 
   console.log(`   ✅ Registered DataShape: ${namespacedName}`);

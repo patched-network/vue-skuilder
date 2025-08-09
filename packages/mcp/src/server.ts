@@ -17,6 +17,7 @@ import {
   handleTagsIntersectResource,
   handleTagsExclusiveResource,
   handleTagsDistributionResource,
+  handleSchemaResource,
   RESOURCE_PATTERNS,
 } from './resources/index.js';
 import {
@@ -31,8 +32,11 @@ import {
   type UpdateCardInput,
   type TagCardInput,
   type DeleteCardInput,
+  CreateCardInputMCPSchema,
+  UpdateCardInputMCPSchema,
+  TagCardInputMCPSchema,
+  DeleteCardInputMCPSchema,
 } from './types/tools.js';
-import { z } from 'zod';
 import {
   createFillInCardAuthoringPrompt,
   createEloScoringGuidancePrompt,
@@ -453,20 +457,44 @@ export class MCPServer {
       }
     );
 
+    // Register schema://{dataShapeName} resource
+    this.mcpServer.registerResource(
+      RESOURCE_PATTERNS.SCHEMA_SPECIFIC,
+      new ResourceTemplate('schema://{dataShapeName}', { list: undefined }),
+      {
+        title: 'DataShape Schema',
+        description: 'Get JSON Schema for a specific DataShape to validate card data',
+        mimeType: 'application/json',
+      },
+      async (uri, { dataShapeName }) => {
+        this.logger.debug(`MCP Server: Fetching schema for '${dataShapeName}'`);
+        const result = await handleSchemaResource(this.courseDB, dataShapeName as string);
+        if (result.available) {
+          this.logger.info(`MCP Server: Retrieved schema for '${dataShapeName}'`);
+        } else {
+          this.logger.warn(`MCP Server: Schema not available for '${dataShapeName}'`);
+        }
+        return {
+          contents: [
+            {
+              uri: uri.href,
+              text: JSON.stringify(result, null, 2),
+              mimeType: 'application/json',
+            },
+          ],
+        };
+      }
+    );
+
     // Register create_card tool
     this.mcpServer.registerTool(
       TOOL_PATTERNS.CREATE_CARD,
       {
         title: 'Create Card',
         description: 'Create a new course card with specified datashape and content',
-        inputSchema: {
-          datashape: z.string(),
-          data: z.any(),
-          tags: z.array(z.string()).optional(),
-          elo: z.number().optional(),
-          sourceRef: z.string().optional(),
-        },
+        inputSchema: CreateCardInputMCPSchema as any,
       },
+      // @ts-ignore - MCP SDK type incompatibility with Zod v4
       async (input) => {
         const createInput = input as CreateCardInput;
         this.logger.info(`MCP Server: Creating card with datashape '${createInput.datashape}'`);
@@ -489,14 +517,9 @@ export class MCPServer {
       {
         title: 'Update Card',
         description: 'Update an existing course card (data, tags, ELO, sourceRef)',
-        inputSchema: {
-          cardId: z.string(),
-          data: z.any().optional(),
-          tags: z.array(z.string()).optional(),
-          elo: z.number().optional(),
-          sourceRef: z.string().optional(),
-        },
+        inputSchema: UpdateCardInputMCPSchema as any,
       },
+      // @ts-ignore - MCP SDK type incompatibility with Zod v4
       async (input) => {
         const updateInput = input as UpdateCardInput;
         this.logger.info(`MCP Server: Updating card ${updateInput.cardId}`);
@@ -519,13 +542,9 @@ export class MCPServer {
       {
         title: 'Tag Card',
         description: 'Add or remove tags from a course card with optional ELO update',
-        inputSchema: {
-          cardId: z.string(),
-          action: z.enum(['add', 'remove']),
-          tags: z.array(z.string()),
-          updateELO: z.boolean().optional().default(false),
-        },
+        inputSchema: TagCardInputMCPSchema as any,
       },
+      // @ts-ignore - MCP SDK type incompatibility with Zod v4
       async (input) => {
         const tagInput = input as TagCardInput;
         this.logger.info(`MCP Server: ${tagInput.action === 'add' ? 'Adding' : 'Removing'} tags [${tagInput.tags.join(', ')}] ${tagInput.action === 'add' ? 'to' : 'from'} card ${tagInput.cardId}`);
@@ -548,12 +567,9 @@ export class MCPServer {
       {
         title: 'Delete Card',
         description: 'Safely delete a course card with confirmation requirement',
-        inputSchema: {
-          cardId: z.string(),
-          confirm: z.boolean().default(false),
-          reason: z.string().optional(),
-        },
+        inputSchema: DeleteCardInputMCPSchema as any,
       },
+      // @ts-ignore - MCP SDK type incompatibility with Zod v4
       async (input) => {
         const deleteInput = input as DeleteCardInput;
         this.logger.warn(`MCP Server: Deleting card ${deleteInput.cardId}${deleteInput.reason ? ` (reason: ${deleteInput.reason})` : ''}`);
