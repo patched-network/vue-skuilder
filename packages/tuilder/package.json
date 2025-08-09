@@ -35,7 +35,7 @@
     "@types/node": "^20.0.0",
     "@types/react": "^18.3.3",
     "@types/yargs": "^17.0.32",
-    "typescript": "~5.7.2"
+    "typescript": "~5.9.2"
   },
   "engines": {
     "node": ">=18.0.0"
