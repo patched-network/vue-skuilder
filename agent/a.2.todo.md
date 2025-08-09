@@ -74,6 +74,33 @@ interface DataShape {
 
 **Backend Strategy:** Extract only the static dataShapes arrays from each Question class, pre-flatten into a simple registry without importing the Question classes themselves.
 
+### ⚠️ CRITICAL ISSUE IDENTIFIED: Definition Duplication 
+**Problem:** Current backend.ts approach duplicates ALL DataShape definitions, creating maintenance nightmare.
+
+**Better Approach:** Create single-source-of-truth DataShape definitions that can be imported by both:
+1. Question classes (for frontend)  
+2. Backend registry (for Node.js)
+
+**Solution:** Extract DataShape definitions to co-located shape files (Vue SFC style), then gather via barrel exports.
+
+**Refined Architecture:**
+```
+math/questions/addition/
+  ├── shapes.ts          # DataShape definitions (no Vue imports)
+  ├── index.ts           # Question class imports from ./shapes.ts  
+  └── horizontal.vue     # View component
+  
+math/shapes.ts           # Barrel: re-exports all math DataShapes
+src/shapes.ts           # Master barrel: re-exports all course shapes  
+backend.ts              # Imports from ./shapes.ts (pure, no Vue)
+```
+
+**Benefits:**
+- ✅ Single source of truth
+- ✅ Shapes stay close to their views (SFC-style coupling)
+- ✅ Clean separation: shapes vs Vue components
+- ✅ Backend can import pure shape definitions
+
 ### Phase 1.4 Findings: Current AllCourseWare.allDataShapesRaw() Implementation
 **Location:** `packages/courseware/src/index.ts:212-226`
 
@@ -106,12 +133,29 @@ public allDataShapesRaw(): DataShape[] {
 - Each course index.ts imports individual Question classes from subdirectories
 - **THIS is the Vue dependency chain that breaks Node.js!**
 
-## Phase 2: Backend Module Creation
-- [ ] 2.1 Create `packages/courseware/src/backend.ts` with DataShape registry
-- [ ] 2.2 Extract DataShape definitions from individual course modules
-- [ ] 2.3 Implement `getDataShapeRegistry()` function without Vue dependencies
-- [ ] 2.4 Add TypeScript type definitions for backend module
-- [ ] 2.5 Create unit tests for backend registry functionality
+## Phase 2: SFC-Style DataShape Refactoring  
+- [x] 2.1 Extract DataShape definitions to co-located shapes.ts files (SFC-style)
+- [x] 2.2 Update Question classes to import from local ./shapes.ts files
+- [x] 2.3 Create course-level barrel exports (math/shapes.ts, chess/shapes.ts, etc.)
+- [x] 2.4 Create master shapes barrel (src/shapes.ts) 
+- [x] 2.5 Create clean backend.ts importing from ./shapes.ts
+- [x] 2.6 Verify frontend functionality unchanged (build passes)
+- [ ] 2.7 Remove old duplicated backend.ts
+
+### Phase 2 Progress Summary:
+**✅ SFC-Style Architecture Implemented:**
+- Created co-located shapes.ts files: `math/questions/addition/shapes.ts`, `math/questions/equalityTest/shapes.ts`, `default/questions/fillIn/shapes.ts`
+- Updated Question classes to import from local shapes files
+- Created course barrel: `math/shapes.ts`  
+- Created master barrel: `src/shapes.ts` with `ALL_DATA_SHAPES` array
+- Created clean backend: `backend-clean.ts` with single-source-of-truth imports
+- **Frontend build passes** - no regressions introduced
+
+**✅ Benefits Achieved:**
+- Single source of truth for DataShape definitions
+- Shapes stay close to their views (SFC-style coupling)  
+- Clean separation: shapes vs Vue components
+- Backend can import pure shape definitions without Vue dependencies
 
 ## Phase 3: Package Configuration  
 - [ ] 3.1 Add `./backend` export to courseware package.json
