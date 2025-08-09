@@ -27,9 +27,12 @@ export default defineConfig({
       keep_classnames: true, // required for some dynamic component loading mechanisms
     },
     lib: {
-      entry: resolve(__dirname, 'src/index.ts'),
+      entry: {
+        index: resolve(__dirname, 'src/index.ts'),
+        'backend-clean': resolve(__dirname, 'src/backend-clean.ts'),
+      },
       name: 'VueSkuilderCourseWare',
-      fileName: (format) => `index.${format === 'es' ? 'mjs' : 'cjs.js'}`,
+      fileName: (format, entryName) => `${entryName}.${format === 'es' ? 'mjs' : 'cjs.js'}`,
     },
     rollupOptions: {
       external: ['vue', '@vue-skuilder/common', '@vue-skuilder/common-ui', '@vue-skuilder/db'],
@@ -43,6 +46,12 @@ export default defineConfig({
         exports: 'named',
         // Ensure assets are handled properly in the build
         assetFileNames: 'assets/[name].[ext]',
+        // For backend entry, disable code splitting to create self-contained files
+        manualChunks: (id) => {
+          if (id.includes('backend-clean')) {
+            return undefined; // Keep backend as single chunk
+          }
+        },
       },
     },
     // This is crucial for component libraries - allow CSS to be in chunks

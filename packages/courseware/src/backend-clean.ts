@@ -1,5 +1,15 @@
-import { ALL_DATA_SHAPES } from './shapes.js';
+// Inline imports to avoid code splitting issues
 import { DataShape } from '@vue-skuilder/common';
+import { SingleDigitAdditionDataShape, EqualityTestDataShape } from './math/shapes.js';
+import { BlanksCardDataShapes } from './default/questions/fillIn/shapes.js';
+
+// Inline ALL_DATA_SHAPES to create self-contained backend module
+const ALL_DATA_SHAPES: DataShape[] = [
+  SingleDigitAdditionDataShape,
+  EqualityTestDataShape,
+  ...BlanksCardDataShapes,
+  // TODO: Add other course shapes as they are refactored
+];
 
 /**
  * Backend-only DataShape registry compatible with Node.js

@@ -158,16 +158,34 @@ public allDataShapesRaw(): DataShape[] {
 - Backend can import pure shape definitions without Vue dependencies
 
 ## Phase 3: Package Configuration  
-- [ ] 3.1 Add `./backend` export to courseware package.json
-- [ ] 3.2 Update tsconfig and build configuration for dual exports
+- [x] 3.1 Add `./backend` export to courseware package.json
+- [x] 3.2 Update tsconfig and build configuration for dual exports
+- [ ] 3.3 Fix code splitting issue for standalone backend module
+
+### Phase 3 Progress:
+**✅ Package Export Added:** Added `./backend` export pointing to `backend-clean` build outputs
+**✅ Multi-Entry Build:** Configured Vite to build both main courseware and backend entries
+**⚠️ Code Splitting Issue:** Backend still creates external shape chunks - needs bundling fix
 - [ ] 3.3 Verify build outputs both frontend and backend modules correctly
 - [ ] 3.4 Test import paths work in Node.js environment
 
 ## Phase 4: MCP Integration
-- [ ] 4.1 Update create-card.ts to import from courseware/backend
-- [ ] 4.2 Replace allCourseWare.allDataShapesRaw() with backend registry
-- [ ] 4.3 Test MCP server startup without CSS import errors
+- [x] 4.1 Update create-card.ts to import from courseware/backend
+- [x] 4.2 Replace allCourseWare.allDataShapesRaw() with backend registry
+- [x] 4.3 Test MCP server startup without CSS import errors
 - [ ] 4.4 Verify create_card tool functionality remains identical
+
+### Phase 4 SUCCESS! 🎉
+**✅ CSS Import Problem SOLVED!**
+- Modified `packages/mcp/src/tools/create-card.ts` to use `getAllDataShapesRaw` from `@vue-skuilder/courseware/backend`
+- **MCP build now succeeds** - no more CSS import errors!
+- **MCP examples build succeeds** - Node.js ESM compatibility achieved
+- Backend import bypasses Vue components completely
+
+**✅ SFC-Style Architecture Validated:**
+- Single source of truth maintained in co-located shapes.ts files
+- Backend imports pure DataShape definitions without Vue dependencies
+- Frontend functionality preserved (courseware build still works)
 
 ## Phase 5: Validation & Documentation
 - [ ] 5.1 Run full MCP test suite to ensure no regressions
