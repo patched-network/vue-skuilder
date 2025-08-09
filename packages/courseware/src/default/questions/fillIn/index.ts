@@ -1,27 +1,15 @@
 import { Question, splitByDelimiters, containsComponent } from '@vue-skuilder/common-ui';
-import { Answer, RadioMultipleChoiceAnswer, DataShape } from '@vue-skuilder/common';
+import { Answer, RadioMultipleChoiceAnswer } from '@vue-skuilder/common';
 import { Validator, ViewData } from '@vue-skuilder/common';
 import { randomInt } from '@courseware/math/utility';
-import { FieldType, DataShapeName, Status } from '@vue-skuilder/common';
+import { Status } from '@vue-skuilder/common';
 import _ from 'lodash';
 import { Tokens } from 'marked';
 import FillInView from './fillIn.vue';
+import { BlanksCardDataShapes } from './shapes.js';
 
-export const BlanksCardDataShapes: DataShape[] = [
-  {
-    name: DataShapeName.Blanks,
-    fields: [
-      {
-        name: 'Input',
-        type: FieldType.MARKDOWN,
-      },
-      {
-        name: 'Uploads',
-        type: FieldType.MEDIA_UPLOADS,
-      },
-    ],
-  },
-];
+// Re-export for backward compatibility
+export { BlanksCardDataShapes } from './shapes.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 // @ts-expect-error

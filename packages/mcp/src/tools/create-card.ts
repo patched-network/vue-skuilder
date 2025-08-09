@@ -5,7 +5,7 @@ import {
   type CreateCardOutput,
 } from '../types/tools.js';
 import { toCourseElo, NameSpacer } from '@vue-skuilder/common';
-import { allCourseWare } from '@vue-skuilder/courseware';
+import { getAllDataShapesRaw } from '@vue-skuilder/courseware/backend';
 import {
   MCP_AGENT_AUTHOR,
   handleToolError,
@@ -56,8 +56,7 @@ export async function handleCreateCard(
     }
 
     // Get runtime DataShape definition from courseware
-    const runtimeDataShape = allCourseWare
-      .allDataShapesRaw()
+    const runtimeDataShape = getAllDataShapesRaw()
       .find((ds) => ds.name === shapeDescriptor.dataShape);
 
     if (!runtimeDataShape) {

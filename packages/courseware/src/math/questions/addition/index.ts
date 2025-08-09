@@ -1,18 +1,8 @@
 import { Question, ViewComponent } from '@vue-skuilder/common-ui';
-import { Answer, FieldDefinition, ViewData, DataShapeName, FieldType } from '@vue-skuilder/common';
+import { Answer, ViewData } from '@vue-skuilder/common';
 import HorizontalAddition from './horizontal.vue';
 import VerbalAddition from './verbal.vue';
-
-const fields: FieldDefinition[] = [
-  {
-    name: 'a',
-    type: FieldType.INT,
-  },
-  {
-    name: 'b',
-    type: FieldType.INT,
-  },
-];
+import { SingleDigitAdditionDataShape } from './shapes.js';
 
 const data = function () {
   const ret: { a: number; b: number }[] = [];
@@ -28,12 +18,7 @@ const data = function () {
 };
 
 export class SingleDigitAdditionQuestion extends Question {
-  public static dataShapes = [
-    {
-      name: DataShapeName.MATH_SingleDigitAddition,
-      fields,
-    },
-  ];
+  public static dataShapes = [SingleDigitAdditionDataShape];
 
   public static views: ViewComponent[] = [HorizontalAddition, VerbalAddition];
 

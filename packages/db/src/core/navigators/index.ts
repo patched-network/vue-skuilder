@@ -32,7 +32,7 @@ export abstract class ContentNavigator implements StudyContentSource {
     let NavigatorImpl;
 
     // Try different extension variations
-    const variations = ['', '.js', '.ts'];
+    const variations = ['.ts', '.js', ''];
 
     for (const ext of variations) {
       try {

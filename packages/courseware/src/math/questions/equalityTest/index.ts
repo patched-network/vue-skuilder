@@ -1,28 +1,10 @@
 import { Question } from '@vue-skuilder/common-ui';
-import { FieldDefinition, Answer } from '@vue-skuilder/common';
-import { ViewData } from '@vue-skuilder/common';
-import { DataShapeName } from '@vue-skuilder/common';
-import { FieldType } from '@vue-skuilder/common';
+import { Answer, ViewData } from '@vue-skuilder/common';
 import TrueFalse from './trueFalse.vue';
-
-const fields: FieldDefinition[] = [
-  {
-    name: 'a',
-    type: FieldType.STRING,
-  },
-  {
-    name: 'b',
-    type: FieldType.STRING,
-  },
-];
+import { EqualityTestDataShape } from './shapes.js';
 
 export class EqualityTest extends Question {
-  public static dataShapes = [
-    {
-      name: DataShapeName.MATH_EqualityTest,
-      fields,
-    },
-  ];
+  public static dataShapes = [EqualityTestDataShape];
 
   public static views = [TrueFalse];
 

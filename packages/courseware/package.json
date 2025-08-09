@@ -19,6 +19,11 @@
       "import": "./src/logic.js",
       "require": "./src/logic.js"
     },
+    "./backend": {
+      "types": "./dist/backend-clean.d.ts",
+      "import": "./dist/backend-clean.mjs",
+      "require": "./dist/backend-clean.cjs.js"
+    },
     "./style": "./dist/assets/index.css"
   },
   "files": [
