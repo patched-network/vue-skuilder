@@ -29,7 +29,7 @@ export default defineConfig({
     lib: {
       entry: {
         index: resolve(__dirname, 'src/index.ts'),
-        'backend-clean': resolve(__dirname, 'src/backend-clean.ts'),
+        backend: resolve(__dirname, 'src/backend.ts'),
       },
       name: 'VueSkuilderCourseWare',
       fileName: (format, entryName) => `${entryName}.${format === 'es' ? 'mjs' : 'cjs.js'}`,
@@ -48,7 +48,7 @@ export default defineConfig({
         assetFileNames: 'assets/[name].[ext]',
         // For backend entry, disable code splitting to create self-contained files
         manualChunks: (id) => {
-          if (id.includes('backend-clean')) {
+          if (id.includes('backend')) {
             return undefined; // Keep backend as single chunk
           }
         },
