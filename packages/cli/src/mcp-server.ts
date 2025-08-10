@@ -56,7 +56,9 @@ async function main() {
 
     console.error('MCP Server started successfully!');
     console.error(`Course: ${courseId}`);
-    console.error('Available resources: course://config, cards://all, tags://all, shapes://all');
+    console.error('Available resources: course://config, cards://all, cards://tag/{tagName}, cards://shape/{shapeName}, cards://elo/{eloRange}');
+    console.error('                     shapes://all, shapes://{shapeName}, schema://{dataShapeName}');
+    console.error('                     tags://all, tags://stats, tags://{tagName}, tags://union/{tags}, tags://intersect/{tags}, tags://exclusive/{tags}, tags://distribution');
     console.error('Available tools: create_card, update_card, tag_card, delete_card');
     console.error('Available prompts: fill-in-card-authoring, elo-scoring-guidance');
     console.error('Ready for MCP client connections via stdio');
