@@ -45,9 +45,12 @@ export async function handleSchemaResource(
 
   if (dataShape.fields) {
     for (const field of dataShape.fields) {
+      // Map Vue-Skuilder field types to JSON Schema types
+      const jsonType = field.type === 'int' ? 'integer' : 'string';
+      
       jsonSchema.properties[field.name] = {
-        type: field.type === 'INT' ? 'integer' : 'string',
-        description: field.description || `Field ${field.name}`,
+        type: jsonType,
+        description: field.description || `Field ${field.name} (${field.type})`,
       };
       if (field.required) {
         jsonSchema.required.push(field.name);
