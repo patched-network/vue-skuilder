@@ -16,9 +16,11 @@ npx @vue-skuilder/cli pack my-course
 ```
 
 ## Build System
-- **TypeScript**: Direct compilation to CommonJS in `dist/`
+- **TypeScript**: Direct compilation to ES module in `dist/`
 - **Binary Entry**: `dist/cli.js` with executable shebang
 - **Module Type**: ES module with `.js` extension
+- **Asset Embedding**: Templates and UI source files embedded during build
+- **Complex Build**: Multi-step process with template copying and path adjustments
 
 ## CLI Commands
 
@@ -35,8 +37,14 @@ npx @vue-skuilder/cli pack my-course
 - `inquirer` - Interactive prompts and wizards
 - `chalk` - Terminal color output
 
-### Vue-Skuilder Integration
+### Vue-Skuilder Integration (All Workspace Packages)
+- `@vue-skuilder/common` - Shared types and utilities
+- `@vue-skuilder/common-ui` - Base UI components
+- `@vue-skuilder/courseware` - Course content types and question implementations
 - `@vue-skuilder/db` - Database utilities for course packaging
+- `@vue-skuilder/edit-ui` - Course editing interface components
+- `@vue-skuilder/express` - Express server for API endpoints
+- `@vue-skuilder/mcp` - Model Context Protocol server integration
 - `@vue-skuilder/standalone-ui` - Standalone player for packaged courses
 
 ### File Management
@@ -63,11 +71,12 @@ npx @vue-skuilder/cli pack my-course
 - **Optimization**: Minifies and optimizes course assets
 - **Packaging**: Creates deployable course bundle
 
-### MCP Server (`mcp-server.ts`)
-- **Protocol Implementation**: Full MCP server with 14 resources, 4 tools, 2 prompts
+### MCP Server Integration
+- **Protocol Implementation**: Leverages `@vue-skuilder/mcp` package for full server functionality
 - **Course Access**: Direct CourseDBInterface integration for real-time data
-- **Content Generation**: AI-powered card creation and content authoring
+- **Content Generation**: AI-powered card creation and content authoring via Claude Code
 - **ELO Integration**: Native support for difficulty rating system
+- **Studio Command**: Launches MCP server alongside development environment
 
 ## Utilities
 
