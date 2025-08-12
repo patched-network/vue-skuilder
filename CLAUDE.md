@@ -164,8 +164,10 @@ Course-scoped MCP servers that accept CourseDBInterface injection:
 ### Build System
 Uses **tsup** for dual CommonJS/ESM output:
 - **ESM**: `dist/index.mjs` (primary)
-- **CommonJS**: `dist/index.js` (compatibility)
+- **CommonJS**: `dist/index.js` (compatibility)  
 - **Types**: `dist/index.d.ts`
+- **Target**: ES2022 with source maps
+- **Code Splitting**: Disabled for single-file output
 
 ### Available Resources (14 total)
 - `course://config` - Course configuration with metadata and ELO statistics
@@ -215,8 +217,12 @@ Use MCP Inspector for interactive testing:
 yarn workspace @vue-skuilder/mcp dev  # Opens Inspector UI automatically
 ```
 
-### Dependencies
+### Dependencies  
 - `@modelcontextprotocol/sdk` - MCP protocol implementation
 - `@vue-skuilder/db` - Database layer access
 - `@vue-skuilder/common` - Shared types and utilities
+- `@vue-skuilder/courseware` - DataShape definitions via `/backend` export
 - `zod` - Schema validation
+
+### Key Integration Point
+Uses `@vue-skuilder/courseware/backend` export to access DataShape definitions without importing Vue components or CSS files, solving Node.js ESM compatibility issues.

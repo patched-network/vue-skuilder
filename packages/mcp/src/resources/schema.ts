@@ -16,13 +16,15 @@ export interface SchemaResource {
  * Returns the JSON Schema for the DataShape if available
  */
 export async function handleSchemaResource(
-  courseDB: CourseDBInterface,
+  _courseDB: CourseDBInterface,
   dataShapeName: string
 ): Promise<SchemaResource> {
-  const courseConfig = await courseDB.getCourseConfig();
+  // Import DataShapes from courseware backend (avoids Vue dependencies)
+  const { getAllDataShapesRaw } = await import('@vue-skuilder/courseware/backend');
+  const dataShapes = getAllDataShapesRaw();
   
-  // Find the DataShape in course config
-  const dataShape = courseConfig.dataShapes.find(ds => ds.name === dataShapeName);
+  // Find the DataShape
+  const dataShape = dataShapes.find(ds => ds.name === dataShapeName);
   
   if (!dataShape) {
     return {
@@ -33,32 +35,33 @@ export async function handleSchemaResource(
     };
   }
 
-  if (!dataShape.serializedZodSchema) {
-    return {
-      dataShapeName,
-      jsonSchema: {},
-      schemaString: '',
-      available: false,
-    };
-  }
+  // Generate JSON Schema from DataShape fields
+  const jsonSchema = {
+    type: 'object',
+    properties: {} as any,
+    required: [] as string[],
+    title: dataShape.name,
+  };
 
-  let jsonSchema: object;
-  try {
-    jsonSchema = JSON.parse(dataShape.serializedZodSchema);
-  } catch (error) {
-    console.warn(`Failed to parse schema for ${dataShapeName}:`, error);
-    return {
-      dataShapeName,
-      jsonSchema: {},
-      schemaString: '',
-      available: false,
-    };
+  if (dataShape.fields) {
+    for (const field of dataShape.fields) {
+      // Map Vue-Skuilder field types to JSON Schema types
+      const jsonType = field.type === 'int' ? 'integer' : 'string';
+      
+      jsonSchema.properties[field.name] = {
+        type: jsonType,
+        description: field.description || `Field ${field.name} (${field.type})`,
+      };
+      if (field.required) {
+        jsonSchema.required.push(field.name);
+      }
+    }
   }
 
   return {
     dataShapeName,
     jsonSchema,
-    schemaString: dataShape.serializedZodSchema,
+    schemaString: JSON.stringify(jsonSchema, null, 2),
     available: true,
   };
 }

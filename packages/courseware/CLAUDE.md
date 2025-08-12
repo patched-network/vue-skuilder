@@ -17,7 +17,9 @@ Vue 3 component library providing specialized course content types and question 
 
 ### Package Exports
 - **Main**: ES module (`./dist/index.mjs`) and CommonJS (`./dist/index.cjs.js`)
-- **Types**: TypeScript definitions (`./dist/index.d.ts`)
+- **Backend**: Clean Node.js export (`./dist/backend.mjs`) for server-side DataShape access
+- **Logic**: Direct source access (`./src/logic.js`) for specialized utilities
+- **Types**: TypeScript definitions (`./dist/index.d.ts`, `./dist/backend.d.ts`)
 - **Styles**: CSS bundle (`./dist/assets/index.css`)
 
 ## Testing
@@ -84,6 +86,28 @@ Vue 3 component library providing specialized course content types and question 
 - **Vue Components**: `.vue` files for interactive content
 - **Composables**: Shared logic using Vue 3 Composition API
 - **Asset Management**: SVG icons and CSS styles co-located with components
+- **SFC-Style DataShapes**: Single-source-of-truth pattern with co-located `shapes.ts` files
+
+### SFC-Style DataShape Architecture
+New architecture pattern for maintaining DataShape definitions:
+```
+math/questions/addition/
+  ├── shapes.ts          # Pure DataShape definitions (no Vue imports)
+  ├── index.ts           # Question class imports from ./shapes.ts  
+  └── horizontal.vue     # View component
+  
+math/shapes.ts           # Course-level barrel export
+src/shapes.ts           # Master barrel export  
+src/backend.ts          # Backend-clean registry functions
+```
+
+#### Backend Export (`./backend`)
+Provides Node.js-compatible DataShape access without Vue dependencies:
+- `getAllDataShapesRaw()` - All registered DataShapes
+- `getDataShapeByName(name)` - Find specific DataShape
+- `getAllDataShapeNames()` - List all DataShape names
+
+Used by MCP server and other backend services that need DataShape metadata without importing Vue components or CSS files.
 
 ## Asset Handling
 The build system includes special handling for:

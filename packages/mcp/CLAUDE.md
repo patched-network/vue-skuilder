@@ -16,15 +16,20 @@ Uses **tsup** for dual CommonJS/ESM output:
 - **ESM**: `dist/index.mjs` (primary)
 - **CommonJS**: `dist/index.js` (compatibility)
 - **Types**: `dist/index.d.ts`
+- **Target**: ES2022 with TypeScript ~5.7.2
+- **Source Maps**: Enabled for debugging
+- **Code Splitting**: Disabled for single-file output
 
 ## Dependencies
 - `@modelcontextprotocol/sdk` - MCP protocol implementation
 - `@vue-skuilder/db` - Database layer access
 - `@vue-skuilder/common` - Shared types and utilities
+- `@vue-skuilder/courseware` - DataShape definitions via `/backend` export
 - `zod` - Schema validation
 
 ## Dev Dependencies
 - `@modelcontextprotocol/inspector` - MCP server testing and debugging
+- `tsup` - TypeScript universal packager
 
 ## Architecture
 Course-scoped MCP servers that accept CourseDBInterface injection:

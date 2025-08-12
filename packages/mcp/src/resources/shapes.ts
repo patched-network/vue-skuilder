@@ -24,24 +24,23 @@ export interface ShapesCollection {
  * Handle shapes://all resource - List all available DataShapes
  */
 export async function handleShapesAllResource(
-  courseDB: CourseDBInterface
+  _courseDB: CourseDBInterface
 ): Promise<ShapesCollection> {
   try {
-    // Get course config to access DataShapes
-    const courseConfig = await courseDB.getCourseConfig();
-    const dataShapes = courseConfig.dataShapes || [];
+    // Import DataShapes from courseware backend (avoids Vue dependencies)
+    const { getAllDataShapesRaw } = await import('@vue-skuilder/courseware/backend');
+    const dataShapes = getAllDataShapesRaw();
 
     // Transform DataShapes to ShapeResource format
     const shapes: ShapeResource[] = dataShapes.map((shape) => ({
       name: shape.name,
       description: `DataShape for ${shape.name} content type`,
-      fields:
-        (shape as any).fields?.map((field: any) => ({
-          name: field.name,
-          type: field.type || 'string',
-          required: field.required || false,
-          description: field.description || `Field for ${field.name}`,
-        })) || [],
+      fields: shape.fields?.map((field: any) => ({
+        name: field.name,
+        type: field.type || 'string',
+        required: field.required || false,
+        description: field.description || `Field for ${field.name}`,
+      })) || [],
       category: 'course-content',
       examples: [], // Could be populated with example cards
     }));
@@ -69,9 +68,9 @@ export async function handleShapeSpecificResource(
   shapeName: string
 ): Promise<ShapeResource> {
   try {
-    // Get course config to access DataShapes
-    const courseConfig = await courseDB.getCourseConfig();
-    const dataShapes = courseConfig.dataShapes || [];
+    // Import DataShapes from courseware backend (avoids Vue dependencies)
+    const { getAllDataShapesRaw } = await import('@vue-skuilder/courseware/backend');
+    const dataShapes = getAllDataShapesRaw();
 
     // Find the specific shape
     const targetShape = dataShapes.find((shape) => shape.name === shapeName);
@@ -108,13 +107,12 @@ export async function handleShapeSpecificResource(
     return {
       name: targetShape.name,
       description: `DataShape definition for ${targetShape.name} content type`,
-      fields:
-        (targetShape as any).fields?.map((field: any) => ({
-          name: field.name,
-          type: field.type || 'string',
-          required: field.required || false,
-          description: field.description || `Field for ${field.name}`,
-        })) || [],
+      fields: targetShape.fields?.map((field: any) => ({
+        name: field.name,
+        type: field.type || 'string',
+        required: field.required || false,
+        description: field.description || `Field for ${field.name}`,
+      })) || [],
       category: 'course-content',
       examples,
     };
