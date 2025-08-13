@@ -1,6 +1,8 @@
-This folder is the working scratchpad for user+assistant development.
+This folder is the working scratchpad for document-centric user+assistant development.
 
 # Conventions
+
+Working sessions will usually be focused on a session-directory. Either a numbered directory (referring to a gh issue) or a directory named for the task at hand. New working documents should be created in this directory, and named according to the conventions below. For GH issues, please *do* use the `gh` command to *read* existing issues, PRs, and workflow runs.
 
 files prefixed with `u.` are user-authored.
 files prefixed with `a.` are assistant-authored.
