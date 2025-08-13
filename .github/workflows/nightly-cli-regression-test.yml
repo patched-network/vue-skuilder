@@ -33,6 +33,7 @@ jobs:
         run: |
           yarn build:lib
           yarn workspace @vue-skuilder/mcp build
+          yarn workspace @vue-skuilder/express build
           yarn workspace @vue-skuilder/cli build
       
       - name: Create test directory
