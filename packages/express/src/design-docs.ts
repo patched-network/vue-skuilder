@@ -15,19 +15,42 @@ function emit(key?: unknown, value?: unknown): [unknown, unknown] {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Load design documents with absolute paths
+// Dual resolution strategy for assets
+function getAssetPath(assetName: string): string {
+  // Strategy 1: Development mode - assets in parent directory
+  const devModePath = join(__dirname, '..', 'assets', assetName);
+  if (fileSystem.existsSync(devModePath)) {
+    return devModePath;
+  }
+  
+  // Strategy 2: Built module mode - assets in same directory
+  const moduleModePath = join(__dirname, 'assets', assetName);
+  if (fileSystem.existsSync(moduleModePath)) {
+    return moduleModePath;
+  }
+  
+  // Fallback error with helpful context
+  throw new Error(
+    `Asset '${assetName}' not found. Tried:\n` +
+    `  Dev mode: ${devModePath}\n` +
+    `  Module mode: ${moduleModePath}\n` +
+    `  Current __dirname: ${__dirname}`
+  );
+}
+
+// Load design documents with dual resolution
 export const classroomDbDesignDoc = fileSystem.readFileSync(
-  join(__dirname, 'assets', 'classroomDesignDoc.js'),
+  getAssetPath('classroomDesignDoc.js'),
   'utf-8'
 );
 
 export const courseDBDesignDoc = fileSystem.readFileSync(
-  join(__dirname, 'assets', 'get-tagsDesignDoc.json'),
+  getAssetPath('get-tagsDesignDoc.json'),
   'utf-8'
 );
 
 export const courseValidateDocUpdate = fileSystem.readFileSync(
-  join(__dirname, 'assets', 'courseValidateDocUpdate.js'),
+  getAssetPath('courseValidateDocUpdate.js'),
   'utf-8'
 );
 
