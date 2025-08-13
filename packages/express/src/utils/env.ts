@@ -20,13 +20,14 @@ function getVar(name: string): string {
   }
 }
 
+// Use getter to read environment variables lazily after dotenv has loaded
 const env: Env = {
-  COUCHDB_SERVER: getVar('COUCHDB_SERVER'),
-  COUCHDB_PROTOCOL: getVar('COUCHDB_PROTOCOL'),
-  COUCHDB_ADMIN: getVar('COUCHDB_ADMIN'),
-  COUCHDB_PASSWORD: getVar('COUCHDB_PASSWORD'),
-  VERSION: getVar('VERSION'),
-  NODE_ENV: getVar('NODE_ENV'),
+  get COUCHDB_SERVER() { return getVar('COUCHDB_SERVER'); },
+  get COUCHDB_PROTOCOL() { return getVar('COUCHDB_PROTOCOL'); },
+  get COUCHDB_ADMIN() { return getVar('COUCHDB_ADMIN'); },
+  get COUCHDB_PASSWORD() { return getVar('COUCHDB_PASSWORD'); },
+  get VERSION() { return getVar('VERSION'); },
+  get NODE_ENV() { return getVar('NODE_ENV'); },
 };
 
 export default env;

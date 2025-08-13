@@ -1,10 +1,6 @@
-import { createExpressApp, initializeServices } from './app-factory.js';
-import logger from './logger.js';
-import ENV from './utils/env.js';
 import dotenv from 'dotenv';
-import { initializeCouchDB } from './couchdb/index.js';
-import { initializeDataLayer } from '@vue-skuilder/db';
 
+// Load environment variables FIRST before importing any modules that depend on them
 dotenv.config({
   path:
     process.argv && process.argv.length == 3
@@ -12,7 +8,14 @@ dotenv.config({
       : '.env.development',
 });
 
-// Now that dotenv is configured, we can validate the environment
+// Now import modules that depend on environment variables
+import { createExpressApp, initializeServices } from './app-factory.js';
+import logger from './logger.js';
+import ENV from './utils/env.js';
+import { initializeCouchDB } from './couchdb/index.js';
+import { initializeDataLayer } from '@vue-skuilder/db';
+
+// Validate that environment variables are loaded
 const requiredVars = ['COUCHDB_SERVER', 'COUCHDB_PROTOCOL', 'COUCHDB_ADMIN', 'COUCHDB_PASSWORD', 'VERSION', 'NODE_ENV'];
 const missingVars = requiredVars.filter(v => !process.env[v]);
 
