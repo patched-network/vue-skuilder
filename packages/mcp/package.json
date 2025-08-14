@@ -21,16 +21,16 @@
     "server": "node dist/examples/local-dev.mjs"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.15.1",
+    "@modelcontextprotocol/sdk": "^1.17.2",
     "@vue-skuilder/common": "workspace:*",
     "@vue-skuilder/courseware": "workspace:*",
     "@vue-skuilder/db": "workspace:*",
-    "zod": "^4.0.0"
+    "zod": "^4.0.17"
   },
   "devDependencies": {
-    "@modelcontextprotocol/inspector": "^0.16.1",
-    "tsup": "^8.0.0",
-    "typescript": "~5.7.2"
+    "@modelcontextprotocol/inspector": "^0.16.3",
+    "tsup": "^8.5.0",
+    "typescript": "~5.9.2"
   },
   "stableVersion": "0.1.10"
 }
