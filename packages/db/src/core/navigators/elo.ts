@@ -4,7 +4,6 @@ import { UserDBInterface } from '../interfaces/userDB';
 import { ContentNavigator } from './index';
 import { CourseElo } from '@vue-skuilder/common';
 import { StudySessionReviewItem, StudySessionNewItem, QualifiedCardID } from '..';
-import { StudySessionItem } from '../interfaces/contentSource';
 
 export default class ELONavigator extends ContentNavigator {
   user: UserDBInterface;
