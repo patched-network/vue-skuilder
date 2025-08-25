@@ -36,7 +36,7 @@ yarn install
 yarn setup # makes git submodule available - test database, builds library packages
 ```
 
-After the setup, workflows will differdepending on what you are working on. To explore, I recommend:
+After the setup, workflows will differ depending on what you are working on. To explore, I recommend:
 
 ```
 yarn dev:platform
@@ -51,7 +51,7 @@ Which will build the components of the platform version of the software and serv
 
 This monorepo is structured to support both **platform development** and **course creation**.
 
-Broadly: an education system has `User` and `Content` as endpoints, with `UI` as the mediating software in between.
+Broadly: an education system has `User` and `Content` as endpoints, with `UI` as the mediating software in between. We aim for flexible storange and delivery of User and Content data, and for easily extensible `UI` for rendering custom course content.
 
 Here:
 
@@ -82,8 +82,10 @@ There are several UI *application* packages:
 
 And some shared UI packages:
 - `common-ui`: a library of reusable Vue components and utilities
-- `courses`: a package containing domain-specific course logic and content types, also base-types for course content rendering components (e.g., a Chessboard component for a chess course)
 - `edit-ui`: course editing widgets used in both `studio-ui` and `platform-ui`
+
+
+The `courseware` package contains base-types for course content rendering components, and also some domain-specific course logic and content type definitions (e.g., a Chessboard component for a chess course). In order to create custom content rendering components, you will extend from these base types.
 
 All web UI is built with Vue 3 and Vuetify 3, in TypeScript, mostly with Composition API and Pinia state management. All web UI shares most of its config via `./vite.config.base.json`
 
