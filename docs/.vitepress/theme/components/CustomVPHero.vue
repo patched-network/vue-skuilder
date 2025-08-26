@@ -132,7 +132,7 @@ const showStudySession = true;
 @media (min-width: 960px) {
   .main {
     order: 1;
-    width: calc(55%); /* Adjusted to give more space to study session */
+    width: calc(45%); /* Give more space to study session */
   }
 
   .VPHero.has-study-session .main {
@@ -275,7 +275,7 @@ const showStudySession = true;
     order: 2; /* Keep on right side on desktop */
     margin: 0;
     min-height: 400px;
-    width: calc(45%);
+    width: calc(55%);
   }
 }
 
@@ -314,8 +314,15 @@ const showStudySession = true;
   border-radius: 12px;
   padding: 2rem;
   width: 100%;
-  max-width: 400px;
+  max-width: 400px; /* Limit on mobile */
   text-align: center;
+}
+
+@media (min-width: 960px) {
+  .study-placeholder {
+    max-width: none; /* Remove width limit on desktop */
+    width: 100%; /* Take full available space */
+  }
 }
 
 .study-placeholder h3 {
