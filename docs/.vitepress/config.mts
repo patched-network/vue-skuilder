@@ -51,7 +51,7 @@ export default defineConfig({
       // { text: 'Home', link: '/' },
       // { text: 'Examples', link: '/markdown-examples' }
     ],
-    logo: './logo.svg',
+    logo: '/logo.svg',
 
     sidebar: [
       {
