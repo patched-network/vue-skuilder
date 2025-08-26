@@ -1,15 +1,33 @@
 import { defineConfig } from 'vitepress';
 import path from 'path';
+import { fileURLToPath, URL } from 'node:url';
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
   vite: {
     resolve: {
-      alias: {
-        '@vue-skuilder/courseware': path.resolve(__dirname, '../../packages/courseware/src'),
-        '@vue-skuilder/common-ui': path.resolve(__dirname, '../../packages/common-ui/src'),
-        '@vue-skuilder/platform-ui': path.resolve(__dirname, '../../packages/platform-ui/src'),
-      },
+      alias: [
+        // Override VitePress default VPHero component with our custom one
+        {
+          find: /^.*\/VPHero\.vue$/,
+          replacement: fileURLToPath(
+            new URL('./theme/components/CustomVPHero.vue', import.meta.url)
+          )
+        },
+        // Existing project aliases
+        {
+          find: '@vue-skuilder/courseware',
+          replacement: path.resolve(__dirname, '../../packages/courseware/src')
+        },
+        {
+          find: '@vue-skuilder/common-ui', 
+          replacement: path.resolve(__dirname, '../../packages/common-ui/src')
+        },
+        {
+          find: '@vue-skuilder/platform-ui',
+          replacement: path.resolve(__dirname, '../../packages/platform-ui/src')
+        }
+      ],
     },
     optimizeDeps: {
       exclude: [
