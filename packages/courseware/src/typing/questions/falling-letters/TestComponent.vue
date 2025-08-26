@@ -7,7 +7,8 @@
     <div style="margin-top: 10px; font-size: 12px">
       <strong>Imported types evidence:</strong><br />
       testLetter: {{ testLetter }}<br />
-      testPos: {{ testPos }}
+      testPos: {{ testPos }}<br />
+      testViewData: {{ testViewData }}
     </div>
   </div>
 </template>
@@ -22,8 +23,10 @@
 // Current working imports:
 import { ref } from 'vue';
 import { Letter, TreePosition } from './types';
+import { ViewData } from '@vue-skuilder/common';
 
 const count = ref(0);
 const testLetter = { id: 1, char: 'A', x: 10, y: 20 } as Letter;
 const testPos = { id: 1, left: 0, height: 100, scale: 1 } as TreePosition;
+const testViewData = { testField: 'hello' } as ViewData;
 </script>
