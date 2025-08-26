@@ -9,10 +9,10 @@ hero:
   actions:
     - theme: brand
       text: Tell me more!
-      link: /introduction
+      link: introduction
     - theme: alt
       text: Quickstart
-      link: /quickstart
+      link: quickstart
     - theme: alt
       text: GitHub
       link: https://github.com/patched-network/vue-skuilder
