@@ -12,7 +12,12 @@ export default defineConfig({
       },
     },
     optimizeDeps: {
-      exclude: ['@vue-skuilder/courseware', '@vue-skuilder/common-ui', '@vue-skuilder/platform-ui', '@vue-skuilder/db'],
+      exclude: [
+        '@vue-skuilder/courseware',
+        '@vue-skuilder/common-ui',
+        '@vue-skuilder/platform-ui',
+        '@vue-skuilder/db',
+      ],
     },
     ssr: {
       noExternal: ['@vojtechlanka/vue-tags-input'],
@@ -20,12 +25,14 @@ export default defineConfig({
   },
   title: 'skuilder',
   description: 'modern tooling for adaptive tutoring systems and SRS++',
+  head: [['link', { rel: 'icon', type: 'image/svg+xml', href: '/logo.svg' }]],
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
     nav: [
       // { text: 'Home', link: '/' },
       // { text: 'Examples', link: '/markdown-examples' }
     ],
+    logo: '/logo.svg',
 
     sidebar: [
       {
