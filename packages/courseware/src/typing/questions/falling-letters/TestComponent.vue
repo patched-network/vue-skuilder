@@ -9,6 +9,14 @@
 </template>
 
 <script setup>
+// FallingLetters.vue imports to test incrementally:
+// import { defineComponent, ref, onMounted, onUnmounted, PropType } from 'vue';
+// import { useViewable, useQuestionView } from '@vue-skuilder/common-ui';
+// import { FallingLettersQuestion } from './index';
+// import { ViewData } from '@vue-skuilder/common';
+// import { Letter, TreePosition } from './types';
+
+// Current test imports:
 import { ref } from 'vue'
 
 const count = ref(0)
