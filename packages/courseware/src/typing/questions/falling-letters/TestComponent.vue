@@ -8,7 +8,11 @@
       <strong>Imported types evidence:</strong><br />
       testLetter: {{ testLetter }}<br />
       testPos: {{ testPos }}<br />
-      testViewData: {{ testViewData }}
+      testViewData: {{ testViewData }}<br />
+      viewable exists: {{ !!viewable }}<br />
+      questionView exists: {{ !!questionView }}<br />
+      FallingLettersQuestion class: {{ questionClass?.name }}<br />
+      FallingLettersQuestion dataShapes: {{ questionClass?.dataShapes?.length }} items
     </div>
   </div>
 </template>
@@ -16,15 +20,13 @@
 <script setup lang="ts">
 // FallingLetters.vue imports to test incrementally:
 // import { defineComponent, ref, onMounted, onUnmounted, PropType } from 'vue';
-// import { useViewable, useQuestionView } from '@vue-skuilder/common-ui';
-// import { FallingLettersQuestion } from './index';
-// import { ViewData } from '@vue-skuilder/common';
 
 // Current working imports:
 import { ref } from 'vue';
 import { Letter, TreePosition } from './types';
 import { ViewData } from '@vue-skuilder/common';
 import { useViewable, useQuestionView } from '@vue-skuilder/common-ui';
+import { FallingLettersQuestion } from './index';
 
 const count = ref(0);
 const testLetter = { id: 1, char: 'A', x: 10, y: 20 } as Letter;
@@ -34,4 +36,7 @@ const testViewData = { testField: 'hello' } as ViewData;
 // Test common-ui composables
 const viewable = useViewable();
 const questionView = useQuestionView();
+
+// Test FallingLettersQuestion class
+const questionClass = FallingLettersQuestion;
 </script>
