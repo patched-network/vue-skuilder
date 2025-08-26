@@ -12,7 +12,10 @@ export default defineConfig({
       },
     },
     optimizeDeps: {
-      exclude: ['@vue-skuilder/courseware', '@vue-skuilder/common-ui', '@vue-skuilder/platform-ui'],
+      exclude: ['@vue-skuilder/courseware', '@vue-skuilder/common-ui', '@vue-skuilder/platform-ui', '@vue-skuilder/db'],
+    },
+    ssr: {
+      noExternal: ['@vojtechlanka/vue-tags-input'],
     },
   },
   title: 'skuilder',
