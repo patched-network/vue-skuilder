@@ -1,9 +1,9 @@
 # Cards
 
 <script setup>
-import FallingLetters from '@vue-skuilder/courseware/typing/questions/falling-letters/FallingLetters.vue'
+import TestComponent from '@vue-skuilder/courseware/typing/questions/falling-letters/TestComponent.vue'
 </script>
 
-Test page with Vue components from monorepo.
+Test page with simple Vue component from monorepo.
 
-<FallingLetters />
+<TestComponent />
