@@ -4,6 +4,7 @@ import { fileURLToPath, URL } from 'node:url';
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
+  base: 'vue-skuilder',
   vite: {
     resolve: {
       alias: [
@@ -12,21 +13,21 @@ export default defineConfig({
           find: /^.*\/VPHero\.vue$/,
           replacement: fileURLToPath(
             new URL('./theme/components/CustomVPHero.vue', import.meta.url)
-          )
+          ),
         },
         // Existing project aliases
         {
           find: '@vue-skuilder/courseware',
-          replacement: path.resolve(__dirname, '../../packages/courseware/src')
+          replacement: path.resolve(__dirname, '../../packages/courseware/src'),
         },
         {
-          find: '@vue-skuilder/common-ui', 
-          replacement: path.resolve(__dirname, '../../packages/common-ui/src')
+          find: '@vue-skuilder/common-ui',
+          replacement: path.resolve(__dirname, '../../packages/common-ui/src'),
         },
         {
           find: '@vue-skuilder/platform-ui',
-          replacement: path.resolve(__dirname, '../../packages/platform-ui/src')
-        }
+          replacement: path.resolve(__dirname, '../../packages/platform-ui/src'),
+        },
       ],
     },
     optimizeDeps: {
