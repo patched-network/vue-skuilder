@@ -19,10 +19,9 @@
 
 <script setup lang="ts">
 // FallingLetters.vue imports to test incrementally:
-// import { defineComponent, ref, onMounted, onUnmounted, PropType } from 'vue';
 
 // Current working imports:
-import { ref } from 'vue';
+import { defineComponent, ref, onMounted, onUnmounted, PropType } from 'vue';
 import { Letter, TreePosition } from './types';
 import { ViewData } from '@vue-skuilder/common';
 import { useViewable, useQuestionView } from '@vue-skuilder/common-ui';
