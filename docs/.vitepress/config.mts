@@ -4,7 +4,7 @@ import { fileURLToPath, URL } from 'node:url';
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
-  base: 'vue-skuilder',
+  // base: 'vue-skuilder',
   vite: {
     resolve: {
       alias: [
