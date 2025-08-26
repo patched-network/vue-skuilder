@@ -47,3 +47,8 @@ ignore
 
 # node pouchdb userdbs that get popped by `db` package sometimes. nuisance.
 userdb-Guest
+
+# vitepress docs build/dev output
+
+docs/.vitepress/dist
+docs/.vitepress/cache
