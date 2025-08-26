@@ -114,7 +114,7 @@ const showStudySession = true;
 .main {
   position: relative;
   z-index: 10;
-  order: 2;
+  order: 1; /* Text comes first on mobile */
   flex-grow: 1;
   flex-shrink: 0;
 }
@@ -259,20 +259,20 @@ const showStudySession = true;
 
 /* Study Session Styles - replaces image styles */
 .study-session {
-  order: 1;
-  margin: -76px -24px -48px;
+  order: 2; /* Place below text on mobile */
+  margin: 2rem -24px 0; /* Add top margin, remove negative margins that cause overlay */
 }
 
 @media (min-width: 640px) {
   .study-session {
-    margin: -108px -24px -48px;
+    margin: 2rem -24px 0; /* Keep positive margin on tablet */
   }
 }
 
 @media (min-width: 960px) {
   .study-session {
     flex-grow: 1;
-    order: 2;
+    order: 2; /* Keep on right side on desktop */
     margin: 0;
     min-height: 400px;
     width: calc(45%);
@@ -282,17 +282,19 @@ const showStudySession = true;
 .study-session-container {
   position: relative;
   margin: 0 auto;
-  width: 320px;
-  height: 320px;
+  width: 100%;
+  max-width: 400px;
+  min-height: 280px; /* Reduced height for mobile */
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 1rem; /* Add padding to prevent edge clipping */
 }
 
 @media (min-width: 640px) {
   .study-session-container {
-    width: 392px;
-    height: 392px;
+    max-width: 450px;
+    min-height: 320px;
   }
 }
 
@@ -301,6 +303,7 @@ const showStudySession = true;
     width: 100%;
     height: 100%;
     min-height: 400px;
+    padding: 0; /* Remove padding on desktop */
   }
 }
 
