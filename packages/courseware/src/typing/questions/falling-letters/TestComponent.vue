@@ -24,9 +24,14 @@
 import { ref } from 'vue';
 import { Letter, TreePosition } from './types';
 import { ViewData } from '@vue-skuilder/common';
+import { useViewable, useQuestionView } from '@vue-skuilder/common-ui';
 
 const count = ref(0);
 const testLetter = { id: 1, char: 'A', x: 10, y: 20 } as Letter;
 const testPos = { id: 1, left: 0, height: 100, scale: 1 } as TreePosition;
 const testViewData = { testField: 'hello' } as ViewData;
+
+// Test common-ui composables
+const viewable = useViewable();
+const questionView = useQuestionView();
 </script>
