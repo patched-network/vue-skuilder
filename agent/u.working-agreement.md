@@ -1,5 +1,9 @@
 This folder is the working scratchpad for document-centric user+assistant development.
 
+# Available Local Documentation
+
+The folder `./agent/docs-vendoring` contains reference material for some libraries and tools used by this project. Currently: `vitepress`.
+
 # Conventions
 
 Working sessions will usually be focused on a session-directory. Either a numbered directory (referring to a gh issue) or a directory named for the task at hand. New working documents should be created in this directory, and named according to the conventions below. For GH issues, please *do* use the `gh` command to *read* existing issues, PRs, and workflow runs.
