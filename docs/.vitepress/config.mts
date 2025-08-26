@@ -44,14 +44,14 @@ export default defineConfig({
   },
   title: 'skuilder',
   description: 'modern tooling for adaptive tutoring systems and SRS++',
-  head: [['link', { rel: 'icon', type: 'image/svg+xml', href: '/logo.svg' }]],
+  head: [['link', { rel: 'icon', type: 'image/svg+xml', href: './logo.svg' }]],
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
     nav: [
       // { text: 'Home', link: '/' },
       // { text: 'Examples', link: '/markdown-examples' }
     ],
-    logo: '/logo.svg',
+    logo: './logo.svg',
 
     sidebar: [
       {
