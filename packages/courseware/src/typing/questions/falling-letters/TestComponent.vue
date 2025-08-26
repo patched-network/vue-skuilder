@@ -3,16 +3,23 @@
     <h2>Test Component from Monorepo</h2>
     <p>Testing TypeScript imports with lang="ts"</p>
     <button @click="count++" style="padding: 8px 16px; margin: 5px">Clicked {{ count }} times</button>
-    
-    <div style="margin-top: 10px; font-size: 12px;">
-      <strong>Imported types evidence:</strong><br>
-      testLetter: {{ testLetter }}<br>
+
+    <div style="margin-top: 10px; font-size: 12px">
+      <strong>Imported types evidence:</strong><br />
+      testLetter: {{ testLetter }}<br />
       testPos: {{ testPos }}
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+// FallingLetters.vue imports to test incrementally:
+// import { defineComponent, ref, onMounted, onUnmounted, PropType } from 'vue';
+// import { useViewable, useQuestionView } from '@vue-skuilder/common-ui';
+// import { FallingLettersQuestion } from './index';
+// import { ViewData } from '@vue-skuilder/common';
+
+// Current working imports:
 import { ref } from 'vue';
 import { Letter, TreePosition } from './types';
 
