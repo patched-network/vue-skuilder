@@ -6,11 +6,9 @@ Test page works.
 import TestComponent from '@vue-skuilder/courseware/typing/questions/falling-letters/TestComponent.vue'
 import { defineAsyncComponent } from 'vue'
 
-const FallingLetters = defineAsyncComponent({
-  loader: () => import('@vue-skuilder/courseware/typing/questions/falling-letters/FallingLettersWrapper.vue'),
-  errorComponent: () => 'Failed to load FallingLetters wrapper',
-  loadingComponent: () => 'Loading FallingLetters wrapper...',
-})
+const FallingLetters = defineAsyncComponent(
+  () => import('@vue-skuilder/courseware/typing/questions/falling-letters/FallingLetters.vue')
+)
 </script>
 
 ## Test Component (Working)
