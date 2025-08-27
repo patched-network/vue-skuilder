@@ -144,8 +144,7 @@ const handleCardResponse = (response: any) => {
 };
 
 const handleTimeChanged = (timeRemaining: number) => {
-  // Could emit to parent for time display
-  console.log('[EmbeddedCourse] Time remaining:', timeRemaining);
+  // Could emit to parent for time display (removed noisy console.log)
 };
 
 // Initialize session
