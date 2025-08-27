@@ -70,6 +70,8 @@ export default defineConfig({
         'vuetify/components',
         'vuetify/directives',
         '@mdi/font/css/materialdesignicons.css',
+        'pinia',
+        'vue-router',
       ],
       exclude: [
         '@vue-skuilder/courseware',

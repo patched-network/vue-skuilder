@@ -6,6 +6,12 @@ import DefaultTheme from 'vitepress/theme';
 // VitePress custom styles
 import './style.css';
 
+// Pinia for state management
+import { createPinia } from 'pinia';
+
+// Vue Router (create a minimal router for component compatibility)
+import { createRouter, createWebHistory } from 'vue-router';
+
 // Vuetify setup
 import 'vuetify/styles';
 import '@mdi/font/css/materialdesignicons.css';
@@ -30,6 +36,20 @@ export default {
     });
   },
   enhanceApp({ app, router, siteData }) {
+    // Create and install Pinia
+    const pinia = createPinia()
+    app.use(pinia)
+    
+    // Create minimal Vue Router for component compatibility
+    const vueRouter = createRouter({
+      history: createWebHistory(),
+      routes: [
+        // Minimal route - VitePress handles actual routing
+        { path: '/', component: { template: '<div></div>' } }
+      ]
+    })
+    app.use(vueRouter)
+    
     // Configure Vuetify
     const vuetify = createVuetify({
       components,
