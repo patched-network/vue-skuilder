@@ -23,6 +23,24 @@ export function useStaticDataLayer(courseIds: string[] = ['2aeb8315ef78f3e89ca38
   const error = ref<Error | null>(null);
   const isLoading = ref(false);
 
+  // Calculate relative path to static-courses from current location
+  const getStaticCoursesPath = (): string => {
+    // Get current path depth to calculate relative path back to root
+    const currentPath = window.location.pathname;
+    const basePath = '/vue-skuilder/';
+    
+    // Remove base path to get relative path within docs
+    const relativePath = currentPath.replace(basePath, '');
+    const pathDepth = relativePath.split('/').filter(segment => segment.length > 0).length - 1;
+    
+    // Build relative path back to root: '../' repeated pathDepth times + 'static-courses'
+    const backToRoot = pathDepth > 0 ? '../'.repeat(pathDepth) : './';
+    const staticCoursesPath = `${backToRoot}static-courses`;
+    
+    console.log(`[useStaticDataLayer] Current path: ${currentPath}, depth: ${pathDepth}, static path: ${staticCoursesPath}`);
+    return staticCoursesPath;
+  };
+
   const initialize = async (): Promise<void> => {
     if (dataLayer.value) {
       console.log('[useStaticDataLayer] Already initialized, skipping');
@@ -35,13 +53,16 @@ export function useStaticDataLayer(courseIds: string[] = ['2aeb8315ef78f3e89ca38
       
       console.log('[useStaticDataLayer] Initializing with course IDs:', courseIds);
 
+      // Get the correct relative path to static-courses
+      const staticCoursesPath = getStaticCoursesPath();
+
       // Load individual manifests for each course (following testproject pattern)
       const manifests: Record<string, any> = {};
       
       for (const courseId of courseIds) {
         try {
           console.log(`[useStaticDataLayer] Loading manifest for course: ${courseId}`);
-          const manifestResponse = await fetch(`./static-courses/${courseId}/manifest.json`);
+          const manifestResponse = await fetch(`${staticCoursesPath}/${courseId}/manifest.json`);
           
           if (!manifestResponse.ok) {
             throw new Error(`Failed to load manifest: ${manifestResponse.status} ${manifestResponse.statusText}`);
@@ -63,7 +84,7 @@ export function useStaticDataLayer(courseIds: string[] = ['2aeb8315ef78f3e89ca38
       const config: DataLayerConfig = {
         type: 'static',
         options: {
-          staticContentPath: './static-courses',
+          staticContentPath: staticCoursesPath,
           manifests,
           COURSE_IDS: courseIds
         }
