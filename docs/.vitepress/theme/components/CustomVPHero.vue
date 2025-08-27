@@ -137,8 +137,10 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <!-- Fullscreen overlay backdrop - moved to root level -->
-    <div v-if="isFullscreen" class="fullscreen-backdrop" @click="closeFullscreen"></div>
+    <!-- Fullscreen overlay backdrop with transition -->
+    <Transition name="backdrop">
+      <div v-if="isFullscreen" class="fullscreen-backdrop" @click="closeFullscreen"></div>
+    </Transition>
   </div>
 </template>
 
@@ -379,9 +381,25 @@ onUnmounted(() => {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(0, 0, 0, 0.4);
   z-index: 2000;
   backdrop-filter: blur(4px);
+}
+
+/* Vue Transition for backdrop */
+.backdrop-enter-active,
+.backdrop-leave-active {
+  transition: opacity 0.3s ease-out;
+}
+
+.backdrop-enter-from,
+.backdrop-leave-to {
+  opacity: 0;
+}
+
+.backdrop-enter-to,
+.backdrop-leave-from {
+  opacity: 1;
 }
 
 /* Fullscreen Container */
