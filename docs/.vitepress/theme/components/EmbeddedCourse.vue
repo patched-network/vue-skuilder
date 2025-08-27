@@ -1,6 +1,6 @@
 <!-- EmbeddedCourse.vue - Reusable component for embedding study sessions in docs -->
 <template>
-  <div class="embedded-course">
+  <div ref="containerRef" class="embedded-course">
     <!-- Error state (hidden but logged) -->
     <div v-if="error" class="error-state" style="display: none;">
       <!-- Hidden error state for graceful degradation -->
@@ -38,9 +38,11 @@
     <!-- Ready to start or initialization state -->
     <div v-else class="init-state">
       <div class="init-content">
-        <p v-if="!dataLayer">Initializing study session...</p>
+        <p v-if="!hasInitialized">Interactive study session</p>
+        <p v-else-if="!dataLayer">Initializing study session...</p>
         <p v-else>Ready to start study session!</p>
-        <p><small>Debug: dataLayer={{!!dataLayer}}, user={{!!user}}, loading={{isLoading}}, error={{!!error}}</small></p>
+        <p v-if="!hasInitialized"><small>Scroll down to activate</small></p>
+        <p v-else><small>Debug: dataLayer={{!!dataLayer}}, user={{!!user}}, loading={{isLoading}}, error={{!!error}}</small></p>
         <button 
           v-if="dataLayer && user && !isLoading" 
           @click="startSession" 
@@ -49,12 +51,20 @@
           Start Session
         </button>
         <button 
-          v-else 
+          v-else-if="hasInitialized"
           @click="initializeSession" 
           class="retry-button"
           :disabled="isLoading"
         >
           {{ isLoading ? 'Loading...' : 'Initialize' }}
+        </button>
+        <button 
+          v-else
+          @click="initializeSession" 
+          class="retry-button"
+          :disabled="false"
+        >
+          Load Study Session
         </button>
       </div>
     </div>
@@ -62,7 +72,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { StudySession, type StudySessionConfig } from '@vue-skuilder/common-ui';
 import { allCourseWare } from '@vue-skuilder/courseware';
 import { type ContentSourceID } from '@vue-skuilder/db';
@@ -88,6 +98,8 @@ const { dataLayer, error: dataLayerError, isLoading: dataLayerLoading, initializ
 const sessionPrepared = ref(false);
 const error = ref<Error | null>(null);
 const isLoading = ref(false);
+const hasInitialized = ref(false);
+const containerRef = ref<HTMLElement | null>(null);
 
 // Computed properties for StudySession
 const contentSources = computed<ContentSourceID[]>(() => [
@@ -162,10 +174,17 @@ const handleTimeChanged = (timeRemaining: number) => {
   // Could emit to parent for time display (removed noisy console.log)
 };
 
-// Initialize session
+// Initialize session lazily
 const initializeSession = async () => {
+  if (hasInitialized.value) {
+    console.log('[EmbeddedCourse] Already initialized, skipping');
+    return;
+  }
+  
+  hasInitialized.value = true;
+  
   try {
-    console.log('[EmbeddedCourse] Starting initialization for course:', props.courseId);
+    console.log('[EmbeddedCourse] Starting lazy initialization for course:', props.courseId);
     
     // Ensure data layer is initialized
     if (!dataLayer.value) {
@@ -206,14 +225,45 @@ const startSession = () => {
   sessionPrepared.value = true;
 };
 
-// Auto-initialize on mount (data layer only, not session)
-onMounted(async () => {
+// Intersection Observer for lazy loading
+let observer: IntersectionObserver | null = null;
+
+// Lazy initialization - only start when component becomes visible
+onMounted(() => {
   console.log('[EmbeddedCourse] Mounted with props:', {
     courseId: props.courseId,
     sessionTimeLimit: props.sessionTimeLimit
   });
   
-  await initializeSession();
+  // Set up intersection observer for lazy loading
+  if (containerRef.value && 'IntersectionObserver' in window) {
+    observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (entry.isIntersecting && !hasInitialized.value) {
+          console.log('[EmbeddedCourse] Component became visible, starting lazy initialization');
+          initializeSession();
+          // Disconnect observer after first trigger
+          observer?.disconnect();
+        }
+      },
+      {
+        rootMargin: '50px' // Start loading 50px before component becomes visible
+      }
+    );
+    
+    observer.observe(containerRef.value);
+    console.log('[EmbeddedCourse] Intersection observer set up for lazy loading');
+  } else {
+    // Fallback for environments without IntersectionObserver
+    console.log('[EmbeddedCourse] No IntersectionObserver, initializing immediately');
+    setTimeout(() => initializeSession(), 100);
+  }
+});
+
+onUnmounted(() => {
+  // Clean up observer
+  observer?.disconnect();
 });
 
 // Watch for errors and log them
