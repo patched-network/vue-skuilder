@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { DefaultTheme } from 'vitepress/theme';
 import { useData } from 'vitepress';
+import { ref, onMounted, onUnmounted } from 'vue';
 
 export interface HeroAction {
   theme?: 'brand' | 'alt';
@@ -22,6 +23,31 @@ const { site } = useData();
 
 // For now, we'll always show the study session, but this could be conditional
 const showStudySession = true;
+
+// Fullscreen state
+const isFullscreen = ref(false);
+
+const toggleFullscreen = () => {
+  isFullscreen.value = !isFullscreen.value;
+};
+
+const closeFullscreen = () => {
+  isFullscreen.value = false;
+};
+
+const handleEscapeKey = (event: KeyboardEvent) => {
+  if (event.key === 'Escape' && isFullscreen.value) {
+    closeFullscreen();
+  }
+};
+
+onMounted(() => {
+  document.addEventListener('keydown', handleEscapeKey);
+});
+
+onUnmounted(() => {
+  document.removeEventListener('keydown', handleEscapeKey);
+});
 </script>
 
 <template>
@@ -56,10 +82,46 @@ const showStudySession = true;
 
       <!-- Study Session Section - replaces the image section -->
       <div v-if="showStudySession" class="study-session">
-        <div class="study-session-container">
+        <div class="study-session-container" :class="{ fullscreen: isFullscreen }">
           <!-- Placeholder for StudySessionWrapper -->
-          <div class="study-placeholder">
-            <h3>Interactive Study Session</h3>
+          <div class="study-placeholder" :class="{ fullscreen: isFullscreen }">
+            <div class="study-header">
+              <h3>Interactive Study Session</h3>
+              <button
+                class="fullscreen-toggle"
+                @click="toggleFullscreen"
+                :title="isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'"
+              >
+                <svg
+                  v-if="!isFullscreen"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M7 14H5V19H10V17H7V14ZM5 10H7V7H10V5H5V10ZM17 17H14V19H19V14H17V17ZM14 5V7H17V10H19V5H14Z"
+                    fill="currentColor"
+                  />
+                </svg>
+                <svg
+                  v-else
+                  viewBox="0 0 24.00 24.00"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="currentColor"
+                  stroke="currentColor"
+                  stroke-width="0.00024"
+                >
+                  <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+                  <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+                  <g id="SVGRepo_iconCarrier">
+                    <path d="M16 8h6v1h-7V2h1zM2 16h6v6h1v-7H2zm13 6h1v-6h6v-1h-7zM8 8H2v1h7V2H8z"></path>
+                    <path fill="none" d="M0 0h24v24H0z"></path>
+                  </g>
+                </svg>
+              </button>
+            </div>
             <p>Live demo will appear here</p>
             <div class="demo-card">
               <div class="card-content">Sample flashcard content</div>
@@ -74,6 +136,9 @@ const showStudySession = true;
         </div>
       </div>
     </div>
+
+    <!-- Fullscreen overlay backdrop - moved to root level -->
+    <div v-if="isFullscreen" class="fullscreen-backdrop" @click="closeFullscreen"></div>
   </div>
 </template>
 
@@ -307,6 +372,33 @@ const showStudySession = true;
   }
 }
 
+/* Fullscreen Overlay */
+.fullscreen-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 2000;
+  backdrop-filter: blur(4px);
+}
+
+/* Fullscreen Container */
+.study-session-container.fullscreen {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  z-index: 2001 !important;
+  width: 90vw !important;
+  height: 85vh !important;
+  max-width: 1200px !important;
+  max-height: 800px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
 /* Placeholder Demo Styles */
 .study-placeholder {
   background: var(--vp-c-bg-soft);
@@ -316,6 +408,16 @@ const showStudySession = true;
   width: 100%;
   max-width: 400px; /* Limit on mobile */
   text-align: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.study-placeholder.fullscreen {
+  max-width: none;
+  width: 100%;
+  height: 100%;
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
 }
 
 @media (min-width: 960px) {
@@ -325,10 +427,50 @@ const showStudySession = true;
   }
 }
 
+/* Study Header with Toggle Button */
+.study-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
 .study-placeholder h3 {
-  margin: 0 0 1rem 0;
+  margin: 0;
   color: var(--vp-c-text-1);
   font-size: 1.25rem;
+  flex-grow: 1;
+  text-align: left;
+}
+
+.study-placeholder.fullscreen h3 {
+  font-size: 1.5rem;
+  text-align: center;
+}
+
+.fullscreen-toggle {
+  background: var(--vp-c-bg);
+  border: 1px solid var(--vp-c-border);
+  border-radius: 6px;
+  padding: 8px;
+  color: var(--vp-c-text-2);
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
+}
+
+.fullscreen-toggle:hover {
+  background: var(--vp-c-bg-soft);
+  color: var(--vp-c-text-1);
+  border-color: var(--vp-c-brand-1);
+}
+
+.fullscreen-toggle:active {
+  transform: scale(0.95);
 }
 
 .study-placeholder p {
