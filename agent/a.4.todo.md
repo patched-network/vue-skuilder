@@ -3,15 +3,15 @@
 ## Phase 1: Core Infrastructure
 
 ### 1.1 Static Data Layer Composable
-- [ ] 1.1.1 Create `docs/.vitepress/theme/composables/useStaticDataLayer.ts`
-  - [ ] 1.1.1.1 Import required types from `@vue-skuilder/db`
-  - [ ] 1.1.1.2 Implement composable with error handling
-  - [ ] 1.1.1.3 Configure localStorage persistence with 'docs-skuilder' prefix
-  - [ ] 1.1.1.4 Add support for multiple course IDs
-- [ ] 1.1.2 Test composable in isolation
-  - [ ] 1.1.2.1 Create simple test component
-  - [ ] 1.1.2.2 Verify data layer initialization
-  - [ ] 1.1.2.3 Test error handling scenarios
+- [x] 1.1.1 Create `docs/.vitepress/theme/composables/useStaticDataLayer.ts`
+  - [x] 1.1.1.1 Import required types from `@vue-skuilder/db`
+  - [x] 1.1.1.2 Implement composable with error handling
+  - [x] 1.1.1.3 Configure localStorage persistence with 'docs-skuilder' prefix (removed - not applicable for browser)
+  - [x] 1.1.1.4 Add support for multiple course IDs
+- [x] 1.1.2 Test composable in isolation
+  - [x] 1.1.2.1 Create simple test component
+  - [x] 1.1.2.2 Verify data layer initialization
+  - [x] 1.1.2.3 Test error handling scenarios
 
 ### 1.2 Demo Course Data Creation (deferred - working against existing course w/ ID 2aeb8315ef78f3e89ca386992d00825b currently in the public folder)
 - [ ] 1.2.1 Create directory structure `docs/public/static-courses/`
@@ -128,10 +128,29 @@
 ## Notes Section
 
 ### Completed Items Commentary
-<!-- Commentary will be added here as items are completed -->
+**1.1.1 useStaticDataLayer composable**: ✅ Created following testproject pattern
+- Loads individual manifests from `./static-courses/${courseId}/manifest.json` 
+- Constructs manifests object programmatically (not from index.json registry)
+- Removed localStorage prefix (not applicable for browser environment)
+- Full error handling and loading states
+
+**1.1.2 Test composable**: ✅ Created StaticDataLayerTest component and verified working
+- Added to `/docs/workingdoc.md` for testing
+- Added URL probing functionality that identified correct path pattern
+- Successfully initialized with: Username "Me", Courses DB available
+- Ready to proceed to EmbeddedCourse component
 
 ### Technical Discoveries
-<!-- Technical findings and adjustments will be noted here -->
+**StaticDataLayerProvider Pattern**: Initially assumed index.json registry was needed, but `packages/cli/testproject/src/main.ts` shows the correct pattern:
+- Each course manifest loaded individually: `fetch(\`/static-courses/\${courseId}/manifest.json\`)`
+- Manifests object constructed as: `{ [courseId]: manifest }`
+- No central registry file required
+
+**VitePress Asset Path Resolution**: URL probing revealed:
+- Absolute paths like `/static-courses/` return 404
+- Relative paths like `./static-courses/` work correctly (200)  
+- VitePress serves assets relative to current page location
+- Using `./` notation provides robustness across different base path configurations
 
 ### Next Steps Adjustments
 <!-- Plan modifications based on implementation learnings -->
