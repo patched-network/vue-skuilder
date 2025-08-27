@@ -87,7 +87,7 @@ onUnmounted(() => {
           <!-- Real StudySession Integration -->
           <div class="study-wrapper" :class="{ fullscreen: isFullscreen }">
             <div class="study-header">
-              <h3>Interactive Study Session</h3>
+              <h3>Try it out!</h3>
               <button
                 class="fullscreen-toggle"
                 @click="toggleFullscreen"
@@ -418,15 +418,14 @@ onUnmounted(() => {
   width: 100%;
   max-width: 400px; /* Limit on mobile */
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  
-  /* Diffuse brand color shadows */
-  box-shadow: 
- 
 
-    -30px 10px 140px rgba(66, 184, 131, 0.25),    /* Vue green glow */
-    30px -10px 150px rgba(255, 106, 84, 0.28),    /* Patched orange glow */
-    0 0 100px rgba(53, 73, 94, 0.08),     /* Dark gray subtle glow */
-    0 4px 20px rgba(0, 0, 0, 0.1);        /* Standard depth shadow */
+  /* Diffuse brand color shadows */
+  box-shadow:
+    /* Vue green glow */
+    -30px 10px 140px rgba(66, 184, 131, 0.25),
+    /* Patched orange glow */ 30px -10px 150px rgba(255, 106, 84, 0.28),
+    /* Dark gray subtle glow */ 0 0 100px rgba(53, 73, 94, 0.08),
+    /* Standard depth shadow */ 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 
 .study-wrapper.fullscreen {
@@ -435,13 +434,13 @@ onUnmounted(() => {
   height: 100%;
   border-radius: 16px;
   padding: 1rem;
-  
+
   /* Enhanced brand shadows for fullscreen */
-  box-shadow: 
-    -20px 10px 140px rgba(66, 184, 131, 0.30),     /* Stronger Vue green glow */
-    20px -10px 150px rgba(255, 106, 84, 0.35),    /* Stronger patched orange glow */
-    0 0 200px rgba(53, 73, 94, 0.1),       /* Stronger dark gray glow */
-    0 25px 50px rgba(0, 0, 0, 0.25);       /* Standard depth shadow */
+  box-shadow:
+    -20px 10px 140px rgba(66, 184, 131, 0.3),
+    20px -10px 150px rgba(255, 106, 84, 0.35),
+    0 0 200px rgba(53, 73, 94, 0.1),
+    0 25px 50px rgba(0, 0, 0, 0.25);
 }
 
 @media (min-width: 960px) {
@@ -497,7 +496,6 @@ onUnmounted(() => {
 .fullscreen-toggle:active {
   transform: scale(0.95);
 }
-
 
 /* VitePress Button Styles */
 .vp-button {

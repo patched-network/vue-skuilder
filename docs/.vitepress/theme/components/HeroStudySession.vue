@@ -1,8 +1,8 @@
 <!-- HeroStudySession.vue - Wrapper for hero section integration -->
 <template>
   <div class="hero-study-session">
-    <EmbeddedCourse 
-      course-id="2aeb8315ef78f3e89ca386992d00825b" 
+    <EmbeddedCourse
+      course-id="2aeb8315ef78f3e89ca386992d00825b"
       :session-time-limit="5"
       :session-config="{ likesConfetti: true }"
     />
