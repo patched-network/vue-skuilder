@@ -15,7 +15,16 @@ export default defineConfig({
             new URL('./theme/components/CustomVPHero.vue', import.meta.url)
           ),
         },
-        // Existing project aliases
+        // Style aliases MUST come first (most specific paths)
+        {
+          find: '@vue-skuilder/courseware/style',
+          replacement: path.resolve(__dirname, '../../packages/courseware/dist/assets/index.css'),
+        },
+        {
+          find: '@vue-skuilder/common-ui/style',
+          replacement: path.resolve(__dirname, '../../packages/common-ui/dist/assets/index.css'),
+        },
+        // Inter-package aliases (less specific)
         {
           find: '@vue-skuilder/courseware',
           replacement: path.resolve(__dirname, '../../packages/courseware/src'),
@@ -28,18 +37,55 @@ export default defineConfig({
           find: '@vue-skuilder/platform-ui',
           replacement: path.resolve(__dirname, '../../packages/platform-ui/src'),
         },
+        {
+          find: '@vue-skuilder/db',
+          replacement: path.resolve(__dirname, '../../packages/db/src'),
+        },
+        {
+          find: '@vue-skuilder/common',
+          replacement: path.resolve(__dirname, '../../packages/common/src'),
+        },
+        // Intra-package aliases (matching vite.config.base.js)
+        {
+          find: '@courseware',
+          replacement: path.resolve(__dirname, '../../packages/courseware/src'),
+        },
+        {
+          find: '@cui',
+          replacement: path.resolve(__dirname, '../../packages/common-ui/src'),
+        },
+        {
+          find: '@common',
+          replacement: path.resolve(__dirname, '../../packages/common/src'),
+        },
+        {
+          find: '@db',
+          replacement: path.resolve(__dirname, '../../packages/db/src'),
+        },
       ],
     },
     optimizeDeps: {
+      include: [
+        'vuetify',
+        'vuetify/components',
+        'vuetify/directives',
+        '@mdi/font/css/materialdesignicons.css',
+      ],
       exclude: [
         '@vue-skuilder/courseware',
         '@vue-skuilder/common-ui',
         '@vue-skuilder/platform-ui',
         '@vue-skuilder/db',
+        '@vue-skuilder/common',
       ],
     },
     ssr: {
-      noExternal: ['@vojtechlanka/vue-tags-input'],
+      noExternal: [
+        '@vojtechlanka/vue-tags-input',
+        'vuetify',
+        '@vue-skuilder/common-ui',
+        '@vue-skuilder/courseware',
+      ],
     },
   },
   title: 'skuilder',
