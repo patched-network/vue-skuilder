@@ -1,0 +1,1619 @@
+{
+  "byTag": {
+    "array": {
+      "cardIds": [
+        "2aeb8315ef78f3e89ca386992d008826",
+        "787bc0d25821da0abb503a3b8b014bd0",
+        "787bc0d25821da0abb503a3b8b0154bf",
+        "787bc0d25821da0abb503a3b8b016dc9",
+        "787bc0d25821da0abb503a3b8b017e81",
+        "07e3ce7d2009ef7162d0af56e6014669",
+        "804cfd4c244877d6d244bd6abc04490f",
+        "804cfd4c244877d6d244bd6abc0464de"
+      ],
+      "count": 8
+    },
+    "best-practices": {
+      "cardIds": [
+        "787bc0d25821da0abb503a3b8b04d723"
+      ],
+      "count": 1
+    },
+    "binary": {
+      "cardIds": [
+        "5470797268f4763a116b22d673028b4d"
+      ],
+      "snippet": "",
+      "count": 1
+    },
+    "bool": {
+      "cardIds": [
+        "787bc0d25821da0abb503a3b8b0081cd"
+      ],
+      "count": 1
+    },
+    "built-ins": {
+      "cardIds": [
+        "787bc0d25821da0abb503a3b8b0550d7",
+        "804cfd4c244877d6d244bd6abc04364a",
+        "804cfd4c244877d6d244bd6abc04490f",
+        "804cfd4c244877d6d244bd6abc04a7d8"
+      ],
+      "count": 4
+    },
+    "channel": {
+      "cardIds": [
+        "787bc0d25821da0abb503a3b8b057bad",
+        "787bc0d25821da0abb503a3b8b058990",
+        "07e3ce7d2009ef7162d0af56e6008558"
+      ],
+      "count": 3
+    },
+    "channels": {
+      "cardIds": [
+        "787bc0d25821da0abb503a3b8b04acb2",
+        "787bc0d25821da0abb503a3b8b04d723",
+        "787bc0d25821da0abb503a3b8b04ea5d",
+        "787bc0d25821da0abb503a3b8b04ee24",
+        "787bc0d25821da0abb503a3b8b053b6a",
+        "787bc0d25821da0abb503a3b8b053e6b",
+        "787bc0d25821da0abb503a3b8b0550d7",
+        "787bc0d25821da0abb503a3b8b056a02",
+        "07e3ce7d2009ef7162d0af56e6000bb6"
+      ],
+      "count": 9
+    },
+    "closure": {
+      "cardIds": [
+        "787bc0d25821da0abb503a3b8b01dd53"
+      ],
+      "count": 1
+    },
+    "code-blocks": {
+      "cardIds": [
+        "787bc0d25821da0abb503a3b8b0130f1",
+        "787bc0d25821da0abb503a3b8b020b81"
+      ],
+      "count": 2
+    },
+    "code-organization": {
+      "cardIds": [
+        "787bc0d25821da0abb503a3b8b03f6e1",
+        "787bc0d25821da0abb503a3b8b0402e2",
+        "787bc0d25821da0abb503a3b8b04148e"
+      ],
+      "count": 3
+    },
+    "command-line-utils": {
+      "cardIds": [
+        "787bc0d25821da0abb503a3b8b0319f8"
+      ],
+      "count": 1
+    },
+    "comments": {
+      "cardIds": [
+        "5470797268f4763a116b22d67303555d"
+      ],
+      "snippet": "",
+      "count": 1
+    },
+    "comparable": {
+      "cardIds": [
+        "787bc0d25821da0abb503a3b8b04f424"
+      ],
+      "count": 1
+    },
+    "compiler-rules": {
+      "cardIds": [
+        "787bc0d25821da0abb503a3b8b01b534",
+        "787bc0d25821da0abb503a3b8b01bb8e",
+        "787bc0d25821da0abb503a3b8b030f47",
+        "5470797268f4763a116b22d67302dca9"
+      ],
+      "count": 4
+    },
+    "concurrency": {
+      "cardIds": [
+        "787bc0d25821da0abb503a3b8b027984",
+        "787bc0d25821da0abb503a3b8b029b83",
+        "787bc0d25821da0abb503a3b8b044507",
+        "787bc0d25821da0abb503a3b8b04c4f5",
+        "787bc0d25821da0abb503a3b8b04d723",
+        "787bc0d25821da0abb503a3b8b04ea5d",
+        "787bc0d25821da0abb503a3b8b05b093",
+        "787bc0d25821da0abb503a3b8b05f922",
+        "07e3ce7d2009ef7162d0af56e6008558"
+      ],
+      "count": 9
+    },
+    "constants": {
+      "cardIds": [
+        "787bc0d25821da0abb503a3b8b012408"
+      ],
+      "count": 1
+    },
+    "conventions": {
+      "cardIds": [
+        "787bc0d25821da0abb503a3b8b024e69",
+        "787bc0d25821da0abb503a3b8b026aee",
+        "787bc0d25821da0abb503a3b8b02a7e1",
+        "787bc0d25821da0abb503a3b8b02fcae",
+        "787bc0d25821da0abb503a3b8b03284a",
+        "787bc0d25821da0abb503a3b8b03e45c",
+        "787bc0d25821da0abb503a3b8b04d723",
+        "07e3ce7d2009ef7162d0af56e600bb65",
+        "804cfd4c244877d6d244bd6abc01d4e5",
+        "804cfd4c244877d6d244bd6abc026834",
+        "804cfd4c244877d6d244bd6abc0276c0",
+        "804cfd4c244877d6d244bd6abc028724",
+        "804cfd4c244877d6d244bd6abc02963d"
+      ],
+      "count": 13
+    },
+    "deadlocks": {
+      "cardIds": [
+        "787bc0d25821da0abb503a3b8b05f922"
+      ],
+      "count": 1
+    },
+    "defer": {
+      "cardIds": [
+        "787bc0d25821da0abb503a3b8b0134e7"
+      ],
+      "count": 1
+    },
+    "dependencies": {
+      "cardIds": [
+        "787bc0d25821da0abb503a3b8b030f47"
+      ],
+      "count": 1
+    },
+    "embedded-types": {
+      "cardIds": [
+        "787bc0d25821da0abb503a3b8b01efe5"
+      ],
+      "count": 1
+    },
+    "errors": {
+      "cardIds": [
+        "787bc0d25821da0abb503a3b8b026aee",
+        "787bc0d25821da0abb503a3b8b02fcae",
+        "787bc0d25821da0abb503a3b8b03e45c",
+        "804cfd4c244877d6d244bd6abc02631a",
+        "804cfd4c244877d6d244bd6abc0276c0"
+      ],
+      "count": 5
+    },
+    "exports": {
+      "cardIds": [
+        "787bc0d25821da0abb503a3b8b0194e1",
+        "787bc0d25821da0abb503a3b8b0340bf"
+      ],
+      "count": 2
+    },
+    "expression-evaluation": {
+      "cardIds": [
+        "07e3ce7d2009ef7162d0af56e6015b5e"
+      ],
+      "snippet": "",
+      "count": 1
+    },
+    "float": {
+      "cardIds": [
+        "787bc0d25821da0abb503a3b8b00b4a1",
+        "787bc0d25821da0abb503a3b8b00cf90",
+        "787bc0d25821da0abb503a3b8b02b0ad",
+        "787bc0d25821da0abb503a3b8b02c491",
+        "787bc0d25821da0abb503a3b8b02d608",
+        "787bc0d25821da0abb503a3b8b02ea9d"
+      ],
+      "count": 6
+    },
+    "flow-control": {
+      "cardIds": [
+        "804cfd4c244877d6d244bd6abc0276c0"
+      ],
+      "snippet": "",
+      "count": 1
+    },
+    "function-values": {
+      "cardIds": [
+        "5470797268f4763a116b22d673024702",
+        "5470797268f4763a116b22d67302588f"
+      ],
+      "snippet": "",
+      "count": 2
+    },
+    "functions": {
+      "cardIds": [
+        "787bc0d25821da0abb503a3b8b00059f",
+        "787bc0d25821da0abb503a3b8b01dd53",
+        "787bc0d25821da0abb503a3b8b022f9a",
+        "787bc0d25821da0abb503a3b8b026aee",
+        "5470797268f4763a116b22d673024702",
+        "5470797268f4763a116b22d67302588f",
+        "804cfd4c244877d6d244bd6abc0490af",
+        "804cfd4c244877d6d244bd6abc049fa5",
+        "804cfd4c244877d6d244bd6abc04e520"
+      ],
+      "count": 9
+    },
+    "garbage-collection": {
+      "cardIds": [
+        "07e3ce7d2009ef7162d0af56e6000bb6",
+        "07e3ce7d2009ef7162d0af56e6002071",
+        "5470797268f4763a116b22d67303314c"
+      ],
+      "count": 3
+    },
+    "global-scope": {
+      "cardIds": [
+        "787bc0d25821da0abb503a3b8b038d14",
+        "787bc0d25821da0abb503a3b8b0394f7",
+        "787bc0d25821da0abb503a3b8b03abee",
+        "787bc0d25821da0abb503a3b8b05970a"
+      ],
+      "count": 4
+    },
+    "godocs": {
+      "cardIds": [
+        "787bc0d25821da0abb503a3b8b0319f8",
+        "787bc0d25821da0abb503a3b8b03284a",
+        "787bc0d25821da0abb503a3b8b050961",
+        "07e3ce7d2009ef7162d0af56e600f0e2"
+      ],
+      "count": 4
+    },
+    "goroutines": {
+      "cardIds": [
+        "787bc0d25821da0abb503a3b8b029b83",
+        "787bc0d25821da0abb503a3b8b044507",
+        "787bc0d25821da0abb503a3b8b045df3",
+        "787bc0d25821da0abb503a3b8b046ae4",
+        "787bc0d25821da0abb503a3b8b04c4f5",
+        "787bc0d25821da0abb503a3b8b04d723",
+        "787bc0d25821da0abb503a3b8b04ea5d",
+        "787bc0d25821da0abb503a3b8b053b6a",
+        "787bc0d25821da0abb503a3b8b061201",
+        "07e3ce7d2009ef7162d0af56e6002071",
+        "07e3ce7d2009ef7162d0af56e6002e0c"
+      ],
+      "count": 11
+    },
+    "hexadecimal": {
+      "cardIds": [
+        "5470797268f4763a116b22d673029dd4"
+      ],
+      "snippet": "",
+      "count": 1
+    },
+    "identifiers": {
+      "cardIds": [
+        "787bc0d25821da0abb503a3b8b05970a",
+        "5470797268f4763a116b22d6730266e8",
+        "5470797268f4763a116b22d673027658",
+        "5470797268f4763a116b22d6730309a1",
+        "5470797268f4763a116b22d6730318dd",
+        "5470797268f4763a116b22d6730326a1",
+        "804cfd4c244877d6d244bd6abc028724",
+        "804cfd4c244877d6d244bd6abc02963d",
+        "804cfd4c244877d6d244bd6abc02abf8"
+      ],
+      "count": 9
+    },
+    "imports": {
+      "cardIds": [
+        "804cfd4c244877d6d244bd6abc026834"
+      ],
+      "snippet": "",
+      "count": 1
+    },
+    "int": {
+      "cardIds": [
+        "787bc0d25821da0abb503a3b8b008d33",
+        "787bc0d25821da0abb503a3b8b00b4a1",
+        "787bc0d25821da0abb503a3b8b00cf90",
+        "787bc0d25821da0abb503a3b8b02b0ad",
+        "787bc0d25821da0abb503a3b8b02c491",
+        "787bc0d25821da0abb503a3b8b02d608",
+        "787bc0d25821da0abb503a3b8b02ea9d",
+        "5470797268f4763a116b22d673028b4d",
+        "5470797268f4763a116b22d673029dd4",
+        "5470797268f4763a116b22d67302b5cd",
+        "5470797268f4763a116b22d67302cf8f",
+        "5470797268f4763a116b22d673034352"
+      ],
+      "count": 12
+    },
+    "interface": {
+      "cardIds": [
+        "787bc0d25821da0abb503a3b8b01a3bb",
+        "787bc0d25821da0abb503a3b8b01b4f2",
+        "787bc0d25821da0abb503a3b8b020b81",
+        "787bc0d25821da0abb503a3b8b021ecb",
+        "804cfd4c244877d6d244bd6abc030fb0"
+      ],
+      "count": 5
+    },
+    "keywords": {
+      "cardIds": [
+        "5470797268f4763a116b22d6730364ad",
+        "5470797268f4763a116b22d673036b32",
+        "5470797268f4763a116b22d673037b70",
+        "5470797268f4763a116b22d67303841e",
+        "5470797268f4763a116b22d6730390fb",
+        "5470797268f4763a116b22d67303a187",
+        "5470797268f4763a116b22d67303b400",
+        "5470797268f4763a116b22d67303c114",
+        "5470797268f4763a116b22d67303c715",
+        "5470797268f4763a116b22d67303d3b2",
+        "5470797268f4763a116b22d67303df7f",
+        "5470797268f4763a116b22d67303e95a",
+        "5470797268f4763a116b22d67303f215",
+        "5470797268f4763a116b22d673040ab9",
+        "5470797268f4763a116b22d673042093",
+        "5470797268f4763a116b22d6730439e9",
+        "5470797268f4763a116b22d673045037",
+        "5470797268f4763a116b22d6730458d1",
+        "5470797268f4763a116b22d673046440",
+        "5470797268f4763a116b22d673047390",
+        "5470797268f4763a116b22d673047d4b",
+        "5470797268f4763a116b22d67304947e",
+        "5470797268f4763a116b22d67304a7e6",
+        "5470797268f4763a116b22d67304b479",
+        "5470797268f4763a116b22d67304bf39",
+        "5470797268f4763a116b22d67304d38e",
+        "5470797268f4763a116b22d67304e7dd",
+        "5470797268f4763a116b22d67304f5a3",
+        "5470797268f4763a116b22d67304ffc0",
+        "5470797268f4763a116b22d673050bf7",
+        "5470797268f4763a116b22d673052274",
+        "5470797268f4763a116b22d673052f53",
+        "5470797268f4763a116b22d673054171",
+        "5470797268f4763a116b22d673054b84",
+        "5470797268f4763a116b22d673055a5e",
+        "5470797268f4763a116b22d673056428",
+        "5470797268f4763a116b22d67305741c",
+        "5470797268f4763a116b22d673057901",
+        "5470797268f4763a116b22d673059512",
+        "5470797268f4763a116b22d67305aa0b",
+        "5470797268f4763a116b22d67305bb7a",
+        "5470797268f4763a116b22d67305daab",
+        "5470797268f4763a116b22d67305e2f1",
+        "5470797268f4763a116b22d67305eadc",
+        "804cfd4c244877d6d244bd6abc01e0e6"
+      ],
+      "snippet": "",
+      "count": 45
+    },
+    "language-documentation": {
+      "cardIds": [
+        "07e3ce7d2009ef7162d0af56e600c6b4",
+        "07e3ce7d2009ef7162d0af56e600da1d"
+      ],
+      "count": 2
+    },
+    "language-features": {
+      "cardIds": [
+        "787bc0d25821da0abb503a3b8b0356fc",
+        "5470797268f4763a116b22d67302f6f0",
+        "5470797268f4763a116b22d67303314c"
+      ],
+      "count": 3
+    },
+    "len": {
+      "cardIds": [
+        "804cfd4c244877d6d244bd6abc04364a"
+      ],
+      "snippet": "",
+      "count": 1
+    },
+    "literals": {
+      "cardIds": [
+        "2aeb8315ef78f3e89ca386992d00f98c",
+        "2aeb8315ef78f3e89ca386992d010e51",
+        "2aeb8315ef78f3e89ca386992d011b12",
+        "2aeb8315ef78f3e89ca386992d0122fd",
+        "2aeb8315ef78f3e89ca386992d0132e8",
+        "2aeb8315ef78f3e89ca386992d013df4",
+        "787bc0d25821da0abb503a3b8b02b0ad",
+        "787bc0d25821da0abb503a3b8b02c491",
+        "787bc0d25821da0abb503a3b8b02d608",
+        "787bc0d25821da0abb503a3b8b02ea9d",
+        "5470797268f4763a116b22d673028b4d",
+        "5470797268f4763a116b22d673029dd4",
+        "5470797268f4763a116b22d67302b5cd",
+        "5470797268f4763a116b22d67302cf8f",
+        "5470797268f4763a116b22d673034352",
+        "804cfd4c244877d6d244bd6abc031cbb"
+      ],
+      "count": 16
+    },
+    "loops": {
+      "cardIds": [
+        "787bc0d25821da0abb503a3b8b0130f1",
+        "787bc0d25821da0abb503a3b8b0134e7",
+        "787bc0d25821da0abb503a3b8b01c415"
+      ],
+      "count": 3
+    },
+    "magic-strings": {
+      "cardIds": [
+        "787bc0d25821da0abb503a3b8b0340bf",
+        "787bc0d25821da0abb503a3b8b038d14",
+        "787bc0d25821da0abb503a3b8b04148e"
+      ],
+      "count": 3
+    },
+    "make": {
+      "cardIds": [
+        "2aeb8315ef78f3e89ca386992d00d726",
+        "2aeb8315ef78f3e89ca386992d00dd79",
+        "2aeb8315ef78f3e89ca386992d00ed07",
+        "2aeb8315ef78f3e89ca386992d00d728",
+        "804cfd4c244877d6d244bd6abc04490f"
+      ],
+      "count": 5
+    },
+    "maps": {
+      "cardIds": [
+        "787bc0d25821da0abb503a3b8b04f424",
+        "07e3ce7d2009ef7162d0af56e6018876"
+      ],
+      "count": 2
+    },
+    "method-set": {
+      "cardIds": [
+        "804cfd4c244877d6d244bd6abc040f86",
+        "804cfd4c244877d6d244bd6abc0426cf"
+      ],
+      "snippet": "",
+      "count": 2
+    },
+    "methods": {
+      "cardIds": [
+        "787bc0d25821da0abb503a3b8b022f9a",
+        "787bc0d25821da0abb503a3b8b023bbe",
+        "787bc0d25821da0abb503a3b8b024451",
+        "787bc0d25821da0abb503a3b8b024e69",
+        "5470797268f4763a116b22d673022ea1",
+        "5470797268f4763a116b22d673023d0b",
+        "804cfd4c244877d6d244bd6abc040f86",
+        "804cfd4c244877d6d244bd6abc0426cf"
+      ],
+      "count": 8
+    },
+    "modules": {
+      "cardIds": [
+        "787bc0d25821da0abb503a3b8b02a7e1",
+        "787bc0d25821da0abb503a3b8b0402e2",
+        "787bc0d25821da0abb503a3b8b0429b6",
+        "787bc0d25821da0abb503a3b8b0434d9",
+        "787bc0d25821da0abb503a3b8b048cab"
+      ],
+      "count": 5
+    },
+    "new": {
+      "cardIds": [
+        "804cfd4c244877d6d244bd6abc04490f"
+      ],
+      "snippet": "",
+      "count": 1
+    },
+    "nil": {
+      "cardIds": [
+        "5470797268f4763a116b22d673022ea1",
+        "5470797268f4763a116b22d673023d0b",
+        "804cfd4c244877d6d244bd6abc01e0e6",
+        "804cfd4c244877d6d244bd6abc04a7d8"
+      ],
+      "snippet": "",
+      "count": 4
+    },
+    "octal": {
+      "cardIds": [
+        "5470797268f4763a116b22d67302b5cd",
+        "5470797268f4763a116b22d67302cf8f"
+      ],
+      "snippet": "",
+      "count": 2
+    },
+    "packages": {
+      "cardIds": [
+        "787bc0d25821da0abb503a3b8b0194e1",
+        "787bc0d25821da0abb503a3b8b023bbe",
+        "787bc0d25821da0abb503a3b8b030f47",
+        "787bc0d25821da0abb503a3b8b032ea4",
+        "787bc0d25821da0abb503a3b8b0340bf",
+        "787bc0d25821da0abb503a3b8b038d14",
+        "787bc0d25821da0abb503a3b8b0394f7",
+        "787bc0d25821da0abb503a3b8b03abee",
+        "787bc0d25821da0abb503a3b8b03ca14",
+        "787bc0d25821da0abb503a3b8b03f6e1",
+        "787bc0d25821da0abb503a3b8b04148e",
+        "787bc0d25821da0abb503a3b8b0429b6",
+        "787bc0d25821da0abb503a3b8b0434d9",
+        "787bc0d25821da0abb503a3b8b047c28",
+        "804cfd4c244877d6d244bd6abc02abf8"
+      ],
+      "count": 15
+    },
+    "panic": {
+      "cardIds": [
+        "804cfd4c244877d6d244bd6abc02631a"
+      ],
+      "snippet": "",
+      "count": 1
+    },
+    "parameters": {
+      "cardIds": [
+        "787bc0d25821da0abb503a3b8b00059f",
+        "804cfd4c244877d6d244bd6abc0490af",
+        "804cfd4c244877d6d244bd6abc049fa5"
+      ],
+      "count": 3
+    },
+    "performance": {
+      "cardIds": [
+        "787bc0d25821da0abb503a3b8b044507"
+      ],
+      "count": 1
+    },
+    "pkg-context": {
+      "cardIds": [
+        "07e3ce7d2009ef7162d0af56e600bb65",
+        "07e3ce7d2009ef7162d0af56e600e4ae"
+      ],
+      "count": 2
+    },
+    "pkg-sync": {
+      "cardIds": [
+        "07e3ce7d2009ef7162d0af56e600b53c"
+      ],
+      "count": 1
+    },
+    "pointers": {
+      "cardIds": [
+        "787bc0d25821da0abb503a3b8b014753",
+        "787bc0d25821da0abb503a3b8b024451"
+      ],
+      "count": 2
+    },
+    "primitives": {
+      "cardIds": [
+        "787bc0d25821da0abb503a3b8b006592"
+      ],
+      "count": 1
+    },
+    "range": {
+      "cardIds": [
+        "787bc0d25821da0abb503a3b8b01c415"
+      ],
+      "count": 1
+    },
+    "rune": {
+      "cardIds": [
+        "2aeb8315ef78f3e89ca386992d011b12",
+        "2aeb8315ef78f3e89ca386992d0122fd",
+        "2aeb8315ef78f3e89ca386992d0132e8",
+        "2aeb8315ef78f3e89ca386992d013df4",
+        "787bc0d25821da0abb503a3b8b0031c7",
+        "787bc0d25821da0abb503a3b8b0054a1",
+        "787bc0d25821da0abb503a3b8b00acf1"
+      ],
+      "count": 7
+    },
+    "runtime": {
+      "cardIds": [
+        "787bc0d25821da0abb503a3b8b05f922",
+        "787bc0d25821da0abb503a3b8b061201",
+        "07e3ce7d2009ef7162d0af56e6002e0c"
+      ],
+      "count": 3
+    },
+    "scopes": {
+      "cardIds": [
+        "787bc0d25821da0abb503a3b8b000dc8",
+        "787bc0d25821da0abb503a3b8b01dd53",
+        "787bc0d25821da0abb503a3b8b020b81",
+        "787bc0d25821da0abb503a3b8b05970a",
+        "787bc0d25821da0abb503a3b8b05cee6"
+      ],
+      "count": 5
+    },
+    "select": {
+      "cardIds": [
+        "787bc0d25821da0abb503a3b8b05b093",
+        "787bc0d25821da0abb503a3b8b05cee6",
+        "787bc0d25821da0abb503a3b8b05e42c",
+        "787bc0d25821da0abb503a3b8b06163b",
+        "787bc0d25821da0abb503a3b8b061c27",
+        "07e3ce7d2009ef7162d0af56e6008558"
+      ],
+      "count": 6
+    },
+    "short-variable-declarations": {
+      "cardIds": [
+        "787bc0d25821da0abb503a3b8b01008b",
+        "787bc0d25821da0abb503a3b8b010bc2",
+        "787bc0d25821da0abb503a3b8b012408"
+      ],
+      "count": 3
+    },
+    "slice": {
+      "cardIds": [
+        "2aeb8315ef78f3e89ca386992d008826",
+        "2aeb8315ef78f3e89ca386992d008ffa",
+        "2aeb8315ef78f3e89ca386992d00989b",
+        "2aeb8315ef78f3e89ca386992d00ae9d",
+        "2aeb8315ef78f3e89ca386992d00b9b7",
+        "2aeb8315ef78f3e89ca386992d00cb31",
+        "2aeb8315ef78f3e89ca386992d00d726",
+        "2aeb8315ef78f3e89ca386992d00dd79",
+        "2aeb8315ef78f3e89ca386992d00ed07",
+        "787bc0d25821da0abb503a3b8b0154bf",
+        "787bc0d25821da0abb503a3b8b016dc9",
+        "787bc0d25821da0abb503a3b8b017e81",
+        "787bc0d25821da0abb503a3b8b01c415",
+        "2aeb8315ef78f3e89ca386992d00d728",
+        "804cfd4c244877d6d244bd6abc01d4e5",
+        "804cfd4c244877d6d244bd6abc04490f",
+        "804cfd4c244877d6d244bd6abc047ac3",
+        "804cfd4c244877d6d244bd6abc047e5c",
+        "804cfd4c244877d6d244bd6abc04a7d8"
+      ],
+      "count": 19
+    },
+    "source-code": {
+      "cardIds": [
+        "5470797268f4763a116b22d67302e85e"
+      ],
+      "snippet": "",
+      "count": 1
+    },
+    "standard-library": {
+      "cardIds": [
+        "07e3ce7d2009ef7162d0af56e600b53c",
+        "07e3ce7d2009ef7162d0af56e600bb65",
+        "07e3ce7d2009ef7162d0af56e600c6b4",
+        "07e3ce7d2009ef7162d0af56e600da1d",
+        "07e3ce7d2009ef7162d0af56e600e4ae",
+        "5470797268f4763a116b22d673024702",
+        "5470797268f4763a116b22d67302588f"
+      ],
+      "count": 7
+    },
+    "std-reflect": {
+      "cardIds": [
+        "5470797268f4763a116b22d673024702",
+        "5470797268f4763a116b22d67302588f"
+      ],
+      "snippet": "",
+      "count": 2
+    },
+    "string": {
+      "cardIds": [
+        "2aeb8315ef78f3e89ca386992d00f98c",
+        "2aeb8315ef78f3e89ca386992d010e51",
+        "2aeb8315ef78f3e89ca386992d0122fd",
+        "2aeb8315ef78f3e89ca386992d0132e8",
+        "2aeb8315ef78f3e89ca386992d013df4",
+        "787bc0d25821da0abb503a3b8b007a74",
+        "787bc0d25821da0abb503a3b8b007c2f",
+        "804cfd4c244877d6d244bd6abc032769",
+        "804cfd4c244877d6d244bd6abc04364a"
+      ],
+      "count": 9
+    },
+    "struct": {
+      "cardIds": [
+        "787bc0d25821da0abb503a3b8b01a3bb",
+        "787bc0d25821da0abb503a3b8b01b4f2",
+        "787bc0d25821da0abb503a3b8b01efe5",
+        "5470797268f4763a116b22d673022ea1",
+        "5470797268f4763a116b22d673023d0b",
+        "804cfd4c244877d6d244bd6abc040f86",
+        "804cfd4c244877d6d244bd6abc0426cf"
+      ],
+      "count": 7
+    },
+    "struct-tag": {
+      "cardIds": [
+        "804cfd4c244877d6d244bd6abc04bc95"
+      ],
+      "snippet": "",
+      "count": 1
+    },
+    "syntax": {
+      "cardIds": [
+        "787bc0d25821da0abb503a3b8b0130f1",
+        "787bc0d25821da0abb503a3b8b01c415",
+        "787bc0d25821da0abb503a3b8b04acb2",
+        "07e3ce7d2009ef7162d0af56e6014669"
+      ],
+      "count": 4
+    },
+    "type-alias": {
+      "cardIds": [
+        "787bc0d25821da0abb503a3b8b047c28",
+        "787bc0d25821da0abb503a3b8b048cab"
+      ],
+      "count": 2
+    },
+    "type-conversions": {
+      "cardIds": [
+        "787bc0d25821da0abb503a3b8b00b4a1",
+        "787bc0d25821da0abb503a3b8b00cf90",
+        "787bc0d25821da0abb503a3b8b00e978"
+      ],
+      "count": 3
+    },
+    "types": {
+      "cardIds": [
+        "787bc0d25821da0abb503a3b8b00059f",
+        "787bc0d25821da0abb503a3b8b0021ff",
+        "787bc0d25821da0abb503a3b8b0031c7",
+        "787bc0d25821da0abb503a3b8b0054a1",
+        "787bc0d25821da0abb503a3b8b006592",
+        "787bc0d25821da0abb503a3b8b007a74",
+        "787bc0d25821da0abb503a3b8b0081cd",
+        "787bc0d25821da0abb503a3b8b008d33",
+        "787bc0d25821da0abb503a3b8b00acf1",
+        "787bc0d25821da0abb503a3b8b01008b",
+        "787bc0d25821da0abb503a3b8b010bc2",
+        "787bc0d25821da0abb503a3b8b01a3bb",
+        "787bc0d25821da0abb503a3b8b01b4f2",
+        "787bc0d25821da0abb503a3b8b01b534",
+        "787bc0d25821da0abb503a3b8b01efe5",
+        "787bc0d25821da0abb503a3b8b020b81",
+        "787bc0d25821da0abb503a3b8b022f9a",
+        "787bc0d25821da0abb503a3b8b023bbe",
+        "787bc0d25821da0abb503a3b8b024e69",
+        "787bc0d25821da0abb503a3b8b047c28",
+        "787bc0d25821da0abb503a3b8b048cab",
+        "5470797268f4763a116b22d67302f6f0",
+        "804cfd4c244877d6d244bd6abc030fb0",
+        "804cfd4c244877d6d244bd6abc031cbb",
+        "804cfd4c244877d6d244bd6abc04e520"
+      ],
+      "count": 25
+    },
+    "variables": {
+      "cardIds": [
+        "787bc0d25821da0abb503a3b8b000dc8",
+        "787bc0d25821da0abb503a3b8b0194e1",
+        "787bc0d25821da0abb503a3b8b01bb8e"
+      ],
+      "count": 3
+    },
+    "version-control": {
+      "cardIds": [
+        "787bc0d25821da0abb503a3b8b0429b6",
+        "787bc0d25821da0abb503a3b8b0434d9"
+      ],
+      "count": 2
+    },
+    "zero-value": {
+      "cardIds": [
+        "2aeb8315ef78f3e89ca386992d00cb31",
+        "787bc0d25821da0abb503a3b8b007a74",
+        "787bc0d25821da0abb503a3b8b0081cd",
+        "787bc0d25821da0abb503a3b8b008d33",
+        "787bc0d25821da0abb503a3b8b00acf1",
+        "787bc0d25821da0abb503a3b8b014753",
+        "787bc0d25821da0abb503a3b8b007c2f",
+        "787bc0d25821da0abb503a3b8b04ee24",
+        "07e3ce7d2009ef7162d0af56e6018876",
+        "5470797268f4763a116b22d673022ea1",
+        "5470797268f4763a116b22d673023d0b",
+        "804cfd4c244877d6d244bd6abc01d4e5",
+        "804cfd4c244877d6d244bd6abc047e5c"
+      ],
+      "count": 13
+    }
+  },
+  "byCard": {
+    "2aeb8315ef78f3e89ca386992d008826": [
+      "array",
+      "slice"
+    ],
+    "787bc0d25821da0abb503a3b8b014bd0": [
+      "array"
+    ],
+    "787bc0d25821da0abb503a3b8b0154bf": [
+      "array",
+      "slice"
+    ],
+    "787bc0d25821da0abb503a3b8b016dc9": [
+      "array",
+      "slice"
+    ],
+    "787bc0d25821da0abb503a3b8b017e81": [
+      "array",
+      "slice"
+    ],
+    "07e3ce7d2009ef7162d0af56e6014669": [
+      "array",
+      "syntax"
+    ],
+    "804cfd4c244877d6d244bd6abc04490f": [
+      "array",
+      "built-ins",
+      "make",
+      "new",
+      "slice"
+    ],
+    "804cfd4c244877d6d244bd6abc0464de": [
+      "array"
+    ],
+    "787bc0d25821da0abb503a3b8b04d723": [
+      "best-practices",
+      "channels",
+      "concurrency",
+      "conventions",
+      "goroutines"
+    ],
+    "5470797268f4763a116b22d673028b4d": [
+      "binary",
+      "int",
+      "literals"
+    ],
+    "787bc0d25821da0abb503a3b8b0081cd": [
+      "bool",
+      "types",
+      "zero-value"
+    ],
+    "787bc0d25821da0abb503a3b8b0550d7": [
+      "built-ins",
+      "channels"
+    ],
+    "804cfd4c244877d6d244bd6abc04364a": [
+      "built-ins",
+      "len",
+      "string"
+    ],
+    "804cfd4c244877d6d244bd6abc04a7d8": [
+      "built-ins",
+      "nil",
+      "slice"
+    ],
+    "787bc0d25821da0abb503a3b8b057bad": [
+      "channel"
+    ],
+    "787bc0d25821da0abb503a3b8b058990": [
+      "channel"
+    ],
+    "07e3ce7d2009ef7162d0af56e6008558": [
+      "channel",
+      "concurrency",
+      "select"
+    ],
+    "787bc0d25821da0abb503a3b8b04acb2": [
+      "channels",
+      "syntax"
+    ],
+    "787bc0d25821da0abb503a3b8b04ea5d": [
+      "channels",
+      "concurrency",
+      "goroutines"
+    ],
+    "787bc0d25821da0abb503a3b8b04ee24": [
+      "channels",
+      "zero-value"
+    ],
+    "787bc0d25821da0abb503a3b8b053b6a": [
+      "channels",
+      "goroutines"
+    ],
+    "787bc0d25821da0abb503a3b8b053e6b": [
+      "channels"
+    ],
+    "787bc0d25821da0abb503a3b8b056a02": [
+      "channels"
+    ],
+    "07e3ce7d2009ef7162d0af56e6000bb6": [
+      "channels",
+      "garbage-collection"
+    ],
+    "787bc0d25821da0abb503a3b8b01dd53": [
+      "closure",
+      "functions",
+      "scopes"
+    ],
+    "787bc0d25821da0abb503a3b8b0130f1": [
+      "code-blocks",
+      "loops",
+      "syntax"
+    ],
+    "787bc0d25821da0abb503a3b8b020b81": [
+      "code-blocks",
+      "interface",
+      "scopes",
+      "types"
+    ],
+    "787bc0d25821da0abb503a3b8b03f6e1": [
+      "code-organization",
+      "packages"
+    ],
+    "787bc0d25821da0abb503a3b8b0402e2": [
+      "code-organization",
+      "modules"
+    ],
+    "787bc0d25821da0abb503a3b8b04148e": [
+      "code-organization",
+      "magic-strings",
+      "packages"
+    ],
+    "787bc0d25821da0abb503a3b8b0319f8": [
+      "command-line-utils",
+      "godocs"
+    ],
+    "5470797268f4763a116b22d67303555d": [
+      "comments"
+    ],
+    "787bc0d25821da0abb503a3b8b04f424": [
+      "comparable",
+      "maps"
+    ],
+    "787bc0d25821da0abb503a3b8b01b534": [
+      "compiler-rules",
+      "types"
+    ],
+    "787bc0d25821da0abb503a3b8b01bb8e": [
+      "compiler-rules",
+      "variables"
+    ],
+    "787bc0d25821da0abb503a3b8b030f47": [
+      "compiler-rules",
+      "dependencies",
+      "packages"
+    ],
+    "5470797268f4763a116b22d67302dca9": [
+      "compiler-rules"
+    ],
+    "787bc0d25821da0abb503a3b8b027984": [
+      "concurrency"
+    ],
+    "787bc0d25821da0abb503a3b8b029b83": [
+      "concurrency",
+      "goroutines"
+    ],
+    "787bc0d25821da0abb503a3b8b044507": [
+      "concurrency",
+      "goroutines",
+      "performance"
+    ],
+    "787bc0d25821da0abb503a3b8b04c4f5": [
+      "concurrency",
+      "goroutines"
+    ],
+    "787bc0d25821da0abb503a3b8b05b093": [
+      "concurrency",
+      "select"
+    ],
+    "787bc0d25821da0abb503a3b8b05f922": [
+      "concurrency",
+      "deadlocks",
+      "runtime"
+    ],
+    "787bc0d25821da0abb503a3b8b012408": [
+      "constants",
+      "short-variable-declarations"
+    ],
+    "787bc0d25821da0abb503a3b8b024e69": [
+      "conventions",
+      "methods",
+      "types"
+    ],
+    "787bc0d25821da0abb503a3b8b026aee": [
+      "conventions",
+      "errors",
+      "functions"
+    ],
+    "787bc0d25821da0abb503a3b8b02a7e1": [
+      "conventions",
+      "modules"
+    ],
+    "787bc0d25821da0abb503a3b8b02fcae": [
+      "conventions",
+      "errors"
+    ],
+    "787bc0d25821da0abb503a3b8b03284a": [
+      "conventions",
+      "godocs"
+    ],
+    "787bc0d25821da0abb503a3b8b03e45c": [
+      "conventions",
+      "errors"
+    ],
+    "07e3ce7d2009ef7162d0af56e600bb65": [
+      "conventions",
+      "pkg-context",
+      "standard-library"
+    ],
+    "804cfd4c244877d6d244bd6abc01d4e5": [
+      "conventions",
+      "slice",
+      "zero-value"
+    ],
+    "804cfd4c244877d6d244bd6abc026834": [
+      "conventions",
+      "imports"
+    ],
+    "804cfd4c244877d6d244bd6abc0276c0": [
+      "conventions",
+      "errors",
+      "flow-control"
+    ],
+    "804cfd4c244877d6d244bd6abc028724": [
+      "conventions",
+      "identifiers"
+    ],
+    "804cfd4c244877d6d244bd6abc02963d": [
+      "conventions",
+      "identifiers"
+    ],
+    "787bc0d25821da0abb503a3b8b0134e7": [
+      "defer",
+      "loops"
+    ],
+    "787bc0d25821da0abb503a3b8b01efe5": [
+      "embedded-types",
+      "struct",
+      "types"
+    ],
+    "804cfd4c244877d6d244bd6abc02631a": [
+      "errors",
+      "panic"
+    ],
+    "787bc0d25821da0abb503a3b8b0194e1": [
+      "exports",
+      "packages",
+      "variables"
+    ],
+    "787bc0d25821da0abb503a3b8b0340bf": [
+      "exports",
+      "magic-strings",
+      "packages"
+    ],
+    "07e3ce7d2009ef7162d0af56e6015b5e": [
+      "expression-evaluation"
+    ],
+    "787bc0d25821da0abb503a3b8b00b4a1": [
+      "float",
+      "int",
+      "type-conversions"
+    ],
+    "787bc0d25821da0abb503a3b8b00cf90": [
+      "float",
+      "int",
+      "type-conversions"
+    ],
+    "787bc0d25821da0abb503a3b8b02b0ad": [
+      "float",
+      "int",
+      "literals"
+    ],
+    "787bc0d25821da0abb503a3b8b02c491": [
+      "float",
+      "int",
+      "literals"
+    ],
+    "787bc0d25821da0abb503a3b8b02d608": [
+      "float",
+      "int",
+      "literals"
+    ],
+    "787bc0d25821da0abb503a3b8b02ea9d": [
+      "float",
+      "int",
+      "literals"
+    ],
+    "5470797268f4763a116b22d673024702": [
+      "function-values",
+      "functions",
+      "standard-library",
+      "std-reflect"
+    ],
+    "5470797268f4763a116b22d67302588f": [
+      "function-values",
+      "functions",
+      "standard-library",
+      "std-reflect"
+    ],
+    "787bc0d25821da0abb503a3b8b00059f": [
+      "functions",
+      "parameters",
+      "types"
+    ],
+    "787bc0d25821da0abb503a3b8b022f9a": [
+      "functions",
+      "methods",
+      "types"
+    ],
+    "804cfd4c244877d6d244bd6abc0490af": [
+      "functions",
+      "parameters"
+    ],
+    "804cfd4c244877d6d244bd6abc049fa5": [
+      "functions",
+      "parameters"
+    ],
+    "804cfd4c244877d6d244bd6abc04e520": [
+      "functions",
+      "types"
+    ],
+    "07e3ce7d2009ef7162d0af56e6002071": [
+      "garbage-collection",
+      "goroutines"
+    ],
+    "5470797268f4763a116b22d67303314c": [
+      "garbage-collection",
+      "language-features"
+    ],
+    "787bc0d25821da0abb503a3b8b038d14": [
+      "global-scope",
+      "magic-strings",
+      "packages"
+    ],
+    "787bc0d25821da0abb503a3b8b0394f7": [
+      "global-scope",
+      "packages"
+    ],
+    "787bc0d25821da0abb503a3b8b03abee": [
+      "global-scope",
+      "packages"
+    ],
+    "787bc0d25821da0abb503a3b8b05970a": [
+      "global-scope",
+      "identifiers",
+      "scopes"
+    ],
+    "787bc0d25821da0abb503a3b8b050961": [
+      "godocs"
+    ],
+    "07e3ce7d2009ef7162d0af56e600f0e2": [
+      "godocs"
+    ],
+    "787bc0d25821da0abb503a3b8b045df3": [
+      "goroutines"
+    ],
+    "787bc0d25821da0abb503a3b8b046ae4": [
+      "goroutines"
+    ],
+    "787bc0d25821da0abb503a3b8b061201": [
+      "goroutines",
+      "runtime"
+    ],
+    "07e3ce7d2009ef7162d0af56e6002e0c": [
+      "goroutines",
+      "runtime"
+    ],
+    "5470797268f4763a116b22d673029dd4": [
+      "hexadecimal",
+      "int",
+      "literals"
+    ],
+    "5470797268f4763a116b22d6730266e8": [
+      "identifiers"
+    ],
+    "5470797268f4763a116b22d673027658": [
+      "identifiers"
+    ],
+    "5470797268f4763a116b22d6730309a1": [
+      "identifiers"
+    ],
+    "5470797268f4763a116b22d6730318dd": [
+      "identifiers"
+    ],
+    "5470797268f4763a116b22d6730326a1": [
+      "identifiers"
+    ],
+    "804cfd4c244877d6d244bd6abc02abf8": [
+      "identifiers",
+      "packages"
+    ],
+    "787bc0d25821da0abb503a3b8b008d33": [
+      "int",
+      "types",
+      "zero-value"
+    ],
+    "5470797268f4763a116b22d67302b5cd": [
+      "int",
+      "literals",
+      "octal"
+    ],
+    "5470797268f4763a116b22d67302cf8f": [
+      "int",
+      "literals",
+      "octal"
+    ],
+    "5470797268f4763a116b22d673034352": [
+      "int",
+      "literals"
+    ],
+    "787bc0d25821da0abb503a3b8b01a3bb": [
+      "interface",
+      "struct",
+      "types"
+    ],
+    "787bc0d25821da0abb503a3b8b01b4f2": [
+      "interface",
+      "struct",
+      "types"
+    ],
+    "787bc0d25821da0abb503a3b8b021ecb": [
+      "interface"
+    ],
+    "804cfd4c244877d6d244bd6abc030fb0": [
+      "interface",
+      "types"
+    ],
+    "5470797268f4763a116b22d6730364ad": [
+      "keywords"
+    ],
+    "5470797268f4763a116b22d673036b32": [
+      "keywords"
+    ],
+    "5470797268f4763a116b22d673037b70": [
+      "keywords"
+    ],
+    "5470797268f4763a116b22d67303841e": [
+      "keywords"
+    ],
+    "5470797268f4763a116b22d6730390fb": [
+      "keywords"
+    ],
+    "5470797268f4763a116b22d67303a187": [
+      "keywords"
+    ],
+    "5470797268f4763a116b22d67303b400": [
+      "keywords"
+    ],
+    "5470797268f4763a116b22d67303c114": [
+      "keywords"
+    ],
+    "5470797268f4763a116b22d67303c715": [
+      "keywords"
+    ],
+    "5470797268f4763a116b22d67303d3b2": [
+      "keywords"
+    ],
+    "5470797268f4763a116b22d67303df7f": [
+      "keywords"
+    ],
+    "5470797268f4763a116b22d67303e95a": [
+      "keywords"
+    ],
+    "5470797268f4763a116b22d67303f215": [
+      "keywords"
+    ],
+    "5470797268f4763a116b22d673040ab9": [
+      "keywords"
+    ],
+    "5470797268f4763a116b22d673042093": [
+      "keywords"
+    ],
+    "5470797268f4763a116b22d6730439e9": [
+      "keywords"
+    ],
+    "5470797268f4763a116b22d673045037": [
+      "keywords"
+    ],
+    "5470797268f4763a116b22d6730458d1": [
+      "keywords"
+    ],
+    "5470797268f4763a116b22d673046440": [
+      "keywords"
+    ],
+    "5470797268f4763a116b22d673047390": [
+      "keywords"
+    ],
+    "5470797268f4763a116b22d673047d4b": [
+      "keywords"
+    ],
+    "5470797268f4763a116b22d67304947e": [
+      "keywords"
+    ],
+    "5470797268f4763a116b22d67304a7e6": [
+      "keywords"
+    ],
+    "5470797268f4763a116b22d67304b479": [
+      "keywords"
+    ],
+    "5470797268f4763a116b22d67304bf39": [
+      "keywords"
+    ],
+    "5470797268f4763a116b22d67304d38e": [
+      "keywords"
+    ],
+    "5470797268f4763a116b22d67304e7dd": [
+      "keywords"
+    ],
+    "5470797268f4763a116b22d67304f5a3": [
+      "keywords"
+    ],
+    "5470797268f4763a116b22d67304ffc0": [
+      "keywords"
+    ],
+    "5470797268f4763a116b22d673050bf7": [
+      "keywords"
+    ],
+    "5470797268f4763a116b22d673052274": [
+      "keywords"
+    ],
+    "5470797268f4763a116b22d673052f53": [
+      "keywords"
+    ],
+    "5470797268f4763a116b22d673054171": [
+      "keywords"
+    ],
+    "5470797268f4763a116b22d673054b84": [
+      "keywords"
+    ],
+    "5470797268f4763a116b22d673055a5e": [
+      "keywords"
+    ],
+    "5470797268f4763a116b22d673056428": [
+      "keywords"
+    ],
+    "5470797268f4763a116b22d67305741c": [
+      "keywords"
+    ],
+    "5470797268f4763a116b22d673057901": [
+      "keywords"
+    ],
+    "5470797268f4763a116b22d673059512": [
+      "keywords"
+    ],
+    "5470797268f4763a116b22d67305aa0b": [
+      "keywords"
+    ],
+    "5470797268f4763a116b22d67305bb7a": [
+      "keywords"
+    ],
+    "5470797268f4763a116b22d67305daab": [
+      "keywords"
+    ],
+    "5470797268f4763a116b22d67305e2f1": [
+      "keywords"
+    ],
+    "5470797268f4763a116b22d67305eadc": [
+      "keywords"
+    ],
+    "804cfd4c244877d6d244bd6abc01e0e6": [
+      "keywords",
+      "nil"
+    ],
+    "07e3ce7d2009ef7162d0af56e600c6b4": [
+      "language-documentation",
+      "standard-library"
+    ],
+    "07e3ce7d2009ef7162d0af56e600da1d": [
+      "language-documentation",
+      "standard-library"
+    ],
+    "787bc0d25821da0abb503a3b8b0356fc": [
+      "language-features"
+    ],
+    "5470797268f4763a116b22d67302f6f0": [
+      "language-features",
+      "types"
+    ],
+    "2aeb8315ef78f3e89ca386992d00f98c": [
+      "literals",
+      "string"
+    ],
+    "2aeb8315ef78f3e89ca386992d010e51": [
+      "literals",
+      "string"
+    ],
+    "2aeb8315ef78f3e89ca386992d011b12": [
+      "literals",
+      "rune"
+    ],
+    "2aeb8315ef78f3e89ca386992d0122fd": [
+      "literals",
+      "rune",
+      "string"
+    ],
+    "2aeb8315ef78f3e89ca386992d0132e8": [
+      "literals",
+      "rune",
+      "string"
+    ],
+    "2aeb8315ef78f3e89ca386992d013df4": [
+      "literals",
+      "rune",
+      "string"
+    ],
+    "804cfd4c244877d6d244bd6abc031cbb": [
+      "literals",
+      "types"
+    ],
+    "787bc0d25821da0abb503a3b8b01c415": [
+      "loops",
+      "range",
+      "slice",
+      "syntax"
+    ],
+    "2aeb8315ef78f3e89ca386992d00d726": [
+      "make",
+      "slice"
+    ],
+    "2aeb8315ef78f3e89ca386992d00dd79": [
+      "make",
+      "slice"
+    ],
+    "2aeb8315ef78f3e89ca386992d00ed07": [
+      "make",
+      "slice"
+    ],
+    "2aeb8315ef78f3e89ca386992d00d728": [
+      "make",
+      "slice"
+    ],
+    "07e3ce7d2009ef7162d0af56e6018876": [
+      "maps",
+      "zero-value"
+    ],
+    "804cfd4c244877d6d244bd6abc040f86": [
+      "method-set",
+      "methods",
+      "struct"
+    ],
+    "804cfd4c244877d6d244bd6abc0426cf": [
+      "method-set",
+      "methods",
+      "struct"
+    ],
+    "787bc0d25821da0abb503a3b8b023bbe": [
+      "methods",
+      "packages",
+      "types"
+    ],
+    "787bc0d25821da0abb503a3b8b024451": [
+      "methods",
+      "pointers"
+    ],
+    "5470797268f4763a116b22d673022ea1": [
+      "methods",
+      "nil",
+      "struct",
+      "zero-value"
+    ],
+    "5470797268f4763a116b22d673023d0b": [
+      "methods",
+      "nil",
+      "struct",
+      "zero-value"
+    ],
+    "787bc0d25821da0abb503a3b8b0429b6": [
+      "modules",
+      "packages",
+      "version-control"
+    ],
+    "787bc0d25821da0abb503a3b8b0434d9": [
+      "modules",
+      "packages",
+      "version-control"
+    ],
+    "787bc0d25821da0abb503a3b8b048cab": [
+      "modules",
+      "type-alias",
+      "types"
+    ],
+    "787bc0d25821da0abb503a3b8b032ea4": [
+      "packages"
+    ],
+    "787bc0d25821da0abb503a3b8b03ca14": [
+      "packages"
+    ],
+    "787bc0d25821da0abb503a3b8b047c28": [
+      "packages",
+      "type-alias",
+      "types"
+    ],
+    "07e3ce7d2009ef7162d0af56e600e4ae": [
+      "pkg-context",
+      "standard-library"
+    ],
+    "07e3ce7d2009ef7162d0af56e600b53c": [
+      "pkg-sync",
+      "standard-library"
+    ],
+    "787bc0d25821da0abb503a3b8b014753": [
+      "pointers",
+      "zero-value"
+    ],
+    "787bc0d25821da0abb503a3b8b006592": [
+      "primitives",
+      "types"
+    ],
+    "787bc0d25821da0abb503a3b8b0031c7": [
+      "rune",
+      "types"
+    ],
+    "787bc0d25821da0abb503a3b8b0054a1": [
+      "rune",
+      "types"
+    ],
+    "787bc0d25821da0abb503a3b8b00acf1": [
+      "rune",
+      "types",
+      "zero-value"
+    ],
+    "787bc0d25821da0abb503a3b8b000dc8": [
+      "scopes",
+      "variables"
+    ],
+    "787bc0d25821da0abb503a3b8b05cee6": [
+      "scopes",
+      "select"
+    ],
+    "787bc0d25821da0abb503a3b8b05e42c": [
+      "select"
+    ],
+    "787bc0d25821da0abb503a3b8b06163b": [
+      "select"
+    ],
+    "787bc0d25821da0abb503a3b8b061c27": [
+      "select"
+    ],
+    "787bc0d25821da0abb503a3b8b01008b": [
+      "short-variable-declarations",
+      "types"
+    ],
+    "787bc0d25821da0abb503a3b8b010bc2": [
+      "short-variable-declarations",
+      "types"
+    ],
+    "2aeb8315ef78f3e89ca386992d008ffa": [
+      "slice"
+    ],
+    "2aeb8315ef78f3e89ca386992d00989b": [
+      "slice"
+    ],
+    "2aeb8315ef78f3e89ca386992d00ae9d": [
+      "slice"
+    ],
+    "2aeb8315ef78f3e89ca386992d00b9b7": [
+      "slice"
+    ],
+    "2aeb8315ef78f3e89ca386992d00cb31": [
+      "slice",
+      "zero-value"
+    ],
+    "804cfd4c244877d6d244bd6abc047ac3": [
+      "slice"
+    ],
+    "804cfd4c244877d6d244bd6abc047e5c": [
+      "slice",
+      "zero-value"
+    ],
+    "5470797268f4763a116b22d67302e85e": [
+      "source-code"
+    ],
+    "787bc0d25821da0abb503a3b8b007a74": [
+      "string",
+      "types",
+      "zero-value"
+    ],
+    "787bc0d25821da0abb503a3b8b007c2f": [
+      "string",
+      "zero-value"
+    ],
+    "804cfd4c244877d6d244bd6abc032769": [
+      "string"
+    ],
+    "804cfd4c244877d6d244bd6abc04bc95": [
+      "struct-tag"
+    ],
+    "787bc0d25821da0abb503a3b8b00e978": [
+      "type-conversions"
+    ],
+    "787bc0d25821da0abb503a3b8b0021ff": [
+      "types"
+    ]
+  }
+}

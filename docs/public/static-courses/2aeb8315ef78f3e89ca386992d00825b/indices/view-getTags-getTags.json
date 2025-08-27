@@ -1,0 +1,5082 @@
+{
+  "type": "couchdb-view",
+  "viewName": "getTags",
+  "designDoc": "_design/getTags",
+  "results": [
+    {
+      "id": "TAG-channels",
+      "key": "07e3ce7d2009ef7162d0af56e6000bb6",
+      "value": {
+        "docType": "TAG",
+        "name": "channels",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-garbage-collection",
+      "key": "07e3ce7d2009ef7162d0af56e6000bb6",
+      "value": {
+        "docType": "TAG",
+        "name": "garbage-collection",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-garbage-collection",
+      "key": "07e3ce7d2009ef7162d0af56e6002071",
+      "value": {
+        "docType": "TAG",
+        "name": "garbage-collection",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-goroutines",
+      "key": "07e3ce7d2009ef7162d0af56e6002071",
+      "value": {
+        "docType": "TAG",
+        "name": "goroutines",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-goroutines",
+      "key": "07e3ce7d2009ef7162d0af56e6002e0c",
+      "value": {
+        "docType": "TAG",
+        "name": "goroutines",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-runtime",
+      "key": "07e3ce7d2009ef7162d0af56e6002e0c",
+      "value": {
+        "docType": "TAG",
+        "name": "runtime",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-channel",
+      "key": "07e3ce7d2009ef7162d0af56e6008558",
+      "value": {
+        "docType": "TAG",
+        "name": "channel",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-concurrency",
+      "key": "07e3ce7d2009ef7162d0af56e6008558",
+      "value": {
+        "docType": "TAG",
+        "name": "concurrency",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-select",
+      "key": "07e3ce7d2009ef7162d0af56e6008558",
+      "value": {
+        "docType": "TAG",
+        "name": "select",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-pkg-sync",
+      "key": "07e3ce7d2009ef7162d0af56e600b53c",
+      "value": {
+        "docType": "TAG",
+        "name": "pkg-sync",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-standard-library",
+      "key": "07e3ce7d2009ef7162d0af56e600b53c",
+      "value": {
+        "docType": "TAG",
+        "name": "standard-library",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-conventions",
+      "key": "07e3ce7d2009ef7162d0af56e600bb65",
+      "value": {
+        "docType": "TAG",
+        "name": "conventions",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-pkg-context",
+      "key": "07e3ce7d2009ef7162d0af56e600bb65",
+      "value": {
+        "docType": "TAG",
+        "name": "pkg-context",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-standard-library",
+      "key": "07e3ce7d2009ef7162d0af56e600bb65",
+      "value": {
+        "docType": "TAG",
+        "name": "standard-library",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-language-documentation",
+      "key": "07e3ce7d2009ef7162d0af56e600c6b4",
+      "value": {
+        "docType": "TAG",
+        "name": "language-documentation",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-standard-library",
+      "key": "07e3ce7d2009ef7162d0af56e600c6b4",
+      "value": {
+        "docType": "TAG",
+        "name": "standard-library",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-language-documentation",
+      "key": "07e3ce7d2009ef7162d0af56e600da1d",
+      "value": {
+        "docType": "TAG",
+        "name": "language-documentation",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-standard-library",
+      "key": "07e3ce7d2009ef7162d0af56e600da1d",
+      "value": {
+        "docType": "TAG",
+        "name": "standard-library",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-pkg-context",
+      "key": "07e3ce7d2009ef7162d0af56e600e4ae",
+      "value": {
+        "docType": "TAG",
+        "name": "pkg-context",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-standard-library",
+      "key": "07e3ce7d2009ef7162d0af56e600e4ae",
+      "value": {
+        "docType": "TAG",
+        "name": "standard-library",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-godocs",
+      "key": "07e3ce7d2009ef7162d0af56e600f0e2",
+      "value": {
+        "docType": "TAG",
+        "name": "godocs",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-array",
+      "key": "07e3ce7d2009ef7162d0af56e6014669",
+      "value": {
+        "docType": "TAG",
+        "name": "array",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-syntax",
+      "key": "07e3ce7d2009ef7162d0af56e6014669",
+      "value": {
+        "docType": "TAG",
+        "name": "syntax",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-expression-evaluation",
+      "key": "07e3ce7d2009ef7162d0af56e6015b5e",
+      "value": {
+        "docType": "TAG",
+        "name": "expression-evaluation",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-maps",
+      "key": "07e3ce7d2009ef7162d0af56e6018876",
+      "value": {
+        "docType": "TAG",
+        "name": "maps",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-zero-value",
+      "key": "07e3ce7d2009ef7162d0af56e6018876",
+      "value": {
+        "docType": "TAG",
+        "name": "zero-value",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-array",
+      "key": "2aeb8315ef78f3e89ca386992d008826",
+      "value": {
+        "docType": "TAG",
+        "name": "array",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-slice",
+      "key": "2aeb8315ef78f3e89ca386992d008826",
+      "value": {
+        "docType": "TAG",
+        "name": "slice",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-slice",
+      "key": "2aeb8315ef78f3e89ca386992d008ffa",
+      "value": {
+        "docType": "TAG",
+        "name": "slice",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-slice",
+      "key": "2aeb8315ef78f3e89ca386992d00989b",
+      "value": {
+        "docType": "TAG",
+        "name": "slice",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-slice",
+      "key": "2aeb8315ef78f3e89ca386992d00ae9d",
+      "value": {
+        "docType": "TAG",
+        "name": "slice",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-slice",
+      "key": "2aeb8315ef78f3e89ca386992d00b9b7",
+      "value": {
+        "docType": "TAG",
+        "name": "slice",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-slice",
+      "key": "2aeb8315ef78f3e89ca386992d00cb31",
+      "value": {
+        "docType": "TAG",
+        "name": "slice",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-zero-value",
+      "key": "2aeb8315ef78f3e89ca386992d00cb31",
+      "value": {
+        "docType": "TAG",
+        "name": "zero-value",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-make",
+      "key": "2aeb8315ef78f3e89ca386992d00d726",
+      "value": {
+        "docType": "TAG",
+        "name": "make",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-slice",
+      "key": "2aeb8315ef78f3e89ca386992d00d726",
+      "value": {
+        "docType": "TAG",
+        "name": "slice",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-make",
+      "key": "2aeb8315ef78f3e89ca386992d00d728",
+      "value": {
+        "docType": "TAG",
+        "name": "make",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-slice",
+      "key": "2aeb8315ef78f3e89ca386992d00d728",
+      "value": {
+        "docType": "TAG",
+        "name": "slice",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-make",
+      "key": "2aeb8315ef78f3e89ca386992d00dd79",
+      "value": {
+        "docType": "TAG",
+        "name": "make",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-slice",
+      "key": "2aeb8315ef78f3e89ca386992d00dd79",
+      "value": {
+        "docType": "TAG",
+        "name": "slice",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-make",
+      "key": "2aeb8315ef78f3e89ca386992d00ed07",
+      "value": {
+        "docType": "TAG",
+        "name": "make",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-slice",
+      "key": "2aeb8315ef78f3e89ca386992d00ed07",
+      "value": {
+        "docType": "TAG",
+        "name": "slice",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-literals",
+      "key": "2aeb8315ef78f3e89ca386992d00f98c",
+      "value": {
+        "docType": "TAG",
+        "name": "literals",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-string",
+      "key": "2aeb8315ef78f3e89ca386992d00f98c",
+      "value": {
+        "docType": "TAG",
+        "name": "string",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-literals",
+      "key": "2aeb8315ef78f3e89ca386992d010e51",
+      "value": {
+        "docType": "TAG",
+        "name": "literals",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-string",
+      "key": "2aeb8315ef78f3e89ca386992d010e51",
+      "value": {
+        "docType": "TAG",
+        "name": "string",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-literals",
+      "key": "2aeb8315ef78f3e89ca386992d011b12",
+      "value": {
+        "docType": "TAG",
+        "name": "literals",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-rune",
+      "key": "2aeb8315ef78f3e89ca386992d011b12",
+      "value": {
+        "docType": "TAG",
+        "name": "rune",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-literals",
+      "key": "2aeb8315ef78f3e89ca386992d0122fd",
+      "value": {
+        "docType": "TAG",
+        "name": "literals",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-rune",
+      "key": "2aeb8315ef78f3e89ca386992d0122fd",
+      "value": {
+        "docType": "TAG",
+        "name": "rune",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-string",
+      "key": "2aeb8315ef78f3e89ca386992d0122fd",
+      "value": {
+        "docType": "TAG",
+        "name": "string",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-literals",
+      "key": "2aeb8315ef78f3e89ca386992d0132e8",
+      "value": {
+        "docType": "TAG",
+        "name": "literals",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-rune",
+      "key": "2aeb8315ef78f3e89ca386992d0132e8",
+      "value": {
+        "docType": "TAG",
+        "name": "rune",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-string",
+      "key": "2aeb8315ef78f3e89ca386992d0132e8",
+      "value": {
+        "docType": "TAG",
+        "name": "string",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-literals",
+      "key": "2aeb8315ef78f3e89ca386992d013df4",
+      "value": {
+        "docType": "TAG",
+        "name": "literals",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-rune",
+      "key": "2aeb8315ef78f3e89ca386992d013df4",
+      "value": {
+        "docType": "TAG",
+        "name": "rune",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-string",
+      "key": "2aeb8315ef78f3e89ca386992d013df4",
+      "value": {
+        "docType": "TAG",
+        "name": "string",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-methods",
+      "key": "5470797268f4763a116b22d673022ea1",
+      "value": {
+        "docType": "TAG",
+        "name": "methods",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-nil",
+      "key": "5470797268f4763a116b22d673022ea1",
+      "value": {
+        "docType": "TAG",
+        "name": "nil",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-struct",
+      "key": "5470797268f4763a116b22d673022ea1",
+      "value": {
+        "docType": "TAG",
+        "name": "struct",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-zero-value",
+      "key": "5470797268f4763a116b22d673022ea1",
+      "value": {
+        "docType": "TAG",
+        "name": "zero-value",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-methods",
+      "key": "5470797268f4763a116b22d673023d0b",
+      "value": {
+        "docType": "TAG",
+        "name": "methods",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-nil",
+      "key": "5470797268f4763a116b22d673023d0b",
+      "value": {
+        "docType": "TAG",
+        "name": "nil",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-struct",
+      "key": "5470797268f4763a116b22d673023d0b",
+      "value": {
+        "docType": "TAG",
+        "name": "struct",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-zero-value",
+      "key": "5470797268f4763a116b22d673023d0b",
+      "value": {
+        "docType": "TAG",
+        "name": "zero-value",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-function-values",
+      "key": "5470797268f4763a116b22d673024702",
+      "value": {
+        "docType": "TAG",
+        "name": "function-values",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-functions",
+      "key": "5470797268f4763a116b22d673024702",
+      "value": {
+        "docType": "TAG",
+        "name": "functions",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-standard-library",
+      "key": "5470797268f4763a116b22d673024702",
+      "value": {
+        "docType": "TAG",
+        "name": "standard-library",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-std-reflect",
+      "key": "5470797268f4763a116b22d673024702",
+      "value": {
+        "docType": "TAG",
+        "name": "std-reflect",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-function-values",
+      "key": "5470797268f4763a116b22d67302588f",
+      "value": {
+        "docType": "TAG",
+        "name": "function-values",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-functions",
+      "key": "5470797268f4763a116b22d67302588f",
+      "value": {
+        "docType": "TAG",
+        "name": "functions",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-standard-library",
+      "key": "5470797268f4763a116b22d67302588f",
+      "value": {
+        "docType": "TAG",
+        "name": "standard-library",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-std-reflect",
+      "key": "5470797268f4763a116b22d67302588f",
+      "value": {
+        "docType": "TAG",
+        "name": "std-reflect",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-identifiers",
+      "key": "5470797268f4763a116b22d6730266e8",
+      "value": {
+        "docType": "TAG",
+        "name": "identifiers",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-identifiers",
+      "key": "5470797268f4763a116b22d673027658",
+      "value": {
+        "docType": "TAG",
+        "name": "identifiers",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-binary",
+      "key": "5470797268f4763a116b22d673028b4d",
+      "value": {
+        "docType": "TAG",
+        "name": "binary",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-int",
+      "key": "5470797268f4763a116b22d673028b4d",
+      "value": {
+        "docType": "TAG",
+        "name": "int",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-literals",
+      "key": "5470797268f4763a116b22d673028b4d",
+      "value": {
+        "docType": "TAG",
+        "name": "literals",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-hexadecimal",
+      "key": "5470797268f4763a116b22d673029dd4",
+      "value": {
+        "docType": "TAG",
+        "name": "hexadecimal",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-int",
+      "key": "5470797268f4763a116b22d673029dd4",
+      "value": {
+        "docType": "TAG",
+        "name": "int",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-literals",
+      "key": "5470797268f4763a116b22d673029dd4",
+      "value": {
+        "docType": "TAG",
+        "name": "literals",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-int",
+      "key": "5470797268f4763a116b22d67302b5cd",
+      "value": {
+        "docType": "TAG",
+        "name": "int",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-literals",
+      "key": "5470797268f4763a116b22d67302b5cd",
+      "value": {
+        "docType": "TAG",
+        "name": "literals",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-octal",
+      "key": "5470797268f4763a116b22d67302b5cd",
+      "value": {
+        "docType": "TAG",
+        "name": "octal",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-int",
+      "key": "5470797268f4763a116b22d67302cf8f",
+      "value": {
+        "docType": "TAG",
+        "name": "int",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-literals",
+      "key": "5470797268f4763a116b22d67302cf8f",
+      "value": {
+        "docType": "TAG",
+        "name": "literals",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-octal",
+      "key": "5470797268f4763a116b22d67302cf8f",
+      "value": {
+        "docType": "TAG",
+        "name": "octal",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-compiler-rules",
+      "key": "5470797268f4763a116b22d67302dca9",
+      "value": {
+        "docType": "TAG",
+        "name": "compiler-rules",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-source-code",
+      "key": "5470797268f4763a116b22d67302e85e",
+      "value": {
+        "docType": "TAG",
+        "name": "source-code",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-language-features",
+      "key": "5470797268f4763a116b22d67302f6f0",
+      "value": {
+        "docType": "TAG",
+        "name": "language-features",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-types",
+      "key": "5470797268f4763a116b22d67302f6f0",
+      "value": {
+        "docType": "TAG",
+        "name": "types",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-identifiers",
+      "key": "5470797268f4763a116b22d6730309a1",
+      "value": {
+        "docType": "TAG",
+        "name": "identifiers",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-identifiers",
+      "key": "5470797268f4763a116b22d6730318dd",
+      "value": {
+        "docType": "TAG",
+        "name": "identifiers",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-identifiers",
+      "key": "5470797268f4763a116b22d6730326a1",
+      "value": {
+        "docType": "TAG",
+        "name": "identifiers",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-garbage-collection",
+      "key": "5470797268f4763a116b22d67303314c",
+      "value": {
+        "docType": "TAG",
+        "name": "garbage-collection",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-language-features",
+      "key": "5470797268f4763a116b22d67303314c",
+      "value": {
+        "docType": "TAG",
+        "name": "language-features",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-int",
+      "key": "5470797268f4763a116b22d673034352",
+      "value": {
+        "docType": "TAG",
+        "name": "int",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-literals",
+      "key": "5470797268f4763a116b22d673034352",
+      "value": {
+        "docType": "TAG",
+        "name": "literals",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-comments",
+      "key": "5470797268f4763a116b22d67303555d",
+      "value": {
+        "docType": "TAG",
+        "name": "comments",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-keywords",
+      "key": "5470797268f4763a116b22d6730364ad",
+      "value": {
+        "docType": "TAG",
+        "name": "keywords",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-keywords",
+      "key": "5470797268f4763a116b22d673036b32",
+      "value": {
+        "docType": "TAG",
+        "name": "keywords",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-keywords",
+      "key": "5470797268f4763a116b22d673037b70",
+      "value": {
+        "docType": "TAG",
+        "name": "keywords",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-keywords",
+      "key": "5470797268f4763a116b22d67303841e",
+      "value": {
+        "docType": "TAG",
+        "name": "keywords",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-keywords",
+      "key": "5470797268f4763a116b22d6730390fb",
+      "value": {
+        "docType": "TAG",
+        "name": "keywords",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-keywords",
+      "key": "5470797268f4763a116b22d67303a187",
+      "value": {
+        "docType": "TAG",
+        "name": "keywords",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-keywords",
+      "key": "5470797268f4763a116b22d67303b400",
+      "value": {
+        "docType": "TAG",
+        "name": "keywords",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-keywords",
+      "key": "5470797268f4763a116b22d67303c114",
+      "value": {
+        "docType": "TAG",
+        "name": "keywords",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-keywords",
+      "key": "5470797268f4763a116b22d67303c715",
+      "value": {
+        "docType": "TAG",
+        "name": "keywords",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-keywords",
+      "key": "5470797268f4763a116b22d67303d3b2",
+      "value": {
+        "docType": "TAG",
+        "name": "keywords",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-keywords",
+      "key": "5470797268f4763a116b22d67303df7f",
+      "value": {
+        "docType": "TAG",
+        "name": "keywords",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-keywords",
+      "key": "5470797268f4763a116b22d67303e95a",
+      "value": {
+        "docType": "TAG",
+        "name": "keywords",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-keywords",
+      "key": "5470797268f4763a116b22d67303f215",
+      "value": {
+        "docType": "TAG",
+        "name": "keywords",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-keywords",
+      "key": "5470797268f4763a116b22d673040ab9",
+      "value": {
+        "docType": "TAG",
+        "name": "keywords",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-keywords",
+      "key": "5470797268f4763a116b22d673042093",
+      "value": {
+        "docType": "TAG",
+        "name": "keywords",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-keywords",
+      "key": "5470797268f4763a116b22d6730439e9",
+      "value": {
+        "docType": "TAG",
+        "name": "keywords",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-keywords",
+      "key": "5470797268f4763a116b22d673045037",
+      "value": {
+        "docType": "TAG",
+        "name": "keywords",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-keywords",
+      "key": "5470797268f4763a116b22d6730458d1",
+      "value": {
+        "docType": "TAG",
+        "name": "keywords",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-keywords",
+      "key": "5470797268f4763a116b22d673046440",
+      "value": {
+        "docType": "TAG",
+        "name": "keywords",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-keywords",
+      "key": "5470797268f4763a116b22d673047390",
+      "value": {
+        "docType": "TAG",
+        "name": "keywords",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-keywords",
+      "key": "5470797268f4763a116b22d673047d4b",
+      "value": {
+        "docType": "TAG",
+        "name": "keywords",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-keywords",
+      "key": "5470797268f4763a116b22d67304947e",
+      "value": {
+        "docType": "TAG",
+        "name": "keywords",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-keywords",
+      "key": "5470797268f4763a116b22d67304a7e6",
+      "value": {
+        "docType": "TAG",
+        "name": "keywords",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-keywords",
+      "key": "5470797268f4763a116b22d67304b479",
+      "value": {
+        "docType": "TAG",
+        "name": "keywords",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-keywords",
+      "key": "5470797268f4763a116b22d67304bf39",
+      "value": {
+        "docType": "TAG",
+        "name": "keywords",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-keywords",
+      "key": "5470797268f4763a116b22d67304d38e",
+      "value": {
+        "docType": "TAG",
+        "name": "keywords",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-keywords",
+      "key": "5470797268f4763a116b22d67304e7dd",
+      "value": {
+        "docType": "TAG",
+        "name": "keywords",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-keywords",
+      "key": "5470797268f4763a116b22d67304f5a3",
+      "value": {
+        "docType": "TAG",
+        "name": "keywords",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-keywords",
+      "key": "5470797268f4763a116b22d67304ffc0",
+      "value": {
+        "docType": "TAG",
+        "name": "keywords",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-keywords",
+      "key": "5470797268f4763a116b22d673050bf7",
+      "value": {
+        "docType": "TAG",
+        "name": "keywords",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-keywords",
+      "key": "5470797268f4763a116b22d673052274",
+      "value": {
+        "docType": "TAG",
+        "name": "keywords",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-keywords",
+      "key": "5470797268f4763a116b22d673052f53",
+      "value": {
+        "docType": "TAG",
+        "name": "keywords",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-keywords",
+      "key": "5470797268f4763a116b22d673054171",
+      "value": {
+        "docType": "TAG",
+        "name": "keywords",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-keywords",
+      "key": "5470797268f4763a116b22d673054b84",
+      "value": {
+        "docType": "TAG",
+        "name": "keywords",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-keywords",
+      "key": "5470797268f4763a116b22d673055a5e",
+      "value": {
+        "docType": "TAG",
+        "name": "keywords",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-keywords",
+      "key": "5470797268f4763a116b22d673056428",
+      "value": {
+        "docType": "TAG",
+        "name": "keywords",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-keywords",
+      "key": "5470797268f4763a116b22d67305741c",
+      "value": {
+        "docType": "TAG",
+        "name": "keywords",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-keywords",
+      "key": "5470797268f4763a116b22d673057901",
+      "value": {
+        "docType": "TAG",
+        "name": "keywords",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-keywords",
+      "key": "5470797268f4763a116b22d673059512",
+      "value": {
+        "docType": "TAG",
+        "name": "keywords",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-keywords",
+      "key": "5470797268f4763a116b22d67305aa0b",
+      "value": {
+        "docType": "TAG",
+        "name": "keywords",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-keywords",
+      "key": "5470797268f4763a116b22d67305bb7a",
+      "value": {
+        "docType": "TAG",
+        "name": "keywords",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-keywords",
+      "key": "5470797268f4763a116b22d67305daab",
+      "value": {
+        "docType": "TAG",
+        "name": "keywords",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-keywords",
+      "key": "5470797268f4763a116b22d67305e2f1",
+      "value": {
+        "docType": "TAG",
+        "name": "keywords",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-keywords",
+      "key": "5470797268f4763a116b22d67305eadc",
+      "value": {
+        "docType": "TAG",
+        "name": "keywords",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-functions",
+      "key": "787bc0d25821da0abb503a3b8b00059f",
+      "value": {
+        "docType": "TAG",
+        "name": "functions",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-parameters",
+      "key": "787bc0d25821da0abb503a3b8b00059f",
+      "value": {
+        "docType": "TAG",
+        "name": "parameters",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-types",
+      "key": "787bc0d25821da0abb503a3b8b00059f",
+      "value": {
+        "docType": "TAG",
+        "name": "types",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-scopes",
+      "key": "787bc0d25821da0abb503a3b8b000dc8",
+      "value": {
+        "docType": "TAG",
+        "name": "scopes",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-variables",
+      "key": "787bc0d25821da0abb503a3b8b000dc8",
+      "value": {
+        "docType": "TAG",
+        "name": "variables",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-types",
+      "key": "787bc0d25821da0abb503a3b8b0021ff",
+      "value": {
+        "docType": "TAG",
+        "name": "types",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-rune",
+      "key": "787bc0d25821da0abb503a3b8b0031c7",
+      "value": {
+        "docType": "TAG",
+        "name": "rune",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-types",
+      "key": "787bc0d25821da0abb503a3b8b0031c7",
+      "value": {
+        "docType": "TAG",
+        "name": "types",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-rune",
+      "key": "787bc0d25821da0abb503a3b8b0054a1",
+      "value": {
+        "docType": "TAG",
+        "name": "rune",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-types",
+      "key": "787bc0d25821da0abb503a3b8b0054a1",
+      "value": {
+        "docType": "TAG",
+        "name": "types",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-primitives",
+      "key": "787bc0d25821da0abb503a3b8b006592",
+      "value": {
+        "docType": "TAG",
+        "name": "primitives",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-types",
+      "key": "787bc0d25821da0abb503a3b8b006592",
+      "value": {
+        "docType": "TAG",
+        "name": "types",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-string",
+      "key": "787bc0d25821da0abb503a3b8b007a74",
+      "value": {
+        "docType": "TAG",
+        "name": "string",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-types",
+      "key": "787bc0d25821da0abb503a3b8b007a74",
+      "value": {
+        "docType": "TAG",
+        "name": "types",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-zero-value",
+      "key": "787bc0d25821da0abb503a3b8b007a74",
+      "value": {
+        "docType": "TAG",
+        "name": "zero-value",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-string",
+      "key": "787bc0d25821da0abb503a3b8b007c2f",
+      "value": {
+        "docType": "TAG",
+        "name": "string",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-zero-value",
+      "key": "787bc0d25821da0abb503a3b8b007c2f",
+      "value": {
+        "docType": "TAG",
+        "name": "zero-value",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-bool",
+      "key": "787bc0d25821da0abb503a3b8b0081cd",
+      "value": {
+        "docType": "TAG",
+        "name": "bool",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-types",
+      "key": "787bc0d25821da0abb503a3b8b0081cd",
+      "value": {
+        "docType": "TAG",
+        "name": "types",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-zero-value",
+      "key": "787bc0d25821da0abb503a3b8b0081cd",
+      "value": {
+        "docType": "TAG",
+        "name": "zero-value",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-int",
+      "key": "787bc0d25821da0abb503a3b8b008d33",
+      "value": {
+        "docType": "TAG",
+        "name": "int",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-types",
+      "key": "787bc0d25821da0abb503a3b8b008d33",
+      "value": {
+        "docType": "TAG",
+        "name": "types",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-zero-value",
+      "key": "787bc0d25821da0abb503a3b8b008d33",
+      "value": {
+        "docType": "TAG",
+        "name": "zero-value",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-rune",
+      "key": "787bc0d25821da0abb503a3b8b00acf1",
+      "value": {
+        "docType": "TAG",
+        "name": "rune",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-types",
+      "key": "787bc0d25821da0abb503a3b8b00acf1",
+      "value": {
+        "docType": "TAG",
+        "name": "types",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-zero-value",
+      "key": "787bc0d25821da0abb503a3b8b00acf1",
+      "value": {
+        "docType": "TAG",
+        "name": "zero-value",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-float",
+      "key": "787bc0d25821da0abb503a3b8b00b4a1",
+      "value": {
+        "docType": "TAG",
+        "name": "float",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-int",
+      "key": "787bc0d25821da0abb503a3b8b00b4a1",
+      "value": {
+        "docType": "TAG",
+        "name": "int",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-type-conversions",
+      "key": "787bc0d25821da0abb503a3b8b00b4a1",
+      "value": {
+        "docType": "TAG",
+        "name": "type-conversions",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-float",
+      "key": "787bc0d25821da0abb503a3b8b00cf90",
+      "value": {
+        "docType": "TAG",
+        "name": "float",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-int",
+      "key": "787bc0d25821da0abb503a3b8b00cf90",
+      "value": {
+        "docType": "TAG",
+        "name": "int",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-type-conversions",
+      "key": "787bc0d25821da0abb503a3b8b00cf90",
+      "value": {
+        "docType": "TAG",
+        "name": "type-conversions",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-type-conversions",
+      "key": "787bc0d25821da0abb503a3b8b00e978",
+      "value": {
+        "docType": "TAG",
+        "name": "type-conversions",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-short-variable-declarations",
+      "key": "787bc0d25821da0abb503a3b8b01008b",
+      "value": {
+        "docType": "TAG",
+        "name": "short-variable-declarations",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-types",
+      "key": "787bc0d25821da0abb503a3b8b01008b",
+      "value": {
+        "docType": "TAG",
+        "name": "types",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-short-variable-declarations",
+      "key": "787bc0d25821da0abb503a3b8b010bc2",
+      "value": {
+        "docType": "TAG",
+        "name": "short-variable-declarations",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-types",
+      "key": "787bc0d25821da0abb503a3b8b010bc2",
+      "value": {
+        "docType": "TAG",
+        "name": "types",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-constants",
+      "key": "787bc0d25821da0abb503a3b8b012408",
+      "value": {
+        "docType": "TAG",
+        "name": "constants",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-short-variable-declarations",
+      "key": "787bc0d25821da0abb503a3b8b012408",
+      "value": {
+        "docType": "TAG",
+        "name": "short-variable-declarations",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-code-blocks",
+      "key": "787bc0d25821da0abb503a3b8b0130f1",
+      "value": {
+        "docType": "TAG",
+        "name": "code-blocks",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-loops",
+      "key": "787bc0d25821da0abb503a3b8b0130f1",
+      "value": {
+        "docType": "TAG",
+        "name": "loops",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-syntax",
+      "key": "787bc0d25821da0abb503a3b8b0130f1",
+      "value": {
+        "docType": "TAG",
+        "name": "syntax",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-defer",
+      "key": "787bc0d25821da0abb503a3b8b0134e7",
+      "value": {
+        "docType": "TAG",
+        "name": "defer",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-loops",
+      "key": "787bc0d25821da0abb503a3b8b0134e7",
+      "value": {
+        "docType": "TAG",
+        "name": "loops",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-pointers",
+      "key": "787bc0d25821da0abb503a3b8b014753",
+      "value": {
+        "docType": "TAG",
+        "name": "pointers",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-zero-value",
+      "key": "787bc0d25821da0abb503a3b8b014753",
+      "value": {
+        "docType": "TAG",
+        "name": "zero-value",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-array",
+      "key": "787bc0d25821da0abb503a3b8b014bd0",
+      "value": {
+        "docType": "TAG",
+        "name": "array",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-array",
+      "key": "787bc0d25821da0abb503a3b8b0154bf",
+      "value": {
+        "docType": "TAG",
+        "name": "array",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-slice",
+      "key": "787bc0d25821da0abb503a3b8b0154bf",
+      "value": {
+        "docType": "TAG",
+        "name": "slice",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-array",
+      "key": "787bc0d25821da0abb503a3b8b016dc9",
+      "value": {
+        "docType": "TAG",
+        "name": "array",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-slice",
+      "key": "787bc0d25821da0abb503a3b8b016dc9",
+      "value": {
+        "docType": "TAG",
+        "name": "slice",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-array",
+      "key": "787bc0d25821da0abb503a3b8b017e81",
+      "value": {
+        "docType": "TAG",
+        "name": "array",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-slice",
+      "key": "787bc0d25821da0abb503a3b8b017e81",
+      "value": {
+        "docType": "TAG",
+        "name": "slice",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-exports",
+      "key": "787bc0d25821da0abb503a3b8b0194e1",
+      "value": {
+        "docType": "TAG",
+        "name": "exports",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-packages",
+      "key": "787bc0d25821da0abb503a3b8b0194e1",
+      "value": {
+        "docType": "TAG",
+        "name": "packages",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-variables",
+      "key": "787bc0d25821da0abb503a3b8b0194e1",
+      "value": {
+        "docType": "TAG",
+        "name": "variables",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-interface",
+      "key": "787bc0d25821da0abb503a3b8b01a3bb",
+      "value": {
+        "docType": "TAG",
+        "name": "interface",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-struct",
+      "key": "787bc0d25821da0abb503a3b8b01a3bb",
+      "value": {
+        "docType": "TAG",
+        "name": "struct",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-types",
+      "key": "787bc0d25821da0abb503a3b8b01a3bb",
+      "value": {
+        "docType": "TAG",
+        "name": "types",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-interface",
+      "key": "787bc0d25821da0abb503a3b8b01b4f2",
+      "value": {
+        "docType": "TAG",
+        "name": "interface",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-struct",
+      "key": "787bc0d25821da0abb503a3b8b01b4f2",
+      "value": {
+        "docType": "TAG",
+        "name": "struct",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-types",
+      "key": "787bc0d25821da0abb503a3b8b01b4f2",
+      "value": {
+        "docType": "TAG",
+        "name": "types",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-compiler-rules",
+      "key": "787bc0d25821da0abb503a3b8b01b534",
+      "value": {
+        "docType": "TAG",
+        "name": "compiler-rules",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-types",
+      "key": "787bc0d25821da0abb503a3b8b01b534",
+      "value": {
+        "docType": "TAG",
+        "name": "types",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-compiler-rules",
+      "key": "787bc0d25821da0abb503a3b8b01bb8e",
+      "value": {
+        "docType": "TAG",
+        "name": "compiler-rules",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-variables",
+      "key": "787bc0d25821da0abb503a3b8b01bb8e",
+      "value": {
+        "docType": "TAG",
+        "name": "variables",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-loops",
+      "key": "787bc0d25821da0abb503a3b8b01c415",
+      "value": {
+        "docType": "TAG",
+        "name": "loops",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-range",
+      "key": "787bc0d25821da0abb503a3b8b01c415",
+      "value": {
+        "docType": "TAG",
+        "name": "range",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-slice",
+      "key": "787bc0d25821da0abb503a3b8b01c415",
+      "value": {
+        "docType": "TAG",
+        "name": "slice",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-syntax",
+      "key": "787bc0d25821da0abb503a3b8b01c415",
+      "value": {
+        "docType": "TAG",
+        "name": "syntax",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-closure",
+      "key": "787bc0d25821da0abb503a3b8b01dd53",
+      "value": {
+        "docType": "TAG",
+        "name": "closure",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-functions",
+      "key": "787bc0d25821da0abb503a3b8b01dd53",
+      "value": {
+        "docType": "TAG",
+        "name": "functions",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-scopes",
+      "key": "787bc0d25821da0abb503a3b8b01dd53",
+      "value": {
+        "docType": "TAG",
+        "name": "scopes",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-embedded-types",
+      "key": "787bc0d25821da0abb503a3b8b01efe5",
+      "value": {
+        "docType": "TAG",
+        "name": "embedded-types",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-struct",
+      "key": "787bc0d25821da0abb503a3b8b01efe5",
+      "value": {
+        "docType": "TAG",
+        "name": "struct",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-types",
+      "key": "787bc0d25821da0abb503a3b8b01efe5",
+      "value": {
+        "docType": "TAG",
+        "name": "types",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-code-blocks",
+      "key": "787bc0d25821da0abb503a3b8b020b81",
+      "value": {
+        "docType": "TAG",
+        "name": "code-blocks",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-interface",
+      "key": "787bc0d25821da0abb503a3b8b020b81",
+      "value": {
+        "docType": "TAG",
+        "name": "interface",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-scopes",
+      "key": "787bc0d25821da0abb503a3b8b020b81",
+      "value": {
+        "docType": "TAG",
+        "name": "scopes",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-types",
+      "key": "787bc0d25821da0abb503a3b8b020b81",
+      "value": {
+        "docType": "TAG",
+        "name": "types",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-interface",
+      "key": "787bc0d25821da0abb503a3b8b021ecb",
+      "value": {
+        "docType": "TAG",
+        "name": "interface",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-functions",
+      "key": "787bc0d25821da0abb503a3b8b022f9a",
+      "value": {
+        "docType": "TAG",
+        "name": "functions",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-methods",
+      "key": "787bc0d25821da0abb503a3b8b022f9a",
+      "value": {
+        "docType": "TAG",
+        "name": "methods",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-types",
+      "key": "787bc0d25821da0abb503a3b8b022f9a",
+      "value": {
+        "docType": "TAG",
+        "name": "types",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-methods",
+      "key": "787bc0d25821da0abb503a3b8b023bbe",
+      "value": {
+        "docType": "TAG",
+        "name": "methods",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-packages",
+      "key": "787bc0d25821da0abb503a3b8b023bbe",
+      "value": {
+        "docType": "TAG",
+        "name": "packages",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-types",
+      "key": "787bc0d25821da0abb503a3b8b023bbe",
+      "value": {
+        "docType": "TAG",
+        "name": "types",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-methods",
+      "key": "787bc0d25821da0abb503a3b8b024451",
+      "value": {
+        "docType": "TAG",
+        "name": "methods",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-pointers",
+      "key": "787bc0d25821da0abb503a3b8b024451",
+      "value": {
+        "docType": "TAG",
+        "name": "pointers",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-conventions",
+      "key": "787bc0d25821da0abb503a3b8b024e69",
+      "value": {
+        "docType": "TAG",
+        "name": "conventions",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-methods",
+      "key": "787bc0d25821da0abb503a3b8b024e69",
+      "value": {
+        "docType": "TAG",
+        "name": "methods",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-types",
+      "key": "787bc0d25821da0abb503a3b8b024e69",
+      "value": {
+        "docType": "TAG",
+        "name": "types",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-conventions",
+      "key": "787bc0d25821da0abb503a3b8b026aee",
+      "value": {
+        "docType": "TAG",
+        "name": "conventions",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-errors",
+      "key": "787bc0d25821da0abb503a3b8b026aee",
+      "value": {
+        "docType": "TAG",
+        "name": "errors",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-functions",
+      "key": "787bc0d25821da0abb503a3b8b026aee",
+      "value": {
+        "docType": "TAG",
+        "name": "functions",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-concurrency",
+      "key": "787bc0d25821da0abb503a3b8b027984",
+      "value": {
+        "docType": "TAG",
+        "name": "concurrency",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-concurrency",
+      "key": "787bc0d25821da0abb503a3b8b029b83",
+      "value": {
+        "docType": "TAG",
+        "name": "concurrency",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-goroutines",
+      "key": "787bc0d25821da0abb503a3b8b029b83",
+      "value": {
+        "docType": "TAG",
+        "name": "goroutines",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-conventions",
+      "key": "787bc0d25821da0abb503a3b8b02a7e1",
+      "value": {
+        "docType": "TAG",
+        "name": "conventions",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-modules",
+      "key": "787bc0d25821da0abb503a3b8b02a7e1",
+      "value": {
+        "docType": "TAG",
+        "name": "modules",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-float",
+      "key": "787bc0d25821da0abb503a3b8b02b0ad",
+      "value": {
+        "docType": "TAG",
+        "name": "float",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-int",
+      "key": "787bc0d25821da0abb503a3b8b02b0ad",
+      "value": {
+        "docType": "TAG",
+        "name": "int",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-literals",
+      "key": "787bc0d25821da0abb503a3b8b02b0ad",
+      "value": {
+        "docType": "TAG",
+        "name": "literals",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-float",
+      "key": "787bc0d25821da0abb503a3b8b02c491",
+      "value": {
+        "docType": "TAG",
+        "name": "float",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-int",
+      "key": "787bc0d25821da0abb503a3b8b02c491",
+      "value": {
+        "docType": "TAG",
+        "name": "int",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-literals",
+      "key": "787bc0d25821da0abb503a3b8b02c491",
+      "value": {
+        "docType": "TAG",
+        "name": "literals",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-float",
+      "key": "787bc0d25821da0abb503a3b8b02d608",
+      "value": {
+        "docType": "TAG",
+        "name": "float",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-int",
+      "key": "787bc0d25821da0abb503a3b8b02d608",
+      "value": {
+        "docType": "TAG",
+        "name": "int",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-literals",
+      "key": "787bc0d25821da0abb503a3b8b02d608",
+      "value": {
+        "docType": "TAG",
+        "name": "literals",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-float",
+      "key": "787bc0d25821da0abb503a3b8b02ea9d",
+      "value": {
+        "docType": "TAG",
+        "name": "float",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-int",
+      "key": "787bc0d25821da0abb503a3b8b02ea9d",
+      "value": {
+        "docType": "TAG",
+        "name": "int",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-literals",
+      "key": "787bc0d25821da0abb503a3b8b02ea9d",
+      "value": {
+        "docType": "TAG",
+        "name": "literals",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-conventions",
+      "key": "787bc0d25821da0abb503a3b8b02fcae",
+      "value": {
+        "docType": "TAG",
+        "name": "conventions",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-errors",
+      "key": "787bc0d25821da0abb503a3b8b02fcae",
+      "value": {
+        "docType": "TAG",
+        "name": "errors",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-compiler-rules",
+      "key": "787bc0d25821da0abb503a3b8b030f47",
+      "value": {
+        "docType": "TAG",
+        "name": "compiler-rules",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-dependencies",
+      "key": "787bc0d25821da0abb503a3b8b030f47",
+      "value": {
+        "docType": "TAG",
+        "name": "dependencies",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-packages",
+      "key": "787bc0d25821da0abb503a3b8b030f47",
+      "value": {
+        "docType": "TAG",
+        "name": "packages",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-command-line-utils",
+      "key": "787bc0d25821da0abb503a3b8b0319f8",
+      "value": {
+        "docType": "TAG",
+        "name": "command-line-utils",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-godocs",
+      "key": "787bc0d25821da0abb503a3b8b0319f8",
+      "value": {
+        "docType": "TAG",
+        "name": "godocs",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-conventions",
+      "key": "787bc0d25821da0abb503a3b8b03284a",
+      "value": {
+        "docType": "TAG",
+        "name": "conventions",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-godocs",
+      "key": "787bc0d25821da0abb503a3b8b03284a",
+      "value": {
+        "docType": "TAG",
+        "name": "godocs",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-packages",
+      "key": "787bc0d25821da0abb503a3b8b032ea4",
+      "value": {
+        "docType": "TAG",
+        "name": "packages",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-exports",
+      "key": "787bc0d25821da0abb503a3b8b0340bf",
+      "value": {
+        "docType": "TAG",
+        "name": "exports",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-magic-strings",
+      "key": "787bc0d25821da0abb503a3b8b0340bf",
+      "value": {
+        "docType": "TAG",
+        "name": "magic-strings",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-packages",
+      "key": "787bc0d25821da0abb503a3b8b0340bf",
+      "value": {
+        "docType": "TAG",
+        "name": "packages",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-language-features",
+      "key": "787bc0d25821da0abb503a3b8b0356fc",
+      "value": {
+        "docType": "TAG",
+        "name": "language-features",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-global-scope",
+      "key": "787bc0d25821da0abb503a3b8b038d14",
+      "value": {
+        "docType": "TAG",
+        "name": "global-scope",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-magic-strings",
+      "key": "787bc0d25821da0abb503a3b8b038d14",
+      "value": {
+        "docType": "TAG",
+        "name": "magic-strings",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-packages",
+      "key": "787bc0d25821da0abb503a3b8b038d14",
+      "value": {
+        "docType": "TAG",
+        "name": "packages",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-global-scope",
+      "key": "787bc0d25821da0abb503a3b8b0394f7",
+      "value": {
+        "docType": "TAG",
+        "name": "global-scope",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-packages",
+      "key": "787bc0d25821da0abb503a3b8b0394f7",
+      "value": {
+        "docType": "TAG",
+        "name": "packages",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-global-scope",
+      "key": "787bc0d25821da0abb503a3b8b03abee",
+      "value": {
+        "docType": "TAG",
+        "name": "global-scope",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-packages",
+      "key": "787bc0d25821da0abb503a3b8b03abee",
+      "value": {
+        "docType": "TAG",
+        "name": "packages",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-packages",
+      "key": "787bc0d25821da0abb503a3b8b03ca14",
+      "value": {
+        "docType": "TAG",
+        "name": "packages",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-conventions",
+      "key": "787bc0d25821da0abb503a3b8b03e45c",
+      "value": {
+        "docType": "TAG",
+        "name": "conventions",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-errors",
+      "key": "787bc0d25821da0abb503a3b8b03e45c",
+      "value": {
+        "docType": "TAG",
+        "name": "errors",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-code-organization",
+      "key": "787bc0d25821da0abb503a3b8b03f6e1",
+      "value": {
+        "docType": "TAG",
+        "name": "code-organization",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-packages",
+      "key": "787bc0d25821da0abb503a3b8b03f6e1",
+      "value": {
+        "docType": "TAG",
+        "name": "packages",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-code-organization",
+      "key": "787bc0d25821da0abb503a3b8b0402e2",
+      "value": {
+        "docType": "TAG",
+        "name": "code-organization",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-modules",
+      "key": "787bc0d25821da0abb503a3b8b0402e2",
+      "value": {
+        "docType": "TAG",
+        "name": "modules",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-code-organization",
+      "key": "787bc0d25821da0abb503a3b8b04148e",
+      "value": {
+        "docType": "TAG",
+        "name": "code-organization",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-magic-strings",
+      "key": "787bc0d25821da0abb503a3b8b04148e",
+      "value": {
+        "docType": "TAG",
+        "name": "magic-strings",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-packages",
+      "key": "787bc0d25821da0abb503a3b8b04148e",
+      "value": {
+        "docType": "TAG",
+        "name": "packages",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-modules",
+      "key": "787bc0d25821da0abb503a3b8b0429b6",
+      "value": {
+        "docType": "TAG",
+        "name": "modules",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-packages",
+      "key": "787bc0d25821da0abb503a3b8b0429b6",
+      "value": {
+        "docType": "TAG",
+        "name": "packages",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-version-control",
+      "key": "787bc0d25821da0abb503a3b8b0429b6",
+      "value": {
+        "docType": "TAG",
+        "name": "version-control",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-modules",
+      "key": "787bc0d25821da0abb503a3b8b0434d9",
+      "value": {
+        "docType": "TAG",
+        "name": "modules",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-packages",
+      "key": "787bc0d25821da0abb503a3b8b0434d9",
+      "value": {
+        "docType": "TAG",
+        "name": "packages",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-version-control",
+      "key": "787bc0d25821da0abb503a3b8b0434d9",
+      "value": {
+        "docType": "TAG",
+        "name": "version-control",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-concurrency",
+      "key": "787bc0d25821da0abb503a3b8b044507",
+      "value": {
+        "docType": "TAG",
+        "name": "concurrency",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-goroutines",
+      "key": "787bc0d25821da0abb503a3b8b044507",
+      "value": {
+        "docType": "TAG",
+        "name": "goroutines",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-performance",
+      "key": "787bc0d25821da0abb503a3b8b044507",
+      "value": {
+        "docType": "TAG",
+        "name": "performance",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-goroutines",
+      "key": "787bc0d25821da0abb503a3b8b045df3",
+      "value": {
+        "docType": "TAG",
+        "name": "goroutines",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-goroutines",
+      "key": "787bc0d25821da0abb503a3b8b046ae4",
+      "value": {
+        "docType": "TAG",
+        "name": "goroutines",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-packages",
+      "key": "787bc0d25821da0abb503a3b8b047c28",
+      "value": {
+        "docType": "TAG",
+        "name": "packages",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-type-alias",
+      "key": "787bc0d25821da0abb503a3b8b047c28",
+      "value": {
+        "docType": "TAG",
+        "name": "type-alias",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-types",
+      "key": "787bc0d25821da0abb503a3b8b047c28",
+      "value": {
+        "docType": "TAG",
+        "name": "types",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-modules",
+      "key": "787bc0d25821da0abb503a3b8b048cab",
+      "value": {
+        "docType": "TAG",
+        "name": "modules",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-type-alias",
+      "key": "787bc0d25821da0abb503a3b8b048cab",
+      "value": {
+        "docType": "TAG",
+        "name": "type-alias",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-types",
+      "key": "787bc0d25821da0abb503a3b8b048cab",
+      "value": {
+        "docType": "TAG",
+        "name": "types",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-channels",
+      "key": "787bc0d25821da0abb503a3b8b04acb2",
+      "value": {
+        "docType": "TAG",
+        "name": "channels",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-syntax",
+      "key": "787bc0d25821da0abb503a3b8b04acb2",
+      "value": {
+        "docType": "TAG",
+        "name": "syntax",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-concurrency",
+      "key": "787bc0d25821da0abb503a3b8b04c4f5",
+      "value": {
+        "docType": "TAG",
+        "name": "concurrency",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-goroutines",
+      "key": "787bc0d25821da0abb503a3b8b04c4f5",
+      "value": {
+        "docType": "TAG",
+        "name": "goroutines",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-best-practices",
+      "key": "787bc0d25821da0abb503a3b8b04d723",
+      "value": {
+        "docType": "TAG",
+        "name": "best-practices",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-channels",
+      "key": "787bc0d25821da0abb503a3b8b04d723",
+      "value": {
+        "docType": "TAG",
+        "name": "channels",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-concurrency",
+      "key": "787bc0d25821da0abb503a3b8b04d723",
+      "value": {
+        "docType": "TAG",
+        "name": "concurrency",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-conventions",
+      "key": "787bc0d25821da0abb503a3b8b04d723",
+      "value": {
+        "docType": "TAG",
+        "name": "conventions",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-goroutines",
+      "key": "787bc0d25821da0abb503a3b8b04d723",
+      "value": {
+        "docType": "TAG",
+        "name": "goroutines",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-channels",
+      "key": "787bc0d25821da0abb503a3b8b04ea5d",
+      "value": {
+        "docType": "TAG",
+        "name": "channels",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-concurrency",
+      "key": "787bc0d25821da0abb503a3b8b04ea5d",
+      "value": {
+        "docType": "TAG",
+        "name": "concurrency",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-goroutines",
+      "key": "787bc0d25821da0abb503a3b8b04ea5d",
+      "value": {
+        "docType": "TAG",
+        "name": "goroutines",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-channels",
+      "key": "787bc0d25821da0abb503a3b8b04ee24",
+      "value": {
+        "docType": "TAG",
+        "name": "channels",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-zero-value",
+      "key": "787bc0d25821da0abb503a3b8b04ee24",
+      "value": {
+        "docType": "TAG",
+        "name": "zero-value",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-comparable",
+      "key": "787bc0d25821da0abb503a3b8b04f424",
+      "value": {
+        "docType": "TAG",
+        "name": "comparable",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-maps",
+      "key": "787bc0d25821da0abb503a3b8b04f424",
+      "value": {
+        "docType": "TAG",
+        "name": "maps",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-godocs",
+      "key": "787bc0d25821da0abb503a3b8b050961",
+      "value": {
+        "docType": "TAG",
+        "name": "godocs",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-channels",
+      "key": "787bc0d25821da0abb503a3b8b053b6a",
+      "value": {
+        "docType": "TAG",
+        "name": "channels",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-goroutines",
+      "key": "787bc0d25821da0abb503a3b8b053b6a",
+      "value": {
+        "docType": "TAG",
+        "name": "goroutines",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-channels",
+      "key": "787bc0d25821da0abb503a3b8b053e6b",
+      "value": {
+        "docType": "TAG",
+        "name": "channels",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-built-ins",
+      "key": "787bc0d25821da0abb503a3b8b0550d7",
+      "value": {
+        "docType": "TAG",
+        "name": "built-ins",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-channels",
+      "key": "787bc0d25821da0abb503a3b8b0550d7",
+      "value": {
+        "docType": "TAG",
+        "name": "channels",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-channels",
+      "key": "787bc0d25821da0abb503a3b8b056a02",
+      "value": {
+        "docType": "TAG",
+        "name": "channels",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-channel",
+      "key": "787bc0d25821da0abb503a3b8b057bad",
+      "value": {
+        "docType": "TAG",
+        "name": "channel",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-channel",
+      "key": "787bc0d25821da0abb503a3b8b058990",
+      "value": {
+        "docType": "TAG",
+        "name": "channel",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-global-scope",
+      "key": "787bc0d25821da0abb503a3b8b05970a",
+      "value": {
+        "docType": "TAG",
+        "name": "global-scope",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-identifiers",
+      "key": "787bc0d25821da0abb503a3b8b05970a",
+      "value": {
+        "docType": "TAG",
+        "name": "identifiers",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-scopes",
+      "key": "787bc0d25821da0abb503a3b8b05970a",
+      "value": {
+        "docType": "TAG",
+        "name": "scopes",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-concurrency",
+      "key": "787bc0d25821da0abb503a3b8b05b093",
+      "value": {
+        "docType": "TAG",
+        "name": "concurrency",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-select",
+      "key": "787bc0d25821da0abb503a3b8b05b093",
+      "value": {
+        "docType": "TAG",
+        "name": "select",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-scopes",
+      "key": "787bc0d25821da0abb503a3b8b05cee6",
+      "value": {
+        "docType": "TAG",
+        "name": "scopes",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-select",
+      "key": "787bc0d25821da0abb503a3b8b05cee6",
+      "value": {
+        "docType": "TAG",
+        "name": "select",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-select",
+      "key": "787bc0d25821da0abb503a3b8b05e42c",
+      "value": {
+        "docType": "TAG",
+        "name": "select",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-concurrency",
+      "key": "787bc0d25821da0abb503a3b8b05f922",
+      "value": {
+        "docType": "TAG",
+        "name": "concurrency",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-deadlocks",
+      "key": "787bc0d25821da0abb503a3b8b05f922",
+      "value": {
+        "docType": "TAG",
+        "name": "deadlocks",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-runtime",
+      "key": "787bc0d25821da0abb503a3b8b05f922",
+      "value": {
+        "docType": "TAG",
+        "name": "runtime",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-goroutines",
+      "key": "787bc0d25821da0abb503a3b8b061201",
+      "value": {
+        "docType": "TAG",
+        "name": "goroutines",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-runtime",
+      "key": "787bc0d25821da0abb503a3b8b061201",
+      "value": {
+        "docType": "TAG",
+        "name": "runtime",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-select",
+      "key": "787bc0d25821da0abb503a3b8b06163b",
+      "value": {
+        "docType": "TAG",
+        "name": "select",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-select",
+      "key": "787bc0d25821da0abb503a3b8b061c27",
+      "value": {
+        "docType": "TAG",
+        "name": "select",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-conventions",
+      "key": "804cfd4c244877d6d244bd6abc01d4e5",
+      "value": {
+        "docType": "TAG",
+        "name": "conventions",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-slice",
+      "key": "804cfd4c244877d6d244bd6abc01d4e5",
+      "value": {
+        "docType": "TAG",
+        "name": "slice",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-zero-value",
+      "key": "804cfd4c244877d6d244bd6abc01d4e5",
+      "value": {
+        "docType": "TAG",
+        "name": "zero-value",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-keywords",
+      "key": "804cfd4c244877d6d244bd6abc01e0e6",
+      "value": {
+        "docType": "TAG",
+        "name": "keywords",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-nil",
+      "key": "804cfd4c244877d6d244bd6abc01e0e6",
+      "value": {
+        "docType": "TAG",
+        "name": "nil",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-errors",
+      "key": "804cfd4c244877d6d244bd6abc02631a",
+      "value": {
+        "docType": "TAG",
+        "name": "errors",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-panic",
+      "key": "804cfd4c244877d6d244bd6abc02631a",
+      "value": {
+        "docType": "TAG",
+        "name": "panic",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-conventions",
+      "key": "804cfd4c244877d6d244bd6abc026834",
+      "value": {
+        "docType": "TAG",
+        "name": "conventions",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-imports",
+      "key": "804cfd4c244877d6d244bd6abc026834",
+      "value": {
+        "docType": "TAG",
+        "name": "imports",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-conventions",
+      "key": "804cfd4c244877d6d244bd6abc0276c0",
+      "value": {
+        "docType": "TAG",
+        "name": "conventions",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-errors",
+      "key": "804cfd4c244877d6d244bd6abc0276c0",
+      "value": {
+        "docType": "TAG",
+        "name": "errors",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-flow-control",
+      "key": "804cfd4c244877d6d244bd6abc0276c0",
+      "value": {
+        "docType": "TAG",
+        "name": "flow-control",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-conventions",
+      "key": "804cfd4c244877d6d244bd6abc028724",
+      "value": {
+        "docType": "TAG",
+        "name": "conventions",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-identifiers",
+      "key": "804cfd4c244877d6d244bd6abc028724",
+      "value": {
+        "docType": "TAG",
+        "name": "identifiers",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-conventions",
+      "key": "804cfd4c244877d6d244bd6abc02963d",
+      "value": {
+        "docType": "TAG",
+        "name": "conventions",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-identifiers",
+      "key": "804cfd4c244877d6d244bd6abc02963d",
+      "value": {
+        "docType": "TAG",
+        "name": "identifiers",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-identifiers",
+      "key": "804cfd4c244877d6d244bd6abc02abf8",
+      "value": {
+        "docType": "TAG",
+        "name": "identifiers",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-packages",
+      "key": "804cfd4c244877d6d244bd6abc02abf8",
+      "value": {
+        "docType": "TAG",
+        "name": "packages",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-interface",
+      "key": "804cfd4c244877d6d244bd6abc030fb0",
+      "value": {
+        "docType": "TAG",
+        "name": "interface",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-types",
+      "key": "804cfd4c244877d6d244bd6abc030fb0",
+      "value": {
+        "docType": "TAG",
+        "name": "types",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-literals",
+      "key": "804cfd4c244877d6d244bd6abc031cbb",
+      "value": {
+        "docType": "TAG",
+        "name": "literals",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-types",
+      "key": "804cfd4c244877d6d244bd6abc031cbb",
+      "value": {
+        "docType": "TAG",
+        "name": "types",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-string",
+      "key": "804cfd4c244877d6d244bd6abc032769",
+      "value": {
+        "docType": "TAG",
+        "name": "string",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-method-set",
+      "key": "804cfd4c244877d6d244bd6abc040f86",
+      "value": {
+        "docType": "TAG",
+        "name": "method-set",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-methods",
+      "key": "804cfd4c244877d6d244bd6abc040f86",
+      "value": {
+        "docType": "TAG",
+        "name": "methods",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-struct",
+      "key": "804cfd4c244877d6d244bd6abc040f86",
+      "value": {
+        "docType": "TAG",
+        "name": "struct",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-method-set",
+      "key": "804cfd4c244877d6d244bd6abc0426cf",
+      "value": {
+        "docType": "TAG",
+        "name": "method-set",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-methods",
+      "key": "804cfd4c244877d6d244bd6abc0426cf",
+      "value": {
+        "docType": "TAG",
+        "name": "methods",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-struct",
+      "key": "804cfd4c244877d6d244bd6abc0426cf",
+      "value": {
+        "docType": "TAG",
+        "name": "struct",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-built-ins",
+      "key": "804cfd4c244877d6d244bd6abc04364a",
+      "value": {
+        "docType": "TAG",
+        "name": "built-ins",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-len",
+      "key": "804cfd4c244877d6d244bd6abc04364a",
+      "value": {
+        "docType": "TAG",
+        "name": "len",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-string",
+      "key": "804cfd4c244877d6d244bd6abc04364a",
+      "value": {
+        "docType": "TAG",
+        "name": "string",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-array",
+      "key": "804cfd4c244877d6d244bd6abc04490f",
+      "value": {
+        "docType": "TAG",
+        "name": "array",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-built-ins",
+      "key": "804cfd4c244877d6d244bd6abc04490f",
+      "value": {
+        "docType": "TAG",
+        "name": "built-ins",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-make",
+      "key": "804cfd4c244877d6d244bd6abc04490f",
+      "value": {
+        "docType": "TAG",
+        "name": "make",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-new",
+      "key": "804cfd4c244877d6d244bd6abc04490f",
+      "value": {
+        "docType": "TAG",
+        "name": "new",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-slice",
+      "key": "804cfd4c244877d6d244bd6abc04490f",
+      "value": {
+        "docType": "TAG",
+        "name": "slice",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-array",
+      "key": "804cfd4c244877d6d244bd6abc0464de",
+      "value": {
+        "docType": "TAG",
+        "name": "array",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-slice",
+      "key": "804cfd4c244877d6d244bd6abc047ac3",
+      "value": {
+        "docType": "TAG",
+        "name": "slice",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-slice",
+      "key": "804cfd4c244877d6d244bd6abc047e5c",
+      "value": {
+        "docType": "TAG",
+        "name": "slice",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-zero-value",
+      "key": "804cfd4c244877d6d244bd6abc047e5c",
+      "value": {
+        "docType": "TAG",
+        "name": "zero-value",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-functions",
+      "key": "804cfd4c244877d6d244bd6abc0490af",
+      "value": {
+        "docType": "TAG",
+        "name": "functions",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-parameters",
+      "key": "804cfd4c244877d6d244bd6abc0490af",
+      "value": {
+        "docType": "TAG",
+        "name": "parameters",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-functions",
+      "key": "804cfd4c244877d6d244bd6abc049fa5",
+      "value": {
+        "docType": "TAG",
+        "name": "functions",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-parameters",
+      "key": "804cfd4c244877d6d244bd6abc049fa5",
+      "value": {
+        "docType": "TAG",
+        "name": "parameters",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-built-ins",
+      "key": "804cfd4c244877d6d244bd6abc04a7d8",
+      "value": {
+        "docType": "TAG",
+        "name": "built-ins",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-nil",
+      "key": "804cfd4c244877d6d244bd6abc04a7d8",
+      "value": {
+        "docType": "TAG",
+        "name": "nil",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-slice",
+      "key": "804cfd4c244877d6d244bd6abc04a7d8",
+      "value": {
+        "docType": "TAG",
+        "name": "slice",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-struct-tag",
+      "key": "804cfd4c244877d6d244bd6abc04bc95",
+      "value": {
+        "docType": "TAG",
+        "name": "struct-tag",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-functions",
+      "key": "804cfd4c244877d6d244bd6abc04e520",
+      "value": {
+        "docType": "TAG",
+        "name": "functions",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "id": "TAG-types",
+      "key": "804cfd4c244877d6d244bd6abc04e520",
+      "value": {
+        "docType": "TAG",
+        "name": "types",
+        "snippit": "",
+        "wiki": "",
+        "taggedCards": []
+      }
+    }
+  ],
+  "metadata": {
+    "resultCount": 394,
+    "generatedAt": "2025-08-27T16:42:09.040Z"
+  },
+  "byTag": {
+    "07e3ce7d2009ef7162d0af56e6000bb6": [
+      "TAG-channels",
+      "TAG-garbage-collection"
+    ],
+    "07e3ce7d2009ef7162d0af56e6002071": [
+      "TAG-garbage-collection",
+      "TAG-goroutines"
+    ],
+    "07e3ce7d2009ef7162d0af56e6002e0c": [
+      "TAG-goroutines",
+      "TAG-runtime"
+    ],
+    "07e3ce7d2009ef7162d0af56e6008558": [
+      "TAG-channel",
+      "TAG-concurrency",
+      "TAG-select"
+    ],
+    "07e3ce7d2009ef7162d0af56e600b53c": [
+      "TAG-pkg-sync",
+      "TAG-standard-library"
+    ],
+    "07e3ce7d2009ef7162d0af56e600bb65": [
+      "TAG-conventions",
+      "TAG-pkg-context",
+      "TAG-standard-library"
+    ],
+    "07e3ce7d2009ef7162d0af56e600c6b4": [
+      "TAG-language-documentation",
+      "TAG-standard-library"
+    ],
+    "07e3ce7d2009ef7162d0af56e600da1d": [
+      "TAG-language-documentation",
+      "TAG-standard-library"
+    ],
+    "07e3ce7d2009ef7162d0af56e600e4ae": [
+      "TAG-pkg-context",
+      "TAG-standard-library"
+    ],
+    "07e3ce7d2009ef7162d0af56e600f0e2": [
+      "TAG-godocs"
+    ],
+    "07e3ce7d2009ef7162d0af56e6014669": [
+      "TAG-array",
+      "TAG-syntax"
+    ],
+    "07e3ce7d2009ef7162d0af56e6015b5e": [
+      "TAG-expression-evaluation"
+    ],
+    "07e3ce7d2009ef7162d0af56e6018876": [
+      "TAG-maps",
+      "TAG-zero-value"
+    ],
+    "2aeb8315ef78f3e89ca386992d008826": [
+      "TAG-array",
+      "TAG-slice"
+    ],
+    "2aeb8315ef78f3e89ca386992d008ffa": [
+      "TAG-slice"
+    ],
+    "2aeb8315ef78f3e89ca386992d00989b": [
+      "TAG-slice"
+    ],
+    "2aeb8315ef78f3e89ca386992d00ae9d": [
+      "TAG-slice"
+    ],
+    "2aeb8315ef78f3e89ca386992d00b9b7": [
+      "TAG-slice"
+    ],
+    "2aeb8315ef78f3e89ca386992d00cb31": [
+      "TAG-slice",
+      "TAG-zero-value"
+    ],
+    "2aeb8315ef78f3e89ca386992d00d726": [
+      "TAG-make",
+      "TAG-slice"
+    ],
+    "2aeb8315ef78f3e89ca386992d00d728": [
+      "TAG-make",
+      "TAG-slice"
+    ],
+    "2aeb8315ef78f3e89ca386992d00dd79": [
+      "TAG-make",
+      "TAG-slice"
+    ],
+    "2aeb8315ef78f3e89ca386992d00ed07": [
+      "TAG-make",
+      "TAG-slice"
+    ],
+    "2aeb8315ef78f3e89ca386992d00f98c": [
+      "TAG-literals",
+      "TAG-string"
+    ],
+    "2aeb8315ef78f3e89ca386992d010e51": [
+      "TAG-literals",
+      "TAG-string"
+    ],
+    "2aeb8315ef78f3e89ca386992d011b12": [
+      "TAG-literals",
+      "TAG-rune"
+    ],
+    "2aeb8315ef78f3e89ca386992d0122fd": [
+      "TAG-literals",
+      "TAG-rune",
+      "TAG-string"
+    ],
+    "2aeb8315ef78f3e89ca386992d0132e8": [
+      "TAG-literals",
+      "TAG-rune",
+      "TAG-string"
+    ],
+    "2aeb8315ef78f3e89ca386992d013df4": [
+      "TAG-literals",
+      "TAG-rune",
+      "TAG-string"
+    ],
+    "5470797268f4763a116b22d673022ea1": [
+      "TAG-methods",
+      "TAG-nil",
+      "TAG-struct",
+      "TAG-zero-value"
+    ],
+    "5470797268f4763a116b22d673023d0b": [
+      "TAG-methods",
+      "TAG-nil",
+      "TAG-struct",
+      "TAG-zero-value"
+    ],
+    "5470797268f4763a116b22d673024702": [
+      "TAG-function-values",
+      "TAG-functions",
+      "TAG-standard-library",
+      "TAG-std-reflect"
+    ],
+    "5470797268f4763a116b22d67302588f": [
+      "TAG-function-values",
+      "TAG-functions",
+      "TAG-standard-library",
+      "TAG-std-reflect"
+    ],
+    "5470797268f4763a116b22d6730266e8": [
+      "TAG-identifiers"
+    ],
+    "5470797268f4763a116b22d673027658": [
+      "TAG-identifiers"
+    ],
+    "5470797268f4763a116b22d673028b4d": [
+      "TAG-binary",
+      "TAG-int",
+      "TAG-literals"
+    ],
+    "5470797268f4763a116b22d673029dd4": [
+      "TAG-hexadecimal",
+      "TAG-int",
+      "TAG-literals"
+    ],
+    "5470797268f4763a116b22d67302b5cd": [
+      "TAG-int",
+      "TAG-literals",
+      "TAG-octal"
+    ],
+    "5470797268f4763a116b22d67302cf8f": [
+      "TAG-int",
+      "TAG-literals",
+      "TAG-octal"
+    ],
+    "5470797268f4763a116b22d67302dca9": [
+      "TAG-compiler-rules"
+    ],
+    "5470797268f4763a116b22d67302e85e": [
+      "TAG-source-code"
+    ],
+    "5470797268f4763a116b22d67302f6f0": [
+      "TAG-language-features",
+      "TAG-types"
+    ],
+    "5470797268f4763a116b22d6730309a1": [
+      "TAG-identifiers"
+    ],
+    "5470797268f4763a116b22d6730318dd": [
+      "TAG-identifiers"
+    ],
+    "5470797268f4763a116b22d6730326a1": [
+      "TAG-identifiers"
+    ],
+    "5470797268f4763a116b22d67303314c": [
+      "TAG-garbage-collection",
+      "TAG-language-features"
+    ],
+    "5470797268f4763a116b22d673034352": [
+      "TAG-int",
+      "TAG-literals"
+    ],
+    "5470797268f4763a116b22d67303555d": [
+      "TAG-comments"
+    ],
+    "5470797268f4763a116b22d6730364ad": [
+      "TAG-keywords"
+    ],
+    "5470797268f4763a116b22d673036b32": [
+      "TAG-keywords"
+    ],
+    "5470797268f4763a116b22d673037b70": [
+      "TAG-keywords"
+    ],
+    "5470797268f4763a116b22d67303841e": [
+      "TAG-keywords"
+    ],
+    "5470797268f4763a116b22d6730390fb": [
+      "TAG-keywords"
+    ],
+    "5470797268f4763a116b22d67303a187": [
+      "TAG-keywords"
+    ],
+    "5470797268f4763a116b22d67303b400": [
+      "TAG-keywords"
+    ],
+    "5470797268f4763a116b22d67303c114": [
+      "TAG-keywords"
+    ],
+    "5470797268f4763a116b22d67303c715": [
+      "TAG-keywords"
+    ],
+    "5470797268f4763a116b22d67303d3b2": [
+      "TAG-keywords"
+    ],
+    "5470797268f4763a116b22d67303df7f": [
+      "TAG-keywords"
+    ],
+    "5470797268f4763a116b22d67303e95a": [
+      "TAG-keywords"
+    ],
+    "5470797268f4763a116b22d67303f215": [
+      "TAG-keywords"
+    ],
+    "5470797268f4763a116b22d673040ab9": [
+      "TAG-keywords"
+    ],
+    "5470797268f4763a116b22d673042093": [
+      "TAG-keywords"
+    ],
+    "5470797268f4763a116b22d6730439e9": [
+      "TAG-keywords"
+    ],
+    "5470797268f4763a116b22d673045037": [
+      "TAG-keywords"
+    ],
+    "5470797268f4763a116b22d6730458d1": [
+      "TAG-keywords"
+    ],
+    "5470797268f4763a116b22d673046440": [
+      "TAG-keywords"
+    ],
+    "5470797268f4763a116b22d673047390": [
+      "TAG-keywords"
+    ],
+    "5470797268f4763a116b22d673047d4b": [
+      "TAG-keywords"
+    ],
+    "5470797268f4763a116b22d67304947e": [
+      "TAG-keywords"
+    ],
+    "5470797268f4763a116b22d67304a7e6": [
+      "TAG-keywords"
+    ],
+    "5470797268f4763a116b22d67304b479": [
+      "TAG-keywords"
+    ],
+    "5470797268f4763a116b22d67304bf39": [
+      "TAG-keywords"
+    ],
+    "5470797268f4763a116b22d67304d38e": [
+      "TAG-keywords"
+    ],
+    "5470797268f4763a116b22d67304e7dd": [
+      "TAG-keywords"
+    ],
+    "5470797268f4763a116b22d67304f5a3": [
+      "TAG-keywords"
+    ],
+    "5470797268f4763a116b22d67304ffc0": [
+      "TAG-keywords"
+    ],
+    "5470797268f4763a116b22d673050bf7": [
+      "TAG-keywords"
+    ],
+    "5470797268f4763a116b22d673052274": [
+      "TAG-keywords"
+    ],
+    "5470797268f4763a116b22d673052f53": [
+      "TAG-keywords"
+    ],
+    "5470797268f4763a116b22d673054171": [
+      "TAG-keywords"
+    ],
+    "5470797268f4763a116b22d673054b84": [
+      "TAG-keywords"
+    ],
+    "5470797268f4763a116b22d673055a5e": [
+      "TAG-keywords"
+    ],
+    "5470797268f4763a116b22d673056428": [
+      "TAG-keywords"
+    ],
+    "5470797268f4763a116b22d67305741c": [
+      "TAG-keywords"
+    ],
+    "5470797268f4763a116b22d673057901": [
+      "TAG-keywords"
+    ],
+    "5470797268f4763a116b22d673059512": [
+      "TAG-keywords"
+    ],
+    "5470797268f4763a116b22d67305aa0b": [
+      "TAG-keywords"
+    ],
+    "5470797268f4763a116b22d67305bb7a": [
+      "TAG-keywords"
+    ],
+    "5470797268f4763a116b22d67305daab": [
+      "TAG-keywords"
+    ],
+    "5470797268f4763a116b22d67305e2f1": [
+      "TAG-keywords"
+    ],
+    "5470797268f4763a116b22d67305eadc": [
+      "TAG-keywords"
+    ],
+    "787bc0d25821da0abb503a3b8b00059f": [
+      "TAG-functions",
+      "TAG-parameters",
+      "TAG-types"
+    ],
+    "787bc0d25821da0abb503a3b8b000dc8": [
+      "TAG-scopes",
+      "TAG-variables"
+    ],
+    "787bc0d25821da0abb503a3b8b0021ff": [
+      "TAG-types"
+    ],
+    "787bc0d25821da0abb503a3b8b0031c7": [
+      "TAG-rune",
+      "TAG-types"
+    ],
+    "787bc0d25821da0abb503a3b8b0054a1": [
+      "TAG-rune",
+      "TAG-types"
+    ],
+    "787bc0d25821da0abb503a3b8b006592": [
+      "TAG-primitives",
+      "TAG-types"
+    ],
+    "787bc0d25821da0abb503a3b8b007a74": [
+      "TAG-string",
+      "TAG-types",
+      "TAG-zero-value"
+    ],
+    "787bc0d25821da0abb503a3b8b007c2f": [
+      "TAG-string",
+      "TAG-zero-value"
+    ],
+    "787bc0d25821da0abb503a3b8b0081cd": [
+      "TAG-bool",
+      "TAG-types",
+      "TAG-zero-value"
+    ],
+    "787bc0d25821da0abb503a3b8b008d33": [
+      "TAG-int",
+      "TAG-types",
+      "TAG-zero-value"
+    ],
+    "787bc0d25821da0abb503a3b8b00acf1": [
+      "TAG-rune",
+      "TAG-types",
+      "TAG-zero-value"
+    ],
+    "787bc0d25821da0abb503a3b8b00b4a1": [
+      "TAG-float",
+      "TAG-int",
+      "TAG-type-conversions"
+    ],
+    "787bc0d25821da0abb503a3b8b00cf90": [
+      "TAG-float",
+      "TAG-int",
+      "TAG-type-conversions"
+    ],
+    "787bc0d25821da0abb503a3b8b00e978": [
+      "TAG-type-conversions"
+    ],
+    "787bc0d25821da0abb503a3b8b01008b": [
+      "TAG-short-variable-declarations",
+      "TAG-types"
+    ],
+    "787bc0d25821da0abb503a3b8b010bc2": [
+      "TAG-short-variable-declarations",
+      "TAG-types"
+    ],
+    "787bc0d25821da0abb503a3b8b012408": [
+      "TAG-constants",
+      "TAG-short-variable-declarations"
+    ],
+    "787bc0d25821da0abb503a3b8b0130f1": [
+      "TAG-code-blocks",
+      "TAG-loops",
+      "TAG-syntax"
+    ],
+    "787bc0d25821da0abb503a3b8b0134e7": [
+      "TAG-defer",
+      "TAG-loops"
+    ],
+    "787bc0d25821da0abb503a3b8b014753": [
+      "TAG-pointers",
+      "TAG-zero-value"
+    ],
+    "787bc0d25821da0abb503a3b8b014bd0": [
+      "TAG-array"
+    ],
+    "787bc0d25821da0abb503a3b8b0154bf": [
+      "TAG-array",
+      "TAG-slice"
+    ],
+    "787bc0d25821da0abb503a3b8b016dc9": [
+      "TAG-array",
+      "TAG-slice"
+    ],
+    "787bc0d25821da0abb503a3b8b017e81": [
+      "TAG-array",
+      "TAG-slice"
+    ],
+    "787bc0d25821da0abb503a3b8b0194e1": [
+      "TAG-exports",
+      "TAG-packages",
+      "TAG-variables"
+    ],
+    "787bc0d25821da0abb503a3b8b01a3bb": [
+      "TAG-interface",
+      "TAG-struct",
+      "TAG-types"
+    ],
+    "787bc0d25821da0abb503a3b8b01b4f2": [
+      "TAG-interface",
+      "TAG-struct",
+      "TAG-types"
+    ],
+    "787bc0d25821da0abb503a3b8b01b534": [
+      "TAG-compiler-rules",
+      "TAG-types"
+    ],
+    "787bc0d25821da0abb503a3b8b01bb8e": [
+      "TAG-compiler-rules",
+      "TAG-variables"
+    ],
+    "787bc0d25821da0abb503a3b8b01c415": [
+      "TAG-loops",
+      "TAG-range",
+      "TAG-slice",
+      "TAG-syntax"
+    ],
+    "787bc0d25821da0abb503a3b8b01dd53": [
+      "TAG-closure",
+      "TAG-functions",
+      "TAG-scopes"
+    ],
+    "787bc0d25821da0abb503a3b8b01efe5": [
+      "TAG-embedded-types",
+      "TAG-struct",
+      "TAG-types"
+    ],
+    "787bc0d25821da0abb503a3b8b020b81": [
+      "TAG-code-blocks",
+      "TAG-interface",
+      "TAG-scopes",
+      "TAG-types"
+    ],
+    "787bc0d25821da0abb503a3b8b021ecb": [
+      "TAG-interface"
+    ],
+    "787bc0d25821da0abb503a3b8b022f9a": [
+      "TAG-functions",
+      "TAG-methods",
+      "TAG-types"
+    ],
+    "787bc0d25821da0abb503a3b8b023bbe": [
+      "TAG-methods",
+      "TAG-packages",
+      "TAG-types"
+    ],
+    "787bc0d25821da0abb503a3b8b024451": [
+      "TAG-methods",
+      "TAG-pointers"
+    ],
+    "787bc0d25821da0abb503a3b8b024e69": [
+      "TAG-conventions",
+      "TAG-methods",
+      "TAG-types"
+    ],
+    "787bc0d25821da0abb503a3b8b026aee": [
+      "TAG-conventions",
+      "TAG-errors",
+      "TAG-functions"
+    ],
+    "787bc0d25821da0abb503a3b8b027984": [
+      "TAG-concurrency"
+    ],
+    "787bc0d25821da0abb503a3b8b029b83": [
+      "TAG-concurrency",
+      "TAG-goroutines"
+    ],
+    "787bc0d25821da0abb503a3b8b02a7e1": [
+      "TAG-conventions",
+      "TAG-modules"
+    ],
+    "787bc0d25821da0abb503a3b8b02b0ad": [
+      "TAG-float",
+      "TAG-int",
+      "TAG-literals"
+    ],
+    "787bc0d25821da0abb503a3b8b02c491": [
+      "TAG-float",
+      "TAG-int",
+      "TAG-literals"
+    ],
+    "787bc0d25821da0abb503a3b8b02d608": [
+      "TAG-float",
+      "TAG-int",
+      "TAG-literals"
+    ],
+    "787bc0d25821da0abb503a3b8b02ea9d": [
+      "TAG-float",
+      "TAG-int",
+      "TAG-literals"
+    ],
+    "787bc0d25821da0abb503a3b8b02fcae": [
+      "TAG-conventions",
+      "TAG-errors"
+    ],
+    "787bc0d25821da0abb503a3b8b030f47": [
+      "TAG-compiler-rules",
+      "TAG-dependencies",
+      "TAG-packages"
+    ],
+    "787bc0d25821da0abb503a3b8b0319f8": [
+      "TAG-command-line-utils",
+      "TAG-godocs"
+    ],
+    "787bc0d25821da0abb503a3b8b03284a": [
+      "TAG-conventions",
+      "TAG-godocs"
+    ],
+    "787bc0d25821da0abb503a3b8b032ea4": [
+      "TAG-packages"
+    ],
+    "787bc0d25821da0abb503a3b8b0340bf": [
+      "TAG-exports",
+      "TAG-magic-strings",
+      "TAG-packages"
+    ],
+    "787bc0d25821da0abb503a3b8b0356fc": [
+      "TAG-language-features"
+    ],
+    "787bc0d25821da0abb503a3b8b038d14": [
+      "TAG-global-scope",
+      "TAG-magic-strings",
+      "TAG-packages"
+    ],
+    "787bc0d25821da0abb503a3b8b0394f7": [
+      "TAG-global-scope",
+      "TAG-packages"
+    ],
+    "787bc0d25821da0abb503a3b8b03abee": [
+      "TAG-global-scope",
+      "TAG-packages"
+    ],
+    "787bc0d25821da0abb503a3b8b03ca14": [
+      "TAG-packages"
+    ],
+    "787bc0d25821da0abb503a3b8b03e45c": [
+      "TAG-conventions",
+      "TAG-errors"
+    ],
+    "787bc0d25821da0abb503a3b8b03f6e1": [
+      "TAG-code-organization",
+      "TAG-packages"
+    ],
+    "787bc0d25821da0abb503a3b8b0402e2": [
+      "TAG-code-organization",
+      "TAG-modules"
+    ],
+    "787bc0d25821da0abb503a3b8b04148e": [
+      "TAG-code-organization",
+      "TAG-magic-strings",
+      "TAG-packages"
+    ],
+    "787bc0d25821da0abb503a3b8b0429b6": [
+      "TAG-modules",
+      "TAG-packages",
+      "TAG-version-control"
+    ],
+    "787bc0d25821da0abb503a3b8b0434d9": [
+      "TAG-modules",
+      "TAG-packages",
+      "TAG-version-control"
+    ],
+    "787bc0d25821da0abb503a3b8b044507": [
+      "TAG-concurrency",
+      "TAG-goroutines",
+      "TAG-performance"
+    ],
+    "787bc0d25821da0abb503a3b8b045df3": [
+      "TAG-goroutines"
+    ],
+    "787bc0d25821da0abb503a3b8b046ae4": [
+      "TAG-goroutines"
+    ],
+    "787bc0d25821da0abb503a3b8b047c28": [
+      "TAG-packages",
+      "TAG-type-alias",
+      "TAG-types"
+    ],
+    "787bc0d25821da0abb503a3b8b048cab": [
+      "TAG-modules",
+      "TAG-type-alias",
+      "TAG-types"
+    ],
+    "787bc0d25821da0abb503a3b8b04acb2": [
+      "TAG-channels",
+      "TAG-syntax"
+    ],
+    "787bc0d25821da0abb503a3b8b04c4f5": [
+      "TAG-concurrency",
+      "TAG-goroutines"
+    ],
+    "787bc0d25821da0abb503a3b8b04d723": [
+      "TAG-best-practices",
+      "TAG-channels",
+      "TAG-concurrency",
+      "TAG-conventions",
+      "TAG-goroutines"
+    ],
+    "787bc0d25821da0abb503a3b8b04ea5d": [
+      "TAG-channels",
+      "TAG-concurrency",
+      "TAG-goroutines"
+    ],
+    "787bc0d25821da0abb503a3b8b04ee24": [
+      "TAG-channels",
+      "TAG-zero-value"
+    ],
+    "787bc0d25821da0abb503a3b8b04f424": [
+      "TAG-comparable",
+      "TAG-maps"
+    ],
+    "787bc0d25821da0abb503a3b8b050961": [
+      "TAG-godocs"
+    ],
+    "787bc0d25821da0abb503a3b8b053b6a": [
+      "TAG-channels",
+      "TAG-goroutines"
+    ],
+    "787bc0d25821da0abb503a3b8b053e6b": [
+      "TAG-channels"
+    ],
+    "787bc0d25821da0abb503a3b8b0550d7": [
+      "TAG-built-ins",
+      "TAG-channels"
+    ],
+    "787bc0d25821da0abb503a3b8b056a02": [
+      "TAG-channels"
+    ],
+    "787bc0d25821da0abb503a3b8b057bad": [
+      "TAG-channel"
+    ],
+    "787bc0d25821da0abb503a3b8b058990": [
+      "TAG-channel"
+    ],
+    "787bc0d25821da0abb503a3b8b05970a": [
+      "TAG-global-scope",
+      "TAG-identifiers",
+      "TAG-scopes"
+    ],
+    "787bc0d25821da0abb503a3b8b05b093": [
+      "TAG-concurrency",
+      "TAG-select"
+    ],
+    "787bc0d25821da0abb503a3b8b05cee6": [
+      "TAG-scopes",
+      "TAG-select"
+    ],
+    "787bc0d25821da0abb503a3b8b05e42c": [
+      "TAG-select"
+    ],
+    "787bc0d25821da0abb503a3b8b05f922": [
+      "TAG-concurrency",
+      "TAG-deadlocks",
+      "TAG-runtime"
+    ],
+    "787bc0d25821da0abb503a3b8b061201": [
+      "TAG-goroutines",
+      "TAG-runtime"
+    ],
+    "787bc0d25821da0abb503a3b8b06163b": [
+      "TAG-select"
+    ],
+    "787bc0d25821da0abb503a3b8b061c27": [
+      "TAG-select"
+    ],
+    "804cfd4c244877d6d244bd6abc01d4e5": [
+      "TAG-conventions",
+      "TAG-slice",
+      "TAG-zero-value"
+    ],
+    "804cfd4c244877d6d244bd6abc01e0e6": [
+      "TAG-keywords",
+      "TAG-nil"
+    ],
+    "804cfd4c244877d6d244bd6abc02631a": [
+      "TAG-errors",
+      "TAG-panic"
+    ],
+    "804cfd4c244877d6d244bd6abc026834": [
+      "TAG-conventions",
+      "TAG-imports"
+    ],
+    "804cfd4c244877d6d244bd6abc0276c0": [
+      "TAG-conventions",
+      "TAG-errors",
+      "TAG-flow-control"
+    ],
+    "804cfd4c244877d6d244bd6abc028724": [
+      "TAG-conventions",
+      "TAG-identifiers"
+    ],
+    "804cfd4c244877d6d244bd6abc02963d": [
+      "TAG-conventions",
+      "TAG-identifiers"
+    ],
+    "804cfd4c244877d6d244bd6abc02abf8": [
+      "TAG-identifiers",
+      "TAG-packages"
+    ],
+    "804cfd4c244877d6d244bd6abc030fb0": [
+      "TAG-interface",
+      "TAG-types"
+    ],
+    "804cfd4c244877d6d244bd6abc031cbb": [
+      "TAG-literals",
+      "TAG-types"
+    ],
+    "804cfd4c244877d6d244bd6abc032769": [
+      "TAG-string"
+    ],
+    "804cfd4c244877d6d244bd6abc040f86": [
+      "TAG-method-set",
+      "TAG-methods",
+      "TAG-struct"
+    ],
+    "804cfd4c244877d6d244bd6abc0426cf": [
+      "TAG-method-set",
+      "TAG-methods",
+      "TAG-struct"
+    ],
+    "804cfd4c244877d6d244bd6abc04364a": [
+      "TAG-built-ins",
+      "TAG-len",
+      "TAG-string"
+    ],
+    "804cfd4c244877d6d244bd6abc04490f": [
+      "TAG-array",
+      "TAG-built-ins",
+      "TAG-make",
+      "TAG-new",
+      "TAG-slice"
+    ],
+    "804cfd4c244877d6d244bd6abc0464de": [
+      "TAG-array"
+    ],
+    "804cfd4c244877d6d244bd6abc047ac3": [
+      "TAG-slice"
+    ],
+    "804cfd4c244877d6d244bd6abc047e5c": [
+      "TAG-slice",
+      "TAG-zero-value"
+    ],
+    "804cfd4c244877d6d244bd6abc0490af": [
+      "TAG-functions",
+      "TAG-parameters"
+    ],
+    "804cfd4c244877d6d244bd6abc049fa5": [
+      "TAG-functions",
+      "TAG-parameters"
+    ],
+    "804cfd4c244877d6d244bd6abc04a7d8": [
+      "TAG-built-ins",
+      "TAG-nil",
+      "TAG-slice"
+    ],
+    "804cfd4c244877d6d244bd6abc04bc95": [
+      "TAG-struct-tag"
+    ],
+    "804cfd4c244877d6d244bd6abc04e520": [
+      "TAG-functions",
+      "TAG-types"
+    ]
+  },
+  "tagCount": 204
+}

@@ -1,0 +1,117 @@
+{
+  "version": "1.0.0",
+  "courseId": "2aeb8315ef78f3e89ca386992d00825b",
+  "courseName": "Go (Programming Language)",
+  "courseConfig": {
+    "_id": "CourseConfig",
+    "_rev": "3-c01708aab2b2fbf67a154993d83eba95",
+    "name": "Go (Programming Language)",
+    "description": "",
+    "public": true,
+    "deleted": false,
+    "creator": "Colin",
+    "admins": [],
+    "moderators": [],
+    "dataShapes": [
+      {
+        "name": "default.datashape.Blanks",
+        "questionTypes": [
+          "default.question.BlanksCard"
+        ]
+      }
+    ],
+    "questionTypes": [
+      {
+        "name": "default.question.BlanksCard",
+        "viewList": [
+          "FillInView"
+        ],
+        "dataShapeList": [
+          "default.datashape.Blanks"
+        ]
+      }
+    ],
+    "courseID": "2aeb8315ef78f3e89ca386992d00825b"
+  },
+  "lastUpdated": "2025-08-27T16:42:08.278Z",
+  "documentCount": 488,
+  "chunks": [
+    {
+      "id": "DISPLAYABLE_DATA-0000",
+      "docType": "DISPLAYABLE_DATA",
+      "startKey": "07e3ce7d2009ef7162d0af56e6000bb6",
+      "endKey": "804cfd4c244877d6d244bd6abc04e4ab",
+      "documentCount": 206,
+      "path": "chunks/DISPLAYABLE_DATA-0000.json"
+    },
+    {
+      "id": "CARD-0000",
+      "docType": "CARD",
+      "startKey": "07e3ce7d2009ef7162d0af56e6001831",
+      "endKey": "804cfd4c244877d6d244bd6abc04e520",
+      "documentCount": 202,
+      "path": "chunks/CARD-0000.json"
+    },
+    {
+      "id": "TAG-0000",
+      "docType": "TAG",
+      "startKey": "TAG-array",
+      "endKey": "TAG-zero-value",
+      "documentCount": 80,
+      "path": "chunks/TAG-0000.json"
+    }
+  ],
+  "indices": [
+    {
+      "name": "elo",
+      "type": "btree",
+      "path": "indices/elo.json"
+    },
+    {
+      "name": "tags",
+      "type": "hash",
+      "path": "indices/tags.json"
+    },
+    {
+      "name": "view-cardsByInexperience-cardsByInexperience",
+      "type": "view",
+      "path": "indices/view-cardsByInexperience-cardsByInexperience.json"
+    },
+    {
+      "name": "view-elo-elo",
+      "type": "view",
+      "path": "indices/view-elo-elo.json"
+    },
+    {
+      "name": "view-getTags-getTags",
+      "type": "view",
+      "path": "indices/view-getTags-getTags.json"
+    }
+  ],
+  "designDocs": [
+    {
+      "_id": "_design/cardsByInexperience",
+      "views": {
+        "cardsByInexperience": {
+          "map": "function (doc) {\n                if (doc.docType && doc.docType === 'CARD') {\n                    if (doc.elo && doc.elo.global && typeof doc.elo.global.count == 'number') {\n                        emit(doc.elo.global.count, doc.elo);\n                    }\n                    else if (doc.elo && typeof doc.elo == 'number') {\n                        emit(0, doc.elo);\n                    }\n                    else {\n                        emit(0, 995 + Math.floor(10 * Math.random()));\n                    }\n                }\n            }"
+        }
+      }
+    },
+    {
+      "_id": "_design/elo",
+      "views": {
+        "elo": {
+          "map": "function (doc) {\n                if (doc.docType && doc.docType === 'CARD') {\n                    if (doc.elo && typeof(doc.elo) === 'number') {\n                        emit(doc.elo, doc._id);\n                    } else if (doc.elo && doc.elo.global) {\n                        emit(doc.elo.global.score, doc._id);\n                    } else if (doc.elo) {\n                        emit(doc.elo.score, doc._id);\n                    } else {\n                        const randElo = 995 + Math.round(10 * Math.random());\n                        emit(randElo, doc._id);\n                    }\n                }\n            }"
+        }
+      }
+    },
+    {
+      "_id": "_design/getTags",
+      "views": {
+        "getTags": {
+          "map": "function (doc) {\n                if (doc.docType && doc.docType === \"TAG\") {\n                    for (var cardIndex in doc.taggedCards) {\n                        emit(doc.taggedCards[cardIndex], {\n                            docType: doc.docType,\n                            name: doc.name,\n                            snippit: doc.snippit,\n                            wiki: '',\n                            taggedCards: []\n                        });\n                    }\n                }\n            }"
+        }
+      }
+    }
+  ]
+}
