@@ -13,7 +13,7 @@
   - [ ] 1.1.2.2 Verify data layer initialization
   - [ ] 1.1.2.3 Test error handling scenarios
 
-### 1.2 Demo Course Data Creation
+### 1.2 Demo Course Data Creation (deferred - working against existing course w/ ID 2aeb8315ef78f3e89ca386992d00825b currently in the public folder)
 - [ ] 1.2.1 Create directory structure `docs/public/static-courses/`
 - [ ] 1.2.2 Create demo course manifest and data
   - [ ] 1.2.2.1 Create `docs/public/static-courses/demo-course/manifest.json`
