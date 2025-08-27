@@ -418,6 +418,15 @@ onUnmounted(() => {
   width: 100%;
   max-width: 400px; /* Limit on mobile */
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* Diffuse brand color shadows */
+  box-shadow: 
+ 
+
+    -30px 10px 140px rgba(66, 184, 131, 0.25),    /* Vue green glow */
+    30px -10px 150px rgba(255, 106, 84, 0.28),    /* Patched orange glow */
+    0 0 100px rgba(53, 73, 94, 0.08),     /* Dark gray subtle glow */
+    0 4px 20px rgba(0, 0, 0, 0.1);        /* Standard depth shadow */
 }
 
 .study-wrapper.fullscreen {
@@ -426,7 +435,13 @@ onUnmounted(() => {
   height: 100%;
   border-radius: 16px;
   padding: 1rem;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  
+  /* Enhanced brand shadows for fullscreen */
+  box-shadow: 
+    -20px 10px 140px rgba(66, 184, 131, 0.30),     /* Stronger Vue green glow */
+    20px -10px 150px rgba(255, 106, 84, 0.35),    /* Stronger patched orange glow */
+    0 0 200px rgba(53, 73, 94, 0.1),       /* Stronger dark gray glow */
+    0 25px 50px rgba(0, 0, 0, 0.25);       /* Standard depth shadow */
 }
 
 @media (min-width: 960px) {
