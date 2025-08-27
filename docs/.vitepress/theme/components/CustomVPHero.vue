@@ -381,7 +381,7 @@ onUnmounted(() => {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.1);
   z-index: 2000;
   backdrop-filter: blur(4px);
 }
