@@ -15,7 +15,7 @@
     </div>
     
     <!-- Study session active -->
-    <div v-else-if="dataLayer && user && !isLoading" class="study-container">
+    <div v-else-if="sessionPrepared && dataLayer && user && !isLoading" class="study-container">
       <div class="debug-info">
         <p><small>Debug: dataLayer={{!!dataLayer}}, user={{!!user}}, sessionPrepared={{sessionPrepared}}</small></p>
       </div>
@@ -35,12 +35,27 @@
       />
     </div>
     
-    <!-- Initialization state -->
+    <!-- Ready to start or initialization state -->
     <div v-else class="init-state">
       <div class="init-content">
-        <p>Initializing study session...</p>
+        <p v-if="!dataLayer">Initializing study session...</p>
+        <p v-else>Ready to start study session!</p>
         <p><small>Debug: dataLayer={{!!dataLayer}}, user={{!!user}}, loading={{isLoading}}, error={{!!error}}</small></p>
-        <button @click="initializeSession" class="retry-button">Start Session</button>
+        <button 
+          v-if="dataLayer && user && !isLoading" 
+          @click="startSession" 
+          class="retry-button"
+        >
+          Start Session
+        </button>
+        <button 
+          v-else 
+          @click="initializeSession" 
+          class="retry-button"
+          :disabled="isLoading"
+        >
+          {{ isLoading ? 'Loading...' : 'Initialize' }}
+        </button>
       </div>
     </div>
   </div>
@@ -174,9 +189,9 @@ const initializeSession = async () => {
     console.log('[EmbeddedCourse] Course name:', courseConfig?.name);
     console.log('[EmbeddedCourse] Course verified:', courseConfig?.name || 'Unknown course');
     
-    // Session will be prepared by StudySession component itself
-    console.log('[EmbeddedCourse] Setting sessionPrepared to false, StudySession should handle preparation');
-    sessionPrepared.value = false; // StudySession will set this to true via event
+    // Ready to start session - user must click "Start Session" button
+    console.log('[EmbeddedCourse] Data layer ready, waiting for user to start session');
+    // sessionPrepared stays false until user clicks button
     
   } catch (e) {
     const err = e as Error;
@@ -185,7 +200,13 @@ const initializeSession = async () => {
   }
 };
 
-// Auto-initialize on mount
+// Method to start the actual study session
+const startSession = () => {
+  console.log('[EmbeddedCourse] User clicked Start Session');
+  sessionPrepared.value = true;
+};
+
+// Auto-initialize on mount (data layer only, not session)
 onMounted(async () => {
   console.log('[EmbeddedCourse] Mounted with props:', {
     courseId: props.courseId,
