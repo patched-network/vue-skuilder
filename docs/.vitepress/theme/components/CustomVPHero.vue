@@ -2,6 +2,7 @@
 import type { DefaultTheme } from 'vitepress/theme';
 import { useData } from 'vitepress';
 import { ref, onMounted, onUnmounted } from 'vue';
+import HeroStudySession from './HeroStudySession.vue';
 
 export interface HeroAction {
   theme?: 'brand' | 'alt';
@@ -83,8 +84,8 @@ onUnmounted(() => {
       <!-- Study Session Section - replaces the image section -->
       <div v-if="showStudySession" class="study-session">
         <div class="study-session-container" :class="{ fullscreen: isFullscreen }">
-          <!-- Placeholder for StudySessionWrapper -->
-          <div class="study-placeholder" :class="{ fullscreen: isFullscreen }">
+          <!-- Real StudySession Integration -->
+          <div class="study-wrapper" :class="{ fullscreen: isFullscreen }">
             <div class="study-header">
               <h3>Interactive Study Session</h3>
               <button
@@ -122,16 +123,7 @@ onUnmounted(() => {
                 </svg>
               </button>
             </div>
-            <p>Live demo will appear here</p>
-            <div class="demo-card">
-              <div class="card-content">Sample flashcard content</div>
-              <div class="card-buttons">
-                <button class="demo-btn">Again</button>
-                <button class="demo-btn">Hard</button>
-                <button class="demo-btn">Good</button>
-                <button class="demo-btn">Easy</button>
-              </div>
-            </div>
+            <HeroStudySession />
           </div>
         </div>
       </div>
@@ -417,31 +409,31 @@ onUnmounted(() => {
   margin: 0 !important;
 }
 
-/* Placeholder Demo Styles */
-.study-placeholder {
+/* Study Session Wrapper Styles */
+.study-wrapper {
   background: var(--vp-c-bg-soft);
   border: 2px solid var(--vp-c-border);
   border-radius: 12px;
-  padding: 2rem;
+  padding: 1rem;
   width: 100%;
   max-width: 400px; /* Limit on mobile */
-  text-align: center;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.study-placeholder.fullscreen {
+.study-wrapper.fullscreen {
   max-width: none;
   width: 100%;
   height: 100%;
   border-radius: 16px;
-  padding: 2rem;
+  padding: 1rem;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
 }
 
 @media (min-width: 960px) {
-  .study-placeholder {
+  .study-wrapper {
     max-width: none; /* Remove width limit on desktop */
     width: 100%; /* Take full available space */
+    padding: 1.5rem;
   }
 }
 
@@ -453,7 +445,7 @@ onUnmounted(() => {
   margin-bottom: 1rem;
 }
 
-.study-placeholder h3 {
+.study-wrapper h3 {
   margin: 0;
   color: var(--vp-c-text-1);
   font-size: 1.25rem;
@@ -461,7 +453,7 @@ onUnmounted(() => {
   text-align: left;
 }
 
-.study-placeholder.fullscreen h3 {
+.study-wrapper.fullscreen h3 {
   font-size: 1.5rem;
   text-align: center;
 }
@@ -491,73 +483,6 @@ onUnmounted(() => {
   transform: scale(0.95);
 }
 
-.study-placeholder p {
-  margin: 0 0 1.5rem 0;
-  color: var(--vp-c-text-2);
-  font-size: 0.9rem;
-}
-
-.demo-card {
-  background: var(--vp-c-bg);
-  border: 1px solid var(--vp-c-border);
-  border-radius: 8px;
-  padding: 1.5rem;
-  margin-bottom: 1rem;
-}
-
-.card-content {
-  font-size: 1.1rem;
-  margin-bottom: 1.5rem;
-  color: var(--vp-c-text-1);
-}
-
-.card-buttons {
-  display: flex;
-  gap: 0.5rem;
-  justify-content: center;
-  flex-wrap: wrap;
-}
-
-.demo-btn {
-  background: var(--vp-c-brand-1);
-  color: white;
-  border: none;
-  border-radius: 4px;
-  padding: 0.5rem 1rem;
-  font-size: 0.875rem;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.demo-btn:hover {
-  background: var(--vp-c-brand-2);
-}
-
-.demo-btn:nth-child(1) {
-  background: var(--vp-c-red-1);
-}
-.demo-btn:nth-child(2) {
-  background: var(--vp-c-yellow-1);
-}
-.demo-btn:nth-child(3) {
-  background: var(--vp-c-green-1);
-}
-.demo-btn:nth-child(4) {
-  background: var(--vp-c-blue-1);
-}
-
-.demo-btn:nth-child(1):hover {
-  background: var(--vp-c-red-2);
-}
-.demo-btn:nth-child(2):hover {
-  background: var(--vp-c-yellow-2);
-}
-.demo-btn:nth-child(3):hover {
-  background: var(--vp-c-green-2);
-}
-.demo-btn:nth-child(4):hover {
-  background: var(--vp-c-blue-2);
-}
 
 /* VitePress Button Styles */
 .vp-button {

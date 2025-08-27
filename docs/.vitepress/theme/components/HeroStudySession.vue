@@ -23,8 +23,11 @@
 /* Override EmbeddedCourse styles for hero context */
 .hero-study-session :deep(.embedded-course) {
   margin: 0; /* Remove default margins in hero */
-  border-radius: 8px; /* Smaller border radius for hero */
-  min-height: 350px; /* Ensure good height in hero */
+  border: none; /* Remove border since wrapper has border */
+  background: transparent; /* Transparent background since wrapper has background */
+  border-radius: 0; /* No border radius since wrapper handles it */
+  padding: 0; /* Remove padding since wrapper provides it */
+  min-height: 300px; /* Ensure good height in hero */
 }
 
 .hero-study-session :deep(.debug-info) {
