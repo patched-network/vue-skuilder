@@ -121,53 +121,7 @@ async function launchStudio(coursePath: string, options: StudioOptions) {
     console.log(chalk.green(`✅ Valid standalone-ui course detected`));
 
     // Studio UI build preparation
-    console.log(chalk.cyan(`🔍 Analyzing local question types...`));
-    let questionsHash: string;
-    let studioUIPath: string;
-
-    try {
-      questionsHash = await withStudioBuildErrorHandling(
-        () => hashQuestionsDirectory(resolvedPath),
-        StudioBuildErrorType.QUESTIONS_HASH_ERROR,
-        { coursePath: resolvedPath }
-      );
-
-      // Ensure cache directory exists
-      await ensureCacheDirectory(resolvedPath);
-
-      const buildExists = studioBuildExists(resolvedPath, questionsHash);
-      const buildPath = getStudioBuildPath(resolvedPath, questionsHash);
-
-      console.log(chalk.gray(`   Questions hash: ${questionsHash}`));
-      console.log(chalk.gray(`   Cached build exists: ${buildExists ? 'Yes' : 'No'}`));
-
-      // Determine if we need to rebuild studio-ui
-      if (buildExists) {
-        console.log(chalk.gray(`   Using cached build at: ${buildPath}`));
-        studioUIPath = buildPath;
-      } else {
-        console.log(chalk.cyan(`🔨 Building studio-ui with local question types...`));
-        studioUIPath = await buildStudioUIWithQuestions(resolvedPath, questionsHash);
-        console.log(chalk.green(`✅ Studio-UI build complete: ${studioUIPath}`));
-      }
-    } catch (error) {
-      // Handle catastrophic build errors by falling back to embedded source
-      console.log(
-        chalk.yellow(
-          `⚠️  Unable to process questions due to ${error},\n⚠️  Using embedded studio-ui`
-        )
-      );
-
-      const embeddedPath = path.join(__dirname, '..', 'studio-ui-src');
-
-      if (fs.existsSync(embeddedPath)) {
-        studioUIPath = embeddedPath;
-        console.log(chalk.gray(`   Using embedded studio-ui source directly`));
-      } else {
-        console.error(chalk.red(`❌ No viable studio-ui source available`));
-        throw new Error('Critical error: Cannot locate studio-ui source');
-      }
-    }
+    const studioUIPath = await handleSuiCourse(resolvedPath);
 
     // Start CouchDB instance
     const studioDatabaseName = generateStudioDatabaseName(resolvedPath);
@@ -1402,4 +1356,72 @@ function generateMCPJson(
   };
 
   return JSON.stringify(mcpConfig, null, 2);
+}
+
+/**
+ * Handle SUI course build process - extract questions hashing and UI building logic
+ */
+async function handleSuiCourse(coursePath: string): Promise<string> {
+  console.log(chalk.cyan(`🔍 Analyzing local question types...`));
+  
+  try {
+    const questionsHash = await withStudioBuildErrorHandling(
+      () => hashQuestionsDirectory(coursePath),
+      StudioBuildErrorType.QUESTIONS_HASH_ERROR,
+      { coursePath: coursePath }
+    );
+
+    // Ensure cache directory exists
+    await ensureCacheDirectory(coursePath);
+
+    const buildExists = studioBuildExists(coursePath, questionsHash);
+    const buildPath = getStudioBuildPath(coursePath, questionsHash);
+
+    console.log(chalk.gray(`   Questions hash: ${questionsHash}`));
+    console.log(chalk.gray(`   Cached build exists: ${buildExists ? 'Yes' : 'No'}`));
+
+    let studioUIPath: string;
+    
+    // Determine if we need to rebuild studio-ui
+    if (buildExists) {
+      console.log(chalk.gray(`   Using cached build at: ${buildPath}`));
+      studioUIPath = buildPath;
+    } else {
+      console.log(chalk.cyan(`🔨 Building studio-ui with local question types...`));
+      studioUIPath = await buildStudioUIWithQuestions(coursePath, questionsHash);
+      console.log(chalk.green(`✅ Studio-UI build complete: ${studioUIPath}`));
+    }
+    
+    return studioUIPath;
+  } catch (error) {
+    // Handle catastrophic build errors by falling back to embedded source
+    console.log(
+      chalk.yellow(
+        `⚠️  Unable to process questions due to ${error},\n⚠️  Using embedded studio-ui`
+      )
+    );
+
+    const embeddedPath = path.join(__dirname, '..', 'studio-ui-src');
+
+    if (fs.existsSync(embeddedPath)) {
+      const studioUIPath = embeddedPath;
+      console.log(chalk.gray(`   Using embedded studio-ui source directly`));
+      return studioUIPath;
+    } else {
+      console.error(chalk.red(`❌ No viable studio-ui source available`));
+      throw new Error('Critical error: Cannot locate studio-ui source');
+    }
+  }
+}
+
+/**
+ * Handle manifest course - simple default build without custom questions
+ */
+async function handleManifestCourse(): Promise<string> {
+  console.log(chalk.cyan(`📋 Manifest mode: using default studio-ui build`));
+  
+  const manifestBuildPath = path.join(__dirname, '..', 'studio-builds', 'manifest-default');
+  const studioUIPath = await buildDefaultStudioUI(manifestBuildPath);
+  
+  return studioUIPath;
 }
