@@ -51,4 +51,5 @@ userdb-Guest
 # vitepress docs build/dev output
 
 docs/.vitepress/dist
+docs/.vitepress/.temp
 docs/.vitepress/cache

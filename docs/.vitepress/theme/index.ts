@@ -10,7 +10,7 @@ import './style.css';
 import { createPinia } from 'pinia';
 
 // Vue Router (create a minimal router for component compatibility)
-import { createRouter, createWebHistory } from 'vue-router';
+import { createRouter, createWebHistory, createMemoryHistory } from 'vue-router';
 
 // Vuetify setup
 import 'vuetify/styles';
@@ -37,19 +37,20 @@ export default {
   },
   enhanceApp({ app, router, siteData }) {
     // Create and install Pinia
-    const pinia = createPinia()
-    app.use(pinia)
-    
+    const pinia = createPinia();
+    app.use(pinia);
+
     // Create minimal Vue Router for component compatibility
+    // Use MemoryHistory for SSR, WebHistory for client
     const vueRouter = createRouter({
-      history: createWebHistory(),
+      history: typeof window !== 'undefined' ? createWebHistory() : createMemoryHistory(),
       routes: [
         // Minimal route - VitePress handles actual routing
-        { path: '/', component: { template: '<div></div>' } }
-      ]
-    })
-    app.use(vueRouter)
-    
+        { path: '/', component: { template: '<div></div>' } },
+      ],
+    });
+    app.use(vueRouter);
+
     // Configure Vuetify
     const vuetify = createVuetify({
       components,
