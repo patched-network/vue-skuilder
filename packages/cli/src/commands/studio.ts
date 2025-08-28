@@ -104,7 +104,7 @@ async function launchStudio(coursePath: string, options: StudioOptions) {
   try {
     console.log(chalk.cyan(`🎨 Launching Skuilder Studio...`));
 
-    // Phase 2: Course Detection & Validation
+    // Input validation and course detection
     const resolvedPath = path.resolve(coursePath);
     console.log(chalk.gray(`📁 Course path: ${resolvedPath}`));
 
@@ -120,7 +120,7 @@ async function launchStudio(coursePath: string, options: StudioOptions) {
 
     console.log(chalk.green(`✅ Valid standalone-ui course detected`));
 
-    // Phase 0.5: Hash questions directory to determine studio-ui build needs
+    // Studio UI build preparation
     console.log(chalk.cyan(`🔍 Analyzing local question types...`));
     let questionsHash: string;
     let studioUIPath: string;
@@ -169,27 +169,27 @@ async function launchStudio(coursePath: string, options: StudioOptions) {
       }
     }
 
-    // Phase 1: CouchDB Management
+    // Start CouchDB instance
     const studioDatabaseName = generateStudioDatabaseName(resolvedPath);
     console.log(chalk.cyan(`🗄️  Starting studio CouchDB instance: ${studioDatabaseName}`));
 
     couchDBManager = await startStudioCouchDB(studioDatabaseName, parseInt(options.port));
 
-    // Phase 4: Populate CouchDB with course data
+    // Load course data into database
     console.log(chalk.cyan(`📦 Unpacking course data to studio database...`));
     const unpackResult = await unpackCourseToStudio(
       resolvedPath,
       couchDBManager.getConnectionDetails()
     );
 
-    // Phase 9.5: Launch Express backend
+    // Start Express API server
     const expressResult = await startExpressBackend(
       couchDBManager.getConnectionDetails(),
       unpackResult.databaseName
     );
     expressServer = expressResult.server;
 
-    // Phase 7: Launch studio-ui server
+    // Launch studio web interface
     console.log(chalk.cyan(`🌐 Starting studio-ui server...`));
     console.log(
       chalk.gray(
@@ -228,7 +228,7 @@ async function launchStudio(coursePath: string, options: StudioOptions) {
     }
     console.log(chalk.gray(`   Press Ctrl+C to stop studio session`));
 
-    // Keep process alive and handle cleanup
+    // Session lifecycle management
     process.on('SIGINT', () => {
       void (async () => {
         console.log(chalk.cyan(`\n🔄 Stopping studio session...`));
