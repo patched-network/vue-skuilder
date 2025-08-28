@@ -57,7 +57,7 @@ export function createStudioCommand(): Command {
     .description(
       'Launch studio mode: a complete course editing environment with CouchDB, Express API, and web editor'
     )
-    .argument('[coursePath]', 'Path to static course directory', '.')
+    .argument('[coursePath]', 'Path to static course directory or manifest file', '.')
     .option('-p, --port <port>', 'CouchDB port for studio session', '5985')
     .option('--no-browser', 'Skip automatic browser launch')
     .action(launchStudio)
@@ -106,25 +106,37 @@ async function launchStudio(coursePath: string, options: StudioOptions) {
 
     // Input validation and course detection
     const resolvedPath = path.resolve(coursePath);
-    console.log(chalk.gray(`📁 Course path: ${resolvedPath}`));
-
-    if (!(await validateSuiCourse(resolvedPath))) {
-      console.error(chalk.red(`❌ Not a valid standalone-ui course directory`));
-      console.log(chalk.yellow(`💡 Studio mode requires a vue-skuilder course with:`));
-      console.log(chalk.yellow(`   - package.json with @vue-skuilder/* dependencies`));
-      console.log(
-        chalk.yellow(`   - static-data/ OR public/static-courses/ directory with course content`)
-      );
-      process.exit(1);
+    console.log(chalk.gray(`📁 Input path: ${resolvedPath}`));
+    
+    let isManifestMode = false;
+    let actualCoursePath = resolvedPath;
+    
+    // Check if input is a manifest file
+    const manifestValidation = await validateManifestCourse(resolvedPath);
+    if (manifestValidation.isValid) {
+      console.log(chalk.green(`✅ Valid course manifest detected`));
+      isManifestMode = true;
+      actualCoursePath = manifestValidation.coursePath!;
+      console.log(chalk.gray(`📁 Course data path: ${actualCoursePath}`));
+    } else {
+      // Check if it's a traditional scaffolded course directory
+      if (!(await validateSuiCourse(resolvedPath))) {
+        console.error(chalk.red(`❌ Not a valid course directory or manifest file`));
+        console.log(chalk.yellow(`💡 Studio mode accepts either:`));
+        console.log(chalk.yellow(`   - Scaffolded course directory with package.json and static-data/`));
+        console.log(chalk.yellow(`   - Course manifest.json file with chunks/ and indices/ directories`));
+        process.exit(1);
+      }
+      console.log(chalk.green(`✅ Valid standalone-ui course detected`));
     }
 
-    console.log(chalk.green(`✅ Valid standalone-ui course detected`));
-
     // Studio UI build preparation
-    const studioUIPath = await handleSuiCourse(resolvedPath);
+    const studioUIPath = isManifestMode 
+      ? await handleManifestCourse()
+      : await handleSuiCourse(resolvedPath);
 
     // Start CouchDB instance
-    const studioDatabaseName = generateStudioDatabaseName(resolvedPath);
+    const studioDatabaseName = generateStudioDatabaseName(actualCoursePath);
     console.log(chalk.cyan(`🗄️  Starting studio CouchDB instance: ${studioDatabaseName}`));
 
     couchDBManager = await startStudioCouchDB(studioDatabaseName, parseInt(options.port));
@@ -132,8 +144,9 @@ async function launchStudio(coursePath: string, options: StudioOptions) {
     // Load course data into database
     console.log(chalk.cyan(`📦 Unpacking course data to studio database...`));
     const unpackResult = await unpackCourseToStudio(
-      resolvedPath,
-      couchDBManager.getConnectionDetails()
+      actualCoursePath,
+      couchDBManager.getConnectionDetails(),
+      isManifestMode
     );
 
     // Start Express API server
@@ -209,7 +222,48 @@ async function launchStudio(coursePath: string, options: StudioOptions) {
 }
 
 /**
- * Phase 2: Validate that the given path contains a standalone-ui course
+ * Validate that the given path is a course manifest file
+ */
+async function validateManifestCourse(manifestPath: string): Promise<{ isValid: boolean; coursePath?: string }> {
+  try {
+    // Check if file exists
+    if (!fs.existsSync(manifestPath) || !fs.statSync(manifestPath).isFile()) {
+      return { isValid: false };
+    }
+
+    // Check if it's a JSON file
+    if (!manifestPath.endsWith('.json')) {
+      return { isValid: false };
+    }
+
+    // Try to parse as JSON
+    const manifestContent = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+    
+    // Validate required manifest fields
+    if (!manifestContent.courseId || !manifestContent.courseName) {
+      return { isValid: false };
+    }
+
+    // Find course data directory relative to manifest
+    const manifestDir = path.dirname(manifestPath);
+    const coursePath = manifestDir; // Course data should be alongside manifest
+
+    // Check for required course data structure
+    const chunksPath = path.join(coursePath, 'chunks');
+    const indicesPath = path.join(coursePath, 'indices');
+    
+    if (!fs.existsSync(chunksPath) || !fs.existsSync(indicesPath)) {
+      return { isValid: false };
+    }
+
+    return { isValid: true, coursePath };
+  } catch {
+    return { isValid: false };
+  }
+}
+
+/**
+ * Validate that the given path contains a standalone-ui course
  */
 async function validateSuiCourse(coursePath: string): Promise<boolean> {
   try {
@@ -586,28 +640,37 @@ async function startExpressBackend(
  */
 async function unpackCourseToStudio(
   coursePath: string,
-  connectionDetails: ConnectionDetails
+  connectionDetails: ConnectionDetails,
+  isManifestMode = false
 ): Promise<{ databaseName: string; courseId: string }> {
   try {
-    // Find the course data directory (static-data OR public/static-courses)
-    let courseDataPath = path.join(coursePath, 'static-data');
-    if (!fs.existsSync(courseDataPath)) {
-      // Try public/static-courses directory
-      const publicStaticPath = path.join(coursePath, 'public', 'static-courses');
-      if (fs.existsSync(publicStaticPath)) {
-        // Find the first course directory inside public/static-courses
-        const courses = fs
-          .readdirSync(publicStaticPath, { withFileTypes: true })
-          .filter((dirent) => dirent.isDirectory())
-          .map((dirent) => dirent.name);
+    let courseDataPath: string;
+    
+    if (isManifestMode) {
+      // For manifest mode, the coursePath already points to the course data directory
+      courseDataPath = coursePath;
+      console.log(chalk.gray(`   Manifest mode: using course data at ${courseDataPath}`));
+    } else {
+      // Find the course data directory (static-data OR public/static-courses)
+      courseDataPath = path.join(coursePath, 'static-data');
+      if (!fs.existsSync(courseDataPath)) {
+        // Try public/static-courses directory
+        const publicStaticPath = path.join(coursePath, 'public', 'static-courses');
+        if (fs.existsSync(publicStaticPath)) {
+          // Find the first course directory inside public/static-courses
+          const courses = fs
+            .readdirSync(publicStaticPath, { withFileTypes: true })
+            .filter((dirent) => dirent.isDirectory())
+            .map((dirent) => dirent.name);
 
-        if (courses.length > 0) {
-          courseDataPath = path.join(publicStaticPath, courses[0]);
+          if (courses.length > 0) {
+            courseDataPath = path.join(publicStaticPath, courses[0]);
+          } else {
+            throw new Error('No course directories found in public/static-courses/');
+          }
         } else {
-          throw new Error('No course directories found in public/static-courses/');
+          throw new Error('No course data found in static-data/ or public/static-courses/');
         }
-      } else {
-        throw new Error('No course data found in static-data/ or public/static-courses/');
       }
     }
 
