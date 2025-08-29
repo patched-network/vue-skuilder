@@ -121,8 +121,8 @@ export default defineConfig({
             collapsed: false,
             items: [
               { text: 'Quickstart', link: '/quickstart' },
+              { text: 'Adding Content', link: './studio-mode' },
               { text: 'Creating Custom Cards', link: './custom-cards' },
-              { text: 'Editing Content', link: './studio-mode' },
               { text: 'Themes', link: './theming' },
               { text: 'Connect Agents [wip]', link: './mcp' },
             ],
@@ -130,7 +130,10 @@ export default defineConfig({
         ],
       },
       {
-        items: [{ text: 'CLI Reference', link: './cli' }],
+        items: [
+          { text: 'CLI Reference', link: './cli' },
+          { text: 'Default Cards References', link: './default-cards' },
+        ],
       },
     ],
 
