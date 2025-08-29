@@ -109,8 +109,8 @@ export default defineConfig({
             collapsed: false,
             items: [
               { text: 'Introduction', link: '/introduction' },
-              { text: 'Main Study Loop', link: '/study-loop' },
-              { text: 'Architecture Overview', link: '/architecture' },
+              // { text: 'Main Study Loop', link: '/study-loop' },
+              { text: 'System Overview', link: '/architecture' },
               { text: 'Data Layer', link: '/data-layer' },
               { text: 'Application Layer', link: '/apps' },
               { text: 'Pedagogy Defaults', link: '/pedagogy' },
@@ -123,6 +123,7 @@ export default defineConfig({
               { text: 'Quickstart', link: '/quickstart' },
               { text: 'Creating Custom Cards', link: './custom-cards' },
               { text: 'Editing Content', link: './studio-mode' },
+              { text: 'Themes', link: './theming' },
               { text: 'Connect Agents [wip]', link: './mcp' },
             ],
           },
