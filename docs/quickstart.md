@@ -1,4 +1,4 @@
-This document describes the creation of a new, empty `skuilder` course using the Skuilder CLI.
+This document describes the creation of a new, empty `skuilder` course using the Skuilder CLI. The documents that follow tell how to populate and customize the course.
 
 # Prerequisites
 
