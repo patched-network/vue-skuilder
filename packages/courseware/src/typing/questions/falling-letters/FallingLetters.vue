@@ -78,6 +78,8 @@ interface GameStateInternal {
 export default defineComponent({
   name: 'FallingLettersView',
 
+  emits: ['emitResponse'],
+
   props: {
     data: {
       type: Array as PropType<ViewData[]>,
