@@ -151,3 +151,11 @@
 .DocSearch {
   --docsearch-primary-color: var(--vp-c-brand-1) !important;
 }
+
+.items a {
+  color: var(--vp-c-brand-3);
+}
+
+.items a:hover {
+  text-decoration: underline;
+}
