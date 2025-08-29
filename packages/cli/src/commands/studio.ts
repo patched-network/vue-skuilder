@@ -79,8 +79,11 @@ Studio Mode creates a full editing environment for static courses:
 
   Requirements:
     • Docker (for CouchDB instance)
-    • Valid static course project (with package.json)
-    • Course data in public/static-courses/ directory
+    - either
+      • Valid static course project (with package.json)
+      • Course data in public/static-courses/ directory
+    - OR
+      - a valid mainfest.json
 
   Example:
     skuilder studio                    # Launch in current directory
@@ -107,10 +110,10 @@ async function launchStudio(coursePath: string, options: StudioOptions) {
     // Input validation and course detection
     const resolvedPath = path.resolve(coursePath);
     console.log(chalk.gray(`📁 Input path: ${resolvedPath}`));
-    
+
     let isManifestMode = false;
     let actualCoursePath = resolvedPath;
-    
+
     // Check if input is a manifest file
     const manifestValidation = await validateManifestCourse(resolvedPath);
     if (manifestValidation.isValid) {
@@ -123,15 +126,19 @@ async function launchStudio(coursePath: string, options: StudioOptions) {
       if (!(await validateSuiCourse(resolvedPath))) {
         console.error(chalk.red(`❌ Not a valid course directory or manifest file`));
         console.log(chalk.yellow(`💡 Studio mode accepts either:`));
-        console.log(chalk.yellow(`   - Scaffolded course directory with package.json and static-data/`));
-        console.log(chalk.yellow(`   - Course manifest.json file with chunks/ and indices/ directories`));
+        console.log(
+          chalk.yellow(`   - Scaffolded course directory with package.json and static-data/`)
+        );
+        console.log(
+          chalk.yellow(`   - Course manifest.json file with chunks/ and indices/ directories`)
+        );
         process.exit(1);
       }
       console.log(chalk.green(`✅ Valid standalone-ui course detected`));
     }
 
     // Studio UI build preparation
-    const studioUIPath = isManifestMode 
+    const studioUIPath = isManifestMode
       ? await handleManifestCourse()
       : await handleSuiCourse(resolvedPath);
 
@@ -224,7 +231,9 @@ async function launchStudio(coursePath: string, options: StudioOptions) {
 /**
  * Validate that the given path is a course manifest file
  */
-async function validateManifestCourse(manifestPath: string): Promise<{ isValid: boolean; coursePath?: string }> {
+async function validateManifestCourse(
+  manifestPath: string
+): Promise<{ isValid: boolean; coursePath?: string }> {
   try {
     // Check if file exists
     if (!fs.existsSync(manifestPath) || !fs.statSync(manifestPath).isFile()) {
@@ -238,7 +247,7 @@ async function validateManifestCourse(manifestPath: string): Promise<{ isValid: 
 
     // Try to parse as JSON
     const manifestContent = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
-    
+
     // Validate required manifest fields
     if (!manifestContent.courseId || !manifestContent.courseName) {
       return { isValid: false };
@@ -251,7 +260,7 @@ async function validateManifestCourse(manifestPath: string): Promise<{ isValid: 
     // Check for required course data structure
     const chunksPath = path.join(coursePath, 'chunks');
     const indicesPath = path.join(coursePath, 'indices');
-    
+
     if (!fs.existsSync(chunksPath) || !fs.existsSync(indicesPath)) {
       return { isValid: false };
     }
@@ -645,7 +654,7 @@ async function unpackCourseToStudio(
 ): Promise<{ databaseName: string; courseId: string }> {
   try {
     let courseDataPath: string;
-    
+
     if (isManifestMode) {
       // For manifest mode, the coursePath already points to the course data directory
       courseDataPath = coursePath;
@@ -1426,7 +1435,7 @@ function generateMCPJson(
  */
 async function handleSuiCourse(coursePath: string): Promise<string> {
   console.log(chalk.cyan(`🔍 Analyzing local question types...`));
-  
+
   try {
     const questionsHash = await withStudioBuildErrorHandling(
       () => hashQuestionsDirectory(coursePath),
@@ -1444,7 +1453,7 @@ async function handleSuiCourse(coursePath: string): Promise<string> {
     console.log(chalk.gray(`   Cached build exists: ${buildExists ? 'Yes' : 'No'}`));
 
     let studioUIPath: string;
-    
+
     // Determine if we need to rebuild studio-ui
     if (buildExists) {
       console.log(chalk.gray(`   Using cached build at: ${buildPath}`));
@@ -1454,14 +1463,12 @@ async function handleSuiCourse(coursePath: string): Promise<string> {
       studioUIPath = await buildStudioUIWithQuestions(coursePath, questionsHash);
       console.log(chalk.green(`✅ Studio-UI build complete: ${studioUIPath}`));
     }
-    
+
     return studioUIPath;
   } catch (error) {
     // Handle catastrophic build errors by falling back to embedded source
     console.log(
-      chalk.yellow(
-        `⚠️  Unable to process questions due to ${error},\n⚠️  Using embedded studio-ui`
-      )
+      chalk.yellow(`⚠️  Unable to process questions due to ${error},\n⚠️  Using embedded studio-ui`)
     );
 
     const embeddedPath = path.join(__dirname, '..', 'studio-ui-src');
@@ -1482,9 +1489,9 @@ async function handleSuiCourse(coursePath: string): Promise<string> {
  */
 async function handleManifestCourse(): Promise<string> {
   console.log(chalk.cyan(`📋 Manifest mode: using default studio-ui build`));
-  
+
   const manifestBuildPath = path.join(__dirname, '..', 'studio-builds', 'manifest-default');
   const studioUIPath = await buildDefaultStudioUI(manifestBuildPath);
-  
+
   return studioUIPath;
 }
