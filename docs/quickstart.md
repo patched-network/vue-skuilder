@@ -17,6 +17,8 @@ npx skuilder init mycourse
 # skuilder init mycourse
 ```
 
+The below options create the simplest working course with no reliance on existing infrastructure. __NOTE__, the rest of the **Dd** tutorials presume you've taken this path.
+
 ``` bash
 ? Course title:
 My Course Title
@@ -28,14 +30,35 @@ Static
 No
 
 ? Select Theme:
-(Your choice - see skuilder.json )
+(Your choice - see the Themes doc for updating this in your built app)
 ```
 
+You now have your own new standalone static site as a new npm package. The static site stores user data locally (and presumes a singleoton user per browser), and serves course content from JSON files that are bundled into the webapp.
 
-# Build, Serve, and Edit
+# Build & Serve
 
+To run your app:
+
+```bash
+cd myCourse
+npm install
+npm run dev
 ```
-cd
+
+There is just one problem: your app has no content, and because it is statically hosted, you cannot add to it through the 'front door' of the served application. Do not fear - the scaffolded app includes a helper script from the CLI for just this purpose.
+
+```json {10}
+"scripts": {
+  "dev": "vite",
+  "build": "npm run build:webapp && npm run build:lib",
+  "build:webapp": "vite build",
+  "build:lib": "BUILD_MODE=library vite build",
+  "preview": "vite preview",
+  "test:e2e": "cypress open",
+  "test:e2e:headless": "cypress run",
+  "ci:e2e": "vite dev & wait-on http://localhost:6173 && cypress run",
+  "studio": "skuilder studio"
+},
 ```
 
-# Deve
+Onward!
