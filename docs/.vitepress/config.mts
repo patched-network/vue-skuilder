@@ -99,6 +99,9 @@ export default defineConfig({
       // { text: 'Home', link: '/' },
       // { text: 'Examples', link: '/markdown-examples' }
     ],
+    editLink: {
+      pattern: 'https://github.com/patched-network/vue-skuilder/edit/master/docs/:path',
+    },
     logo: '/logo.svg',
 
     sidebar: [
