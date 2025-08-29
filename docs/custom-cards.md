@@ -4,19 +4,34 @@ import FallingLetters from '@vue-skuilder/courseware/typing/questions/falling-le
 
 const showCard = ref(false)
 const gameData = ref([
-  { gameLength: 30, initialSpeed: 1, acceleration: 0.2, spawnInterval: 1 }
+  { gameLength: 15, initialSpeed: 1, acceleration: 0.2, spawnInterval: 0.25 }
 ])
+const lastResult = ref(null)
+
+const handleResponse = (cardRecord) => {
+  console.log(`handling: ${JSON.stringify(cardRecord)}`);
+  lastResult.value = {
+    isCorrect: cardRecord.isCorrect,
+    performance: cardRecord.performance
+  }
+};
+
+const toggleCard = () => {
+  // Reset result when showing the card
+  if (!showCard.value) {
+    lastResult.value = null;
+  }
+  showCard.value = !showCard.value;
+}
 </script>
 
-# Creating Custom Interactive Cards
+# Creating Custom Cards
 
-You've scaffolded a new course with the CLI. Now for the fun part: building custom, interactive learning experiences that go beyond simple multiple-choice or text-input questions.
+This document will show you how to add a custom card type to your app. Card types must adhere to some defined interfaces and exhibit some specific lifecycle behaviour, but otherwise face very little constraint. Whatever might be in a `vue` component can be rendered as a card.
 
-This guide will show you how the platform is designed to host rich Vue components as cards, giving you the freedom to build almost anything.
+## Illustrating Example: Saving the world from letter-asteriods
 
-## See It in Action: A Mini-Game Card
-
-A card can be a simple quiz, but it can also be a game. Click the button below to run the "Falling Letters" game, built as a custom card. Try to type the letters before they reach the bottom!
+Here is a card implemented as a for-fun exercise in a typing course. Run the card, but consider cracking your knuckles first, or else taming the difficulty via playing with the parameters.
 
 <div class="interactive-demo">
   <div class="demo-controls">
@@ -38,11 +53,15 @@ A card can be a simple quiz, but it can also be a game. Click the button below t
     </div>
   </div>
 
-  <button @click="showCard = !showCard" class="vp-button vp-button-brand run-card-button">
-    {{ showCard ? 'Hide Card' : 'Run the Card' }}
+  <button @click="toggleCard" class="vp-button vp-button-brand run-card-button">
+    {{ showCard ? 'Reset the Card' : 'Run the Card' }}
   </button>
   <div v-if="showCard" class="demo-content">
-    <FallingLetters :data="gameData" />
+    <FallingLetters :data="gameData" @emit-response="handleResponse" />
+    <div v-if="lastResult" class="result-display">
+      <p><strong>Card Emitted Result:</strong></p>
+      <pre>{{ JSON.stringify(lastResult, null, 2) }}</pre>
+    </div>
   </div>
 </div>
 
@@ -103,6 +122,30 @@ A card can be a simple quiz, but it can also be a game. Click the button below t
   background-color: var(--vp-button-brand-hover-bg);
   border-color: var(--vp-button-brand-hover-border);
   color: var(--vp-button-brand-hover-text);
+}
+
+.result-display {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background-color: var(--vp-c-bg);
+  border-radius: 8px;
+  border: 1px solid var(--vp-c-divider);
+}
+
+.result-display p {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.875rem;
+  color: var(--vp-c-text-2);
+}
+
+.result-display pre {
+  background-color: var(--vp-c-bg-alt);
+  padding: 1rem;
+  border-radius: 4px;
+  font-family: var(--vp-font-family-mono);
+  font-size: 0.875rem;
+  color: var(--vp-c-text-1);
+  white-space: pre-wrap;
 }
 </style>
 
