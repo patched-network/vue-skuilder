@@ -104,9 +104,32 @@ export default defineConfig({
     sidebar: [
       {
         items: [
-          { text: 'Introduction', link: '/introduction' },
-          { text: 'Quickstart', link: '/quickstart' },
+          {
+            text: 'Learn',
+            collapsed: false,
+            items: [
+              { text: 'Introduction', link: '/introduction' },
+              { text: 'Main Study Loop', link: '/study-loop' },
+              { text: 'Architecture Overview', link: '/architecture' },
+              { text: 'Data Layer', link: '/data-layer' },
+              { text: 'Application Layer', link: '/apps' },
+              { text: 'Pedagogy Defaults', link: '/pedagogy' },
+            ],
+          },
+          {
+            text: 'Do',
+            collapsed: false,
+            items: [
+              { text: 'Quickstart', link: '/quickstart' },
+              { text: 'Creating Custom Cards', link: './custom-cards' },
+              { text: 'Editing Content', link: './studio-mode' },
+              { text: 'Connect Agents [wip]', link: './mcp' },
+            ],
+          },
         ],
+      },
+      {
+        items: [{ text: 'CLI Reference', link: './cli' }],
       },
     ],
 
