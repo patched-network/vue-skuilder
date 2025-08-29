@@ -102,6 +102,11 @@ export default defineConfig({
     editLink: {
       pattern: 'https://github.com/patched-network/vue-skuilder/edit/master/docs/:path',
     },
+    lastUpdated: {
+      formatOptions: {
+        dateStyle: 'medium',
+      },
+    },
     logo: '/logo.svg',
 
     sidebar: [
