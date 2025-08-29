@@ -55,7 +55,7 @@ skuilder studio [coursePath] [options]
 
 **Services:**
 - CouchDB instance (Docker) for temporary editing
-- Express API server for backend operations  
+- Express API server for backend operations
 - Studio web interface for visual editing
 - MCP server for Claude Code integration
 
@@ -80,7 +80,7 @@ skuilder pack <courseId> [options]
 - `courseId` - Course ID to pack from CouchDB (required)
 
 **Options:**
-- `-s, --server <url>` - CouchDB server URL (default: http://localhost:5984)
+- `-s, --server <url>` - CouchDB server URL (default: `http://localhost:5984`)
 - `-u, --username <username>` - CouchDB username
 - `-p, --password <password>` - CouchDB password
 - `-o, --output <dir>` - Output directory (default: ./static-courses)
@@ -105,7 +105,7 @@ skuilder unpack <coursePath> [options]
 - `coursePath` - Path to static course directory (required)
 
 **Options:**
-- `-s, --server <url>` - CouchDB server URL (default: http://localhost:5984)
+- `-s, --server <url>` - CouchDB server URL (default: `http://localhost:5984`)
 - `-u, --username <username>` - CouchDB username
 - `-p, --password <password>` - CouchDB password
 - `-d, --database <name>` - Target database name (auto-generated if not provided)
@@ -161,12 +161,12 @@ skuilder studio . --port 6000 --no-browser
 3. Edit content in studio web interface
 4. Use "Flush to Static" to save changes
 
-### Deployment Workflow  
+### Deployment Workflow
 1. `skuilder pack course-id` - Export from CouchDB to static files
 2. Deploy static files to web server
 3. `skuilder studio manifest.json` - Edit deployed course directly
 
 ### Migration Workflow
 1. `skuilder unpack ./static-course` - Import to CouchDB
-2. `skuilder studio` - Edit in dynamic environment  
+2. `skuilder studio` - Edit in dynamic environment
 3. `skuilder pack course-id` - Export back to static
