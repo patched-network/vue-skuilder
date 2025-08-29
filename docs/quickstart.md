@@ -1,4 +1,4 @@
-This document describes the creation of a new, empty `skuilder` course using the Skuilder CLI.
+This document describes the creation of a new, empty `skuilder` course using the Skuilder CLI. The documents that follow tell how to populate and customize the course.
 
 # Prerequisites
 
@@ -17,7 +17,7 @@ npx skuilder init mycourse
 # skuilder init mycourse
 ```
 
-The below options create the simplest working course with no reliance on existing infrastructure. __NOTE__, the rest of the **Dd** tutorials presume you've taken this path.
+The below options create the simplest working course with no reliance on existing infrastructure. __NOTE__, the rest of the **Do** tutorial presumes you've taken this path.
 
 ``` bash
 ? Course title:
