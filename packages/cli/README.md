@@ -73,10 +73,11 @@ skuilder init biology-course \
 Studio mode provides a complete visual editing environment for static courses:
 
 ```bash
-skuilder studio                    # Launch in current directory
-skuilder studio ./my-course        # Launch against specific packed course directory
-skuilder studio --port 6000        # Use custom CouchDB port
-skuilder studio --no-browser       # Don't auto-open browser
+skuilder studio                       # Launch in current directory
+skuilder studio ./my-course           # Launch against specific skuilder app w/ packed course data
+skuilder studio ./some/manifest.json  # Launch against a specific packed course on disk
+skuilder studio --port 6000           # Use custom CouchDB port
+skuilder studio --no-browser          # Don't auto-open browser
 ```
 
 #### What Studio Mode Does
