@@ -19,7 +19,26 @@ This guide will show you how the platform is designed to host rich Vue component
 A card can be a simple quiz, but it can also be a game. Click the button below to run the "Falling Letters" game, built as a custom card. Try to type the letters before they reach the bottom!
 
 <div class="interactive-demo">
-  <button @click="showCard = !showCard" class="vp-button vp-button-brand">
+  <div class="demo-controls">
+    <div class="control-group">
+      <label for="gameLength">Game Length (s)</label>
+      <input id="gameLength" type="number" v-model.number="gameData[0].gameLength">
+    </div>
+    <div class="control-group">
+      <label for="initialSpeed">Initial Speed</label>
+      <input id="initialSpeed" type="number" v-model.number="gameData[0].initialSpeed">
+    </div>
+    <div class="control-group">
+      <label for="acceleration">Acceleration</label>
+      <input id="acceleration" type="number" step="0.1" v-model.number="gameData[0].acceleration">
+    </div>
+    <div class="control-group">
+      <label for="spawnInterval">Spawn Interval (s)</label>
+      <input id="spawnInterval" type="number" step="0.1" v-model.number="gameData[0].spawnInterval">
+    </div>
+  </div>
+
+  <button @click="showCard = !showCard" class="vp-button vp-button-brand run-card-button">
     {{ showCard ? 'Hide Card' : 'Run the Card' }}
   </button>
   <div v-if="showCard" class="demo-content">
@@ -34,8 +53,56 @@ A card can be a simple quiz, but it can also be a game. Click the button below t
   border-radius: 8px;
   margin: 1.5rem 0;
 }
+.demo-controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+.control-group {
+  display: flex;
+  flex-direction: column;
+}
+.control-group label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  color: var(--vp-c-text-2);
+}
+.control-group input {
+  font-size: 1rem;
+  padding: 0.5rem;
+  border-radius: 4px;
+  border: 1px solid var(--vp-c-border);
+  background-color: var(--vp-c-bg);
+  width: 100%;
+}
 .demo-content {
   margin-top: 1.5rem;
+}
+
+.run-card-button {
+  /* Base styles to ensure it looks like a button */
+  display: inline-block;
+  border: 2px solid var(--vp-button-brand-border);
+  color: var(--vp-button-brand-text);
+  background-color: var(--vp-button-brand-bg);
+  border-radius: 20px;
+  text-decoration: none !important; /* Ensure no underline */
+  text-align: center;
+
+  /* "Poppy" styles */
+  padding: 0.5rem 1.5rem;
+  font-weight: 600;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+  transition: all 0.2s ease-out;
+}
+
+.run-card-button:hover {
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  background-color: var(--vp-button-brand-hover-bg);
+  border-color: var(--vp-button-brand-hover-border);
+  color: var(--vp-button-brand-hover-text);
 }
 </style>
 
