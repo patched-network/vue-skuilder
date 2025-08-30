@@ -8,21 +8,25 @@ Briefly, `skuilder` is a set of [npm packages](https://npmjs.org/org/vue-skuilde
 
 ## ... *Why* is Skuilder?
 
-To build on the legacy of great open-source personalized learning software like [Anki](https://apps.ankiweb.net/?download)! With [SRS](https://en.wikipedia.org/wiki/Spaced_repetition), Anki made **remembering things** into a personal choice - this is magical! - but the family of similar software has been slow to penerate into the mainstream.
+To boldly go where no heirarchical SRS++ dev stack has gone before!
 
-We hope to move this needle a little by various means:
+The overall vision is to simplify the production of top-tier interactive educational tech, and for this simplification to catylise increased participation and innovation. To this end, we have some broad goals:
 
-### SRS++
+__First__, we want to __improve accessibility and user onboarding__ by replacing complex config and [canonical death spirals](https://www.lesswrong.com/posts/7Q7DPSk4iGFJd8DRk/an-opinionated-guide-to-using-anki-correctly) with simpler *goals* + *time commitment* configuration. We want our apps to immediately maximize time-on-task for learners.
 
-First, we'd like to have **friendlier end-user experiences** by default. Traditional SRS implementations both require a substantial self-education onboarding, and the user experience is famously brittle against interruptions to a user's regular study regimine.
+This work is *complete-ish*.
 
-Second, we're broadening the scope from pure 'knowledge' retrieval to become a more general purpose **sk**ill-b**uild**ing engine. This involves both **richer interactive experiences** with [individual cards](/custom-cards), and also moving [beyond](/pedagogy) pure SRS protocols for navigating course content.
+__Second__, we'd like to apply the paradigm to a __broader set of skills__ than has traditionally been targeted. SRS is a proven paradigm for knowledge building, but we expect it can be taken from 'mere' retrieval into contexts with procedural and even creative aspects. The move is from a knowledge-builder to a **sk**ill-b**uilder**.
 
-Third, we hope that with flexible and friendly tooling, more people can fruitfully experiment in the space, bringing effective techniques like SRS, interleaving, and knowledge graphs to their own pet domains.
+This work is *complete-ish*.
 
-### And Beyond
+__Third__, we'd like to intelligently blend the SRS paradigm with heirarchical knowledge graphs, dynamic high-demensional dificulty sorting, and other bespoke tutoring intervtions. We'd like this blending to be responsive to revealed deficiencies in userbase progress through course materials, and we'd like these learning bottlenecks to be surfaced automaticlly. Further, we're interested in generalized A/B or marketplace mechanisms for pedagogical strategies over given curricula.
 
-We're also
+This work is *in progress*, with a dynamic high-dimensional difficuty sorting default pedagogy, and existing API definitions and data storage hooks for custom "ContentNavigationStrategies".
+
+__Finally__, we aim to specify a format to declare, package, and re-use educational content.
+
+This work is *in design phase*, but will lean on existing mechanisms for declaring contents of serialized courses.
 
 ## Tech Stack
 
@@ -38,6 +42,16 @@ Skuilder uses the following major dependencies:
 
 This is developer documentation, mainly intended for persons interested in building their own SRS / adaptive tutoring system.
 
+### Organization
+
+The __Learn__ section
+
+The __Do__ section is a guided tutorial that . Open it side-by-side with your terminal, IDE, or claude-code(-clone).
+
+<!--The __Reference__ section leans into the nitty-gritty details. You can probably leave it alone until either:
+- you're
+--->
+
 ### Caveat and Working Assumption
 
 This documentation is both *in-progess* and also not really intended to be fully comprehensive.
@@ -45,7 +59,6 @@ This documentation is both *in-progess* and also not really intended to be fully
 The project's modular components require a little cajoling to work together in different contexts (eg, static-site vs live backend, standalone course vs course development platform). This site focuses on **standalone** courses built for **static deployment** and browser-local user data, as described in the [quickstart](./quickstart) document.
 
 All "general purpose" information should be reliable, but specifics in the vein of "`foo` must be exported from `bar`" may apply to the specific assumed context.
-
 
 ## Contributing
 
