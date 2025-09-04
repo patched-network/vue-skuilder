@@ -112,27 +112,27 @@ export default defineConfig({
     sidebar: [
       {
         items: [
+          { text: 'Introduction', link: '/introduction' },
           {
             text: 'Learn',
             collapsed: false,
             items: [
-              { text: 'Introduction', link: '/introduction' },
               // { text: 'Main Study Loop', link: '/study-loop' },
-              { text: 'System Overview', link: '/architecture' },
-              { text: 'Data Layer', link: '/data-layer' },
-              { text: 'Application Layer', link: '/apps' },
-              { text: 'Pedagogy Defaults', link: '/pedagogy' },
+              { text: 'System Overview', link: '/learn/architecture' },
+              { text: 'Data Layer', link: '/learn/data-layer' },
+              { text: 'Application Layer', link: '/learn/apps' },
+              { text: 'Pedagogy Defaults', link: '/learn/pedagogy' },
             ],
           },
           {
             text: 'Do',
             collapsed: false,
             items: [
-              { text: 'Quickstart', link: '/quickstart' },
-              { text: 'Adding Content', link: '/studio-mode' },
-              { text: 'Creating Custom Cards', link: '/custom-cards' },
-              { text: 'Themes', link: '/theming' },
-              { text: 'Connect Agents [wip]', link: '/mcp' },
+              { text: 'Quickstart', link: '/do/quickstart' },
+              { text: 'Adding Content', link: '/do/studio-mode' },
+              { text: 'Creating Custom Cards', link: '/do/custom-cards' },
+              { text: 'Themes', link: '/do/theming' },
+              { text: 'Connect Agents [wip]', link: '/do/mcp' },
             ],
           },
         ],
