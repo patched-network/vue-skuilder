@@ -9,14 +9,18 @@ export class StaticCoursesDB implements CoursesDBInterface {
   constructor(private manifests: Record<string, StaticCourseManifest>) {}
 
   async getCourseConfig(courseId: string): Promise<CourseConfig> {
-    if (!this.manifests[courseId]) {
-      // throw new Error(`Course ${courseId} not found`);
-      logger.warn(`Course ${courseId} not found`);
-      return {} as CourseConfig; // Return empty config if course not found
+    const manifest = this.manifests[courseId];
+    if (!manifest) {
+      logger.warn(`Course manifest for ${courseId} not found`);
+      throw new Error(`Course ${courseId} not found`);
     }
 
-    // Would need to fetch the course config from static files
-    return {} as CourseConfig;
+    if (manifest.courseConfig) {
+      return manifest.courseConfig;
+    } else {
+      logger.warn(`Course config not found in manifest for course ${courseId}`);
+      throw new Error(`Course config not found for course ${courseId}`);
+    }
   }
 
   async getCourseList(): Promise<CourseConfig[]> {
