@@ -1,7 +1,7 @@
 <template>
   <div v-if="sessionPrepared" class="StudySession">
     <v-row align="center">
-      <h1 class="text-h3" v-if="courseNames[courseID]">{{ courseNames[courseID] }}:</h1>
+      <!-- <h1 class="text-h3" v-if="courseNames[courseID]">{{ courseNames[courseID] }}:</h1> -->
       <v-spacer></v-spacer>
       <v-progress-circular v-if="loading" color="primary" indeterminate size="32" width="4" />
     </v-row>
