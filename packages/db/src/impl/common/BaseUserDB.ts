@@ -761,17 +761,21 @@ Currently logged-in as ${this._username}.`
     } catch (e) {
       const reason = e as PouchError;
       if (reason.status === 404) {
-        const initCardHistory: CardHistory<T> = {
-          _id: cardHistoryID,
-          cardID: record.cardID,
-          courseID: record.courseID,
-          records: [record],
-          lapses: 0,
-          streak: 0,
-          bestInterval: 0,
-        };
-        const putResult = await this.writeDB.put<CardHistory<T>>(initCardHistory);
-        return { ...initCardHistory, _rev: putResult.rev };
+        try {
+          const initCardHistory: CardHistory<T> = {
+            _id: cardHistoryID,
+            cardID: record.cardID,
+            courseID: record.courseID,
+            records: [record],
+            lapses: 0,
+            streak: 0,
+            bestInterval: 0,
+          };
+          const putResult = await this.writeDB.put<CardHistory<T>>(initCardHistory);
+          return { ...initCardHistory, _rev: putResult.rev };
+        } catch (creationError) {
+          throw new Error(`Failed to create CardHistory for ${cardHistoryID}. Reason: ${creationError}`);
+        }
       } else {
         throw new Error(`putCardRecord failed because of:
   name:${reason.name}
