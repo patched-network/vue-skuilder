@@ -94,6 +94,10 @@ export default class UpdateQueue extends Loggable {
               logger.warn(`Conflict on update for doc ${id}, retry #${i + 1}`);
               await new Promise((res) => setTimeout(res, 50 * Math.random()));
               // continue to next iteration of the loop
+            } else if (e.name === 'not_found' && i === 0) {
+              // Document not present - throw to caller for initialization
+              logger.warn(`Update failed for ${id} - does not exist. Throwing to caller.`);
+              throw e; // Let caller handle
             } else {
               // Max retries reached or a non-conflict error
               delete this.inprogressUpdates[id];
