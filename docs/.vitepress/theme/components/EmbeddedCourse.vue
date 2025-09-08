@@ -194,6 +194,17 @@ const initializeSession = async () => {
     if (!dataLayer.value) {
       throw new Error('Data layer failed to initialize');
     }
+
+    // Auto-register for the course if not already registered
+    const userDB = dataLayer.value.getUserDB();
+    if (userDB) {
+      const regDoc = await userDB.getCourseRegistrationsDoc();
+      const isRegistered = regDoc.courses.some(c => c.courseID === props.courseId && c.status === 'active');
+      if (!isRegistered) {
+        console.log(`[EmbeddedCourse] Auto-registering user for course: ${props.courseId}`);
+        await userDB.registerForCourse(props.courseId);
+      }
+    }
     
     // Verify course access
     const courseDB = dataLayer.value.getCourseDB(props.courseId);
