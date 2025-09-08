@@ -132,17 +132,25 @@ export class StaticCourseDB implements CourseDBInterface {
     return { ok: true, id: cardId, rev: '1-static' };
   }
 
-  async getNewCards(limit?: number): Promise<StudySessionNewItem[]> {
-    // Simplified implementation - would need proper navigation strategy
-    const cardIds = await this.unpacker.queryByElo(1000, limit || 10);
-    return cardIds.map((cardId) => ({
-      status: 'new' as const,
-      qualifiedID: `${this.courseId}-${cardId}`,
-      cardID: cardId,
-      contentSourceType: 'course' as const,
-      contentSourceID: this.courseId,
-      courseID: this.courseId,
-    }));
+  async getNewCards(limit: number = 99): Promise<StudySessionNewItem[]> {
+    const activeCards = await this.userDB.getActiveCards();
+    return (
+      await this.getCardsCenteredAtELO(
+        { limit: limit, elo: 'user' },
+        (c: QualifiedCardID) => {
+          if (activeCards.some((ac) => c.cardID === ac.cardID)) {
+            return false;
+          } else {
+            return true;
+          }
+        }
+      )
+    ).map((c) => {
+      return {
+        ...c,
+        status: 'new',
+      };
+    });
   }
 
   async getCardsCenteredAtELO(
