@@ -87,9 +87,9 @@ import {
   HydratedCard,
   isQuestionRecord,
   isReview,
+  ResponseResult,
   SessionController,
   StudyContentSource,
-  StudySessionItem,
   StudySessionRecord,
   UserDBInterface,
 } from '@vue-skuilder/db';
@@ -373,113 +373,79 @@ export default defineComponent({
       console.log(`[StudySession] StudySession.processResponse is running...`);
       const cardHistory = this.logCardRecord(r);
 
-      if (isQuestionRecord(r)) {
-        console.log(`[StudySession] Question is ${r.isCorrect ? '' : 'in'}correct`);
-        if (r.isCorrect) {
-          try {
-            if (this.$refs.shadowWrapper) {
-              this.$refs.shadowWrapper.setAttribute(
-                'style',
-                `--r: ${255 * (1 - (r.performance as number))}; --g:${255}`
-              );
-              this.$refs.shadowWrapper.classList.add('correct');
-            }
-          } catch (e) {
-            // swallow error
-            console.warn(`[StudySession] Error setting shadowWrapper style: ${e}`);
-          }
+      // Get view constraints for response processing
+      let maxAttemptsPerView = 1;
+      let maxSessionViews = 1;
+      if (isQuestionView(this.$refs.cardViewer?.$refs.activeView)) {
+        const view = this.$refs.cardViewer.$refs.activeView;
+        maxAttemptsPerView = view.maxAttemptsPerView;
+        maxSessionViews = view.maxSessionViews;
+      }
+      const sessionViews = this.countCardViews(this.courseID, this.cardID);
 
-          if (this.sessionConfig.likesConfetti) {
-            confetti({
-              origin: {
-                y: 1,
-                x: 0.25 + 0.5 * Math.random(),
-              },
-              disableForReducedMotion: true,
-              angle: 60 + 60 * Math.random(),
-            });
-          }
+      // Process response through SessionController
+      const result: ResponseResult = await this.sessionController!.submitResponse(
+        r,
+        cardHistory,
+        this.userCourseRegDoc!,
+        this.currentCard,
+        this.courseID,
+        this.cardID,
+        maxAttemptsPerView,
+        maxSessionViews,
+        sessionViews
+      );
 
-          if (r.priorAttemps === 0) {
-            const item: StudySessionItem = {
-              ...this.currentCard.item,
-            };
-            this.loadCard(await this.sessionController!.nextCard('dismiss-success'));
+      // Handle UI feedback based on result
+      this.handleUIFeedback(result);
 
-            cardHistory.then((history: CardHistory<CardRecord>) => {
-              this.sessionController.services.srs.scheduleReview(history, item);
-              if (history.records.length === 1) {
-                this.sessionController!.services.elo.updateUserAndCardElo(
-                  0.5 + (r.performance as number) / 2,
-                  this.courseID,
-                  this.cardID,
-                  this.userCourseRegDoc!,
-                  this.currentCard
-                );
-              } else {
-                const k = Math.ceil(32 / history.records.length);
-                this.sessionController!.services.elo.updateUserAndCardElo(
-                  0.5 + (r.performance as number) / 2,
-                  this.courseID,
-                  this.cardID,
-                  this.userCourseRegDoc!,
-                  this.currentCard,
-                  k
-                );
-              }
-            });
-          } else {
-            this.loadCard(await this.sessionController!.nextCard('marked-failed'));
-          }
-        } else {
-          /* !r.isCorrect */
-          try {
-            if (this.$refs.shadowWrapper) {
-              this.$refs.shadowWrapper.classList.add('incorrect');
-            }
-          } catch (e) {
-            // swallow error
-            console.warn(`[StudySession] Error setting shadowWrapper style: ${e}`);
-          }
-
-          cardHistory.then((history: CardHistory<CardRecord>) => {
-            if (history.records.length !== 1 && r.priorAttemps === 0) {
-              this.sessionController!.services.elo.updateUserAndCardElo(
-                0,
-                this.courseID,
-                this.cardID,
-                this.userCourseRegDoc!,
-                this.currentCard
-              );
-            }
-          });
-
-          // [ ]  v3 version. Keep an eye on this -
-          if (isQuestionView(this.$refs.cardViewer?.$refs.activeView)) {
-            const view = this.$refs.cardViewer.$refs.activeView;
-
-            if (this.currentCard.records.length >= view.maxAttemptsPerView) {
-              const sessionViews: number = this.countCardViews(this.courseID, this.cardID);
-              if (sessionViews >= view.maxSessionViews) {
-                this.loadCard(await this.sessionController!.nextCard('dismiss-failed'));
-                this.sessionController!.services.elo.updateUserAndCardElo(
-                  0,
-                  this.courseID,
-                  this.cardID,
-                  this.userCourseRegDoc!,
-                  this.currentCard
-                );
-              } else {
-                this.loadCard(await this.sessionController!.nextCard('marked-failed'));
-              }
-            }
-          }
-        }
-      } else {
-        this.loadCard(await this.sessionController!.nextCard('dismiss-success'));
+      // Handle navigation based on result
+      if (result.shouldLoadNextCard) {
+        this.loadCard(await this.sessionController!.nextCard(result.nextCardAction));
       }
 
-      this.clearFeedbackShadow();
+      // Clear feedback shadow if requested
+      if (result.shouldClearFeedbackShadow) {
+        this.clearFeedbackShadow();
+      }
+    },
+
+    handleUIFeedback(result: ResponseResult) {
+      if (result.isCorrect) {
+        // Handle correct response UI
+        try {
+          if (this.$refs.shadowWrapper && result.performanceScore !== undefined) {
+            this.$refs.shadowWrapper.setAttribute(
+              'style',
+              `--r: ${255 * (1 - result.performanceScore)}; --g:${255}`
+            );
+            this.$refs.shadowWrapper.classList.add('correct');
+          }
+        } catch (e) {
+          console.warn(`[StudySession] Error setting shadowWrapper style: ${e}`);
+        }
+
+        // Show confetti for correct responses
+        if (this.sessionConfig.likesConfetti) {
+          confetti({
+            origin: {
+              y: 1,
+              x: 0.25 + 0.5 * Math.random(),
+            },
+            disableForReducedMotion: true,
+            angle: 60 + 60 * Math.random(),
+          });
+        }
+      } else {
+        // Handle incorrect response UI
+        try {
+          if (this.$refs.shadowWrapper) {
+            this.$refs.shadowWrapper.classList.add('incorrect');
+          }
+        } catch (e) {
+          console.warn(`[StudySession] Error setting shadowWrapper style: ${e}`);
+        }
+      }
     },
 
     clearFeedbackShadow() {
