@@ -1,5 +1,6 @@
 import { SrsService } from './services/SrsService';
 import { EloService } from './services/EloService';
+import { ResponseProcessor } from './services/ResponseProcessor';
 import {
   isReview,
   StudyContentSource,
@@ -91,9 +92,23 @@ import { DataLayerProvider } from '@db/core';
 
 export type SessionAction = 'dismiss-success' | 'dismiss-failed' | 'marked-failed' | 'dismiss-error';
 
+export interface ResponseResult {
+  // Navigation
+  nextCardAction: Exclude<SessionAction, 'dismiss-error'> | 'none';
+  shouldLoadNextCard: boolean;
+  
+  // UI Data (let view decide how to render)
+  isCorrect: boolean;
+  performanceScore?: number; // for shadow color calculation
+  
+  // Cleanup
+  shouldClearFeedbackShadow: boolean;
+}
+
 interface SessionServices {
   srs: SrsService;
   elo: EloService;
+  response: ResponseProcessor;
 }
 
 export class SessionController<TView = unknown> extends Loggable {
@@ -146,6 +161,10 @@ export class SessionController<TView = unknown> extends Loggable {
     this.services = {
       srs: new SrsService(dataLayer.getUserDB()),
       elo: new EloService(dataLayer, dataLayer.getUserDB()),
+      response: new ResponseProcessor(
+        new SrsService(dataLayer.getUserDB()),
+        new EloService(dataLayer, dataLayer.getUserDB())
+      ),
     };
 
     this.sources = sources;
