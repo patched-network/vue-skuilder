@@ -407,7 +407,7 @@ export default defineComponent({
             this.loadCard(await this.sessionController!.nextCard('dismiss-success'));
 
             cardHistory.then((history: CardHistory<CardRecord>) => {
-              this.scheduleReview(history, item);
+              this.sessionController.services.srs.scheduleReview(history, item);
               if (history.records.length === 1) {
                 this.updateUserAndCardElo(0.5 + (r.performance as number) / 2, this.courseID, this.cardID);
               } else {
@@ -524,25 +524,6 @@ export default defineComponent({
 
     async logCardRecord(r: CardRecord): Promise<CardHistory<CardRecord>> {
       return await this.user!.putCardRecord(r);
-    },
-
-    async scheduleReview(history: CardHistory<CardRecord>, item: StudySessionItem) {
-      const nextInterval = newInterval(this.$props.user, history);
-      const nextReviewTime = moment.utc().add(nextInterval, 'seconds');
-
-      if (isReview(item)) {
-        console.log(`[StudySession] Removing previously scheduled review for: ${item.cardID}`);
-        this.user!.removeScheduledCardReview(item.reviewID);
-      }
-
-      this.user!.scheduleCardReview({
-        user: this.user!.getUsername(),
-        course_id: history.courseID,
-        card_id: history.cardID,
-        time: nextReviewTime,
-        scheduledFor: item.contentSourceType,
-        schedulingAgentId: item.contentSourceID,
-      });
     },
 
     async loadCard(card: HydratedCard | null) {

@@ -1,3 +1,4 @@
+import { SrsService } from './services/SrsService';
 import {
   isReview,
   StudyContentSource,
@@ -87,8 +88,15 @@ class ItemQueue<T> {
 
 import { DataLayerProvider } from '@db/core';
 
+interface SessionServices {
+  srs: SrsService;
+}
+
 export class SessionController<TView = unknown> extends Loggable {
   _className = 'SessionController';
+
+  public services: SessionServices;
+
   private sources: StudyContentSource[];
   private dataLayer: DataLayerProvider;
   private getViewComponent: (viewId: string) => TView;
@@ -130,6 +138,10 @@ export class SessionController<TView = unknown> extends Loggable {
     getViewComponent: (viewId: string) => TView
   ) {
     super();
+
+    this.services = {
+      srs: new SrsService(dataLayer.getUserDB()),
+    };
 
     this.sources = sources;
     this.startTime = new Date();
