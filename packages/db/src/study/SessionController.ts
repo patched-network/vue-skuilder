@@ -88,6 +88,8 @@ class ItemQueue<T> {
 
 import { DataLayerProvider } from '@db/core';
 
+export type SessionAction = 'dismiss-success' | 'dismiss-failed' | 'marked-failed' | 'dismiss-error';
+
 interface SessionServices {
   srs: SrsService;
 }
@@ -360,13 +362,7 @@ export class SessionController<TView = unknown> extends Loggable {
     }
   }
 
-  public async nextCard(
-    action:
-      | 'dismiss-success'
-      | 'dismiss-failed'
-      | 'marked-failed'
-      | 'dismiss-error' = 'dismiss-success'
-  ): Promise<HydratedCard<TView> | null> {
+  public async nextCard(action: SessionAction = 'dismiss-success'): Promise<HydratedCard<TView> | null> {
     // dismiss (or sort to failedQ) the current card
     this.dismissCurrentCard(action);
 
@@ -397,13 +393,7 @@ export class SessionController<TView = unknown> extends Loggable {
     return card;
   }
 
-  private dismissCurrentCard(
-    action:
-      | 'dismiss-success'
-      | 'dismiss-failed'
-      | 'marked-failed'
-      | 'dismiss-error' = 'dismiss-success'
-  ) {
+  private dismissCurrentCard(action: SessionAction = 'dismiss-success') {
     if (this._currentCard) {
       // this.log(`Running dismissCurrentCard on ${this._currentCard!.qualifiedID}`);
       // if (action.includes('dismiss')) {

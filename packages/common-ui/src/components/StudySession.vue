@@ -65,35 +65,35 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, PropType, markRaw } from 'vue';
-import { isQuestionView } from '../composables/CompositionViewable';
-import { alertUser } from './SnackbarService';
+import { defineComponent, markRaw, PropType } from 'vue';
 import { ViewComponent } from '../composables';
-import SkMouseTrap from './SkMouseTrap.vue';
-import StudySessionTimer from './StudySessionTimer.vue';
+import { isQuestionView } from '../composables/CompositionViewable';
 import HeatMap from './HeatMap.vue';
+import SkMouseTrap from './SkMouseTrap.vue';
+import { alertUser } from './SnackbarService';
+import StudySessionTimer from './StudySessionTimer.vue';
 import CardViewer from './cardRendering/CardViewer.vue';
 
+import { CourseElo, Status, toCourseElo, ViewData } from '@vue-skuilder/common';
 import {
-  ContentSourceID,
-  getStudySource,
-  isReview,
-  StudyContentSource,
-  StudySessionItem,
-  docIsDeleted,
   CardHistory,
   CardRecord,
-  isQuestionRecord,
+  ClassroomDBInterface,
+  ContentSourceID,
   CourseRegistrationDoc,
   DataLayerProvider,
+  docIsDeleted,
+  getStudySource,
+  HydratedCard,
+  isQuestionRecord,
+  isReview,
+  SessionController,
+  StudyContentSource,
+  StudySessionItem,
+  StudySessionRecord,
   UserDBInterface,
-  ClassroomDBInterface,
 } from '@vue-skuilder/db';
-import { HydratedCard, SessionController, StudySessionRecord } from '@vue-skuilder/db';
-import { newInterval } from '@vue-skuilder/db';
-import { adjustCourseScores, CourseElo, toCourseElo, ViewData, Status } from '@vue-skuilder/common';
 import confetti from 'canvas-confetti';
-import moment from 'moment';
 
 import { StudySessionConfig } from './StudySession.types';
 
@@ -409,10 +409,23 @@ export default defineComponent({
             cardHistory.then((history: CardHistory<CardRecord>) => {
               this.sessionController.services.srs.scheduleReview(history, item);
               if (history.records.length === 1) {
-                this.updateUserAndCardElo(0.5 + (r.performance as number) / 2, this.courseID, this.cardID);
+                this.sessionController!.services.elo.updateUserAndCardElo(
+                  0.5 + (r.performance as number) / 2,
+                  this.courseID,
+                  this.cardID,
+                  this.userCourseRegDoc!,
+                  this.currentCard
+                );
               } else {
                 const k = Math.ceil(32 / history.records.length);
-                this.updateUserAndCardElo(0.5 + (r.performance as number) / 2, this.courseID, this.cardID, k);
+                this.sessionController!.services.elo.updateUserAndCardElo(
+                  0.5 + (r.performance as number) / 2,
+                  this.courseID,
+                  this.cardID,
+                  this.userCourseRegDoc!,
+                  this.currentCard,
+                  k
+                );
               }
             });
           } else {
@@ -431,7 +444,13 @@ export default defineComponent({
 
           cardHistory.then((history: CardHistory<CardRecord>) => {
             if (history.records.length !== 1 && r.priorAttemps === 0) {
-              this.updateUserAndCardElo(0, this.courseID, this.cardID);
+              this.sessionController!.services.elo.updateUserAndCardElo(
+                0,
+                this.courseID,
+                this.cardID,
+                this.userCourseRegDoc!,
+                this.currentCard
+              );
             }
           });
 
@@ -443,7 +462,13 @@ export default defineComponent({
               const sessionViews: number = this.countCardViews(this.courseID, this.cardID);
               if (sessionViews >= view.maxSessionViews) {
                 this.loadCard(await this.sessionController!.nextCard('dismiss-failed'));
-                this.updateUserAndCardElo(0, this.courseID, this.cardID);
+                this.sessionController!.services.elo.updateUserAndCardElo(
+                  0,
+                  this.courseID,
+                  this.cardID,
+                  this.userCourseRegDoc!,
+                  this.currentCard
+                );
               } else {
                 this.loadCard(await this.sessionController!.nextCard('marked-failed'));
               }
@@ -455,58 +480,6 @@ export default defineComponent({
       }
 
       this.clearFeedbackShadow();
-    },
-
-    async updateUserAndCardElo(userScore: number, course_id: string, card_id: string, k?: number) {
-      if (k) {
-        console.warn(`k value interpretation not currently implemented`);
-      }
-      const courseDB = this.dataLayer.getCourseDB(this.currentCard.card.course_id);
-      const userElo = toCourseElo(this.userCourseRegDoc!.courses.find((c) => c.courseID === course_id)!.elo);
-      const cardElo = (await courseDB.getCardEloData([this.currentCard.card.card_id]))[0];
-
-      if (cardElo && userElo) {
-        const eloUpdate = adjustCourseScores(userElo, cardElo, userScore);
-        this.userCourseRegDoc!.courses.find((c) => c.courseID === course_id)!.elo = eloUpdate.userElo;
-
-        const results = await Promise.allSettled([
-          this.user!.updateUserElo(course_id, eloUpdate.userElo),
-          courseDB.updateCardElo(card_id, eloUpdate.cardElo),
-        ]);
-
-        // Check the results of each operation
-        const userEloStatus = results[0].status === 'fulfilled';
-        const cardEloStatus = results[1].status === 'fulfilled';
-
-        if (userEloStatus && cardEloStatus) {
-          const user = results[0].value;
-          const card = results[1].value;
-
-          if (user.ok && card && card.ok) {
-            console.log(
-              `[StudySession] Updated ELOS:
-              \tUser: ${JSON.stringify(eloUpdate.userElo)})
-              \tCard: ${JSON.stringify(eloUpdate.cardElo)})
-              `
-            );
-          }
-        } else {
-          // Log which operations succeeded and which failed
-          console.log(
-            `[StudySession] Partial ELO update:
-            \tUser ELO update: ${userEloStatus ? 'SUCCESS' : 'FAILED'}
-            \tCard ELO update: ${cardEloStatus ? 'SUCCESS' : 'FAILED'}`
-          );
-
-          if (!userEloStatus && results[0].status === 'rejected') {
-            console.error('[StudySession] User ELO update error:', results[0].reason);
-          }
-
-          if (!cardEloStatus && results[1].status === 'rejected') {
-            console.error('[StudySession] Card ELO update error:', results[1].reason);
-          }
-        }
-      }
     },
 
     clearFeedbackShadow() {
