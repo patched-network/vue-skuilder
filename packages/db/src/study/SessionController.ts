@@ -1,4 +1,5 @@
 import { SrsService } from './services/SrsService';
+import { EloService } from './services/EloService';
 import {
   isReview,
   StudyContentSource,
@@ -92,6 +93,7 @@ export type SessionAction = 'dismiss-success' | 'dismiss-failed' | 'marked-faile
 
 interface SessionServices {
   srs: SrsService;
+  elo: EloService;
 }
 
 export class SessionController<TView = unknown> extends Loggable {
@@ -143,6 +145,7 @@ export class SessionController<TView = unknown> extends Loggable {
 
     this.services = {
       srs: new SrsService(dataLayer.getUserDB()),
+      elo: new EloService(dataLayer, dataLayer.getUserDB()),
     };
 
     this.sources = sources;
