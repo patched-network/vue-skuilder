@@ -11,10 +11,10 @@
     <div v-if="sessionFinished" class="text-h4">
       <p>Study session finished! Great job!</p>
       <p v-if="sessionController">{{ sessionController.report }}</p>
-      <p>
+      <!-- <p>
         Start <a @click="$emit('session-finished')">another study session</a>, or try
         <router-link :to="`/edit/${courseID}`">adding some new content</router-link> to challenge yourself and others!
-      </p>
+      </p> -->
       <heat-map :activity-records-getter="() => user.getActivityRecords()" />
     </div>
 
@@ -371,7 +371,10 @@ export default defineComponent({
       this.currentCard.records.push(r);
 
       console.log(`[StudySession] StudySession.processResponse is running...`);
+      // DEBUG: Added logging to track hanging issue - can be removed if issue resolved
+      // console.log(`[StudySession] About to call logCardRecord...`);
       const cardHistory = this.logCardRecord(r);
+      // console.log(`[StudySession] logCardRecord called, cardHistory promise created...`);
 
       // Get view constraints for response processing
       let maxAttemptsPerView = 1;
@@ -384,6 +387,8 @@ export default defineComponent({
       const sessionViews = this.countCardViews(this.courseID, this.cardID);
 
       // Process response through SessionController
+      // DEBUG: Added logging to track hanging issue - can be removed if issue resolved
+      // console.log(`[StudySession] About to call submitResponse...`);
       const result: ResponseResult = await this.sessionController!.submitResponse(
         r,
         cardHistory,
@@ -395,6 +400,8 @@ export default defineComponent({
         maxSessionViews,
         sessionViews
       );
+      // DEBUG: Added logging to track hanging issue - can be removed if issue resolved
+      // console.log(`[StudySession] submitResponse completed, result:`, result);
 
       // Handle UI feedback based on result
       this.handleUIFeedback(result);
@@ -415,10 +422,7 @@ export default defineComponent({
         // Handle correct response UI
         try {
           if (this.$refs.shadowWrapper && result.performanceScore !== undefined) {
-            this.$refs.shadowWrapper.setAttribute(
-              'style',
-              `--r: ${255 * (1 - result.performanceScore)}; --g:${255}`
-            );
+            this.$refs.shadowWrapper.setAttribute('style', `--r: ${255 * (1 - result.performanceScore)}; --g:${255}`);
             this.$refs.shadowWrapper.classList.add('correct');
           }
         } catch (e) {
@@ -462,7 +466,11 @@ export default defineComponent({
     },
 
     async logCardRecord(r: CardRecord): Promise<CardHistory<CardRecord>> {
-      return await this.user!.putCardRecord(r);
+      // DEBUG: Added logging to track hanging issue - can be removed if issue resolved
+      // console.log(`[StudySession] About to call user.putCardRecord...`);
+      const result = await this.user!.putCardRecord(r);
+      // console.log(`[StudySession] user.putCardRecord completed`);
+      return result;
     },
 
     async loadCard(card: HydratedCard | null) {
