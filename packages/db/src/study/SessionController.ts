@@ -1,6 +1,8 @@
 import { SrsService } from './services/SrsService';
 import { EloService } from './services/EloService';
 import { ResponseProcessor } from './services/ResponseProcessor';
+import { CardHydrationService, HydratedCard } from './services/CardHydrationService';
+import { ItemQueue } from './ItemQueue';
 import {
   isReview,
   StudyContentSource,
@@ -13,7 +15,6 @@ import {
 import { CardRecord, CardHistory, CourseRegistrationDoc } from '@db/core';
 import { Loggable } from '@db/util';
 import { ScheduledCard } from '@db/core/types/user';
-import { ViewData } from '@vue-skuilder/common';
 
 function randomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -27,76 +28,6 @@ export interface StudySessionRecord {
   };
   item: StudySessionItem;
   records: CardRecord[];
-}
-
-export interface HydratedCard<TView = unknown> {
-  item: StudySessionItem;
-  view: TView;
-  data: ViewData[];
-}
-
-import {
-  CardData,
-  DisplayableData,
-  displayableDataToViewData,
-  isCourseElo,
-  toCourseElo,
-} from '@vue-skuilder/common';
-
-class ItemQueue<T> {
-  private q: T[] = [];
-  private seenCardIds: string[] = [];
-  private _dequeueCount: number = 0;
-  public get dequeueCount(): number {
-    return this._dequeueCount;
-  }
-
-  public add(item: T, cardId: string) {
-    if (this.seenCardIds.find((d) => d === cardId)) {
-      return; // do not re-add a card to the same queue
-    }
-
-    this.seenCardIds.push(cardId);
-    this.q.push(item);
-  }
-  public addAll(items: T[], cardIdExtractor: (item: T) => string) {
-    items.forEach((i) => this.add(i, cardIdExtractor(i)));
-  }
-  public get length() {
-    return this.q.length;
-  }
-  public peek(index: number): T {
-    return this.q[index];
-  }
-
-  public dequeue(cardIdExtractor?: (item: T) => string): T | null {
-    if (this.q.length !== 0) {
-      this._dequeueCount++;
-      const item = this.q.splice(0, 1)[0];
-      
-      // Remove cardId from seenCardIds when dequeuing to allow re-queueing
-      if (cardIdExtractor) {
-        const cardId = cardIdExtractor(item);
-        const index = this.seenCardIds.indexOf(cardId);
-        if (index > -1) {
-          this.seenCardIds.splice(index, 1);
-        }
-      }
-      
-      return item;
-    } else {
-      return null;
-    }
-  }
-
-  public get toString(): string {
-    return (
-      `${typeof this.q[0]}:\n` +
-      this.q
-        .map((i) => `\t${(i as any).courseID}+${(i as any).cardID}: ${(i as any).status}`)
-        .join('\n')
-    );
-  }
 }
 
 import { DataLayerProvider } from '@db/core';
@@ -130,10 +61,10 @@ export class SessionController<TView = unknown> extends Loggable {
   public services: SessionServices;
   private srsService: SrsService;
   private eloService: EloService;
+  private hydrationService: CardHydrationService<TView>;
 
   private sources: StudyContentSource[];
-  private dataLayer: DataLayerProvider;
-  private getViewComponent: (viewId: string) => TView;
+  // dataLayer and getViewComponent now injected into CardHydrationService
   private _sessionRecord: StudySessionRecord[] = [];
   public set sessionRecord(r: StudySessionRecord[]) {
     this._sessionRecord = r;
@@ -146,12 +77,6 @@ export class SessionController<TView = unknown> extends Loggable {
   private newQ: ItemQueue<StudySessionNewItem> = new ItemQueue<StudySessionNewItem>();
   private failedQ: ItemQueue<StudySessionFailedItem> = new ItemQueue<StudySessionFailedItem>();
   // END   Session card stores
-
-  // Card hydration data
-  private hydratedQ: ItemQueue<HydratedCard<TView>> = new ItemQueue<HydratedCard<TView>>();
-  private failedCardCache: Map<string, HydratedCard<TView>> = new Map();
-  private hydration_in_progress: boolean = false;
-  // END   Card hydration data
 
   private startTime: Date;
   private endTime: Date;
@@ -182,6 +107,14 @@ export class SessionController<TView = unknown> extends Loggable {
     this.srsService = new SrsService(dataLayer.getUserDB());
     this.eloService = new EloService(dataLayer, dataLayer.getUserDB());
 
+    this.hydrationService = new CardHydrationService<TView>(
+      getViewComponent,
+      (courseId: string) => dataLayer.getCourseDB(courseId),
+      () => this._selectNextItemToHydrate(),
+      (item: StudySessionItem) => this.removeItemFromQueue(item),
+      () => this.hasAvailableCards()
+    );
+
     this.services = {
       response: new ResponseProcessor(this.srsService, this.eloService),
     };
@@ -190,8 +123,6 @@ export class SessionController<TView = unknown> extends Loggable {
     this.startTime = new Date();
     this._secondsRemaining = time;
     this.endTime = new Date(this.startTime.valueOf() + 1000 * this._secondsRemaining);
-    this.dataLayer = dataLayer;
-    this.getViewComponent = getViewComponent;
 
     this.log(`Session constructed:
     startTime: ${this.startTime}
@@ -255,7 +186,7 @@ export class SessionController<TView = unknown> extends Loggable {
       this.error('Error preparing study session:', e);
     }
 
-    await this._fillHydratedQueue();
+    await this.hydrationService.ensureHydratedCards();
 
     this._intervalHandle = setInterval(() => {
       this.tick();
@@ -414,18 +345,15 @@ export class SessionController<TView = unknown> extends Loggable {
       return null;
     }
 
-    let card = this.hydratedQ.dequeue((item) => item.item.cardID);
+    let card = this.hydrationService.dequeueHydratedCard();
 
     // If no hydrated card but source cards available, wait for hydration
     if (!card && this.hasAvailableCards()) {
-      void this._fillHydratedQueue(); // Start hydration in background
-      card = await this.nextHydratedCard(); // Wait for first available card
+      card = await this.hydrationService.waitForHydratedCard();
     }
 
     // Trigger background hydration to maintain cache (async, non-blocking)
-    if (this.hydratedQ.length < 3) {
-      void this._fillHydratedQueue();
-    }
+    await this.hydrationService.ensureHydratedCards();
 
     if (card) {
       this._currentCard = card;
@@ -493,7 +421,7 @@ export class SessionController<TView = unknown> extends Loggable {
       if (action === 'dismiss-success') {
         // schedule a review - currently done in Study.vue
       } else if (action === 'marked-failed') {
-        this.failedCardCache.set(this._currentCard.item.cardID, this._currentCard);
+        this.hydrationService.cacheFailedCard(this._currentCard);
 
         let failedItem: StudySessionFailedItem;
 
@@ -529,79 +457,16 @@ export class SessionController<TView = unknown> extends Loggable {
     return this.reviewQ.length > 0 || this.newQ.length > 0 || this.failedQ.length > 0;
   }
 
-  private async nextHydratedCard(): Promise<HydratedCard<TView> | null> {
-    // Wait for a card to become available in hydratedQ
-    while (this.hydratedQ.length === 0 && this.hasAvailableCards()) {
-      await new Promise((resolve) => setTimeout(resolve, 25)); // Short polling interval
+  /**
+   * Helper method for CardHydrationService to remove items from appropriate queue.
+   */
+  private removeItemFromQueue(item: StudySessionItem): void {
+    if (this.reviewQ.peek(0) === item) {
+      this.reviewQ.dequeue((queueItem) => queueItem.cardID);
+    } else if (this.newQ.peek(0) === item) {
+      this.newQ.dequeue((queueItem) => queueItem.cardID);
+    } else {
+      this.failedQ.dequeue((queueItem) => queueItem.cardID);
     }
-    return this.hydratedQ.dequeue((item) => item.item.cardID);
-  }
-
-  private async _fillHydratedQueue() {
-    if (this.hydration_in_progress) {
-      return; // Prevent concurrent hydration
-    }
-
-    const BUFFER_SIZE = 5;
-    this.hydration_in_progress = true;
-
-    while (this.hydratedQ.length < BUFFER_SIZE) {
-      const nextItem = this._selectNextItemToHydrate();
-      if (!nextItem) {
-        this.hydration_in_progress = false;
-        return; // No more cards to hydrate
-      }
-
-      try {
-        // If the card is a failed card, it may be in the cache
-        if (this.failedCardCache.has(nextItem.cardID)) {
-          const cachedCard = this.failedCardCache.get(nextItem.cardID)!;
-          this.hydratedQ.add(cachedCard, cachedCard.item.cardID);
-          this.failedCardCache.delete(nextItem.cardID);
-        } else {
-          const cardData = await this.dataLayer
-            .getCourseDB(nextItem.courseID)
-            .getCourseDoc<CardData>(nextItem.cardID);
-
-          if (!isCourseElo(cardData.elo)) {
-            cardData.elo = toCourseElo(cardData.elo);
-          }
-
-          const view = this.getViewComponent(cardData.id_view);
-          const dataDocs = await Promise.all(
-            cardData.id_displayable_data.map((id: string) =>
-              this.dataLayer.getCourseDB(nextItem.courseID).getCourseDoc<DisplayableData>(id, {
-                attachments: true,
-                binary: true,
-              })
-            )
-          );
-
-          const data = dataDocs.map(displayableDataToViewData).reverse();
-
-          this.hydratedQ.add(
-            {
-              item: nextItem,
-              view,
-              data,
-            },
-            nextItem.cardID
-          );
-        }
-      } catch (e) {
-        this.error(`Error hydrating card ${nextItem.cardID}:`, e);
-      } finally {
-        // Remove the item from the original queue, regardless of success/failure/cache
-        if (this.reviewQ.peek(0) === nextItem) {
-          this.reviewQ.dequeue((item) => item.cardID);
-        } else if (this.newQ.peek(0) === nextItem) {
-          this.newQ.dequeue((item) => item.cardID);
-        } else {
-          this.failedQ.dequeue((item) => item.cardID);
-        }
-      }
-    }
-
-    this.hydration_in_progress = false;
   }
 }
