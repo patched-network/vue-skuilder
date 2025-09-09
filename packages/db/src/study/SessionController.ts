@@ -69,10 +69,21 @@ class ItemQueue<T> {
     return this.q[index];
   }
 
-  public dequeue(): T | null {
+  public dequeue(cardIdExtractor?: (item: T) => string): T | null {
     if (this.q.length !== 0) {
       this._dequeueCount++;
-      return this.q.splice(0, 1)[0];
+      const item = this.q.splice(0, 1)[0];
+      
+      // Remove cardId from seenCardIds when dequeuing to allow re-queueing
+      if (cardIdExtractor) {
+        const cardId = cardIdExtractor(item);
+        const index = this.seenCardIds.indexOf(cardId);
+        if (index > -1) {
+          this.seenCardIds.splice(index, 1);
+        }
+      }
+      
+      return item;
     } else {
       return null;
     }
@@ -403,7 +414,7 @@ export class SessionController<TView = unknown> extends Loggable {
       return null;
     }
 
-    let card = this.hydratedQ.dequeue();
+    let card = this.hydratedQ.dequeue((item) => item.item.cardID);
 
     // If no hydrated card but source cards available, wait for hydration
     if (!card && this.hasAvailableCards()) {
@@ -523,7 +534,7 @@ export class SessionController<TView = unknown> extends Loggable {
     while (this.hydratedQ.length === 0 && this.hasAvailableCards()) {
       await new Promise((resolve) => setTimeout(resolve, 25)); // Short polling interval
     }
-    return this.hydratedQ.dequeue();
+    return this.hydratedQ.dequeue((item) => item.item.cardID);
   }
 
   private async _fillHydratedQueue() {
@@ -582,11 +593,11 @@ export class SessionController<TView = unknown> extends Loggable {
       } finally {
         // Remove the item from the original queue, regardless of success/failure/cache
         if (this.reviewQ.peek(0) === nextItem) {
-          this.reviewQ.dequeue();
+          this.reviewQ.dequeue((item) => item.cardID);
         } else if (this.newQ.peek(0) === nextItem) {
-          this.newQ.dequeue();
+          this.newQ.dequeue((item) => item.cardID);
         } else {
-          this.failedQ.dequeue();
+          this.failedQ.dequeue((item) => item.cardID);
         }
       }
     }
