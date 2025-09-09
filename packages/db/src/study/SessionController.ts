@@ -101,7 +101,8 @@ export class SessionController<TView = unknown> extends Loggable {
   private newQ: ItemQueue<StudySessionNewItem> = new ItemQueue<StudySessionNewItem>();
   private failedQ: ItemQueue<StudySessionFailedItem> = new ItemQueue<StudySessionFailedItem>();
   private hydratedQ: ItemQueue<HydratedCard<TView>> = new ItemQueue<HydratedCard<TView>>();
-  private _currentCard: StudySessionItem | null = null;
+  private failedCardCache: Map<string, HydratedCard<TView>> = new Map();
+  private _currentCard: HydratedCard<TView> | null = null;
   private hydration_in_progress: boolean = false;
 
   private startTime: Date;
@@ -146,7 +147,7 @@ export class SessionController<TView = unknown> extends Loggable {
     this._secondsRemaining = Math.floor((this.endTime.valueOf() - Date.now()) / 1000);
     // this.log(this.secondsRemaining);
 
-    if (this._secondsRemaining === 0) {
+    if (this._secondsRemaining <= 0) {
       clearInterval(this._intervalHandle);
     }
   }
@@ -275,13 +276,7 @@ export class SessionController<TView = unknown> extends Loggable {
     }
   }
 
-  private _selectNextItemToHydrate(
-    action:
-      | 'dismiss-success'
-      | 'dismiss-failed'
-      | 'marked-failed'
-      | 'dismiss-error' = 'dismiss-success'
-  ): StudySessionItem | null {
+  private _selectNextItemToHydrate(): StudySessionItem | null {
     const choice = Math.random();
     let newBound: number = 0.1;
     let reviewBound: number = 0.75;
@@ -333,12 +328,6 @@ export class SessionController<TView = unknown> extends Loggable {
       reviewBound = 0.1;
     }
 
-    // prevent (unless no other option available) re-display of
-    // most recent card
-    if (this.failedQ.length === 1 && action === 'marked-failed') {
-      reviewBound = 1;
-    }
-
     // exclude possibility of drawing from empty queues
     if (this.failedQ.length === 0) {
       reviewBound = 1;
@@ -369,6 +358,11 @@ export class SessionController<TView = unknown> extends Loggable {
     // dismiss (or sort to failedQ) the current card
     this.dismissCurrentCard(action);
 
+    if (this._secondsRemaining <= 0 && this.failedQ.length === 0) {
+      this._currentCard = null;
+      return null;
+    }
+
     let card = this.hydratedQ.dequeue();
 
     // If no hydrated card but source cards available, wait for hydration
@@ -380,6 +374,12 @@ export class SessionController<TView = unknown> extends Loggable {
     // Trigger background hydration to maintain cache (async, non-blocking)
     if (this.hydratedQ.length < 3) {
       void this._fillHydratedQueue();
+    }
+
+    if (card) {
+      this._currentCard = card;
+    } else {
+      this._currentCard = null;
     }
 
     return card;
@@ -406,23 +406,25 @@ export class SessionController<TView = unknown> extends Loggable {
       if (action === 'dismiss-success') {
         // schedule a review - currently done in Study.vue
       } else if (action === 'marked-failed') {
+        this.failedCardCache.set(this._currentCard.item.cardID, this._currentCard);
+
         let failedItem: StudySessionFailedItem;
 
-        if (isReview(this._currentCard)) {
+        if (isReview(this._currentCard.item)) {
           failedItem = {
-            cardID: this._currentCard.cardID,
-            courseID: this._currentCard.courseID,
-            contentSourceID: this._currentCard.contentSourceID,
-            contentSourceType: this._currentCard.contentSourceType,
+            cardID: this._currentCard.item.cardID,
+            courseID: this._currentCard.item.courseID,
+            contentSourceID: this._currentCard.item.contentSourceID,
+            contentSourceType: this._currentCard.item.contentSourceType,
             status: 'failed-review',
-            reviewID: this._currentCard.reviewID,
+            reviewID: this._currentCard.item.reviewID,
           };
         } else {
           failedItem = {
-            cardID: this._currentCard.cardID,
-            courseID: this._currentCard.courseID,
-            contentSourceID: this._currentCard.contentSourceID,
-            contentSourceType: this._currentCard.contentSourceType,
+            cardID: this._currentCard.item.cardID,
+            courseID: this._currentCard.item.courseID,
+            contentSourceID: this._currentCard.item.contentSourceID,
+            contentSourceType: this._currentCard.item.contentSourceType,
             status: 'failed-new',
           };
         }
@@ -459,50 +461,50 @@ export class SessionController<TView = unknown> extends Loggable {
     while (this.hydratedQ.length < BUFFER_SIZE) {
       const nextItem = this._selectNextItemToHydrate();
       if (!nextItem) {
+        this.hydration_in_progress = false;
         return; // No more cards to hydrate
       }
 
       try {
-        const cardData = await this.dataLayer
-          .getCourseDB(nextItem.courseID)
-          .getCourseDoc<CardData>(nextItem.cardID);
-
-        if (!isCourseElo(cardData.elo)) {
-          cardData.elo = toCourseElo(cardData.elo);
-        }
-
-        const view = this.getViewComponent(cardData.id_view);
-        const dataDocs = await Promise.all(
-          cardData.id_displayable_data.map((id: string) =>
-            this.dataLayer.getCourseDB(nextItem.courseID).getCourseDoc<DisplayableData>(id, {
-              attachments: true,
-              binary: true,
-            })
-          )
-        );
-
-        const data = dataDocs.map(displayableDataToViewData).reverse();
-
-        this.hydratedQ.add(
-          {
-            item: nextItem,
-            view,
-            data,
-          },
-          nextItem.cardID
-        );
-
-        // Remove the item from the original queue
-        if (this.reviewQ.peek(0) === nextItem) {
-          this.reviewQ.dequeue();
-        } else if (this.newQ.peek(0) === nextItem) {
-          this.newQ.dequeue();
+        // If the card is a failed card, it may be in the cache
+        if (this.failedCardCache.has(nextItem.cardID)) {
+          const cachedCard = this.failedCardCache.get(nextItem.cardID)!;
+          this.hydratedQ.add(cachedCard, cachedCard.item.cardID);
+          this.failedCardCache.delete(nextItem.cardID);
         } else {
-          this.failedQ.dequeue();
+          const cardData = await this.dataLayer
+            .getCourseDB(nextItem.courseID)
+            .getCourseDoc<CardData>(nextItem.cardID);
+
+          if (!isCourseElo(cardData.elo)) {
+            cardData.elo = toCourseElo(cardData.elo);
+          }
+
+          const view = this.getViewComponent(cardData.id_view);
+          const dataDocs = await Promise.all(
+            cardData.id_displayable_data.map((id: string) =>
+              this.dataLayer.getCourseDB(nextItem.courseID).getCourseDoc<DisplayableData>(id, {
+                attachments: true,
+                binary: true,
+              })
+            )
+          );
+
+          const data = dataDocs.map(displayableDataToViewData).reverse();
+
+          this.hydratedQ.add(
+            {
+              item: nextItem,
+              view,
+              data,
+            },
+            nextItem.cardID
+          );
         }
       } catch (e) {
         this.error(`Error hydrating card ${nextItem.cardID}:`, e);
-        // Remove the failed item from the queue
+      } finally {
+        // Remove the item from the original queue, regardless of success/failure/cache
         if (this.reviewQ.peek(0) === nextItem) {
           this.reviewQ.dequeue();
         } else if (this.newQ.peek(0) === nextItem) {
