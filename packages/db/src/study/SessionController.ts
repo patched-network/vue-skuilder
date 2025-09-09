@@ -90,17 +90,21 @@ class ItemQueue<T> {
 
 import { DataLayerProvider } from '@db/core';
 
-export type SessionAction = 'dismiss-success' | 'dismiss-failed' | 'marked-failed' | 'dismiss-error';
+export type SessionAction =
+  | 'dismiss-success'
+  | 'dismiss-failed'
+  | 'marked-failed'
+  | 'dismiss-error';
 
 export interface ResponseResult {
   // Navigation
   nextCardAction: Exclude<SessionAction, 'dismiss-error'> | 'none';
   shouldLoadNextCard: boolean;
-  
+
   // UI Data (let view decide how to render)
   isCorrect: boolean;
   performanceScore?: number; // for shadow color calculation
-  
+
   // Cleanup
   shouldClearFeedbackShadow: boolean;
 }
@@ -124,13 +128,19 @@ export class SessionController<TView = unknown> extends Loggable {
     this._sessionRecord = r;
   }
 
+  // Session card stores
+  private _currentCard: HydratedCard<TView> | null = null;
+
   private reviewQ: ItemQueue<StudySessionReviewItem> = new ItemQueue<StudySessionReviewItem>();
   private newQ: ItemQueue<StudySessionNewItem> = new ItemQueue<StudySessionNewItem>();
   private failedQ: ItemQueue<StudySessionFailedItem> = new ItemQueue<StudySessionFailedItem>();
+  // END   Session card stores
+
+  // Card hydration data
   private hydratedQ: ItemQueue<HydratedCard<TView>> = new ItemQueue<HydratedCard<TView>>();
   private failedCardCache: Map<string, HydratedCard<TView>> = new Map();
-  private _currentCard: HydratedCard<TView> | null = null;
   private hydration_in_progress: boolean = false;
+  // END   Card hydration data
 
   private startTime: Date;
   private endTime: Date;
@@ -160,7 +170,7 @@ export class SessionController<TView = unknown> extends Loggable {
 
     this.srsService = new SrsService(dataLayer.getUserDB());
     this.eloService = new EloService(dataLayer, dataLayer.getUserDB());
-    
+
     this.services = {
       response: new ResponseProcessor(this.srsService, this.eloService),
     };
@@ -382,7 +392,9 @@ export class SessionController<TView = unknown> extends Loggable {
     }
   }
 
-  public async nextCard(action: SessionAction = 'dismiss-success'): Promise<HydratedCard<TView> | null> {
+  public async nextCard(
+    action: SessionAction = 'dismiss-success'
+  ): Promise<HydratedCard<TView> | null> {
     // dismiss (or sort to failedQ) the current card
     this.dismissCurrentCard(action);
 
