@@ -146,7 +146,7 @@ export class SessionController<TView = unknown> extends Loggable {
     this._secondsRemaining = Math.floor((this.endTime.valueOf() - Date.now()) / 1000);
     // this.log(this.secondsRemaining);
 
-    if (this._secondsRemaining === 0) {
+    if (this._secondsRemaining <= 0) {
       clearInterval(this._intervalHandle);
     }
   }
@@ -275,13 +275,7 @@ export class SessionController<TView = unknown> extends Loggable {
     }
   }
 
-  private _selectNextItemToHydrate(
-    action:
-      | 'dismiss-success'
-      | 'dismiss-failed'
-      | 'marked-failed'
-      | 'dismiss-error' = 'dismiss-success'
-  ): StudySessionItem | null {
+  private _selectNextItemToHydrate(): StudySessionItem | null {
     const choice = Math.random();
     let newBound: number = 0.1;
     let reviewBound: number = 0.75;
@@ -333,12 +327,6 @@ export class SessionController<TView = unknown> extends Loggable {
       reviewBound = 0.1;
     }
 
-    // prevent (unless no other option available) re-display of
-    // most recent card
-    if (this.failedQ.length === 1 && action === 'marked-failed') {
-      reviewBound = 1;
-    }
-
     // exclude possibility of drawing from empty queues
     if (this.failedQ.length === 0) {
       reviewBound = 1;
@@ -369,6 +357,11 @@ export class SessionController<TView = unknown> extends Loggable {
     // dismiss (or sort to failedQ) the current card
     this.dismissCurrentCard(action);
 
+    if (this._secondsRemaining <= 0 && this.failedQ.length === 0) {
+      this._currentCard = null;
+      return null;
+    }
+
     let card = this.hydratedQ.dequeue();
 
     // If no hydrated card but source cards available, wait for hydration
@@ -380,6 +373,12 @@ export class SessionController<TView = unknown> extends Loggable {
     // Trigger background hydration to maintain cache (async, non-blocking)
     if (this.hydratedQ.length < 3) {
       void this._fillHydratedQueue();
+    }
+
+    if (card) {
+      this._currentCard = card.item;
+    } else {
+      this._currentCard = null;
     }
 
     return card;
