@@ -44,9 +44,10 @@ export default class UpdateQueue extends Loggable {
   ): Promise<T & PouchDB.Core.GetMeta & PouchDB.Core.RevisionIdMeta> {
     logger.debug(`Applying updates on doc: ${id}`);
     if (this.inprogressUpdates[id]) {
-      // console.log(`Updates in progress...`);
-      await this.readDB.info(); // stall for a round trip
-      // console.log(`Retrying...`);
+      // Poll instead of recursing to avoid infinite recursion
+      while (this.inprogressUpdates[id]) {
+        await new Promise(resolve => setTimeout(resolve, Math.random() * 50));
+      }
       return this.applyUpdates<T>(id);
     } else {
       if (this.pendingUpdates[id] && this.pendingUpdates[id].length > 0) {

@@ -11,10 +11,10 @@
     <div v-if="sessionFinished" class="text-h4">
       <p>Study session finished! Great job!</p>
       <p v-if="sessionController">{{ sessionController.report }}</p>
-      <p>
+      <!-- <p>
         Start <a @click="$emit('session-finished')">another study session</a>, or try
         <router-link :to="`/edit/${courseID}`">adding some new content</router-link> to challenge yourself and others!
-      </p>
+      </p> -->
       <heat-map :activity-records-getter="() => user.getActivityRecords()" />
     </div>
 
@@ -65,35 +65,35 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, PropType, markRaw } from 'vue';
-import { isQuestionView } from '../composables/CompositionViewable';
-import { alertUser } from './SnackbarService';
+import { defineComponent, markRaw, PropType } from 'vue';
 import { ViewComponent } from '../composables';
-import SkMouseTrap from './SkMouseTrap.vue';
-import StudySessionTimer from './StudySessionTimer.vue';
+import { isQuestionView } from '../composables/CompositionViewable';
 import HeatMap from './HeatMap.vue';
+import SkMouseTrap from './SkMouseTrap.vue';
+import { alertUser } from './SnackbarService';
+import StudySessionTimer from './StudySessionTimer.vue';
 import CardViewer from './cardRendering/CardViewer.vue';
 
+import { CourseElo, Status, toCourseElo, ViewData } from '@vue-skuilder/common';
 import {
-  ContentSourceID,
-  getStudySource,
-  isReview,
-  StudyContentSource,
-  StudySessionItem,
-  docIsDeleted,
   CardHistory,
   CardRecord,
-  isQuestionRecord,
+  ClassroomDBInterface,
+  ContentSourceID,
   CourseRegistrationDoc,
   DataLayerProvider,
+  docIsDeleted,
+  getStudySource,
+  HydratedCard,
+  isQuestionRecord,
+  isReview,
+  ResponseResult,
+  SessionController,
+  StudyContentSource,
+  StudySessionRecord,
   UserDBInterface,
-  ClassroomDBInterface,
 } from '@vue-skuilder/db';
-import { HydratedCard, SessionController, StudySessionRecord } from '@vue-skuilder/db';
-import { newInterval } from '@vue-skuilder/db';
-import { adjustCourseScores, CourseElo, toCourseElo, ViewData, Status } from '@vue-skuilder/common';
 import confetti from 'canvas-confetti';
-import moment from 'moment';
 
 import { StudySessionConfig } from './StudySession.types';
 
@@ -371,140 +371,83 @@ export default defineComponent({
       this.currentCard.records.push(r);
 
       console.log(`[StudySession] StudySession.processResponse is running...`);
+      // DEBUG: Added logging to track hanging issue - can be removed if issue resolved
+      // console.log(`[StudySession] About to call logCardRecord...`);
       const cardHistory = this.logCardRecord(r);
+      // console.log(`[StudySession] logCardRecord called, cardHistory promise created...`);
 
-      if (isQuestionRecord(r)) {
-        console.log(`[StudySession] Question is ${r.isCorrect ? '' : 'in'}correct`);
-        if (r.isCorrect) {
-          try {
-            if (this.$refs.shadowWrapper) {
-              this.$refs.shadowWrapper.setAttribute(
-                'style',
-                `--r: ${255 * (1 - (r.performance as number))}; --g:${255}`
-              );
-              this.$refs.shadowWrapper.classList.add('correct');
-            }
-          } catch (e) {
-            // swallow error
-            console.warn(`[StudySession] Error setting shadowWrapper style: ${e}`);
-          }
+      // Get view constraints for response processing
+      let maxAttemptsPerView = 1;
+      let maxSessionViews = 1;
+      if (isQuestionView(this.$refs.cardViewer?.$refs.activeView)) {
+        const view = this.$refs.cardViewer.$refs.activeView;
+        maxAttemptsPerView = view.maxAttemptsPerView;
+        maxSessionViews = view.maxSessionViews;
+      }
+      const sessionViews = this.countCardViews(this.courseID, this.cardID);
 
-          if (this.sessionConfig.likesConfetti) {
-            confetti({
-              origin: {
-                y: 1,
-                x: 0.25 + 0.5 * Math.random(),
-              },
-              disableForReducedMotion: true,
-              angle: 60 + 60 * Math.random(),
-            });
-          }
+      // Process response through SessionController
+      // DEBUG: Added logging to track hanging issue - can be removed if issue resolved
+      // console.log(`[StudySession] About to call submitResponse...`);
+      const result: ResponseResult = await this.sessionController!.submitResponse(
+        r,
+        cardHistory,
+        this.userCourseRegDoc!,
+        this.currentCard,
+        this.courseID,
+        this.cardID,
+        maxAttemptsPerView,
+        maxSessionViews,
+        sessionViews
+      );
+      // DEBUG: Added logging to track hanging issue - can be removed if issue resolved
+      // console.log(`[StudySession] submitResponse completed, result:`, result);
 
-          if (r.priorAttemps === 0) {
-            const item: StudySessionItem = {
-              ...this.currentCard.item,
-            };
-            this.loadCard(await this.sessionController!.nextCard('dismiss-success'));
+      // Handle UI feedback based on result
+      this.handleUIFeedback(result);
 
-            cardHistory.then((history: CardHistory<CardRecord>) => {
-              this.scheduleReview(history, item);
-              if (history.records.length === 1) {
-                this.updateUserAndCardElo(0.5 + (r.performance as number) / 2, this.courseID, this.cardID);
-              } else {
-                const k = Math.ceil(32 / history.records.length);
-                this.updateUserAndCardElo(0.5 + (r.performance as number) / 2, this.courseID, this.cardID, k);
-              }
-            });
-          } else {
-            this.loadCard(await this.sessionController!.nextCard('marked-failed'));
-          }
-        } else {
-          /* !r.isCorrect */
-          try {
-            if (this.$refs.shadowWrapper) {
-              this.$refs.shadowWrapper.classList.add('incorrect');
-            }
-          } catch (e) {
-            // swallow error
-            console.warn(`[StudySession] Error setting shadowWrapper style: ${e}`);
-          }
-
-          cardHistory.then((history: CardHistory<CardRecord>) => {
-            if (history.records.length !== 1 && r.priorAttemps === 0) {
-              this.updateUserAndCardElo(0, this.courseID, this.cardID);
-            }
-          });
-
-          // [ ]  v3 version. Keep an eye on this -
-          if (isQuestionView(this.$refs.cardViewer?.$refs.activeView)) {
-            const view = this.$refs.cardViewer.$refs.activeView;
-
-            if (this.currentCard.records.length >= view.maxAttemptsPerView) {
-              const sessionViews: number = this.countCardViews(this.courseID, this.cardID);
-              if (sessionViews >= view.maxSessionViews) {
-                this.loadCard(await this.sessionController!.nextCard('dismiss-failed'));
-                this.updateUserAndCardElo(0, this.courseID, this.cardID);
-              } else {
-                this.loadCard(await this.sessionController!.nextCard('marked-failed'));
-              }
-            }
-          }
-        }
-      } else {
-        this.loadCard(await this.sessionController!.nextCard('dismiss-success'));
+      // Handle navigation based on result
+      if (result.shouldLoadNextCard) {
+        this.loadCard(await this.sessionController!.nextCard(result.nextCardAction));
       }
 
-      this.clearFeedbackShadow();
+      // Clear feedback shadow if requested
+      if (result.shouldClearFeedbackShadow) {
+        this.clearFeedbackShadow();
+      }
     },
 
-    async updateUserAndCardElo(userScore: number, course_id: string, card_id: string, k?: number) {
-      if (k) {
-        console.warn(`k value interpretation not currently implemented`);
-      }
-      const courseDB = this.dataLayer.getCourseDB(this.currentCard.card.course_id);
-      const userElo = toCourseElo(this.userCourseRegDoc!.courses.find((c) => c.courseID === course_id)!.elo);
-      const cardElo = (await courseDB.getCardEloData([this.currentCard.card.card_id]))[0];
-
-      if (cardElo && userElo) {
-        const eloUpdate = adjustCourseScores(userElo, cardElo, userScore);
-        this.userCourseRegDoc!.courses.find((c) => c.courseID === course_id)!.elo = eloUpdate.userElo;
-
-        const results = await Promise.allSettled([
-          this.user!.updateUserElo(course_id, eloUpdate.userElo),
-          courseDB.updateCardElo(card_id, eloUpdate.cardElo),
-        ]);
-
-        // Check the results of each operation
-        const userEloStatus = results[0].status === 'fulfilled';
-        const cardEloStatus = results[1].status === 'fulfilled';
-
-        if (userEloStatus && cardEloStatus) {
-          const user = results[0].value;
-          const card = results[1].value;
-
-          if (user.ok && card && card.ok) {
-            console.log(
-              `[StudySession] Updated ELOS:
-              \tUser: ${JSON.stringify(eloUpdate.userElo)})
-              \tCard: ${JSON.stringify(eloUpdate.cardElo)})
-              `
-            );
+    handleUIFeedback(result: ResponseResult) {
+      if (result.isCorrect) {
+        // Handle correct response UI
+        try {
+          if (this.$refs.shadowWrapper && result.performanceScore !== undefined) {
+            this.$refs.shadowWrapper.setAttribute('style', `--r: ${255 * (1 - result.performanceScore)}; --g:${255}`);
+            this.$refs.shadowWrapper.classList.add('correct');
           }
-        } else {
-          // Log which operations succeeded and which failed
-          console.log(
-            `[StudySession] Partial ELO update:
-            \tUser ELO update: ${userEloStatus ? 'SUCCESS' : 'FAILED'}
-            \tCard ELO update: ${cardEloStatus ? 'SUCCESS' : 'FAILED'}`
-          );
+        } catch (e) {
+          console.warn(`[StudySession] Error setting shadowWrapper style: ${e}`);
+        }
 
-          if (!userEloStatus && results[0].status === 'rejected') {
-            console.error('[StudySession] User ELO update error:', results[0].reason);
+        // Show confetti for correct responses
+        if (this.sessionConfig.likesConfetti) {
+          confetti({
+            origin: {
+              y: 1,
+              x: 0.25 + 0.5 * Math.random(),
+            },
+            disableForReducedMotion: true,
+            angle: 60 + 60 * Math.random(),
+          });
+        }
+      } else {
+        // Handle incorrect response UI
+        try {
+          if (this.$refs.shadowWrapper) {
+            this.$refs.shadowWrapper.classList.add('incorrect');
           }
-
-          if (!cardEloStatus && results[1].status === 'rejected') {
-            console.error('[StudySession] Card ELO update error:', results[1].reason);
-          }
+        } catch (e) {
+          console.warn(`[StudySession] Error setting shadowWrapper style: ${e}`);
         }
       }
     },
@@ -523,26 +466,11 @@ export default defineComponent({
     },
 
     async logCardRecord(r: CardRecord): Promise<CardHistory<CardRecord>> {
-      return await this.user!.putCardRecord(r);
-    },
-
-    async scheduleReview(history: CardHistory<CardRecord>, item: StudySessionItem) {
-      const nextInterval = newInterval(this.$props.user, history);
-      const nextReviewTime = moment.utc().add(nextInterval, 'seconds');
-
-      if (isReview(item)) {
-        console.log(`[StudySession] Removing previously scheduled review for: ${item.cardID}`);
-        this.user!.removeScheduledCardReview(item.reviewID);
-      }
-
-      this.user!.scheduleCardReview({
-        user: this.user!.getUsername(),
-        course_id: history.courseID,
-        card_id: history.cardID,
-        time: nextReviewTime,
-        scheduledFor: item.contentSourceType,
-        schedulingAgentId: item.contentSourceID,
-      });
+      // DEBUG: Added logging to track hanging issue - can be removed if issue resolved
+      // console.log(`[StudySession] About to call user.putCardRecord...`);
+      const result = await this.user!.putCardRecord(r);
+      // console.log(`[StudySession] user.putCardRecord completed`);
+      return result;
     },
 
     async loadCard(card: HydratedCard | null) {
