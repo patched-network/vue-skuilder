@@ -1,12 +1,7 @@
 import moment from 'moment';
-import {
-  CardHistory,
-  CardRecord,
-  isReview,
-  newInterval,
-  StudySessionItem,
-  UserDBInterface,
-} from '@vue-skuilder/db';
+import { CardHistory, CardRecord, UserDBInterface } from '@db/core';
+import { isReview, StudySessionItem } from '@db/impl/couch';
+import { newInterval } from '../SpacedRepetition';
 import { logger } from '@db/util/logger';
 
 /**
