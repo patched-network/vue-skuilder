@@ -10,7 +10,7 @@ import {
   StudySessionReviewItem,
 } from '@db/impl/couch';
 
-import { CardRecord } from '@db/core';
+import { CardRecord, CardHistory, CourseRegistrationDoc } from '@db/core';
 import { Loggable } from '@db/util';
 import { ScheduledCard } from '@db/core/types/user';
 import { ViewData } from '@vue-skuilder/common';
@@ -106,8 +106,6 @@ export interface ResponseResult {
 }
 
 interface SessionServices {
-  srs: SrsService;
-  elo: EloService;
   response: ResponseProcessor;
 }
 
@@ -115,6 +113,8 @@ export class SessionController<TView = unknown> extends Loggable {
   _className = 'SessionController';
 
   public services: SessionServices;
+  private srsService: SrsService;
+  private eloService: EloService;
 
   private sources: StudyContentSource[];
   private dataLayer: DataLayerProvider;
@@ -158,13 +158,11 @@ export class SessionController<TView = unknown> extends Loggable {
   ) {
     super();
 
+    this.srsService = new SrsService(dataLayer.getUserDB());
+    this.eloService = new EloService(dataLayer, dataLayer.getUserDB());
+    
     this.services = {
-      srs: new SrsService(dataLayer.getUserDB()),
-      elo: new EloService(dataLayer, dataLayer.getUserDB()),
-      response: new ResponseProcessor(
-        new SrsService(dataLayer.getUserDB()),
-        new EloService(dataLayer, dataLayer.getUserDB())
-      ),
+      response: new ResponseProcessor(this.srsService, this.eloService),
     };
 
     this.sources = sources;
@@ -413,6 +411,48 @@ export class SessionController<TView = unknown> extends Loggable {
     }
 
     return card;
+  }
+
+  /**
+   * Public API for processing user responses to cards.
+   * @param cardRecord User's response record
+   * @param cardHistory Promise resolving to the card's history
+   * @param courseRegistrationDoc User's course registration document
+   * @param currentCard Current study session record
+   * @param courseId Course identifier
+   * @param cardId Card identifier
+   * @param maxAttemptsPerView Maximum attempts allowed per view
+   * @param maxSessionViews Maximum session views for this card
+   * @param sessionViews Current number of session views
+   * @returns ResponseResult with navigation and UI instructions
+   */
+  public async submitResponse(
+    cardRecord: CardRecord,
+    cardHistory: Promise<CardHistory<CardRecord>>,
+    courseRegistrationDoc: CourseRegistrationDoc,
+    currentCard: StudySessionRecord,
+    courseId: string,
+    cardId: string,
+    maxAttemptsPerView: number,
+    maxSessionViews: number,
+    sessionViews: number
+  ): Promise<ResponseResult> {
+    const studySessionItem: StudySessionItem = {
+      ...currentCard.item,
+    };
+
+    return await this.services.response.processResponse(
+      cardRecord,
+      cardHistory,
+      studySessionItem,
+      courseRegistrationDoc,
+      currentCard,
+      courseId,
+      cardId,
+      maxAttemptsPerView,
+      maxSessionViews,
+      sessionViews
+    );
   }
 
   private dismissCurrentCard(action: SessionAction = 'dismiss-success') {
