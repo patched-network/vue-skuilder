@@ -1,0 +1,9 @@
+{
+  "name": "@skuilder/hero-course",
+  "version": "1.0.0",
+  "description": "The interactive course used in the VitePress hero section.",
+  "content": {
+    "type": "static",
+    "manifest": "./manifest.json"
+  }
+}

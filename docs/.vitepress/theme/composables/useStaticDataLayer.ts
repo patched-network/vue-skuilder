@@ -6,6 +6,7 @@ import {
   type DataLayerConfig,
   initializeDataLayer 
 } from '@vue-skuilder/db';
+import { withBase } from 'vitepress';
 
 interface UseStaticDataLayerReturn {
   dataLayer: Ref<DataLayerProvider | null>;
@@ -14,36 +15,35 @@ interface UseStaticDataLayerReturn {
   initialize: () => Promise<void>;
 }
 
+// Cache the dataLayer promise to prevent re-initialization across components
+let dataLayerPromise: Promise<DataLayerProvider> | null = null;
+
 /**
- * Composable for initializing static data layer in VitePress docs context
- * Provides localStorage persistence and error handling
+ * Composable for initializing a static data layer in VitePress.
+ * It fetches the root skuilder.json manifest and passes it to the DataLayerProvider.
  */
-export function useStaticDataLayer(courseIds: string[] = ['2aeb8315ef78f3e89ca386992d00825b']): UseStaticDataLayerReturn {
+export function useStaticDataLayer(): UseStaticDataLayerReturn {
   const dataLayer = ref<DataLayerProvider | null>(null);
   const error = ref<Error | null>(null);
   const isLoading = ref(false);
 
-  // Calculate relative path to static-courses from current location
-  const getStaticCoursesPath = (): string => {
-    // Get current path depth to calculate relative path back to root
-    const currentPath = window.location.pathname;
-    const basePath = '/vue-skuilder/';
-    
-    // Remove base path to get relative path within docs
-    const relativePath = currentPath.replace(basePath, '');
-    const pathDepth = relativePath.split('/').filter(segment => segment.length > 0).length - 1;
-    
-    // Build relative path back to root: '../' repeated pathDepth times + 'static-courses'
-    const backToRoot = pathDepth > 0 ? '../'.repeat(pathDepth) : './';
-    const staticCoursesPath = `${backToRoot}static-courses`;
-    
-    console.log(`[useStaticDataLayer] Current path: ${currentPath}, depth: ${pathDepth}, static path: ${staticCoursesPath}`);
-    return staticCoursesPath;
-  };
-
   const initialize = async (): Promise<void> => {
     if (dataLayer.value) {
-      console.log('[useStaticDataLayer] Already initialized, skipping');
+      console.log('[useStaticDataLayer] Data layer already available, skipping initialization.');
+      return;
+    }
+
+    // If another component is already initializing, just wait for its promise
+    if (dataLayerPromise) {
+      console.log('[useStaticDataLayer] Initialization already in progress, awaiting result...');
+      isLoading.value = true;
+      try {
+        dataLayer.value = await dataLayerPromise;
+      } catch (e) {
+        error.value = e as Error;
+      } finally {
+        isLoading.value = false;
+      }
       return;
     }
 
@@ -51,61 +51,38 @@ export function useStaticDataLayer(courseIds: string[] = ['2aeb8315ef78f3e89ca38
       isLoading.value = true;
       error.value = null;
       
-      console.log('[useStaticDataLayer] Initializing with course IDs:', courseIds);
+      console.log('[useStaticDataLayer] Starting data layer initialization...');
 
-      // Get the correct relative path to static-courses
-      const staticCoursesPath = getStaticCoursesPath();
-
-      // Load individual manifests for each course (following testproject pattern)
-      const manifests: Record<string, any> = {};
-      
-      for (const courseId of courseIds) {
-        try {
-          console.log(`[useStaticDataLayer] Loading manifest for course: ${courseId}`);
-          const manifestResponse = await fetch(`${staticCoursesPath}/${courseId}/manifest.json`);
-          
-          if (!manifestResponse.ok) {
-            throw new Error(`Failed to load manifest: ${manifestResponse.status} ${manifestResponse.statusText}`);
-          }
-          
-          const manifest = await manifestResponse.json();
-          manifests[courseId] = manifest;
-          console.log(`[useStaticDataLayer] Loaded manifest for course ${courseId}:`, manifest.courseName || 'Unknown');
-          
-        } catch (manifestError) {
-          console.error(`[useStaticDataLayer] Failed to load manifest for course ${courseId}:`, manifestError);
-          throw new Error(`Could not load course manifest for ${courseId}: ${manifestError}`);
-        }
+      // 1. Fetch the root application manifest
+      const rootManifestUrl = withBase('/skuilder.json');
+      const rootManifestResponse = await fetch(rootManifestUrl);
+      if (!rootManifestResponse.ok) {
+        throw new Error(`Failed to fetch root manifest: ${rootManifestUrl}`);
       }
+      const rootManifest = await rootManifestResponse.json();
 
-      console.log('[useStaticDataLayer] All manifests loaded:', Object.keys(manifests));
-
-      // Configure static data layer (following testproject pattern)
+      // 2. Prepare the simplified config for the DataLayerProvider
       const config: DataLayerConfig = {
         type: 'static',
         options: {
-          staticContentPath: staticCoursesPath,
-          manifests,
-          COURSE_IDS: courseIds
+          rootManifest,
+          rootManifestUrl: new URL(rootManifestUrl, window.location.href).href
         }
       };
 
-      console.log('[useStaticDataLayer] Initializing data layer with config');
+      console.log('[useStaticDataLayer] Initializing data layer with root manifest.');
       
-      // Initialize the data layer
-      dataLayer.value = await initializeDataLayer(config);
+      // 3. Initialize the data layer and cache the promise
+      dataLayerPromise = initializeDataLayer(config);
+      dataLayer.value = await dataLayerPromise;
       
       console.log('[useStaticDataLayer] Data layer initialized successfully');
       
     } catch (e) {
       const err = e as Error;
       error.value = err;
+      dataLayerPromise = null; // Clear promise on failure
       console.error('[useStaticDataLayer] Failed to initialize data layer:', err);
-      console.error('[useStaticDataLayer] Error details:', {
-        message: err.message,
-        stack: err.stack,
-        courseIds,
-      });
     } finally {
       isLoading.value = false;
     }

@@ -1,3 +1,4 @@
+
 // packages/db/src/impl/static/StaticDataLayerProvider.ts
 
 import {
@@ -17,39 +18,78 @@ import { StaticCoursesDB } from './coursesDB';
 import { BaseUser } from '../common';
 import { NoOpSyncStrategy } from './NoOpSyncStrategy';
 
+
+interface SkuilderManifest {
+  name?: string;
+  version?: string;
+  description?: string;
+  dependencies?: Record<string, string>;
+}
+
 interface StaticDataLayerConfig {
-  staticContentPath: string;
   localStoragePrefix?: string;
-  manifests: Record<string, StaticCourseManifest>; // courseId -> manifest
+  rootManifest: SkuilderManifest; // The parsed root skuilder.json object
+  rootManifestUrl: string; // The absolute URL where the root manifest was found
 }
 
 export class StaticDataLayerProvider implements DataLayerProvider {
   private config: StaticDataLayerConfig;
   private initialized: boolean = false;
   private courseUnpackers: Map<string, StaticDataUnpacker> = new Map();
+  private manifests: Record<string, StaticCourseManifest> = {};
 
   constructor(config: Partial<StaticDataLayerConfig>) {
     this.config = {
-      staticContentPath: config.staticContentPath || '/static-courses',
       localStoragePrefix: config.localStoragePrefix || 'skuilder-static',
-      manifests: config.manifests || {},
+      rootManifest: config.rootManifest || { dependencies: {} },
+      rootManifestUrl: config.rootManifestUrl || '/',
     };
+  }
+
+  private async resolveCourseDependencies(): Promise<void> {
+    logger.info('[StaticDataLayerProvider] Starting course dependency resolution...');
+    const rootManifest = this.config.rootManifest;
+
+    for (const [courseName, courseUrl] of Object.entries(rootManifest.dependencies || {})) {
+      try {
+        logger.debug(`[StaticDataLayerProvider] Resolving dependency: ${courseName} from ${courseUrl}`);
+        
+        const courseManifestUrl = new URL(courseUrl as string, this.config.rootManifestUrl).href;
+        const courseJsonResponse = await fetch(courseManifestUrl);
+        if (!courseJsonResponse.ok) {
+          throw new Error(`Failed to fetch course manifest for ${courseName}`);
+        }
+        const courseJson = await courseJsonResponse.json();
+
+        if (courseJson.content && courseJson.content.manifest) {
+          const baseUrl = new URL('.', courseManifestUrl).href;
+          const finalManifestUrl = new URL(courseJson.content.manifest, courseManifestUrl).href;
+
+          const finalManifestResponse = await fetch(finalManifestUrl);
+          if (!finalManifestResponse.ok) {
+            throw new Error(`Failed to fetch final content manifest for ${courseName} at ${finalManifestUrl}`);
+          }
+          const finalManifest = await finalManifestResponse.json();
+          
+          this.manifests[courseName] = finalManifest;
+          const unpacker = new StaticDataUnpacker(finalManifest, baseUrl);
+          this.courseUnpackers.set(courseName, unpacker);
+
+          logger.info(`[StaticDataLayerProvider] Successfully resolved and prepared course: ${courseName}`);
+        }
+      } catch (e) {
+        logger.error(`[StaticDataLayerProvider] Failed to resolve dependency ${courseName}:`, e);
+        // Continue to next dependency
+      }
+    }
+    logger.info('[StaticDataLayerProvider] Course dependency resolution complete.');
   }
 
   async initialize(): Promise<void> {
     if (this.initialized) return;
 
     logger.info('Initializing static data layer provider');
-
-    // Load manifests for all courses
-    for (const [courseId, manifest] of Object.entries(this.config.manifests)) {
-      const unpacker = new StaticDataUnpacker(
-        manifest,
-        `${this.config.staticContentPath}/${courseId}`
-      );
-      this.courseUnpackers.set(courseId, unpacker);
-    }
-
+    await this.resolveCourseDependencies();
     this.initialized = true;
   }
 
@@ -67,14 +107,14 @@ export class StaticDataLayerProvider implements DataLayerProvider {
   getCourseDB(courseId: string): CourseDBInterface {
     const unpacker = this.courseUnpackers.get(courseId);
     if (!unpacker) {
-      throw new Error(`Course ${courseId} not found in static data`);
+      throw new Error(`Course ${courseId} not found or failed to initialize in static data layer.`);
     }
-    const manifest = this.config.manifests[courseId];
+    const manifest = this.manifests[courseId];
     return new StaticCourseDB(courseId, unpacker, this.getUserDB(), manifest);
   }
 
   getCoursesDB(): CoursesDBInterface {
-    return new StaticCoursesDB(this.config.manifests);
+    return new StaticCoursesDB(this.manifests);
   }
 
   async getClassroomDB(
