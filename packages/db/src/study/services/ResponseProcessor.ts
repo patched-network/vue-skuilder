@@ -64,7 +64,7 @@ export class ResponseProcessor {
 
     // Handle correct responses
     if (cardRecord.isCorrect) {
-      return await this.processCorrectResponse(
+      return this.processCorrectResponse(
         cardRecord,
         history,
         studySessionItem,
@@ -75,7 +75,7 @@ export class ResponseProcessor {
       );
     } else {
       // Handle incorrect responses
-      return await this.processIncorrectResponse(
+      return this.processIncorrectResponse(
         cardRecord,
         history,
         courseRegistrationDoc,
@@ -92,7 +92,7 @@ export class ResponseProcessor {
   /**
    * Handles processing for correct responses: SRS scheduling and ELO updates.
    */
-  private async processCorrectResponse(
+  private processCorrectResponse(
     cardRecord: QuestionRecord,
     history: CardHistory<CardRecord>,
     studySessionItem: StudySessionItem,
@@ -100,17 +100,17 @@ export class ResponseProcessor {
     currentCard: StudySessionRecord,
     courseId: string,
     cardId: string
-  ): Promise<ResponseResult> {
+  ): ResponseResult {
     // Only schedule and update ELO for first-time attempts
     if (cardRecord.priorAttemps === 0) {
-      // Schedule the card for future review based on performance
-      await this.srsService.scheduleReview(history, studySessionItem);
+      // Schedule the card for future review based on performance (async, non-blocking)
+      void this.srsService.scheduleReview(history, studySessionItem);
 
       // Update ELO ratings
       if (history.records.length === 1) {
-        // First interaction with this card - standard ELO update
+        // First interaction with this card - standard ELO update (async, non-blocking)
         const userScore = 0.5 + (cardRecord.performance as number) / 2;
-        await this.eloService.updateUserAndCardElo(
+        void this.eloService.updateUserAndCardElo(
           userScore,
           courseId,
           cardId,
@@ -118,10 +118,10 @@ export class ResponseProcessor {
           currentCard
         );
       } else {
-        // Multiple interactions - reduce K-factor to limit ELO volatility
+        // Multiple interactions - reduce K-factor to limit ELO volatility (async, non-blocking)
         const k = Math.ceil(32 / history.records.length);
         const userScore = 0.5 + (cardRecord.performance as number) / 2;
-        await this.eloService.updateUserAndCardElo(
+        void this.eloService.updateUserAndCardElo(
           userScore,
           courseId,
           cardId,
@@ -160,7 +160,7 @@ export class ResponseProcessor {
   /**
    * Handles processing for incorrect responses: ELO updates only.
    */
-  private async processIncorrectResponse(
+  private processIncorrectResponse(
     cardRecord: QuestionRecord,
     history: CardHistory<CardRecord>,
     courseRegistrationDoc: CourseRegistrationDoc,
@@ -170,10 +170,10 @@ export class ResponseProcessor {
     maxAttemptsPerView: number,
     maxSessionViews: number,
     sessionViews: number
-  ): Promise<ResponseResult> {
-    // Update ELO for first-time failures (not subsequent attempts on same card)
+  ): ResponseResult {
+    // Update ELO for first-time failures (not subsequent attempts on same card) (async, non-blocking)
     if (history.records.length !== 1 && cardRecord.priorAttemps === 0) {
-      await this.eloService.updateUserAndCardElo(
+      void this.eloService.updateUserAndCardElo(
         0, // Failed response = 0 score
         courseId,
         cardId,
@@ -188,8 +188,8 @@ export class ResponseProcessor {
     // Determine navigation based on attempt limits
     if (currentCard.records.length >= maxAttemptsPerView) {
       if (sessionViews >= maxSessionViews) {
-        // Too many session views - dismiss completely with ELO penalty
-        await this.eloService.updateUserAndCardElo(
+        // Too many session views - dismiss completely with ELO penalty (async, non-blocking)
+        void this.eloService.updateUserAndCardElo(
           0,
           courseId,
           cardId,
