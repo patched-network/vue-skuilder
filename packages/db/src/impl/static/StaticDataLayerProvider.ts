@@ -18,9 +18,9 @@ import { BaseUser } from '../common';
 import { NoOpSyncStrategy } from './NoOpSyncStrategy';
 
 interface StaticDataLayerConfig {
-  staticContentPath: string;
   localStoragePrefix?: string;
   manifests: Record<string, StaticCourseManifest>; // courseId -> manifest
+  courseLocations: Record<string, string>; // courseId -> baseUrl
 }
 
 export class StaticDataLayerProvider implements DataLayerProvider {
@@ -30,9 +30,9 @@ export class StaticDataLayerProvider implements DataLayerProvider {
 
   constructor(config: Partial<StaticDataLayerConfig>) {
     this.config = {
-      staticContentPath: config.staticContentPath || '/static-courses',
       localStoragePrefix: config.localStoragePrefix || 'skuilder-static',
       manifests: config.manifests || {},
+      courseLocations: config.courseLocations || {},
     };
   }
 
@@ -43,10 +43,12 @@ export class StaticDataLayerProvider implements DataLayerProvider {
 
     // Load manifests for all courses
     for (const [courseId, manifest] of Object.entries(this.config.manifests)) {
-      const unpacker = new StaticDataUnpacker(
-        manifest,
-        `${this.config.staticContentPath}/${courseId}`
-      );
+      const baseUrl = this.config.courseLocations[courseId];
+      if (!baseUrl) {
+        logger.warn(`[StaticDataLayerProvider] No base URL found for course ${courseId}, skipping unpacker creation.`);
+        continue;
+      }
+      const unpacker = new StaticDataUnpacker(manifest, baseUrl);
       this.courseUnpackers.set(courseId, unpacker);
     }
 
@@ -67,7 +69,7 @@ export class StaticDataLayerProvider implements DataLayerProvider {
   getCourseDB(courseId: string): CourseDBInterface {
     const unpacker = this.courseUnpackers.get(courseId);
     if (!unpacker) {
-      throw new Error(`Course ${courseId} not found in static data`);
+      throw new Error(`Course ${courseId} not found or failed to initialize in static data layer.`);
     }
     const manifest = this.config.manifests[courseId];
     return new StaticCourseDB(courseId, unpacker, this.getUserDB(), manifest);

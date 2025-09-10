@@ -1,0 +1,8 @@
+{
+  "name": "@skuilder/docs-site",
+  "version": "0.1.0",
+  "description": "The root manifest for the vue-skuilder documentation site.",
+  "dependencies": {
+    "@skuilder/hero-course": "/vue-skuilder/static-courses/2aeb8315ef78f3e89ca386992d00825b/skuilder.json"
+  }
+}

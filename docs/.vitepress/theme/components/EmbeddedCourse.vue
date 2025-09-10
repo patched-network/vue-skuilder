@@ -86,13 +86,13 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  courseId: '2aeb8315ef78f3e89ca386992d00825b',
+  courseId: '@skuilder/hero-course',
   sessionTimeLimit: 10,
   sessionConfig: () => ({ likesConfetti: true })
 });
 
 // Data layer composable
-const { dataLayer, error: dataLayerError, isLoading: dataLayerLoading, initialize } = useStaticDataLayer([props.courseId]);
+const { dataLayer, error: dataLayerError, isLoading: dataLayerLoading, initialize } = useStaticDataLayer();
 
 // Component state
 const sessionPrepared = ref(false);
@@ -188,7 +188,7 @@ const initializeSession = async () => {
     
     // Ensure data layer is initialized
     if (!dataLayer.value) {
-      await initialize();
+      await initialize(props.courseId);
     }
     
     if (!dataLayer.value) {
