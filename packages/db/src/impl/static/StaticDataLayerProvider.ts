@@ -18,9 +18,17 @@ import { StaticCoursesDB } from './coursesDB';
 import { BaseUser } from '../common';
 import { NoOpSyncStrategy } from './NoOpSyncStrategy';
 
+
+interface SkuilderManifest {
+  name?: string;
+  version?: string;
+  description?: string;
+  dependencies?: Record<string, string>;
+}
+
 interface StaticDataLayerConfig {
   localStoragePrefix?: string;
-  rootManifest: any; // The parsed root skuilder.json object
+  rootManifest: SkuilderManifest; // The parsed root skuilder.json object
   rootManifestUrl: string; // The absolute URL where the root manifest was found
 }
 
