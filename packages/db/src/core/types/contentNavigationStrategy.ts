@@ -4,7 +4,7 @@ import { DocType, SkuilderCourseData } from './types-legacy';
  *
  */
 export interface ContentNavigationStrategyData extends SkuilderCourseData {
-  id: string;
+  id: string; // todo: enforce an id prefix
   docType: DocType.NAVIGATION_STRATEGY;
   name: string;
   description: string;

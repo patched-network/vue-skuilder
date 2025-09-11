@@ -456,17 +456,21 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
 
   getNavigationStrategy(id: string): Promise<ContentNavigationStrategyData> {
     logger.debug(`[courseDB] Getting navigation strategy: ${id}`);
-    // For now, just return the ELO strategy regardless of the ID
-    const strategy: ContentNavigationStrategyData = {
-      id: 'ELO',
-      docType: DocType.NAVIGATION_STRATEGY,
-      name: 'ELO',
-      description: 'ELO-based navigation strategy for ordering content by difficulty',
-      implementingClass: Navigators.ELO,
-      course: this.id,
-      serializedData: '', // serde is a noop for ELO navigator.
-    };
-    return Promise.resolve(strategy);
+
+    if (id == '') {
+      const strategy: ContentNavigationStrategyData = {
+        id: 'ELO',
+        docType: DocType.NAVIGATION_STRATEGY,
+        name: 'ELO',
+        description: 'ELO-based navigation strategy for ordering content by difficulty',
+        implementingClass: Navigators.ELO,
+        course: this.id,
+        serializedData: '', // serde is a noop for ELO navigator.
+      };
+      return Promise.resolve(strategy);
+    } else {
+      return this.db.get(id);
+    }
   }
 
   getAllNavigationStrategies(): Promise<ContentNavigationStrategyData[]> {
@@ -485,11 +489,11 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
     return Promise.resolve(strategies);
   }
 
-  addNavigationStrategy(data: ContentNavigationStrategyData): Promise<void> {
+  async addNavigationStrategy(data: ContentNavigationStrategyData): Promise<void> {
     logger.debug(`[courseDB] Adding navigation strategy: ${data.id}`);
-    // For now, just log the data and return success
-    logger.debug(JSON.stringify(data));
-    return Promise.resolve();
+    // // For now, just log the data and return success
+    // logger.debug(JSON.stringify(data));
+    return this.db.put(data).then(() => {});
   }
   updateNavigationStrategy(id: string, data: ContentNavigationStrategyData): Promise<void> {
     logger.debug(`[courseDB] Updating navigation strategy: ${id}`);
@@ -499,6 +503,32 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
   }
 
   async surfaceNavigationStrategy(): Promise<ContentNavigationStrategyData> {
+    try {
+      const config = await this.getCourseConfig();
+      // @ts-expect-error tmp: defaultNavigationStrategyId property does not yet exist
+      if (config.defaultNavigationStrategyId) {
+        try {
+          // @ts-expect-error tmp: defaultNavigationStrategyId property does not yet exist
+          const strategy = await this.getNavigationStrategy(config.defaultNavigationStrategyId);
+          if (strategy) {
+            logger.debug(`Surfacing strategy ${strategy.name} from course config`);
+            return strategy;
+          }
+        } catch (e) {
+          logger.warn(
+            // @ts-expect-error tmp: defaultNavigationStrategyId property does not yet exist
+            `Failed to load strategy '${config.defaultNavigationStrategyId}' specified in course config. Falling back to ELO.`,
+            e
+          );
+        }
+      }
+    } catch (e) {
+      logger.warn(
+        'Could not retrieve course config to determine navigation strategy. Falling back to ELO.',
+        e
+      );
+    }
+
     logger.warn(`Returning hard-coded default ELO navigator`);
     const ret: ContentNavigationStrategyData = {
       id: 'ELO',
