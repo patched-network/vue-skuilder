@@ -6,6 +6,8 @@ Test page for EmbeddedCourse component development and debugging.
 import EmbeddedCourse from '../.vitepress/theme/components/EmbeddedCourse.vue'
 </script>
 
-## Embedded "local" course
+## Embedded "remote" course
 
-<EmbeddedCourse course-id="@skuilder/hero-course" :session-time-limit="5" />
+This is loaded from a static deployed course from another repo at https://patched-network.github.io/demo-chess
+
+<EmbeddedCourse course-id="@skuilder/demo-chess" :session-time-limit="5" />
