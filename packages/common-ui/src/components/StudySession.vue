@@ -21,6 +21,7 @@
     <div v-else ref="shadowWrapper">
       <card-viewer
         ref="cardViewer"
+        :key="cardID"
         :class="loading ? 'muted' : ''"
         :view="view"
         :data="data"
