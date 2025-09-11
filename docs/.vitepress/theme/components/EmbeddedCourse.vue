@@ -91,6 +91,9 @@ const props = withDefaults(defineProps<Props>(), {
   sessionConfig: () => ({ likesConfetti: true })
 });
 
+// Create a cleaned, trimmed version of the courseId prop
+const cleanedCourseId = computed(() => (props.courseId || '').trim());
+
 // Data layer composable
 const { dataLayer, error: dataLayerError, isLoading: dataLayerLoading, initialize } = useStaticDataLayer();
 
@@ -105,7 +108,7 @@ const containerRef = ref<HTMLElement | null>(null);
 const contentSources = computed<ContentSourceID[]>(() => [
   {
     type: 'course',
-    id: props.courseId,
+    id: cleanedCourseId.value,
   }
 ]);
 
@@ -184,11 +187,12 @@ const initializeSession = async () => {
   hasInitialized.value = true;
   
   try {
-    console.log('[EmbeddedCourse] Starting lazy initialization for course:', props.courseId);
+    console.log('[EmbeddedCourse] Starting lazy initialization for course:', cleanedCourseId.value);
     
     // Ensure data layer is initialized
     if (!dataLayer.value) {
-      await initialize(props.courseId);
+      // initialize() now takes no arguments and resolves all courses
+      await initialize();
     }
     
     if (!dataLayer.value) {
@@ -199,21 +203,21 @@ const initializeSession = async () => {
     const userDB = dataLayer.value.getUserDB();
     if (userDB) {
       const regDoc = await userDB.getCourseRegistrationsDoc();
-      const isRegistered = regDoc.courses.some(c => c.courseID === props.courseId && c.status === 'active');
+      const isRegistered = regDoc.courses.some(c => c.courseID === cleanedCourseId.value && c.status === 'active');
       if (!isRegistered) {
-        console.log(`[EmbeddedCourse] Auto-registering user for course: ${props.courseId}`);
-        await userDB.registerForCourse(props.courseId);
+        console.log(`[EmbeddedCourse] Auto-registering user for course: ${cleanedCourseId.value}`);
+        await userDB.registerForCourse(cleanedCourseId.value);
       }
     }
     
     // Verify course access
-    const courseDB = dataLayer.value.getCourseDB(props.courseId);
+    const courseDB = dataLayer.value.getCourseDB(cleanedCourseId.value);
     const coursesDB = dataLayer.value.getCoursesDB();
     
     console.log('[EmbeddedCourse] CourseDB:', courseDB);
     console.log('[EmbeddedCourse] CoursesDB:', coursesDB);
     
-    const courseConfig = await coursesDB.getCourseConfig(props.courseId);
+    const courseConfig = await coursesDB.getCourseConfig(cleanedCourseId.value);
     
     console.log('[EmbeddedCourse] Course config raw:', courseConfig);
     console.log('[EmbeddedCourse] Course name:', courseConfig?.name);
@@ -284,7 +288,7 @@ const watchError = computed(() => {
     console.error('[EmbeddedCourse] Error state:', {
       message: err.message,
       stack: err.stack,
-      courseId: props.courseId
+      courseId: cleanedCourseId.value
     });
   }
   return err;
