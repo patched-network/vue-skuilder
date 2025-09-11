@@ -56,12 +56,12 @@ The __Do__ section is a guided tutorial that . Open it side-by-side with your te
 
 This documentation is both *in-progess* and also not really intended to be fully comprehensive.
 
-The project's modular components require a little cajoling to work together in different contexts (eg, static-site vs live backend, standalone course vs course development platform). This site focuses on **standalone** courses built for **static deployment** and browser-local user data, as described in the [quickstart](.do/quickstart) document.
+The project's modular components require a little cajoling to work together in different contexts (eg, static-site vs live backend, standalone course vs course development platform). This site focuses on **standalone** courses built for **static deployment** and browser-local user data, as described in the [quickstart](./do/quickstart) document.
 
 All "general purpose" information should be reliable, but specifics in the vein of "`foo` must be exported from `bar`" may apply to the specific assumed context.
 
 ## Contributing
 
-External collaboration welcome. First and foremost, run the [quickstart](.do/quickstart) and raise [issues](https://github.com/patched-network/vue-skuilder/issues) wheverver you stub your toes.
+External collaboration welcome. First and foremost, run the [quickstart](./do/quickstart) and raise [issues](https://github.com/patched-network/vue-skuilder/issues) wheverver you stub your toes.
 
 Small PRs that present as unambiguous wins are always welcome. Before working on a major PR, consider raising the work as a github issue or being in touch through [this contact form](https://patched.network/contact/).
