@@ -84,7 +84,7 @@ export default defineComponent({
 
     async loadCard() {
       const qualified_id = this.qualified_id;
-      console.log(`Card Loader displaying: ${qualified_id.courseID}-${qualified_id.cardID}`);
+      console.log(`Card Loader displaying: ${qualified_id.courseID}::${qualified_id.cardID}`);
 
       this.loading = true;
       const _courseID = qualified_id.courseID;
