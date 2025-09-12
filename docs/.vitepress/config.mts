@@ -119,6 +119,7 @@ export default defineConfig({
             items: [
               // { text: 'Main Study Loop', link: '/study-loop' },
               { text: 'System Overview', link: '/learn/architecture' },
+              { text: 'Authoring Cards', link: '/learn/cards' },
               { text: 'Data Layer', link: '/learn/data-layer' },
               { text: 'Application Layer', link: '/learn/apps' },
               { text: 'Pedagogy Defaults', link: '/learn/pedagogy' },
