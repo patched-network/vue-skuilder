@@ -66,6 +66,7 @@ import { defineComponent } from 'vue';
 import type { ContentNavigationStrategyData } from '@vue-skuilder/db/src/core/types/contentNavigationStrategy';
 import NavigationStrategyList from './NavigationStrategyList.vue';
 import { getDataLayer, DocType, Navigators } from '@vue-skuilder/db';
+import { DocTypePrefixes } from '@vue-skuilder/db/src/core/types/types-legacy';
 
 export default defineComponent({
   name: 'NavigationStrategyEditor',
@@ -115,15 +116,13 @@ export default defineComponent({
         ]);
 
         this.strategies = strategies;
-        // @ts-expect-error defaultNavigationStrategyId is not yet in the type
         this.defaultStrategyId = courseConfig.defaultNavigationStrategyId || null;
-
       } catch (error) {
         console.error('Failed to load navigation strategies:', error);
         // In case of error, use a placeholder
         this.strategies = [
           {
-            _id: 'ELO',
+            _id: `NAVIGATION_STRATEGY-ELO`,
             docType: DocType.NAVIGATION_STRATEGY,
             name: 'ELO',
             description: 'Default ELO-based navigation strategy',
@@ -144,7 +143,6 @@ export default defineComponent({
         const courseDB = dataLayer.getCourseDB(this.courseId);
         const config = await courseDB.getCourseConfig();
 
-        // @ts-expect-error defaultNavigationStrategyId is not yet in the type
         config.defaultNavigationStrategyId = strategyId;
 
         await courseDB.updateCourseConfig(config);
@@ -184,7 +182,7 @@ export default defineComponent({
           .filter((id) => id);
 
         const strategyData: ContentNavigationStrategyData = {
-          _id: `nav-strategy-hardcoded-${Date.now()}`,
+          _id: `NAVIGATION_STRATEGY-${Date.now()}`,
           docType: DocType.NAVIGATION_STRATEGY,
           name: this.newStrategy.name,
           description: this.newStrategy.description,

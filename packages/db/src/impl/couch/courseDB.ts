@@ -25,6 +25,7 @@ import {
   SkuilderCourseData,
   Tag,
   TagStub,
+  DocTypePrefixes,
 } from '../../core/types/types-legacy';
 import { logger } from '../../util/logger';
 import { GET_CACHED } from './clientCache';
@@ -459,7 +460,7 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
 
     if (id == '') {
       const strategy: ContentNavigationStrategyData = {
-        id: 'ELO',
+        _id: 'NAVIGATION_STRATEGY-ELO',
         docType: DocType.NAVIGATION_STRATEGY,
         name: 'ELO',
         description: 'ELO-based navigation strategy for ordering content by difficulty',
@@ -474,10 +475,13 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
   }
 
   async getAllNavigationStrategies(): Promise<ContentNavigationStrategyData[]> {
-    const result = await this.db.find<ContentNavigationStrategyData>({
-      selector: { docType: DocType.NAVIGATION_STRATEGY },
+    const prefix = DocTypePrefixes[DocType.NAVIGATION_STRATEGY];
+    const result = await this.db.allDocs<ContentNavigationStrategyData>({
+      startkey: prefix,
+      endkey: `${prefix}\ufff0`,
+      include_docs: true,
     });
-    return result.docs;
+    return result.rows.map((row) => row.doc!);
   }
 
   async addNavigationStrategy(data: ContentNavigationStrategyData): Promise<void> {
@@ -522,7 +526,7 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
 
     logger.warn(`Returning hard-coded default ELO navigator`);
     const ret: ContentNavigationStrategyData = {
-      id: 'ELO',
+      _id: 'NAVIGATION_STRATEGY-ELO',
       docType: DocType.NAVIGATION_STRATEGY,
       name: 'ELO',
       description: 'ELO-based navigation strategy',

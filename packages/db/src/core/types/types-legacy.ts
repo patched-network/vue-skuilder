@@ -91,7 +91,7 @@ export interface QuestionData extends SkuilderCourseData {
   dataShapeList: PouchDB.Core.DocumentId[];
 }
 
-export const DocTypePrefixes: Record<string, string> = {
+export const DocTypePrefixes = {
   [DocType.CARD]: 'c',
   [DocType.DISPLAYABLE_DATA]: 'dd',
   [DocType.TAG]: 'TAG',
@@ -103,7 +103,7 @@ export const DocTypePrefixes: Record<string, string> = {
   [DocType.VIEW]: 'VIEW',
   [DocType.PEDAGOGY]: 'PEDAGOGY',
   [DocType.NAVIGATION_STRATEGY]: 'NAVIGATION_STRATEGY',
-};
+} as const;
 
 export interface CardHistory<T extends CardRecord> {
   _id: PouchDB.Core.DocumentId;
