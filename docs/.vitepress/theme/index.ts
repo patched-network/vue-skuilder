@@ -27,6 +27,7 @@ import '@vue-skuilder/common-ui/style';
 // Import components to register globally
 import EmbeddedCourse from './components/EmbeddedCourse.vue';
 import HeroStudySession from './components/HeroStudySession.vue';
+import EmbeddedFillInEditor from './components/EmbeddedFillInEditor.vue';
 
 export default {
   extends: DefaultTheme,
@@ -123,5 +124,6 @@ export default {
     // Register global components
     app.component('EmbeddedCourse', EmbeddedCourse);
     app.component('HeroStudySession', HeroStudySession);
+    app.component('EmbeddedFillInEditor', EmbeddedFillInEditor);
   },
 } satisfies Theme;
