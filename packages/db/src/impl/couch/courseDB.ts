@@ -473,24 +473,15 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
     }
   }
 
-  getAllNavigationStrategies(): Promise<ContentNavigationStrategyData[]> {
-    logger.debug('[courseDB] Returning hard-coded navigation strategies');
-    const strategies: ContentNavigationStrategyData[] = [
-      {
-        id: 'ELO',
-        docType: DocType.NAVIGATION_STRATEGY,
-        name: 'ELO',
-        description: 'ELO-based navigation strategy for ordering content by difficulty',
-        implementingClass: Navigators.ELO,
-        course: this.id,
-        serializedData: '', // serde is a noop for ELO navigator.
-      },
-    ];
-    return Promise.resolve(strategies);
+  async getAllNavigationStrategies(): Promise<ContentNavigationStrategyData[]> {
+    const result = await this.db.find<ContentNavigationStrategyData>({
+      selector: { docType: DocType.NAVIGATION_STRATEGY },
+    });
+    return result.docs;
   }
 
   async addNavigationStrategy(data: ContentNavigationStrategyData): Promise<void> {
-    logger.debug(`[courseDB] Adding navigation strategy: ${data.id}`);
+    logger.debug(`[courseDB] Adding navigation strategy: ${data._id}`);
     // // For now, just log the data and return success
     // logger.debug(JSON.stringify(data));
     return this.db.put(data).then(() => {});
