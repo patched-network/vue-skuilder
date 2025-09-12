@@ -11,6 +11,7 @@ import { logger } from '../../util/logger';
 
 export enum Navigators {
   ELO = 'elo',
+  HARDCODED = 'hardcodedOrder',
 }
 
 /**

@@ -135,16 +135,13 @@ export class StaticCourseDB implements CourseDBInterface {
   async getNewCards(limit: number = 99): Promise<StudySessionNewItem[]> {
     const activeCards = await this.userDB.getActiveCards();
     return (
-      await this.getCardsCenteredAtELO(
-        { limit: limit, elo: 'user' },
-        (c: QualifiedCardID) => {
-          if (activeCards.some((ac) => c.cardID === ac.cardID)) {
-            return false;
-          } else {
-            return true;
-          }
+      await this.getCardsCenteredAtELO({ limit: limit, elo: 'user' }, (c: QualifiedCardID) => {
+        if (activeCards.some((ac) => c.cardID === ac.cardID)) {
+          return false;
+        } else {
+          return true;
         }
-      )
+      })
     ).map((c) => {
       return {
         ...c,
@@ -372,7 +369,7 @@ export class StaticCourseDB implements CourseDBInterface {
   // Navigation Strategy Manager implementation
   async getNavigationStrategy(_id: string): Promise<ContentNavigationStrategyData> {
     return {
-      id: 'ELO',
+      _id: 'NAVIGATION_STRATEGY-ELO',
       docType: DocType.NAVIGATION_STRATEGY,
       name: 'ELO',
       description: 'ELO-based navigation strategy',
