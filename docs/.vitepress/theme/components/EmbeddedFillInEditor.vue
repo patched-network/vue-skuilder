@@ -2,7 +2,7 @@
   <div class="embedded-fill-in-editor">
     <div class="editor-panel">
       <div class="editor-header">
-        <h4>Source:</h4>
+        <h4>Markdown Source:</h4>
         <div class="editor-buttons">
           <button @click="resetToOriginal" class="reset-button" title="Reset to original">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
@@ -23,15 +23,16 @@
         </div>
       </div>
       <textarea
+        ref="textareaRef"
         v-model="markdownSource"
         class="editor-textarea"
         placeholder="Enter fill-in markdown with {{mustache}} syntax..."
-        rows="6"
+        @input="autoResize"
       />
     </div>
     <div class="preview-panel">
       <div class="preview-header">
-        <h4>Card:</h4>
+        <h4>Rendered Card:</h4>
         <div v-if="copyStatus" class="copy-status">{{ copyStatus }}</div>
       </div>
       <div class="preview-content">
@@ -47,7 +48,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, nextTick, watch } from 'vue';
 import FillInView from '@vue-skuilder/courseware/default/questions/fillIn/fillIn.vue';
 
 interface Props {
@@ -63,6 +64,7 @@ const originalValue = ref(props.initialValue); // Store original for reset
 const markdownSource = ref(props.initialValue);
 const copyStatus = ref('');
 const lastResponse = ref(null);
+const textareaRef = ref<HTMLTextAreaElement | null>(null);
 
 // Convert markdown to ViewData format expected by fillIn.vue
 const viewData = computed(() => [
@@ -81,6 +83,18 @@ const handleResponse = (response: any) => {
   };
 };
 
+// Auto-resize textarea to fit content
+const autoResize = () => {
+  nextTick(() => {
+    if (textareaRef.value) {
+      // Reset height to auto to get the correct scrollHeight
+      textareaRef.value.style.height = 'auto';
+      // Set height to scrollHeight (content height) with minimum
+      textareaRef.value.style.height = Math.max(textareaRef.value.scrollHeight, 60) + 'px';
+    }
+  });
+};
+
 // Reset to original value
 const resetToOriginal = () => {
   markdownSource.value = originalValue.value;
@@ -89,6 +103,8 @@ const resetToOriginal = () => {
   setTimeout(() => {
     copyStatus.value = '';
   }, 1500);
+  // Resize after reset
+  nextTick(() => autoResize());
 };
 
 // Copy markdown source to clipboard
@@ -107,17 +123,27 @@ const copyToClipboard = async () => {
     }, 2000);
   }
 };
+
+// Initialize auto-resize on mount and when content changes
+onMounted(() => {
+  autoResize();
+});
+
+// Watch for changes in markdownSource to trigger resize
+watch(markdownSource, () => {
+  autoResize();
+});
 </script>
 
 <style scoped>
 .embedded-fill-in-editor {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 1.5rem;
+  gap: 0;
   border: 1px solid var(--vp-c-border);
   border-radius: 12px;
   background: var(--vp-c-bg-soft);
-  padding: 1.5rem;
+  padding: 0;
   margin: 1.5rem 0;
 }
 
@@ -132,20 +158,28 @@ const copyToClipboard = async () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0;
+  padding: 0.75rem 1.5rem 0.5rem 1.5rem;
+  position: relative;
 }
 
 .editor-header h4,
 .preview-header h4 {
   margin: 0;
-  color: var(--vp-c-text-1);
-  font-size: 1rem;
-  font-weight: 600;
+  color: var(--vp-c-text-2);
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .editor-buttons {
   display: flex;
-  gap: 0.5rem;
+  height: 100%;
+  gap: 0rem;
+  position: absolute;
+  right: 0rem;
+  top: 0rem;
 }
 
 .copy-button,
@@ -153,14 +187,29 @@ const copyToClipboard = async () => {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background: var(--vp-c-bg);
   border: 1px solid var(--vp-c-border);
+  border-top: none;
+  border-bottom: none;
+  border-right: none;
+  background: var(--vp-c-bg-soft);
   color: var(--vp-c-text-2);
-  padding: 0.5rem 0.75rem;
-  border-radius: 6px;
-  font-size: 0.875rem;
+  padding: 0.375rem 0.625rem;
+  font-size: 0.8rem;
   cursor: pointer;
   transition: all 0.2s;
+  height: 100%;
+}
+
+/* First button (reset) gets left border */
+.reset-button {
+  border-left: 2px solid var(--vp-c-border);
+  border-right: 1px solid var(--vp-c-border);
+}
+
+/* Last button (copy) gets right border and rounded top-right corner */
+.copy-button {
+  border-right: 1px solid var(--vp-c-border);
+  border-top-right-radius: 12px;
 }
 
 .copy-button:hover,
@@ -170,35 +219,36 @@ const copyToClipboard = async () => {
   border-color: var(--vp-c-brand-1);
 }
 
-.reset-button:hover {
-  border-color: var(--vp-c-yellow-1);
-}
-
 .copy-status {
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   color: var(--vp-c-brand-1);
   font-weight: 500;
+  height: 100%;
+  right: 1rem;
 }
 
 .editor-textarea {
-  flex: 1;
   width: 100%;
-  padding: 1rem;
-  border: 1px solid var(--vp-c-border);
-  border-radius: 8px;
+  padding: 1rem 1.5rem;
+  border: none;
+  border-top: 1px solid var(--vp-c-border);
+  border-bottom: 1px solid var(--vp-c-border);
+  border-radius: 0;
   background: var(--vp-c-bg);
   color: var(--vp-c-text-1);
   font-family: var(--vp-font-family-mono);
   font-size: 0.9rem;
   line-height: 1.5;
-  resize: vertical;
-  min-height: 120px;
+  resize: none;
+  min-height: 60px;
+  height: auto;
+  overflow: hidden;
 }
 
 .editor-textarea:focus {
   outline: none;
-  border-color: var(--vp-c-brand-1);
-  box-shadow: 0 0 0 2px var(--vp-c-brand-soft);
+  border-top-color: var(--vp-c-brand-1);
+  box-shadow: inset 0 2px 0 var(--vp-c-brand-1);
 }
 
 .editor-textarea::placeholder {
@@ -207,10 +257,11 @@ const copyToClipboard = async () => {
 
 .preview-content {
   flex: 1;
-  border: 1px solid var(--vp-c-border);
-  border-radius: 8px;
+  border: none;
+  border-top: 1px solid var(--vp-c-border);
+  border-radius: 0 0 12px 12px;
   background: var(--vp-c-bg);
-  padding: 1rem;
+  padding: 1rem 1.5rem 1.5rem 1.5rem;
   min-height: 120px;
   display: flex;
   flex-direction: column;
