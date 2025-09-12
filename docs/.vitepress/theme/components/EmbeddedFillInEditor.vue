@@ -2,16 +2,28 @@
   <div class="embedded-fill-in-editor">
     <div class="editor-panel">
       <div class="editor-header">
-        <h4>Markdown Source</h4>
-        <button @click="copyToClipboard" class="copy-button" title="Copy to clipboard">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
-          </svg>
-          Copy
-        </button>
+        <h4>Source:</h4>
+        <div class="editor-buttons">
+          <button @click="resetToOriginal" class="reset-button" title="Reset to original">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path
+                d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"
+              />
+            </svg>
+            Reset
+          </button>
+          <button @click="copyToClipboard" class="copy-button" title="Copy to clipboard">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path
+                d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"
+              />
+            </svg>
+            Copy
+          </button>
+        </div>
       </div>
-      <textarea 
-        v-model="markdownSource" 
+      <textarea
+        v-model="markdownSource"
         class="editor-textarea"
         placeholder="Enter fill-in markdown with {{mustache}} syntax..."
         rows="6"
@@ -19,18 +31,12 @@
     </div>
     <div class="preview-panel">
       <div class="preview-header">
-        <h4>Live Preview</h4>
+        <h4>Card:</h4>
         <div v-if="copyStatus" class="copy-status">{{ copyStatus }}</div>
       </div>
       <div class="preview-content">
-        <fill-in-view 
-          v-if="markdownSource.trim()" 
-          :data="viewData" 
-          @emit-response="handleResponse"
-        />
-        <div v-else class="empty-state">
-          Enter markdown above to see the live preview
-        </div>
+        <fill-in-view v-if="markdownSource.trim()" :data="viewData" @emit-response="handleResponse" />
+        <div v-else class="empty-state">Enter markdown above to see the live preview</div>
         <div v-if="lastResponse" class="response-display">
           <p><strong>Last Response:</strong></p>
           <pre>{{ JSON.stringify(lastResponse, null, 2) }}</pre>
@@ -41,95 +47,109 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import FillInView from '@vue-skuilder/courseware/default/questions/fillIn/fillIn.vue'
+import { ref, computed } from 'vue';
+import FillInView from '@vue-skuilder/courseware/default/questions/fillIn/fillIn.vue';
 
 interface Props {
   initialValue?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  initialValue: "The capital of France is {{Paris}}."
-})
+  initialValue: 'The capital of France is {{Paris}}.',
+});
 
 // Reactive state
-const markdownSource = ref(props.initialValue)
-const copyStatus = ref('')
-const lastResponse = ref(null)
+const originalValue = ref(props.initialValue); // Store original for reset
+const markdownSource = ref(props.initialValue);
+const copyStatus = ref('');
+const lastResponse = ref(null);
 
 // Convert markdown to ViewData format expected by fillIn.vue
-const viewData = computed(() => [{
-  Input: markdownSource.value
-}])
+const viewData = computed(() => [
+  {
+    Input: markdownSource.value,
+  },
+]);
 
 // Handle card responses (when user interacts with the fill-in)
 const handleResponse = (response: any) => {
-  console.log('Fill-in response:', response)
+  console.log('Fill-in response:', response);
   lastResponse.value = {
     isCorrect: response.isCorrect,
     performance: response.performance,
-    timestamp: new Date().toISOString()
-  }
-}
+    timestamp: new Date().toISOString(),
+  };
+};
+
+// Reset to original value
+const resetToOriginal = () => {
+  markdownSource.value = originalValue.value;
+  lastResponse.value = null; // Clear any previous response
+  copyStatus.value = 'Reset!';
+  setTimeout(() => {
+    copyStatus.value = '';
+  }, 1500);
+};
 
 // Copy markdown source to clipboard
 const copyToClipboard = async () => {
   try {
-    await navigator.clipboard.writeText(markdownSource.value)
-    copyStatus.value = 'Copied!'
+    await navigator.clipboard.writeText(markdownSource.value);
+    copyStatus.value = 'Copied!';
     setTimeout(() => {
-      copyStatus.value = ''
-    }, 2000)
+      copyStatus.value = '';
+    }, 2000);
   } catch (err) {
-    console.error('Failed to copy:', err)
-    copyStatus.value = 'Copy failed'
+    console.error('Failed to copy:', err);
+    copyStatus.value = 'Copy failed';
     setTimeout(() => {
-      copyStatus.value = ''
-    }, 2000)
+      copyStatus.value = '';
+    }, 2000);
   }
-}
+};
 </script>
 
 <style scoped>
 .embedded-fill-in-editor {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 1.5rem;
   border: 1px solid var(--vp-c-border);
   border-radius: 12px;
   background: var(--vp-c-bg-soft);
   padding: 1.5rem;
   margin: 1.5rem 0;
-  min-height: 400px;
 }
 
-@media (max-width: 768px) {
-  .embedded-fill-in-editor {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-}
-
-.editor-panel, .preview-panel {
+.editor-panel,
+.preview-panel {
   display: flex;
   flex-direction: column;
 }
 
-.editor-header, .preview-header {
+.editor-header,
+.preview-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 0.75rem;
 }
 
-.editor-header h4, .preview-header h4 {
+.editor-header h4,
+.preview-header h4 {
   margin: 0;
   color: var(--vp-c-text-1);
   font-size: 1rem;
   font-weight: 600;
 }
 
-.copy-button {
+.editor-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.copy-button,
+.reset-button {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -143,10 +163,15 @@ const copyToClipboard = async () => {
   transition: all 0.2s;
 }
 
-.copy-button:hover {
+.copy-button:hover,
+.reset-button:hover {
   background: var(--vp-c-bg-soft);
   color: var(--vp-c-text-1);
   border-color: var(--vp-c-brand-1);
+}
+
+.reset-button:hover {
+  border-color: var(--vp-c-yellow-1);
 }
 
 .copy-status {
