@@ -136,7 +136,13 @@ Including, eg, code blocks:
 
 Basic cards support media (audio, image) that has been bundled with the card. Porting that process to this docs site is a work in progress, but the rough picture is this:
 
+#### Images
+
 ![Card with a Heart](../assets/img-card.png)
+
+#### Audio
+
+![Card with Sound](../assets/audio-card.png)
 
 ## General Content Embedding
 

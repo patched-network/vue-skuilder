@@ -225,7 +225,29 @@ export class CourseDB implements StudyContentSource, CourseDBInterface {
     if (!doc.docType || !(doc.docType === DocType.CARD)) {
       throw new Error(`failed to remove ${id} from course ${this.id}. id does not point to a card`);
     }
-    // TODO: remove card from tags lists (getTagsByCards)
+    
+    // Remove card from all associated tags before deleting the card
+    try {
+      const appliedTags = await this.getAppliedTags(id);
+      const results = await Promise.allSettled(
+        appliedTags.rows.map(async (tagRow) => {
+          const tagId = tagRow.id;
+          await this.removeTagFromCard(id, tagId);
+        })
+      );
+      
+      // Log any individual tag cleanup failures
+      results.forEach((result, index) => {
+        if (result.status === 'rejected') {
+          const tagId = appliedTags.rows[index].id;
+          logger.error(`Failed to remove card ${id} from tag ${tagId}: ${result.reason}`);
+        }
+      });
+    } catch (error) {
+      logger.error(`Error removing card ${id} from tags: ${error}`);
+      // Continue with card deletion even if tag cleanup fails
+    }
+    
     return this.db.remove(doc);
   }
 
