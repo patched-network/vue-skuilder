@@ -1,4 +1,4 @@
-name: Publish to NPM
+name: Publish packages to NPM and GH
 
 on:
   push:
@@ -11,6 +11,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
+      packages: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -35,7 +36,7 @@ jobs:
           VERSION=${GITHUB_REF_NAME#v}
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           echo "📌 Expected version: $VERSION"
-          
+
           # Determine npm tag based on version format
           if [[ "$VERSION" =~ -[0-9]+$ ]]; then
             NPM_TAG="alpha"
@@ -49,7 +50,7 @@ jobs:
       - name: Verify package versions match tag
         run: |
           VERSION=${{ steps.extract_version.outputs.VERSION }}
-          
+
           # Verify all packages have the correct version
           for package in common db common-ui courseware edit-ui client platform-ui standalone-ui express mcp cli; do
             PACKAGE_VERSION=$(cd packages/$package && node -p "require('./package.json').version")
@@ -59,7 +60,7 @@ jobs:
             fi
             echo "✅ packages/$package version $PACKAGE_VERSION matches tag"
           done
-          
+
           echo "✅ All package versions verified"
 
       - name: Lint packages
@@ -73,37 +74,37 @@ jobs:
         run: |
           echo "Building common package..."
           yarn workspace @vue-skuilder/common build
-          
+
           echo "Building db package..."
           yarn workspace @vue-skuilder/db build
-          
+
           echo "Building common-ui package..."
           yarn workspace @vue-skuilder/common-ui build
-          
+
           echo "Building courseware package..."
           yarn workspace @vue-skuilder/courseware build
 
           echo "Building edit-ui package..."
           yarn workspace @vue-skuilder/edit-ui build
-          
+
           echo "Building client package..."
           yarn workspace @vue-skuilder/client build
-          
+
           echo "Building platform-ui package..."
           yarn workspace @vue-skuilder/platform-ui build
-          
+
           echo "Building standalone-ui package..."
           yarn workspace @vue-skuilder/standalone-ui build
-          
+
           echo "Building express package..."
           yarn workspace @vue-skuilder/express build
-          
+
           # echo "Building tuilder package..."
           # yarn workspace @vue-skuilder/tuilder build
-          
+
           echo "Building mcp package..."
           yarn workspace @vue-skuilder/mcp build
-          
+
           echo "Building cli package..."
           yarn workspace @vue-skuilder/cli build
 
@@ -130,47 +131,47 @@ jobs:
         run: |
           set -e
           NPM_TAG="${{ steps.extract_version.outputs.NPM_TAG }}"
-          
+
           echo "Publishing @vue-skuilder/common..."
           cd packages/common && yarn npm publish --access public --tag $NPM_TAG && cd ../..
-          
+
           echo "Publishing @vue-skuilder/db..."
           cd packages/db && yarn npm publish --access public --tag $NPM_TAG && cd ../..
-          
+
           echo "Publishing @vue-skuilder/common-ui..."
           cd packages/common-ui && yarn npm publish --access public --tag $NPM_TAG && cd ../..
-          
+
           echo "Publishing @vue-skuilder/edit-ui..."
           cd packages/edit-ui && yarn npm publish --access public --tag $NPM_TAG && cd ../..
-          
+
           echo "Publishing @vue-skuilder/courseware..."
           cd packages/courseware && yarn npm publish --access public --tag $NPM_TAG && cd ../..
-          
+
           echo "Publishing @vue-skuilder/client..."
           cd packages/client && yarn npm publish --access public --tag $NPM_TAG && cd ../..
-          
+
           echo "Publishing @vue-skuilder/platform-ui..."
           cd packages/platform-ui && yarn npm publish --access public --tag $NPM_TAG && cd ../..
-          
+
           echo "Publishing @vue-skuilder/standalone-ui..."
           cd packages/standalone-ui && yarn npm publish --access public --tag $NPM_TAG && cd ../..
-          
+
           echo "Publishing @vue-skuilder/mcp..."
           cd packages/mcp && yarn npm publish --access public --tag $NPM_TAG && cd ../..
-          
+
           # echo "Publishing @vue-skuilder/tuilder..."
           # cd packages/tuilder && yarn npm publish --access public --tag $NPM_TAG && cd ../..
-          
+
           echo "Publishing @vue-skuilder/express..."
           cd packages/express && yarn npm publish --access public --tag $NPM_TAG && cd ../..
-          
+
           echo "Publishing @vue-skuilder/cli (scoped)..."
           cd packages/cli && yarn npm publish --access public --tag $NPM_TAG && cd ../..
-          
+
           # Dual-publish CLI as unscoped 'skuilder' package
           echo "Publishing CLI as 'skuilder'..."
           cd packages/cli
-          
+
           # Modify package.json for unscoped publish
           node -e "
             const fs = require('fs');
@@ -180,19 +181,68 @@ jobs:
             delete pkg.publishConfig;
             fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
           "
-          
+
           # Use yarn npm publish to maintain workspace dependency resolution
           yarn npm publish --access public --tag $NPM_TAG
           cd ../..
-          
-          echo "All packages published successfully!"
 
-      - name: NPM publish completed
+          echo "All packages published successfully to NPM!"
+
+      - name: Configure GitHub Packages authentication
         run: |
-          echo "✅ All vue-skuilder packages published to NPM registry"
+          echo "@vue-skuilder:registry=https://npm.pkg.github.com" >> ~/.npmrc
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> ~/.npmrc
+
+      - name: Publish packages to GitHub Packages
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          NPM_TAG="${{ steps.extract_version.outputs.NPM_TAG }}"
+
+          echo "Publishing packages to GitHub Packages registry..."
+
+          echo "Publishing @vue-skuilder/common to GitHub Packages..."
+          cd packages/common && npm publish --registry=https://npm.pkg.github.com --tag $NPM_TAG && cd ../..
+
+          echo "Publishing @vue-skuilder/db to GitHub Packages..."
+          cd packages/db && npm publish --registry=https://npm.pkg.github.com --tag $NPM_TAG && cd ../..
+
+          echo "Publishing @vue-skuilder/common-ui to GitHub Packages..."
+          cd packages/common-ui && npm publish --registry=https://npm.pkg.github.com --tag $NPM_TAG && cd ../..
+
+          echo "Publishing @vue-skuilder/edit-ui to GitHub Packages..."
+          cd packages/edit-ui && npm publish --registry=https://npm.pkg.github.com --tag $NPM_TAG && cd ../..
+
+          echo "Publishing @vue-skuilder/courseware to GitHub Packages..."
+          cd packages/courseware && npm publish --registry=https://npm.pkg.github.com --tag $NPM_TAG && cd ../..
+
+          echo "Publishing @vue-skuilder/client to GitHub Packages..."
+          cd packages/client && npm publish --registry=https://npm.pkg.github.com --tag $NPM_TAG && cd ../..
+
+          echo "Publishing @vue-skuilder/platform-ui to GitHub Packages..."
+          cd packages/platform-ui && npm publish --registry=https://npm.pkg.github.com --tag $NPM_TAG && cd ../..
+
+          echo "Publishing @vue-skuilder/standalone-ui to GitHub Packages..."
+          cd packages/standalone-ui && npm publish --registry=https://npm.pkg.github.com --tag $NPM_TAG && cd ../..
+
+          echo "Publishing @vue-skuilder/mcp to GitHub Packages..."
+          cd packages/mcp && npm publish --registry=https://npm.pkg.github.com --tag $NPM_TAG && cd ../..
+
+          echo "Publishing @vue-skuilder/express to GitHub Packages..."
+          cd packages/express && npm publish --registry=https://npm.pkg.github.com --tag $NPM_TAG && cd ../..
+
+          echo "Publishing @vue-skuilder/cli to GitHub Packages..."
+          cd packages/cli && npm publish --registry=https://npm.pkg.github.com --tag $NPM_TAG && cd ../..
+
+          echo "All packages published successfully to GitHub Packages!"
+
+      - name: Publish completed
+        run: |
+          echo "✅ All vue-skuilder packages published to both NPM and GitHub Packages registries"
           echo "📦 Packages published:"
           echo "   - @vue-skuilder/common"
-          echo "   - @vue-skuilder/db" 
+          echo "   - @vue-skuilder/db"
           echo "   - @vue-skuilder/common-ui"
           echo "   - @vue-skuilder/courseware"
           echo "   - @vue-skuilder/edit-ui"
@@ -202,6 +252,7 @@ jobs:
           echo "   - @vue-skuilder/express"
           echo "   - @vue-skuilder/mcp"
           echo "   - @vue-skuilder/cli"
-          echo "   - skuilder (CLI unscoped)"
+          echo "   - skuilder (CLI unscoped, NPM only)"
           echo ""
+          echo "📦 GitHub Packages: Packages will now appear in the repository sidebar"
           echo "🚀 GitHub release will be created by the 'Publish GitHub Release' workflow"
