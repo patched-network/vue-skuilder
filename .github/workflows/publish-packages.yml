@@ -196,6 +196,7 @@ jobs:
       - name: Publish packages to GitHub Packages
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_CONFIG_REGISTRY: https://npm.pkg.github.com
         run: |
           set -e
           NPM_TAG="${{ steps.extract_version.outputs.NPM_TAG }}"
@@ -203,37 +204,37 @@ jobs:
           echo "Publishing packages to GitHub Packages registry..."
 
           echo "Publishing @vue-skuilder/common to GitHub Packages..."
-          cd packages/common && yarn npm publish --registry=https://npm.pkg.github.com --tag $NPM_TAG && cd ../..
+          cd packages/common && npm publish --tag $NPM_TAG && cd ../..
 
           echo "Publishing @vue-skuilder/db to GitHub Packages..."
-          cd packages/db && yarn npm publish --registry=https://npm.pkg.github.com --tag $NPM_TAG && cd ../..
+          cd packages/db && npm publish --tag $NPM_TAG && cd ../..
 
           echo "Publishing @vue-skuilder/common-ui to GitHub Packages..."
-          cd packages/common-ui && yarn npm publish --registry=https://npm.pkg.github.com --tag $NPM_TAG && cd ../..
+          cd packages/common-ui && npm publish --tag $NPM_TAG && cd ../..
 
           echo "Publishing @vue-skuilder/edit-ui to GitHub Packages..."
-          cd packages/edit-ui && yarn npm publish --registry=https://npm.pkg.github.com --tag $NPM_TAG && cd ../..
+          cd packages/edit-ui && npm publish --tag $NPM_TAG && cd ../..
 
           echo "Publishing @vue-skuilder/courseware to GitHub Packages..."
-          cd packages/courseware && yarn npm publish --registry=https://npm.pkg.github.com --tag $NPM_TAG && cd ../..
+          cd packages/courseware && npm publish --tag $NPM_TAG && cd ../..
 
           echo "Publishing @vue-skuilder/client to GitHub Packages..."
-          cd packages/client && yarn npm publish --registry=https://npm.pkg.github.com --tag $NPM_TAG && cd ../..
+          cd packages/client && npm publish --tag $NPM_TAG && cd ../..
 
           echo "Publishing @vue-skuilder/platform-ui to GitHub Packages..."
-          cd packages/platform-ui && yarn npm publish --registry=https://npm.pkg.github.com --tag $NPM_TAG && cd ../..
+          cd packages/platform-ui && npm publish --tag $NPM_TAG && cd ../..
 
           echo "Publishing @vue-skuilder/standalone-ui to GitHub Packages..."
-          cd packages/standalone-ui && yarn npm publish --registry=https://npm.pkg.github.com --tag $NPM_TAG && cd ../..
+          cd packages/standalone-ui && npm publish --tag $NPM_TAG && cd ../..
 
           echo "Publishing @vue-skuilder/mcp to GitHub Packages..."
-          cd packages/mcp && yarn npm publish --registry=https://npm.pkg.github.com --tag $NPM_TAG && cd ../..
+          cd packages/mcp && npm publish --tag $NPM_TAG && cd ../..
 
           echo "Publishing @vue-skuilder/express to GitHub Packages..."
-          cd packages/express && yarn npm publish --registry=https://npm.pkg.github.com --tag $NPM_TAG && cd ../..
+          cd packages/express && npm publish --tag $NPM_TAG && cd ../..
 
           echo "Publishing @vue-skuilder/cli to GitHub Packages..."
-          cd packages/cli && yarn npm publish --registry=https://npm.pkg.github.com --tag $NPM_TAG && cd ../..
+          cd packages/cli && npm publish --tag $NPM_TAG && cd ../..
 
           echo "All packages published successfully to GitHub Packages!"
 
