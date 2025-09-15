@@ -560,6 +560,15 @@ a {
   text-decoration: underline;
 }
 
+.component-fade-enter-active,
+.component-fade-leave-active {
+  transition: opacity 0.03s ease;
+}
+.component-fade-enter-from,
+.component-fade-leave-to {
+  opacity: 0;
+}
+
 @keyframes varFade {
   0% {
     box-shadow:
