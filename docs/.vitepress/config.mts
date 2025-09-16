@@ -1,11 +1,13 @@
 import { defineConfig } from 'vitepress';
 import path from 'path';
 import { fileURLToPath, URL } from 'node:url';
+import llmstxt from 'vitepress-plugin-llms';
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
   base: '/vue-skuilder/',
   vite: {
+    plugins: [llmstxt()],
     resolve: {
       alias: [
         // Override VitePress default VPHero component with our custom one
