@@ -4,8 +4,13 @@
 
 The focal point of `skuilder` is the main learning loop housed in the `StudySession.vue` component. If you ran the inline demo on the docs [frontpage](../index), you've encountered this loop first-hand. Here we will step through the lifecycle of a *Study Session* and describe the major components along the way.
 
+::: warning !!!
+This diagram is not *strictly* accurate in terms of named entities or functions, but is right in spirit.
+:::
 
-## 0. Session Configuration
+## 0. Session Startup
+
+### 0.1 Configuration
 
 Before the loop begins, a few objects are created to parameterise the session.
 - a list of `StudyContentSource`s
@@ -14,13 +19,28 @@ Before the loop begins, a few objects are created to parameterise the session.
 
 In the frontpage demo, the `StudyContentSource` is hard-coded. In an application with a single standalone course, that course would be hardcoded. In more general contexts, the contentSources may come from a user's registrations or selections from a menu.
 
-A `StudyContentSource`, for practical purposes, is a `CourseDBInterface`. Courses are intended to be bundles of related curriculum. There is also a `ClassroomDBInterface`, which gives an administrator
+The `StudyContentSource` at this point is passed by reference - just an ID string.
 
-*Note* that the studyContentSource at this point is passed by reference - just an ID string.
+### 0.2 Initialization
 
-## 1. Preparing the SessionController
+`StudyContentSource` is a small interface:
 
-Having received a bundle of StudyContentSources, the SessionController instantiates data links
+<<< @../../packages/db/src/core/interfaces/contentSource.ts#docs_StudyContentSource
+
+The behaviour of a course depends (in obvious ways!) on both the course content and the current user. To instantiate
+
+
+### 0.3 Hydration
+
+
+
+## 1. Instantiating the
+
+
+
+Having received a bundle of StudyContentSources, the SessionController instantiates data links to those sources.
+
+
 
 ## 2.
 
