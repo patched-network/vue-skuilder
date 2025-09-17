@@ -407,7 +407,11 @@ export default defineComponent({
       // console.log(`[StudySession] submitResponse completed, result:`, result);
 
       // Handle UI feedback based on result
-      this.handleUIFeedback(result);
+      try {
+        this.handleUIFeedback(result);
+      } catch (error) {
+        console.error(`[StudySession] Error handling UI feedback: ${error}.\n\nResult: ${JSON.stringify(result)}`);
+      }
 
       // Handle navigation based on result
       if (result.shouldLoadNextCard) {
