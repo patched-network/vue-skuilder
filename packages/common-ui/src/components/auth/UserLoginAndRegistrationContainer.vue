@@ -1,13 +1,16 @@
 <template>
   <div v-if="userReady && display">
     <transition name="component-fade" mode="out-in">
-      <div v-if="guestMode && authUIConfig.showLoginRegistration" key="login-buttons">
-        <v-dialog v-model="regDialog" width="500px">
+      <div v-if="guestMode" key="login-buttons">
+        <!-- Registration button: only if showLoginRegistration is true -->
+        <v-dialog v-model="regDialog" width="500px" v-if="authUIConfig.showLoginRegistration">
           <template #activator="{ props }">
             <v-btn class="mr-2" size="small" color="success" v-bind="props">Sign Up</v-btn>
           </template>
           <UserRegistration @toggle="toggle" />
         </v-dialog>
+        
+        <!-- Login button: always show in guest mode -->
         <v-dialog v-model="loginDialog" width="500px">
           <template #activator="{ props }">
             <v-btn size="small" color="success" v-bind="props">Log In</v-btn>
@@ -36,6 +39,7 @@ import { GuestUsername } from '@vue-skuilder/db';
 const props = defineProps<{
   showLoginButton?: boolean;
   redirectToPath?: string;
+  showRegistration?: boolean;
 }>();
 
 const route = useRoute();
@@ -64,12 +68,20 @@ const guestMode = computed(() => {
   return !authStore.loginAndRegistration.loggedIn;
 });
 
-const authUIConfig = computed(() => authUI.config.value || {
-  showLoginRegistration: true,
-  showLogout: true, 
-  showResetData: false,
-  logoutLabel: 'Log out',
-  resetLabel: '',
+const authUIConfig = computed(() => {
+  const baseConfig = authUI.config.value || {
+    showLoginRegistration: true,
+    showLogout: true, 
+    showResetData: false,
+    logoutLabel: 'Log out',
+    resetLabel: '',
+  };
+  
+  // Apply prop overrides
+  return {
+    ...baseConfig,
+    ...(props.showRegistration !== undefined && { showLoginRegistration: props.showRegistration })
+  };
 });
 
 const regDialog = computed({
