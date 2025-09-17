@@ -7,6 +7,7 @@ import llmstxt from 'vitepress-plugin-llms';
 export default defineConfig({
   base: '/vue-skuilder/',
   vite: {
+    // @ts-expect-error See: https://github.com/okineadev/vitepress-plugin-llms/issues/75#issuecomment-3299422144
     plugins: [llmstxt()],
     resolve: {
       alias: [
