@@ -33,6 +33,7 @@
   "dependencies": {
     "@vue-skuilder/common": "workspace:*",
     "@vue-skuilder/common-ui": "workspace:*",
+    "@vue-skuilder/courseware": "workspace:*",
     "@vue-skuilder/db": "workspace:*",
     "pinia": "^2.3.0",
     "vue": "^3.5.13",

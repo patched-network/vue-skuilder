@@ -110,7 +110,7 @@ export default defineComponent({
     const questionData: Array<[QuestionDescriptor, typeof Displayable]> = [];
 
     courseNameList.forEach((course) => {
-      const courseQs = allCourseWare.getCourse(course)!.questions;
+      const courseQs = allCourseWare.getCourseWare(course)!.questions;
 
       courseQs.forEach((courseQ) => {
         questionData.push([
