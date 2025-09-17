@@ -6620,6 +6620,7 @@ __metadata:
     "@vitejs/plugin-vue": "npm:^5.2.1"
     "@vue-skuilder/common": "workspace:*"
     "@vue-skuilder/common-ui": "workspace:*"
+    "@vue-skuilder/courseware": "workspace:*"
     "@vue-skuilder/db": "workspace:*"
     "@vue/eslint-config-typescript": "npm:^14.4.0"
     "@vue/test-utils": "npm:^2.4.6"
