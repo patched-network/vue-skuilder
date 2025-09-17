@@ -57,7 +57,7 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-// import ComponentRegistration from '@vue-skuilder/platform-ui/src/components/Edit/ComponentRegistration/ComponentRegistration.vue';
+import ComponentRegistration from './ComponentRegistration.vue';
 import NavigationStrategyEditor from './NavigationStrategy/NavigationStrategyEditor.vue';
 import { allCourseWare } from '@vue-skuilder/courseware';
 import { BlanksCard, BlanksCardDataShapes } from '@vue-skuilder/courseware';
@@ -72,7 +72,7 @@ export default defineComponent({
 
   components: {
     DataInputForm,
-    // ComponentRegistration,
+    ComponentRegistration,
     NavigationStrategyEditor,
     BulkImportView,
   },
