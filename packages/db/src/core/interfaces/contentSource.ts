@@ -45,10 +45,12 @@ export interface ContentSourceID {
   id: string;
 }
 
+// #region docs_StudyContentSource
 export interface StudyContentSource {
   getPendingReviews(): Promise<(StudySessionReviewItem & ScheduledCard)[]>;
   getNewCards(n?: number): Promise<StudySessionNewItem[]>;
 }
+// #endregion docs_StudyContentSource
 
 export async function getStudySource(
   source: ContentSourceID,
