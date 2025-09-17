@@ -15,7 +15,7 @@ import Courses from './views/Courses.vue';
 import Home from './views/Home.vue';
 import Login from './views/Login.vue';
 import ReleaseNotes from './views/ReleaseNotes.vue';
-import SignUp from './views/SignUp.vue';
+// import SignUp from './views/SignUp.vue';
 import Study from './views/Study.vue';
 import User from './views/User.vue';
 import DataInputFormTester from './dev/DataInputFormTester.vue';
@@ -61,11 +61,13 @@ const router = createRouter({
       name: 'login',
       component: Login,
     },
-    {
-      path: '/signup',
-      name: 'signup',
-      component: SignUp,
-    },
+    // Suppress signup for now
+    //
+    // {
+    //   path: '/signup',
+    //   name: 'signup',
+    //   component: SignUp,
+    // },
     {
       path: '/notes',
       component: ReleaseNotes,
@@ -187,7 +189,7 @@ router.beforeEach(async (to, _from, next) => {
       } else {
         const redirectStore = useAuthRedirectStore();
         let reason: 'admin-required' | 'auth-required' | 'auth-failed';
-        
+
         if (user) {
           // User is logged in but not admin
           reason = 'admin-required';
@@ -195,35 +197,35 @@ router.beforeEach(async (to, _from, next) => {
           // User is not logged in
           reason = 'auth-required';
         }
-        
+
         // Set context in store (fallback for refresh)
         redirectStore.setPendingRedirect(to.fullPath, reason);
-        
+
         // Navigate with history state (primary method)
-        next({ 
+        next({
           name: 'login',
           state: {
             redirect: to.fullPath,
             reason,
-            timestamp: Date.now()
-          }
+            timestamp: Date.now(),
+          },
         });
       }
     } catch {
       const redirectStore = useAuthRedirectStore();
       const reason = 'auth-failed';
-      
+
       // Set context in store (fallback for refresh)
       redirectStore.setPendingRedirect(to.fullPath, reason);
-      
+
       // Navigate with history state (primary method)
-      next({ 
+      next({
         name: 'login',
         state: {
           redirect: to.fullPath,
           reason,
-          timestamp: Date.now()
-        }
+          timestamp: Date.now(),
+        },
       });
     }
   } else {
