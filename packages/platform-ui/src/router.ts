@@ -15,7 +15,7 @@ import Courses from './views/Courses.vue';
 import Home from './views/Home.vue';
 import Login from './views/Login.vue';
 import ReleaseNotes from './views/ReleaseNotes.vue';
-import SignUp from './views/SignUp.vue';
+// import SignUp from './views/SignUp.vue';
 import Study from './views/Study.vue';
 import User from './views/User.vue';
 import DataInputFormTester from './dev/DataInputFormTester.vue';
