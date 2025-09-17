@@ -8,9 +8,9 @@ The focal point of `skuilder` is the main learning loop housed in the `StudySess
 This diagram is not *strictly* accurate in terms of named entities or functions, but is right in spirit.
 :::
 
-## 0. Session Startup
+## Session Startup
 
-### 0.1 Configuration
+### Configuration
 
 Before the loop begins, a few objects are created to parameterise the session.
 - a list of `StudyContentSource`s
@@ -21,30 +21,52 @@ In the frontpage demo, the `StudyContentSource` is hard-coded. In an application
 
 The `StudyContentSource` at this point is passed by reference - just an ID string.
 
-### 0.2 Initialization
+### Initialization
 
 `StudyContentSource` is a small interface:
 
 <<< @../../packages/db/src/core/interfaces/contentSource.ts#docs_StudyContentSource
 
-The behaviour of a course depends (in obvious ways!) on both the course content and the current user. To instantiate
+The behaviour of a course depends (in obvious ways!) on both the course content and the current user. To instantiate the working content souces, a helper from the `dataLayerProvider` is used, which combines each curriculum store with a user's running records to produce the personalized content source for the session:
+
+``` ts
+getStudySource(source: ContentSourceID, user: UserDBInterface): StudyContentSource
+```
+
+We're here:
+
+![Initialization](../assets/sk-architecture-init.excalidraw.svg)
+
+### Session Planning & Data Hydration
+
+With the content sources initialized, the `SessionController` now populates its queues for the session.
 
 
-### 0.3 Hydration
+The default behaviour is to prefer surfacing at least *something* new for each session, but otherwise to make some tradeoff between how long the session is scheduled for and how much backlog review exists. Skuilder likes to keep a buffer of cards that are *eligible* for review but do not *immediately require* it, as a means of gracefully handling increases or decreases to a user's regular study routine.
+
+In the definition of `StudyContentSource` above, two types
+
+``` ts
+type StudySessionReiewItem {}
+type StudySessionNewItem {}
+```
+
+are described - each of which is a subtype of the more general
+
+Like the ContentSource
+
+With some `newCards` and `reviewCards` in the pipe,
 
 
 
-## 1. Instantiating the
+![Initialization](../assets/sk-architecture-plan.excalidraw.svg)
+
+## The Main Loop
+
+As the user responds to each card, events are emitted for the SessionController to handle. (See the [authoring cards](./cards) doc for a live demo).
 
 
 
-Having received a bundle of StudyContentSources, the SessionController instantiates data links to those sources.
+## Cleanup
 
-
-
-## 2.
-
-
-To understand the system as a whole, it's best to start here and then fan out to the individual pieces.
-
-A `StudySession` injests a `UserDBInterface` instance and one or more `StudyContentSource`s.
+As the session approaches its configured time limit,
