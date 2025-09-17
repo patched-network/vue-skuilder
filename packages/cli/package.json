@@ -60,7 +60,7 @@
   "devDependencies": {
     "@types/fs-extra": "^11.0.0",
     "@types/inquirer": "^9.0.0",
-    "@types/node": "^20.0.0",
+    "@types/node": "^24.4.0",
     "@types/serve-static": "^1.15.0",
     "@vitejs/plugin-vue": "^5.2.1",
     "@vue-skuilder/studio-ui": "workspace:*",
