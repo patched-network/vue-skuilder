@@ -19,19 +19,21 @@
     </div>
 
     <div v-else ref="shadowWrapper">
-      <card-viewer
-        ref="cardViewer"
-        :key="cardID"
-        :class="loading ? 'muted' : ''"
-        :view="view"
-        :data="data"
-        :card_id="cardID"
-        :course_id="courseID"
-        :session-order="cardCount"
-        :user_elo="user_elo(courseID)"
-        :card_elo="card_elo"
-        @emit-response="processResponse($event)"
-      />
+      <transition name="component-fade" mode="out-in">
+        <card-viewer
+          ref="cardViewer"
+          :key="cardID"
+          :class="loading ? 'muted' : ''"
+          :view="view"
+          :data="data"
+          :card_id="cardID"
+          :course_id="courseID"
+          :session-order="cardCount"
+          :user_elo="user_elo(courseID)"
+          :card_elo="card_elo"
+          @emit-response="processResponse($event)"
+        />
+      </transition>
     </div>
 
     <br />
@@ -562,7 +564,7 @@ a {
 
 .component-fade-enter-active,
 .component-fade-leave-active {
-  transition: opacity 0.03s ease;
+  transition: opacity 0.2s ease;
 }
 .component-fade-enter-from,
 .component-fade-leave-to {

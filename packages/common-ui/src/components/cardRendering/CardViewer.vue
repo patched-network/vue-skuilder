@@ -1,16 +1,14 @@
 <template>
   <v-card elevation="12">
-    <transition name="component-fade" mode="out-in">
-      <component
-        :is="view"
-        ref="activeView"
-        :key="course_id + '-' + card_id + '-' + sessionOrder"
-        :data="data"
-        :modify-difficulty="user_elo.global.score - card_elo"
-        class="cardView ma-2 pa-2"
-        @emit-response="processResponse($event)"
-      />
-    </transition>
+    <component
+      :is="view"
+      ref="activeView"
+      :key="course_id + '-' + card_id + '-' + sessionOrder"
+      :data="data"
+      :modify-difficulty="user_elo.global.score - card_elo"
+      class="cardView ma-2 pa-2"
+      @emit-response="processResponse($event)"
+    />
   </v-card>
 </template>
 
@@ -90,12 +88,4 @@ export default defineComponent({
   border-radius: 8px;
 }
 
-.component-fade-enter-active,
-.component-fade-leave-active {
-  transition: opacity 0.3s ease;
-}
-.component-fade-enter, .component-fade-leave-to
-/* .component-fade-leave-active below version 2.1.8 */ {
-  opacity: 0;
-}
 </style>
