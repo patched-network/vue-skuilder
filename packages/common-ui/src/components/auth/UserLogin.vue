@@ -30,14 +30,29 @@
           <v-btn color="pink" variant="text" @click="badLoginAttempt = false">Close</v-btn>
         </v-snackbar>
 
-        <v-btn class="mr-2" type="submit" :loading="awaitingResponse" :color="buttonStatus.color">
-          <v-icon start>mdi-lock-open</v-icon>
-          Log In
-        </v-btn>
-        <router-link v-if="loginRoute" to="signup">
-          <v-btn variant="text">Create New Account</v-btn>
-        </router-link>
-        <v-btn v-else variant="text" @click="toggle">Create New Account</v-btn>
+        <div class="d-flex flex-column align-start">
+          <div class="mb-2">
+            <v-btn class="mr-2" type="submit" :loading="awaitingResponse" :color="buttonStatus.color">
+              <v-icon start>mdi-lock-open</v-icon>
+              Log In
+            </v-btn>
+            <router-link v-if="loginRoute" to="signup">
+              <v-btn variant="text">Create New Account</v-btn>
+            </router-link>
+            <v-btn v-else variant="text" @click="toggle">Create New Account</v-btn>
+          </div>
+
+          <slot name="forgot-password">
+            <!-- Default: always show forgot password link -->
+            <a
+              href="#"
+              class="text-caption text-decoration-none"
+              @click.prevent="handleForgotPassword"
+            >
+              Forgot password?
+            </a>
+          </slot>
+        </div>
       </v-form>
     </v-card-text>
   </v-card>
@@ -62,10 +77,11 @@ const props = withDefaults(defineProps<Props>(), {
   redirectTo: '/study'
 });
 
-// Define emits for toggle and cleanup
+// Define emits for toggle, cleanup, and forgot password
 const emit = defineEmits<{
   toggle: [];
   loginSuccess: [redirectPath: string];
+  forgotPassword: [];
 }>();
 
 const router = useRouter();
@@ -149,6 +165,17 @@ const login = async () => {
 const toggle = () => {
   log('Toggling registration / login forms.');
   emit('toggle');
+};
+
+const handleForgotPassword = () => {
+  log('Forgot password clicked');
+  // If on login route, navigate directly
+  if (loginRoute.value) {
+    router.push('/request-reset');
+  } else {
+    // Otherwise, emit event for parent to handle (e.g., modal context)
+    emit('forgotPassword');
+  }
 };
 </script>
 

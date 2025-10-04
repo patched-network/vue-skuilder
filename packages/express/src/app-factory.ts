@@ -27,7 +27,9 @@ import { getCouchDB, initializeCouchDB, useOrCreateCourseDB, useOrCreateDB } fro
 import { classroomDbDesignDoc } from './design-docs.js';
 import logger from './logger.js';
 import logsRouter from './routes/logs.js';
+import authRouter from './routes/auth.js';
 import type { ExpressServerConfig, EnvironmentConfig } from './types.js';
+import { applyUsersDesignDocs } from './couchdb/userDesignDocs.js';
 
 export interface VueClientRequest extends express.Request {
   body: ServerRequest;
@@ -91,6 +93,7 @@ export function createExpressApp(config: AppConfig): express.Application {
     })
   );
   app.use('/logs', logsRouter);
+  app.use('/auth', authRouter);
 
   // Routes
   app.get('/courses', (_req: Request, res: Response) => {
@@ -263,11 +266,11 @@ export function createExpressApp(config: AppConfig): express.Application {
  */
 export async function initializeServices(config: AppConfig): Promise<void> {
   // Initialize data layer first
-  const envConfig = isExpressServerConfig(config) 
-    ? convertToEnvConfig(config) 
+  const envConfig = isExpressServerConfig(config)
+    ? convertToEnvConfig(config)
     : config;
-  
-  
+
+
 
   await initializeDataLayer({
     type: 'couch',
@@ -282,6 +285,15 @@ export async function initializeServices(config: AppConfig): Promise<void> {
     // In programmatic mode, we shouldn't exit the process, but let the error propagate
     throw e;
   });
+
+  // Apply design documents to _users database for auth flows
+  try {
+    await applyUsersDesignDocs();
+    logger.info('Auth design documents applied successfully');
+  } catch (error) {
+    logger.error('Error applying auth design documents:', error);
+    // Don't throw - auth design docs are nice-to-have, not critical for startup
+  }
   try {
     // start the change-listener that does post-processing on user
     // media uploads

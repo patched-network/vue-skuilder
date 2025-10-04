@@ -5,10 +5,19 @@
     <v-card-text>
       <v-form @submit.prevent="createUser">
         <v-text-field
+          v-model="email"
+          name="email"
+          label="Email address"
+          type="email"
+          prepend-icon="mdi-email"
+          :error="emailError"
+          :hint="emailHint"
+          @blur="validateEmail"
+        ></v-text-field>
+        <v-text-field
           id=""
           ref="userNameTextField"
           v-model="username"
-          autofocus
           name="username"
           label="Choose a Username"
           prepend-icon="mdi-account-circle"
@@ -66,6 +75,7 @@ import { UserDBInterface } from '@vue-skuilder/db';
 import { alertUser } from '../SnackbarService';
 import { Status, log } from '@vue-skuilder/common';
 import { getCurrentUser, useAuthStore } from '../../stores/useAuthStore';
+import { sendVerificationEmail } from '../../services/authAPI';
 
 export default defineComponent({
   name: 'UserRegistration',
@@ -74,10 +84,13 @@ export default defineComponent({
 
   data() {
     return {
+      email: '',
       username: '',
       password: '',
       retypedPassword: '',
       passwordVisible: false,
+      emailError: false,
+      emailHint: '',
       usernameValidationInProgress: false,
       usernameError: false,
       usernameHint: '',
@@ -116,6 +129,18 @@ export default defineComponent({
       this.$emit('toggle');
     },
 
+    validateEmail() {
+      this.emailError = false;
+      // Basic email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (this.email && !emailRegex.test(this.email)) {
+        this.emailError = true;
+        this.emailHint = 'Please enter a valid email address';
+      } else {
+        this.emailHint = '';
+      }
+    },
+
     validateUsername() {
       this.usernameError = false;
     },
@@ -138,9 +163,35 @@ Author: ${this.author}
           .createAccount(this.username, this.password)
           .then(async (resp) => {
             if (resp.status === Status.ok) {
+              // Account created successfully via PouchDB
               this.authStore.loginAndRegistration.loggedIn = true;
               this.authStore.loginAndRegistration.init = false;
               this.authStore.loginAndRegistration.init = true;
+
+              // Save email to user config if provided
+              if (this.email) {
+                try {
+                  const currentUser = await getCurrentUser();
+                  await currentUser.setConfig({ email: this.email });
+
+                  // Trigger verification email send with current origin
+                  const origin =
+                    typeof window !== 'undefined' ? window.location.origin : undefined;
+                  const verificationResult = await sendVerificationEmail(this.username, origin);
+                  if (verificationResult.ok) {
+                    alertUser({
+                      text: 'Account created! Please check your email to verify your account.',
+                      status: Status.ok,
+                    });
+                  } else {
+                    log(`Warning: Failed to send verification email: ${verificationResult.error}`);
+                    // Continue anyway - user can still use the account
+                  }
+                } catch (emailError) {
+                  log(`Warning: Failed to save email or send verification: ${emailError}`);
+                  // Continue anyway - account was created successfully
+                }
+              }
 
               this.$router.push(`/u/${(await getCurrentUser()).getUsername()}/new`);
             } else {

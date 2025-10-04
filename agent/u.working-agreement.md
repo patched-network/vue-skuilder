@@ -48,6 +48,16 @@ If the user makes a selection:
 turn 3 (assistant):
 - assistant will create `a.plan.md` and `a.todo.md`. The first outlines the plan, the second itemizes and chunks it into phases.
 
+<todo-guidelines>
+Items in the todo document should be itemized so that they can be referred to by number. Eg, Phase 1 with sections 1.1, 1.2, etc.
+
+A `Phase` should usually represent a unit of work achievable by yourself, with legible success markers, in a single prompt from the user.
+
+Todos should use checkbox style notation as in
+- [ ] 2.1 add some required dependency
+- [ ] 2.2 use it to solve problem
+- [ ] 2.3 run the build process
+</todo-guidelines>
 
 At this point we are into the main loop of the session.
 
@@ -56,21 +66,16 @@ Main Loop:
 
 - User will assign chunks of tasks from the todo list to the assistant
 - Agent will attempt to complete the tasks.
- - if successful, assistant will write and `a.next.md` with a suggested next chunk
- - if unsucessful, we break the flow and debug / rethink together
-
-
+- Agent will update the todo list w/ completed tasks, and add any *important* commentary inline w/ the todo doc. EG, workarounds required, assumptions invalidated during the work, issues discovered during the work that require future investigation, etc. Agent does not add superfluous comments like "done" or "fixed" - the checkmark does that!
 
 - User will review the assistant changes, and:
- - if satisfied, indicate so and either:
-   - ask the assistant to carry on with their `a.next.md` suggestion
-   - redirect to a different set of tasks
+ - if satisfied
+   - (usually) checkpoint w/ a commit
+   - repeat the main loop with new range of tasks
  - if unsatisfied, main loop breaks and we debug / rethink together
 
 
-Where a user approves the changes, before moving on, the assistant will update the `a.todo.md` file to reflect completed and potentiall *in flight* tasks.
-
-At the end of each agentic turn, assistant can rewrite `a.next.md` from scratch.
+NB: agent is not generally concerned with making commits.
 
 }}
 
