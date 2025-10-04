@@ -5,6 +5,7 @@ export interface UserConfig {
   darkMode: boolean;
   likesConfetti: boolean;
   sessionTimeLimit: number; // Session time limit in minutes
+  email?: string; // Optional email for verification flows (added for enhanced auth)
 }
 
 export interface ActivityRecord {

@@ -15,6 +15,9 @@ import Courses from './views/Courses.vue';
 import Home from './views/Home.vue';
 import Login from './views/Login.vue';
 import ReleaseNotes from './views/ReleaseNotes.vue';
+import VerifyEmailView from './views/VerifyEmail.vue';
+import RequestPasswordResetView from './views/RequestPasswordReset.vue';
+import ResetPasswordView from './views/ResetPassword.vue';
 // import SignUp from './views/SignUp.vue';
 import Study from './views/Study.vue';
 import User from './views/User.vue';
@@ -68,6 +71,21 @@ const router = createRouter({
     //   name: 'signup',
     //   component: SignUp,
     // },
+    {
+      path: '/verify',
+      name: 'verify',
+      component: VerifyEmailView,
+    },
+    {
+      path: '/request-reset',
+      name: 'request-reset',
+      component: RequestPasswordResetView,
+    },
+    {
+      path: '/reset-password',
+      name: 'reset-password',
+      component: ResetPasswordView,
+    },
     {
       path: '/notes',
       component: ReleaseNotes,

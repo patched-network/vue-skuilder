@@ -30,14 +30,25 @@
           <v-btn color="pink" variant="text" @click="badLoginAttempt = false">Close</v-btn>
         </v-snackbar>
 
-        <v-btn class="mr-2" type="submit" :loading="awaitingResponse" :color="buttonStatus.color">
-          <v-icon start>mdi-lock-open</v-icon>
-          Log In
-        </v-btn>
-        <router-link v-if="loginRoute" to="signup">
-          <v-btn variant="text">Create New Account</v-btn>
-        </router-link>
-        <v-btn v-else variant="text" @click="toggle">Create New Account</v-btn>
+        <div class="d-flex flex-column align-start">
+          <div class="mb-2">
+            <v-btn class="mr-2" type="submit" :loading="awaitingResponse" :color="buttonStatus.color">
+              <v-icon start>mdi-lock-open</v-icon>
+              Log In
+            </v-btn>
+            <router-link v-if="loginRoute" to="signup">
+              <v-btn variant="text">Create New Account</v-btn>
+            </router-link>
+            <v-btn v-else variant="text" @click="toggle">Create New Account</v-btn>
+          </div>
+
+          <slot name="forgot-password">
+            <!-- Default: simple link that can be overridden by parent -->
+            <router-link v-if="loginRoute" to="/request-reset" class="text-caption text-decoration-none">
+              Forgot password?
+            </router-link>
+          </slot>
+        </div>
       </v-form>
     </v-card-text>
   </v-card>
