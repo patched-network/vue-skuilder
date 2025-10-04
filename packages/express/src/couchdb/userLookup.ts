@@ -25,12 +25,23 @@ function getUserDB<T = unknown>(username: string): Nano.DocumentScope<T> {
 
 /**
  * Convert string to hex encoding (for userdb naming).
+ * @param str - String to encode (typically username)
+ * @throws Error if string exceeds maximum safe length
  */
 function hexEncode(str: string): string {
+  // Prevent DoS via extremely long usernames
+  // CouchDB usernames are typically limited to 256 chars, but we'll be more restrictive
+  const MAX_USERNAME_LENGTH = 256;
+
+  if (str.length > MAX_USERNAME_LENGTH) {
+    throw new Error(`Username exceeds maximum length of ${MAX_USERNAME_LENGTH} characters`);
+  }
+
   let hex: string;
   let returnStr: string = '';
+  const len = str.length; // Cache length to avoid repeated property access
 
-  for (let i = 0; i < str.length; i++) {
+  for (let i = 0; i < len; i++) {
     hex = str.charCodeAt(i).toString(16);
     returnStr += ('000' + hex).slice(-4);
   }
