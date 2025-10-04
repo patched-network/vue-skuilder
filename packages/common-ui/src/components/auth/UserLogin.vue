@@ -43,10 +43,14 @@
           </div>
 
           <slot name="forgot-password">
-            <!-- Default: simple link that can be overridden by parent -->
-            <router-link v-if="loginRoute" to="/request-reset" class="text-caption text-decoration-none">
+            <!-- Default: always show forgot password link -->
+            <a
+              href="#"
+              class="text-caption text-decoration-none"
+              @click.prevent="handleForgotPassword"
+            >
               Forgot password?
-            </router-link>
+            </a>
           </slot>
         </div>
       </v-form>
@@ -73,10 +77,11 @@ const props = withDefaults(defineProps<Props>(), {
   redirectTo: '/study'
 });
 
-// Define emits for toggle and cleanup
+// Define emits for toggle, cleanup, and forgot password
 const emit = defineEmits<{
   toggle: [];
   loginSuccess: [redirectPath: string];
+  forgotPassword: [];
 }>();
 
 const router = useRouter();
@@ -160,6 +165,17 @@ const login = async () => {
 const toggle = () => {
   log('Toggling registration / login forms.');
   emit('toggle');
+};
+
+const handleForgotPassword = () => {
+  log('Forgot password clicked');
+  // If on login route, navigate directly
+  if (loginRoute.value) {
+    router.push('/request-reset');
+  } else {
+    // Otherwise, emit event for parent to handle (e.g., modal context)
+    emit('forgotPassword');
+  }
 };
 </script>
 

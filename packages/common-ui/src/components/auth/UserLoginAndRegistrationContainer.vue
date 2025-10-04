@@ -15,7 +15,12 @@
           <template #activator="{ props }">
             <v-btn size="small" color="success" v-bind="props">Log In</v-btn>
           </template>
-          <UserLogin @toggle="toggle" />
+          <UserLogin @toggle="toggle" @forgot-password="openResetDialog" />
+        </v-dialog>
+
+        <!-- Password reset dialog: opened from login via "Forgot password?" -->
+        <v-dialog v-model="resetDialog" width="500px">
+          <RequestPasswordReset @cancel="closeResetDialog" @success="closeResetDialog" />
         </v-dialog>
       </div>
       <div v-else key="user-chip">
@@ -26,10 +31,11 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import UserLogin from './UserLogin.vue';
 import UserRegistration from './UserRegistration.vue';
+import RequestPasswordReset from './RequestPasswordReset.vue';
 import UserChip from './UserChip.vue';
 import { useAuthStore } from '../../stores/useAuthStore';
 import { useAuthUI } from '../../composables/useAuthUI';
@@ -98,6 +104,9 @@ const loginDialog = computed({
   },
 });
 
+// Password reset dialog state (local, not in auth store)
+const resetDialog = ref(false);
+
 const toggle = () => {
   if (regDialog.value && loginDialog.value) {
     throw new Error('Registration / Login dialogs both activated.');
@@ -107,6 +116,15 @@ const toggle = () => {
     regDialog.value = !regDialog.value;
     loginDialog.value = !loginDialog.value;
   }
+};
+
+const openResetDialog = () => {
+  loginDialog.value = false; // Close login dialog
+  resetDialog.value = true; // Open reset dialog
+};
+
+const closeResetDialog = () => {
+  resetDialog.value = false;
 };
 </script>
 
