@@ -16,14 +16,27 @@ export interface VerifyEmailResponse extends AuthResponse {
  * Triggers verification email send for a newly created account.
  * Express backend will read email from userdb-{username}/CONFIG
  * and send verification email with token.
+ *
+ * @param username - Username of the newly created account
+ * @param origin - Optional frontend origin URL (e.g., window.location.origin)
+ *                 Used to construct the correct verification link in the email.
+ *                 If not provided, backend falls back to APP_URL env var.
  */
-export async function sendVerificationEmail(username: string): Promise<AuthResponse> {
+export async function sendVerificationEmail(
+  username: string,
+  origin?: string
+): Promise<AuthResponse> {
   try {
+    const body: { username: string; origin?: string } = { username };
+    if (origin) {
+      body.origin = origin;
+    }
+
     const response = await fetch('/auth/send-verification', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify({ username }),
+      body: JSON.stringify(body),
     });
 
     if (!response.ok) {
@@ -72,14 +85,27 @@ export async function verifyEmail(token: string): Promise<VerifyEmailResponse> {
 
 /**
  * Request password reset email for user identified by email.
+ *
+ * @param email - User's email address
+ * @param origin - Optional frontend origin URL (e.g., window.location.origin)
+ *                 Used to construct the correct password reset link in the email.
+ *                 If not provided, backend falls back to APP_URL env var.
  */
-export async function requestPasswordReset(email: string): Promise<AuthResponse> {
+export async function requestPasswordReset(
+  email: string,
+  origin?: string
+): Promise<AuthResponse> {
   try {
+    const body: { email: string; origin?: string } = { email };
+    if (origin) {
+      body.origin = origin;
+    }
+
     const response = await fetch('/auth/request-reset', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify({ email }),
+      body: JSON.stringify(body),
     });
 
     if (!response.ok) {

@@ -174,8 +174,10 @@ Author: ${this.author}
                   const currentUser = await getCurrentUser();
                   await currentUser.setConfig({ email: this.email });
 
-                  // Trigger verification email send
-                  const verificationResult = await sendVerificationEmail(this.username);
+                  // Trigger verification email send with current origin
+                  const origin =
+                    typeof window !== 'undefined' ? window.location.origin : undefined;
+                  const verificationResult = await sendVerificationEmail(this.username, origin);
                   if (verificationResult.ok) {
                     alertUser({
                       text: 'Account created! Please check your email to verify your account.',

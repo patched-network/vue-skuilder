@@ -16,11 +16,15 @@ const router = express.Router();
  * POST /auth/send-verification
  * Trigger verification email for a newly created account.
  * Reads email from userdb-{username}/CONFIG.
+ *
+ * Body params:
+ *   - username: string (required)
+ *   - origin: string (optional) - Frontend origin URL for constructing verification link
  */
 router.post('/send-verification', (req: Request, res: Response) => {
   void (async () => {
     try {
-    const { username } = req.body;
+    const { username, origin } = req.body;
 
     if (!username) {
       return res.status(400).json({ ok: false, error: 'Username required' });
@@ -52,8 +56,8 @@ router.post('/send-verification', (req: Request, res: Response) => {
 
     await updateUserDoc(userDoc);
 
-    // Send verification email
-    await sendVerificationEmail(email, token);
+    // Send verification email with origin for link construction
+    await sendVerificationEmail(email, token, origin);
 
     logger.info(`Verification email sent to ${username} at ${email}`);
     res.json({ ok: true });
@@ -116,11 +120,15 @@ router.post('/verify', (req: Request, res: Response) => {
 /**
  * POST /auth/request-reset
  * Request password reset email.
+ *
+ * Body params:
+ *   - email: string (required)
+ *   - origin: string (optional) - Frontend origin URL for constructing reset link
  */
 router.post('/request-reset', (req: Request, res: Response) => {
   void (async () => {
     try {
-    const { email } = req.body;
+    const { email, origin } = req.body;
 
     if (!email) {
       return res.status(400).json({ ok: false, error: 'Email required' });
@@ -144,8 +152,8 @@ router.post('/request-reset', (req: Request, res: Response) => {
 
     await updateUserDoc(userDoc);
 
-    // Send password reset email
-    await sendPasswordResetEmail(email, token);
+    // Send password reset email with origin for link construction
+    await sendPasswordResetEmail(email, token, origin);
 
     logger.info(`Password reset email sent to ${userDoc.name} at ${email}`);
     res.json({ ok: true });

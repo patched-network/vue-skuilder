@@ -104,7 +104,9 @@ export default defineComponent({
       this.isSubmitting = true;
 
       try {
-        const result = await requestPasswordReset(this.email);
+        // Pass current origin for correct reset link in email
+        const origin = typeof window !== 'undefined' ? window.location.origin : undefined;
+        const result = await requestPasswordReset(this.email, origin);
 
         if (result.ok) {
           this.requestSent = true;

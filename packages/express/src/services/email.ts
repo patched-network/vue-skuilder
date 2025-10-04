@@ -9,10 +9,19 @@ import logger from '../logger.js';
 
 /**
  * Send verification email with magic link token.
+ * @param to - Recipient email address
+ * @param token - Verification token to include in link
+ * @param origin - Optional frontend origin URL (e.g., 'https://course.example.com')
+ *                 If not provided, falls back to APP_URL env var or localhost
  */
-export async function sendVerificationEmail(to: string, token: string): Promise<void> {
-  const appUrl = process.env.APP_URL || 'http://localhost:5173';
-  const verificationLink = `${appUrl}/verify?token=${token}`;
+export async function sendVerificationEmail(
+  to: string,
+  token: string,
+  origin?: string
+): Promise<void> {
+  // Priority: origin param > APP_URL env var > localhost fallback
+  const baseUrl = origin || process.env.APP_URL || 'http://localhost:5173';
+  const verificationLink = `${baseUrl}/verify?token=${token}`;
 
   // TODO: Replace with actual email service
   logger.info(`
@@ -21,18 +30,30 @@ VERIFICATION EMAIL (STUB)
 To: ${to}
 Subject: Verify your Vue-Skuilder account
 Link: ${verificationLink}
+Origin: ${origin || '(fallback)'}
 ====================================
   `);
 
-  console.log(`\n📧 VERIFICATION EMAIL\nTo: ${to}\nLink: ${verificationLink}\n`);
+  console.log(
+    `\n📧 VERIFICATION EMAIL\nTo: ${to}\nLink: ${verificationLink}\nOrigin: ${origin || 'default'}\n`
+  );
 }
 
 /**
  * Send password reset email with magic link token.
+ * @param to - Recipient email address
+ * @param token - Reset token to include in link
+ * @param origin - Optional frontend origin URL (e.g., 'https://course.example.com')
+ *                 If not provided, falls back to APP_URL env var or localhost
  */
-export async function sendPasswordResetEmail(to: string, token: string): Promise<void> {
-  const appUrl = process.env.APP_URL || 'http://localhost:5173';
-  const resetLink = `${appUrl}/reset-password?token=${token}`;
+export async function sendPasswordResetEmail(
+  to: string,
+  token: string,
+  origin?: string
+): Promise<void> {
+  // Priority: origin param > APP_URL env var > localhost fallback
+  const baseUrl = origin || process.env.APP_URL || 'http://localhost:5173';
+  const resetLink = `${baseUrl}/reset-password?token=${token}`;
 
   // TODO: Replace with actual email service
   logger.info(`
@@ -41,10 +62,13 @@ PASSWORD RESET EMAIL (STUB)
 To: ${to}
 Subject: Reset your Vue-Skuilder password
 Link: ${resetLink}
+Origin: ${origin || '(fallback)'}
 ====================================
   `);
 
-  console.log(`\n📧 PASSWORD RESET EMAIL\nTo: ${to}\nLink: ${resetLink}\n`);
+  console.log(
+    `\n📧 PASSWORD RESET EMAIL\nTo: ${to}\nLink: ${resetLink}\nOrigin: ${origin || 'default'}\n`
+  );
 }
 
 /**
