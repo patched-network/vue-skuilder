@@ -334,6 +334,8 @@ import {
 
 ## Phase 4: Platform-UI Integration ✅ COMPLETED
 
+**Multi-Frontend Support Note**: All auth endpoints and functions now support optional `origin` parameter to construct correct verification/reset links for multiple frontends sharing the same backend (e.g., platform-ui, scaffolded courses). The frontend's `window.location.origin` is automatically passed to backend.
+
 ### 4.1: Add Routes ✅
 
 **File**: `packages/platform-ui/src/router.ts`
@@ -440,10 +442,14 @@ These items were identified during implementation and are tracked inline in the 
 **File**: `packages/express/src/services/email.ts`
 
 - [ ] **6.1.1**: Replace console.log stub with actual email provider
-  - Location: Lines 7, 17, 37
+  - Location: Lines 26-39, 58-71
   - Options: SendGrid, AWS SES, Resend, Postmark, etc.
   - Required environment variables: API keys, sender addresses
   - Note: This is being handled in separate email infrastructure work
+  - ✅ **Multi-frontend support**: Both functions now accept optional `origin` parameter
+    - Priority: `origin` param → `APP_URL` env var → localhost fallback
+    - Allows multiple frontends (platform-ui, scaffolded courses) to receive correct links
+    - Example: `sendVerificationEmail(email, token, 'https://course.example.com')`
 
 ### 6.2: Password Update Implementation
 
@@ -457,24 +463,41 @@ These items were identified during implementation and are tracked inline in the 
   - Current behavior: Flow completes but password is NOT actually changed
   - Related: Line 205 warning message should be removed after implementation
 
-### 6.3: Future Enhancements (Not Blocking)
+### 6.3: Security Hardening ✅
 
-- [ ] **6.3.1**: Add "resend verification email" functionality
+**File**: `packages/express/src/couchdb/userLookup.ts`
+
+- [x] **6.3.1**: Mitigate Loop Bound Injection vulnerability
+  - ✅ Added `MAX_USERNAME_LENGTH = 256` validation in `hexEncode()` function
+  - ✅ Prevents DoS attacks via extremely long usernames
+  - ✅ Cached `str.length` to avoid repeated property access
+  - ✅ Throws descriptive error if username exceeds limit
+  - Location: Lines 31-50
+  - CodeQL Alert: High severity - Loop bound injection - **RESOLVED**
+
+### 6.4: Future Enhancements (Not Blocking)
+
+- [ ] **6.4.1**: Add "resend verification email" functionality
   - Allow users to request new verification token if original expires
   - Could be triggered from login page or separate endpoint
 
-- [ ] **6.3.2**: Add rate limiting to auth endpoints
+- [ ] **6.4.2**: Add rate limiting to auth endpoints
   - Prevent brute force attacks on password reset
   - Limit verification email sends per user per time window
 
-- [ ] **6.3.3**: Add email templates with HTML formatting
+- [ ] **6.4.3**: Add email templates with HTML formatting
   - Currently using plain text console output
   - Move to proper email templates when integrating email service
 
-- [ ] **6.3.4**: Track verification/reset attempts in user doc
+- [ ] **6.4.4**: Track verification/reset attempts in user doc
   - Add `verificationAttempts`, `resetAttempts` counters
   - Implement lockout after excessive failed attempts
 
-- [ ] **6.3.5**: Add email change flow
+- [ ] **6.4.5**: Add email change flow
   - Allow verified users to update their email address
   - Require verification of new email before switching
+
+- [ ] **6.4.6**: Add origin whitelist validation
+  - Validate `origin` parameter against allowed domains
+  - Prevents malicious actors from providing fake origins in API calls
+  - See `a.8.multi-frontend-support.md` for implementation example
