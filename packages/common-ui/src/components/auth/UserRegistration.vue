@@ -80,7 +80,7 @@ import { sendVerificationEmail } from '../../services/authAPI';
 export default defineComponent({
   name: 'UserRegistration',
 
-  emits: ['toggle'],
+  emits: ['toggle', 'signup-success'],
 
   data() {
     return {
@@ -193,7 +193,10 @@ Author: ${this.author}
                 }
               }
 
-              this.$router.push(`/u/${(await getCurrentUser()).getUsername()}/new`);
+              // Emit signup success event for parent to handle
+              const username = (await getCurrentUser()).getUsername();
+              console.log('[SIGNUP-1] Emitting signup-success event', { username });
+              this.$emit('signup-success', { username });
             } else {
               if (resp.error === 'This username is taken!') {
                 this.usernameError = true;
