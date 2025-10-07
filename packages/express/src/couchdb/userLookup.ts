@@ -34,7 +34,9 @@ function hexEncode(str: string): string {
   const MAX_USERNAME_LENGTH = 256;
 
   if (str.length > MAX_USERNAME_LENGTH) {
-    throw new Error(`Username exceeds maximum length of ${MAX_USERNAME_LENGTH} characters`);
+    throw new Error(
+      `Username exceeds maximum length of ${MAX_USERNAME_LENGTH} characters`
+    );
   }
 
   let hex: string;
@@ -60,8 +62,8 @@ export async function findUserByUsername(
     const docId = `org.couchdb.user:${username}`;
     const userDoc = await usersDB.get(docId);
     return userDoc;
-  } catch (error: any) {
-    if (error.statusCode === 404) {
+  } catch (error: unknown) {
+    if (isNanoError(error) && error.statusCode === 404) {
       return null;
     }
     logger.error(`Error finding user by username ${username}:`, error);
@@ -82,8 +84,8 @@ export async function getUserEmail(username: string): Promise<string | null> {
     }
 
     return null;
-  } catch (error: any) {
-    if (error.statusCode === 404) {
+  } catch (error: unknown) {
+    if (isNanoError(error) && error.statusCode === 404) {
       logger.warn(`No CONFIG doc found for user ${username}`);
       return null;
     }
@@ -115,8 +117,8 @@ export async function findUserByToken(
     }
 
     return null;
-  } catch (error: any) {
-    if (error.statusCode === 404) {
+  } catch (error: unknown) {
+    if (isNanoError(error) && error.statusCode === 404) {
       logger.warn(`Design doc or view not found for ${tokenType} token lookup`);
       return null;
     }
@@ -128,7 +130,9 @@ export async function findUserByToken(
 /**
  * Find user by email using design doc view.
  */
-export async function findUserByEmail(email: string): Promise<CouchDbUserDoc | null> {
+export async function findUserByEmail(
+  email: string
+): Promise<CouchDbUserDoc | null> {
   try {
     const usersDB = getUsersDB();
 
@@ -143,8 +147,8 @@ export async function findUserByEmail(email: string): Promise<CouchDbUserDoc | n
     }
 
     return null;
-  } catch (error: any) {
-    if (error.statusCode === 404) {
+  } catch (error: unknown) {
+    if (isNanoError(error) && error.statusCode === 404) {
       logger.warn('Design doc or view not found for email lookup');
       return null;
     }
@@ -165,4 +169,11 @@ export async function updateUserDoc(userDoc: CouchDbUserDoc): Promise<void> {
     logger.error(`Error updating user doc for ${userDoc.name}:`, error);
     throw error;
   }
+}
+
+/**
+ * Type guard to check if an error is a Nano RequestError with statusCode
+ */
+function isNanoError(error: unknown): error is { statusCode?: number } {
+  return typeof error === 'object' && error !== null && 'statusCode' in error;
 }
