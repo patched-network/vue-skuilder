@@ -3,9 +3,10 @@ import logger from '../logger.js';
 /**
  * Email service for sending verification and password reset emails.
  *
- * Current implementation: Console logging stub
- * TODO: Integrate with email provider (SendGrid, AWS SES, Resend, etc.)
+ * Integrated with business-backend mailer service running on port 3001
  */
+
+const MAILER_SERVICE_URL = process.env.MAILER_SERVICE_URL || 'http://localhost:3001/mailer';
 
 /**
  * Send verification email with magic link token.
@@ -23,20 +24,36 @@ export async function sendVerificationEmail(
   const baseUrl = origin || process.env.APP_URL || 'http://localhost:5173';
   const verificationLink = `${baseUrl}/verify?token=${token}`;
 
-  // TODO: Replace with actual email service
-  logger.info(`
-====================================
-VERIFICATION EMAIL (STUB)
-To: ${to}
-Subject: Verify your Vue-Skuilder account
-Link: ${verificationLink}
-Origin: ${origin || '(fallback)'}
-====================================
-  `);
+  try {
+    const response = await fetch(`${MAILER_SERVICE_URL}/send-verification`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        recipientEmail: to,
+        recipientName: to.split('@')[0], // Extract name from email (simple approach)
+        magicLink: verificationLink,
+        supportEmail: process.env.SUPPORT_EMAIL || 'support@example.com'
+      })
+    });
 
-  console.log(
-    `\n📧 VERIFICATION EMAIL\nTo: ${to}\nLink: ${verificationLink}\nOrigin: ${origin || 'default'}\n`
-  );
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(`Mailer service error: ${error.error || response.statusText}`);
+    }
+
+    logger.info(`Verification email sent to ${to} via mailer service`);
+  } catch (error) {
+    logger.error(`Failed to send verification email to ${to}:`, error);
+
+    // Fallback: log to console for debugging
+    console.log(
+      `\n📧 VERIFICATION EMAIL (FALLBACK - Mailer service failed)\nTo: ${to}\nLink: ${verificationLink}\nOrigin: ${origin || 'default'}\n`
+    );
+
+    throw error;
+  }
 }
 
 /**
@@ -55,35 +72,33 @@ export async function sendPasswordResetEmail(
   const baseUrl = origin || process.env.APP_URL || 'http://localhost:5173';
   const resetLink = `${baseUrl}/reset-password?token=${token}`;
 
-  // TODO: Replace with actual email service
-  logger.info(`
-====================================
-PASSWORD RESET EMAIL (STUB)
-To: ${to}
-Subject: Reset your Vue-Skuilder password
-Link: ${resetLink}
-Origin: ${origin || '(fallback)'}
-====================================
-  `);
+  try {
+    const response = await fetch(`${MAILER_SERVICE_URL}/send-password-reset`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        recipientEmail: to,
+        recipientName: to.split('@')[0], // Extract name from email (simple approach)
+        magicLink: resetLink
+      })
+    });
 
-  console.log(
-    `\n📧 PASSWORD RESET EMAIL\nTo: ${to}\nLink: ${resetLink}\nOrigin: ${origin || 'default'}\n`
-  );
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(`Mailer service error: ${error.error || response.statusText}`);
+    }
+
+    logger.info(`Password reset email sent to ${to} via mailer service`);
+  } catch (error) {
+    logger.error(`Failed to send password reset email to ${to}:`, error);
+
+    // Fallback: log to console for debugging
+    console.log(
+      `\n📧 PASSWORD RESET EMAIL (FALLBACK - Mailer service failed)\nTo: ${to}\nLink: ${resetLink}\nOrigin: ${origin || 'default'}\n`
+    );
+
+    throw error;
+  }
 }
-
-/**
- * Future email provider integration example:
- *
- * import { SendGrid } from '@sendgrid/mail';
- *
- * const sg = new SendGrid(process.env.SENDGRID_API_KEY);
- *
- * export async function sendVerificationEmail(to: string, token: string): Promise<void> {
- *   await sg.send({
- *     to,
- *     from: 'noreply@vue-skuilder.com',
- *     subject: 'Verify your account',
- *     html: `<a href="${appUrl}/verify?token=${token}">Click here to verify</a>`
- *   });
- * }
- */
