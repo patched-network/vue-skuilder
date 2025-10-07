@@ -6,7 +6,8 @@ import logger from '../logger.js';
  * Integrated with business-backend mailer service running on port 3001
  */
 
-const MAILER_SERVICE_URL = process.env.MAILER_SERVICE_URL || 'http://localhost:3001/mailer';
+const MAILER_SERVICE_URL =
+  process.env.MAILER_SERVICE_URL || 'http://localhost:3001/mailer';
 
 /**
  * Send verification email with magic link token.
@@ -34,23 +35,20 @@ export async function sendVerificationEmail(
         recipientEmail: to,
         recipientName: to.split('@')[0], // Extract name from email (simple approach)
         magicLink: verificationLink,
-        supportEmail: process.env.SUPPORT_EMAIL || 'support@example.com'
-      })
+        supportEmail: process.env.SUPPORT_EMAIL || 'support@example.com',
+      }),
     });
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(`Mailer service error: ${error.error || response.statusText}`);
+      throw new Error(
+        `Mailer service error: ${error.error || response.statusText}`
+      );
     }
 
     logger.info(`Verification email sent to ${to} via mailer service`);
   } catch (error) {
     logger.error(`Failed to send verification email to ${to}:`, error);
-
-    // Fallback: log to console for debugging
-    console.log(
-      `\n📧 VERIFICATION EMAIL (FALLBACK - Mailer service failed)\nTo: ${to}\nLink: ${verificationLink}\nOrigin: ${origin || 'default'}\n`
-    );
 
     throw error;
   }
@@ -81,23 +79,20 @@ export async function sendPasswordResetEmail(
       body: JSON.stringify({
         recipientEmail: to,
         recipientName: to.split('@')[0], // Extract name from email (simple approach)
-        magicLink: resetLink
-      })
+        magicLink: resetLink,
+      }),
     });
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(`Mailer service error: ${error.error || response.statusText}`);
+      throw new Error(
+        `Mailer service error: ${error.error || response.statusText}`
+      );
     }
 
     logger.info(`Password reset email sent to ${to} via mailer service`);
   } catch (error) {
     logger.error(`Failed to send password reset email to ${to}:`, error);
-
-    // Fallback: log to console for debugging
-    console.log(
-      `\n📧 PASSWORD RESET EMAIL (FALLBACK - Mailer service failed)\nTo: ${to}\nLink: ${resetLink}\nOrigin: ${origin || 'default'}\n`
-    );
 
     throw error;
   }

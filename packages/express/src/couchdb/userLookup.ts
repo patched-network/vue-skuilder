@@ -2,6 +2,7 @@ import Nano from 'nano';
 import type { CouchDbUserDoc, UserConfig } from '@vue-skuilder/db';
 import { getCouchDB } from './index.js';
 import logger from '../logger.js';
+import { isNanoError } from '../utils/types.js';
 
 /**
  * User lookup utilities for authentication flows.
@@ -169,11 +170,4 @@ export async function updateUserDoc(userDoc: CouchDbUserDoc): Promise<void> {
     logger.error(`Error updating user doc for ${userDoc.name}:`, error);
     throw error;
   }
-}
-
-/**
- * Type guard to check if an error is a Nano RequestError with statusCode
- */
-function isNanoError(error: unknown): error is { statusCode?: number } {
-  return typeof error === 'object' && error !== null && 'statusCode' in error;
 }

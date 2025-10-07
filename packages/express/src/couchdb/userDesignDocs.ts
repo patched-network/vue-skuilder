@@ -6,6 +6,7 @@
 import Nano from 'nano';
 import { getCouchDB } from './index.js';
 import logger from '../logger.js';
+import { isNanoError } from '../utils/types.js';
 
 /**
  * Design document for user lookups in _users database.
@@ -59,8 +60,8 @@ export async function applyUsersDesignDocs(): Promise<void> {
     let existingDoc: Nano.DocumentGetResponse | null = null;
     try {
       existingDoc = await usersDB.get(usersDesignDoc._id);
-    } catch (error: any) {
-      if (error.statusCode !== 404) {
+    } catch (error: unknown) {
+      if (isNanoError(error) && error.statusCode !== 404) {
         throw error;
       }
       // Doc doesn't exist, will create new
