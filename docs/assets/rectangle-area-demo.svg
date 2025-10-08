@@ -1,0 +1,77 @@
+<svg viewBox="0 0 500 400" xmlns="http://www.w3.org/2000/svg">
+  <!-- Define the rectangle parameters -->
+  <defs>
+    <style>
+      .grid-line { stroke: #333; stroke-width: 1.5; }
+      .border { stroke: #000; stroke-width: 3; fill: none; }
+      .label { font-family: Arial, sans-serif; font-size: 20px; fill: #000; }
+      .square { fill: #e3f2fd; stroke: #333; stroke-width: 1.5; }
+    </style>
+  </defs>
+  
+  <!-- Starting position and size -->
+  <!-- Rectangle will be 280 wide (7 * 40) and 160 tall (4 * 40) -->
+  
+  <!-- Draw individual squares -->
+  <g id="squares">
+    <!-- Row 1 -->
+    <rect class="square" x="80" y="80" width="40" height="40"/>
+    <rect class="square" x="120" y="80" width="40" height="40"/>
+    <rect class="square" x="160" y="80" width="40" height="40"/>
+    <rect class="square" x="200" y="80" width="40" height="40"/>
+    <rect class="square" x="240" y="80" width="40" height="40"/>
+    <rect class="square" x="280" y="80" width="40" height="40"/>
+    <rect class="square" x="320" y="80" width="40" height="40"/>
+    
+    <!-- Row 2 -->
+    <rect class="square" x="80" y="120" width="40" height="40"/>
+    <rect class="square" x="120" y="120" width="40" height="40"/>
+    <rect class="square" x="160" y="120" width="40" height="40"/>
+    <rect class="square" x="200" y="120" width="40" height="40"/>
+    <rect class="square" x="240" y="120" width="40" height="40"/>
+    <rect class="square" x="280" y="120" width="40" height="40"/>
+    <rect class="square" x="320" y="120" width="40" height="40"/>
+    
+    <!-- Row 3 -->
+    <rect class="square" x="80" y="160" width="40" height="40"/>
+    <rect class="square" x="120" y="160" width="40" height="40"/>
+    <rect class="square" x="160" y="160" width="40" height="40"/>
+    <rect class="square" x="200" y="160" width="40" height="40"/>
+    <rect class="square" x="240" y="160" width="40" height="40"/>
+    <rect class="square" x="280" y="160" width="40" height="40"/>
+    <rect class="square" x="320" y="160" width="40" height="40"/>
+    
+    <!-- Row 4 -->
+    <rect class="square" x="80" y="200" width="40" height="40"/>
+    <rect class="square" x="120" y="200" width="40" height="40"/>
+    <rect class="square" x="160" y="200" width="40" height="40"/>
+    <rect class="square" x="200" y="200" width="40" height="40"/>
+    <rect class="square" x="240" y="200" width="40" height="40"/>
+    <rect class="square" x="280" y="200" width="40" height="40"/>
+    <rect class="square" x="320" y="200" width="40" height="40"/>
+  </g>
+  
+  <!-- Outer border -->
+  <rect class="border" x="80" y="80" width="280" height="160"/>
+  
+  <!-- Top label (7) -->
+  <text class="label" x="220" y="60" text-anchor="middle" font-weight="bold">7</text>
+  <line x1="80" y1="70" x2="360" y2="70" stroke="#000" stroke-width="2" marker-start="url(#arrowstart)" marker-end="url(#arrowend)"/>
+  
+  <!-- Left label (4) -->
+  <text class="label" x="50" y="165" text-anchor="middle" font-weight="bold">4</text>
+  <line x1="65" y1="80" x2="65" y2="240" stroke="#000" stroke-width="2" marker-start="url(#arrowstart)" marker-end="url(#arrowend)"/>
+  
+  <!-- Area label -->
+  <text class="label" x="220" y="290" text-anchor="middle" font-size="24" font-weight="bold">How many little squares make up the rectangle?</text>
+  
+  <!-- Arrow markers -->
+  <defs>
+    <marker id="arrowend" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#000"/>
+    </marker>
+    <marker id="arrowstart" markerWidth="10" markerHeight="10" refX="0" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M9,0 L9,6 L0,3 z" fill="#000"/>
+    </marker>
+  </defs>
+</svg>

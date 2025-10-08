@@ -1,12 +1,39 @@
-# Card Data Model
+**Note:** See [Do: Creating Custom Cards](../do/custom-cards) for a more hands-on treatment of this info.
 
-## Overview
+# Cards - The Unit of Study
 
-Vue-Skuilder's card architecture separates **presentation** from **content** through a flexible, strongly-typed system that enables both combinatorial content generation and compositional question design.
+**Cards are the atomic unit of learning content.** Each card represents a single pedagogical interaction - a question to answer, a passage to read, a skill to practice.
 
-## Core Components
+In particular, a single card is typically **the rendered thing** with which a user interacts.
 
-### 1. **DataShapes** - The Type System
+In the database, a card is metadata that references its constituent parts:
+
+```typescript
+interface CardData {
+  id_displayable_data: DocumentId[];  // One or more data instances
+  id_view: DocumentId;                // The view component ID
+  elo: CourseElo;                     // Difficulty rating
+  author: string;
+  // ... (course, tags, etc.)
+}
+```
+
+## The Card Lifecycle
+
+When a user encounters a card, the system performs **card hydration**:
+
+1. **Fetch Data**: Retrieves the referenced `DisplayableData` documents from the database
+2. **Convert Format**: Transforms database documents into `ViewData` (plain objects with typed field values)
+3. **Instantiate Question**: Creates the appropriate `Question` subclass with the data
+4. **Render View**: Displays the Vue component associated with this question type
+5. **Capture Response**: Records user interaction (answer, time spent)
+6. **Evaluate Performance**: Runs the question's `evaluate()` method
+7. **Update Pedagogy**: Adjusts ELO ratings and schedules next review
+
+
+# Core Components
+
+## 1. **DataShapes** - Schema Definitions
 
 A `DataShape` defines the structure of data that can populate a card:
 
@@ -33,7 +60,7 @@ Each field has a `name`, `type` (from the `FieldType` enum), and optional valida
 }
 ```
 
-### 2. **Questions** - The Pedagogy Layer
+## 2. **Questions** - Strongly-Typed Pedagogy Layer
 
 The abstract `Question` class (extends `Displayable`) defines how to:
 1. **Interpret** data into an interactive experience
@@ -52,79 +79,69 @@ abstract class Question {
 ```
 
 Questions declare:
-- Which `DataShapes` they can consume
+- Which `DataShapes` they consume
 - Which Vue components can render them
 - How to assess correctness
-- (Optionally) Sophisticated performance metrics
+- (Optionally) Custome performance metrics
 
 **Example**: The `SingleDigitAdditionQuestion` consumes data matching `SingleDigitAdditionDataShape` and can render via `HorizontalAddition.vue` or `VerbalAddition.vue` components.
 
-### 3. **Views** - The Presentation Layer
+## 3. **Views** - The Presentation Layer
 
 Vue components that receive:
 - A `Question` instance (with populated data)
 - Props/events for user interaction
 
-Views are **reusable** - a single view component can render many different question types that share a common interaction pattern (e.g., multiple-choice, fill-in-the-blank).
+In practice, a view is used to render a specific `Displayable` or `Question` type.
 
-### 4. **Cards** - The Unit of Study
+# Design Goals
 
-In the database, a card is metadata that references:
-```typescript
-interface CardData {
-  id_displayable_data: DocumentId[];  // One or more data instances
-  id_view: DocumentId;                // The view component ID
-  elo: CourseElo;                     // Difficulty rating
-  author: string;
-  // ... (course, tags, etc.)
-}
-```
-
-When hydrated for study, the system:
-1. Fetches the referenced `DisplayableData` documents
-2. Converts them to `ViewData` (plain objects with field values)
-3. Instantiates the appropriate `Question` subclass
-4. Renders the associated Vue component
-
-## Key Design Advantages
-
-### **Combinatorial Content Generation**
-
-Cards reference data by ID rather than embedding it. This enables:
-- **Reusable data**: One melody can appear in multiple keys
-- **Atomic authoring**: Define `data1: [tonalMelody]` and `data2: [key]` separately
-- **Exponential combinations**: N melodies × M keys = N×M cards without duplication
-
-### **Compositional Questions**
+## **Compositional Questions**
 
 Questions can:
 - **Inherit** from base implementations (override `isCorrect()`, reuse `displayedSkill()`)
 - **Compose** multiple sub-questions into compound assessments
-- **Share views** across question types
 
 The architecture supports cards containing instances of several questions, enabling compound assessments where failure in subcomponents can be analyzed independently.
 
-### **Strongly Typed Pedagogy**
+For example, the stacked addition question
 
-By declaring `dataShapes` statically:
-- Type errors are caught at build time (TypeScript + Zod validation)
-- The MCP server can enumerate all question types programmatically
-- Backend services access `DataShapes` without importing Vue code (via `@vue-skuilder/courseware/backend`)
+<pre>
+  123
++ 456
+-----
+</pre>
 
-The `displayedSkill()` method enables nuanced performance tracking beyond binary correct/incorrect:
-- Time penalties for slow responses
-- Future: Multi-dimensional skill assessment
-- Future: Typo detection vs. conceptual errors
+Can, at runtime, execute as a sequence of `SingleDigitAdditionQuestion` instances evaluated on their own merits, leading to...
 
-### **Flexible Rendering**
+## **Strongly Typed Pedagogy**
+
+With compositional questions, aspects of prerequsite structure and inferred competence can be handled **by the 'compiler'** rather than hand-rolled by a curriculum author.
+
+EG, the successful completion of the stacked addition question above can explicitly count as practice on the SingleDigitAddition skills as well, and mastery of the SingleDigitAddition can serve as prerequisite for the 3-digit addition.
+
+## **Flexible Rendering**
 
 A single `DataShape` can have multiple views:
-- `SingleDigitAddition` ’ `HorizontalAddition.vue` (symbolic: "7 + 4 = ?")
-- `SingleDigitAddition` ’ `VerbalAddition.vue` (natural language: "What is seven plus four?")
+- `SingleDigitAddition` ï¿½ `HorizontalAddition.vue` (symbolic: "7 + 4 = ?")
+- `SingleDigitAddition` ï¿½ `VerbalAddition.vue` (natural language: "What is seven plus four?", "Seven and four make ___")
 
-The system randomly selects views, providing varied presentation of the same content.
+Different views of the same content
+- provide more robust signal of competence
+- avoids 'overfitting' developed skill to a specific presentation
+- permits some types of explicit scaffolding
 
-## Storage Architecture
+For example, a canned sequence of renderings of a basic multiplication fact can enforce the relationship between multiplication and the area of a rectangle.
+
+The 'normal' view:
+
+`4 x 7 = __`
+
+Followed directly by:
+
+![Rectangle Area](../assets/rectangle-area-demo.svg)
+
+# Storage Architecture
 
 **Normalized database**:
 - `DISPLAYABLE_DATA` documents hold field values + attachments (audio, images)
@@ -132,30 +149,12 @@ The system randomly selects views, providing varied presentation of the same con
 - `TAG` documents enable filtering and organization
 - `CardHistory` tracks user performance over time
 
-This separation enables:
-- Efficient bulk imports (shared data, many cards)
-- Git-based content provenance (via `sourceRef` in MCP tools)
-- ELO-based adaptive difficulty
-
-## Default Card Type: Fill-in-the-Blank
+# Default Card Type: Fill-in-the-Blank
 
 The `BlanksCard` (DataShape: `Blanks`) parses markdown with moustache syntax:
-- `{{answer}}` ’ text input
-- `{{answer1|answer2}}` ’ accepts multiple correct answers
-- `{{answer||distractor1|distractor2}}` ’ multiple choice
+- `{{answer}}` ï¿½ text input
+- `{{answer1|answer2}}` ï¿½ accepts multiple correct answers
+- `{{answer||distractor1|distractor2}}` ï¿½ multiple choice
 - Full markdown support (code blocks, images, audio, embeds)
 
-This provides a low-friction authoring experience while maintaining the typed data model underneath.
-
----
-
-## Why This Matters
-
-The card data model isn't just data plumbing - it's an **architecture for scalable educational content**. By separating data, logic, and presentation, Vue-Skuilder enables:
-
-1. **Authors** to create rich, interactive content without writing code
-2. **Developers** to extend the system with new question types
-3. **AI agents** (via MCP) to generate well-formed content programmatically
-4. **Researchers** to analyze learning patterns across question types
-
-The strongly-typed approach means pedagogical relationships - like "mastering X implies partial mastery of Y" - can be encoded statically and reasoned about systematically, moving toward a future of formally verifiable educational content.
+See the following document for more on the default card type.
