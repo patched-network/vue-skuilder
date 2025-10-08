@@ -14,20 +14,20 @@ export interface VerifyEmailResponse extends AuthResponse {
 
 /**
  * Triggers verification email send for a newly created account.
- * Express backend will read email from userdb-{username}/CONFIG
- * and send verification email with token.
  *
  * @param username - Username of the newly created account
+ * @param email - User's email address (passed directly to avoid race conditions with DB sync)
  * @param origin - Optional frontend origin URL (e.g., window.location.origin)
  *                 Used to construct the correct verification link in the email.
  *                 If not provided, backend falls back to APP_URL env var.
  */
 export async function sendVerificationEmail(
   username: string,
+  email: string,
   origin?: string
 ): Promise<AuthResponse> {
   try {
-    const body: { username: string; origin?: string } = { username };
+    const body: { username: string; email: string; origin?: string } = { username, email };
     if (origin) {
       body.origin = origin;
     }
@@ -40,6 +40,8 @@ export async function sendVerificationEmail(
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[SIGNUP-2] Response error:', errorText);
       return {
         ok: false,
         error: `HTTP ${response.status}: ${response.statusText}`,
@@ -48,6 +50,7 @@ export async function sendVerificationEmail(
 
     return await response.json();
   } catch (error) {
+    console.error('[SIGNUP-2] Fetch error:', error);
     return {
       ok: false,
       error: error instanceof Error ? error.message : 'Network error',
