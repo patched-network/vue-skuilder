@@ -1,4 +1,7 @@
-**Note:** See [Do: Creating Custom Cards](../do/custom-cards) for a more hands-on treatment of this info.
+**Note 1:** This background info is not *required* unless you're intersted creating either customized cards, or customized pedagogical logic for you course. On first read, it may be suitable to skip ahead to the [Default Card Type](./cards) doc.
+
+**Note 2:** See [Do: Creating Custom Cards](../do/custom-cards) for a more hands-on treatment of this info.
+
 
 # Cards - The Unit of Study
 
@@ -123,8 +126,8 @@ EG, the successful completion of the stacked addition question above can explici
 ## **Flexible Rendering**
 
 A single `DataShape` can have multiple views:
-- `SingleDigitAddition` � `HorizontalAddition.vue` (symbolic: "7 + 4 = ?")
-- `SingleDigitAddition` � `VerbalAddition.vue` (natural language: "What is seven plus four?", "Seven and four make ___")
+- `SingleDigitAddition`::`HorizontalAddition.vue` (symbolic: "7 + 4 = ?")
+- `SingleDigitAddition`::`VerbalAddition.vue` (natural language: "What is seven plus four?", "Seven and four make ___")
 
 Different views of the same content
 - provide more robust signal of competence
@@ -140,21 +143,3 @@ The 'normal' view:
 Followed directly by:
 
 ![Rectangle Area](../assets/rectangle-area-demo.svg)
-
-# Storage Architecture
-
-**Normalized database**:
-- `DISPLAYABLE_DATA` documents hold field values + attachments (audio, images)
-- `CARD` documents reference data by ID
-- `TAG` documents enable filtering and organization
-- `CardHistory` tracks user performance over time
-
-# Default Card Type: Fill-in-the-Blank
-
-The `BlanksCard` (DataShape: `Blanks`) parses markdown with moustache syntax:
-- `{{answer}}` � text input
-- `{{answer1|answer2}}` � accepts multiple correct answers
-- `{{answer||distractor1|distractor2}}` � multiple choice
-- Full markdown support (code blocks, images, audio, embeds)
-
-See the following document for more on the default card type.
