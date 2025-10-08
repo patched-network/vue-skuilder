@@ -50,6 +50,10 @@ function hello_world() {}
 
 const embeddingExample = `<iframe width="100%" height="315" src="https://www.youtube.com/embed/lw6TaiXzHAE?si=3bqL50nrl5b3Hv-K" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>`
 
+const mcAsAnswer = `Is *skuilder* neat?
+
+{{ I guess so || nah }}`;
+
 </script>
 
 Skuilder's default card type uses **markdown** enhanced with a **moustache** syntax to define its interactivity. The features are described by example in the editors below. The editors are live - play with the contents.
@@ -70,13 +74,13 @@ Simple fill-in-the-blank with a single correct answer. This renders a `TextInput
 
 <EmbeddedFillInEditor initial-value="The capital of France is {{Paris}}." />
 
-## Multiple Alternatives Example
+<!--Disabled for now b/c this is broken!-->
+<!--## Multiple Alternatives Example
 
 Let's be little more forgiving. The below will accept either Paris or paris. Generally, moustache items separated by a `|` are siblings that play the same role in the rendered card.
 
 
-<EmbeddedFillInEditor initial-value="The capital of France is {{Paris|paris}}." />
-
+<EmbeddedFillInEditor initial-value="The capital of France is {{Paris|paris}}." />-->
 
 ## Fill-In with Multiple Choice
 
@@ -98,9 +102,9 @@ Multiple correct answers can be supplied as well. Exactly one correct answer wil
 
 ## Multiple Choice as Answer-to-a-Question
 
-If the multiple-choice moustache is the **final** content of the card, it will render the options but insert no blank into the text.
+If the multiple-choice moustache occupies its own **final, line-break separated** line content of the card, it will render the options but insert no blank into the text.
 
-<EmbeddedFillInEditor initial-value="Is `skuilder` neat? {{ I guess so || not really }}"/>
+<EmbeddedFillInEditor :initial-value="mcAsAnswer"/>
 
 ## On Whitespace
 
