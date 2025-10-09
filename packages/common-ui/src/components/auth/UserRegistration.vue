@@ -147,11 +147,6 @@ export default defineComponent({
 
     async createUser() {
       this.awaitingResponse = true;
-      console.log('[SIGNUP-1] Starting user creation', {
-        username: this.username,
-        hasEmail: !!this.email,
-        hasUser: !!this.user,
-      });
       log(`
 User creation
 -------------
@@ -163,16 +158,14 @@ Author: ${this.author}
 `);
       if (this.password === this.retypedPassword) {
         if (!this.user) {
-          console.error('[SIGNUP-1] ERROR: No user object available');
+          console.error('ERROR: No user object available');
           return;
         }
 
         this.user
           .createAccount(this.username, this.password)
           .then(async (resp: any) => {
-            console.log('[SIGNUP-1] createAccount response:', resp);
             if (resp.status === Status.ok) {
-              console.log('[SIGNUP-1] Account created successfully');
               // Account created successfully via PouchDB
               this.authStore.loginAndRegistration.loggedIn = true;
               this.authStore.loginAndRegistration.init = false;
@@ -186,21 +179,18 @@ Author: ${this.author}
 
                   // Trigger verification email send with current origin
                   const origin = typeof window !== 'undefined' ? window.location.origin : undefined;
-                  console.log('[SIGNUP-1] Triggering verification email', { username: this.username, email: this.email, origin });
                   const verificationResult = await sendVerificationEmail(this.username, this.email, origin);
-                  console.log('[SIGNUP-1] Verification email result:', verificationResult);
                   if (verificationResult.ok) {
                     alertUser({
                       text: 'Account created! Please check your email to verify your account.',
                       status: Status.ok,
                     });
                   } else {
-                    console.warn('[SIGNUP-1] Verification email failed:', verificationResult.error);
                     log(`Warning: Failed to send verification email: ${verificationResult.error}`);
                     // Continue anyway - user can still use the account
                   }
                 } catch (emailError) {
-                  console.error('[SIGNUP-1] Email save/send error:', emailError);
+                  console.error('Email save/send error:', emailError);
                   log(`Warning: Failed to save email or send verification: ${emailError}`);
                   // Continue anyway - account was created successfully
                 }
@@ -208,7 +198,6 @@ Author: ${this.author}
 
               // Emit signup success event for parent to handle
               const username = (await getCurrentUser()).getUsername();
-              console.log('[SIGNUP-1] Emitting signup-success event', { username });
               this.$emit('signup-success', { username });
             } else {
               if (resp.error === 'This username is taken!') {
@@ -228,11 +217,7 @@ Author: ${this.author}
             }
           })
           .catch((e) => {
-            console.error('[SIGNUP-1] CATCH: createAccount threw error:', e);
-            console.error('[SIGNUP-1] Error type:', typeof e);
-            console.error('[SIGNUP-1] Error constructor:', e?.constructor?.name);
-            console.error('[SIGNUP-1] Error message:', e?.message);
-            console.error('[SIGNUP-1] Error stack:', e?.stack);
+            console.error('createAccount error:', e);
             if (e) {
               const errorText = e?.message || e?.error || e?.toString() || 'Account creation failed';
               alertUser({

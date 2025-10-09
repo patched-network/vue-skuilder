@@ -41,7 +41,7 @@ export async function sendVerificationEmail(
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('[SIGNUP-2] Response error:', errorText);
+      console.error('Send verification email error:', errorText);
       return {
         ok: false,
         error: `HTTP ${response.status}: ${response.statusText}`,
@@ -50,7 +50,7 @@ export async function sendVerificationEmail(
 
     return await response.json();
   } catch (error) {
-    console.error('[SIGNUP-2] Fetch error:', error);
+    console.error('Send verification email fetch error:', error);
     return {
       ok: false,
       error: error instanceof Error ? error.message : 'Network error',
