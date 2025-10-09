@@ -35,7 +35,7 @@
   "dependencies": {
     "@vue-skuilder/common": "workspace:^",
     "@vue-skuilder/db": "workspace:^",
-    "axios": "^1.7.4",
+    "axios": "^1.12.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
