@@ -26,17 +26,19 @@ export async function sendVerificationEmail(
   const verificationLink = `${baseUrl}/verify?token=${token}`;
 
   try {
+    const payload = {
+      recipientEmail: to,
+      recipientName: to.split('@')[0], // Extract name from email (simple approach)
+      magicLink: verificationLink,
+      supportEmail: process.env.SUPPORT_EMAIL || 'support@example.com',
+    };
+
     const response = await fetch(`${MAILER_SERVICE_URL}/send-verification`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        recipientEmail: to,
-        recipientName: to.split('@')[0], // Extract name from email (simple approach)
-        magicLink: verificationLink,
-        supportEmail: process.env.SUPPORT_EMAIL || 'support@example.com',
-      }),
+      body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
@@ -49,7 +51,6 @@ export async function sendVerificationEmail(
     logger.info(`Verification email sent to ${to} via mailer service`);
   } catch (error) {
     logger.error(`Failed to send verification email to ${to}:`, error);
-
     throw error;
   }
 }

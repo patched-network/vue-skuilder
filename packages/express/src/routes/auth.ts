@@ -15,16 +15,16 @@ const router = express.Router();
 /**
  * POST /auth/send-verification
  * Trigger verification email for a newly created account.
- * Reads email from userdb-{username}/CONFIG.
  *
  * Body params:
  *   - username: string (required)
+ *   - email: string (optional) - If provided, uses this email directly (avoids DB sync race condition)
  *   - origin: string (optional) - Frontend origin URL for constructing verification link
  */
 router.post('/send-verification', (req: Request, res: Response) => {
   void (async () => {
     try {
-    const { username, origin } = req.body;
+    const { username, email: providedEmail, origin } = req.body;
 
     if (!username) {
       return res.status(400).json({ ok: false, error: 'Username required' });
@@ -36,23 +36,31 @@ router.post('/send-verification', (req: Request, res: Response) => {
       return res.status(404).json({ ok: false, error: 'User not found' });
     }
 
-    // Get email from user's personal database
-    const email = await getUserEmail(username);
+    // Use provided email if available, otherwise lookup in database
+    let email = providedEmail;
     if (!email) {
-      return res.status(400).json({
-        ok: false,
-        error: 'No email found for user. Please provide email during registration.',
-      });
+      email = await getUserEmail(username);
+      if (!email) {
+        return res.status(400).json({
+          ok: false,
+          error: 'No email found for user. Please provide email during registration.',
+        });
+      }
     }
 
     // Generate verification token (24 hour expiry)
     const token = generateSecureToken();
     const expiresAt = getTokenExpiry(24);
 
-    // Update user doc with token
+    // Update user doc with token and email (for password reset lookup)
     userDoc.verificationToken = token;
     userDoc.verificationTokenExpiresAt = expiresAt;
     userDoc.status = 'pending_verification';
+
+    // Save email to _users doc if not already present (enables findUserByEmail)
+    if (email && !userDoc.email) {
+      userDoc.email = email as any;
+    }
 
     await updateUserDoc(userDoc);
 
@@ -194,12 +202,10 @@ router.post('/reset-password', (req: Request, res: Response) => {
       return res.status(400).json({ ok: false, error: 'Token has expired' });
     }
 
-    // TODO: Update password in CouchDB
-    // CouchDB stores password in derived_key/salt/iterations fields (PBKDF2)
-    // For now, log a warning that this needs admin implementation
-    logger.warn(
-      `Password reset requested for ${userDoc.name} but password update not yet implemented`
-    );
+    // Update password in CouchDB
+    // CouchDB has an internal hook that automatically hashes the password
+    // when a 'password' field is present in the user document
+    userDoc.password = newPassword as any; // Add plain text password field
 
     // Clear reset token
     userDoc.passwordResetToken = null;
@@ -210,8 +216,6 @@ router.post('/reset-password', (req: Request, res: Response) => {
     logger.info(`Password reset completed for ${userDoc.name}`);
     res.json({
       ok: true,
-      // TODO: Remove this warning once password update is implemented
-      warning: 'Password reset flow completed, but actual password update not yet implemented',
     });
     } catch (error) {
       logger.error('Error resetting password:', error);
