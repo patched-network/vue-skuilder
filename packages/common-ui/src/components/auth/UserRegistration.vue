@@ -31,7 +31,8 @@
           name="password"
           hover="Show password"
           label="Create a password"
-          hint=""
+          :hint="passwordError"
+          :error="!!passwordError"
           min="4"
           :append-icon="passwordVisible ? 'mdi-eye-off' : 'mdi-eye'"
           :type="passwordVisible ? 'text' : 'password'"
@@ -56,7 +57,13 @@
           Username or password was incorrect.
           <v-btn color="pink" variant="text" @click="badLoginAttempt = false"> Close </v-btn>
         </v-snackbar>
-        <v-btn class="mr-2" type="submit" :loading="awaitingResponse" :color="buttonStatus.color">
+        <v-btn
+          class="mr-2"
+          type="submit"
+          :loading="awaitingResponse"
+          :color="buttonStatus.color"
+          :disabled="!!passwordError || password !== retypedPassword"
+        >
           <v-icon start>mdi-lock-open</v-icon>
           Create Account
         </v-btn>
@@ -76,6 +83,7 @@ import { alertUser } from '../SnackbarService';
 import { Status, log } from '@vue-skuilder/common';
 import { getCurrentUser, useAuthStore } from '../../stores/useAuthStore';
 import { sendVerificationEmail } from '../../services/authAPI';
+import { validatePassword } from '../../utils/passwordValidation';
 
 export default defineComponent({
   name: 'UserRegistration',
@@ -117,6 +125,9 @@ export default defineComponent({
         text: this.badLoginAttempt ? 'Try again' : 'Log In',
       };
     },
+    passwordError(): string {
+      return validatePassword(this.password);
+    },
   },
 
   async created() {
@@ -147,6 +158,17 @@ export default defineComponent({
 
     async createUser() {
       this.awaitingResponse = true;
+
+      // Validate password before proceeding
+      if (this.passwordError) {
+        alertUser({
+          text: this.passwordError,
+          status: Status.error,
+        });
+        this.awaitingResponse = false;
+        return;
+      }
+
       log(`
 User creation
 -------------
