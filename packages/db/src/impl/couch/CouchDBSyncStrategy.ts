@@ -6,7 +6,7 @@ import { logger } from '../../util/logger';
 import { Status } from '@vue-skuilder/common';
 import type { SyncStrategy } from '../common/SyncStrategy';
 import type { AccountCreationResult, AuthenticationResult } from '../common/types';
-import { getLocalUserDB, hexEncode, updateGuestAccountExpirationDate } from '../common';
+import { getLocalUserDB, hexEncode, updateGuestAccountExpirationDate, accomodateGuest } from '../common';
 import pouch from './pouchdb-setup';
 import { createPouchDBConfig } from './index';
 import { getLoggedInUsername } from './auth';
@@ -171,7 +171,8 @@ export class CouchDBSyncStrategy implements SyncStrategy {
     try {
       return await getLoggedInUsername();
     } catch {
-      return GuestUsername;
+      // Not logged in - return unique guest account
+      return accomodateGuest().username;
     }
   }
 

@@ -114,7 +114,7 @@ Currently logged-in as ${this._username}.`
       log(`Account created successfully, updating username to ${username}`);
       this._username = username;
       try {
-        localStorage.removeItem('dbUUID');
+        localStorage.removeItem('sk-guest-uuid');
       } catch (e) {
         logger.warn('localStorage not available (Node.js environment):', e);
       }
@@ -144,7 +144,7 @@ Currently logged-in as ${this._username}.`
       log(`Logged in as ${username}`);
       this._username = username;
       try {
-        localStorage.removeItem('dbUUID');
+        localStorage.removeItem('sk-guest-uuid');
       } catch (e) {
         logger.warn('localStorage not available (Node.js environment):', e);
       }
@@ -1036,43 +1036,43 @@ Currently logged-in as ${this._username}.`
   }
 }
 
-// function accomodateGuest(): {
-//   username: string;
-//   firstVisit: boolean;
-// } {
-//   const dbUUID = 'dbUUID';
-//   let firstVisit: boolean;
+export function accomodateGuest(): {
+  username: string;
+  firstVisit: boolean;
+} {
+  const dbUUID = 'sk-guest-uuid';
+  let firstVisit: boolean;
 
-//   if (localStorage.getItem(dbUUID) !== null) {
-//     firstVisit = false;
-//     console.log(`Returning guest ${localStorage.getItem(dbUUID)} "logging in".`);
-//   } else {
-//     firstVisit = true;
-//     const uuid = generateUUID();
-//     localStorage.setItem(dbUUID, uuid);
-//     console.log(`Accommodating a new guest with account: ${uuid}`);
-//   }
+  if (localStorage.getItem(dbUUID) !== null) {
+    firstVisit = false;
+    console.log(`Returning guest ${localStorage.getItem(dbUUID)} "logging in".`);
+  } else {
+    firstVisit = true;
+    const uuid = generateUUID();
+    localStorage.setItem(dbUUID, uuid);
+    console.log(`Accommodating a new guest with account: ${uuid}`);
+  }
 
-//   return {
-//     username: GuestUsername + localStorage.getItem(dbUUID),
-//     firstVisit: firstVisit,
-//   };
+  return {
+    username: GuestUsername + localStorage.getItem(dbUUID),
+    firstVisit: firstVisit,
+  };
 
-//   // pilfered from https://stackoverflow.com/a/8809472/1252649
-//   function generateUUID() {
-//     let d = new Date().getTime();
-//     if (typeof performance !== 'undefined' && typeof performance.now === 'function') {
-//       d += performance.now(); // use high-precision timer if available
-//     }
-//     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-//       // tslint:disable-next-line:no-bitwise
-//       const r = (d + Math.random() * 16) % 16 | 0;
-//       d = Math.floor(d / 16);
-//       // tslint:disable-next-line:no-bitwise
-//       return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
-//     });
-//   }
-// }
+  // pilfered from https://stackoverflow.com/a/8809472/1252649
+  function generateUUID() {
+    let d = new Date().getTime();
+    if (typeof performance !== 'undefined' && typeof performance.now === 'function') {
+      d += performance.now(); // use high-precision timer if available
+    }
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+      // tslint:disable-next-line:no-bitwise
+      const r = (d + Math.random() * 16) % 16 | 0;
+      d = Math.floor(d / 16);
+      // tslint:disable-next-line:no-bitwise
+      return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
+    });
+  }
+}
 
 const userCoursesDoc = 'CourseRegistrations';
 const userClassroomsDoc = 'ClassroomRegistrations';
