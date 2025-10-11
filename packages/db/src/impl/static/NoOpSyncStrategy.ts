@@ -1,6 +1,4 @@
 // packages/db/src/impl/static/NoOpSyncStrategy.ts
-
-import { GuestUsername } from '../../core/types/types-legacy';
 import type { SyncStrategy } from '../common/SyncStrategy';
 import type { AccountCreationResult, AuthenticationResult } from '../common/types';
 import { getLocalUserDB, accomodateGuest } from '../common';
