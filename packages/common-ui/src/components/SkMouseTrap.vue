@@ -7,7 +7,7 @@
     </template>
 
     <v-card>
-      <v-toolbar color="teal" dark dense>
+      <v-toolbar color="secondary" dark dense>
         <v-toolbar-title class="text-subtitle-1">Shortcut keys:</v-toolbar-title>
       </v-toolbar>
       <v-list dense>

@@ -38,7 +38,7 @@ const log = (s: any) => {
   logger.info(s);
 };
 
-// console.log(`Connecting to remote: ${remoteStr}`);
+// logger.log(`Connecting to remote: ${remoteStr}`);
 
 interface DesignDoc {
   _id: string;
@@ -114,7 +114,7 @@ Currently logged-in as ${this._username}.`
       log(`Account created successfully, updating username to ${username}`);
       this._username = username;
       try {
-        localStorage.removeItem('dbUUID');
+        localStorage.removeItem('sk-guest-uuid');
       } catch (e) {
         logger.warn('localStorage not available (Node.js environment):', e);
       }
@@ -144,7 +144,7 @@ Currently logged-in as ${this._username}.`
       log(`Logged in as ${username}`);
       this._username = username;
       try {
-        localStorage.removeItem('dbUUID');
+        localStorage.removeItem('sk-guest-uuid');
       } catch (e) {
         logger.warn('localStorage not available (Node.js environment):', e);
       }
@@ -320,7 +320,7 @@ Currently logged-in as ${this._username}.`
                     // It's a Date object
                     timeStamp = record.timeStamp.toISOString();
                   } else {
-                    // Log a sample of unknown object types, but don't flood console
+                    // Log a sample of unknown object types, but don't flood logger
                     if (sampleCount < 3) {
                       logger.warn('Unknown timestamp object type:', record.timeStamp);
                       sampleCount++;
@@ -774,7 +774,9 @@ Currently logged-in as ${this._username}.`
           const putResult = await this.writeDB.put<CardHistory<T>>(initCardHistory);
           return { ...initCardHistory, _rev: putResult.rev };
         } catch (creationError) {
-          throw new Error(`Failed to create CardHistory for ${cardHistoryID}. Reason: ${creationError}`);
+          throw new Error(
+            `Failed to create CardHistory for ${cardHistoryID}. Reason: ${creationError}`
+          );
         }
       } else {
         throw new Error(`putCardRecord failed because of:
@@ -1036,43 +1038,73 @@ Currently logged-in as ${this._username}.`
   }
 }
 
-// function accomodateGuest(): {
-//   username: string;
-//   firstVisit: boolean;
-// } {
-//   const dbUUID = 'dbUUID';
-//   let firstVisit: boolean;
+export function accomodateGuest(): {
+  username: string;
+  firstVisit: boolean;
+} {
+  logger.log('[funnel] accomodateGuest() called');
 
-//   if (localStorage.getItem(dbUUID) !== null) {
-//     firstVisit = false;
-//     console.log(`Returning guest ${localStorage.getItem(dbUUID)} "logging in".`);
-//   } else {
-//     firstVisit = true;
-//     const uuid = generateUUID();
-//     localStorage.setItem(dbUUID, uuid);
-//     console.log(`Accommodating a new guest with account: ${uuid}`);
-//   }
+  const dbUUID = 'sk-guest-uuid';
+  let firstVisit: boolean;
 
-//   return {
-//     username: GuestUsername + localStorage.getItem(dbUUID),
-//     firstVisit: firstVisit,
-//   };
+  const existingUUID = localStorage.getItem(dbUUID);
+  logger.log('[funnel] Checking localStorage for key:', dbUUID);
+  logger.log('[funnel] Existing UUID value:', existingUUID);
+  logger.log('[funnel] existingUUID !== null:', existingUUID !== null);
 
-//   // pilfered from https://stackoverflow.com/a/8809472/1252649
-//   function generateUUID() {
-//     let d = new Date().getTime();
-//     if (typeof performance !== 'undefined' && typeof performance.now === 'function') {
-//       d += performance.now(); // use high-precision timer if available
-//     }
-//     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-//       // tslint:disable-next-line:no-bitwise
-//       const r = (d + Math.random() * 16) % 16 | 0;
-//       d = Math.floor(d / 16);
-//       // tslint:disable-next-line:no-bitwise
-//       return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
-//     });
-//   }
-// }
+  if (existingUUID !== null) {
+    firstVisit = false;
+    logger.log(`[funnel] Returning guest ${existingUUID} "logging in".`);
+  } else {
+    firstVisit = true;
+    logger.log('[funnel] No existing UUID, generating new one...');
+    const uuid = generateUUID();
+    logger.log('[funnel] Generated UUID:', uuid);
+    logger.log('[funnel] UUID length:', uuid.length);
+
+    try {
+      localStorage.setItem(dbUUID, uuid);
+      logger.log('[funnel] Successfully stored UUID in localStorage');
+      const verification = localStorage.getItem(dbUUID);
+      logger.log('[funnel] Verification read from localStorage:', verification);
+    } catch (e) {
+      logger.error('[funnel] ERROR storing UUID:', e);
+    }
+
+    logger.log(`[funnel] Accommodating a new guest with account: ${uuid}`);
+  }
+
+  const finalUUID = localStorage.getItem(dbUUID);
+  const finalUsername = GuestUsername + finalUUID;
+  logger.log('[funnel] Final UUID from localStorage:', finalUUID);
+  logger.log('[funnel] GuestUsername constant:', GuestUsername);
+  logger.log('[funnel] Final username to return:', finalUsername);
+
+  return {
+    username: finalUsername,
+    firstVisit: firstVisit,
+  };
+
+  // pilfered from https://stackoverflow.com/a/8809472/1252649
+  function generateUUID() {
+    logger.log('[funnel] Inside generateUUID()');
+    let d = new Date().getTime();
+    logger.log('[funnel] Date timestamp:', d);
+    if (typeof performance !== 'undefined' && typeof performance.now === 'function') {
+      d += performance.now(); // use high-precision timer if available
+      logger.log('[funnel] After adding performance.now():', d);
+    }
+    const uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+      // tslint:disable-next-line:no-bitwise
+      const r = (d + Math.random() * 16) % 16 | 0;
+      d = Math.floor(d / 16);
+      // tslint:disable-next-line:no-bitwise
+      return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
+    });
+    logger.log('[funnel] Generated UUID inside function:', uuid);
+    return uuid;
+  }
+}
 
 const userCoursesDoc = 'CourseRegistrations';
 const userClassroomsDoc = 'ClassroomRegistrations';

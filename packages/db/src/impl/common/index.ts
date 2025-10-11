@@ -9,7 +9,7 @@ export type {
   SyncConfig,
   SyncStatus,
 } from './types';
-export { BaseUser } from './BaseUserDB';
+export { BaseUser, accomodateGuest } from './BaseUserDB';
 export {
   REVIEW_TIME_FORMAT,
   hexEncode,

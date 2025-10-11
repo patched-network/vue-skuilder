@@ -1,16 +1,14 @@
 // packages/db/src/impl/static/NoOpSyncStrategy.ts
-
-import { GuestUsername } from '../../core/types/types-legacy';
 import type { SyncStrategy } from '../common/SyncStrategy';
 import type { AccountCreationResult, AuthenticationResult } from '../common/types';
-import { getLocalUserDB } from '../common';
+import { getLocalUserDB, accomodateGuest } from '../common';
 
 /**
  * Sync strategy for static deployments that provides no-op implementations
  * for remote operations. Uses only local storage with no remote synchronization.
  */
 export class NoOpSyncStrategy implements SyncStrategy {
-  private currentUsername: string = GuestUsername;
+  private currentUsername: string = accomodateGuest().username;
 
   setupRemoteDB(username: string): PouchDB.Database {
     // Return the same database instance as local - sync with self is a no-op
@@ -53,7 +51,7 @@ export class NoOpSyncStrategy implements SyncStrategy {
 
   async logout(): Promise<AuthenticationResult> {
     // In static mode, "logout" means switch back to guest user
-    this.currentUsername = GuestUsername;
+    this.currentUsername = accomodateGuest().username;
     return {
       ok: true,
     };

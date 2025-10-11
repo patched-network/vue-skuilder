@@ -1,5 +1,4 @@
 import { ENV, NOT_SET } from '@db/factory';
-import { GuestUsername } from '../../core/types/types-legacy';
 import { logger } from '@db/util/logger';
 import fetch from 'cross-fetch';
 
@@ -72,13 +71,10 @@ export async function getCurrentSession(): Promise<SessionResponse> {
 }
 
 export async function getLoggedInUsername(): Promise<string> {
-  try {
-    const session = await getCurrentSession();
-    if (session.userCtx.name && session.userCtx.name !== '') {
-      return session.userCtx.name;
-    }
-  } catch (error) {
-    logger.error('Failed to get session:', error);
+  const session = await getCurrentSession();
+  if (session.userCtx.name && session.userCtx.name !== '') {
+    return session.userCtx.name;
   }
-  return GuestUsername;
+  // Not logged in - throw so caller can handle guest account
+  throw new Error('No logged in user');
 }

@@ -53,24 +53,11 @@ export class CouchDataLayerProvider implements DataLayerProvider {
       this.userDB = await BaseUser.instance(syncStrategy);
     } else {
       // Assume browser-like environment, proceed with user session logic
-      try {
-        // Get the current username from session
-        this.currentUsername = await getLoggedInUsername();
-        logger.debug(`Current username: ${this.currentUsername}`);
-
-        // Create the user db instance if a username was found
-        if (this.currentUsername) {
-          const syncStrategy = new CouchDBSyncStrategy();
-          this.userDB = await BaseUser.instance(syncStrategy, this.currentUsername);
-        } else {
-          logger.warn('CouchDataLayerProvider: No logged-in username found in session.');
-        }
-      } catch (error) {
-        logger.error(
-          'CouchDataLayerProvider: Error during user session check or user DB initialization:',
-          error
-        );
-      }
+      // Let CouchDBSyncStrategy.getCurrentUsername() handle both logged-in and guest users
+      const syncStrategy = new CouchDBSyncStrategy();
+      this.userDB = await BaseUser.instance(syncStrategy);
+      this.currentUsername = this.userDB.getUsername();
+      logger.debug(`Current username: ${this.currentUsername}`);
     }
 
     this.initialized = true;
