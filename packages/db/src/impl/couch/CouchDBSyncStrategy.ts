@@ -69,6 +69,14 @@ export class CouchDBSyncStrategy implements SyncStrategy {
   }
 
   async createAccount(username: string, password: string): Promise<AccountCreationResult> {
+    // IMPORTANT: Capture funnel username BEFORE any operations that might change session state
+    const funnelUsername = await this.getCurrentUsername();
+    const isFunnelAccount = funnelUsername.startsWith(GuestUsername);
+
+    if (isFunnelAccount) {
+      logger.info(`Creating account for funnel user ${funnelUsername} -> ${username}`);
+    }
+
     try {
       const signupRequest = await this.getRemoteCouchRootDB().signUp(username, password);
 
@@ -88,12 +96,16 @@ export class CouchDBSyncStrategy implements SyncStrategy {
         log(`CREATEACCOUNT: logged in as new user: ${loginResult.ok}`);
 
         if (loginResult.ok) {
-          // TODO: Handle guest data migration here if needed
-          // Set up databases for the new user:
-          // const newLocal = getLocalUserDB(username);
-          // const newRemote = this.getUserDB(username);
+          // Migrate funnel account data if applicable
+          if (isFunnelAccount) {
+            logger.info(`Migrating data from funnel account ${funnelUsername} to ${username}`);
+            const migrationResult = await this.migrateFunnelData(funnelUsername, username);
+            if (!migrationResult.success) {
+              logger.warn(`Migration failed: ${migrationResult.error}`);
+              // Continue anyway - don't block account creation
+            }
+          }
 
-          // For now, just return success
           return {
             status: Status.ok,
             error: undefined,
@@ -168,11 +180,61 @@ export class CouchDBSyncStrategy implements SyncStrategy {
   }
 
   async getCurrentUsername(): Promise<string> {
+    console.log('[funnel] CouchDBSyncStrategy.getCurrentUsername() called');
     try {
-      return await getLoggedInUsername();
-    } catch {
+      const loggedInUsername = await getLoggedInUsername();
+      console.log('[funnel] getLoggedInUsername() returned:', loggedInUsername);
+      return loggedInUsername;
+    } catch (e) {
       // Not logged in - return unique guest account
-      return accomodateGuest().username;
+      console.log('[funnel] getLoggedInUsername() failed, calling accomodateGuest()');
+      console.log('[funnel] Error was:', e);
+      const guestInfo = accomodateGuest();
+      console.log('[funnel] accomodateGuest() returned:', guestInfo);
+      return guestInfo.username;
+    }
+  }
+
+  /**
+   * Migrate data from funnel account to real account
+   */
+  private async migrateFunnelData(
+    oldUsername: string,
+    newUsername: string
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      logger.info(`Starting data migration from ${oldUsername} to ${newUsername}`);
+
+      const oldLocalDB = getLocalUserDB(oldUsername);
+      const newLocalDB = getLocalUserDB(newUsername);
+
+      // Get all docs from funnel account
+      const allDocs = await oldLocalDB.allDocs({ include_docs: true });
+
+      logger.info(`Found ${allDocs.rows.length} documents in funnel account`);
+
+      // Filter out design docs and prepare for migration
+      const docsToMigrate = allDocs.rows
+        .filter(row => !row.id.startsWith('_design/'))
+        .map(row => ({
+          ...row.doc,
+          _rev: undefined, // Remove rev to insert as new
+        }));
+
+      if (docsToMigrate.length > 0) {
+        await newLocalDB.bulkDocs(docsToMigrate);
+        logger.info(`Successfully migrated ${docsToMigrate.length} documents from ${oldUsername} to ${newUsername}`);
+      } else {
+        logger.info('No documents to migrate from funnel account');
+      }
+
+      return { success: true };
+    } catch (error) {
+      logger.error('Migration failed:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
     }
   }
 

@@ -1040,37 +1040,67 @@ export function accomodateGuest(): {
   username: string;
   firstVisit: boolean;
 } {
+  console.log('[funnel] accomodateGuest() called');
+
   const dbUUID = 'sk-guest-uuid';
   let firstVisit: boolean;
 
-  if (localStorage.getItem(dbUUID) !== null) {
+  const existingUUID = localStorage.getItem(dbUUID);
+  console.log('[funnel] Checking localStorage for key:', dbUUID);
+  console.log('[funnel] Existing UUID value:', existingUUID);
+  console.log('[funnel] existingUUID !== null:', existingUUID !== null);
+
+  if (existingUUID !== null) {
     firstVisit = false;
-    console.log(`Returning guest ${localStorage.getItem(dbUUID)} "logging in".`);
+    console.log(`[funnel] Returning guest ${existingUUID} "logging in".`);
   } else {
     firstVisit = true;
+    console.log('[funnel] No existing UUID, generating new one...');
     const uuid = generateUUID();
-    localStorage.setItem(dbUUID, uuid);
-    console.log(`Accommodating a new guest with account: ${uuid}`);
+    console.log('[funnel] Generated UUID:', uuid);
+    console.log('[funnel] UUID length:', uuid.length);
+
+    try {
+      localStorage.setItem(dbUUID, uuid);
+      console.log('[funnel] Successfully stored UUID in localStorage');
+      const verification = localStorage.getItem(dbUUID);
+      console.log('[funnel] Verification read from localStorage:', verification);
+    } catch (e) {
+      console.error('[funnel] ERROR storing UUID:', e);
+    }
+
+    console.log(`[funnel] Accommodating a new guest with account: ${uuid}`);
   }
 
+  const finalUUID = localStorage.getItem(dbUUID);
+  const finalUsername = GuestUsername + finalUUID;
+  console.log('[funnel] Final UUID from localStorage:', finalUUID);
+  console.log('[funnel] GuestUsername constant:', GuestUsername);
+  console.log('[funnel] Final username to return:', finalUsername);
+
   return {
-    username: GuestUsername + localStorage.getItem(dbUUID),
+    username: finalUsername,
     firstVisit: firstVisit,
   };
 
   // pilfered from https://stackoverflow.com/a/8809472/1252649
   function generateUUID() {
+    console.log('[funnel] Inside generateUUID()');
     let d = new Date().getTime();
+    console.log('[funnel] Date timestamp:', d);
     if (typeof performance !== 'undefined' && typeof performance.now === 'function') {
       d += performance.now(); // use high-precision timer if available
+      console.log('[funnel] After adding performance.now():', d);
     }
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
       // tslint:disable-next-line:no-bitwise
       const r = (d + Math.random() * 16) % 16 | 0;
       d = Math.floor(d / 16);
       // tslint:disable-next-line:no-bitwise
       return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
     });
+    console.log('[funnel] Generated UUID inside function:', uuid);
+    return uuid;
   }
 }
 
