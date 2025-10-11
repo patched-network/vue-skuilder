@@ -180,17 +180,17 @@ export class CouchDBSyncStrategy implements SyncStrategy {
   }
 
   async getCurrentUsername(): Promise<string> {
-    console.log('[funnel] CouchDBSyncStrategy.getCurrentUsername() called');
+    logger.log('[funnel] CouchDBSyncStrategy.getCurrentUsername() called');
     try {
       const loggedInUsername = await getLoggedInUsername();
-      console.log('[funnel] getLoggedInUsername() returned:', loggedInUsername);
+      logger.log('[funnel] getLoggedInUsername() returned:', loggedInUsername);
       return loggedInUsername;
     } catch (e) {
       // Not logged in - return unique guest account
-      console.log('[funnel] getLoggedInUsername() failed, calling accomodateGuest()');
-      console.log('[funnel] Error was:', e);
+      logger.log('[funnel] getLoggedInUsername() failed, calling accomodateGuest()');
+      logger.log('[funnel] Error was:', e);
       const guestInfo = accomodateGuest();
-      console.log('[funnel] accomodateGuest() returned:', guestInfo);
+      logger.log('[funnel] accomodateGuest() returned:', guestInfo);
       return guestInfo.username;
     }
   }

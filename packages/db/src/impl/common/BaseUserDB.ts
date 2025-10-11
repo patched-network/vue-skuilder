@@ -38,7 +38,7 @@ const log = (s: any) => {
   logger.info(s);
 };
 
-// console.log(`Connecting to remote: ${remoteStr}`);
+// logger.log(`Connecting to remote: ${remoteStr}`);
 
 interface DesignDoc {
   _id: string;
@@ -320,7 +320,7 @@ Currently logged-in as ${this._username}.`
                     // It's a Date object
                     timeStamp = record.timeStamp.toISOString();
                   } else {
-                    // Log a sample of unknown object types, but don't flood console
+                    // Log a sample of unknown object types, but don't flood logger
                     if (sampleCount < 3) {
                       logger.warn('Unknown timestamp object type:', record.timeStamp);
                       sampleCount++;
@@ -774,7 +774,9 @@ Currently logged-in as ${this._username}.`
           const putResult = await this.writeDB.put<CardHistory<T>>(initCardHistory);
           return { ...initCardHistory, _rev: putResult.rev };
         } catch (creationError) {
-          throw new Error(`Failed to create CardHistory for ${cardHistoryID}. Reason: ${creationError}`);
+          throw new Error(
+            `Failed to create CardHistory for ${cardHistoryID}. Reason: ${creationError}`
+          );
         }
       } else {
         throw new Error(`putCardRecord failed because of:
@@ -1040,43 +1042,43 @@ export function accomodateGuest(): {
   username: string;
   firstVisit: boolean;
 } {
-  console.log('[funnel] accomodateGuest() called');
+  logger.log('[funnel] accomodateGuest() called');
 
   const dbUUID = 'sk-guest-uuid';
   let firstVisit: boolean;
 
   const existingUUID = localStorage.getItem(dbUUID);
-  console.log('[funnel] Checking localStorage for key:', dbUUID);
-  console.log('[funnel] Existing UUID value:', existingUUID);
-  console.log('[funnel] existingUUID !== null:', existingUUID !== null);
+  logger.log('[funnel] Checking localStorage for key:', dbUUID);
+  logger.log('[funnel] Existing UUID value:', existingUUID);
+  logger.log('[funnel] existingUUID !== null:', existingUUID !== null);
 
   if (existingUUID !== null) {
     firstVisit = false;
-    console.log(`[funnel] Returning guest ${existingUUID} "logging in".`);
+    logger.log(`[funnel] Returning guest ${existingUUID} "logging in".`);
   } else {
     firstVisit = true;
-    console.log('[funnel] No existing UUID, generating new one...');
+    logger.log('[funnel] No existing UUID, generating new one...');
     const uuid = generateUUID();
-    console.log('[funnel] Generated UUID:', uuid);
-    console.log('[funnel] UUID length:', uuid.length);
+    logger.log('[funnel] Generated UUID:', uuid);
+    logger.log('[funnel] UUID length:', uuid.length);
 
     try {
       localStorage.setItem(dbUUID, uuid);
-      console.log('[funnel] Successfully stored UUID in localStorage');
+      logger.log('[funnel] Successfully stored UUID in localStorage');
       const verification = localStorage.getItem(dbUUID);
-      console.log('[funnel] Verification read from localStorage:', verification);
+      logger.log('[funnel] Verification read from localStorage:', verification);
     } catch (e) {
-      console.error('[funnel] ERROR storing UUID:', e);
+      logger.error('[funnel] ERROR storing UUID:', e);
     }
 
-    console.log(`[funnel] Accommodating a new guest with account: ${uuid}`);
+    logger.log(`[funnel] Accommodating a new guest with account: ${uuid}`);
   }
 
   const finalUUID = localStorage.getItem(dbUUID);
   const finalUsername = GuestUsername + finalUUID;
-  console.log('[funnel] Final UUID from localStorage:', finalUUID);
-  console.log('[funnel] GuestUsername constant:', GuestUsername);
-  console.log('[funnel] Final username to return:', finalUsername);
+  logger.log('[funnel] Final UUID from localStorage:', finalUUID);
+  logger.log('[funnel] GuestUsername constant:', GuestUsername);
+  logger.log('[funnel] Final username to return:', finalUsername);
 
   return {
     username: finalUsername,
@@ -1085,12 +1087,12 @@ export function accomodateGuest(): {
 
   // pilfered from https://stackoverflow.com/a/8809472/1252649
   function generateUUID() {
-    console.log('[funnel] Inside generateUUID()');
+    logger.log('[funnel] Inside generateUUID()');
     let d = new Date().getTime();
-    console.log('[funnel] Date timestamp:', d);
+    logger.log('[funnel] Date timestamp:', d);
     if (typeof performance !== 'undefined' && typeof performance.now === 'function') {
       d += performance.now(); // use high-precision timer if available
-      console.log('[funnel] After adding performance.now():', d);
+      logger.log('[funnel] After adding performance.now():', d);
     }
     const uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
       // tslint:disable-next-line:no-bitwise
@@ -1099,7 +1101,7 @@ export function accomodateGuest(): {
       // tslint:disable-next-line:no-bitwise
       return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
     });
-    console.log('[funnel] Generated UUID inside function:', uuid);
+    logger.log('[funnel] Generated UUID inside function:', uuid);
     return uuid;
   }
 }

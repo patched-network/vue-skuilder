@@ -1,5 +1,4 @@
 import { ENV, NOT_SET } from '@db/factory';
-import { GuestUsername } from '../../core/types/types-legacy';
 import { logger } from '@db/util/logger';
 import fetch from 'cross-fetch';
 

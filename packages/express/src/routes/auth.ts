@@ -59,7 +59,7 @@ router.post('/send-verification', (req: Request, res: Response) => {
 
     // Save email to _users doc if not already present (enables findUserByEmail)
     if (email && !userDoc.email) {
-      userDoc.email = email as any;
+      userDoc.email = email as string;
     }
 
     await updateUserDoc(userDoc);
@@ -204,8 +204,12 @@ router.post('/reset-password', (req: Request, res: Response) => {
 
     // Update password in CouchDB
     // CouchDB has an internal hook that automatically hashes the password
-    // when a 'password' field is present in the user document
-    userDoc.password = newPassword as any; // Add plain text password field
+    // when a 'password' field is present in the user document.
+    // see https://docs.couchdb.org/en/stable/intro/security.html#password-changing
+    
+    
+    // @ts-expect-error writing to metadata field here.
+    userDoc.password = newPassword as string; // Add plain text password field
 
     // Clear reset token
     userDoc.passwordResetToken = null;
