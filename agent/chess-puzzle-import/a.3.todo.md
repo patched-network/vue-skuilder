@@ -11,19 +11,20 @@
 
 ## Phase 2: CSV Parser Module (Standalone Script)
 
-- [ ] 2.1 Create `agent/chess-puzzle-import/csvPuzzleParser.ts`
-- [ ] 2.2 Implement `ParsedPuzzle` interface
-- [ ] 2.3 Implement `parsePuzzleCSV(csvLine)` function
-  - [ ] 2.3.1 Split CSV line on commas
-  - [ ] 2.3.2 Extract themes (index 7), split on spaces
-  - [ ] 2.3.3 Extract openings (index 9), split on spaces, add "opening:" prefix
-  - [ ] 2.3.4 Handle empty opening tags field
-  - [ ] 2.3.5 Combine tags: [...themes, ...prefixedOpenings]
-  - [ ] 2.3.6 Extract rating (index 3) as elo
-  - [ ] 2.3.7 Reconstruct full puzzleData string
-- [ ] 2.4 Implement `parsePuzzleCSVStream()` function with Node.js readline
-- [ ] 2.5 Add progress callback support
-- [ ] 2.6 Add error handling for malformed lines
+- [x] 2.1 Create `agent/chess-puzzle-import/csvPuzzleParser.ts`
+- [x] 2.2 Implement `ParsedPuzzle` interface
+- [x] 2.3 Implement `parsePuzzleCSV(csvLine)` function
+  - [x] 2.3.1 Split CSV line on commas
+  - [x] 2.3.2 Extract themes (index 7), split on spaces
+  - [x] 2.3.3 Extract openings (index 9), split on spaces, add "opening:" prefix
+  - [x] 2.3.4 Handle empty opening tags field
+  - [x] 2.3.5 Combine tags: [...themes, ...prefixedOpenings]
+  - [x] 2.3.6 Extract rating (index 3) as elo
+  - [x] 2.3.7 Reconstruct full puzzleData string (stores full CSV row)
+- [x] 2.4 Implement `parsePuzzleCSVStream()` function with Node.js readline
+- [x] 2.5 Add progress callback support (with ParseStats interface)
+- [x] 2.6 Add error handling for malformed lines
+- [x] 2.7 Test parser with Lichess sample data (8/8 tests pass)
 
 ## Phase 3: Standalone Import Script
 
