@@ -30,18 +30,33 @@ export class ChessPuzzle extends Question {
                 };
               }
 
-              const split = s.split(',');
-              if (split.length != 10) {
+              // Trim whitespace
+              const trimmed = s.trim();
+
+              const split = trimmed.split(',');
+
+              // Accept 9 or 10 fields (10 if trailing comma present, 9 if not)
+              // This handles both "...,gameUrl," and "...,gameUrl"
+              if (split.length < 9 || split.length > 10) {
                 return {
                   status: Status.error,
-                  msg: 'puzzleData must have 8 comma-separated fields',
-                };
-              } else {
-                return {
-                  status: Status.ok,
-                  msg: '',
+                  msg: `puzzleData must have 9-10 comma-separated fields, got ${split.length}`,
                 };
               }
+
+              // Verify minimum required fields are non-empty
+              const [id, fen, moves, rating] = split;
+              if (!id || !fen || !moves || !rating) {
+                return {
+                  status: Status.error,
+                  msg: 'puzzleData missing required fields (id, fen, moves, or rating)',
+                };
+              }
+
+              return {
+                status: Status.ok,
+                msg: '',
+              };
             },
           },
           tagger: () => {
