@@ -12,6 +12,12 @@ export interface VerifyEmailResponse extends AuthResponse {
   username?: string;
 }
 
+export interface UserStatusResponse extends AuthResponse {
+  username?: string;
+  status?: 'pending_verification' | 'verified' | 'suspended';
+  email?: string | null;
+}
+
 /**
  * Triggers verification email send for a newly created account.
  *
@@ -68,6 +74,34 @@ export async function verifyEmail(token: string): Promise<VerifyEmailResponse> {
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
       body: JSON.stringify({ token }),
+    });
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: `HTTP ${response.status}: ${response.statusText}`,
+      };
+    }
+
+    return await response.json();
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : 'Network error',
+    };
+  }
+}
+
+/**
+ * Get current user's account status (verification status, email).
+ * Requires valid AuthSession cookie.
+ */
+export async function getUserStatus(): Promise<UserStatusResponse> {
+  try {
+    const response = await fetch('/auth/status', {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
     });
 
     if (!response.ok) {

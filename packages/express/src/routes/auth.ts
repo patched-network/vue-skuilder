@@ -1,4 +1,6 @@
 import express, { Request, Response } from 'express';
+import Nano from 'nano';
+import { getCouchURLWithProtocol } from '../couchdb/index.js';
 import {
   findUserByUsername,
   findUserByToken,
@@ -9,6 +11,19 @@ import {
 import { generateSecureToken, getTokenExpiry, isTokenExpired } from '../utils/tokens.js';
 import { sendVerificationEmail, sendPasswordResetEmail } from '../services/email.js';
 import logger from '../logger.js';
+
+interface CouchSession {
+  info: {
+    authenticated: string;
+    authentication_db: string;
+    authentication_handlers: string[];
+  };
+  ok: boolean;
+  userCtx: {
+    name: string;
+    roles: string[];
+  };
+}
 
 const router = express.Router();
 
@@ -121,6 +136,49 @@ router.post('/verify', (req: Request, res: Response) => {
         ok: false,
         error: 'Failed to verify email',
       });
+    }
+  })();
+});
+
+/**
+ * GET /auth/status
+ * Get current user's account status (verification status, email).
+ * Requires AuthSession cookie.
+ */
+router.get('/status', (req: Request, res: Response) => {
+  void (async () => {
+    try {
+      const authCookie: string = req.cookies?.AuthSession;
+      if (!authCookie) {
+        return res.status(401).json({ ok: false, error: 'Not authenticated' });
+      }
+
+      // Verify session with CouchDB to get username
+      const session: CouchSession = await Nano({
+        cookie: 'AuthSession=' + authCookie,
+        url: getCouchURLWithProtocol(),
+      }).session();
+
+      const username = session.userCtx.name;
+      if (!username) {
+        return res.status(401).json({ ok: false, error: 'Invalid session' });
+      }
+
+      // Use admin credentials to read user's status from _users
+      const userDoc = await findUserByUsername(username);
+      if (!userDoc) {
+        return res.status(404).json({ ok: false, error: 'User not found' });
+      }
+
+      res.json({
+        ok: true,
+        username: userDoc.name,
+        status: userDoc.status || 'verified',
+        email: userDoc.email || null,
+      });
+    } catch (error) {
+      logger.error('Error fetching user status:', error);
+      res.status(500).json({ ok: false, error: 'Failed to fetch user status' });
     }
   })();
 });
