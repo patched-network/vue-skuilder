@@ -67,7 +67,8 @@ jobs:
           rsync -rl ./packages/express/.env.production ${{ secrets.DO_USERNAME }}@eduquilt.com:/home/skuilder/dist/express-backend/$newversion/.env.production
 
           echo "Syncing workspace dependencies..."
-          ssh ${{ secrets.DO_USERNAME }}@eduquilt.com mkdir -p /home/skuilder/dist/express-backend/$newversion/workspace
+          ssh ${{ secrets.DO_USERNAME }}@eduquilt.com mkdir -p /home/skuilder/dist/express-backend/$newversion/workspace/common
+          ssh ${{ secrets.DO_USERNAME }}@eduquilt.com mkdir -p /home/skuilder/dist/express-backend/$newversion/workspace/db
 
           # Sync @vue-skuilder/common
           rsync -rl --delete ./packages/common/dist/ ${{ secrets.DO_USERNAME }}@eduquilt.com:/home/skuilder/dist/express-backend/$newversion/workspace/common/dist
