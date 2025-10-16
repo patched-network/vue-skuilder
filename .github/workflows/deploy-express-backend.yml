@@ -66,8 +66,8 @@ jobs:
           rsync -rl ./packages/express/assets/ ${{ secrets.DO_USERNAME }}@eduquilt.com:/home/skuilder/dist/express-backend/$newversion/assets
           rsync -rl ./packages/express/.env.production ${{ secrets.DO_USERNAME }}@eduquilt.com:/home/skuilder/dist/express-backend/$newversion/.env.production
 
-          echo "Syncing node_modules (following symlinks for workspace packages)..."
-          rsync -rL ./packages/express/node_modules/ ${{ secrets.DO_USERNAME }}@eduquilt.com:/home/skuilder/dist/express-backend/$newversion/node_modules
+          echo "Syncing node_modules from root (following symlinks for workspace packages)..."
+          rsync -rL ./node_modules/ ${{ secrets.DO_USERNAME }}@eduquilt.com:/home/skuilder/dist/express-backend/$newversion/node_modules
 
           echo "Setting symlink to new version..."
           ssh ${{ secrets.DO_USERNAME }}@eduquilt.com ln -sfn /home/skuilder/dist/express-backend/$newversion /home/skuilder/express-backend
