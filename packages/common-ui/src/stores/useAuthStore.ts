@@ -14,7 +14,7 @@ export interface AuthState {
   onLoadComplete: boolean;
 }
 
-export async function getCurrentUser(): Promise<UserDBInterface> {
+export async function getCurrentUser(): Promise<UserDBInterface | undefined> {
   const store = useAuthStore();
 
   if (!store.onLoadComplete) {
@@ -58,12 +58,16 @@ export const useAuthStore = () => {
         try {
           this._user = getDataLayer().getUserDB();
 
-          this.loginAndRegistration.loggedIn = this._user.isLoggedIn();
+          this.loginAndRegistration.loggedIn = this._user ? this._user.isLoggedIn() : false;
 
           this.onLoadComplete = true;
           this.loginAndRegistration.init = true;
         } catch (e) {
           console.error('Failed to initialize auth store:', e);
+          // Set onLoadComplete even on error to prevent timeout
+          this.loginAndRegistration.loggedIn = false;
+          this.onLoadComplete = true;
+          this.loginAndRegistration.init = true;
         }
       },
 

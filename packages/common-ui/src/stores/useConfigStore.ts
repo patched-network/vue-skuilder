@@ -28,32 +28,46 @@ export const useConfigStore = () => {
       async updateDarkMode(darkMode: boolean) {
         this.config.darkMode = darkMode;
         const user = await getCurrentUser();
-        await user.setConfig({
-          darkMode,
-        });
+        if (user) {
+          await user.setConfig({
+            darkMode,
+          });
+        }
       },
 
       async updateLikesConfetti(likesConfetti: boolean) {
         this.config.likesConfetti = likesConfetti;
         const user = await getCurrentUser();
-        await user.setConfig({
-          likesConfetti,
-        });
+        if (user) {
+          await user.setConfig({
+            likesConfetti,
+          });
+        }
       },
 
       async updateSessionTimeLimit(sessionTimeLimit: number) {
         this.config.sessionTimeLimit = sessionTimeLimit;
         const user = await getCurrentUser();
-        await user.setConfig({
-          sessionTimeLimit,
-        });
+        if (user) {
+          await user.setConfig({
+            sessionTimeLimit,
+          });
+        }
       },
 
       async hydrate() {
-        const user = await getCurrentUser();
-        const cfg = await user.getConfig();
-        console.log(`user config: ${JSON.stringify(cfg)}`);
-        this.updateConfig(cfg);
+        try {
+          const user = await getCurrentUser();
+          if (user) {
+            const cfg = await user.getConfig();
+            console.log(`user config: ${JSON.stringify(cfg)}`);
+            this.updateConfig(cfg);
+          } else {
+            console.log('No user logged in, using default config');
+          }
+        } catch (e) {
+          console.warn('Failed to hydrate config store, using defaults:', e);
+        }
       },
       async init() {
         await this.hydrate();

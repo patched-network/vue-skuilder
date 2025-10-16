@@ -13,8 +13,10 @@ export { default as ResetPassword } from './ResetPassword.vue';
 export {
   sendVerificationEmail,
   verifyEmail,
+  getUserStatus,
   requestPasswordReset,
   resetPassword,
   type AuthResponse,
   type VerifyEmailResponse,
+  type UserStatusResponse,
 } from '../../services/authAPI';

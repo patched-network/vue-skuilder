@@ -173,7 +173,7 @@ router.get('/status', (req: Request, res: Response) => {
       res.json({
         ok: true,
         username: userDoc.name,
-        status: userDoc.status || 'verified',
+        status: userDoc.status || 'pending_verification', // Default to pending if not explicitly set
         email: userDoc.email || null,
       });
     } catch (error) {

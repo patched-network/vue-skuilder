@@ -1044,6 +1044,15 @@ export function accomodateGuest(): {
 } {
   logger.log('[funnel] accomodateGuest() called');
 
+  // Check if localStorage is available (browser environment)
+  if (typeof localStorage === 'undefined') {
+    logger.log('[funnel] localStorage not available (Node.js environment), returning default guest');
+    return {
+      username: GuestUsername + 'nodejs-test',
+      firstVisit: true,
+    };
+  }
+
   const dbUUID = 'sk-guest-uuid';
   let firstVisit: boolean;
 
