@@ -1,0 +1,24 @@
+[Unit]
+Description=Vue-Skuilder Express API Backend
+After=network.target
+
+[Service]
+Type=simple
+User=skuilder
+Group=skuilder
+WorkingDirectory=/home/skuilder/express-backend
+Environment=NODE_ENV=production
+Environment=PATH=/home/skuilder/.nvm/versions/node/v18.20.4/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=/home/skuilder/.nvm/versions/node/v18.20.4/bin/node /home/skuilder/express-backend/dist/app.js /home/skuilder/express-backend/.env.production
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=express-backend
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
