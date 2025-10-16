@@ -1,7 +1,20 @@
 /**
  * Authentication API service for interacting with Express backend auth endpoints.
- * Uses relative paths (same-origin) to avoid ENV coupling.
+ * Uses configurable API base path from environment or falls back to relative paths.
  */
+
+// Get API base path from environment, defaulting to empty string for relative paths
+const getApiBase = (): string => {
+  if (typeof import.meta !== 'undefined' && import.meta.env) {
+    const base = import.meta.env.VITE_API_BASE_URL;
+    if (base) {
+      // Remove trailing slash if present, ensure leading slash
+      const cleaned = base.replace(/\/$/, '');
+      return cleaned.startsWith('/') ? cleaned : `/${cleaned}`;
+    }
+  }
+  return '';
+};
 
 export interface AuthResponse {
   ok: boolean;
@@ -38,7 +51,7 @@ export async function sendVerificationEmail(
       body.origin = origin;
     }
 
-    const response = await fetch('/auth/send-verification', {
+    const response = await fetch(`${getApiBase()}/auth/send-verification`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
@@ -69,7 +82,7 @@ export async function sendVerificationEmail(
  */
 export async function verifyEmail(token: string): Promise<VerifyEmailResponse> {
   try {
-    const response = await fetch('/auth/verify', {
+    const response = await fetch(`${getApiBase()}/auth/verify`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
@@ -98,7 +111,7 @@ export async function verifyEmail(token: string): Promise<VerifyEmailResponse> {
  */
 export async function getUserStatus(): Promise<UserStatusResponse> {
   try {
-    const response = await fetch('/auth/status', {
+    const response = await fetch(`${getApiBase()}/auth/status`, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
@@ -138,7 +151,7 @@ export async function requestPasswordReset(
       body.origin = origin;
     }
 
-    const response = await fetch('/auth/request-reset', {
+    const response = await fetch(`${getApiBase()}/auth/request-reset`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
@@ -169,7 +182,7 @@ export async function resetPassword(
   newPassword: string
 ): Promise<AuthResponse> {
   try {
-    const response = await fetch('/auth/reset-password', {
+    const response = await fetch(`${getApiBase()}/auth/reset-password`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
