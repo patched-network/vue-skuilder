@@ -46,27 +46,6 @@ jobs:
       - name: Build Express backend
         run: yarn workspace @vue-skuilder/express build
 
-      - name: Prepare package.json for deployment
-        working-directory: ./packages/express
-        run: |
-          # Create a deployment package.json with file: references for workspace deps
-          cat package.json | node -e "
-            const pkg = JSON.parse(require('fs').readFileSync(0, 'utf-8'));
-            pkg.dependencies['@vue-skuilder/common'] = 'file:./workspace/common';
-            pkg.dependencies['@vue-skuilder/db'] = 'file:./workspace/db';
-            console.log(JSON.stringify(pkg, null, 2));
-          " > package.json.deploy
-
-      - name: Install production dependencies
-        working-directory: ./packages/express
-        run: |
-          # Temporarily use the modified package.json
-          mv package.json package.json.orig
-          mv package.json.deploy package.json
-          NODE_ENV=production yarn install
-          # Restore original
-          mv package.json.orig package.json
-
       - name: Create build info
         run: |
           BUILD_INFO="Build created on $(date) from commit ${{ github.sha }}\n"
@@ -83,22 +62,18 @@ jobs:
 
           echo "Syncing Express package..."
           rsync -rl --delete ./packages/express/dist/ ${{ secrets.DO_USERNAME }}@eduquilt.com:/home/skuilder/dist/express-backend/$newversion/dist
-          rsync -rl ./packages/express/package.json.deploy ${{ secrets.DO_USERNAME }}@eduquilt.com:/home/skuilder/dist/express-backend/$newversion/package.json
-          rsync -rl ./packages/express/node_modules/ ${{ secrets.DO_USERNAME }}@eduquilt.com:/home/skuilder/dist/express-backend/$newversion/node_modules
+          rsync -rl ./packages/express/package.json ${{ secrets.DO_USERNAME }}@eduquilt.com:/home/skuilder/dist/express-backend/$newversion/
           rsync -rl ./packages/express/assets/ ${{ secrets.DO_USERNAME }}@eduquilt.com:/home/skuilder/dist/express-backend/$newversion/assets
           rsync -rl ./packages/express/.env.production ${{ secrets.DO_USERNAME }}@eduquilt.com:/home/skuilder/dist/express-backend/$newversion/.env.production
 
-          echo "Syncing workspace dependencies..."
-          ssh ${{ secrets.DO_USERNAME }}@eduquilt.com mkdir -p /home/skuilder/dist/express-backend/$newversion/workspace/common
-          ssh ${{ secrets.DO_USERNAME }}@eduquilt.com mkdir -p /home/skuilder/dist/express-backend/$newversion/workspace/db
+          echo "Syncing workspace dependencies (built packages)..."
+          # Sync common package
+          rsync -rl --delete ./packages/common/ ${{ secrets.DO_USERNAME }}@eduquilt.com:/home/skuilder/dist/express-backend/$newversion/../common
+          # Sync db package
+          rsync -rl --delete ./packages/db/ ${{ secrets.DO_USERNAME }}@eduquilt.com:/home/skuilder/dist/express-backend/$newversion/../db
 
-          # Sync @vue-skuilder/common
-          rsync -rl --delete ./packages/common/dist/ ${{ secrets.DO_USERNAME }}@eduquilt.com:/home/skuilder/dist/express-backend/$newversion/workspace/common/dist
-          rsync -rl ./packages/common/package.json ${{ secrets.DO_USERNAME }}@eduquilt.com:/home/skuilder/dist/express-backend/$newversion/workspace/common/
-
-          # Sync @vue-skuilder/db
-          rsync -rl --delete ./packages/db/dist/ ${{ secrets.DO_USERNAME }}@eduquilt.com:/home/skuilder/dist/express-backend/$newversion/workspace/db/dist
-          rsync -rl ./packages/db/package.json ${{ secrets.DO_USERNAME }}@eduquilt.com:/home/skuilder/dist/express-backend/$newversion/workspace/db/
+          echo "Syncing node_modules..."
+          rsync -rl ./packages/express/node_modules/ ${{ secrets.DO_USERNAME }}@eduquilt.com:/home/skuilder/dist/express-backend/$newversion/node_modules
 
           echo "Setting symlink to new version..."
           ssh ${{ secrets.DO_USERNAME }}@eduquilt.com ln -sfn /home/skuilder/dist/express-backend/$newversion /home/skuilder/express-backend
