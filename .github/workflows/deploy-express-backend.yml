@@ -80,15 +80,15 @@ jobs:
 
           echo "Installing production dependencies on server..."
           # Install deps for workspace packages first
-          ssh ${{ secrets.DO_USERNAME }}@eduquilt.com "cd /home/skuilder/dist/express-backend/$newversion/workspace/common && source ~/.nvm/nvm.sh && NODE_ENV=production yarn install --production --immutable"
-          ssh ${{ secrets.DO_USERNAME }}@eduquilt.com "cd /home/skuilder/dist/express-backend/$newversion/workspace/db && source ~/.nvm/nvm.sh && NODE_ENV=production yarn install --production --immutable"
+          ssh ${{ secrets.DO_USERNAME }}@eduquilt.com "cd /home/skuilder/dist/express-backend/$newversion/workspace/common && source ~/.nvm/nvm.sh && NODE_ENV=production yarn install --immutable"
+          ssh ${{ secrets.DO_USERNAME }}@eduquilt.com "cd /home/skuilder/dist/express-backend/$newversion/workspace/db && source ~/.nvm/nvm.sh && NODE_ENV=production yarn install --immutable"
 
           # Create a modified package.json with file: references for workspace deps
           echo "Creating package.json with resolved workspace paths..."
           ssh ${{ secrets.DO_USERNAME }}@eduquilt.com "cd /home/skuilder/dist/express-backend/$newversion && cat package.json | jq '.dependencies[\"@vue-skuilder/common\"] = \"file:./workspace/common\" | .dependencies[\"@vue-skuilder/db\"] = \"file:./workspace/db\"' > package.json.tmp && mv package.json.tmp package.json"
 
           # Install express package dependencies
-          ssh ${{ secrets.DO_USERNAME }}@eduquilt.com "cd /home/skuilder/dist/express-backend/$newversion && source ~/.nvm/nvm.sh && NODE_ENV=production yarn install --production --immutable"
+          ssh ${{ secrets.DO_USERNAME }}@eduquilt.com "cd /home/skuilder/dist/express-backend/$newversion && source ~/.nvm/nvm.sh && NODE_ENV=production yarn install --immutable"
 
           echo "Setting symlink to new version..."
           ssh ${{ secrets.DO_USERNAME }}@eduquilt.com ln -sfn /home/skuilder/dist/express-backend/$newversion /home/skuilder/express-backend
