@@ -78,16 +78,12 @@ jobs:
           rsync -rl --delete ./packages/db/dist/ ${{ secrets.DO_USERNAME }}@eduquilt.com:/home/skuilder/dist/express-backend/$newversion/workspace/db/dist
           rsync -rl ./packages/db/package.json ${{ secrets.DO_USERNAME }}@eduquilt.com:/home/skuilder/dist/express-backend/$newversion/workspace/db/
 
-          echo "Installing production dependencies on server..."
-          # Install deps for workspace packages first
-          ssh ${{ secrets.DO_USERNAME }}@eduquilt.com "cd /home/skuilder/dist/express-backend/$newversion/workspace/common && source ~/.nvm/nvm.sh && NODE_ENV=production yarn install --immutable"
-          ssh ${{ secrets.DO_USERNAME }}@eduquilt.com "cd /home/skuilder/dist/express-backend/$newversion/workspace/db && source ~/.nvm/nvm.sh && NODE_ENV=production yarn install --immutable"
-
           # Create a modified package.json with file: references for workspace deps
           echo "Creating package.json with resolved workspace paths..."
           ssh ${{ secrets.DO_USERNAME }}@eduquilt.com "cd /home/skuilder/dist/express-backend/$newversion && cat package.json | jq '.dependencies[\"@vue-skuilder/common\"] = \"file:./workspace/common\" | .dependencies[\"@vue-skuilder/db\"] = \"file:./workspace/db\"' > package.json.tmp && mv package.json.tmp package.json"
 
-          # Install express package dependencies
+          # Install express package dependencies (this will also link the workspace packages)
+          echo "Installing production dependencies on server..."
           ssh ${{ secrets.DO_USERNAME }}@eduquilt.com "cd /home/skuilder/dist/express-backend/$newversion && source ~/.nvm/nvm.sh && NODE_ENV=production yarn install --immutable"
 
           echo "Setting symlink to new version..."
