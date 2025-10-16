@@ -1,4 +1,6 @@
 import express, { Request, Response } from 'express';
+import Nano from 'nano';
+import { getCouchURLWithProtocol } from '../couchdb/index.js';
 import {
   findUserByUsername,
   findUserByToken,
@@ -10,21 +12,34 @@ import { generateSecureToken, getTokenExpiry, isTokenExpired } from '../utils/to
 import { sendVerificationEmail, sendPasswordResetEmail } from '../services/email.js';
 import logger from '../logger.js';
 
+interface CouchSession {
+  info: {
+    authenticated: string;
+    authentication_db: string;
+    authentication_handlers: string[];
+  };
+  ok: boolean;
+  userCtx: {
+    name: string;
+    roles: string[];
+  };
+}
+
 const router = express.Router();
 
 /**
  * POST /auth/send-verification
  * Trigger verification email for a newly created account.
- * Reads email from userdb-{username}/CONFIG.
  *
  * Body params:
  *   - username: string (required)
+ *   - email: string (optional) - If provided, uses this email directly (avoids DB sync race condition)
  *   - origin: string (optional) - Frontend origin URL for constructing verification link
  */
 router.post('/send-verification', (req: Request, res: Response) => {
   void (async () => {
     try {
-    const { username, origin } = req.body;
+    const { username, email: providedEmail, origin } = req.body;
 
     if (!username) {
       return res.status(400).json({ ok: false, error: 'Username required' });
@@ -36,23 +51,31 @@ router.post('/send-verification', (req: Request, res: Response) => {
       return res.status(404).json({ ok: false, error: 'User not found' });
     }
 
-    // Get email from user's personal database
-    const email = await getUserEmail(username);
+    // Use provided email if available, otherwise lookup in database
+    let email = providedEmail;
     if (!email) {
-      return res.status(400).json({
-        ok: false,
-        error: 'No email found for user. Please provide email during registration.',
-      });
+      email = await getUserEmail(username);
+      if (!email) {
+        return res.status(400).json({
+          ok: false,
+          error: 'No email found for user. Please provide email during registration.',
+        });
+      }
     }
 
     // Generate verification token (24 hour expiry)
     const token = generateSecureToken();
     const expiresAt = getTokenExpiry(24);
 
-    // Update user doc with token
+    // Update user doc with token and email (for password reset lookup)
     userDoc.verificationToken = token;
     userDoc.verificationTokenExpiresAt = expiresAt;
     userDoc.status = 'pending_verification';
+
+    // Save email to _users doc if not already present (enables findUserByEmail)
+    if (email && !userDoc.email) {
+      userDoc.email = email as string;
+    }
 
     await updateUserDoc(userDoc);
 
@@ -113,6 +136,49 @@ router.post('/verify', (req: Request, res: Response) => {
         ok: false,
         error: 'Failed to verify email',
       });
+    }
+  })();
+});
+
+/**
+ * GET /auth/status
+ * Get current user's account status (verification status, email).
+ * Requires AuthSession cookie.
+ */
+router.get('/status', (req: Request, res: Response) => {
+  void (async () => {
+    try {
+      const authCookie: string = req.cookies?.AuthSession;
+      if (!authCookie) {
+        return res.status(401).json({ ok: false, error: 'Not authenticated' });
+      }
+
+      // Verify session with CouchDB to get username
+      const session: CouchSession = await Nano({
+        cookie: 'AuthSession=' + authCookie,
+        url: getCouchURLWithProtocol(),
+      }).session();
+
+      const username = session.userCtx.name;
+      if (!username) {
+        return res.status(401).json({ ok: false, error: 'Invalid session' });
+      }
+
+      // Use admin credentials to read user's status from _users
+      const userDoc = await findUserByUsername(username);
+      if (!userDoc) {
+        return res.status(404).json({ ok: false, error: 'User not found' });
+      }
+
+      res.json({
+        ok: true,
+        username: userDoc.name,
+        status: userDoc.status || 'pending_verification', // Default to pending if not explicitly set
+        email: userDoc.email || null,
+      });
+    } catch (error) {
+      logger.error('Error fetching user status:', error);
+      res.status(500).json({ ok: false, error: 'Failed to fetch user status' });
     }
   })();
 });
@@ -194,12 +260,14 @@ router.post('/reset-password', (req: Request, res: Response) => {
       return res.status(400).json({ ok: false, error: 'Token has expired' });
     }
 
-    // TODO: Update password in CouchDB
-    // CouchDB stores password in derived_key/salt/iterations fields (PBKDF2)
-    // For now, log a warning that this needs admin implementation
-    logger.warn(
-      `Password reset requested for ${userDoc.name} but password update not yet implemented`
-    );
+    // Update password in CouchDB
+    // CouchDB has an internal hook that automatically hashes the password
+    // when a 'password' field is present in the user document.
+    // see https://docs.couchdb.org/en/stable/intro/security.html#password-changing
+    
+    
+    // @ts-expect-error writing to metadata field here.
+    userDoc.password = newPassword as string; // Add plain text password field
 
     // Clear reset token
     userDoc.passwordResetToken = null;
@@ -210,8 +278,6 @@ router.post('/reset-password', (req: Request, res: Response) => {
     logger.info(`Password reset completed for ${userDoc.name}`);
     res.json({
       ok: true,
-      // TODO: Remove this warning once password update is implemented
-      warning: 'Password reset flow completed, but actual password update not yet implemented',
     });
     } catch (error) {
       logger.error('Error resetting password:', error);

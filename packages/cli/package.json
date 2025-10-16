@@ -3,7 +3,7 @@
   "publishConfig": {
     "access": "public"
   },
-  "version": "0.1.11",
+  "version": "0.1.13-8",
   "type": "module",
   "description": "CLI scaffolding tool for vue-skuilder projects",
   "bin": {

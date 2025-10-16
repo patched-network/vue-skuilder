@@ -2,7 +2,7 @@ import { CourseElo, Answer, Evaluation } from '@vue-skuilder/common';
 import { Moment } from 'moment';
 import { logger } from '../../util/logger';
 
-export const GuestUsername: string = 'Guest';
+export const GuestUsername: string = 'sk-guest-';
 
 export const log = (message: string): void => {
   logger.log(message);

@@ -6453,7 +6453,36 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@vue-skuilder/cli@npm:^0.1.11-25, @vue-skuilder/cli@workspace:packages/cli":
+"@vue-skuilder/cli@npm:^0.1.11-25":
+  version: 0.1.12
+  resolution: "@vue-skuilder/cli@npm:0.1.12"
+  dependencies:
+    "@mdi/font": "npm:^7.3.67"
+    "@vue-skuilder/common": "npm:0.1.12"
+    "@vue-skuilder/common-ui": "npm:0.1.12"
+    "@vue-skuilder/courseware": "npm:0.1.12"
+    "@vue-skuilder/db": "npm:0.1.12"
+    "@vue-skuilder/edit-ui": "npm:0.1.12"
+    "@vue-skuilder/express": "npm:0.1.12"
+    "@vue-skuilder/mcp": "npm:0.1.12"
+    chalk: "npm:^5.3.0"
+    commander: "npm:^11.0.0"
+    fs-extra: "npm:^11.2.0"
+    inquirer: "npm:^9.2.0"
+    leveldown: "npm:^6.1.1"
+    pinia: "npm:^2.3.0"
+    pouchdb: "npm:^9.0.0"
+    serve-static: "npm:^1.15.0"
+    vue: "npm:^3.5.13"
+    vue-router: "npm:^4.2.0"
+    vuetify: "npm:^3.7.0"
+  bin:
+    skuilder: ./dist/cli.js
+  checksum: 10c0/cabf6bfc1ba85004e871e59752a84e1e709f84f081afb1469edc819357fd36c38ce48409ad84198b0d64302538d5b22932580aea696cb63434be15e3d1d2e77b
+  languageName: node
+  linkType: hard
+
+"@vue-skuilder/cli@workspace:packages/cli":
   version: 0.0.0-use.local
   resolution: "@vue-skuilder/cli@workspace:packages/cli"
   dependencies:
@@ -6513,7 +6542,31 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@vue-skuilder/common-ui@npm:^0.1.11-25, @vue-skuilder/common-ui@workspace:*, @vue-skuilder/common-ui@workspace:packages/common-ui":
+"@vue-skuilder/common-ui@npm:0.1.12, @vue-skuilder/common-ui@npm:^0.1.11-25":
+  version: 0.1.12
+  resolution: "@vue-skuilder/common-ui@npm:0.1.12"
+  dependencies:
+    "@highlightjs/vue-plugin": "npm:^2.1.2"
+    "@mdi/font": "npm:^7.3.67"
+    "@vojtechlanka/vue-tags-input": "npm:^3"
+    "@vue-skuilder/common": "npm:0.1.12"
+    "@vue-skuilder/db": "npm:0.1.12"
+    highlight.js: "npm:^11.0.1"
+    marked: "npm:^15.0.6"
+    moment: "npm:^2.29.4"
+    mousetrap: "npm:^1.6.5"
+    pinia: "npm:^2.3.0"
+    vue: "npm:^3.5.13"
+    vuetify: "npm:^3.7.0"
+  peerDependencies:
+    vue: ^3.2.0
+    vue-router: ^4.0.0
+    vuetify: ^3.0.0
+  checksum: 10c0/4521fd2911cc0dcfc2ceed7707741e78bf4d70b4fdd0fb2bbb3bf33da7cb222d841886d2125064178512915348597df6f302305f97584062c0a11270e34983f9
+  languageName: node
+  linkType: hard
+
+"@vue-skuilder/common-ui@workspace:*, @vue-skuilder/common-ui@workspace:packages/common-ui":
   version: 0.0.0-use.local
   resolution: "@vue-skuilder/common-ui@workspace:packages/common-ui"
   dependencies:
@@ -6555,7 +6608,17 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@vue-skuilder/common@npm:^0.1.11-26, @vue-skuilder/common@workspace:*, @vue-skuilder/common@workspace:^, @vue-skuilder/common@workspace:packages/common":
+"@vue-skuilder/common@npm:0.1.12, @vue-skuilder/common@npm:^0.1.11-26, @vue-skuilder/common@npm:^0.1.12":
+  version: 0.1.12
+  resolution: "@vue-skuilder/common@npm:0.1.12"
+  dependencies:
+    moment: "npm:^2.30.1"
+    zod: "npm:^4.0.0"
+  checksum: 10c0/3e0bb74ad325fc0c8e40c8ceff4cb8f4f1557fcaf70fdebf04cba223cb6cce01edd0a6f9109b8ea02115da8a7f34103243cd08c827170174b2d7a71686ad489b
+  languageName: node
+  linkType: hard
+
+"@vue-skuilder/common@workspace:*, @vue-skuilder/common@workspace:^, @vue-skuilder/common@workspace:packages/common":
   version: 0.0.0-use.local
   resolution: "@vue-skuilder/common@workspace:packages/common"
   dependencies:
@@ -6565,7 +6628,24 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@vue-skuilder/courseware@npm:^0.1.11-25, @vue-skuilder/courseware@workspace:*, @vue-skuilder/courseware@workspace:packages/courseware":
+"@vue-skuilder/courseware@npm:0.1.12, @vue-skuilder/courseware@npm:^0.1.11-25":
+  version: 0.1.12
+  resolution: "@vue-skuilder/courseware@npm:0.1.12"
+  dependencies:
+    "@vue-skuilder/common": "npm:0.1.12"
+    "@vue-skuilder/common-ui": "npm:0.1.12"
+    "@vue-skuilder/db": "npm:0.1.12"
+    lodash: "npm:^4.17.21"
+    moment: "npm:^2.29.4"
+    paper: "npm:^0.12.3"
+    vue: "npm:^3.5.13"
+  peerDependencies:
+    vue: ^3.2.0
+  checksum: 10c0/41b4b26fbf73db969471f8e78b6dd171f9cc3048c4ecd3015bda893daae4891ecdfcbda7f9a0178968b51339041ff905b5bd070f6e76cf835cf2e88a061b9298
+  languageName: node
+  linkType: hard
+
+"@vue-skuilder/courseware@workspace:*, @vue-skuilder/courseware@workspace:packages/courseware":
   version: 0.0.0-use.local
   resolution: "@vue-skuilder/courseware@workspace:packages/courseware"
   dependencies:
@@ -6588,7 +6668,22 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@vue-skuilder/db@npm:^0.1.11-25, @vue-skuilder/db@workspace:*, @vue-skuilder/db@workspace:^, @vue-skuilder/db@workspace:packages/db":
+"@vue-skuilder/db@npm:0.1.12, @vue-skuilder/db@npm:^0.1.11-25, @vue-skuilder/db@npm:^0.1.12":
+  version: 0.1.12
+  resolution: "@vue-skuilder/db@npm:0.1.12"
+  dependencies:
+    "@nilock2/pouchdb-authentication": "npm:^1.0.2"
+    "@vue-skuilder/common": "npm:0.1.12"
+    cross-fetch: "npm:^4.1.0"
+    moment: "npm:^2.29.4"
+    pouchdb: "npm:^9.0.0"
+    pouchdb-find: "npm:^9.0.0"
+    uuid: "npm:^11.1.0"
+  checksum: 10c0/8592039c17e42acdc20cc26bc48116a71099deaeb72ba8df0db08ffe8bf191f8530421d8d19162e471f11a8e4363271f25e7f1eb6e8de5c3e194eef9f89e2f8f
+  languageName: node
+  linkType: hard
+
+"@vue-skuilder/db@workspace:*, @vue-skuilder/db@workspace:^, @vue-skuilder/db@workspace:packages/db":
   version: 0.0.0-use.local
   resolution: "@vue-skuilder/db@workspace:packages/db"
   dependencies:
@@ -6622,6 +6717,24 @@ __metadata:
     typescript: "npm:~5.7.2"
   languageName: unknown
   linkType: soft
+
+"@vue-skuilder/edit-ui@npm:0.1.12":
+  version: 0.1.12
+  resolution: "@vue-skuilder/edit-ui@npm:0.1.12"
+  dependencies:
+    "@vue-skuilder/common": "npm:0.1.12"
+    "@vue-skuilder/common-ui": "npm:0.1.12"
+    "@vue-skuilder/db": "npm:0.1.12"
+    pinia: "npm:^2.3.0"
+    vue: "npm:^3.5.13"
+    vuetify: "npm:^3.7.0"
+  peerDependencies:
+    vue: ^3.2.0
+    vue-router: ^4.0.0
+    vuetify: ^3.0.0
+  checksum: 10c0/be5e9f334008ae1594005f69353930e67d3090839d9141b41002038e750c08d595edc1acb76b43b2aac89ae77ac820fdf5fabd9bd70053ff1a6a1406f75ee30d
+  languageName: node
+  linkType: hard
 
 "@vue-skuilder/edit-ui@workspace:*, @vue-skuilder/edit-ui@workspace:packages/edit-ui":
   version: 0.0.0-use.local
@@ -6659,6 +6772,30 @@ __metadata:
     vuetify: ^3.0.0
   languageName: unknown
   linkType: soft
+
+"@vue-skuilder/express@npm:0.1.12":
+  version: 0.1.12
+  resolution: "@vue-skuilder/express@npm:0.1.12"
+  dependencies:
+    "@vue-skuilder/common": "npm:^0.1.12"
+    "@vue-skuilder/db": "npm:^0.1.12"
+    axios: "npm:^1.7.4"
+    cookie-parser: "npm:^1.4.7"
+    cors: "npm:^2.8.5"
+    dotenv: "npm:^16.4.7"
+    express: "npm:^4.21.2"
+    express-rate-limit: "npm:^7.5.0"
+    ffmpeg-static: "npm:^5.2.0"
+    fs-extra: "npm:^11.2.0"
+    hashids: "npm:^2.3.0"
+    morgan: "npm:^1.10.0"
+    nano: "npm:^10.1.4"
+    pouchdb: "npm:9.0.0"
+    winston: "npm:^3.17.0"
+    winston-daily-rotate-file: "npm:^5.0.0"
+  checksum: 10c0/cad0c3a9ec1bd1018e60a0c73b712f2d0c39d6239c58e4fee13a107e0e7677b563b6825d7b189356b0c7e803365b54c9075ddfda540498363992a6b81a6edc30
+  languageName: node
+  linkType: hard
 
 "@vue-skuilder/express@workspace:*, @vue-skuilder/express@workspace:packages/express":
   version: 0.0.0-use.local
@@ -6712,6 +6849,19 @@ __metadata:
     winston-daily-rotate-file: "npm:^5.0.0"
   languageName: unknown
   linkType: soft
+
+"@vue-skuilder/mcp@npm:0.1.12":
+  version: 0.1.12
+  resolution: "@vue-skuilder/mcp@npm:0.1.12"
+  dependencies:
+    "@modelcontextprotocol/sdk": "npm:^1.15.1"
+    "@vue-skuilder/common": "npm:0.1.12"
+    "@vue-skuilder/courseware": "npm:0.1.12"
+    "@vue-skuilder/db": "npm:0.1.12"
+    zod: "npm:^4.0.0"
+  checksum: 10c0/adfe7d6fbd45b4d78ebf45e5d857d8ed7226df8cbfc31c218e8340cc328a02c64bf1644dae83fe9b46e3957651b42bd5b7423b79e58b5cf1369963717f52b347
+  languageName: node
+  linkType: hard
 
 "@vue-skuilder/mcp@workspace:*, @vue-skuilder/mcp@workspace:packages/mcp":
   version: 0.0.0-use.local

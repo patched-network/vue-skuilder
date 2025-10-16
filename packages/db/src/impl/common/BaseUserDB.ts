@@ -38,7 +38,7 @@ const log = (s: any) => {
   logger.info(s);
 };
 
-// console.log(`Connecting to remote: ${remoteStr}`);
+// logger.log(`Connecting to remote: ${remoteStr}`);
 
 interface DesignDoc {
   _id: string;
@@ -114,7 +114,7 @@ Currently logged-in as ${this._username}.`
       log(`Account created successfully, updating username to ${username}`);
       this._username = username;
       try {
-        localStorage.removeItem('dbUUID');
+        localStorage.removeItem('sk-guest-uuid');
       } catch (e) {
         logger.warn('localStorage not available (Node.js environment):', e);
       }
@@ -144,7 +144,7 @@ Currently logged-in as ${this._username}.`
       log(`Logged in as ${username}`);
       this._username = username;
       try {
-        localStorage.removeItem('dbUUID');
+        localStorage.removeItem('sk-guest-uuid');
       } catch (e) {
         logger.warn('localStorage not available (Node.js environment):', e);
       }
@@ -320,7 +320,7 @@ Currently logged-in as ${this._username}.`
                     // It's a Date object
                     timeStamp = record.timeStamp.toISOString();
                   } else {
-                    // Log a sample of unknown object types, but don't flood console
+                    // Log a sample of unknown object types, but don't flood logger
                     if (sampleCount < 3) {
                       logger.warn('Unknown timestamp object type:', record.timeStamp);
                       sampleCount++;
@@ -774,7 +774,9 @@ Currently logged-in as ${this._username}.`
           const putResult = await this.writeDB.put<CardHistory<T>>(initCardHistory);
           return { ...initCardHistory, _rev: putResult.rev };
         } catch (creationError) {
-          throw new Error(`Failed to create CardHistory for ${cardHistoryID}. Reason: ${creationError}`);
+          throw new Error(
+            `Failed to create CardHistory for ${cardHistoryID}. Reason: ${creationError}`
+          );
         }
       } else {
         throw new Error(`putCardRecord failed because of:
@@ -1036,43 +1038,109 @@ Currently logged-in as ${this._username}.`
   }
 }
 
-// function accomodateGuest(): {
-//   username: string;
-//   firstVisit: boolean;
-// } {
-//   const dbUUID = 'dbUUID';
-//   let firstVisit: boolean;
+export function accomodateGuest(): {
+  username: string;
+  firstVisit: boolean;
+} {
+  logger.log('[funnel] accomodateGuest() called');
 
-//   if (localStorage.getItem(dbUUID) !== null) {
-//     firstVisit = false;
-//     console.log(`Returning guest ${localStorage.getItem(dbUUID)} "logging in".`);
-//   } else {
-//     firstVisit = true;
-//     const uuid = generateUUID();
-//     localStorage.setItem(dbUUID, uuid);
-//     console.log(`Accommodating a new guest with account: ${uuid}`);
-//   }
+  // Check if localStorage is available (browser environment)
+  if (typeof localStorage === 'undefined') {
+    logger.log('[funnel] localStorage not available (Node.js environment), returning default guest');
+    return {
+      username: GuestUsername + 'nodejs-test',
+      firstVisit: true,
+    };
+  }
 
-//   return {
-//     username: GuestUsername + localStorage.getItem(dbUUID),
-//     firstVisit: firstVisit,
-//   };
+  const dbUUID = 'sk-guest-uuid';
+  let firstVisit: boolean;
 
-//   // pilfered from https://stackoverflow.com/a/8809472/1252649
-//   function generateUUID() {
-//     let d = new Date().getTime();
-//     if (typeof performance !== 'undefined' && typeof performance.now === 'function') {
-//       d += performance.now(); // use high-precision timer if available
-//     }
-//     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-//       // tslint:disable-next-line:no-bitwise
-//       const r = (d + Math.random() * 16) % 16 | 0;
-//       d = Math.floor(d / 16);
-//       // tslint:disable-next-line:no-bitwise
-//       return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
-//     });
-//   }
-// }
+  const existingUUID = localStorage.getItem(dbUUID);
+  logger.log('[funnel] Checking localStorage for key:', dbUUID);
+  logger.log('[funnel] Existing UUID value:', existingUUID);
+  logger.log('[funnel] existingUUID !== null:', existingUUID !== null);
+
+  if (existingUUID !== null) {
+    firstVisit = false;
+    logger.log(`[funnel] Returning guest ${existingUUID} "logging in".`);
+  } else {
+    firstVisit = true;
+    logger.log('[funnel] No existing UUID, generating new one...');
+    const uuid = generateUUID();
+    logger.log('[funnel] Generated UUID:', uuid);
+    logger.log('[funnel] UUID length:', uuid.length);
+
+    try {
+      localStorage.setItem(dbUUID, uuid);
+      logger.log('[funnel] Successfully stored UUID in localStorage');
+      const verification = localStorage.getItem(dbUUID);
+      logger.log('[funnel] Verification read from localStorage:', verification);
+    } catch (e) {
+      logger.error('[funnel] ERROR storing UUID:', e);
+    }
+
+    logger.log(`[funnel] Accommodating a new guest with account: ${uuid}`);
+  }
+
+  const finalUUID = localStorage.getItem(dbUUID);
+  const finalUsername = GuestUsername + finalUUID;
+  logger.log('[funnel] Final UUID from localStorage:', finalUUID);
+  logger.log('[funnel] GuestUsername constant:', GuestUsername);
+  logger.log('[funnel] Final username to return:', finalUsername);
+
+  return {
+    username: finalUsername,
+    firstVisit: firstVisit,
+  };
+
+  // Use cryptographically secure UUID generation
+  function generateUUID() {
+    logger.log('[funnel] Inside generateUUID()');
+
+    // Use crypto.randomUUID() if available (Node 14.17+ / modern browsers)
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+      const uuid = crypto.randomUUID();
+      logger.log('[funnel] Generated UUID using crypto.randomUUID():', uuid);
+      return uuid;
+    }
+
+    // Fallback for older environments: use crypto.getRandomValues()
+    if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
+      const bytes = new Uint8Array(16);
+      crypto.getRandomValues(bytes);
+
+      // Set version (4) and variant bits according to RFC 4122
+      bytes[6] = (bytes[6] & 0x0f) | 0x40; // Version 4
+      bytes[8] = (bytes[8] & 0x3f) | 0x80; // Variant 10
+
+      const uuid = [
+        Array.from(bytes.slice(0, 4)).map(b => b.toString(16).padStart(2, '0')).join(''),
+        Array.from(bytes.slice(4, 6)).map(b => b.toString(16).padStart(2, '0')).join(''),
+        Array.from(bytes.slice(6, 8)).map(b => b.toString(16).padStart(2, '0')).join(''),
+        Array.from(bytes.slice(8, 10)).map(b => b.toString(16).padStart(2, '0')).join(''),
+        Array.from(bytes.slice(10, 16)).map(b => b.toString(16).padStart(2, '0')).join(''),
+      ].join('-');
+
+      logger.log('[funnel] Generated UUID using crypto.getRandomValues():', uuid);
+      return uuid;
+    }
+
+    // Last resort fallback (should never happen in modern environments)
+    logger.warn('[funnel] crypto API not available, using timestamp-based UUID (NOT SECURE)');
+    let d = new Date().getTime();
+    if (typeof performance !== 'undefined' && typeof performance.now === 'function') {
+      d += performance.now();
+    }
+    const uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+      const r = (d + Math.random() * 16) % 16 | 0;
+      d = Math.floor(d / 16);
+      return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
+    });
+    logger.log('[funnel] Generated UUID (fallback):', uuid);
+    return uuid;
+  }
+}
 
 const userCoursesDoc = 'CourseRegistrations';
 const userClassroomsDoc = 'ClassroomRegistrations';

@@ -31,7 +31,8 @@
           name="password"
           hover="Show password"
           label="Create a password"
-          hint=""
+          :hint="passwordError"
+          :error="!!passwordError"
           min="4"
           :append-icon="passwordVisible ? 'mdi-eye-off' : 'mdi-eye'"
           :type="passwordVisible ? 'text' : 'password'"
@@ -56,7 +57,13 @@
           Username or password was incorrect.
           <v-btn color="pink" variant="text" @click="badLoginAttempt = false"> Close </v-btn>
         </v-snackbar>
-        <v-btn class="mr-2" type="submit" :loading="awaitingResponse" :color="buttonStatus.color">
+        <v-btn
+          class="mr-2"
+          type="submit"
+          :loading="awaitingResponse"
+          :color="buttonStatus.color"
+          :disabled="!!passwordError || password !== retypedPassword"
+        >
           <v-icon start>mdi-lock-open</v-icon>
           Create Account
         </v-btn>
@@ -76,11 +83,12 @@ import { alertUser } from '../SnackbarService';
 import { Status, log } from '@vue-skuilder/common';
 import { getCurrentUser, useAuthStore } from '../../stores/useAuthStore';
 import { sendVerificationEmail } from '../../services/authAPI';
+import { validatePassword } from '../../utils/passwordValidation';
 
 export default defineComponent({
   name: 'UserRegistration',
 
-  emits: ['toggle'],
+  emits: ['toggle', 'signup-success'],
 
   data() {
     return {
@@ -117,6 +125,9 @@ export default defineComponent({
         text: this.badLoginAttempt ? 'Try again' : 'Log In',
       };
     },
+    passwordError(): string {
+      return validatePassword(this.password);
+    },
   },
 
   async created() {
@@ -147,6 +158,17 @@ export default defineComponent({
 
     async createUser() {
       this.awaitingResponse = true;
+
+      // Validate password before proceeding
+      if (this.passwordError) {
+        alertUser({
+          text: this.passwordError,
+          status: Status.error,
+        });
+        this.awaitingResponse = false;
+        return;
+      }
+
       log(`
 User creation
 -------------
@@ -157,11 +179,14 @@ Teacher: ${this.teacher}
 Author: ${this.author}
 `);
       if (this.password === this.retypedPassword) {
-        if (!this.user) return;
+        if (!this.user) {
+          console.error('ERROR: No user object available');
+          return;
+        }
 
         this.user
           .createAccount(this.username, this.password)
-          .then(async (resp) => {
+          .then(async (resp: any) => {
             if (resp.status === Status.ok) {
               // Account created successfully via PouchDB
               this.authStore.loginAndRegistration.loggedIn = true;
@@ -175,9 +200,8 @@ Author: ${this.author}
                   await currentUser.setConfig({ email: this.email });
 
                   // Trigger verification email send with current origin
-                  const origin =
-                    typeof window !== 'undefined' ? window.location.origin : undefined;
-                  const verificationResult = await sendVerificationEmail(this.username, origin);
+                  const origin = typeof window !== 'undefined' ? window.location.origin : undefined;
+                  const verificationResult = await sendVerificationEmail(this.username, this.email, origin);
                   if (verificationResult.ok) {
                     alertUser({
                       text: 'Account created! Please check your email to verify your account.',
@@ -188,12 +212,15 @@ Author: ${this.author}
                     // Continue anyway - user can still use the account
                   }
                 } catch (emailError) {
+                  console.error('Email save/send error:', emailError);
                   log(`Warning: Failed to save email or send verification: ${emailError}`);
                   // Continue anyway - account was created successfully
                 }
               }
 
-              this.$router.push(`/u/${(await getCurrentUser()).getUsername()}/new`);
+              // Emit signup success event for parent to handle
+              const username = (await getCurrentUser()).getUsername();
+              this.$emit('signup-success', { username });
             } else {
               if (resp.error === 'This username is taken!') {
                 this.usernameError = true;
@@ -212,11 +239,14 @@ Author: ${this.author}
             }
           })
           .catch((e) => {
-            if (e)
+            console.error('createAccount error:', e);
+            if (e) {
+              const errorText = e?.message || e?.error || e?.toString() || 'Account creation failed';
               alertUser({
-                text: JSON.stringify(e),
+                text: errorText,
                 status: Status.error,
               });
+            }
           });
         this.awaitingResponse = false;
       } else {

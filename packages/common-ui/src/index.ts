@@ -72,6 +72,11 @@ export { default as MarkdownRenderer } from './components/cardRendering/Markdown
 export * from './components/auth';
 
 /*
+  Authentication Utilities
+*/
+export * from './utils/passwordValidation';
+
+/*
   stores
 */
 export * from './stores/useCardPreviewModeStore';

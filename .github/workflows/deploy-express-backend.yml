@@ -1,0 +1,124 @@
+name: deploy-express-backend
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Reason for deploying Express backend'
+        required: true
+        default: 'Manual deployment'
+jobs:
+  deploy-express-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: "yarn"
+
+      - name: Configure SSH key
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.DO_SSH_KEY }}
+          name: id_rsa
+          known_hosts: ${{ secrets.KNOWN_HOSTS }}
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Build workspace dependencies
+        run: |
+          echo "Building @vue-skuilder/common..."
+          yarn workspace @vue-skuilder/common build
+          echo "Building @vue-skuilder/db..."
+          yarn workspace @vue-skuilder/db build
+
+      - name: Set production environment
+        working-directory: ./packages/express
+        run: printf "${{ secrets.EXPRESS_ENV }}" > .env.production
+
+      - name: Build Express backend
+        run: yarn workspace @vue-skuilder/express build
+
+      - name: Create build info
+        run: |
+          BUILD_INFO="Build created on $(date) from commit ${{ github.sha }}\n"
+          BUILD_INFO+="Triggered by ${{ github.actor }} via ${{ github.event_name }}\n"
+          BUILD_INFO+="Reason: ${{ github.event.inputs.reason }}\n"
+          echo -e "$BUILD_INFO" > ./packages/express/dist/buildinfo.md
+
+      - name: Deploy to server
+        run: |
+          vcount=$(ssh ${{ secrets.DO_USERNAME }}@eduquilt.com ls -1v /home/skuilder/dist/express-backend/ | grep -E '^[0-9]+$' | tail -n1 || echo 0)
+          newversion=$(($vcount+1))
+          echo "Creating directory version $newversion..."
+          ssh ${{ secrets.DO_USERNAME }}@eduquilt.com mkdir -p /home/skuilder/dist/express-backend/$newversion
+
+          echo "Syncing Express package..."
+          rsync -rl --delete ./packages/express/dist/ ${{ secrets.DO_USERNAME }}@eduquilt.com:/home/skuilder/dist/express-backend/$newversion/dist
+          rsync -rl ./packages/express/package.json ${{ secrets.DO_USERNAME }}@eduquilt.com:/home/skuilder/dist/express-backend/$newversion/
+          rsync -rl ./packages/express/assets/ ${{ secrets.DO_USERNAME }}@eduquilt.com:/home/skuilder/dist/express-backend/$newversion/assets
+          rsync -rl ./packages/express/.env.production ${{ secrets.DO_USERNAME }}@eduquilt.com:/home/skuilder/dist/express-backend/$newversion/.env.production
+
+          echo "Syncing workspace dependencies..."
+          ssh ${{ secrets.DO_USERNAME }}@eduquilt.com mkdir -p /home/skuilder/dist/express-backend/$newversion/workspace
+
+          # Sync @vue-skuilder/common
+          rsync -rl --delete ./packages/common/dist/ ${{ secrets.DO_USERNAME }}@eduquilt.com:/home/skuilder/dist/express-backend/$newversion/workspace/common/dist
+          rsync -rl ./packages/common/package.json ${{ secrets.DO_USERNAME }}@eduquilt.com:/home/skuilder/dist/express-backend/$newversion/workspace/common/
+
+          # Sync @vue-skuilder/db
+          rsync -rl --delete ./packages/db/dist/ ${{ secrets.DO_USERNAME }}@eduquilt.com:/home/skuilder/dist/express-backend/$newversion/workspace/db/dist
+          rsync -rl ./packages/db/package.json ${{ secrets.DO_USERNAME }}@eduquilt.com:/home/skuilder/dist/express-backend/$newversion/workspace/db/
+
+          echo "Installing production dependencies on server..."
+          # Install deps for workspace packages first
+          ssh ${{ secrets.DO_USERNAME }}@eduquilt.com "cd /home/skuilder/dist/express-backend/$newversion/workspace/common && source ~/.nvm/nvm.sh && NODE_ENV=production yarn install --production --immutable"
+          ssh ${{ secrets.DO_USERNAME }}@eduquilt.com "cd /home/skuilder/dist/express-backend/$newversion/workspace/db && source ~/.nvm/nvm.sh && NODE_ENV=production yarn install --production --immutable"
+
+          # Create a modified package.json with file: references for workspace deps
+          echo "Creating package.json with resolved workspace paths..."
+          ssh ${{ secrets.DO_USERNAME }}@eduquilt.com "cd /home/skuilder/dist/express-backend/$newversion && cat package.json | jq '.dependencies[\"@vue-skuilder/common\"] = \"file:./workspace/common\" | .dependencies[\"@vue-skuilder/db\"] = \"file:./workspace/db\"' > package.json.tmp && mv package.json.tmp package.json"
+
+          # Install express package dependencies
+          ssh ${{ secrets.DO_USERNAME }}@eduquilt.com "cd /home/skuilder/dist/express-backend/$newversion && source ~/.nvm/nvm.sh && NODE_ENV=production yarn install --production --immutable"
+
+          echo "Setting symlink to new version..."
+          ssh ${{ secrets.DO_USERNAME }}@eduquilt.com ln -sfn /home/skuilder/dist/express-backend/$newversion /home/skuilder/express-backend
+          echo "Deployment complete to version $newversion"
+
+      - name: Restart Express backend service
+        run: |
+          echo "Restarting Express backend service..."
+          ssh ${{ secrets.DO_USERNAME }}@eduquilt.com "sudo systemctl restart express-backend || echo 'Service not found - will need manual setup'"
+
+      - name: Health check
+        run: |
+          echo "Waiting 10 seconds for service to start..."
+          sleep 10
+          echo "Testing Express backend..."
+          if curl -f -s https://eduquilt.com/express > /dev/null; then
+            echo "✅ Health check passed"
+            echo "Response:"
+            curl -s https://eduquilt.com/express
+          else
+            echo "❌ Health check failed - check service status"
+            ssh ${{ secrets.DO_USERNAME }}@eduquilt.com "systemctl status express-backend || echo 'Service status check failed'"
+            exit 1
+          fi
+
+      - name: Clean old versions (keep last 5)
+        run: |
+          echo "Cleaning old deployment versions..."
+          ssh ${{ secrets.DO_USERNAME }}@eduquilt.com '
+            cd /home/skuilder/dist/express-backend/
+            ls -1v | grep -E "^[0-9]+$" | head -n -5 | xargs -r rm -rf
+            echo "Cleanup complete. Remaining versions:"
+            ls -1v | grep -E "^[0-9]+$"
+          '
