@@ -1,19 +1,46 @@
 /**
  * Authentication API service for interacting with Express backend auth endpoints.
- * Uses configurable API base path from environment or falls back to relative paths.
+ * Uses configurable API base path from environment or runtime config.
  */
 
-// Get API base path from environment, defaulting to empty string for relative paths
+// Global runtime configuration (set by consuming app)
+declare global {
+  interface Window {
+    __SKUILDER_CONFIG__?: {
+      apiBase?: string;
+      [key: string]: any;
+    };
+  }
+}
+
+// Get API base path: check env first, then runtime config, then fallback to empty
 const getApiBase = (): string => {
+  let source = 'fallback (empty string)';
+  let result = '';
+
+  // Try import.meta.env first (build-time, only works in consuming app builds)
   if (typeof import.meta !== 'undefined' && import.meta.env) {
     const base = import.meta.env.VITE_API_BASE_URL;
     if (base) {
-      // Remove trailing slash if present, ensure leading slash
       const cleaned = base.replace(/\/$/, '');
-      return cleaned.startsWith('/') ? cleaned : `/${cleaned}`;
+      result = cleaned.startsWith('/') ? cleaned : `/${cleaned}`;
+      source = 'import.meta.env.VITE_API_BASE_URL';
     }
   }
-  return '';
+
+  // Fallback to runtime config (works in library builds)
+  if (!result && typeof window !== 'undefined' && window.__SKUILDER_CONFIG__?.apiBase) {
+    const base = window.__SKUILDER_CONFIG__.apiBase;
+    const cleaned = base.replace(/\/$/, '');
+    result = cleaned.startsWith('/') ? cleaned : `/${cleaned}`;
+    source = 'window.__SKUILDER_CONFIG__.apiBase';
+  }
+
+  console.log('[authAPI] getApiBase() called');
+  console.log('[authAPI]   source:', source);
+  console.log('[authAPI]   result:', result);
+
+  return result;
 };
 
 export interface AuthResponse {
