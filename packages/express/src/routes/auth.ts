@@ -289,4 +289,87 @@ router.post('/reset-password', (req: Request, res: Response) => {
   })();
 });
 
+/**
+ * POST /auth/permissions
+ * Grant or update course permissions for a user (called by payment webhooks)
+ *
+ * Body params:
+ *   - userId: string (required) - CouchDB username
+ *   - courseId: string (required) - Course identifier
+ *   - action: 'grant_access' (required)
+ *   - provider: string (optional) - 'stripe', 'manual', etc.
+ *   - metadata: object (optional) - Additional payment metadata
+ */
+router.post('/permissions', (req: Request, res: Response) => {
+  void (async () => {
+    try {
+      // Verify authorization
+      const authHeader = req.headers.authorization;
+      const expectedAuth = `Bearer ${process.env.PERMISSIONS_SECRET}`;
+
+      if (!authHeader || authHeader !== expectedAuth) {
+        logger.warn('Unauthorized permissions request');
+        return res.status(401).json({ ok: false, error: 'Unauthorized' });
+      }
+
+      const { userId, courseId, action, provider, metadata } = req.body;
+
+      // Validate required fields
+      if (!userId || !courseId || !action) {
+        return res.status(400).json({
+          ok: false,
+          error: 'Missing required fields: userId, courseId, action'
+        });
+      }
+
+      if (action !== 'grant_access') {
+        return res.status(400).json({
+          ok: false,
+          error: 'Invalid action. Only "grant_access" is supported.'
+        });
+      }
+
+      // Find user in _users db
+      const userDoc = await findUserByUsername(userId);
+      if (!userDoc) {
+        logger.error(`Permissions request for non-existent user: ${userId}`);
+        return res.status(404).json({ ok: false, error: 'User not found' });
+      }
+
+      // Initialize entitlements if not present
+      if (!userDoc.entitlements) {
+        userDoc.entitlements = {};
+      }
+
+      // Get existing entitlement (preserve registrationDate if exists)
+      const existingEntitlement = userDoc.entitlements[courseId];
+
+      // Update to paid status
+      userDoc.entitlements[courseId] = {
+        status: 'paid',
+        registrationDate: existingEntitlement?.registrationDate || new Date().toISOString(),
+        purchaseDate: new Date().toISOString(),
+        // No expires field for paid users
+      };
+
+      // Save to _users db
+      await updateUserDoc(userDoc);
+
+      logger.info(`Granted ${courseId} access to user ${userId} via ${provider || 'unknown'}`);
+
+      res.json({
+        ok: true,
+        message: `Access granted to ${courseId} for user ${userId}`
+      });
+
+    } catch (error) {
+      logger.error('Error granting permissions:', error);
+      res.status(500).json({
+        ok: false,
+        error: 'Failed to grant permissions',
+      });
+    }
+  })();
+});
+
 export default router;
