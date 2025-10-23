@@ -355,7 +355,6 @@ router.post('/initialize-trial', (req: Request, res: Response) => {
       userDoc.entitlements[courseId] = {
         status: 'trial',
         registrationDate: now.toISOString(),
-        purchaseDate: now.toISOString(), // Same as registration for trials
         expires: expiresDate.toISOString(),
       };
 
