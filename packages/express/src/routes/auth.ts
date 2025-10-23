@@ -290,6 +290,95 @@ router.post('/reset-password', (req: Request, res: Response) => {
 });
 
 /**
+ * POST /auth/initialize-trial
+ * Initialize trial entitlement for newly created user
+ * Called by frontend immediately after CouchDB account creation
+ *
+ * Body params:
+ *   - username: string (required) - CouchDB username
+ *   - origin: string (optional) - Frontend origin URL (e.g., 'letterspractice.com') for courseId inference
+ *   - courseId: string (optional) - Explicit courseId, if not provided inferred from origin
+ */
+router.post('/initialize-trial', (req: Request, res: Response) => {
+  void (async () => {
+    try {
+      const { username, origin, courseId: explicitCourseId } = req.body;
+
+      if (!username) {
+        return res.status(400).json({ ok: false, error: 'Username required' });
+      }
+
+      // Infer courseId from origin if not explicitly provided
+      let courseId = explicitCourseId;
+      if (!courseId && origin) {
+        // Map origin to courseId (e.g., 'letterspractice.com' → 'letterspractice-basic')
+        const originMap: Record<string, string> = {
+          'letterspractice.com': 'letterspractice-basic',
+          'localhost:5173': 'letterspractice-basic', // local dev
+          'localhost:3000': 'letterspractice-basic', // express server itself
+        };
+        courseId = originMap[origin] || origin.replace(/\./g, '-').toLowerCase();
+      }
+
+      // Default to letterspractice-basic if still not determined
+      if (!courseId) {
+        courseId = 'letterspractice-basic';
+      }
+
+      // Find user in _users db (should exist since just created via CouchDB)
+      const userDoc = await findUserByUsername(username);
+      if (!userDoc) {
+        return res.status(404).json({ ok: false, error: 'User not found' });
+      }
+
+      // Initialize entitlements if not present
+      if (!userDoc.entitlements) {
+        userDoc.entitlements = {};
+      }
+
+      // Don't overwrite if entitlement already exists (idempotent)
+      if (userDoc.entitlements[courseId]) {
+        logger.info(`Trial already initialized for ${username} on ${courseId} - skipping`);
+        return res.json({
+          ok: true,
+          message: 'Trial already initialized',
+          entitlement: userDoc.entitlements[courseId]
+        });
+      }
+
+      // Calculate expiration: 30 days from now
+      const now = new Date();
+      const expiresDate = new Date(now);
+      expiresDate.setDate(expiresDate.getDate() + 30);
+
+      // Create trial entitlement
+      userDoc.entitlements[courseId] = {
+        status: 'trial',
+        registrationDate: now.toISOString(),
+        purchaseDate: now.toISOString(), // Same as registration for trials
+        expires: expiresDate.toISOString(),
+      };
+
+      await updateUserDoc(userDoc);
+
+      logger.info(`Trial initialized for ${username} on ${courseId} - expires ${expiresDate.toISOString()}`);
+
+      res.json({
+        ok: true,
+        entitlement: userDoc.entitlements[courseId]
+      });
+
+    } catch (error) {
+      logger.error('Error initializing trial:', error);
+      res.status(500).json({
+        ok: false,
+        error: 'Failed to initialize trial',
+      });
+    }
+  })();
+});
+
+/**
  * POST /auth/permissions
  * Grant or update course permissions for a user (called by payment webhooks)
  *
