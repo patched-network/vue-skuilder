@@ -355,6 +355,7 @@ router.post('/initialize-trial', (req: Request, res: Response) => {
       userDoc.entitlements[courseId] = {
         status: 'trial',
         registrationDate: now.toISOString(),
+        purchaseDate: "not-yet",
         expires: expiresDate.toISOString(),
       };
 
@@ -400,7 +401,7 @@ router.post('/permissions', (req: Request, res: Response) => {
         return res.status(401).json({ ok: false, error: 'Unauthorized' });
       }
 
-      const { userId, courseId, action, provider, metadata } = req.body;
+      const { userId, courseId, action, provider } = req.body;
 
       // Validate required fields
       if (!userId || !courseId || !action) {
