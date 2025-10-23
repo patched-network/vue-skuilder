@@ -1,11 +1,26 @@
 import { CourseElo } from '@vue-skuilder/common';
 import { Moment } from 'moment';
 
+export interface SessionTrackingData {
+  peekSessionCount: number;
+  studySessionCount: number;
+  sessionCount: number; // total
+  firstSessionDate: string;
+  lastSessionDate: string;
+  signupPrompted: boolean;
+  promptDismissalCount: number;
+  studyModeAcknowledged: boolean;
+}
+
 export interface UserConfig {
   darkMode: boolean;
   likesConfetti: boolean;
   sessionTimeLimit: number; // Session time limit in minutes
   email?: string; // Optional email for verification flows (added for enhanced auth)
+
+  // Session tracking for trial enforcement (per-course)
+  // Key is courseId (e.g., 'letterspractice-basic')
+  sessionTracking?: Record<string, SessionTrackingData>;
 }
 
 export interface ActivityRecord {

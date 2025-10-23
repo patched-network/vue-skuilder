@@ -27,6 +27,7 @@ export { default as CardHistoryViewer } from './components/CardHistoryViewer.vue
 // Composables
 export * from './composables/CompositionViewable';
 export * from './composables/Displayable';
+export * from './composables/useEntitlements';
 
 /*
   Study Session Components

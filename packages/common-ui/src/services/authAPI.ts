@@ -52,10 +52,20 @@ export interface VerifyEmailResponse extends AuthResponse {
   username?: string;
 }
 
+export interface Entitlement {
+  status: 'trial' | 'paid';
+  registrationDate: string;
+  purchaseDate?: string;
+  expires?: string;
+}
+
+export type UserEntitlements = Record<string, Entitlement>;
+
 export interface UserStatusResponse extends AuthResponse {
   username?: string;
   status?: 'pending_verification' | 'verified' | 'suspended';
   email?: string | null;
+  entitlements?: UserEntitlements;
 }
 
 /**
