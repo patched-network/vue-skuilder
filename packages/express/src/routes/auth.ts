@@ -311,18 +311,17 @@ router.post('/initialize-trial', (req: Request, res: Response) => {
       // Infer courseId from origin if not explicitly provided
       let courseId = explicitCourseId;
       if (!courseId && origin) {
-        // Map origin to courseId (e.g., 'letterspractice.com' → 'letterspractice-basic')
-        const originMap: Record<string, string> = {
-          'letterspractice.com': 'letterspractice-basic',
-          'localhost:5173': 'letterspractice-basic', // local dev
-          'localhost:3000': 'letterspractice-basic', // express server itself
-        };
-        courseId = originMap[origin] || origin.replace(/\./g, '-').toLowerCase();
+        // Generic origin-to-courseId conversion (e.g., 'example.com' → 'example-com')
+        // Consuming apps can override by passing explicit courseId
+        courseId = origin.replace(/\./g, '-').replace(/:/g, '-').toLowerCase();
       }
 
-      // Default to letterspractice-basic if still not determined
+      // Require courseId to be provided via explicit param or origin
       if (!courseId) {
-        courseId = 'letterspractice-basic';
+        return res.status(400).json({
+          ok: false,
+          error: 'courseId or origin required to initialize trial'
+        });
       }
 
       // Find user in _users db (should exist since just created via CouchDB)
