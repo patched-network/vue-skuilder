@@ -175,6 +175,7 @@ router.get('/status', (req: Request, res: Response) => {
         username: userDoc.name,
         status: userDoc.status || 'pending_verification', // Default to pending if not explicitly set
         email: userDoc.email || null,
+        entitlements: userDoc.entitlements || {},
       });
     } catch (error) {
       logger.error('Error fetching user status:', error);
