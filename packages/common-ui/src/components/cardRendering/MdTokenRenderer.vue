@@ -10,7 +10,14 @@
           Workaround: Add trailing whitespace, punctuation, or newline after component
           See: "MarkdownRenderer - Known Limitations" test group
         -->
-        <component :is="getComponent(parsedComponent(token).is)" v-if="!last" :text="parsedComponent(token).text" />
+        <component
+          v-if="!last && getComponent(parsedComponent(token).is)"
+          :is="getComponent(parsedComponent(token).is)"
+          :text="parsedComponent(token).text"
+        />
+        <span v-else-if="!last && !getComponent(parsedComponent(token).is)" class="error--text">
+          [Unknown component: {{ parsedComponent(token).is }}]
+        </span>
       </span>
       <span v-else-if="containsComponent(token)">
         <md-token-renderer v-for="(subTok, j) in splitTextToken(token)" :key="j" :token="subTok" />
@@ -127,14 +134,18 @@ import {
 import CodeBlockRenderer from './CodeBlockRenderer.vue';
 import FillInInput from '../../components/studentInputs/fillInInput.vue';
 import { MarkedToken, Tokens } from 'marked';
-import { markRaw } from 'vue';
+import { markRaw, inject } from 'vue';
 import { PropType } from 'vue';
+
+// Inject custom components provided at app level (defaults to empty object)
+const providedComponents = inject<Record<string, any>>('markdownComponents', {});
 
 // Register components to be used in the template
 // In Vue 3 with <script setup>, components used via :is must be explicitly registered
+// Merge built-in components with injected custom components
 const components = {
   fillIn: markRaw(FillInInput),
-  // Add other dynamic components here
+  ...providedComponents,
 };
 
 // Define component props
@@ -173,18 +184,6 @@ function parsedComponent(token: MarkedToken): {
   is: string;
   text: string;
 } {
-  // [ ] switching on component types & loading custom component
-  //
-  // sketch:
-  // const demoustached = token.text.slice(2, token.text.length - 2);
-  // const firstToken = demoustached.split(' ')[0];
-  // if (firstToken.charAt(firstToken.length - 1) == '>') {
-  //   return {
-  //     is: firstToken.slice(0, firstToken.length - 1),
-  //     text: demoustached.slice(firstToken.length + 1, demoustached.length),
-  //   };
-  // }
-
   let text = '';
   if ('text' in token && typeof token.text === 'string') {
     text = token.text;
@@ -192,16 +191,36 @@ function parsedComponent(token: MarkedToken): {
     text = token.raw;
   }
 
-  // This now returns a component from our registered components object
+  // Try to parse new syntax: {{ <component-name /> }}
+  // Matches component name with optional whitespace: {{<name/>}} or {{ <name /> }}
+  const match = text.match(/^\{\{\s*<([\w-]+)\s*\/>\s*\}\}$/);
+
+  if (match) {
+    // New syntax found - return component name, empty text
+    return {
+      is: match[1], // component-name (e.g., "chessBoard", "fillIn")
+      text: '',
+    };
+  }
+
+  // Backward compatible: {{ }} or {{ || }} -> fillIn component
   return {
-    is: 'fillIn', // This should match a key in the components object
+    is: 'fillIn',
     text,
   };
 }
 
 function getComponent(componentName: string) {
-  // Return the component instance from our components object
-  return components[componentName as keyof typeof components];
+  const component = components[componentName as keyof typeof components];
+
+  if (!component) {
+    console.warn(
+      `[MarkdownRenderer] Unknown component: "${componentName}". Available components: ${Object.keys(components).join(', ')}`
+    );
+    return null;
+  }
+
+  return component;
 }
 
 function decodeBasicEntities(text: string): string {
