@@ -169,10 +169,22 @@ import config from '../skuilder.config.json';
   app.use(piniaPlugin, { pinia });
 
   await useAuthStore().init();
-  
+
   // Initialize config store to load user settings (including dark mode)
   const { useConfigStore } = await import('@vue-skuilder/common-ui');
   await useConfigStore().init();
+
+  // Provide inline markdown components for MarkdownRenderer
+  // Supports syntax: {{ <component-name /> }} in markdown content
+  // To add custom components:
+  //   1. Import component and markRaw: import { markRaw } from 'vue';
+  //   2. Import your component: import MyComponent from './components/MyComponent.vue';
+  //   3. Add to registry: { myComponent: markRaw(MyComponent) }
+  //   4. Use in markdown: {{ <myComponent /> }}
+  // Note: Use markRaw() for performance optimization
+  app.provide('markdownComponents', {
+    // Empty for now - add components as needed
+  });
 
   // Auto-register user for the course in standalone mode
   if (config.course) {
