@@ -45,14 +45,10 @@ import { initializeDataLayer } from '@vue-skuilder/db';
   app.use(piniaPlugin, { pinia });
 
   // Provide inline markdown components for MarkdownRenderer
-  // Supports syntax: {{ <component-name /> }} in markdown content
-  // To add custom components:
-  //   1. Import component: import MyComponent from './components/MyComponent.vue';
-  //   2. Add to registry: { myComponent: markRaw(MyComponent) }
-  //   3. Use in markdown: {{ <myComponent /> }}
-  // Note: Use markRaw() from 'vue' for performance optimization
+  // Enables custom Vue components in markdown via {{ <component-name /> }} syntax
+  // See docs: https://patched-network.github.io/vue-skuilder/do/inline-components
   app.provide('markdownComponents', {
-    // Empty for now - add components as needed
+    // Empty - add components as needed
   });
 
   app.mount('#app');
