@@ -123,24 +123,102 @@ dist/common-ui.umd.js  302.90 kB │ gzip: 87.95 kB
 
 ---
 
+## 2025-10-28 - Phase 4: Test New Component Syntax
+
+**Goal**: Add comprehensive Cypress tests for new `{{ <component-name /> }}` syntax
+
+### Testing Challenges & Solutions
+
+**Challenge 1: Vue Template Compilation**
+- Test components initially used string `template` option
+- Error: "Component provided template option but runtime compilation is not supported"
+- Cypress uses Vue's runtime-only build (no template compiler)
+- **Solution**: Changed all test components to use render functions with `h()`
+
+**Challenge 2: Provide/Inject in Cypress**
+- Custom components passed via `global.provide` weren't being injected
+- Initial attempt to manually handle provide in mount helper didn't work
+- **Solution**: Vue's provide/inject works correctly; issue was template compilation (Challenge 1)
+
+### Tests Added
+
+**File**: `packages/common-ui/cypress/component/MarkdownRenderer.cy.ts`
+
+**New test groups**:
+1. **New Component Syntax** (8 tests)
+   - Renders custom component with `{{ <componentName /> }}`
+   - Shows error for unknown components
+   - Renders multiple custom components
+   - Mixes old and new syntax
+   - Handles whitespace variations
+   - Explicitly renders fillIn with new syntax
+   - Case sensitivity and kebab-case support
+
+2. **Backward Compatibility After Changes** (3 tests)
+   - Old syntax still works unchanged
+   - Multiple choice syntax still works
+   - Complex existing content still renders correctly
+
+3. **Known Limitations** (updated)
+   - Added test documenting markdown parser limitations
+   - Components work in paragraphs, not in headings/lists (markdown spec)
+   - Final token limitation already documented
+
+### Testing Results
+
+**All tests passing**: ✅ 39/39 tests
+
+**Test coverage**:
+- ✅ Basic markdown formatting (5 tests)
+- ✅ Headings (2 tests)
+- ✅ Lists (2 tests)
+- ✅ Code blocks (2 tests)
+- ✅ Tables (1 test)
+- ✅ FillIn component - basic (4 tests)
+- ✅ FillIn component - multiple choice (1 test)
+- ✅ FillIn component - multiple blanks (1 test)
+- ✅ Complex content (2 tests)
+- ✅ Edge cases (2 tests)
+- ✅ Known limitations (4 tests)
+- ✅ New component syntax (8 tests)
+- ✅ Backward compatibility (3 tests)
+
+### Known Limitations Documented
+
+1. **Components cannot end document** (v-if="!last" check) - Chesterton's Fence
+2. **Components don't work in headings/lists** - Markdown parser treats these as text-only blocks
+
+**Files Modified**:
+- ✅ Updated: `packages/common-ui/cypress/component/MarkdownRenderer.cy.ts`
+  - Added 11 new tests for new syntax
+  - All using render functions instead of template strings
+  - Comprehensive coverage of features and edge cases
+
+- ✅ Created: `packages/common-ui/cypress/component/MdTokenRenderer.cy.ts`
+  - Direct component test (debugging aid)
+
+- ✅ Updated: `packages/common-ui/cypress/support/component.js`
+  - Added provide directive handling (though ultimately unnecessary)
+
+**Status**: Phase 4 complete - All tests passing, new functionality verified
+
+---
+
 ## Next
 
-**Current Phase**: Phase 1 - Core Parsing & Rendering (complete)
+**Current Phase**: Phase 4 - Test New Behavior (complete)
 
-**Next Step**: Add Cypress tests for new component syntax, then move to Phase 2
+**Next Step**: Move to Phase 2 - Component Registration
 
-**Reference**: See [plan.md - Phase 4](./plan.md#phase-4-test-new-behavior)
+**Reference**: See [plan.md - Phase 2](./plan.md#phase-2-component-registration)
 
 **Todo**:
-- [ ] Add Cypress test suite for new `{{ <component-name /> }}` syntax
-- [ ] Test with custom injected components
-- [ ] Test unknown component error handling
-- [ ] Test whitespace variations
-- [ ] Test mixed old/new syntax
+- [ ] Create inline components export in courseware package
+- [ ] Export from courseware main index
+- [ ] Register components in platform-ui
+- [ ] Register components in standalone-ui
+- [ ] Build and test integration
 
-**After Tests Pass**: Move to Phase 2 - Component Registration
-- Create inline components export in courseware package
-- Export from courseware main index
-- Register in platform-ui and standalone-ui
+**After Phase 2 Complete**: Feature fully functional with example components available
 
 See [plan.md - Phase 2](./plan.md#phase-2-component-registration) for details.

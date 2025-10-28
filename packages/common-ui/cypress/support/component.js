@@ -29,11 +29,19 @@ Cypress.Commands.add('mount', (component, options = {}) => {
   // Create fresh Pinia instance for each test
   const pinia = createPinia();
 
+  // Capture any provide directives from the test
+  const testProvide = options.global.provide || {};
+
   // Add Vuetify and Pinia to the component
   options.global.plugins.push({
     install(app) {
       app.use(vuetify);
       app.use(pinia);
+
+      // Apply any provide directives from the test
+      Object.keys(testProvide).forEach((key) => {
+        app.provide(key, testProvide[key]);
+      });
     },
   });
 

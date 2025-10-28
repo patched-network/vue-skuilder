@@ -1,5 +1,6 @@
 // packages/common-ui/cypress/component/MarkdownRenderer.cy.ts
 import MarkdownRenderer from '../../src/components/cardRendering/MarkdownRenderer.vue';
+import { markRaw, h } from 'vue';
 
 describe('MarkdownRenderer - Basic Text Formatting', () => {
   it('renders plain markdown text', () => {
@@ -278,5 +279,300 @@ Second paragraph here.`,
     // Component renders fine when it's last in paragraph but not last in document
     cy.get('input[type="text"]').should('exist');
     cy.contains('Second paragraph here.').should('exist');
+  });
+});
+
+describe('MarkdownRenderer - New Component Syntax', () => {
+  it('renders custom component with new syntax {{ <componentName /> }}', () => {
+    const TestComponent = {
+      name: 'TestComponent',
+      render() {
+        return h('span', { class: 'test-component' }, 'CUSTOM COMPONENT');
+      },
+    };
+
+    cy.mount(MarkdownRenderer, {
+      props: {
+        md: 'Hello {{ <testComponent /> }} world.',
+      },
+      global: {
+        provide: {
+          markdownComponents: {
+            testComponent: markRaw(TestComponent),
+          },
+        },
+      },
+    });
+
+    cy.contains('Hello').should('exist');
+    cy.get('.test-component').should('contain', 'CUSTOM COMPONENT');
+    cy.contains('world.').should('exist');
+  });
+
+  it('shows error for unknown component', () => {
+    cy.mount(MarkdownRenderer, {
+      props: {
+        md: 'Test {{ <unknownComponent /> }} here.',
+      },
+    });
+
+    cy.contains('Test').should('exist');
+    cy.contains('[Unknown component: unknownComponent]').should('exist');
+    cy.contains('here.').should('exist');
+  });
+
+  it('renders multiple custom components in same markdown', () => {
+    const ComponentA = {
+      name: 'ComponentA',
+      render() {
+        return h('span', { class: 'comp-a' }, 'A');
+      },
+    };
+    const ComponentB = {
+      name: 'ComponentB',
+      render() {
+        return h('span', { class: 'comp-b' }, 'B');
+      },
+    };
+
+    cy.mount(MarkdownRenderer, {
+      props: {
+        md: 'First {{ <compA /> }} and second {{ <compB /> }} done.',
+      },
+      global: {
+        provide: {
+          markdownComponents: {
+            compA: markRaw(ComponentA),
+            compB: markRaw(ComponentB),
+          },
+        },
+      },
+    });
+
+    cy.get('.comp-a').should('contain', 'A');
+    cy.get('.comp-b').should('contain', 'B');
+    cy.contains('First').should('exist');
+    cy.contains('and second').should('exist');
+    cy.contains('done.').should('exist');
+  });
+
+  it('mixes old and new syntax in same markdown', () => {
+    const TestComponent = {
+      name: 'TestComponent',
+      render() {
+        return h('span', { class: 'test' }, 'CUSTOM');
+      },
+    };
+
+    cy.mount(MarkdownRenderer, {
+      props: {
+        md: 'Fill in: {{ answer }} and custom: {{ <test /> }} done.',
+      },
+      global: {
+        provide: {
+          markdownComponents: {
+            test: markRaw(TestComponent),
+          },
+        },
+      },
+    });
+
+    cy.get('input[type="text"]').should('exist'); // fillIn (old syntax)
+    cy.get('.test').should('contain', 'CUSTOM'); // custom (new syntax)
+    cy.contains('Fill in:').should('exist');
+    cy.contains('and custom:').should('exist');
+    cy.contains('done.').should('exist');
+  });
+
+  it('handles whitespace variations in new syntax', () => {
+    const TestComponent = {
+      name: 'TestComponent',
+      render() {
+        return h('span', { class: 'test' }, 'OK');
+      },
+    };
+
+    cy.mount(MarkdownRenderer, {
+      props: {
+        md: 'A {{<test/>}} B {{ <test/> }} C {{  <test />  }} D.',
+      },
+      global: {
+        provide: {
+          markdownComponents: {
+            test: markRaw(TestComponent),
+          },
+        },
+      },
+    });
+
+    cy.get('.test').should('have.length', 3);
+    cy.contains('A').should('exist');
+    cy.contains('B').should('exist');
+    cy.contains('C').should('exist');
+    cy.contains('D.').should('exist');
+  });
+
+  it('explicitly renders fillIn with new syntax {{ <fillIn /> }}', () => {
+    cy.mount(MarkdownRenderer, {
+      props: {
+        md: 'What is the answer? {{ <fillIn /> }} End.',
+      },
+    });
+
+    cy.contains('What is the answer?').should('exist');
+    cy.get('input[type="text"]').should('exist');
+    cy.contains('End.').should('exist');
+  });
+
+  it('DOES NOT work in headings (markdown parser limitation)', () => {
+    const BadgeComponent = {
+      name: 'BadgeComponent',
+      render() {
+        return h('span', { class: 'badge' }, 'NEW');
+      },
+    };
+
+    cy.mount(MarkdownRenderer, {
+      props: {
+        md: '# Title {{ <badge /> }}\n\nSome content.',
+      },
+      global: {
+        provide: {
+          markdownComponents: {
+            badge: markRaw(BadgeComponent),
+          },
+        },
+      },
+    });
+
+    // Markdown parser treats heading content as text-only block
+    // Component syntax doesn't get parsed inside headings
+    cy.get('h1').should('exist');
+    cy.get('.badge').should('not.exist');
+    cy.contains('Some content.').should('exist');
+  });
+
+  it('DOES NOT work in list items (markdown parser limitation)', () => {
+    const IconComponent = {
+      name: 'IconComponent',
+      render() {
+        return h('span', { class: 'icon' }, '✓');
+      },
+    };
+
+    cy.mount(MarkdownRenderer, {
+      props: {
+        md: '- Item 1 {{ <icon /> }}\n- Item 2 {{ <icon /> }}\n- Item 3',
+      },
+      global: {
+        provide: {
+          markdownComponents: {
+            icon: markRaw(IconComponent),
+          },
+        },
+      },
+    });
+
+    // Markdown parser treats list content as text-only blocks
+    // Component syntax doesn't get parsed inside list items
+    cy.get('ul li').should('have.length', 3);
+    cy.get('.icon').should('not.exist');
+  });
+
+  it('preserves component case sensitivity', () => {
+    const MyComponent = {
+      name: 'MyComponent',
+      render() {
+        return h('span', { class: 'my-comp' }, 'Works');
+      },
+    };
+
+    cy.mount(MarkdownRenderer, {
+      props: {
+        md: 'Test {{ <myComponent /> }} here.',
+      },
+      global: {
+        provide: {
+          markdownComponents: {
+            myComponent: markRaw(MyComponent),
+          },
+        },
+      },
+    });
+
+    cy.get('.my-comp').should('contain', 'Works');
+  });
+
+  it('handles kebab-case component names', () => {
+    const MyComponent = {
+      name: 'MyCustomComponent',
+      render() {
+        return h('span', { class: 'kebab' }, 'Kebab Works');
+      },
+    };
+
+    cy.mount(MarkdownRenderer, {
+      props: {
+        md: 'Test {{ <my-custom-component /> }} here.',
+      },
+      global: {
+        provide: {
+          markdownComponents: {
+            'my-custom-component': markRaw(MyComponent),
+          },
+        },
+      },
+    });
+
+    cy.get('.kebab').should('contain', 'Kebab Works');
+  });
+});
+
+describe('MarkdownRenderer - Backward Compatibility After Changes', () => {
+  it('old syntax still works unchanged', () => {
+    cy.mount(MarkdownRenderer, {
+      props: { md: 'The answer is {{ 42 }} exactly.' },
+    });
+
+    cy.contains('The answer is').should('exist');
+    cy.get('input[type="text"]').should('exist');
+    cy.contains('exactly.').should('exist');
+  });
+
+  it('multiple choice syntax still works', () => {
+    cy.mount(MarkdownRenderer, {
+      props: { md: 'Pick one: {{ Paris || London | Berlin | Madrid }} now.' },
+    });
+
+    cy.contains('Pick one:').should('exist');
+    cy.get('.underline').should('exist');
+    cy.contains('now.').should('exist');
+  });
+
+  it('complex existing content still renders correctly', () => {
+    const complexMd = `
+# Quiz Time
+
+Answer the following: {{ question }}
+
+- Item 1
+- Item 2
+
+\`\`\`js
+const x = 1;
+\`\`\`
+
+Done.
+    `;
+
+    cy.mount(MarkdownRenderer, {
+      props: { md: complexMd },
+    });
+
+    cy.get('h1').should('contain', 'Quiz Time');
+    cy.get('input[type="text"]').should('exist');
+    cy.get('ul li').should('have.length', 2);
+    cy.get('code').should('exist');
+    cy.contains('Done.').should('exist');
   });
 });
