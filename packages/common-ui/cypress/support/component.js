@@ -3,6 +3,7 @@ import { mount } from 'cypress/vue';
 import { createVuetify } from 'vuetify';
 import * as components from 'vuetify/components';
 import * as directives from 'vuetify/directives';
+import { createPinia } from 'pinia';
 
 // Import Vuetify styles
 import 'vuetify/styles';
@@ -25,10 +26,14 @@ Cypress.Commands.add('mount', (component, options = {}) => {
     options.global.plugins = [];
   }
 
-  // Add Vuetify to the component
+  // Create fresh Pinia instance for each test
+  const pinia = createPinia();
+
+  // Add Vuetify and Pinia to the component
   options.global.plugins.push({
     install(app) {
       app.use(vuetify);
+      app.use(pinia);
     },
   });
 
