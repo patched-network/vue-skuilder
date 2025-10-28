@@ -204,21 +204,130 @@ dist/common-ui.umd.js  302.90 kB │ gzip: 87.95 kB
 
 ---
 
-## Next
+## 2025-10-28 - Phase 2: Component Registration (Refined)
 
-**Current Phase**: Phase 4 - Test New Behavior (complete)
+**Goal**: Provide empty infrastructure for component registration at app level
 
-**Next Step**: Move to Phase 2 - Component Registration
+### Initial Approach (Discarded)
+- Initially created `/packages/courseware/src/components/inline/index.ts` with empty export
+- Exported `inlineMarkdownComponents` from courseware package
+- **Issue identified**: This is a NOOP - Vue's provide/inject handles everything natively
+- No need for courseware package to export anything
 
-**Reference**: See [plan.md - Phase 2](./plan.md#phase-2-component-registration)
+### Final Approach (Implemented)
+**Realization**: Since we're using Vue's built-in provide/inject, courseware doesn't need to export components at all. Each app provides its own component registry directly.
 
-**Todo**:
-- [ ] Create inline components export in courseware package
-- [ ] Export from courseware main index
-- [ ] Register components in platform-ui
-- [ ] Register components in standalone-ui
-- [ ] Build and test integration
+**Files Modified**:
 
-**After Phase 2 Complete**: Feature fully functional with example components available
+1. **Removed unnecessary exports**:
+   - ✅ Deleted: `packages/courseware/src/components/inline/index.ts`
+   - ✅ Updated: `packages/courseware/src/index.ts` (removed inline component exports)
 
-See [plan.md - Phase 2](./plan.md#phase-2-component-registration) for details.
+2. **Added inline documentation in apps**:
+   - ✅ Updated: `packages/platform-ui/src/main.ts:47-52`
+     - Empty `app.provide('markdownComponents', {})`
+     - 3-line comment with docs URL
+
+   - ✅ Updated: `packages/standalone-ui/src/main.ts:177-182`
+     - Empty `app.provide('markdownComponents', {})`
+     - 3-line comment with docs URL
+
+**Testing Results**:
+- ✅ All 38 Cypress tests passing after removing courseware export
+- ✅ Feature works entirely with Vue's native provide/inject
+- ✅ No unnecessary abstraction layers
+
+**Status**: Phase 2 complete - Clean, minimal infrastructure in place
+
+---
+
+## 2025-10-28 - Documentation
+
+**Goal**: Create comprehensive but brief documentation for the new feature
+
+### Documentation Page Created
+
+**File**: `docs/do/inline-components.md`
+
+**Location**: Positioned in "Do" section, between:
+- **Before**: "Adding Content" (`studio-mode.md`)
+- **After**: "Creating Custom Cards" (`custom-cards.md`)
+
+**Rationale**: Inline components are an intermediate step between basic card syntax and fully custom cards
+
+**Content covered**:
+1. What inline components are
+2. Two types: display-only vs interactive (grading)
+3. Registration pattern with `app.provide()`
+4. Key types and classes (`Answer`, `Evaluation`, `BaseUserInput`, `Question`)
+5. Reference to fillInInput implementation
+6. Decision matrix: when to use what approach
+
+**Brevity**: ~100 lines including code examples vs hundreds of lines if duplicated in code comments
+
+### Documentation Integration
+
+**Files Modified**:
+- ✅ Created: `docs/do/inline-components.md`
+- ✅ Updated: `docs/.vitepress/config.mts:138` (added to sidebar)
+- ✅ Updated: `packages/platform-ui/src/main.ts:47-52` (link to docs)
+- ✅ Updated: `packages/standalone-ui/src/main.ts:177-182` (link to docs)
+
+**Docs URL**: `https://patched-network.github.io/vue-skuilder/do/inline-components`
+
+**Status**: Documentation complete and integrated
+
+---
+
+## Feature Complete ✅
+
+### Summary
+
+**What was built**:
+- Generic custom inline component rendering using syntax `{{ <component-name /> }}`
+- 100% backward compatible with existing `{{ }}` fillIn syntax
+- Pure Vue provide/inject pattern - no unnecessary exports
+- 38 comprehensive Cypress tests with full coverage
+- Documentation page positioned as intermediate step
+
+**Key Files Modified**:
+1. `packages/common-ui/src/components/cardRendering/MdTokenRenderer.vue`
+   - Enhanced parser for new component syntax
+   - Injection support for custom components
+   - Graceful error handling for unknown components
+
+2. `packages/common-ui/cypress/component/MarkdownRenderer.cy.ts`
+   - 38 tests covering baseline, new syntax, edge cases, limitations
+
+3. `packages/platform-ui/src/main.ts` & `packages/standalone-ui/src/main.ts`
+   - Empty component registries with docs links
+
+4. `docs/do/inline-components.md`
+   - Comprehensive documentation
+
+5. `docs/.vitepress/config.mts`
+   - Added to sidebar navigation
+
+**Known Limitations** (documented):
+1. Components cannot be final token of document (Chesterton's Fence)
+2. Components don't work in headings/lists (markdown parser limitation)
+
+**Test Coverage**: ✅ 38/38 passing
+- Baseline markdown rendering
+- FillIn component (existing functionality)
+- New component syntax
+- Error handling
+- Backward compatibility
+- Known limitations
+
+---
+
+## Next: Props Parsing
+
+**Feature request**: Add support for passing props to inline components
+
+**Syntax examples** (proposed):
+- `{{ <component prop="value" /> }}`
+- `{{ <component :prop="expression" /> }}`
+
+**Reference**: See [plan.md](./plan.md) for future phases
