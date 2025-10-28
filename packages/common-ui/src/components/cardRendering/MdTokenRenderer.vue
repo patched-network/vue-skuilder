@@ -2,7 +2,14 @@
   <span v-if="isText(token)">
     <span v-if="!token.tokens || token.tokens.length === 0">
       <span v-if="isComponent(token)">
-        <!-- <component :is="parsedComponent(token).is" v-if="!last" :text="parsedComponent(token).text" /> -->
+        <!--
+          KNOWN LIMITATION: Components cannot be the final token of the entire markdown document
+          The v-if="!last" check prevents rendering when this is the last token overall
+          Components CAN be the last token in a paragraph (just not the whole document)
+          Reason unclear but necessary historically - Chesterton's Fence applies
+          Workaround: Add trailing whitespace, punctuation, or newline after component
+          See: "MarkdownRenderer - Known Limitations" test group
+        -->
         <component :is="getComponent(parsedComponent(token).is)" v-if="!last" :text="parsedComponent(token).text" />
       </span>
       <span v-else-if="containsComponent(token)">
