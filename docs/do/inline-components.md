@@ -1,121 +1,171 @@
+<script setup lang="ts">
+import EmbeddedFillInEditor from '../.vitepress/theme/components/EmbeddedFillInEditor.vue'
+import { markRaw, h } from 'vue';
+
+// Simple badge component
+const Badge = {
+  name: 'Badge',
+  render() {
+    return h('span', {
+      style: 'background: #42b983; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.85em; font-weight: 600;'
+    }, 'NEW');
+  }
+};
+
+// Component that accepts a color prop
+const ColoredBadge = {
+  name: 'ColoredBadge',
+  props: ['color', 'text'],
+  render() {
+    return h('span', {
+      style: `background: ${this.color}; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.85em; font-weight: 600;`
+    }, this.text || 'BADGE');
+  }
+};
+
+// Chess position display component
+const ChessPosition = {
+  name: 'ChessPosition',
+  props: ['fen', 'size'],
+  render() {
+    const displaySize = this.size || 'small';
+    return h('div', {
+      style: `border: 2px solid #8b4513; padding: 8px; background: #f0d9b5; display: inline-block; font-family: monospace; font-size: ${displaySize === 'large' ? '14px' : '11px'};`
+    }, [
+      h('div', { style: 'font-weight: bold; margin-bottom: 4px;' }, 'Chess Position:'),
+      h('code', { style: 'display: block; white-space: pre;' }, this.fen)
+    ]);
+  }
+};
+
+// Provide components for the embedded editors
+const inlineComponents = {
+  badge: markRaw(Badge),
+  coloredBadge: markRaw(ColoredBadge),
+  chessPosition: markRaw(ChessPosition),
+};
+
+// Example markdown strings
+const badgeExample = `Check out this {{ &lt;badge /&gt; }} feature!`;
+
+const coloredBadgeExample = `Status: {{ &lt;coloredBadge color="#e74c3c" text="ALERT" /&gt; }}
+
+Priority: {{ &lt;coloredBadge color="#3498db" text="HIGH" /&gt; }}`;
+
+const chessExample = `White to move. What's the best continuation?
+
+{{ &lt;chessPosition fen="r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R" /&gt; }}
+
+The answer is {{ Nxe5 }}.`;
+
+const chessSizesExample = `Small board:
+{{ &lt;chessPosition fen="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR" size="small" /&gt; }}
+
+Large board:
+{{ &lt;chessPosition fen="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR" size="large" /&gt; }}`;
+</script>
+
 # Inline Components
 
-A middle ground between basic card syntax and fully custom cards.
+Embed custom Vue components directly into your markdown card content using `{<!-- -->{&lt;component-name /&gt; ]}` syntax. This is a middle ground between basic fill-in syntax and fully [custom cards](/custom-cards).
 
-## What Are Inline Components?
+## Basic Example
 
-<!--Inline components let you embed custom Vue components directly into your markdown card content using the syntax `{{ &lt;component-name /&gt; }}`. This is useful when you need richer interactivity than the default `{{ }}` fill-in syntax provides, but don't want to create a full custom card type.-->
+The simplest inline component takes no parameters:
 
-## Two Types of Inline Components
+<EmbeddedFillInEditor :initial-value="badgeExample" :inline-components="inlineComponents" />
 
+Here, `badge` is a Vue component that renders a styled span. The syntax `{<!-- -->{<badge /> }}` tells the markdown renderer to insert the component inline.
 
-### Display-Only Components
+## Components with Data
 
-Simple visual elements that don't participate in grading:
+Pass data to components using attributes:
 
-``` ts
-// In src/main.ts
-import { markRaw } from 'vue';
-import ChessBoard from './components/ChessBoard.vue';
+<EmbeddedFillInEditor
+  :initial-value="coloredBadgeExample"
+  :inline-components="inlineComponents"
+/>
 
-app.provide('markdownComponents', {
-  chessBoard: markRaw(ChessBoard),
-});
-```
+The `color` and `text` attributes become props on the Vue component. This lets you reuse the same component with different data across many cards.
 
-Use in markdown:
-```markdown
-White to move. What's the best continuation?
+## Real-World Example: Chess Positions
 
-{{ <chessBoard /> }}
+A chess position component that accepts FEN notation:
 
-{{ Qxf7+ }}
-```
+<EmbeddedFillInEditor
+  :initial-value="chessExample"
+  :inline-components="inlineComponents"
+/>
 
-### Interactive Components (Grading)
+Notice how the chess component and fill-in blank `{<!-- -->{Nxe5 }}` coexist in the same card. Multiple props work too:
 
-Components that accept user input and participate in answer evaluation:
+<EmbeddedFillInEditor
+  :initial-value="chessSizesExample"
+  :inline-components="inlineComponents"
+/>
 
-**Your component:**
-```vue
-<script lang="ts">;
-import BaseUserInput from '@vue-skuilder/common-ui/components/studentInputs/BaseUserInput';
+## Setting Up Components
 
-export default {
-  extends: BaseUserInput,
-  methods: {
-    handleInput(value) {
-      // When user provides answer, submit it for grading
-      this.submit({ userValue: value });
-    }
-  }
-}
-</script>;
-```
+Register components when bootstrapping your Vue app (in `src/main.ts`):
 
-**Card Question class:**
-```typescript
-import { Question } from '@vue-skuilder/common-ui';
-import { Answer } from '@vue-skuilder/common';
-
-export class MyCard extends Question {
-  protected isCorrect(answer: Answer): boolean {
-    // Evaluate the answer
-    return answer.userValue === this.expectedValue;
-  }
-}
-```
-
-**How it works:**
-1. Component extends `BaseUserInput` and calls `this.submit(answer)`
-2. BaseUserInput walks up the component tree to find the QuestionView ancestor
-3. QuestionView calls `Question.evaluate(answer, timeSpent)`
-4. Returns `Evaluation: { isCorrect: boolean, performance: number }`
-
-## Registration
-
-Register components where you bootstrap your Vue app:
-
-**Platform UI** (`packages/platform-ui/src/main.ts`):
 ```typescript
 import { markRaw } from 'vue';
-import MyComponent from './components/MyComponent.vue';
+import Badge from './components/Badge.vue';
+import ChessPosition from './components/ChessPosition.vue';
 
 app.provide('markdownComponents', {
-  myComponent: markRaw(MyComponent),
-});
-```
-
-**Standalone UI** (`packages/standalone-ui/src/main.ts`):
-```typescript
-// Same pattern
-app.provide('markdownComponents', {
-  myComponent: markRaw(MyComponent),
+  badge: markRaw(Badge),
+  chessPosition: markRaw(ChessPosition),
 });
 ```
 
 ::: tip Why markRaw()?
-Use `markRaw()` for performance optimization - it prevents Vue from making the component reactive, which isn't needed here.
+Use `markRaw()` for performance - it prevents Vue from making components reactive, which isn't needed here.
 :::
 
-## Key Types and Classes
+Components can be defined inline (like in this page's examples) or imported from `.vue` files. The markdown syntax stays the same either way.
 
-From `@vue-skuilder/common`:
-- **`Answer`** - Base interface for user responses
-- **`Evaluation`** - `{ isCorrect: boolean, performance: number }` (0-1)
+## Interactive Components (Grading)
 
-From `@vue-skuilder/common-ui`:
-- **`BaseUserInput`** - Base component with `submit(answer)` method
-- **`Question`** - Abstract class with `isCorrect()` and `evaluate()` methods
+Components can participate in answer evaluation by extending `BaseUserInput`:
 
-## Reference Implementation
+```vue
+<script lang="ts">
+import BaseUserInput from '@vue-skuilder/common-ui/components/studentInputs/BaseUserInput';
 
-See the default fill-in components for a complete example:
+export default {
+  extends: BaseUserInput,
+  props: ['expectedAnswer'],
+  methods: {
+    handleSubmit(value) {
+      // When user provides answer, submit for grading
+      this.submit({ userValue: value });
+    }
+  }
+}
+</script>
+```
+
+**How grading works:**
+1. Component calls `this.submit(answer)` with user's response
+2. BaseUserInput walks up the component tree to find QuestionView ancestor
+3. QuestionView calls `Question.evaluate(answer, timeSpent)`
+4. Returns `Evaluation: { isCorrect: boolean, performance: number (0-1) }`
+
+See the fill-in implementation for a complete example:
 - Component: `packages/common-ui/src/components/studentInputs/fillInInput.vue`
-- Question: `packages/courseware/src/default/questions/fillIn/index.ts` (`BlanksCard` class)
+- Question class: `packages/courseware/src/default/questions/fillIn/index.ts`
+
+**Key types** (from `@vue-skuilder/common`):
+- `Answer` - Base interface for user responses
+- `Evaluation` - `{ isCorrect: boolean, performance: number }`
+
+**Key classes** (from `@vue-skuilder/common-ui`):
+- `BaseUserInput` - Base component with `submit()` method
+- `Question` - Abstract class with `isCorrect()` and `evaluate()` methods
 
 ## When to Use What?
 
-- **Basic `{{ }}` syntax** - Simple text input or multiple choice
-- **Inline components** (this page) - Custom UI within markdown, shared across many cards
-- **[Full custom cards](/do/custom-cards)** - Complete control over card logic, data model, and views
+- **`{<!-- -->{}}` fill-in syntax** → Simple text input or multiple choice
+- **Inline components** (this page) → Custom UI reused across many cards
+- **[Full custom cards](/do/custom-cards)** → Complete control over card logic, data model, and views
