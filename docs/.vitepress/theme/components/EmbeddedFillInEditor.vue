@@ -48,16 +48,21 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick, watch } from 'vue';
+import { ref, computed, onMounted, nextTick, watch, provide } from 'vue';
 import FillInView from '@vue-skuilder/courseware/default/questions/fillIn/fillIn.vue';
 
 interface Props {
   initialValue?: string;
+  inlineComponents?: Record<string, any>;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   initialValue: 'The capital of France is {{Paris}}.',
+  inlineComponents: () => ({}),
 });
+
+// Provide inline components to child components (MarkdownRenderer, etc.)
+provide('markdownComponents', props.inlineComponents);
 
 // Reactive state
 const originalValue = ref(props.initialValue); // Store original for reset
