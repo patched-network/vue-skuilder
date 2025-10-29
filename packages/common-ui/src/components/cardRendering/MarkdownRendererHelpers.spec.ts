@@ -46,6 +46,14 @@ describe('parseComponentSyntax', () => {
       });
     });
 
+    it('handles no whitespace around delimiters', () => {
+      const result = parseComponentSyntax('{{<badge/>}}');
+      expect(result).toEqual({
+        componentName: 'badge',
+        props: {},
+      });
+    });
+
     it('handles extra whitespace in props', () => {
       const result = parseComponentSyntax('{{ <badge   text="value"   color="#fff"  /> }}');
       expect(result).toEqual({
