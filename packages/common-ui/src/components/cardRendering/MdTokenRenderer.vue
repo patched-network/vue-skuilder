@@ -164,13 +164,11 @@ defineProps({
 
 // Methods
 function isComponent(token: MarkedToken): boolean {
-  const result = _isComponent(token);
-  return result;
+  return _isComponent(token);
 }
 
 function containsComponent(token: MarkedToken): boolean {
-  const result = _containsComponent(token);
-  return result;
+  return _containsComponent(token);
 }
 
 function splitTextToken(token: MarkedToken): Tokens.Text[] {
