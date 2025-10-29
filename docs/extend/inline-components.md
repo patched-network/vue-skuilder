@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import EmbeddedFillInEditor from '../.vitepress/theme/components/EmbeddedFillInEditor.vue'
 import { markRaw, h } from 'vue';
+import ChessBoard from '@vue-skuilder/courseware/chess/components/ChessBoard.vue';
 
 // Simple badge component
 const Badge = {
@@ -23,17 +24,27 @@ const ColoredBadge = {
   }
 };
 
-// Chess position display component
+// Wrapper component for ChessBoard that converts string FEN prop to position object
 const ChessPosition = {
   name: 'ChessPosition',
   props: ['fen', 'size'],
+  components: { ChessBoard },
   render() {
-    const displaySize = this.size || 'small';
-    return h('div', {
-      style: `border: 2px solid #8b4513; padding: 8px; background: #f0d9b5; display: inline-block; font-family: monospace; font-size: ${displaySize === 'large' ? '14px' : '11px'};`
-    }, [
-      h('div', { style: 'font-weight: bold; margin-bottom: 4px;' }, 'Chess Position:'),
-      h('code', { style: 'display: block; white-space: pre;' }, this.fen)
+    const position = {
+      fen: this.fen || 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR',
+      orientation: 'white',
+    };
+
+    const containerStyle = this.size === 'large'
+      ? 'width: 400px; height: 400px;'
+      : 'width: 250px; height: 250px;';
+
+    return h('div', { style: `display: inline-block; ${containerStyle}` }, [
+      h(ChessBoard, {
+        position,
+        showCoordinates: false,
+        config: { movable: { free: false } }
+      })
     ]);
   }
 };
