@@ -192,7 +192,7 @@ onMounted(() => {
   board.value = Chessground(boardElement.value, {
     ...props.config,
     fen: props.position.fen,
-
+    coordinates: false, // wrapping component handles these
     orientation: props.position.orientation || 'cg-white',
     movable: {
       events: {
