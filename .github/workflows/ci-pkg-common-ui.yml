@@ -3,14 +3,12 @@ name: ci-pkg-common-ui
 
 on:
   push:
-    branches: [main]
     paths:
       - 'packages/common-ui/**'
       - 'packages/common/**'
       - 'packages/db/**'
       - '.github/workflows/ci-pkg-common-ui.yml'
   pull_request:
-    branches: [main]
     paths:
       - 'packages/common-ui/**'
       - 'packages/common/**'
