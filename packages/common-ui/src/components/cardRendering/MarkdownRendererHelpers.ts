@@ -112,3 +112,85 @@ export function containsComponent(token: MarkedToken) {
 export function isComponent(token: MarkedToken) {
   return token.type === 'text' && token.text.startsWith('{{') && token.text.endsWith('}}');
 }
+
+/**
+ * Parses inline component syntax from a string
+ * @param text - String containing component syntax, e.g., "{{ <badge /> }}" or " <badge prop="value" /> "
+ * @returns Object with componentName and props, or null if not valid component syntax
+ *
+ * @example
+ * parseComponentSyntax("{{ <badge /> }}") // { componentName: 'badge', props: {} }
+ * parseComponentSyntax("{{ <chessBoard fen=\"...\" size=\"large\" /> }}") // { componentName: 'chessBoard', props: { fen: '...', size: 'large' } }
+ * parseComponentSyntax("{{ Paris }}") // null (not a component)
+ */
+export function parseComponentSyntax(text: string): {
+  componentName: string;
+  props: Record<string, string>;
+} | null {
+  // Guard against excessively long input (prevents ReDoS attacks)
+  if (text.length > 10000) {
+    return null;
+  }
+
+  // Simplified regex to avoid catastrophic backtracking
+  // Captures component name and all attributes as a single string
+  const match = text.match(/^\{\{\s*<([\w-]+)((?:\s+[\w-]+="[^"]*")*)\s*\/>\s*\}\}$/);
+
+  if (!match) {
+    return null;
+  }
+
+  const componentName = match[1]; // e.g., "badge", "chessBoard"
+  const attrsString = match[2]; // e.g., ' fen="..." size="large"'
+  const props: Record<string, string> = {};
+
+  if (attrsString) {
+    // Parse attributes: requires space before each attribute
+    // More specific pattern reduces backtracking potential
+    const attrRegex = /\s+([\w-]+)="([^"]*)"/g;
+    let attrMatch;
+
+    while ((attrMatch = attrRegex.exec(attrsString)) !== null) {
+      props[attrMatch[1]] = attrMatch[2];
+    }
+  }
+
+  return { componentName, props };
+}
+
+/**
+ * Checks if delimited content (content between {{ }}) is an inline component vs a fillIn blank
+ * @param delimitedContent - Content between {{ and }}, e.g., " <badge /> " or "Paris" or " choice1 || choice2 "
+ * @returns true if this is an inline component, false if it's a fillIn blank
+ *
+ * @example
+ * isInlineComponent("<badge />") // true
+ * isInlineComponent("<chessBoard fen=\"...\" />") // true
+ * isInlineComponent("Paris") // false (fillIn blank)
+ * isInlineComponent("choice || alt1 | alt2") // false (fillIn with options)
+ */
+export function isInlineComponent(delimitedContent: string): boolean {
+  // Guard against excessively long input (prevents ReDoS attacks)
+  if (delimitedContent.length > 10000) {
+    return false;
+  }
+
+  const trimmed = delimitedContent.trim();
+  // Simplified regex to avoid catastrophic backtracking
+  // Non-capturing group with possessive-like behavior
+  return /^<[\w-]+(?:\s+[\w-]+="[^"]*")*\s*\/?>$/.test(trimmed);
+}
+
+/**
+ * Parses component syntax from a MarkedToken
+ * Convenience wrapper around parseComponentSyntax for token-based usage
+ * @param token - MarkedToken with text or raw property
+ * @returns Object with componentName and props, or null if not valid component syntax
+ */
+export function parseComponentToken(token: MarkedToken): {
+  componentName: string;
+  props: Record<string, string>;
+} | null {
+  const text = (token as any).text || (token as any).raw;
+  return parseComponentSyntax(text);
+}

@@ -44,5 +44,12 @@ import { initializeDataLayer } from '@vue-skuilder/db';
   const { piniaPlugin } = await import('@vue-skuilder/common-ui');
   app.use(piniaPlugin, { pinia });
 
+  // Provide inline markdown components for MarkdownRenderer
+  // Enables custom Vue components in markdown via {{ <component-name /> }} syntax
+  // See docs: https://patched-network.github.io/vue-skuilder/do/inline-components
+  app.provide('markdownComponents', {
+    // Empty - add components as needed
+  });
+
   app.mount('#app');
 })();

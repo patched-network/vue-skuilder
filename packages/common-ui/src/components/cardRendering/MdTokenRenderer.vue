@@ -2,8 +2,23 @@
   <span v-if="isText(token)">
     <span v-if="!token.tokens || token.tokens.length === 0">
       <span v-if="isComponent(token)">
-        <!-- <component :is="parsedComponent(token).is" v-if="!last" :text="parsedComponent(token).text" /> -->
-        <component :is="getComponent(parsedComponent(token).is)" v-if="!last" :text="parsedComponent(token).text" />
+        <!--
+          KNOWN LIMITATION: Components cannot be the final token of the entire markdown document
+          The v-if="!last" check prevents rendering when this is the last token overall
+          Components CAN be the last token in a paragraph (just not the whole document)
+          Reason unclear but necessary historically - Chesterton's Fence applies
+          Workaround: Add trailing whitespace, punctuation, or newline after component
+          See: "MarkdownRenderer - Known Limitations" test group
+        -->
+        <component
+          v-if="!last && getComponent(parsedComponent(token).is)"
+          :is="getComponent(parsedComponent(token).is)"
+          :text="parsedComponent(token).text"
+          v-bind="parsedComponent(token).props"
+        />
+        <span v-else-if="!last && !getComponent(parsedComponent(token).is)" class="error--text">
+          [Unknown component: {{ parsedComponent(token).is }}]
+        </span>
       </span>
       <span v-else-if="containsComponent(token)">
         <md-token-renderer v-for="(subTok, j) in splitTextToken(token)" :key="j" :token="subTok" />
@@ -115,19 +130,24 @@ import {
   isComponent as _isComponent,
   splitParagraphToken as _splitParagraphToken,
   splitTextToken as _splitTextToken,
+  parseComponentSyntax,
   TokenOrComponent,
 } from './MarkdownRendererHelpers';
 import CodeBlockRenderer from './CodeBlockRenderer.vue';
 import FillInInput from '../../components/studentInputs/fillInInput.vue';
 import { MarkedToken, Tokens } from 'marked';
-import { markRaw } from 'vue';
+import { markRaw, inject } from 'vue';
 import { PropType } from 'vue';
+
+// Inject custom components provided at app level (defaults to empty object)
+const providedComponents = inject<Record<string, any>>('markdownComponents', {});
 
 // Register components to be used in the template
 // In Vue 3 with <script setup>, components used via :is must be explicitly registered
+// Merge built-in components with injected custom components
 const components = {
   fillIn: markRaw(FillInInput),
-  // Add other dynamic components here
+  ...providedComponents,
 };
 
 // Define component props
@@ -145,13 +165,11 @@ defineProps({
 
 // Methods
 function isComponent(token: MarkedToken): boolean {
-  const result = _isComponent(token);
-  return result;
+  return _isComponent(token);
 }
 
 function containsComponent(token: MarkedToken): boolean {
-  const result = _containsComponent(token);
-  return result;
+  return _containsComponent(token);
 }
 
 function splitTextToken(token: MarkedToken): Tokens.Text[] {
@@ -165,19 +183,8 @@ function splitParagraphToken(token: Tokens.Paragraph): TokenOrComponent[] {
 function parsedComponent(token: MarkedToken): {
   is: string;
   text: string;
+  props: Record<string, string>;
 } {
-  // [ ] switching on component types & loading custom component
-  //
-  // sketch:
-  // const demoustached = token.text.slice(2, token.text.length - 2);
-  // const firstToken = demoustached.split(' ')[0];
-  // if (firstToken.charAt(firstToken.length - 1) == '>') {
-  //   return {
-  //     is: firstToken.slice(0, firstToken.length - 1),
-  //     text: demoustached.slice(firstToken.length + 1, demoustached.length),
-  //   };
-  // }
-
   let text = '';
   if ('text' in token && typeof token.text === 'string') {
     text = token.text;
@@ -185,16 +192,37 @@ function parsedComponent(token: MarkedToken): {
     text = token.raw;
   }
 
-  // This now returns a component from our registered components object
+  // Try to parse as inline component syntax
+  const parsed = parseComponentSyntax(text);
+
+  if (parsed) {
+    // Successfully parsed as inline component
+    return {
+      is: parsed.componentName,
+      text: '',
+      props: parsed.props,
+    };
+  }
+
+  // Backward compatible: {{ }} or {{ || }} -> fillIn component
   return {
-    is: 'fillIn', // This should match a key in the components object
+    is: 'fillIn',
     text,
+    props: {},
   };
 }
 
 function getComponent(componentName: string) {
-  // Return the component instance from our components object
-  return components[componentName as keyof typeof components];
+  const component = components[componentName as keyof typeof components];
+
+  if (!component) {
+    console.warn(
+      `[MarkdownRenderer] Unknown component: "${componentName}". Available components: ${Object.keys(components).join(', ')}`
+    );
+    return null;
+  }
+
+  return component;
 }
 
 function decodeBasicEntities(text: string): string {

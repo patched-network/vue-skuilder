@@ -135,9 +135,16 @@ export default defineConfig({
             items: [
               { text: 'Quickstart', link: '/do/quickstart' },
               { text: 'Adding Content', link: '/do/studio-mode' },
-              { text: 'Creating Custom Cards', link: '/do/custom-cards' },
               { text: 'Themes', link: '/do/theming' },
               { text: 'Connect Agents [wip]', link: '/do/mcp' },
+            ],
+          },
+          {
+            text: 'Extend',
+            collapsed: false,
+            items: [
+              { text: 'Inline Components', link: '/extend/inline-components' },
+              { text: 'Creating Custom Cards', link: '/extend/custom-cards' },
             ],
           },
         ],

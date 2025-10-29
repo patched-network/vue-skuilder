@@ -1,4 +1,4 @@
-import { Question, splitByDelimiters, containsComponent } from '@vue-skuilder/common-ui';
+import { Question, splitByDelimiters, containsComponent, isInlineComponent } from '@vue-skuilder/common-ui';
 import { Answer, RadioMultipleChoiceAnswer } from '@vue-skuilder/common';
 import { Validator, ViewData } from '@vue-skuilder/common';
 import { randomInt } from '@courseware/math/utility';
@@ -154,19 +154,39 @@ export class BlanksCard extends Question {
     const splits = splitByDelimiters(this.mdText, '{{', '}}');
     const recombines = [];
     for (let i = 0; i < splits.length; i++) {
-      try {
-        const parsedOptions = this.optionsFromString(splits[i]);
-        this.answers = parsedOptions.answers;
-        this.options = parsedOptions.options;
-        if (this.options?.length) {
-          recombines.push('{{ || }}'); // render a multiple-choice blank
+      const split = splits[i];
+      const trimmed = split.trim();
+
+      // If the split starts/ends with {{ }}, it's a delimited block
+      if (trimmed.startsWith('{{') && trimmed.endsWith('}}')) {
+        // Extract content between {{ and }}
+        const content = trimmed.slice(2, -2).trim();
+
+        if (isInlineComponent(content)) {
+          // Preserve inline component syntax
+          recombines.push(split);
         } else {
-          recombines.push('{{ }}'); // render a fill-in blank
+          // Try to parse as fillIn blank
+          try {
+            const parsedOptions = this.optionsFromString(split);
+            this.answers = parsedOptions.answers;
+            this.options = parsedOptions.options;
+            if (this.options?.length) {
+              recombines.push('{{ || }}'); // render a multiple-choice blank
+            } else {
+              recombines.push('{{ }}'); // render a text blank
+            }
+          } catch {
+            // Not valid fillIn syntax, keep original
+            recombines.push(split);
+          }
         }
-      } catch {
-        recombines.push(splits[i]);
+      } else {
+        // Regular text, not delimited
+        recombines.push(split);
       }
     }
+
     this.mdText = recombines.join('');
   }
 

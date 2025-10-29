@@ -169,10 +169,17 @@ import config from '../skuilder.config.json';
   app.use(piniaPlugin, { pinia });
 
   await useAuthStore().init();
-  
+
   // Initialize config store to load user settings (including dark mode)
   const { useConfigStore } = await import('@vue-skuilder/common-ui');
   await useConfigStore().init();
+
+  // Provide inline markdown components for MarkdownRenderer
+  // Enables custom Vue components in markdown via {{ <component-name /> }} syntax
+  // See docs: https://patched-network.github.io/vue-skuilder/do/inline-components
+  app.provide('markdownComponents', {
+    // Empty - add components as needed
+  });
 
   // Auto-register user for the course in standalone mode
   if (config.course) {

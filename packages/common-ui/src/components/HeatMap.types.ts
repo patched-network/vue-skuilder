@@ -11,5 +11,5 @@ export interface Color {
 
 export interface ActivityRecord {
   timeStamp: number | string;
-  [key: string]: any;
+  [key: string]: unknown;
 }

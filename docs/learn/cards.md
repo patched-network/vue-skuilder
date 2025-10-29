@@ -155,3 +155,11 @@ If it's markdown, it mostly just works. For example, this youtube embed.
 Note: if you're reading this and haven't watched this talk, treat yourself.
 
 <EmbeddedFillInEditor :initial-value="embeddingExample" />
+
+# BUG!
+
+A known wart: cards will fail to render moustache syntax componenets if they are the very last text of the card.
+
+For the moment, a fix is more expensive than the workaround of adding *something* to the end (punctuation, a space, a newline via `\n\n`).
+
+<EmbeddedFillInEditor initial-value="The *render* fillin blank does not {{ render }}" />
