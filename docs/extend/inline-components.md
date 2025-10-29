@@ -46,23 +46,23 @@ const inlineComponents = {
 };
 
 // Example markdown strings
-const badgeExample = `Check out this {{ &lt;badge /&gt; }} feature!`;
+const badgeExample = `Check out this {{ <badge /> }} feature!`;
 
-const coloredBadgeExample = `Status: {{ &lt;coloredBadge color="#e74c3c" text="ALERT" /&gt; }}
+const coloredBadgeExample = `Status: {{ <coloredBadge color="#e74c3c" text="ALERT" /> }}
 
-Priority: {{ &lt;coloredBadge color="#3498db" text="HIGH" /&gt; }}`;
+Priority: {{ <coloredBadge color="#3498db" text="HIGH" /> }}`;
 
 const chessExample = `White to move. What's the best continuation?
 
-{{ &lt;chessPosition fen="r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R" /&gt; }}
+{{ <chessPosition fen="r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R" /> }}
 
 The answer is {{ Nxe5 }}.`;
 
 const chessSizesExample = `Small board:
-{{ &lt;chessPosition fen="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR" size="small" /&gt; }}
+{{ <chessPosition fen="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR" size="small" /> }}
 
 Large board:
-{{ &lt;chessPosition fen="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR" size="large" /&gt; }}`;
+{{ <chessPosition fen="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR" size="large" /> }}`;
 </script>
 
 # Inline Components
