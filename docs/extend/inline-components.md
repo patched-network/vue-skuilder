@@ -67,7 +67,7 @@ Large board:
 
 # Inline Components
 
-Embed custom Vue components directly into your markdown card content using `{<!-- -->{&lt;component-name /&gt; ]}` syntax. This is a middle ground between basic fill-in syntax and fully [custom cards](/extend/custom-cards).
+Embed custom Vue components directly into your markdown card content using <span v-pre>`{{ <component-name /> }}`</span> syntax. This is a middle ground between basic fill-in syntax and fully [custom cards](/extend/custom-cards).
 
 ## Basic Example
 
@@ -75,7 +75,7 @@ The simplest inline component takes no parameters:
 
 <EmbeddedFillInEditor :initial-value="badgeExample" :inline-components="inlineComponents" />
 
-Here, `badge` is a Vue component that renders a styled span. The syntax `{<!-- -->{<badge /> }}` tells the markdown renderer to insert the component inline.
+Here, `badge` is a Vue component that renders a styled span. The syntax <span v-pre>`{{ <badge /> }}`</span> tells the markdown renderer to insert the component inline.
 
 ## Components with Data
 
@@ -97,7 +97,7 @@ A chess position component that accepts FEN notation:
   :inline-components="inlineComponents"
 />
 
-Notice how the chess component and fill-in blank `{<!-- -->{Nxe5 }}` coexist in the same card. Multiple props work too:
+Notice how the chess component and fill-in blank <span v-pre>`{{ Nxe5 }}`</span> coexist in the same card. Multiple props work too:
 
 <EmbeddedFillInEditor
   :initial-value="chessSizesExample"
@@ -166,6 +166,6 @@ See the fill-in implementation for a complete example:
 
 ## When to Use What?
 
-- **`{<!-- -->{}}` fill-in syntax** → Simple text input or multiple choice
+- **<span v-pre>`{{ }}`</span> fill-in syntax** → Simple text input or multiple choice
 - **Inline components** (this page) → Custom UI reused across many cards
 - **[Full custom cards](/extend/custom-cards)** → Complete control over card logic, data model, and views
