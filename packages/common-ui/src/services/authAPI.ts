@@ -8,7 +8,7 @@ declare global {
   interface Window {
     __SKUILDER_CONFIG__?: {
       apiBase?: string;
-      [key: string]: any;
+      [key: string]: unknown;
     };
   }
 }
