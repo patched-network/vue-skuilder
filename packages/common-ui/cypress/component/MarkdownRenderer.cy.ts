@@ -796,3 +796,15 @@ describe('MarkdownRenderer - Props Parsing', () => {
     cy.contains('?').should('exist');
   });
 });
+
+// TEMPORARY: Intentional failing test to verify CI workflow catches test failures
+describe('MarkdownRenderer - CI Sanity Check', () => {
+  it('INTENTIONAL FAILURE - remove this test after verifying CI catches it', () => {
+    cy.mount(MarkdownRenderer, {
+      props: { md: 'This test intentionally fails' },
+    });
+
+    // This assertion will fail on purpose
+    cy.contains('This text does not exist').should('exist');
+  });
+});
