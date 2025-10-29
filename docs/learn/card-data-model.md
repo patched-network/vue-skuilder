@@ -1,6 +1,6 @@
 **Note 1:** This background info is not *required* unless you're intersted creating either customized cards, or customized pedagogical logic for you course. On first read, it may be suitable to skip ahead to the [Default Card Type](./cards) doc.
 
-**Note 2:** See [Do: Creating Custom Cards](../do/custom-cards) for a more hands-on treatment of this info.
+**Note 2:** See [Extend: Creating Custom Cards](../extend/custom-cards) for a more hands-on treatment of this info.
 
 
 # Cards - The Unit of Study

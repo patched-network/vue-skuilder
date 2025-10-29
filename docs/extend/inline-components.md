@@ -67,7 +67,7 @@ Large board:
 
 # Inline Components
 
-Embed custom Vue components directly into your markdown card content using `{<!-- -->{&lt;component-name /&gt; ]}` syntax. This is a middle ground between basic fill-in syntax and fully [custom cards](/custom-cards).
+Embed custom Vue components directly into your markdown card content using `{<!-- -->{&lt;component-name /&gt; ]}` syntax. This is a middle ground between basic fill-in syntax and fully [custom cards](/extend/custom-cards).
 
 ## Basic Example
 
@@ -168,4 +168,4 @@ See the fill-in implementation for a complete example:
 
 - **`{<!-- -->{}}` fill-in syntax** → Simple text input or multiple choice
 - **Inline components** (this page) → Custom UI reused across many cards
-- **[Full custom cards](/do/custom-cards)** → Complete control over card logic, data model, and views
+- **[Full custom cards](/extend/custom-cards)** → Complete control over card logic, data model, and views

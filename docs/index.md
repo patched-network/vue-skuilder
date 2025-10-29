@@ -18,7 +18,7 @@ hero:
       link: https://github.com/patched-network/vue-skuilder
 
 features:
-  - title: Fully <a href="custom-cards">Extensible</a> Flash Cards
+  - title: Fully <a href="extend/custom-cards">Extensible</a> Flash Cards
     details: Build <strong><em>whatever</em></strong> types of content that you'd like. Midi interfaces, chess boards, you name it.
   - title:  <a href="pedagogy">Pluggable</a> Pedagogy
     details: "Mix and match naive SRS, ELO-based skill matching, and defined heirarchical paths. Or: bring fully custom implementations."
