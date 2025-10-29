@@ -576,3 +576,223 @@ Done.
     cy.contains('Done.').should('exist');
   });
 });
+
+describe('MarkdownRenderer - Props Parsing', () => {
+  it('parses single prop and passes to component', () => {
+    const PropComponent = {
+      name: 'PropComponent',
+      props: ['title'],
+      render() {
+        return h('div', { class: 'prop-test' }, `Title: ${this.title}`);
+      },
+    };
+
+    cy.mount(MarkdownRenderer, {
+      props: {
+        md: 'Check this: {{ <propComponent title="Hello World" /> }} done.',
+      },
+      global: {
+        provide: {
+          markdownComponents: {
+            propComponent: markRaw(PropComponent),
+          },
+        },
+      },
+    });
+
+    cy.get('.prop-test').should('contain', 'Title: Hello World');
+  });
+
+  it('parses multiple props and passes to component', () => {
+    const MultiPropComponent = {
+      name: 'MultiPropComponent',
+      props: ['name', 'age', 'city'],
+      render() {
+        return h('div', { class: 'multi-prop' }, `${this.name}, ${this.age}, ${this.city}`);
+      },
+    };
+
+    cy.mount(MarkdownRenderer, {
+      props: {
+        md: 'Data: {{ <multiProp name="Alice" age="30" city="Paris" /> }} end.',
+      },
+      global: {
+        provide: {
+          markdownComponents: {
+            multiProp: markRaw(MultiPropComponent),
+          },
+        },
+      },
+    });
+
+    cy.get('.multi-prop').should('contain', 'Alice, 30, Paris');
+  });
+
+  it('handles whitespace variations in props', () => {
+    const WhitespaceComponent = {
+      name: 'WhitespaceComponent',
+      props: ['a', 'b'],
+      render() {
+        return h('span', { class: 'ws-test' }, `${this.a}-${this.b}`);
+      },
+    };
+
+    cy.mount(MarkdownRenderer, {
+      props: {
+        md: 'Test {{<comp a="1" b="2"/>}} and {{ <comp a="3"  b="4" /> }} done.',
+      },
+      global: {
+        provide: {
+          markdownComponents: {
+            comp: markRaw(WhitespaceComponent),
+          },
+        },
+      },
+    });
+
+    cy.get('.ws-test').should('have.length', 2);
+    cy.get('.ws-test').first().should('contain', '1-2');
+    cy.get('.ws-test').last().should('contain', '3-4');
+  });
+
+  it('handles props with spaces in values', () => {
+    const SpacePropComponent = {
+      name: 'SpacePropComponent',
+      props: ['message'],
+      render() {
+        return h('div', { class: 'space-prop' }, this.message);
+      },
+    };
+
+    cy.mount(MarkdownRenderer, {
+      props: {
+        md: 'Message: {{ <spaceProp message="Hello there friend" /> }} end.',
+      },
+      global: {
+        provide: {
+          markdownComponents: {
+            spaceProp: markRaw(SpacePropComponent),
+          },
+        },
+      },
+    });
+
+    cy.get('.space-prop').should('contain', 'Hello there friend');
+  });
+
+  it('handles props with special characters', () => {
+    const SpecialPropComponent = {
+      name: 'SpecialPropComponent',
+      props: ['fen'],
+      render() {
+        return h('code', { class: 'special-prop' }, this.fen);
+      },
+    };
+
+    cy.mount(MarkdownRenderer, {
+      props: {
+        md: 'FEN: {{ <specialProp fen="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR" /> }} end.',
+      },
+      global: {
+        provide: {
+          markdownComponents: {
+            specialProp: markRaw(SpecialPropComponent),
+          },
+        },
+      },
+    });
+
+    cy.get('.special-prop').should('contain', 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR');
+  });
+
+  it('component without props still works (empty props)', () => {
+    const NoPropsComponent = {
+      name: 'NoPropsComponent',
+      render() {
+        return h('span', { class: 'no-props' }, 'No props needed');
+      },
+    };
+
+    cy.mount(MarkdownRenderer, {
+      props: {
+        md: 'Simple: {{ <noProps /> }} done.',
+      },
+      global: {
+        provide: {
+          markdownComponents: {
+            noProps: markRaw(NoPropsComponent),
+          },
+        },
+      },
+    });
+
+    cy.get('.no-props').should('contain', 'No props needed');
+  });
+
+  it('mixes components with props and fillIn syntax', () => {
+    const PropsComponent = {
+      name: 'PropsComponent',
+      props: ['value'],
+      render() {
+        return h('strong', { class: 'has-props' }, this.value);
+      },
+    };
+
+    cy.mount(MarkdownRenderer, {
+      props: {
+        md: 'Answer {{ question }} then see {{ <propsComp value="Result" /> }} done.',
+      },
+      global: {
+        provide: {
+          markdownComponents: {
+            propsComp: markRaw(PropsComponent),
+          },
+        },
+      },
+    });
+
+    // fillIn input should exist
+    cy.get('input[type="text"]').should('exist');
+    // Custom component with prop should render
+    cy.get('.has-props').should('contain', 'Result');
+  });
+
+  it('handles props with numbers in values', () => {
+    const NumberPropComponent = {
+      name: 'NumberPropComponent',
+      props: ['count', 'size'],
+      render() {
+        return h('span', { class: 'num-prop' }, `Count: ${this.count}, Size: ${this.size}`);
+      },
+    };
+
+    cy.mount(MarkdownRenderer, {
+      props: {
+        md: 'Numbers: {{ <numProp count="42" size="100" /> }} end.',
+      },
+      global: {
+        provide: {
+          markdownComponents: {
+            numProp: markRaw(NumberPropComponent),
+          },
+        },
+      },
+    });
+
+    cy.get('.num-prop').should('contain', 'Count: 42, Size: 100');
+  });
+
+  it('backward compat: text prop still works for fillIn', () => {
+    // This test verifies that the existing :text prop binding for fillIn
+    // continues to work alongside new props parsing
+    cy.mount(MarkdownRenderer, {
+      props: {
+        md: 'What is {{ the answer }}?',
+      },
+    });
+
+    cy.get('input[type="text"]').should('exist');
+    cy.contains('What is').should('exist');
+    cy.contains('?').should('exist');
+  });
+});

@@ -14,6 +14,7 @@
           v-if="!last && getComponent(parsedComponent(token).is)"
           :is="getComponent(parsedComponent(token).is)"
           :text="parsedComponent(token).text"
+          v-bind="parsedComponent(token).props"
         />
         <span v-else-if="!last && !getComponent(parsedComponent(token).is)" class="error--text">
           [Unknown component: {{ parsedComponent(token).is }}]
@@ -183,6 +184,7 @@ function splitParagraphToken(token: Tokens.Paragraph): TokenOrComponent[] {
 function parsedComponent(token: MarkedToken): {
   is: string;
   text: string;
+  props: Record<string, string>;
 } {
   let text = '';
   if ('text' in token && typeof token.text === 'string') {
@@ -191,15 +193,29 @@ function parsedComponent(token: MarkedToken): {
     text = token.raw;
   }
 
-  // Try to parse new syntax: {{ <component-name /> }}
-  // Matches component name with optional whitespace: {{<name/>}} or {{ <name /> }}
-  const match = text.match(/^\{\{\s*<([\w-]+)\s*\/>\s*\}\}$/);
+  // Try to parse new syntax: {{ <component-name attr="value" /> }}
+  // Matches component name and optional attributes
+  const match = text.match(/^\{\{\s*<([\w-]+)\s*(.*?)\s*\/>\s*\}\}$/);
 
   if (match) {
-    // New syntax found - return component name, empty text
+    const componentName = match[1]; // e.g., "chessBoard", "fillIn"
+    const attrsString = match[2]; // e.g., 'fen="..." size="..."'
+    const props: Record<string, string> = {};
+
+    // Parse attributes: key="value"
+    // Regex explanation: captures key-value pairs where value is in double quotes
+    const attrRegex = /([\w-]+)="([^"]*)"/g;
+    let attrMatch;
+
+    while ((attrMatch = attrRegex.exec(attrsString)) !== null) {
+      props[attrMatch[1]] = attrMatch[2];
+    }
+
+    // New syntax found - return component name, empty text, and props
     return {
-      is: match[1], // component-name (e.g., "chessBoard", "fillIn")
+      is: componentName,
       text: '',
+      props,
     };
   }
 
@@ -207,6 +223,7 @@ function parsedComponent(token: MarkedToken): {
   return {
     is: 'fillIn',
     text,
+    props: {},
   };
 }
 

@@ -322,12 +322,149 @@ dist/common-ui.umd.js  302.90 kB │ gzip: 87.95 kB
 
 ---
 
-## Next: Props Parsing
+---
 
-**Feature request**: Add support for passing props to inline components
+## 2025-10-28 - Props Parsing Implementation
 
-**Syntax examples** (proposed):
-- `{{ <component prop="value" /> }}`
-- `{{ <component :prop="expression" /> }}`
+**Goal**: Add support for passing static string props to inline components
 
-**Reference**: See [plan.md](./plan.md) for future phases
+### Design Decisions
+
+**Scope** (per user requirements):
+1. **Static string props only**: `prop="value"` syntax
+2. **UGC parsing**: Parse from raw markdown strings (user-generated content)
+3. **No dynamic props**: `:prop="expression"` deferred to future work
+4. **Backward compatibility**: Existing `fillIn` components keep `:text` prop behavior
+5. **Simple error handling**: Vue handles prop validation, renderer continues on errors
+
+### Parser Implementation
+
+**File**: `packages/common-ui/src/components/cardRendering/MdTokenRenderer.vue:183-227`
+
+**Return type updated**:
+```typescript
+{
+  is: string;        // component name
+  text: string;      // for fillIn backward compat
+  props: Record<string, string>;  // NEW: parsed props
+}
+```
+
+**Regex approach**:
+1. Component + attributes: `/^\{\{\s*<([\w-]+)\s*(.*?)\s*\/>\s*\}\}$/`
+   - Captures component name in group 1
+   - Captures attributes string in group 2
+2. Attribute parsing: `/([\w-]+)="([^"]*)"/g`
+   - Captures `key="value"` pairs
+   - Values can contain spaces, special chars, numbers
+
+**Example parsing**:
+```markdown
+{{ <chessBoard fen="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR" size="small" /> }}
+```
+Becomes:
+```typescript
+{
+  is: 'chessBoard',
+  text: '',
+  props: {
+    fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR',
+    size: 'small'
+  }
+}
+```
+
+### Template Updates
+
+**File**: `packages/common-ui/src/components/cardRendering/MdTokenRenderer.vue:13-18`
+
+**Added `v-bind` directive**:
+```vue
+<component
+  v-if="!last && getComponent(parsedComponent(token).is)"
+  :is="getComponent(parsedComponent(token).is)"
+  :text="parsedComponent(token).text"
+  v-bind="parsedComponent(token).props"
+/>
+```
+
+The `v-bind` directive spreads all parsed props onto the component. The `:text` binding remains for `fillIn` backward compatibility.
+
+### Testing
+
+**File**: `packages/common-ui/cypress/component/MarkdownRenderer.cy.ts`
+
+**Added test group**: "MarkdownRenderer - Props Parsing" (9 new tests)
+
+**Test coverage**:
+- ✅ Single prop parsing and passing
+- ✅ Multiple props parsing
+- ✅ Whitespace variations in prop syntax
+- ✅ Props with spaces in values
+- ✅ Props with special characters (FEN notation)
+- ✅ Components without props (empty props object)
+- ✅ Mixing components with props and fillIn syntax
+- ✅ Props with numbers in values
+- ✅ Backward compat: fillIn `text` prop still works
+
+**Test results**: ✅ **47/47 tests passing**
+- 38 baseline tests (from initial implementation)
+- 9 new props tests
+
+### Documentation Updates
+
+**File**: `docs/do/inline-components.md`
+
+**Approach**: Progressive, example-driven
+1. Basic example (no props) with interactive editor
+2. Components with data (single/multiple props) - interactive
+3. Real-world chess example with FEN notation - interactive
+4. Registration instructions
+5. Interactive components (grading)
+
+**Key changes**:
+- Uses `<script setup>` with inline component definitions
+- Uses `<EmbeddedFillInEditor />` for interactive examples
+- Components defined with `h()` render functions
+- Props presented as natural part of syntax, not separate feature
+- Progressive complexity: simple → props → multiple props → real-world
+
+### Files Modified
+
+1. ✅ `packages/common-ui/src/components/cardRendering/MdTokenRenderer.vue`
+   - Updated `parsedComponent()` return type (line 183)
+   - Added props parsing with regex (lines 195-211)
+   - Added `v-bind` to template (line 17)
+
+2. ✅ `packages/common-ui/cypress/component/MarkdownRenderer.cy.ts`
+   - Added 9 tests for props parsing (lines 580-798)
+   - Tests cover all edge cases and backward compat
+
+3. ✅ `docs/do/inline-components.md`
+   - Complete rewrite with interactive examples
+   - Inline component definitions
+   - Progressive complexity
+
+### Status
+
+**Props parsing complete** ✅
+
+All functionality working:
+- Static string props parsed from markdown
+- Props passed to components via `v-bind`
+- Backward compatibility with fillIn maintained
+- Comprehensive test coverage
+- Interactive documentation
+
+### Known Limitations
+
+Same as base implementation:
+1. Components cannot be final token of document (Chesterton's Fence)
+2. Components don't work in headings/lists (markdown parser limitation)
+
+### Next Steps
+
+Future enhancements (not in current scope):
+- Dynamic/reactive props: `:prop="expression"`
+- Prop validation/sanitization
+- Component-specific prop whitelisting
