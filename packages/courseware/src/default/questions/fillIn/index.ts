@@ -1,4 +1,4 @@
-import { Question, splitByDelimiters, containsComponent } from '@vue-skuilder/common-ui';
+import { Question, splitByDelimiters, containsComponent, isInlineComponent } from '@vue-skuilder/common-ui';
 import { Answer, RadioMultipleChoiceAnswer } from '@vue-skuilder/common';
 import { Validator, ViewData } from '@vue-skuilder/common';
 import { randomInt } from '@courseware/math/utility';
@@ -157,49 +157,37 @@ export class BlanksCard extends Question {
       const split = splits[i];
       const trimmed = split.trim();
 
-      console.log(`[BlanksCard] Split[${i}]: "${split}"`);
-      console.log(`  Trimmed: "${trimmed}"`);
-
       // If the split starts/ends with {{ }}, it's a delimited block
       if (trimmed.startsWith('{{') && trimmed.endsWith('}}')) {
         // Extract content between {{ and }}
         const content = trimmed.slice(2, -2).trim();
-        console.log(`  Delimited content: "${content}"`);
 
-        // Check if this looks like an inline component: <componentName /> or <componentName prop="value" />
-        const isInlineComponent = content.match(/^<[\w-]+(\s+[\w-]+="[^"]*")*\s*\/?>$/);
-        console.log(`  Is inline component: ${!!isInlineComponent}`);
-
-        if (isInlineComponent) {
-          // Preserve component syntax
-          console.log(`  → Preserving as component`);
-          recombines.push(split); // push the original {{ ... }} block
+        if (isInlineComponent(content)) {
+          // Preserve inline component syntax
+          recombines.push(split);
         } else {
+          // Try to parse as fillIn blank
           try {
             const parsedOptions = this.optionsFromString(split);
             this.answers = parsedOptions.answers;
             this.options = parsedOptions.options;
             if (this.options?.length) {
-              console.log(`  → Parsed as multiple-choice blank`);
               recombines.push('{{ || }}'); // render a multiple-choice blank
             } else {
-              console.log(`  → Parsed as text blank`);
-              recombines.push('{{ }}'); // render a fill-in blank
+              recombines.push('{{ }}'); // render a text blank
             }
-          } catch (err) {
-            console.log(`  → Parse failed, keeping original: ${err}`);
+          } catch {
+            // Not valid fillIn syntax, keep original
             recombines.push(split);
           }
         }
       } else {
         // Regular text, not delimited
-        console.log(`  → Not delimited, keeping as-is`);
         recombines.push(split);
       }
     }
 
     this.mdText = recombines.join('');
-    console.log(`[BlanksCard] Final mdText: "${this.mdText}"`);
   }
 
   public isCorrect(answer: Answer) {

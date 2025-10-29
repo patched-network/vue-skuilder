@@ -112,3 +112,70 @@ export function containsComponent(token: MarkedToken) {
 export function isComponent(token: MarkedToken) {
   return token.type === 'text' && token.text.startsWith('{{') && token.text.endsWith('}}');
 }
+
+/**
+ * Parses inline component syntax from a string
+ * @param text - String containing component syntax, e.g., "{{ <badge /> }}" or " <badge prop="value" /> "
+ * @returns Object with componentName and props, or null if not valid component syntax
+ *
+ * @example
+ * parseComponentSyntax("{{ <badge /> }}") // { componentName: 'badge', props: {} }
+ * parseComponentSyntax("{{ <chessBoard fen=\"...\" size=\"large\" /> }}") // { componentName: 'chessBoard', props: { fen: '...', size: 'large' } }
+ * parseComponentSyntax("{{ Paris }}") // null (not a component)
+ */
+export function parseComponentSyntax(text: string): {
+  componentName: string;
+  props: Record<string, string>;
+} | null {
+  // Try to parse full syntax: {{ <component-name attr="value" /> }}
+  const match = text.match(/^\{\{\s*<([\w-]+)\s*(.*?)\s*\/>\s*\}\}$/);
+
+  if (!match) {
+    return null;
+  }
+
+  const componentName = match[1]; // e.g., "badge", "chessBoard"
+  const attrsString = match[2]; // e.g., 'fen="..." size="large"'
+  const props: Record<string, string> = {};
+
+  // Parse attributes: key="value"
+  const attrRegex = /([\w-]+)="([^"]*)"/g;
+  let attrMatch;
+
+  while ((attrMatch = attrRegex.exec(attrsString)) !== null) {
+    props[attrMatch[1]] = attrMatch[2];
+  }
+
+  return { componentName, props };
+}
+
+/**
+ * Checks if delimited content (content between {{ }}) is an inline component vs a fillIn blank
+ * @param delimitedContent - Content between {{ and }}, e.g., " <badge /> " or "Paris" or " choice1 || choice2 "
+ * @returns true if this is an inline component, false if it's a fillIn blank
+ *
+ * @example
+ * isInlineComponent("<badge />") // true
+ * isInlineComponent("<chessBoard fen=\"...\" />") // true
+ * isInlineComponent("Paris") // false (fillIn blank)
+ * isInlineComponent("choice || alt1 | alt2") // false (fillIn with options)
+ */
+export function isInlineComponent(delimitedContent: string): boolean {
+  const trimmed = delimitedContent.trim();
+  // Match: <componentName /> or <componentName prop="value" prop2="value2" />
+  return /^<[\w-]+(\s+[\w-]+="[^"]*")*\s*\/?>$/.test(trimmed);
+}
+
+/**
+ * Parses component syntax from a MarkedToken
+ * Convenience wrapper around parseComponentSyntax for token-based usage
+ * @param token - MarkedToken with text or raw property
+ * @returns Object with componentName and props, or null if not valid component syntax
+ */
+export function parseComponentToken(token: MarkedToken): {
+  componentName: string;
+  props: Record<string, string>;
+} | null {
+  const text = (token as any).text || (token as any).raw;
+  return parseComponentSyntax(text);
+}

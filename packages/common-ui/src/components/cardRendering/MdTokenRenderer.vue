@@ -130,6 +130,7 @@ import {
   isComponent as _isComponent,
   splitParagraphToken as _splitParagraphToken,
   splitTextToken as _splitTextToken,
+  parseComponentSyntax,
   TokenOrComponent,
 } from './MarkdownRendererHelpers';
 import CodeBlockRenderer from './CodeBlockRenderer.vue';
@@ -191,29 +192,15 @@ function parsedComponent(token: MarkedToken): {
     text = token.raw;
   }
 
-  // Try to parse new syntax: {{ <component-name attr="value" /> }}
-  // Matches component name and optional attributes
-  const match = text.match(/^\{\{\s*<([\w-]+)\s*(.*?)\s*\/>\s*\}\}$/);
+  // Try to parse as inline component syntax
+  const parsed = parseComponentSyntax(text);
 
-  if (match) {
-    const componentName = match[1]; // e.g., "chessBoard", "fillIn"
-    const attrsString = match[2]; // e.g., 'fen="..." size="..."'
-    const props: Record<string, string> = {};
-
-    // Parse attributes: key="value"
-    // Regex explanation: captures key-value pairs where value is in double quotes
-    const attrRegex = /([\w-]+)="([^"]*)"/g;
-    let attrMatch;
-
-    while ((attrMatch = attrRegex.exec(attrsString)) !== null) {
-      props[attrMatch[1]] = attrMatch[2];
-    }
-
-    // New syntax found - return component name, empty text, and props
+  if (parsed) {
+    // Successfully parsed as inline component
     return {
-      is: componentName,
+      is: parsed.componentName,
       text: '',
-      props,
+      props: parsed.props,
     };
   }
 
