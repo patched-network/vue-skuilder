@@ -127,23 +127,32 @@ export function parseComponentSyntax(text: string): {
   componentName: string;
   props: Record<string, string>;
 } | null {
-  // Try to parse full syntax: {{ <component-name attr="value" /> }}
-  const match = text.match(/^\{\{\s*<([\w-]+)\s*(.*?)\s*\/>\s*\}\}$/);
+  // Guard against excessively long input (prevents ReDoS attacks)
+  if (text.length > 10000) {
+    return null;
+  }
+
+  // Simplified regex to avoid catastrophic backtracking
+  // Captures component name and all attributes as a single string
+  const match = text.match(/^\{\{\s*<([\w-]+)((?:\s+[\w-]+="[^"]*")*)\s*\/>\s*\}\}$/);
 
   if (!match) {
     return null;
   }
 
   const componentName = match[1]; // e.g., "badge", "chessBoard"
-  const attrsString = match[2]; // e.g., 'fen="..." size="large"'
+  const attrsString = match[2]; // e.g., ' fen="..." size="large"'
   const props: Record<string, string> = {};
 
-  // Parse attributes: key="value"
-  const attrRegex = /([\w-]+)="([^"]*)"/g;
-  let attrMatch;
+  if (attrsString) {
+    // Parse attributes: requires space before each attribute
+    // More specific pattern reduces backtracking potential
+    const attrRegex = /\s+([\w-]+)="([^"]*)"/g;
+    let attrMatch;
 
-  while ((attrMatch = attrRegex.exec(attrsString)) !== null) {
-    props[attrMatch[1]] = attrMatch[2];
+    while ((attrMatch = attrRegex.exec(attrsString)) !== null) {
+      props[attrMatch[1]] = attrMatch[2];
+    }
   }
 
   return { componentName, props };
@@ -161,9 +170,15 @@ export function parseComponentSyntax(text: string): {
  * isInlineComponent("choice || alt1 | alt2") // false (fillIn with options)
  */
 export function isInlineComponent(delimitedContent: string): boolean {
+  // Guard against excessively long input (prevents ReDoS attacks)
+  if (delimitedContent.length > 10000) {
+    return false;
+  }
+
   const trimmed = delimitedContent.trim();
-  // Match: <componentName /> or <componentName prop="value" prop2="value2" />
-  return /^<[\w-]+(\s+[\w-]+="[^"]*")*\s*\/?>$/.test(trimmed);
+  // Simplified regex to avoid catastrophic backtracking
+  // Non-capturing group with possessive-like behavior
+  return /^<[\w-]+(?:\s+[\w-]+="[^"]*")*\s*\/?>$/.test(trimmed);
 }
 
 /**
