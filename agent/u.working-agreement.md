@@ -2,7 +2,7 @@ This folder is the working scratchpad for document-centric user+assistant develo
 
 # Available Local Documentation
 
-The folder `./agent/docs-vendoring` contains reference material for some libraries and tools used by this project. Currently: `vitepress`.
+The folder `./agent/docs-vendoring` contains reference material for some libraries and tools used by this project. Currently: `vitepress` (docs site), `couchdb` (main auth and application data backend).
 
 # Conventions
 
