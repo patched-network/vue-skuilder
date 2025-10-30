@@ -1,6 +1,6 @@
 {
   "name": "@vue-skuilder/mcp",
-  "version": "0.1.13",
+  "version": "0.1.14-1",
   "type": "module",
   "exports": {
     ".": {
