@@ -55,7 +55,21 @@ export function isDataShapeRegistered(
 
   const existingDataShape = courseConfig.dataShapes.find((ds) => ds.name === namespacedName);
 
-  // Must exist AND have serialized schema to be considered "registered"
+  // existence sufficient to be considered "registered"
+  return existingDataShape !== undefined;
+}
+
+export function isDataShapeSchemaAvailable(
+  dataShape: ProcessedDataShape,
+  courseConfig: CourseConfig
+): boolean {
+  const namespacedName = NameSpacer.getDataShapeString({
+    dataShape: dataShape.name,
+    course: dataShape.course,
+  });
+
+  const existingDataShape = courseConfig.dataShapes.find((ds) => ds.name === namespacedName);
+
   return existingDataShape !== undefined && existingDataShape.serializedZodSchema !== undefined;
 }
 
@@ -123,11 +137,18 @@ export function registerDataShape(
   dataShape: ProcessedDataShape,
   courseConfig: CourseConfig
 ): boolean {
-  if (isDataShapeRegistered(dataShape, courseConfig)) {
+  if (isDataShapeSchemaAvailable(dataShape, courseConfig)) {
     console.log(
       `   ℹ️  DataShape '${dataShape.name}' from '${dataShape.course}' already registered with schema`
     );
     return false;
+  }
+
+  if (isDataShapeRegistered(dataShape, courseConfig)) {
+    console.log(
+      `   ℹ️  DataShape '${dataShape.name}' from '${dataShape.course}' already registered, but with no schema` +
+        `\n   ℹ️  Updating schema in-place`
+    );
   }
 
   const namespacedName = NameSpacer.getDataShapeString({
