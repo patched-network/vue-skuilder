@@ -361,8 +361,21 @@ async function createEmptyCourseStructure(
     creator: 'system',
     admins: [],
     moderators: [],
-    dataShapes: [],
-    questionTypes: [],
+    dataShapes: [
+      // HARDCODE the basic blanks DS and question types
+      {
+        name: 'default.datashape.Blanks',
+        questionTypes: ['default.question.BlanksCard'],
+      },
+    ],
+    questionTypes: [
+      // HARDCODE the basic blanks DS and question types
+      {
+        name: 'default.question.BlanksCard',
+        viewList: ['FillInView'],
+        dataShapeList: ['default.datashape.Blanks'],
+      },
+    ],
   };
 
   // Create manifest.json with proper structure
