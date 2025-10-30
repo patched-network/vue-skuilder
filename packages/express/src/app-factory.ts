@@ -306,6 +306,7 @@ export async function initializeServices(config: AppConfig): Promise<void> {
       }
     });
 
+    void useOrCreateDB('coursedb-lookup');
     void useOrCreateDB('classdb-lookup');
     try {
       await (
