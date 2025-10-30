@@ -48,7 +48,6 @@ export default class CourseLookup {
     // --- Construct connection options ---
     const dbUrl = `${ENV.COUCHDB_SERVER_PROTOCOL}://${ENV.COUCHDB_SERVER_URL}/${courseLookupDBTitle}`;
     const options: PouchDB.Configuration.RemoteDatabaseConfiguration = {
-      skip_setup: true, // Keep the original option
       // fetch: (url, opts) => { // Optional: Add for debugging network requests
       //   console.log('PouchDB fetch:', url, opts);
       //   return pouch.fetch(url, opts);

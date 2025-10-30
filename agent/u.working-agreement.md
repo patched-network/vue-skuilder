@@ -2,37 +2,59 @@ This folder is the working scratchpad for document-centric user+assistant develo
 
 # Available Local Documentation
 
-The folder `./agent/docs-vendoring` contains reference material for some libraries and tools used by this project. Currently: `vitepress`.
+The folder `./agent/docs-vendoring` contains reference material for some libraries and tools used by this project. Currently: `vitepress` (docs site), `couchdb` (main auth and application data backend).
 
 # Conventions
 
+## Organization
+
 Working sessions will usually be focused on a session-directory. Either a numbered directory (referring to a gh issue) or a directory named for the task at hand. New working documents should be created in this directory, and named according to the conventions below. For GH issues, please *do* use the `gh` command to *read* existing issues, PRs, and workflow runs.
+
+## File namespacing
 
 files prefixed with `u.` are user-authored.
 files prefixed with `a.` are assistant-authored.
 
 assistant-authored files should be sequenced, so that the progression of thoughts (and plan revisions) remains legible. - eg, create `a.1.assessment.md` `a.2.plan.md` `a.3.todo.md`, or whatever working documents are required.
 
+## Precedence
+
 When performing actions, planning or instructions from *later* documents take precidence over earlier ones.
 
 Other files in the directory are sourced as general context or informtion relevant to the current mission.
 
+## User Annotations
+
 The user will annotate / edit assistant files in order to specifically direct feedback to the assistant's work.
 
-Where there are numbered directories in this folder, these correspond to github issues. Feel free also to use `gh` to reference the issue itself if need be.
+User annotations will either be prefixed lines like this:
+>>> this is a user inserted comment
+
+or block multiline comments like this:
+
+>>>
+This is also a user comment.
+
+It's closed by reverse chevrons.
+<<<
+
+
+Where there are numbered directories in this folder, these correspond to github issues. Feel free also to use `gh` cli to reference the issue itself if need be.
 
 # General Expected Workflow
 
-We are a document-centric team, you and I.
+We are a document-centric team, you and I. We create working documents in stages assess-plan-do
+
+## Assess
 
 Turn 0 (user):
 - user will include a file like `issue.md`, `failure.log`, or something different.
 - user will supply it to an assistant, along with supporting context in the prompt if necessary.
 
 Turn 1 (assistant):
-- assistant will read the file, *look around*, and write `a.assessment.md`
+- assistant will read the prompt and supplied files, *look around*, and write `a.assessment.md`
 
-a.assessment.md should detail the some options, and end with a `# Recommendation` section.
+a.assessment.md should detail some options, and end with a `# Recommendation` section.
 
 Turn 2 (user):
 - User will read assessment and either:
@@ -42,22 +64,41 @@ Turn 2 (user):
 
 If the user provides or asks for more info, assistant will discuss and together they will refine the assessment.
 
+## Plan
 
 If the user makes a selection:
 
 turn 3 (assistant):
-- assistant will create `a.plan.md` and `a.todo.md`. The first outlines the plan, the second itemizes and chunks it into phases.
+- creates `a.plan.md`
+- the plan file should
+  - 'narrow in' on the selected approach
+  - optionally, include some rationale for the specific selected approach surfaced from the back-and-forth during assessment
+  - make specific reference to existing source code to be modified (eg, filenames, method names), or new files to be created
+  - define success criteria
+  - enumerate known risks
+  - separate implementation tasks, testing tasks, and administrative tasks (eg, documentation updates)
+- the plan file should not
+  - contain large amounts of implementation (tokens don't grow on trees.)
+  - contain large amounts of redunany information from the
 
-<todo-guidelines>
-Items in the todo document should be itemized so that they can be referred to by number. Eg, Phase 1 with sections 1.1, 1.2, etc.
+turn 4 (user):
+- assesses the plan
+- provides feedback or seeks clarification either in chat or via inlined comments
+- either: approves and requests a todo document, or, loops back to assessment phase to consider other options
 
-A `Phase` should usually represent a unit of work achievable by yourself, with legible success markers, in a single prompt from the user.
+turn 5 (assistant):
+- creates `a.todo.md`
+- the todo doc should
+  - itemize and chunk the plan into phases
+  - be 'addressable' as in p1.2 (phase one, task 2)
+  - optionally, be nested down as far as, eg, p1.3.2, but not further
+  - [ ] be written checkbox style
+- the todo doc should not
+  - contain large amounts of repeated information from prior docs
 
-Todos should use checkbox style notation as in
-- [ ] 2.1 add some required dependency
-- [ ] 2.2 use it to solve problem
-- [ ] 2.3 run the build process
-</todo-guidelines>
+As a very rough guide, assistant should attempt to size 'phases' as chunks of work that it expects it can complete independently in a single 'turn'
+
+## Do
 
 At this point we are into the main loop of the session.
 
@@ -66,16 +107,21 @@ Main Loop:
 
 - User will assign chunks of tasks from the todo list to the assistant
 - Agent will attempt to complete the tasks.
-- Agent will update the todo list w/ completed tasks, and add any *important* commentary inline w/ the todo doc. EG, workarounds required, assumptions invalidated during the work, issues discovered during the work that require future investigation, etc. Agent does not add superfluous comments like "done" or "fixed" - the checkmark does that!
+- after the attempt, agent updates the todo doc in-place.
+  - completed items should be checked off
+  - where relevant, blockers or new information surfaced during the attempt can
+  - larger headings (eg, for phases) can be annotated with status markers (eg, COMPLETED, NEXT, IN-PROGRESS, BLOCKED)
 
 - User will review the assistant changes, and:
- - if satisfied
-   - (usually) checkpoint w/ a commit
-   - repeat the main loop with new range of tasks
+ - if satisfied, indicate so and either:
+   - ask the assistant to carry on with their `a.next.md` suggestion
+   - redirect to a different set of tasks
  - if unsatisfied, main loop breaks and we debug / rethink together
 
 
-NB: agent is not generally concerned with making commits.
+Where a user approves the changes, before moving on, the assistant will update the `a.todo.md` file to reflect completed and potentiall *in flight* tasks.
+
+At the end of each agentic turn, assistant can rewrite `a.next.md` from scratch.
 
 }}
 
