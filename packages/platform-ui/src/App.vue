@@ -44,7 +44,6 @@
       <SkMouseTrapToolTip hotkey="m" command="Toggle Menu" highlight-effect="none" position="right">
         <v-app-bar-nav-icon @click.stop="toggleDrawer"></v-app-bar-nav-icon>
       </SkMouseTrapToolTip>
-      <v-chip color="red" class="mr-2">TESTING123</v-chip>
       <v-spacer></v-spacer>
       <user-login-and-registration-container
         :show-registration="isRegistrationEnabled()"
@@ -112,7 +111,6 @@ const rail = ref(false);
 const ready = ref(false);
 
 const handleSignupSuccess = ({ username }: { username: string }) => {
-  console.log('Signup successful, redirecting to:', `/u/${username}/new`);
   router.push(`/u/${username}/new`);
 };
 
