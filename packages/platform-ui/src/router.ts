@@ -1,5 +1,6 @@
 import { MarkdownRenderer, getCurrentUser } from '@vue-skuilder/common-ui';
 import { useAuthRedirectStore } from './stores/useAuthRedirectStore';
+import { isRegistrationEnabled } from './utils/registrationGuard';
 import { createRouter, createWebHistory } from 'vue-router';
 import ClassroomCtrlPanel from './components/Classrooms/ClassroomCtrlPanel.vue';
 import JoinCode from './components/Classrooms/JoinCode.vue';
@@ -18,7 +19,7 @@ import ReleaseNotes from './views/ReleaseNotes.vue';
 import VerifyEmailView from './views/VerifyEmail.vue';
 import RequestPasswordResetView from './views/RequestPasswordReset.vue';
 import ResetPasswordView from './views/ResetPassword.vue';
-// import SignUp from './views/SignUp.vue';
+import SignUp from './views/SignUp.vue';
 import Study from './views/Study.vue';
 import User from './views/User.vue';
 import DataInputFormTester from './dev/DataInputFormTester.vue';
@@ -64,13 +65,16 @@ const router = createRouter({
       name: 'login',
       component: Login,
     },
-    // Suppress signup for now
-    //
-    // {
-    //   path: '/signup',
-    //   name: 'signup',
-    //   component: SignUp,
-    // },
+    {
+      path: '/signup',
+      name: 'signup',
+      component: SignUp,
+      beforeEnter: () => {
+        if (!isRegistrationEnabled()) {
+          return { name: 'home' };
+        }
+      },
+    },
     {
       path: '/verify',
       name: 'verify',

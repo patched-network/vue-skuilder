@@ -45,7 +45,7 @@
         <v-app-bar-nav-icon @click.stop="toggleDrawer"></v-app-bar-nav-icon>
       </SkMouseTrapToolTip>
       <v-spacer></v-spacer>
-      <user-login-and-registration-container :show-registration="shouldShowRegistration()" />
+      <user-login-and-registration-container :show-registration="isRegistrationEnabled()" />
     </v-app-bar>
 
     <v-main>
@@ -89,6 +89,7 @@ import {
   useConfigStore,
   useAuthStore,
 } from '@vue-skuilder/common-ui';
+import { isRegistrationEnabled } from './utils/registrationGuard';
 
 defineOptions({
   name: 'App',
@@ -103,10 +104,6 @@ const theme = useTheme();
 const rail = ref(false);
 
 const ready = ref(false);
-
-const shouldShowRegistration = () => {
-  return !window.location.href.includes('eduquilt.com');
-};
 
 const toggleDrawer = () => {
   drawer.value = !drawer.value;
