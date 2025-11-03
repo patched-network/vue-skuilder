@@ -54,14 +54,14 @@ describe('User Registration', () => {
     cy.get('input[name="password"]').type(password);
     cy.get('input[name="retypedPassword"]').type(differentPassword);
 
-    // Submit the form
-    cy.contains('button', 'Create Account').click();
-
-    // Assert that we're still on the registration page
-    cy.url().should('not.include', `/u/${username}`);
+    // Assert that the Create Account button is disabled due to password mismatch
+    cy.contains('button', 'Create Account').should('be.disabled');
 
     // Assert that an error message about password mismatch is displayed
     cy.contains('Passwords do not match').should('be.visible');
+
+    // Assert that we're still on the registration page
+    cy.url().should('not.include', `/u/${username}`);
   });
 
   it('should not render Signup form if logged in', () => {
