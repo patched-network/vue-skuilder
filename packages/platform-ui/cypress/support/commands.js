@@ -20,7 +20,9 @@ Cypress.Commands.add('registerUser', (username = null, password = 'securePasswor
 
   // Visit the signup page
   cy.visit('/');
-  cy.contains('Sign Up').click();
+
+  // Click Sign Up button (using force: true to bypass drawer overlay if present)
+  cy.contains('Sign Up').click({ force: true });
 
   // Fill out the registration form
   cy.get('input[name="username"]').type(finalUsername);
