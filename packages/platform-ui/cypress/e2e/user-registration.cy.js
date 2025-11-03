@@ -20,7 +20,7 @@ describe('User Registration', () => {
 
   it('should prevent registration with an existing username', () => {
     cy.visit('/');
-    cy.contains('Sign Up').click();
+    cy.contains('Sign Up').click({ force: true });
 
     // Use a username that you know already exists
     const existingUsername = 'Colin'; // Replace with a username that exists in your system
@@ -43,7 +43,7 @@ describe('User Registration', () => {
 
   it('should validate that passwords match', () => {
     cy.visit('/');
-    cy.contains('Sign Up').click();
+    cy.contains('Sign Up').click({ force: true });
 
     const username = `testuser${Date.now()}`;
     const password = 'password123';

@@ -77,7 +77,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue';
+import { defineComponent, PropType } from 'vue';
 import { UserDBInterface } from '@vue-skuilder/db';
 import { alertUser } from '../SnackbarService';
 import { Status, log } from '@vue-skuilder/common';
@@ -87,6 +87,13 @@ import { validatePassword } from '../../utils/passwordValidation';
 
 export default defineComponent({
   name: 'UserRegistration',
+
+  props: {
+    onSignupSuccess: {
+      type: Function as PropType<(payload: { username: string }) => void>,
+      required: false,
+    },
+  },
 
   emits: ['toggle', 'signup-success'],
 
@@ -184,10 +191,13 @@ Author: ${this.author}
           return;
         }
 
+        console.log('[UserRegistration] About to call createAccount for:', this.username);
         this.user
           .createAccount(this.username, this.password)
           .then(async (resp: any) => {
+            console.log('[UserRegistration] .then() called, resp:', resp);
             if (resp.status === Status.ok) {
+              console.log('[UserRegistration] resp.status === Status.ok, proceeding...');
               // Account created successfully via PouchDB
               this.authStore.loginAndRegistration.loggedIn = true;
               this.authStore.loginAndRegistration.init = false;
@@ -219,8 +229,18 @@ Author: ${this.author}
               }
 
               // Emit signup success event for parent to handle
-              const username = (await getCurrentUser()).getUsername();
-              this.$emit('signup-success', { username });
+              // Use the username we just created rather than calling getCurrentUser() again
+              // which can fail if the auth state hasn't fully synchronized
+              console.log('[UserRegistration] Emitting signup-success event for:', this.username);
+
+              // Call callback prop if provided (preferred method)
+              if (this.onSignupSuccess) {
+                console.log('[UserRegistration] Calling onSignupSuccess callback');
+                this.onSignupSuccess({ username: this.username });
+              }
+
+              // Also emit for backward compatibility
+              this.$emit('signup-success', { username: this.username });
             } else {
               if (resp.error === 'This username is taken!') {
                 this.usernameError = true;
@@ -239,7 +259,7 @@ Author: ${this.author}
             }
           })
           .catch((e) => {
-            console.error('createAccount error:', e);
+            console.error('[UserRegistration] .catch() called with error:', e);
             if (e) {
               const errorText = e?.message || e?.error || e?.toString() || 'Account creation failed';
               alertUser({

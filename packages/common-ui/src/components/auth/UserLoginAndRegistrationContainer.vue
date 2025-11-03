@@ -7,7 +7,11 @@
           <template #activator="{ props }">
             <v-btn class="mr-2" size="small" color="success" v-bind="props">Sign Up</v-btn>
           </template>
-          <UserRegistration @toggle="toggle" />
+          <UserRegistration
+            @toggle="toggle"
+            @signup-success="handleSignupSuccess"
+            :on-signup-success="handleSignupSuccess"
+          />
         </v-dialog>
         
         <!-- Login button: always show in guest mode -->
@@ -46,6 +50,12 @@ const props = defineProps<{
   showLoginButton?: boolean;
   redirectToPath?: string;
   showRegistration?: boolean;
+  onSignupSuccess?: (payload: { username: string }) => void;
+}>();
+
+// Define emits (keeping for backward compatibility if needed)
+const emit = defineEmits<{
+  'signup-success': [payload: { username: string }]
 }>();
 
 const route = useRoute();
@@ -125,6 +135,21 @@ const openResetDialog = () => {
 
 const closeResetDialog = () => {
   resetDialog.value = false;
+};
+
+const handleSignupSuccess = (payload: { username: string }) => {
+  console.log('[UserLoginAndRegistrationContainer] Received signup-success:', payload);
+  // Close the registration dialog
+  regDialog.value = false;
+
+  // Call the callback prop if provided (preferred method)
+  if (props.onSignupSuccess) {
+    console.log('[UserLoginAndRegistrationContainer] Calling onSignupSuccess callback');
+    props.onSignupSuccess(payload);
+  }
+
+  // Also emit event for backward compatibility
+  emit('signup-success', payload);
 };
 </script>
 
