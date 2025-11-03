@@ -45,7 +45,7 @@
         <v-app-bar-nav-icon @click.stop="toggleDrawer"></v-app-bar-nav-icon>
       </SkMouseTrapToolTip>
       <v-spacer></v-spacer>
-      <user-login-and-registration-container :show-registration="false" />
+      <user-login-and-registration-container :show-registration="shouldShowRegistration()" />
     </v-app-bar>
 
     <v-main>
@@ -103,6 +103,10 @@ const theme = useTheme();
 const rail = ref(false);
 
 const ready = ref(false);
+
+const shouldShowRegistration = () => {
+  return !window.location.href.includes('eduquilt.com');
+};
 
 const toggleDrawer = () => {
   drawer.value = !drawer.value;
