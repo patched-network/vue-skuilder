@@ -87,7 +87,7 @@ export function useQuestionView<Q extends Question>(
   const priorAttempts = ref(0);
   const priorAnswers = ref<[Answer, string][]>([]);
   const maxAttemptsPerView = ref(3);
-  const maxSessionViews = ref(1);
+  const maxSessionViews = ref(2);
   const question = ref<Q>();
 
   const submitAnswer = (answer: Answer, submittingClass?: string): QuestionRecord => {
