@@ -199,6 +199,17 @@ const vuetify = createVuetify({
     app.component(name, component);
   });
 
+  // Provide inline markdown components if available
+  console.log('🎨 Studio Mode: Checking for inline markdown components');
+  if (customQuestions?.inlineComponents) {
+    console.log(`   ✅ Found ${Object.keys(customQuestions.inlineComponents).length} inline components`);
+    console.log(`   📋 Component names: ${Object.keys(customQuestions.inlineComponents).join(', ')}`);
+    app.provide('markdownComponents', customQuestions.inlineComponents);
+  } else {
+    console.log('   ℹ️  No inline markdown components available');
+    app.provide('markdownComponents', {});
+  }
+
   app.use(pinia);
   app.use(vuetify);
   app.use(router);
