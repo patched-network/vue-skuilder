@@ -138,13 +138,11 @@ const closeResetDialog = () => {
 };
 
 const handleSignupSuccess = (payload: { username: string }) => {
-  console.log('[UserLoginAndRegistrationContainer] Received signup-success:', payload);
   // Close the registration dialog
   regDialog.value = false;
 
   // Call the callback prop if provided (preferred method)
   if (props.onSignupSuccess) {
-    console.log('[UserLoginAndRegistrationContainer] Calling onSignupSuccess callback');
     props.onSignupSuccess(payload);
   }
 

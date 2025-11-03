@@ -191,13 +191,10 @@ Author: ${this.author}
           return;
         }
 
-        console.log('[UserRegistration] About to call createAccount for:', this.username);
         this.user
           .createAccount(this.username, this.password)
           .then(async (resp: any) => {
-            console.log('[UserRegistration] .then() called, resp:', resp);
             if (resp.status === Status.ok) {
-              console.log('[UserRegistration] resp.status === Status.ok, proceeding...');
               // Account created successfully via PouchDB
               this.authStore.loginAndRegistration.loggedIn = true;
               this.authStore.loginAndRegistration.init = false;
@@ -231,7 +228,6 @@ Author: ${this.author}
               // Emit signup success event for parent to handle
               // Use the username we just created rather than calling getCurrentUser() again
               // which can fail if the auth state hasn't fully synchronized
-              console.log('[UserRegistration] Emitting signup-success event for:', this.username);
 
               // Call callback prop if provided (preferred method)
               if (this.onSignupSuccess) {
