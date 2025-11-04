@@ -60,32 +60,71 @@ export class ResponseProcessor {
       };
     }
 
-    const history = await cardHistory;
+    // Debug logging for response processing
+    // logger.debug('[ResponseProcessor] Processing response', {
+    //   cardId,
+    //   courseId,
+    //   isCorrect: cardRecord.isCorrect,
+    //   performance: cardRecord.performance,
+    //   priorAttempts: cardRecord.priorAttemps,
+    //   currentSessionViews: sessionViews,
+    //   maxSessionViews,
+    //   maxAttemptsPerView,
+    //   currentCardRecordsLength: currentCard.records.length,
+    //   studySessionSourceType: studySessionItem.contentSourceType,
+    //   studySessionSourceID: studySessionItem.contentSourceID,
+    //   studySessionItemId: studySessionItem.cardID,
+    //   studySessionItemType: studySessionItem.contentSourceType,
 
-    // Handle correct responses
-    if (cardRecord.isCorrect) {
-      return this.processCorrectResponse(
-        cardRecord,
-        history,
-        studySessionItem,
-        courseRegistrationDoc,
-        currentCard,
-        courseId,
-        cardId
-      );
-    } else {
-      // Handle incorrect responses
-      return this.processIncorrectResponse(
-        cardRecord,
-        history,
-        courseRegistrationDoc,
-        currentCard,
-        courseId,
-        cardId,
-        maxAttemptsPerView,
-        maxSessionViews,
-        sessionViews
-      );
+    //   cardRecordTimestamp: cardRecord.timeStamp,
+    //   cardRecordResponseTime: cardRecord.timeSpent,
+    // });
+
+    try {
+      const history = await cardHistory;
+
+      // Debug logging for card history
+      // logger.debug('[ResponseProcessor] History loaded:', {
+      //   cardId,
+      //   historyRecordsCount: history.records.length,
+      //   historyRecords: history.records.map((record) => ({
+      //     timeStamp: record.timeStamp,
+      //     isCorrect: 'isCorrect' in record ? record.isCorrect : 'N/A',
+      //     performance: 'performance' in record ? record.performance : 'N/A',
+      //     priorAttempts: 'priorAttemps' in record ? record.priorAttemps : 'N/A',
+      //   })),
+      //   firstInteraction: history.records.length === 1,
+      //   lastRecord: history.records[history.records.length - 1],
+      // });
+
+      // Handle correct responses
+      if (cardRecord.isCorrect) {
+        return this.processCorrectResponse(
+          cardRecord,
+          history,
+          studySessionItem,
+          courseRegistrationDoc,
+          currentCard,
+          courseId,
+          cardId
+        );
+      } else {
+        // Handle incorrect responses
+        return this.processIncorrectResponse(
+          cardRecord,
+          history,
+          courseRegistrationDoc,
+          currentCard,
+          courseId,
+          cardId,
+          maxAttemptsPerView,
+          maxSessionViews,
+          sessionViews
+        );
+      }
+    } catch (e: unknown) {
+      logger.error('[ResponseProcessor] Failed to load card history', { e, cardId });
+      throw e;
     }
   }
 
