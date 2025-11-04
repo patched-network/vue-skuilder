@@ -135,7 +135,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, PropType, computed } from 'vue';
+import { defineComponent, PropType, computed, ref, onMounted, onUnmounted } from 'vue';
 import { SessionController } from '@vue-skuilder/db';
 
 interface QueueDebugInfo {
@@ -168,7 +168,26 @@ export default defineComponent({
   },
 
   setup(props) {
+    const refreshTrigger = ref(0);
+    let pollInterval: NodeJS.Timeout | null = null;
+
+    onMounted(() => {
+      // Poll every 500ms to update debug display
+      pollInterval = setInterval(() => {
+        refreshTrigger.value++;
+      }, 500);
+    });
+
+    onUnmounted(() => {
+      if (pollInterval) {
+        clearInterval(pollInterval);
+      }
+    });
+
     const debugInfo = computed((): SessionDebugInfo => {
+      // Create dependency on refreshTrigger to force updates
+      refreshTrigger.value;
+
       if (!props.sessionController) {
         return {
           reviewQueue: { length: 0, dequeueCount: 0, items: [] },
