@@ -15,6 +15,33 @@ export default class UpdateQueue extends Loggable {
   private readDB: PouchDB.Database; // Database for read operations
   private writeDB: PouchDB.Database; // Database for write operations (local-first)
 
+  /**
+   * Queues an update for a document and applies it with conflict resolution.
+   *
+   * @param id - Document ID to update
+   * @param update - Partial object or function that transforms the document
+   * @returns Promise resolving to the updated document
+   *
+   * @throws {PouchError} with status 404 if document doesn't exist
+   *
+   * @remarks
+   * **Error Handling Pattern:**
+   * - This method does NOT create documents if they don't exist
+   * - Callers are responsible for handling 404 errors and creating documents
+   * - This design maintains separation of concerns (UpdateQueue handles conflicts, callers handle lifecycle)
+   *
+   * @example
+   * ```typescript
+   * try {
+   *   await updateQueue.update(docId, (doc) => ({ ...doc, field: newValue }));
+   * } catch (e) {
+   *   if ((e as PouchError).status === 404) {
+   *     // Create the document with initial values
+   *     await db.put({ _id: docId, field: newValue, ...initialFields });
+   *   }
+   * }
+   * ```
+   */
   public update<T extends PouchDB.Core.Document<object>>(
     id: PouchDB.Core.DocumentId,
     update: Update<T>
@@ -57,7 +84,6 @@ export default class UpdateQueue extends Loggable {
         for (let i = 0; i < MAX_RETRIES; i++) {
           try {
             const doc = await this.readDB.get<T>(id);
-            logger.debug(`Retrieved doc: ${id}`);
 
             // Create a new doc object to apply updates to for this attempt
             let updatedDoc = { ...doc };
@@ -77,7 +103,6 @@ export default class UpdateQueue extends Loggable {
             }
 
             await this.writeDB.put<T>(updatedDoc);
-            logger.debug(`Put doc: ${id}`);
 
             // Success! Remove the updates we just applied.
             this.pendingUpdates[id].splice(0, updatesToApply.length);
@@ -98,6 +123,7 @@ export default class UpdateQueue extends Loggable {
             } else if (e.name === 'not_found' && i === 0) {
               // Document not present - throw to caller for initialization
               logger.warn(`Update failed for ${id} - does not exist. Throwing to caller.`);
+              delete this.inprogressUpdates[id];
               throw e; // Let caller handle
             } else {
               // Max retries reached or a non-conflict error

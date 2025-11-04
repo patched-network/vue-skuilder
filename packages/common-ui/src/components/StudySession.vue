@@ -6,6 +6,9 @@
       <v-progress-circular v-if="loading" color="primary" indeterminate size="32" width="4" />
     </v-row>
 
+    <!-- Debug Panel (only visible if window.debugMode is true) -->
+    <session-controller-debug v-if="debugMode" :session-controller="sessionController" />
+
     <br />
 
     <div v-if="sessionFinished" class="text-h4">
@@ -76,6 +79,7 @@ import SkMouseTrap from './SkMouseTrap.vue';
 import { alertUser } from './SnackbarService';
 import StudySessionTimer from './StudySessionTimer.vue';
 import CardViewer from './cardRendering/CardViewer.vue';
+import SessionControllerDebug from './SessionControllerDebug.vue';
 
 import { CourseElo, Status, toCourseElo, ViewData } from '@vue-skuilder/common';
 import {
@@ -119,6 +123,7 @@ export default defineComponent({
     StudySessionTimer,
     SkMouseTrap,
     HeatMap,
+    SessionControllerDebug,
   },
 
   props: {
@@ -180,6 +185,7 @@ export default defineComponent({
       timeRemaining: 300, // 5 minutes * 60 seconds
       intervalHandler: null as NodeJS.Timeout | null,
       cardType: '',
+      debugMode: (window as any).debugMode === true,
     };
   },
 
@@ -376,7 +382,13 @@ export default defineComponent({
       console.log(`[StudySession] StudySession.processResponse is running...`);
       // DEBUG: Added logging to track hanging issue - can be removed if issue resolved
       // console.log(`[StudySession] About to call logCardRecord...`);
-      const cardHistory = this.logCardRecord(r);
+      
+      let cardHistory;
+      try { 
+        cardHistory = this.logCardRecord(r);
+      } catch (e: unknown) {
+        console.log(`Caught ${e} during putCardHistory...`)
+      }
       // console.log(`[StudySession] logCardRecord called, cardHistory promise created...`);
 
       // Get view constraints for response processing
@@ -473,10 +485,9 @@ export default defineComponent({
     },
 
     async logCardRecord(r: CardRecord): Promise<CardHistory<CardRecord>> {
-      // DEBUG: Added logging to track hanging issue - can be removed if issue resolved
-      // console.log(`[StudySession] About to call user.putCardRecord...`);
+      console.log(`[StudySession] About to call user.putCardRecord...`);
       const result = await this.user!.putCardRecord(r);
-      // console.log(`[StudySession] user.putCardRecord completed`);
+      console.log(`[StudySession] user.putCardRecord completed`);
       return result;
     },
 

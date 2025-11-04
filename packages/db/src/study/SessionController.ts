@@ -208,6 +208,56 @@ export class SessionController<TView = unknown> extends Loggable {
     return `${this.reviewQ.dequeueCount} Reviews, ${this.newQ.dequeueCount} New, ${this.failedQ.dequeueCount} failed`;
   }
 
+  /**
+   * Returns debug information about the current session state.
+   * Used by SessionControllerDebug component for runtime inspection.
+   */
+  public getDebugInfo() {
+    const extractQueueItems = (queue: ItemQueue<any>, limit: number = 10) => {
+      const items = [];
+      for (let i = 0; i < Math.min(queue.length, limit); i++) {
+        const item = queue.peek(i);
+        items.push({
+          courseID: item.courseID || 'unknown',
+          cardID: item.cardID || 'unknown',
+          status: item.status || 'unknown',
+        });
+      }
+      return items;
+    };
+
+    const extractHydratedItems = () => {
+      // We can't easily iterate the hydrated queue without dequeuing,
+      // so we'll just report the count via hydratedCache.count below
+
+      const items: any[] = [];
+      return items;
+    };
+
+    return {
+      reviewQueue: {
+        length: this.reviewQ.length,
+        dequeueCount: this.reviewQ.dequeueCount,
+        items: extractQueueItems(this.reviewQ),
+      },
+      newQueue: {
+        length: this.newQ.length,
+        dequeueCount: this.newQ.dequeueCount,
+        items: extractQueueItems(this.newQ),
+      },
+      failedQueue: {
+        length: this.failedQ.length,
+        dequeueCount: this.failedQ.dequeueCount,
+        items: extractQueueItems(this.failedQ),
+      },
+      hydratedCache: {
+        count: this.hydrationService.hydratedCount,
+        failedCacheSize: this.hydrationService.failedCacheSize,
+        items: extractHydratedItems(),
+      },
+    };
+  }
+
   private async getScheduledReviews() {
     const reviews = await Promise.all(
       this.sources.map((c) =>

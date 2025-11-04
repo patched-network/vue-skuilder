@@ -35,6 +35,7 @@ export * from './composables/useEntitlements';
 
 export { default as StudySession } from './components/StudySession.vue';
 export { default as StudySessionTimer } from './components/StudySessionTimer.vue';
+export { default as SessionControllerDebug } from './components/SessionControllerDebug.vue';
 export type { StudySessionConfig } from './components/StudySession.types';
 
 /*

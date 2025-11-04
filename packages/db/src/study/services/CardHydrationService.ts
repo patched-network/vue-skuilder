@@ -80,6 +80,13 @@ export class CardHydrationService<TView = unknown> {
   }
 
   /**
+   * Get current failed card cache size.
+   */
+  public get failedCacheSize(): number {
+    return this.failedCardCache.size;
+  }
+
+  /**
    * Fill the hydrated queue up to BUFFER_SIZE with pre-fetched cards.
    */
   private async fillHydratedQueue(): Promise<void> {
