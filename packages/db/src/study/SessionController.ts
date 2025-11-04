@@ -226,11 +226,11 @@ export class SessionController<TView = unknown> extends Loggable {
       return items;
     };
 
-    const extractHydratedItems = (limit: number = 10) => {
-      const items = [];
-      const hydratedCount = this.hydrationService.hydratedCount;
+    const extractHydratedItems = () => {
       // We can't easily iterate the hydrated queue without dequeuing,
-      // so we'll just report the count
+      // so we'll just report the count via hydratedCache.count below
+
+      const items: any[] = [];
       return items;
     };
 
