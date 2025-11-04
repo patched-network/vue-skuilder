@@ -58,7 +58,7 @@ describe('User Registration', () => {
     cy.contains('button', 'Create Account').should('be.disabled');
 
     // Assert that an error message about password mismatch is displayed
-    cy.contains('Passwords do not match').should('be.visible');
+    cy.contains('Passwords must match').should('be.visible');
 
     // Assert that we're still on the registration page
     cy.url().should('not.include', `/u/${username}`);
