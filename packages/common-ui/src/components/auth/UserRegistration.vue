@@ -1,6 +1,6 @@
 <template>
   <v-card>
-    <v-card-title v-if="!registrationRoute" class="text-h5 bg-grey-lighten-2"> Create an Account </v-card-title>
+    <v-card-title class="text-h5 bg-grey-lighten-2"> Create an Account </v-card-title>
 
     <v-card-text>
       <v-form @submit.prevent="createUser">
@@ -44,7 +44,8 @@
           name="retypedPassword"
           hover="Show password"
           label="Retype your password"
-          hint=""
+          :disabled="password === '' || !!passwordError"
+          :hint="passwordRetypeError"
           min="4"
           :type="passwordVisible ? 'text' : 'password'"
         ></v-text-field>
@@ -58,7 +59,7 @@
           <v-btn color="pink" variant="text" @click="badLoginAttempt = false"> Close </v-btn>
         </v-snackbar>
         <v-btn
-          class="mr-2"
+          class="mr-2 my-2"
           type="submit"
           :loading="awaitingResponse"
           :color="buttonStatus.color"
@@ -134,6 +135,14 @@ export default defineComponent({
     },
     passwordError(): string {
       return validatePassword(this.password);
+    },
+    passwordRetypeError(): string {
+      console.log('[RTE]');
+      if (this.password !== this.retypedPassword) {
+        return 'Passwords must match.';
+      } else {
+        return '';
+      }
     },
   },
 
