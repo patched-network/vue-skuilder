@@ -722,12 +722,22 @@ Currently logged-in as ${this._username}.`
 
   /**
    * Logs a record of the user's interaction with the card and returns the card's
-   * up-to-date history
+   * up-to-date history.
+   *
+   * **Automatic Initialization:**
+   * If this is the user's first interaction with the card (CardHistory doesn't exist),
+   * this method automatically creates the CardHistory document with initial values
+   * (lapses: 0, streak: 0, bestInterval: 0).
+   *
+   * **Error Handling:**
+   * - Handles 404 errors by creating initial CardHistory document
+   * - Re-throws all other errors from UpdateQueue
    *
    * // [ ] #db-refactor extract to a smaller scope - eg, UserStudySession
    *
-   * @param record the recent recorded interaction between user and card
+   * @param record - The recent recorded interaction between user and card
    * @returns The updated state of the card's CardHistory data
+   * @throws Error if document creation fails or non-404 database error occurs
    */
 
   public async putCardRecord<T extends CardRecord>(
