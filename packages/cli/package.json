@@ -26,7 +26,9 @@
     "lint": "npx eslint .",
     "lint:fix": "npx eslint . --fix",
     "lint:check": "npx eslint . --max-warnings 0",
-    "try:init": "node dist/cli.js init testproject --dangerously-clobber --no-interactive --data-layer static --import-course-data --import-server-url http://localhost:5984 --import-username admin --import-password password --import-course-ids 2aeb8315ef78f3e89ca386992d00825b && cd testproject && npm i && npm install --save-dev @vue-skuilder/cli@file:.. && npm install @vue-skuilder/db@file:../../db @vue-skuilder/courseware@file:../../courseware @vue-skuilder/common-ui@file:../../common-ui @vue-skuilder/express@file:../../express"
+    "try:init": "node dist/cli.js init testproject --dangerously-clobber --no-interactive --data-layer static --import-course-data --import-server-url http://localhost:5984 --import-username admin --import-password password --import-course-ids 2aeb8315ef78f3e89ca386992d00825b && cd testproject && npm i && npm install --save-dev @vue-skuilder/cli@file:.. && npm install @vue-skuilder/db@file:../../db @vue-skuilder/courseware@file:../../courseware @vue-skuilder/common-ui@file:../../common-ui @vue-skuilder/express@file:../../express",
+    "test:e2e": "cypress open",
+    "test:e2e:headless": "cypress run"
   },
   "keywords": [
     "cli",
@@ -64,9 +66,11 @@
     "@types/serve-static": "^1.15.0",
     "@vitejs/plugin-vue": "^5.2.1",
     "@vue-skuilder/studio-ui": "workspace:*",
+    "cypress": "14.1.0",
     "typescript": "~5.7.2",
     "vite": "^6.0.9",
-    "vue-tsc": "^1.8.0"
+    "vue-tsc": "^1.8.0",
+    "wait-on": "8.0.2"
   },
   "engines": {
     "node": ">=18.0.0"
