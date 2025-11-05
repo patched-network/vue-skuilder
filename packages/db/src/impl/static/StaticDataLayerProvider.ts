@@ -70,12 +70,18 @@ export class StaticDataLayerProvider implements DataLayerProvider {
             throw new Error(`Failed to fetch final content manifest for ${courseName} at ${finalManifestUrl}`);
           }
           const finalManifest = await finalManifestResponse.json();
-          
-          this.manifests[courseName] = finalManifest;
-          const unpacker = new StaticDataUnpacker(finalManifest, baseUrl);
-          this.courseUnpackers.set(courseName, unpacker);
 
-          logger.info(`[StaticDataLayerProvider] Successfully resolved and prepared course: ${courseName}`);
+          // Extract courseId from the manifest to use as the lookup key
+          const courseId = finalManifest.courseId || finalManifest.courseConfig?.courseID;
+          if (!courseId) {
+            throw new Error(`Course manifest for ${courseName} missing courseId`);
+          }
+
+          this.manifests[courseId] = finalManifest;
+          const unpacker = new StaticDataUnpacker(finalManifest, baseUrl);
+          this.courseUnpackers.set(courseId, unpacker);
+
+          logger.info(`[StaticDataLayerProvider] Successfully resolved and prepared course: ${courseName} (courseId: ${courseId})`);
         }
       } catch (e) {
         logger.error(`[StaticDataLayerProvider] Failed to resolve dependency ${courseName}:`, e);

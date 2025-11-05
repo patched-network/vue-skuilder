@@ -42,32 +42,25 @@ import config from '../skuilder.config.json';
   };
 
   if (config.dataLayerType === 'static') {
-    // Load manifest for static mode
-    const courseId = config.course;
-    if (!courseId) {
-      throw new Error('Course ID required for static data layer');
-    }
-
+    // Load root skuilder.json manifest for static mode
     try {
-      const manifestResponse = await fetch(`/static-courses/${courseId}/manifest.json`);
-      if (!manifestResponse.ok) {
+      const rootManifestUrl = '/skuilder.json';
+      const rootManifestResponse = await fetch(rootManifestUrl);
+      if (!rootManifestResponse.ok) {
         throw new Error(
-          `Failed to load manifest: ${manifestResponse.status} ${manifestResponse.statusText}`
+          `Failed to load root manifest: ${rootManifestResponse.status} ${rootManifestResponse.statusText}`
         );
       }
-      const manifest = await manifestResponse.json();
-      console.log(`Loaded manifest for course ${courseId}`);
-      console.log(JSON.stringify(manifest));
+      const rootManifest = await rootManifestResponse.json();
+      console.log('[DEBUG] Loaded root manifest:', rootManifest);
 
       dataLayerOptions = {
-        staticContentPath: '/static-courses',
-        manifests: {
-          [courseId]: manifest,
-        },
+        rootManifest,
+        rootManifestUrl: new URL(rootManifestUrl, window.location.href).href,
       };
     } catch (error) {
-      console.error('[DEBUG] Failed to load course manifest:', error);
-      throw new Error(`Could not load course manifest for ${courseId}: ${error}`);
+      console.error('[DEBUG] Failed to load root manifest:', error);
+      throw new Error(`Could not load root skuilder.json manifest: ${error}`);
     }
   }
 

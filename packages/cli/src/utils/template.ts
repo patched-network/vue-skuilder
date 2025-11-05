@@ -289,6 +289,35 @@ export async function generateSkuilderConfig(
 
   await fs.writeFile(configPath, JSON.stringify(skuilderConfig, null, 2));
 
+  // For static data layer, create root skuilder.json manifest
+  if (config.dataLayerType === 'static' && outputPath && skuilderConfig.course) {
+    const publicPath = path.join(outputPath, 'public');
+    await fs.mkdir(publicPath, { recursive: true });
+
+    // Determine course IDs to include in dependencies
+    const courseIds = config.importCourseIds && config.importCourseIds.length > 0
+      ? config.importCourseIds
+      : [skuilderConfig.course];
+
+    // Create root skuilder.json with course dependencies
+    const rootManifest = {
+      name: `@skuilder/${config.projectName}`,
+      version: '1.0.0',
+      description: config.title,
+      dependencies: Object.fromEntries(
+        courseIds.map((courseId) => [
+          `@skuilder/course-${courseId}`,
+          `/static-courses/${courseId}/skuilder.json`,
+        ])
+      ),
+    };
+
+    await fs.writeFile(
+      path.join(publicPath, 'skuilder.json'),
+      JSON.stringify(rootManifest, null, 2)
+    );
+  }
+
   // For static data layer without imports, create empty course structure
   if (
     config.dataLayerType === 'static' &&
@@ -392,6 +421,22 @@ async function createEmptyCourseStructure(
   };
 
   await fs.writeFile(path.join(coursePath, 'manifest.json'), JSON.stringify(manifest, null, 2));
+
+  // Create course-level skuilder.json (points to manifest.json)
+  const courseSkuilderJson = {
+    name: `@skuilder/course-${courseId}`,
+    version: '1.0.0',
+    description: title,
+    content: {
+      type: 'static',
+      manifest: './manifest.json',
+    },
+  };
+
+  await fs.writeFile(
+    path.join(coursePath, 'skuilder.json'),
+    JSON.stringify(courseSkuilderJson, null, 2)
+  );
 
   // Create empty tags index
   await fs.writeFile(

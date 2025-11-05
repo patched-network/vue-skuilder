@@ -1,0 +1,102 @@
+name: ci-pkg-cli
+permissions:
+  contents: read
+
+on:
+  pull_request:
+    paths:
+      - 'packages/cli/**'
+      - 'packages/common/**'
+      - 'packages/db/**'
+      - 'packages/common-ui/**'
+      - 'packages/courseware/**'
+      - 'packages/express/**'
+      - 'packages/standalone-ui/**'
+      - '.github/workflows/ci-pkg-cli.yml'
+      - 'package.json'
+      - 'yarn.lock'
+
+jobs:
+  cli-try-init-e2e:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+
+      - name: Display submodule information
+        run: |
+          echo "Submodule information:"
+          git submodule status
+          echo "CouchDB snapshot details:"
+          cd test-couch && git log -1 --pretty=format:'%h - %s (%cr) <%an>'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'yarn'
+
+      - name: Setup Docker
+        uses: docker/setup-buildx-action@v2
+
+      - name: Install Yarn
+        run: corepack enable
+
+      - name: Install dependencies
+        run: yarn install
+
+      - name: Build library packages
+        run: |
+          yarn build:lib
+          yarn workspace @vue-skuilder/mcp build
+          yarn workspace @vue-skuilder/express build
+          yarn workspace @vue-skuilder/cli build
+
+      - name: Install Cypress
+        run: yarn workspace @vue-skuilder/cli cypress install
+
+      - name: Start CouchDB
+        run: yarn couchdb:start
+
+      - name: Run try:init to create test project
+        working-directory: packages/cli
+        run: yarn try:init
+
+      - name: Start scaffolded app dev server and wait for services
+        working-directory: packages/cli/testproject
+        run: |
+          # Start the dev server in background
+          npm run dev &
+          # Wait for the webserver to be ready
+          npx wait-on http://localhost:5173 --timeout 60000
+
+      - name: Run E2E tests on scaffolded app
+        working-directory: packages/cli
+        run: yarn test:e2e:headless
+
+      - name: Cleanup services
+        if: always()
+        run: |
+          # Clean up dev server
+          kill $(lsof -t -i:5173) || true
+          # Clean up CouchDB
+          yarn couchdb:stop
+
+      - name: Upload screenshots on failure
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: cypress-screenshots
+          path: packages/cli/cypress/screenshots
+          retention-days: 7
+
+      - name: Upload videos
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cypress-videos
+          path: packages/cli/cypress/videos
+          retention-days: 7
