@@ -52,7 +52,7 @@ export async function packCourses(options: PackCoursesOptions): Promise<void> {
         const manifest = JSON.parse(manifestContent);
         courseTitle = manifest.courseName || manifest.courseConfig?.name || courseId;
       } catch (error) {
-        console.warn(chalk.yellow(`⚠️  Could not read manifest for course title, using courseId`));
+        console.warn(chalk.yellow(`⚠️  Could not read manifest for course title, using courseId`), error);
       }
 
       // Create course-level skuilder.json
