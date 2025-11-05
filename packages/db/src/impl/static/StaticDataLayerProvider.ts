@@ -37,6 +37,8 @@ export class StaticDataLayerProvider implements DataLayerProvider {
   private initialized: boolean = false;
   private courseUnpackers: Map<string, StaticDataUnpacker> = new Map();
   private manifests: Record<string, StaticCourseManifest> = {};
+  // Mapping from dependency name to actual courseId for backwards compatibility
+  private dependencyNameToCourseId: Map<string, string> = new Map();
 
   constructor(config: Partial<StaticDataLayerConfig>) {
     this.config = {
@@ -81,6 +83,10 @@ export class StaticDataLayerProvider implements DataLayerProvider {
           const unpacker = new StaticDataUnpacker(finalManifest, baseUrl);
           this.courseUnpackers.set(courseId, unpacker);
 
+          // Also store mapping from dependency name to courseId for backwards compatibility
+          // This allows lookup by either dependency name or courseId
+          this.dependencyNameToCourseId.set(courseName, courseId);
+
           logger.info(`[StaticDataLayerProvider] Successfully resolved and prepared course: ${courseName} (courseId: ${courseId})`);
         }
       } catch (e) {
@@ -111,12 +117,24 @@ export class StaticDataLayerProvider implements DataLayerProvider {
   }
 
   getCourseDB(courseId: string): CourseDBInterface {
-    const unpacker = this.courseUnpackers.get(courseId);
+    // Try direct lookup by courseId first
+    let unpacker = this.courseUnpackers.get(courseId);
+    let actualCourseId = courseId;
+
+    // If not found, try lookup by dependency name (backwards compatibility)
+    if (!unpacker) {
+      const mappedCourseId = this.dependencyNameToCourseId.get(courseId);
+      if (mappedCourseId) {
+        unpacker = this.courseUnpackers.get(mappedCourseId);
+        actualCourseId = mappedCourseId;
+      }
+    }
+
     if (!unpacker) {
       throw new Error(`Course ${courseId} not found or failed to initialize in static data layer.`);
     }
-    const manifest = this.manifests[courseId];
-    return new StaticCourseDB(courseId, unpacker, this.getUserDB(), manifest);
+    const manifest = this.manifests[actualCourseId];
+    return new StaticCourseDB(actualCourseId, unpacker, this.getUserDB(), manifest);
   }
 
   getCoursesDB(): CoursesDBInterface {
