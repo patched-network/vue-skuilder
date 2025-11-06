@@ -6,7 +6,13 @@ on:
       - 'v*'
 
 jobs:
+  lint:
+    uses: ./.github/workflows/lint-backend-packages.yml
+    with:
+      packages: 'common db express cli'
+
   publish:
+    needs: lint
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -49,7 +55,7 @@ jobs:
       - name: Verify package versions match tag
         run: |
           VERSION=${{ steps.extract_version.outputs.VERSION }}
-          
+
           # Verify all packages have the correct version
           for package in common db common-ui courseware edit-ui client platform-ui standalone-ui express mcp cli; do
             PACKAGE_VERSION=$(cd packages/$package && node -p "require('./package.json').version")
@@ -59,15 +65,8 @@ jobs:
             fi
             echo "✅ packages/$package version $PACKAGE_VERSION matches tag"
           done
-          
-          echo "✅ All package versions verified"
 
-      - name: Lint packages
-        run: |
-          yarn workspace @vue-skuilder/common lint:check
-          yarn workspace @vue-skuilder/db lint:check
-          yarn workspace @vue-skuilder/express lint:check
-          yarn workspace @vue-skuilder/cli lint:check
+          echo "✅ All package versions verified"
 
       - name: Build packages in dependency order
         run: |

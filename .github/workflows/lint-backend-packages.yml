@@ -1,0 +1,48 @@
+name: Lint Backend Packages
+
+on:
+  workflow_call:
+    inputs:
+      packages:
+        description: 'Space-separated list of package names to lint (e.g., "common db express cli")'
+        required: false
+        type: string
+        default: 'common db express cli'
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'yarn'
+
+      - name: Install Yarn
+        run: corepack enable
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Lint packages
+        run: |
+          PACKAGES="${{ inputs.packages }}"
+
+          # If no packages specified, use default list
+          if [ -z "$PACKAGES" ]; then
+            PACKAGES="common db express cli"
+          fi
+
+          echo "🔍 Linting packages: $PACKAGES"
+
+          for package in $PACKAGES; do
+            echo "📝 Linting @vue-skuilder/$package..."
+            yarn workspace @vue-skuilder/$package lint:check || exit 1
+            echo "✅ @vue-skuilder/$package passed linting"
+          done
+
+          echo "✅ All packages passed linting checks"

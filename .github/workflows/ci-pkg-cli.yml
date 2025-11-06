@@ -17,7 +17,13 @@ on:
       - 'yarn.lock'
 
 jobs:
+  lint:
+    uses: ./.github/workflows/lint-backend-packages.yml
+    with:
+      packages: 'common db express cli'
+
   cli-try-init-e2e:
+    needs: lint
     runs-on: ubuntu-latest
 
     steps:

@@ -10,7 +10,13 @@ on:
       - 'yarn.lock'
 
 jobs:
+  lint:
+    uses: ./.github/workflows/lint-backend-packages.yml
+    with:
+      packages: 'common db express'
+
   build-express-app:
+    needs: lint
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
