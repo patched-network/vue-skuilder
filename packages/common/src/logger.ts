@@ -34,3 +34,40 @@ export const consoleLogger: SkLogger = {
   warn: (message: string, ...args: unknown[]) => console.warn(message, ...args), // eslint-disable-line no-console
   error: (message: string, ...args: unknown[]) => console.error(message, ...args), // eslint-disable-line no-console
 };
+
+/**
+ * File-based logger for Node.js debugging contexts
+ * Appends logs to a file with timestamps
+ */
+export function createFileLogger(filePath: string): SkLogger {
+  // Lazy import fs to avoid bundling issues
+  let fs: any = null;
+
+  const writeLog = (level: string, message: string, ...args: unknown[]) => {
+    if (!fs) {
+      try {
+        fs = require('fs');
+      } catch (e) {
+        // File logging not available in this context
+        return;
+      }
+    }
+
+    const timestamp = new Date().toISOString();
+    const argsStr = args.length > 0 ? ' ' + JSON.stringify(args) : '';
+    const logLine = `[${timestamp}] [${level}] ${message}${argsStr}\n`;
+
+    try {
+      fs.appendFileSync(filePath, logLine, 'utf8');
+    } catch (e) {
+      // Silently fail if we can't write to the file
+    }
+  };
+
+  return {
+    debug: (message: string, ...args: unknown[]) => writeLog('DEBUG', message, ...args),
+    info: (message: string, ...args: unknown[]) => writeLog('INFO', message, ...args),
+    warn: (message: string, ...args: unknown[]) => writeLog('WARN', message, ...args),
+    error: (message: string, ...args: unknown[]) => writeLog('ERROR', message, ...args),
+  };
+}
