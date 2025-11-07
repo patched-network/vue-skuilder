@@ -25,7 +25,7 @@
     "@vue-skuilder/common": "workspace:*",
     "@vue-skuilder/courseware": "workspace:*",
     "@vue-skuilder/db": "workspace:*",
-    "zod": "^4.0.0"
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@modelcontextprotocol/inspector": "^0.16.1",

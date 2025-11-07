@@ -1,4 +1,5 @@
 import { z, ZodRawShape } from 'zod';
+import { zodToJsonSchema } from 'zod-to-json-schema';
 import { DataShape, FieldDefinition, FieldType, Status } from '../index.js';
 
 /**
@@ -110,10 +111,10 @@ export function toZod(dataShape: DataShape): z.ZodObject<ZodRawShape> {
 }
 
 /**
- * Converts a DataShape to JSON Schema string using Zod v4 native conversion
+ * Converts a DataShape to JSON Schema string using zod-to-json-schema
  */
 export function toZodJSON(dataShape: DataShape): string {
   const zodSchema = toZod(dataShape);
-  const jsonSchema = z.toJSONSchema(zodSchema);
+  const jsonSchema = zodToJsonSchema(zodSchema);
   return JSON.stringify(jsonSchema, null, 2);
 }
