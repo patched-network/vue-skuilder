@@ -4,8 +4,7 @@ import {
   type CreateCardInput,
   type CreateCardOutput,
 } from '../types/tools.js';
-import { toCourseElo, NameSpacer } from '@vue-skuilder/common';
-import { getAllDataShapesRaw } from '@vue-skuilder/courseware/backend';
+import { toCourseElo, NameSpacer, FieldType, type DataShape, type FieldDefinition } from '@vue-skuilder/common';
 import {
   MCP_AGENT_AUTHOR,
   handleToolError,
@@ -13,6 +12,58 @@ import {
   logToolSuccess,
   logToolWarning,
 } from '../utils/index.js';
+
+/**
+ * Reconstructs a minimal DataShape from course config's serialized JSON Schema
+ * Only extracts field names and types - no validators or custom logic
+ */
+function reconstructDataShapeFromConfig(
+  dataShapeName: string,
+  serializedSchema: string
+): DataShape {
+  const jsonSchema = JSON.parse(serializedSchema);
+  const fields: FieldDefinition[] = [];
+
+  if (jsonSchema.properties) {
+    for (const [fieldName, fieldSchema] of Object.entries(jsonSchema.properties)) {
+      const schema = fieldSchema as any;
+
+      // Map JSON Schema types to FieldType enum
+      let fieldType: FieldType = FieldType.STRING; // default
+
+      if (schema.type === 'string') {
+        if (schema.contentEncoding === 'base64' || fieldName.toLowerCase().includes('image')) {
+          fieldType = FieldType.IMAGE;
+        } else if (fieldName.toLowerCase().includes('audio')) {
+          fieldType = FieldType.AUDIO;
+        } else if (schema.description?.includes('Markdown') || schema.description?.includes('markdown')) {
+          fieldType = FieldType.MARKDOWN;
+        } else {
+          fieldType = FieldType.STRING;
+        }
+      } else if (schema.type === 'number') {
+        fieldType = FieldType.NUMBER;
+      } else if (schema.type === 'integer') {
+        fieldType = FieldType.INT;
+      } else if (schema.type === 'array') {
+        // Check if it's uploads/media
+        if (fieldName === 'Uploads' || fieldName.toLowerCase().includes('upload')) {
+          fieldType = FieldType.MEDIA_UPLOADS;
+        }
+      }
+
+      fields.push({
+        name: fieldName,
+        type: fieldType,
+      });
+    }
+  }
+
+  return {
+    name: dataShapeName as any, // Cast to DataShapeName - it's just a string at runtime
+    fields,
+  };
+}
 
 export async function handleCreateCard(
   courseDB: CourseDBInterface,
@@ -56,7 +107,7 @@ export async function handleCreateCard(
       throw new Error(errorMsg);
     }
 
-    // Get the complete DataShape definition from course config
+    // Get the DataShape definition from course config
     const matchingDataShape = courseConfig.dataShapes.find(
       (ds) => ds.name === validatedInput.datashape
     );
@@ -66,23 +117,18 @@ export async function handleCreateCard(
       throw new Error(errorMsg);
     }
 
-    // Get runtime DataShape definition from courseware
-    const runtimeDataShape = getAllDataShapesRaw()
-      .find((ds) => ds.name === shapeDescriptor.dataShape);
-
-    if (!runtimeDataShape) {
-      const errorMsg = `Runtime DataShape not found in courseware: ${shapeDescriptor.dataShape}`;
-      logToolWarning(TOOL_NAME, errorMsg);
-      throw new Error(errorMsg);
-    }
+    // Reconstruct DataShape from course config's serialized schema
+    // This bypasses the need for runtime courseware loading - we only need
+    // field names and types, which we can derive from the JSON Schema
+    const dataShape = reconstructDataShapeFromConfig(
+      shapeDescriptor.dataShape,
+      matchingDataShape.serializedZodSchema!
+    );
 
     logToolStart(
       TOOL_NAME,
-      `Using runtime DataShape with ${runtimeDataShape.fields.length} fields`
+      `Using DataShape with ${dataShape.fields.length} fields (reconstructed from course config)`
     );
-
-    // Use complete DataShape with field definitions from courseware
-    const dataShape = runtimeDataShape;
 
     // Create the card via courseDB
     const result = await courseDB.addNote(
