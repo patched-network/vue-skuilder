@@ -21,7 +21,7 @@ export abstract class Displayable {
   public static dataShapes: DataShape[];
 
   public static views: Array<ViewComponent>;
-  public static seedData?: Array<any>;
+  public static seedData?: Array<unknown>;
   /**
    * True if this displayable content type is meant to have
    * user-submitted questions. False if supplied seedData array

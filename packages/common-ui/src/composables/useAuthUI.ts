@@ -42,7 +42,7 @@ export function useAuthUI() {
       // Access the sync strategy through the user's private syncStrategy property
       // NoOpSyncStrategy (local-only) returns false for canCreateAccount
       // CouchDBSyncStrategy (remote sync) returns true for canCreateAccount
-      const userInternal = user as any; // Type assertion to access private members
+      const userInternal = user as { syncStrategy?: { canCreateAccount?: () => boolean } };
       const canCreateAccount = userInternal.syncStrategy?.canCreateAccount?.();
       
       isLocalOnlyMode.value = !canCreateAccount;

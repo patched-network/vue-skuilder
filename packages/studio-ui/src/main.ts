@@ -68,16 +68,25 @@ const vuetify = createVuetify({
   try {
     console.log('   📁 Fetching custom-questions-config.json');
     const configResponse = await fetch('/custom-questions-config.json');
+
+    console.log(`   🔍 Config fetch response status: ${configResponse.status}`);
+    console.log(`   🔍 Config fetch response URL: ${configResponse.url}`);
+
     if (configResponse.ok) {
       console.log('   ✅ Custom questions config file found');
       const customConfig = await configResponse.json();
       console.log('   📋 Custom config parsed:', customConfig);
+
       if (customConfig.hasCustomQuestions && customConfig.importPath) {
         console.log(`🎨 Studio Mode: Loading custom questions from ${customConfig.packageName}`);
         console.log(`   📦 Import path: ${customConfig.importPath}`);
+
         try {
-          const customModule = await import(customConfig.importPath);
+          console.log('   🔄 Attempting dynamic import...');
+          const customModule = await import(/* @vite-ignore */ customConfig.importPath);
           console.log('   ✅ Custom module imported successfully');
+          console.log('   🔍 Module exports:', Object.keys(customModule));
+
           customQuestions = customModule.allCustomQuestions?.();
           if (customQuestions) {
             console.log(
@@ -85,24 +94,27 @@ const vuetify = createVuetify({
             );
             console.log('   📊 Custom questions object:', customQuestions);
           } else {
-            console.log('   ⚠️  Custom module did not return questions data');
+            console.error('   ❌ FATAL: Custom module did not return questions data!');
+            console.error('   🔍 allCustomQuestions result:', customQuestions);
+            console.error('   🔍 allCustomQuestions function:', customModule.allCustomQuestions);
           }
         } catch (importError) {
-          console.warn(
-            `   ⚠️  Failed to import custom questions: ${importError instanceof Error ? importError.message : String(importError)}`
-          );
+          console.error('   ❌ FATAL: Failed to import custom questions module!');
+          console.error('   🔍 Import path attempted:', customConfig.importPath);
+          console.error('   🔍 Error:', importError);
+          throw importError; // Re-throw to make it visible
         }
       } else {
-        console.log(
-          '   ℹ️  Custom config exists but hasCustomQuestions is false or importPath is missing'
-        );
+        console.warn('   ⚠️  Config exists but hasCustomQuestions is false or importPath is missing');
+        console.warn('   🔍 Config content:', customConfig);
       }
     } else {
-      console.log('   ℹ️  Custom questions config file not found (this is normal)');
+      console.warn(`   ⚠️  Custom questions config not found (HTTP ${configResponse.status})`);
+      console.warn(`   🔍 Attempted URL: ${configResponse.url}`);
     }
   } catch (configError) {
-    // No custom questions config - this is normal for default studio mode
-    console.log('   ℹ️  No custom questions config available (default studio mode)');
+    console.error('   ❌ Error fetching custom questions config:', configError);
+    // Don't throw - missing config is valid for non-custom courses
   }
 
   // Register custom question types in CourseConfig if available
@@ -164,17 +176,29 @@ const vuetify = createVuetify({
     );
   }
 
-  // Build custom courseware registry
-  const { allCourseWare, AllCourseWare } = await import('@vue-skuilder/courseware');
-  const studioCourseWare = customQuestions 
-    ? new AllCourseWare([...allCourseWare.courses, ...customQuestions.courses])
-    : allCourseWare;
-  
-  // Store custom courseware for use in components
-  app.provide('studioCourseWare', studioCourseWare);
+  // Register custom courses with the allCourseWare singleton
+  console.log('🎨 Studio Mode: Registering custom courses');
+  const { allCourseWare } = await import('@vue-skuilder/courseware');
+  console.log(`   🔍 allCourseWare instance:`, allCourseWare);
+  console.log(`   🔍 Current courses BEFORE registration:`, allCourseWare.courses.map(c => c.name));
+
+  if (customQuestions?.courses) {
+    console.log(`   📦 Registering ${customQuestions.courses.length} custom course(s)`);
+    console.log(`   📦 Custom courses to register:`, customQuestions.courses.map(c => c.name));
+    customQuestions.courses.forEach((course) => {
+      // Check if already registered to avoid duplicates
+      if (!allCourseWare.courses.find((c) => c.name === course.name)) {
+        allCourseWare.courses.push(course);
+        console.log(`   ✅ Registered course: ${course.name}`);
+      } else {
+        console.log(`   ℹ️  Course ${course.name} already registered`);
+      }
+    });
+    console.log(`   🔍 Current courses AFTER registration:`, allCourseWare.courses.map(c => c.name));
+  }
 
   console.log('🎨 Studio Mode: Collecting view components');
-  const viewComponents = studioCourseWare.allViewsRaw();
+  const viewComponents = allCourseWare.allViewsRaw();
   console.log(`   ✅ Collected ${Object.keys(viewComponents).length} base view components`);
 
   // Add custom question view components if available

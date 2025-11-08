@@ -3,8 +3,10 @@
 
 import { initializeDataLayer, getDataLayer, initializeTuiLogging } from '@vue-skuilder/db';
 import { MCPServer } from '@vue-skuilder/mcp';
-import { consoleLogger } from '@vue-skuilder/common';
+import { createFileLogger } from '@vue-skuilder/common';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import * as path from 'path';
+import * as os from 'os';
 
 initializeTuiLogging();
 
@@ -44,11 +46,16 @@ async function main() {
     await initializeDataLayer(couchdbConfig);
     const courseDB = getDataLayer().getCourseDB(courseId);
 
-    // Create and start MCP server with console logger
+    // Create file logger for debugging
+    const logFilePath = path.join(os.tmpdir(), 'vue-skuilder-mcp-debug.log');
+    const fileLogger = createFileLogger(logFilePath);
+    console.error(`MCP Server: Debug logs will be written to ${logFilePath}`);
+
+    // Create and start MCP server with file logger
     const server = new MCPServer(courseDB, {
       enableSourceLinking: true,
       maxCardsPerQuery: 50,
-      logger: consoleLogger,
+      logger: fileLogger,
     });
 
     const transport = new StdioServerTransport();

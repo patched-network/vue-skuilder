@@ -1,6 +1,6 @@
 {
   "name": "@vue-skuilder/mcp",
-  "version": "0.1.14-2",
+  "version": "0.1.14",
   "type": "module",
   "exports": {
     ".": {
@@ -25,12 +25,12 @@
     "@vue-skuilder/common": "workspace:*",
     "@vue-skuilder/courseware": "workspace:*",
     "@vue-skuilder/db": "workspace:*",
-    "zod": "^4.0.0"
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@modelcontextprotocol/inspector": "^0.16.1",
     "tsup": "^8.0.0",
     "typescript": "~5.7.2"
   },
-  "stableVersion": "0.1.13"
+  "stableVersion": "0.1.14"
 }
