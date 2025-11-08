@@ -18,6 +18,7 @@ const PACKAGES = [
   'express',
   'mcp',
   'cli',
+  'sk-contributor',
 ];
 
 function main() {
