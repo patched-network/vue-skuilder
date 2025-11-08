@@ -1142,7 +1142,11 @@ async function buildStudioUIWithCustomQuestions(
     const distConfigPath = path.join(distPath, 'custom-questions-config.json');
 
     if (fs.existsSync(sourceConfigPath)) {
-      fs.copyFileSync(sourceConfigPath, distConfigPath);
+      // Read, update import path, and write to dist
+      const configContent = JSON.parse(fs.readFileSync(sourceConfigPath, 'utf-8'));
+      // Use absolute path from root so browser can load it
+      configContent.importPath = '/assets/questions.mjs';
+      fs.writeFileSync(distConfigPath, JSON.stringify(configContent, null, 2));
       console.log(chalk.gray(`   Custom questions config copied to dist directory`));
     }
 

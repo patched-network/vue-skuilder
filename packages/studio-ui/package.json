@@ -3,7 +3,7 @@
   "publishConfig": {
     "access": "public"
   },
-  "version": "0.1.14-2",
+  "version": "0.1.14",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -32,5 +32,5 @@
     "vite": "^6.0.9",
     "vue-tsc": "^1.8.0"
   },
-  "stableVersion": "0.1.13"
+  "stableVersion": "0.1.14"
 }

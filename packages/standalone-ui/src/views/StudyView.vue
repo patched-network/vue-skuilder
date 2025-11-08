@@ -35,7 +35,7 @@ const user = getDataLayer().getUserDB();
 const dataLayer = getDataLayer();
 const configStore = useConfigStore();
 const sessionPrepared = ref(false);
-const sessionTimeLimit = ref(configStore.config.sessionTimeLimit);
+const sessionTimeLimit = ref(Number(configStore.config.sessionTimeLimit));
 const sessionContentSources = ref<ContentSourceID[]>([]);
 const studySessionConfig = ref<StudySessionConfig>({
   likesConfetti: configStore.config.likesConfetti,

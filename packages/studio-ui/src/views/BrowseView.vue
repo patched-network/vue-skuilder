@@ -38,6 +38,9 @@ const courseId = ref<string | null>(null);
 
 // View lookup function with proper context binding
 const viewLookupFunction = (viewDescription: any) => {
+  console.log('[BrowseView] Looking up view:', viewDescription);
+  console.log('[BrowseView] allCourseWare instance:', allCourseWare);
+  console.log('[BrowseView] Available courses:', allCourseWare.courses.map(c => c.name));
   return allCourseWare.getView(viewDescription);
 };
 
