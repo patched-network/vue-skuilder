@@ -41,13 +41,16 @@ export const consoleLogger: SkLogger = {
  */
 export function createFileLogger(filePath: string): SkLogger {
   // Lazy import fs to avoid bundling issues
-  let fs: any = null;
+   
+  type FsModule = typeof import('fs');
+  let fs: FsModule | null = null;
 
   const writeLog = (level: string, message: string, ...args: unknown[]) => {
     if (!fs) {
       try {
-        fs = require('fs');
-      } catch (e) {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+        fs = require('fs') as FsModule;
+      } catch {
         // File logging not available in this context
         return;
       }
@@ -59,7 +62,7 @@ export function createFileLogger(filePath: string): SkLogger {
 
     try {
       fs.appendFileSync(filePath, logLine, 'utf8');
-    } catch (e) {
+    } catch {
       // Silently fail if we can't write to the file
     }
   };
