@@ -23,6 +23,17 @@ export async function handleCreateCard(
   try {
     // Validate input and log start
     const validatedInput = CreateCardInputSchema.parse(input);
+
+    // Fix: Claude Code's MCP client sends data as a JSON string instead of an object
+    // Parse it if it's a string
+    if (typeof validatedInput.data === 'string') {
+      try {
+        validatedInput.data = JSON.parse(validatedInput.data);
+      } catch (e) {
+        throw new Error(`Invalid JSON in data parameter: ${e instanceof Error ? e.message : String(e)}`);
+      }
+    }
+
     logToolStart(TOOL_NAME, validatedInput);
 
     // Get course config to validate datashape
