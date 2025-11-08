@@ -3,7 +3,7 @@ import backendConfig from '../../eslint.config.backend.mjs';
 export default [
   ...backendConfig,
   {
-    ignores: ['node_modules/**', 'dist/**', 'eslint.config.mjs', 'tsconfig.json', 'testproject/**'],
+    ignores: ['node_modules/**', 'dist/**', 'eslint.config.mjs', 'tsconfig.json', 'testproject/**', 'cypress/**', 'cypress.config.js'],
   },
   {
     languageOptions: {

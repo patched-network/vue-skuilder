@@ -18,7 +18,7 @@ export class DatabaseManager {
         await this.couch.db.list();
         console.log('✅ CouchDB is ready');
         return;
-      } catch (error) {
+      } catch {
         if (attempt === maxAttempts) {
           throw new Error(`CouchDB not ready after ${maxAttempts} attempts`);
         }

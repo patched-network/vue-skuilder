@@ -27,6 +27,9 @@ export default [
       // Testing-specific rules
       '@typescript-eslint/no-explicit-any': 'off', // Tests often need any for mocking
       '@typescript-eslint/explicit-function-return-type': 'off', // Test functions don't need return types
+      'no-var': 'off', // var is required in declare global blocks
+      'no-console': 'off', // Tests can use console for debugging
+      '@typescript-eslint/no-namespace': 'off', // Namespaces needed for Jest matcher declarations
     },
   },
 ];

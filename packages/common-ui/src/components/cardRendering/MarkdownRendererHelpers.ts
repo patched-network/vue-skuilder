@@ -191,6 +191,6 @@ export function parseComponentToken(token: MarkedToken): {
   componentName: string;
   props: Record<string, string>;
 } | null {
-  const text = (token as any).text || (token as any).raw;
+  const text = ('text' in token ? token.text : 'raw' in token ? token.raw : '') as string;
   return parseComponentSyntax(text);
 }

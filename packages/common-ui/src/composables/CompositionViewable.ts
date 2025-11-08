@@ -133,8 +133,13 @@ export function useQuestionView<Q extends Question>(
 }
 
 // Helper functions
-export function isQuestionView(component: any): component is QuestionViewUtils<Question> {
-  return 'submitAnswer' in component && 'priorAttempts' in component;
+export function isQuestionView(component: unknown): component is QuestionViewUtils<Question> {
+  return (
+    typeof component === 'object' &&
+    component !== null &&
+    'submitAnswer' in component &&
+    'priorAttempts' in component
+  );
 }
 
 // Example usage in a child component:

@@ -51,7 +51,7 @@ export async function packCourses(options: PackCoursesOptions): Promise<void> {
         const manifestContent = await fs.readFile(manifestPath, 'utf-8');
         const manifest = JSON.parse(manifestContent);
         courseTitle = manifest.courseName || manifest.courseConfig?.name || courseId;
-      } catch (error) {
+      } catch {
         console.warn(chalk.yellow(`⚠️  Could not read manifest for course title, using courseId`));
       }
 
