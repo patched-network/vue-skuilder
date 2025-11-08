@@ -1,0 +1,74 @@
+name: ci-linting
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'yarn'
+
+      - name: Install Yarn
+        run: corepack enable
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Lint backend packages
+        run: |
+          echo "Linting @vue-skuilder/common..."
+          yarn workspace @vue-skuilder/common lint:check
+
+          echo "Linting @vue-skuilder/db..."
+          yarn workspace @vue-skuilder/db lint:check
+
+          echo "Linting @vue-skuilder/express..."
+          yarn workspace @vue-skuilder/express lint:check
+
+          echo "Linting @vue-skuilder/cli..."
+          yarn workspace @vue-skuilder/cli lint:check
+
+          echo "Linting @vue-skuilder/e2e-db..."
+          yarn workspace @vue-skuilder/e2e-db lint:check
+
+      - name: Lint frontend packages
+        run: |
+          echo "Linting @vue-skuilder/common-ui..."
+          yarn workspace @vue-skuilder/common-ui lint:check
+
+          echo "Linting @vue-skuilder/edit-ui..."
+          yarn workspace @vue-skuilder/edit-ui lint:check
+
+          echo "Linting @vue-skuilder/platform-ui..."
+          yarn workspace @vue-skuilder/platform-ui lint:check
+
+          echo "Linting @vue-skuilder/studio-ui..."
+          yarn workspace @vue-skuilder/studio-ui lint:check
+
+      - name: Lint legacy packages
+        run: |
+          echo "Linting @vue-skuilder/client..."
+          yarn workspace @vue-skuilder/client lint
+
+      - name: Linting completed
+        run: |
+          echo "✅ All linting checks passed"
+          echo "📦 Packages checked:"
+          echo "   Backend: common, db, express, cli, e2e-db"
+          echo "   Frontend: common-ui, edit-ui, platform-ui, studio-ui"
+          echo "   Legacy: client"
