@@ -91,27 +91,80 @@ export class CouchDBToStaticPacker {
    * Pack a CouchDB course database and write the static files to disk
    */
   async packCourseToFiles(
-    sourceDB: PouchDB.Database, 
-    courseId: string, 
-    outputDir: string, 
+    sourceDB: PouchDB.Database,
+    courseId: string,
+    outputDir: string,
     fsAdapter: FileSystemAdapter
-  ): Promise<{ 
-    manifest: StaticCourseManifest; 
-    filesWritten: number; 
-    attachmentsFound: number; 
+  ): Promise<{
+    manifest: StaticCourseManifest;
+    filesWritten: number;
+    attachmentsFound: number;
   }> {
     logger.info(`Packing course ${courseId} to files in ${outputDir}`);
-    
+
     // First, pack the course data
     const packedData = await this.packCourse(sourceDB, courseId);
-    
+
     // Write the files using the FileSystemAdapter
     const filesWritten = await this.writePackedDataToFiles(packedData, outputDir, fsAdapter);
-    
+
     return {
       manifest: packedData.manifest,
       filesWritten,
       attachmentsFound: packedData.attachments ? packedData.attachments.size : 0,
+    };
+  }
+
+  /**
+   * Pack a CouchDB course database into a complete course package with skuilder.json
+   *
+   * This is the recommended method for creating distributable course packages.
+   * It includes all data files plus the course-level skuilder.json package descriptor.
+   *
+   * @param sourceDB - PouchDB database instance
+   * @param courseId - Course identifier
+   * @param outputDir - Output directory path
+   * @param fsAdapter - Filesystem adapter for I/O operations
+   * @returns Pack results including manifest and file counts
+   */
+  async packCoursePackage(
+    sourceDB: PouchDB.Database,
+    courseId: string,
+    outputDir: string,
+    fsAdapter: FileSystemAdapter
+  ): Promise<{
+    manifest: StaticCourseManifest;
+    filesWritten: number;
+    attachmentsFound: number;
+  }> {
+    logger.info(`Packing complete course package for ${courseId}`);
+
+    // Pack course data files
+    const packResult = await this.packCourseToFiles(sourceDB, courseId, outputDir, fsAdapter);
+
+    // Generate skuilder.json package descriptor
+    const courseTitle = packResult.manifest.courseName ||
+                       packResult.manifest.courseConfig?.name ||
+                       courseId;
+
+    const skuilderJson = {
+      name: `@skuilder/course-${courseId}`,
+      version: '1.0.0',
+      description: courseTitle,
+      content: {
+        type: 'static',
+        manifest: './manifest.json',
+      },
+    };
+
+    const skuilderJsonPath = fsAdapter.joinPath(outputDir, 'skuilder.json');
+    await fsAdapter.writeJson(skuilderJsonPath, skuilderJson, { spaces: 2 });
+    logger.info(`Created skuilder.json for course package: ${courseId}`);
+
+    return {
+      manifest: packResult.manifest,
+      filesWritten: packResult.filesWritten + 1, // +1 for skuilder.json
+      attachmentsFound: packResult.attachmentsFound,
     };
   }
 
