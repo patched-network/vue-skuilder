@@ -30,7 +30,7 @@
 - [x] In same file, locate `CustomQuestionsExport` interface (line 99-114)
 - [x] Change line 105: `views: ViewComponent[]` to `views: Array<{ name: string; component: ViewComponent }>`
 
-### 1.4 Test Build
+### 1.4 Test Build (DEFERRED)
 - [ ] Run: `BUILD_MODE=library yarn workspace @vue-skuilder/standalone-ui build`
 - [ ] Verify build succeeds
 - [ ] Inspect `packages/standalone-ui/dist-lib/questions.mjs` for correct output
@@ -38,9 +38,9 @@
 ## Phase 2: Add Component Names to standalone-ui
 
 ### 2.1 SimpleTextQuestionView.vue
-- [ ] Open `packages/standalone-ui/src/questions/SimpleTextQuestionView.vue`
-- [ ] Add import if not present: `import { defineOptions } from 'vue';`
-- [ ] Add after imports (before props):
+- [x] Open `packages/standalone-ui/src/questions/SimpleTextQuestionView.vue`
+- [x] Add import if not present: `import { defineOptions } from 'vue';`
+- [x] Add after imports (before props):
   ```typescript
   defineOptions({
     name: 'SimpleTextQuestionView'
@@ -48,16 +48,16 @@
   ```
 
 ### 2.2 MultipleChoiceQuestionView.vue
-- [ ] Open `packages/standalone-ui/src/questions/MultipleChoiceQuestionView.vue`
-- [ ] Add defineOptions import
-- [ ] Add: `defineOptions({ name: 'MultipleChoiceQuestionView' });`
+- [x] Open `packages/standalone-ui/src/questions/MultipleChoiceQuestionView.vue`
+- [x] Add defineOptions import
+- [x] Add: `defineOptions({ name: 'MultipleChoiceQuestionView' });`
 
 ### 2.3 NumberRangeQuestionView.vue
-- [ ] Open `packages/standalone-ui/src/questions/NumberRangeQuestionView.vue`
-- [ ] Add defineOptions import
-- [ ] Add: `defineOptions({ name: 'NumberRangeQuestionView' });`
+- [x] Open `packages/standalone-ui/src/questions/NumberRangeQuestionView.vue`
+- [x] Add defineOptions import
+- [x] Add: `defineOptions({ name: 'NumberRangeQuestionView' });`
 
-### 2.4 Test Build Again
+### 2.4 Test Build Again (DEFERRED)
 - [ ] Run: `BUILD_MODE=library yarn workspace @vue-skuilder/standalone-ui build`
 - [ ] Verify build succeeds
 - [ ] Check that component names are preserved in output
