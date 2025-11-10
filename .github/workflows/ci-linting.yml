@@ -53,24 +53,15 @@ jobs:
           echo "Linting @vue-skuilder/common-ui..."
           yarn workspace @vue-skuilder/common-ui lint:check
 
-          echo "Linting @vue-skuilder/edit-ui..."
-          yarn workspace @vue-skuilder/edit-ui lint:check
-
           echo "Linting @vue-skuilder/platform-ui..."
           yarn workspace @vue-skuilder/platform-ui lint:check
 
           echo "Linting @vue-skuilder/studio-ui..."
           yarn workspace @vue-skuilder/studio-ui lint:check
 
-      - name: Lint legacy packages
-        run: |
-          echo "Linting @vue-skuilder/client..."
-          yarn workspace @vue-skuilder/client lint
-
       - name: Linting completed
         run: |
           echo "✅ All linting checks passed"
           echo "📦 Packages checked:"
           echo "   Backend: common, db, express, cli, e2e-db"
-          echo "   Frontend: common-ui, edit-ui, platform-ui, studio-ui"
-          echo "   Legacy: client"
+          echo "   Frontend: common-ui, platform-ui, studio-ui"
