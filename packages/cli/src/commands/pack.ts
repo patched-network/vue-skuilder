@@ -88,6 +88,25 @@ export async function packCourse(courseId: string, options: PackOptions) {
     // Write files
     await writePackedData(packedData, outputDir);
 
+    // Create course-level skuilder.json for the packed course
+    const courseTitle = packedData.manifest.courseName || packedData.manifest.courseId || courseId;
+    const courseSkuilderJson = {
+      name: `@skuilder/course-${courseId}`,
+      version: '1.0.0',
+      description: courseTitle,
+      content: {
+        type: 'static',
+        manifest: './manifest.json',
+      },
+    };
+
+    await fs.writeJson(
+      path.join(outputDir, 'skuilder.json'),
+      courseSkuilderJson,
+      { spaces: 2 }
+    );
+    console.log(chalk.gray(`📄 Created skuilder.json`));
+
     // Success summary
     console.log(chalk.green('\n✅ Successfully packed course!'));
     console.log(chalk.white(`📊 Course: ${packedData.manifest.courseName}`));

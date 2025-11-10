@@ -170,21 +170,51 @@ export async function packCourse(data: PackCourseData): Promise<PackCourseRespon
     logger.info(`Using originalCourseId "${originalCourseId}" for manifest (extracted from "${data.courseId}")`);
     
     const packResult = await packer.packCourseToFiles(courseDb, originalCourseId, outputPath, fsAdapter);
-    
+
+    // Create course-level skuilder.json for the packed course
+    const pathModule = await import('path');
+    const path = pathModule.default || pathModule;
+    const manifestPath = path.join(outputPath, 'manifest.json');
+
+    // Read the manifest to get course title
+    let courseTitle = originalCourseId;
+    try {
+      const manifestContent = await fsAdapter.readFile(manifestPath);
+      const manifest = JSON.parse(manifestContent);
+      courseTitle = manifest.courseName || manifest.courseConfig?.name || originalCourseId;
+    } catch (error) {
+      logger.warn(`Could not read manifest for course title, using courseId: ${error}`);
+    }
+
+    // Create course-level skuilder.json
+    const courseSkuilderJson = {
+      name: `@skuilder/course-${originalCourseId}`,
+      version: '1.0.0',
+      description: courseTitle,
+      content: {
+        type: 'static',
+        manifest: './manifest.json',
+      },
+    };
+
+    const skuilderJsonPath = path.join(outputPath, 'skuilder.json');
+    await fsAdapter.writeJson(skuilderJsonPath, courseSkuilderJson, { spaces: 2 });
+    logger.info(`Created skuilder.json for course: ${originalCourseId}`);
+
     const duration = Date.now() - startTime;
-    
+
     const response: PackCourseResponse = {
       status: Status.ok,
       ok: true,
       outputPath: outputPath,
       attachmentsFound: packResult.attachmentsFound,
-      filesWritten: packResult.filesWritten,
-      totalFiles: packResult.filesWritten, // Updated to reflect actual files written
+      filesWritten: packResult.filesWritten + 1, // +1 for skuilder.json
+      totalFiles: packResult.filesWritten + 1, // Updated to reflect actual files written including skuilder.json
       duration: duration
     };
-    
+
     logger.info(`Pack completed in ${duration}ms. Attachments: ${response.attachmentsFound}, Files written: ${response.filesWritten}`);
-    
+
     return response;
   } catch (error) {
     logger.error('Pack operation failed:', error);
