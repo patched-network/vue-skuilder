@@ -1,6 +1,7 @@
 // packages/common-ui/vite.config.js
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
+import dts from 'vite-plugin-dts';
 import { resolve } from 'path';
 import { createBaseResolve } from '../../vite.config.base.js';
 
@@ -53,7 +54,16 @@ export default defineConfig({
     // This is crucial for component libraries - allow CSS to be in chunks
     cssCodeSplit: true,
   },
-  plugins: [vue()],
+  plugins: [
+    vue(),
+    dts({
+      insertTypesEntry: true,
+      // Exclude test files from type generation
+      exclude: ['**/*.spec.ts', '**/*.test.ts'],
+      // Include only necessary files
+      include: ['src/**/*.ts', 'src/**/*.d.ts', 'src/**/*.vue'],
+    }),
+  ],
   resolve: createBaseResolve(resolve(__dirname, '../..'), {
     '@cui': resolve(__dirname, 'src'), // Override for self-imports during build
   }),

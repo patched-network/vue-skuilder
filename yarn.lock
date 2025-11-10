@@ -6547,6 +6547,7 @@ __metadata:
     sass: "npm:^1.83.0"
     typescript: "npm:~5.7.2"
     vite: "npm:^6.0.9"
+    vite-plugin-dts: "npm:^4.5.3"
     vitest: "npm:^3.0.5"
     vue: "npm:^3.5.13"
     vuetify: "npm:^3.7.0"

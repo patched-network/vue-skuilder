@@ -22,8 +22,7 @@
   ],
   "scripts": {
     "dev": "vite build --watch",
-    "build": "vite build && yarn build-types",
-    "build-types": "tsc --project tsconfig.types.json",
+    "build": "vite build",
     "lint": "eslint . --fix",
     "lint:check": "eslint .",
     "test:unit": "vitest run",
@@ -68,6 +67,7 @@
     "sass": "^1.83.0",
     "typescript": "~5.7.2",
     "vite": "^6.0.9",
+    "vite-plugin-dts": "^4.5.3",
     "vitest": "^3.0.5"
   },
   "stableVersion": "0.1.14"
