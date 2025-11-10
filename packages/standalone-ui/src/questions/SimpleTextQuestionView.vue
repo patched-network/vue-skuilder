@@ -7,10 +7,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, PropType } from 'vue';
+import { ref, onMounted, PropType, defineOptions } from 'vue';
 import { useViewable, useQuestionView } from '@vue-skuilder/courseware';
 import { SimpleTextQuestion } from './SimpleTextQuestion';
 import { ViewData } from '@vue-skuilder/common';
+
+defineOptions({
+  name: 'SimpleTextQuestionView'
+});
 
 const props = defineProps({
   questionText: {

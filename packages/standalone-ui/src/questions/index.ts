@@ -52,13 +52,17 @@ export function allCustomQuestions() {
   });
 
   // Collect all view components from questions
-  const views: ViewComponent[] = [];
+  const views: Array<{ name: string; component: ViewComponent }> = [];
   questionClasses.forEach((questionClass) => {
     if (questionClass.views) {
       questionClass.views.forEach((view) => {
-        // Avoid duplicates by name
-        if (!views.find((existing) => existing.name === view.name)) {
-          views.push(view);
+        const viewName = (view as any).name || (view as any).__name;
+        if (viewName) {
+          if (!views.find((existing) => existing.name === viewName)) {
+            views.push({ name: viewName, component: view });
+          }
+        } else {
+          console.warn('[allCustomQuestions] View component missing name property:', view);
         }
       });
     }
@@ -102,7 +106,7 @@ export interface CustomQuestionsExport {
     typeof SimpleTextQuestion | typeof MultipleChoiceQuestion | typeof NumberRangeQuestion
   >;
   dataShapes: DataShape[];
-  views: ViewComponent[];
+  views: Array<{ name: string; component: ViewComponent }>;
   meta: {
     questionCount: number;
     dataShapeCount: number;

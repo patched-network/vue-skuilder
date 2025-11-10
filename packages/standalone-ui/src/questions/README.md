@@ -24,19 +24,24 @@ To use your custom questions in a course, you need to:
 
     ```typescript
     // MyCustomQuestion.ts
+    import { markRaw } from 'vue';
     import { Question, DataShape, ViewData, Answer } from '@vue-skuilder/courseware';
     import { FieldType } from '@vue-skuilder/common';
     import MyCustomQuestionView from './MyCustomQuestionView.vue';
 
     export class MyCustomQuestion extends Question {
       public static dataShapes: DataShape[] = [
-        new DataShape('MyCustomQuestion', [
-          { name: 'myField', type: FieldType.STRING },
-        ]),
+        {
+          name: 'MyCustomQuestion' as DataShapeName,
+          fields: [
+            { name: 'myField', type: FieldType.STRING },
+          ],
+        },
       ];
 
+      // Direct inline view registration - use markRaw() to prevent Vue reactivity
       public static views = [
-        { name: 'MyCustomQuestionView', component: MyCustomQuestionView },
+        { name: 'MyCustomQuestionView', component: markRaw(MyCustomQuestionView) },
       ];
 
       constructor(data: ViewData[]) {
@@ -59,6 +64,11 @@ To use your custom questions in a course, you need to:
     }
     ```
 
+    **Important Notes:**
+    - Use `markRaw()` to wrap component imports (prevents unnecessary reactivity)
+    - Views must be `{ name: string, component: ViewComponent }` format for studio mode
+    - The `name` field must match your component's `defineOptions({ name: '...' })`
+
 2.  **Create Your Vue Component**: Create a Vue component (e.g., `MyCustomQuestionView.vue`) that will render your question and allow user interaction. This component will receive props based on the `ViewData` you define for your question.
 
     ```vue
@@ -72,8 +82,13 @@ To use your custom questions in a course, you need to:
     </template>
 
     <script setup lang="ts">
-    import { ref } from 'vue';
+    import { ref, defineOptions } from 'vue';
     import { useStudySessionStore } from '@vue-skuilder/common-ui';
+
+    // REQUIRED: Component name for runtime lookup
+    defineOptions({
+      name: 'MyCustomQuestionView'
+    });
 
     const props = defineProps({
       // Define props based on your question's data
@@ -89,6 +104,8 @@ To use your custom questions in a course, you need to:
     };
     </script>
     ```
+
+    **Important:** Component name must match Question class `views` array name
 
 3.  **Register Your Question and Course**: In your application's entry point (e.g., `src/main.ts` or `src/App.vue`), you need to import your custom question and include it in a `Course` instance. Then, register this course with the `allCourses` list.
 
@@ -117,13 +134,10 @@ To use your custom questions in a course, you need to:
 
     **Note**: The `allCourses` object is a singleton that manages all available courses and their associated questions and views. By adding your custom course to `allCourses.courses`, it becomes discoverable by the `CardViewer` and other components that rely on the course registry.
 
-## Developing New Questions
+## Key Requirements
 
-When developing new questions, consider the following:
-
--   **DataShape Definition**: Carefully define the `DataShape` for your question. This dictates the structure of the data that will be passed to your question's constructor and Vue component.
--   **Answer Evaluation**: Implement the `isCorrect` method in your `Question` subclass to define how user answers are evaluated.
--   **Vue Component Props**: Ensure your Vue component's `props` match the data fields defined in your `DataShape` and any additional data you pass from your `Question` instance.
--   **StudySessionStore**: Use the `useStudySessionStore()` composable from `@vue-skuilder/common-ui` to submit user answers and interact with the study session logic.
-
-Feel free to modify and extend the provided examples to suit your needs.
+-   **DataShape Definition**: Defines data structure passed to constructor and Vue component
+-   **Answer Evaluation**: Implement `isCorrect()` method in your Question subclass
+-   **Component Names**: Use `defineOptions({ name: '...' })` - must match Question class `views` array
+-   **View Registration**: Register views inline with `markRaw()` - no separate setup files needed
+-   **Format**: Use `{ name: string, component: ViewComponent }` format for studio mode compatibility

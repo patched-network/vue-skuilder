@@ -10,10 +10,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, PropType } from 'vue';
+import { ref, PropType, defineOptions } from 'vue';
 import { useViewable, useQuestionView } from '@vue-skuilder/courseware';
 import { MultipleChoiceQuestion } from './MultipleChoiceQuestion';
 import { ViewData } from '@vue-skuilder/common';
+
+defineOptions({
+  name: 'MultipleChoiceQuestionView'
+});
 
 const props = defineProps({
   questionText: {

@@ -7,10 +7,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, PropType } from 'vue';
+import { ref, PropType, defineOptions } from 'vue';
 import { useViewable, useQuestionView } from '@vue-skuilder/courseware';
 import { NumberRangeQuestion } from './NumberRangeQuestion';
 import { ViewData } from '@vue-skuilder/common';
+
+defineOptions({
+  name: 'NumberRangeQuestionView'
+});
 
 const props = defineProps({
   questionText: {

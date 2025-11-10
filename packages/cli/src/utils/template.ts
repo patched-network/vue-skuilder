@@ -192,6 +192,10 @@ export default defineConfig({
         minify: 'terser',
         terserOptions: {
           keep_classnames: true,
+          keep_fnames: true,
+          mangle: {
+            properties: false,
+          },
         },
         lib: {
           entry: resolve(__dirname, 'src/questions/index.ts'),
