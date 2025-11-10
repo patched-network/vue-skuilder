@@ -62,50 +62,36 @@
 - [ ] Verify build succeeds
 - [ ] Check that component names are preserved in output
 
-## Phase 3: Side-Effect Import to standalone-ui
+## Phase 3: Side-Effect Import to standalone-ui (OMITTED)
+
+**DECISION:** This phase was omitted because the side-effect import is not needed.
+
+**Rationale:**
+- Question classes already have inline view registration (e.g., `SimpleTextQuestion.views = [{ name, component }]`)
+- No additional setup code exists in `index.ts` that needs to run
+- BACKPORT_CHECKLIST #7 even recommends removing side-effects as "future" work
+- We're already using the preferred direct inline pattern (#5)
+
+**Risk:** If tests fail with "view not found" errors, we may need to add this back. But current analysis indicates it's redundant.
 
 ### 3.1 Main.ts Import
-- [ ] Open `packages/standalone-ui/src/main.ts`
-- [ ] Locate line 27-28 (imports from courseware)
-- [ ] Add line after line 27: `import './questions/index';`
-- [ ] Ensure it's before: `import { exampleCourse } from './questions/exampleCourse';`
+- [x] ~~Add `import './questions/index';`~~ OMITTED (not needed)
 
-### 3.2 Test Dev Mode
+### 3.2 Test Dev Mode (DEFERRED)
 - [ ] Run: `yarn workspace @vue-skuilder/standalone-ui dev`
 - [ ] Navigate to http://localhost:6173
 - [ ] Verify app loads without errors
 - [ ] Check browser console for warnings
 
-## Phase 4: Replicate to sk-contributor
+## Phase 4: sk-contributor Package (REMOVED)
 
-### 4.1 Vite Config
-- [ ] Open `packages/sk-contributor/vite.config.ts`
-- [ ] Apply same terser options changes as 1.1
-- [ ] Verify syntax
+**DECISION:** The sk-contributor package never made it off the ground and is being removed from the monorepo.
 
-### 4.2 Views Export Format
-- [ ] Open `packages/sk-contributor/src/questions/index.ts`
-- [ ] Apply same changes as 1.2 (views array and logic)
+### 4.1 Remove Package
+- [ ] User will execute: `git rm -r packages/sk-contributor`
+- [ ] Update workspace references if needed (package.json, tsconfig, etc.)
 
-### 4.3 TypeScript Interface
-- [ ] Apply same changes as 1.3 to interface
-
-### 4.4 Component Names
-- [ ] Open `packages/sk-contributor/src/questions/SimpleTextQuestionView.vue`
-- [ ] Add defineOptions with name (same as 2.1)
-- [ ] Open `packages/sk-contributor/src/questions/MultipleChoiceQuestionView.vue`
-- [ ] Add defineOptions with name (same as 2.2)
-- [ ] Open `packages/sk-contributor/src/questions/NumberRangeQuestionView.vue`
-- [ ] Add defineOptions with name (same as 2.3)
-
-### 4.5 Side-Effect Import
-- [ ] Open `packages/sk-contributor/src/main.ts`
-- [ ] Apply same change as 3.1
-
-### 4.6 Test Build
-- [ ] Run: `BUILD_MODE=library yarn workspace @vue-skuilder/sk-contributor build`
-- [ ] Verify build succeeds
-- [ ] Spot check output structure
+**Note:** All backport changes were only applied to standalone-ui. If sk-contributor is revived in the future, it would need the same changes applied.
 
 ## Phase 5: Update Documentation
 
@@ -115,10 +101,7 @@
 - [ ] Update examples to show direct inline view registration
 - [ ] Add note about `markRaw()` for Vue components
 - [ ] Add note about `{ name, component }` format
-
-### 5.2 sk-contributor README (if exists)
-- [ ] Check if `packages/sk-contributor/src/questions/README.md` exists
-- [ ] If yes, apply same documentation updates
+- [ ] Note that side-effect import is NOT needed (inline pattern preferred)
 
 ## Phase 6: CI Enhancement - Standalone Mode Tests
 
