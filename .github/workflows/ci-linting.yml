@@ -1,4 +1,6 @@
 name: ci-linting
+permissions:
+  contents: read
 
 on:
   push:
