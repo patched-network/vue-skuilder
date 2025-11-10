@@ -6453,7 +6453,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@vue-skuilder/cli@npm:^0.1.14, @vue-skuilder/cli@workspace:packages/cli":
+"@vue-skuilder/cli@workspace:packages/cli":
   version: 0.0.0-use.local
   resolution: "@vue-skuilder/cli@workspace:packages/cli"
   dependencies:
@@ -6515,7 +6515,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@vue-skuilder/common-ui@npm:^0.1.14, @vue-skuilder/common-ui@workspace:*, @vue-skuilder/common-ui@workspace:packages/common-ui":
+"@vue-skuilder/common-ui@workspace:*, @vue-skuilder/common-ui@workspace:packages/common-ui":
   version: 0.0.0-use.local
   resolution: "@vue-skuilder/common-ui@workspace:packages/common-ui"
   dependencies:
@@ -6557,7 +6557,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@vue-skuilder/common@npm:^0.1.14, @vue-skuilder/common@workspace:*, @vue-skuilder/common@workspace:^, @vue-skuilder/common@workspace:packages/common":
+"@vue-skuilder/common@workspace:*, @vue-skuilder/common@workspace:^, @vue-skuilder/common@workspace:packages/common":
   version: 0.0.0-use.local
   resolution: "@vue-skuilder/common@workspace:packages/common"
   dependencies:
@@ -6568,7 +6568,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@vue-skuilder/courseware@npm:^0.1.14, @vue-skuilder/courseware@workspace:*, @vue-skuilder/courseware@workspace:packages/courseware":
+"@vue-skuilder/courseware@workspace:*, @vue-skuilder/courseware@workspace:packages/courseware":
   version: 0.0.0-use.local
   resolution: "@vue-skuilder/courseware@workspace:packages/courseware"
   dependencies:
@@ -6591,7 +6591,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@vue-skuilder/db@npm:^0.1.14, @vue-skuilder/db@workspace:*, @vue-skuilder/db@workspace:^, @vue-skuilder/db@workspace:packages/db":
+"@vue-skuilder/db@workspace:*, @vue-skuilder/db@workspace:^, @vue-skuilder/db@workspace:packages/db":
   version: 0.0.0-use.local
   resolution: "@vue-skuilder/db@workspace:packages/db"
   dependencies:
@@ -17938,34 +17938,6 @@ __metadata:
   checksum: 10c0/230ac975cca485b7f6fe2b96a711aa62a6a26ead3e6fb8ba17c5a00d61b8bed0d7adc21f5626b70d7c33c62ff4e63933017a6462942c719d1980bb0b1207ad46
   languageName: node
   linkType: hard
-
-"sk-contributor@workspace:packages/sk-contributor":
-  version: 0.0.0-use.local
-  resolution: "sk-contributor@workspace:packages/sk-contributor"
-  dependencies:
-    "@mdi/font": "npm:^7.3.67"
-    "@types/cypress": "npm:1.1.6"
-    "@types/events": "npm:^3"
-    "@vitejs/plugin-vue": "npm:^5.2.1"
-    "@vue-skuilder/cli": "npm:^0.1.14"
-    "@vue-skuilder/common": "npm:^0.1.14"
-    "@vue-skuilder/common-ui": "npm:^0.1.14"
-    "@vue-skuilder/courseware": "npm:^0.1.14"
-    "@vue-skuilder/db": "npm:^0.1.14"
-    cypress: "npm:14.1.0"
-    events: "npm:^3.3.0"
-    pinia: "npm:^2.3.0"
-    terser: "npm:^5.39.0"
-    typescript: "npm:^5.7.2"
-    vite: "npm:^6.0.9"
-    vite-plugin-dts: "npm:^4.3.0"
-    vue: "npm:^3.5.13"
-    vue-router: "npm:^4.2.0"
-    vue-tsc: "npm:^1.8.0"
-    vuetify: "npm:^3.7.0"
-    wait-on: "npm:8.0.2"
-  languageName: unknown
-  linkType: soft
 
 "skin-tone@npm:^2.0.0":
   version: 2.0.0
