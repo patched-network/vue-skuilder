@@ -8,6 +8,9 @@
 - [x] Add `keep_fnames: true`
 - [x] Add `mangle: { properties: false }`
 - [x] Verify syntax is correct
+- [x] Sync same changes to `packages/cli/src/utils/template.ts` (line ~193)
+  - **Why:** CLI uses template.ts to generate vite.config.ts for scaffolded projects
+  - **CI Check:** Automated check ensures these stay in sync
 
 ### 1.2 Views Export Format - index.ts
 - [x] Open `packages/standalone-ui/src/questions/index.ts`
@@ -104,65 +107,77 @@
 - [x] Note that side-effect import is NOT needed (inline pattern preferred)
 - [x] Add "Best Practices" section with key guidelines
 
-## Phase 6: CI Enhancement - Standalone Mode Tests
+## Phase 6: CI Enhancement - Custom Questions Workflow Test
 
-### 6.1 Enhanced Scaffolded App Test
-- [ ] Open `packages/cli/cypress/e2e/scaffolded-app.cy.js`
-- [ ] Add new describe block: 'Custom Questions - Standalone Mode'
-- [ ] Add test: 'should render custom question types in study view'
-  - Check for `[data-viewable*="SimpleTextQuestionView"]`
-  - Check for input elements
-- [ ] Add test: 'should display all three question types'
-  - Verify SimpleText, MultipleChoice, NumberRange can appear
-- [ ] Run local test to verify: `cd packages/cli && yarn test:e2e:headless`
+**Strategy:** Create end-to-end test of custom questions workflow:
+1. Scaffold empty static course
+2. Start studio mode
+3. Create card using custom DataShape via Cypress
+4. Verify card renders in studio browse view
+5. Flush to static via Cypress button click
+6. Start dev mode
+7. Verify card renders in dev study view
 
-### 6.2 Verify Existing CI Passes
-- [ ] Check CI workflow will trigger on these changes
-- [ ] Ensure `ci-pkg-cli.yml` includes relevant paths
-- [ ] Plan to monitor CI after push
+**Key Decisions:**
+- Leave existing `scaffolded-app.cy.js` alone (tests packed courses)
+- New script: `try:init:empty` (no --import-course-data)
+- **TWO Cypress test files** (studio tests, then dev tests - cleaner CI workflow)
+- Clean up between existing and new test
+- Studio mode manages its own CouchDB (no conflicts)
+- Flush via Cypress clicking studio UI button
 
-## Phase 7: CI Enhancement - Studio Mode Tests (Optional/Future)
+### 6.1 CLI Script - Empty Project Init
+- [x] Add to `packages/cli/package.json`:
+  - `try:init:empty` - scaffolds empty project with template custom questions
+  - Includes npm install and file:.. dependencies
 
-### 7.1 Studio Mode Test File
-- [ ] Create `packages/cli/cypress/e2e/scaffolded-app-studio.cy.js`
-- [ ] Add test: 'should load studio UI'
-  - Visit studio port (7174)
-  - Check for page load
-- [ ] Add test: 'should show custom data shapes in CreateCardView'
-  - Look for SimpleTextQuestion, MultipleChoiceQuestion, NumberRangeQuestion
+### 6.2 Cypress Tests - Custom Questions Workflow
+- [x] Create `packages/cli/cypress/e2e/custom-questions-studio.cy.js`
+  - Test 1: Studio UI loads
+  - Test 2: Custom DataShapes appear in CreateCardView
+  - Test 3: Create card with SimpleTextQuestion
+  - Test 4: Card renders in studio browse view
+  - Test 5: Flush to static button works
+- [x] Create `packages/cli/cypress/e2e/custom-questions-dev.cy.js`
+  - Test 1: Dev mode loads
+  - Test 2: Flushed card renders in study view
+  - Test 3: Can interact with custom question
 
-### 7.2 Cypress Config for Studio
-- [ ] Create `packages/cli/cypress.studio.config.js`
-- [ ] Configure baseUrl: 'http://localhost:7174'
-- [ ] Configure specPattern for `-studio.cy.js` files
+### 6.3 CI Workflow Updates
+- [x] Update `.github/workflows/ci-pkg-cli.yml`
+- [x] Add after existing test cleanup:
+  - Create empty project
+  - Start studio mode (wait on 7174)
+  - Run studio tests
+  - Shutdown studio
+  - Start dev mode (wait on 6173)
+  - Run dev tests
+  - Final cleanup (all ports)
 
-### 7.3 Package Scripts
-- [ ] Add to `packages/cli/package.json`:
-  - `"test:e2e:studio": "cypress open --config-file cypress.studio.config.js"`
-  - `"test:e2e:studio:headless": "cypress run --config-file cypress.studio.config.js"`
+### 6.4 Package Scripts
+- [x] Update existing scripts to be specific:
+  - `test:e2e` - now targets only `scaffolded-app.cy.js`
+  - `test:e2e:headless` - now targets only `scaffolded-app.cy.js`
+- [x] Add new custom questions scripts:
+  - `test:e2e:custom:studio` - open studio tests
+  - `test:e2e:custom:studio:headless` - run studio tests
+  - `test:e2e:custom:dev` - open dev tests
+  - `test:e2e:custom:dev:headless` - run dev tests
 
-### 7.4 CI Workflow Addition
-- [ ] Open `.github/workflows/ci-pkg-cli.yml`
-- [ ] Add step after "Run try:init":
-  ```yaml
-  - name: Start studio mode and wait
-    working-directory: packages/cli/testproject
-    run: |
-      npx skuilder studio --no-browser &
-      npx wait-on http://localhost:7174 --timeout 120000
-  ```
-- [ ] Add step for studio tests:
-  ```yaml
-  - name: Run E2E tests on studio mode
-    working-directory: packages/cli
-    run: yarn test:e2e:studio:headless
-  ```
-- [ ] Update cleanup step to kill studio ports:
-  ```yaml
-  kill $(lsof -t -i:7174) || true
-  kill $(lsof -t -i:3001) || true
-  kill $(lsof -t -i:5985) || true
-  ```
+### 6.5 Local Testing (DEFERRED)
+- [ ] Build CLI: `yarn workspace @vue-skuilder/cli build`
+- [ ] Run empty init: `cd packages/cli && yarn try:init:empty`
+- [ ] Test studio: `cd testproject-empty && npx skuilder studio`
+- [ ] Manually verify custom questions appear in CreateCardView
+- [ ] Run Cypress studio tests: `cd packages/cli && yarn test:e2e:custom:studio`
+- [ ] After flush, run dev tests: `yarn test:e2e:custom:dev`
+
+## Phase 7: Obsolete (Merged into Phase 6)
+
+Studio mode tests are now fully covered in Phase 6 with the two-file Cypress approach:
+- `custom-questions-studio.cy.js` tests studio mode functionality
+- `custom-questions-dev.cy.js` tests dev mode after flush
+- CI workflow runs both sequentially with proper server lifecycle management
 
 ## Phase 8: Final Verification
 
