@@ -96,12 +96,13 @@
 ## Phase 5: Update Documentation
 
 ### 5.1 Standalone-ui README
-- [ ] Open `packages/standalone-ui/src/questions/README.md`
-- [ ] Update examples to show `defineOptions({ name: '...' })` pattern
-- [ ] Update examples to show direct inline view registration
-- [ ] Add note about `markRaw()` for Vue components
-- [ ] Add note about `{ name, component }` format
-- [ ] Note that side-effect import is NOT needed (inline pattern preferred)
+- [x] Open `packages/standalone-ui/src/questions/README.md`
+- [x] Update examples to show `defineOptions({ name: '...' })` pattern
+- [x] Update examples to show direct inline view registration with `markRaw()`
+- [x] Add note about `markRaw()` for Vue components
+- [x] Add note about `{ name, component }` format for studio compatibility
+- [x] Note that side-effect import is NOT needed (inline pattern preferred)
+- [x] Add "Best Practices" section with key guidelines
 
 ## Phase 6: CI Enhancement - Standalone Mode Tests
 
