@@ -27,8 +27,13 @@
     "lint:fix": "npx eslint . --fix",
     "lint:check": "npx eslint . --max-warnings 0",
     "try:init": "node dist/cli.js init testproject --dangerously-clobber --no-interactive --data-layer static --import-course-data --import-server-url http://localhost:5984 --import-username admin --import-password password --import-course-ids 2aeb8315ef78f3e89ca386992d00825b && cd testproject && npm i && npm install --save-dev @vue-skuilder/cli@file:.. && npm install @vue-skuilder/db@file:../../db @vue-skuilder/courseware@file:../../courseware @vue-skuilder/common-ui@file:../../common-ui @vue-skuilder/express@file:../../express",
-    "test:e2e": "cypress open",
-    "test:e2e:headless": "cypress run"
+    "try:init:empty": "node dist/cli.js init testproject-empty --dangerously-clobber --no-interactive --data-layer static && cd testproject-empty && npm i && npm install --save-dev @vue-skuilder/cli@file:.. && npm install @vue-skuilder/db@file:../../db @vue-skuilder/courseware@file:../../courseware @vue-skuilder/common-ui@file:../../common-ui @vue-skuilder/express@file:../../express",
+    "test:e2e": "cypress open --spec 'cypress/e2e/scaffolded-app.cy.js'",
+    "test:e2e:headless": "cypress run --spec 'cypress/e2e/scaffolded-app.cy.js'",
+    "test:e2e:custom:studio": "cypress open --spec 'cypress/e2e/custom-questions-studio.cy.js'",
+    "test:e2e:custom:studio:headless": "cypress run --spec 'cypress/e2e/custom-questions-studio.cy.js'",
+    "test:e2e:custom:dev": "cypress open --spec 'cypress/e2e/custom-questions-dev.cy.js'",
+    "test:e2e:custom:dev:headless": "cypress run --spec 'cypress/e2e/custom-questions-dev.cy.js'"
   },
   "keywords": [
     "cli",
