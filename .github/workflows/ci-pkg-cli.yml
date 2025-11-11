@@ -90,6 +90,10 @@ jobs:
         working-directory: packages/cli
         run: yarn try:init:empty
 
+      - name: Pre-build custom questions library
+        working-directory: packages/cli/testproject-empty
+        run: npm run build:lib
+
       - name: Start studio mode for custom questions workflow
         working-directory: packages/cli/testproject-empty
         run: |
@@ -106,7 +110,7 @@ jobs:
           echo "First 50 lines of studio log:"
           head -50 studio.log || echo "No log file yet"
           echo "Waiting for studio server to be ready..."
-          npx wait-on http://localhost:7174 --timeout 120000 || (echo "wait-on failed, showing full log:" && cat studio.log && exit 1)
+          npx wait-on http://localhost:7174 --timeout 60000 || (echo "wait-on failed, showing full log:" && cat studio.log && exit 1)
 
       - name: Run custom questions studio mode tests
         working-directory: packages/cli
