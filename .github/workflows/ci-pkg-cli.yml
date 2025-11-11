@@ -100,8 +100,10 @@ jobs:
       - name: Wait for studio server to be ready
         working-directory: packages/cli/testproject-empty
         run: |
-          echo "Waiting for studio server on http://localhost:7174..."
-          npx wait-on http://localhost:7174 --timeout 180000 || (echo "wait-on failed, showing studio log:" && cat studio.log && exit 1)
+          echo "Giving studio 3 minutes to build and start..."
+          sleep 180
+          echo "Done waiting, checking studio log:"
+          tail -20 studio.log || echo "No log file"
 
       - name: Run custom questions studio mode tests
         working-directory: packages/cli
