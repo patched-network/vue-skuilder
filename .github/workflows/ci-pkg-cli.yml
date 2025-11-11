@@ -120,7 +120,7 @@ jobs:
         working-directory: packages/cli/testproject-empty
         run: |
           npm run dev &
-          npx wait-on http://localhost:6173 --timeout 60000
+          npx wait-on http://localhost:5173 --timeout 60000
 
       - name: Upload studio log on failure
         uses: actions/upload-artifact@v4
