@@ -85,6 +85,33 @@ jobs:
           # Clean up CouchDB
           yarn couchdb:stop
 
+      # Custom Questions Workflow Test
+      - name: Create empty project for custom questions test
+        working-directory: packages/cli
+        run: yarn try:init:empty
+
+      - name: Start studio mode for custom questions workflow
+        working-directory: packages/cli/testproject-empty
+        run: |
+          npx skuilder studio --no-browser &
+          npx wait-on http://localhost:7174 --timeout 120000
+
+      - name: Run custom questions studio mode tests
+        working-directory: packages/cli
+        run: yarn test:e2e:custom:studio:headless
+
+      - name: Shutdown studio mode
+        if: always()
+        run: |
+          kill $(lsof -t -i:7174) || true
+          kill $(lsof -t -i:3001) || true
+          kill $(lsof -t -i:5985) || true
+
+      - name: Start dev mode for custom questions verification
+        working-directory: packages/cli/testproject-empty
+        run: |
+          npm run dev &
+          npx wait-on http://localhost:6173 --timeout 60000
       - name: Upload screenshots on failure
         uses: actions/upload-artifact@v4
         if: failure()
