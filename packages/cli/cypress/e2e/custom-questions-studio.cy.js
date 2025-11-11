@@ -22,6 +22,9 @@ describe('Custom Questions - Studio Mode', () => {
     // Click to open the dropdown
     cy.get('.v-select').click();
 
+    // Wait for Vuetify menu overlay to render
+    cy.get('.v-overlay--active .v-list', { timeout: 10000 }).should('be.visible');
+
     // Verify custom question types appear in the dropdown menu
     cy.get('.v-list-item').contains('SimpleTextQuestion').should('be.visible');
     cy.get('.v-list-item').contains('MultipleChoiceQuestion').should('be.visible');
@@ -39,6 +42,9 @@ describe('Custom Questions - Studio Mode', () => {
 
     // Click to open the dropdown
     cy.get('.v-select').click();
+
+    // Wait for Vuetify menu overlay to render
+    cy.get('.v-overlay--active .v-list', { timeout: 10000 }).should('be.visible');
 
     // Select SimpleTextQuestion from the dropdown
     cy.get('.v-list-item').contains('SimpleTextQuestion').click();
