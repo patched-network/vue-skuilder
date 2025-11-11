@@ -93,14 +93,20 @@ jobs:
       - name: Start studio mode for custom questions workflow
         working-directory: packages/cli/testproject-empty
         run: |
-          npx skuilder studio --no-browser > ../../studio.log 2>&1 &
+          npx skuilder studio --no-browser > studio.log 2>&1 &
           STUDIO_PID=$!
           echo "Studio process started with PID: $STUDIO_PID"
           sleep 5
           echo "Checking if studio process is still running..."
           ps -p $STUDIO_PID || echo "WARNING: Studio process already exited"
+          echo "Process tree:"
+          pstree -p $STUDIO_PID || ps -ef | grep -E "(studio|$STUDIO_PID)" || true
+          echo "Checking for node processes:"
+          ps aux | grep node | grep -v grep || echo "No node processes found"
+          echo "First 50 lines of studio log:"
+          head -50 studio.log || echo "No log file yet"
           echo "Waiting for studio server to be ready..."
-          npx wait-on http://localhost:7174 --timeout 120000
+          npx wait-on http://localhost:7174 --timeout 120000 || (echo "wait-on failed, showing full log:" && cat studio.log && exit 1)
 
       - name: Run custom questions studio mode tests
         working-directory: packages/cli
@@ -124,7 +130,7 @@ jobs:
         if: failure()
         with:
           name: studio-log
-          path: packages/cli/studio.log
+          path: packages/cli/testproject-empty/studio.log
           retention-days: 7
 
       - name: Upload screenshots on failure
