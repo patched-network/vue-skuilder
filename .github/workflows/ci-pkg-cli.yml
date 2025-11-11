@@ -94,15 +94,14 @@ jobs:
         working-directory: packages/cli/testproject-empty
         run: |
           npx skuilder studio --no-browser > studio.log 2>&1 &
-          STUDIO_PID=$!
-          echo "Studio process started with PID: $STUDIO_PID"
-          sleep 5
-          echo "Checking if studio process is still running..."
-          ps -p $STUDIO_PID || echo "WARNING: Studio process already exited"
-          echo "First 50 lines of studio log:"
-          head -50 studio.log || echo "No log file yet"
-          echo "Waiting for studio server to be ready..."
-          node_modules/.bin/wait-on http://localhost:7174 --timeout 60000 || (echo "wait-on failed, showing full log:" && cat studio.log && exit 1)
+          echo "Studio process started with PID: $!"
+          sleep 2
+
+      - name: Wait for studio server to be ready
+        working-directory: packages/cli/testproject-empty
+        run: |
+          echo "Waiting for studio server on http://localhost:7174..."
+          npx wait-on http://localhost:7174 --timeout 180000 || (echo "wait-on failed, showing studio log:" && cat studio.log && exit 1)
 
       - name: Run custom questions studio mode tests
         working-directory: packages/cli
