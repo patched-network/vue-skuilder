@@ -93,7 +93,7 @@ jobs:
       - name: Start studio mode for custom questions workflow
         working-directory: packages/cli/testproject-empty
         run: |
-          npx skuilder studio --no-browser > studio.log 2>&1 &
+          npm run studio --no-browser > studio.log 2>&1 &
           echo "Studio process started with PID: $!"
           sleep 2
 
