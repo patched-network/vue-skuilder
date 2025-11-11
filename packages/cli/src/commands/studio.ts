@@ -432,6 +432,13 @@ async function startStudioUIServer(
 
   console.log(chalk.gray(`   Serving studio-ui from: ${studioSourcePath}`));
 
+  const indexHtmlPath = path.join(studioSourcePath, 'index.html');
+  if (!fs.existsSync(indexHtmlPath)) {
+    console.error(chalk.red(`   ERROR: index.html not found at ${indexHtmlPath}`));
+    throw new Error(`Studio-UI index.html missing at ${indexHtmlPath}`);
+  }
+  console.log(chalk.gray(`   Verified index.html exists at: ${indexHtmlPath}`));
+
   const serve = serveStatic(studioSourcePath, {
     index: ['index.html'],
     setHeaders: (res, path) => {
@@ -457,10 +464,12 @@ async function startStudioUIServer(
     try {
       await new Promise<void>((resolve, reject) => {
         const server = http.createServer((req, res) => {
-          const url = new URL(req.url || '/', `http://${req.headers.host}`);
+          try {
+            console.log(chalk.gray(`   [Studio HTTP] ${req.method} ${req.url} from ${req.socket.remoteAddress}`));
+            const url = new URL(req.url || '/', `http://${req.headers.host || 'localhost:7174'}`);
 
-          // Inject config for index.html
-          if (url.pathname === '/' || url.pathname === '/index.html') {
+            // Inject config for index.html
+            if (url.pathname === '/' || url.pathname === '/index.html') {
             const indexPath = path.join(studioSourcePath, 'index.html');
             let html = fs.readFileSync(indexPath, 'utf8');
             const connectionScript = `
@@ -517,14 +526,31 @@ async function startStudioUIServer(
             res.setHeader('Content-Type', 'text/html');
             res.end(html);
           });
+          } catch (error) {
+            console.error(chalk.red(`   [Studio HTTP] Error handling request: ${error}`));
+            res.statusCode = 500;
+            res.end('Internal Server Error');
+          }
+        });
+
+        server.on('listening', () => {
+          const addr = server.address();
+          console.log(chalk.gray(`   [Studio HTTP] Server listening event fired, address: ${JSON.stringify(addr)}`));
+        });
+
+        server.on('connection', (socket) => {
+          console.log(chalk.gray(`   [Studio HTTP] New connection from ${socket.remoteAddress}:${socket.remotePort}`));
         });
 
         server.listen(port, '0.0.0.0', () => {
           studioUIServer = server;
+          const addr = server.address();
+          console.log(chalk.gray(`   [Studio HTTP] Listen callback fired, address: ${JSON.stringify(addr)}`));
           resolve();
         });
 
         server.on('error', (err: NodeJS.ErrnoException) => {
+          console.error(chalk.red(`   [Studio HTTP] Server error: ${err.code} - ${err.message}`));
           if (err.code === 'EADDRINUSE') {
             reject(err);
           } else {
