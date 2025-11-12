@@ -122,6 +122,18 @@ jobs:
           npm run dev &
           npx wait-on http://localhost:5173 --timeout 60000
 
+      - name: Run custom questions dev mode tests
+        working-directory: packages/cli
+        run: yarn test:e2e:custom:dev:headless
+
+      - name: Final cleanup
+        if: always()
+        run: |
+          kill $(lsof -t -i:6173) || true
+          kill $(lsof -t -i:7174) || true
+          kill $(lsof -t -i:3001) || true
+          kill $(lsof -t -i:5985) || true
+
       - name: Upload studio log on failure
         uses: actions/upload-artifact@v4
         if: failure()
