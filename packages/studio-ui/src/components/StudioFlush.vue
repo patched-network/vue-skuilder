@@ -1,5 +1,5 @@
 <template>
-  <v-btn color="success" :loading="flushing" :disabled="flushing" @click="handleFlush">
+  <v-btn :loading="flushing" :disabled="flushing" @click="handleFlush">
     <v-icon start>mdi-content-save</v-icon>
     Flush to Static
   </v-btn>
