@@ -1,5 +1,6 @@
 import { ViewData, Answer, Question } from '@vue-skuilder/courseware';
 import { FieldType, DataShape, DataShapeName } from '@vue-skuilder/common';
+import { markRaw } from 'vue';
 import MultipleChoiceQuestionView from './MultipleChoiceQuestionView.vue';
 
 export class MultipleChoiceQuestion extends Question {
@@ -14,9 +15,7 @@ export class MultipleChoiceQuestion extends Question {
     },
   ];
 
-  public static views = [
-    { name: 'MultipleChoiceQuestionView', component: MultipleChoiceQuestionView },
-  ];
+  public static views = [markRaw(MultipleChoiceQuestionView)];
 
   // @ts-expect-error TS6133: Used in Vue template
   private _questionText: string;

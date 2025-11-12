@@ -85,6 +85,63 @@ jobs:
           # Clean up CouchDB
           yarn couchdb:stop
 
+      # Custom Questions Workflow Test
+      - name: Create empty project for custom questions test
+        working-directory: packages/cli
+        run: yarn try:init:empty
+
+      - name: Start studio mode for custom questions workflow
+        working-directory: packages/cli/testproject-empty
+        run: |
+          npm run studio --no-browser > studio.log 2>&1 &
+          echo "Studio process started with PID: $!"
+          sleep 2
+
+      - name: Wait for studio server to be ready
+        working-directory: packages/cli/testproject-empty
+        run: |
+          echo "Giving studio 3 minutes to build and start..."
+          sleep 180
+          echo "Done waiting, checking studio log:"
+          tail -20 studio.log || echo "No log file"
+
+      - name: Run custom questions studio mode tests
+        working-directory: packages/cli
+        run: yarn test:e2e:custom:studio:headless
+
+      - name: Shutdown studio mode
+        if: always()
+        run: |
+          kill $(lsof -t -i:7174) || true
+          kill $(lsof -t -i:3001) || true
+          kill $(lsof -t -i:5985) || true
+
+      - name: Start dev mode for custom questions verification
+        working-directory: packages/cli/testproject-empty
+        run: |
+          npm run dev &
+          npx wait-on http://localhost:5173 --timeout 60000
+
+      - name: Run custom questions dev mode tests
+        working-directory: packages/cli
+        run: yarn test:e2e:custom:dev:headless
+
+      - name: Final cleanup
+        if: always()
+        run: |
+          kill $(lsof -t -i:6173) || true
+          kill $(lsof -t -i:7174) || true
+          kill $(lsof -t -i:3001) || true
+          kill $(lsof -t -i:5985) || true
+
+      - name: Upload studio log on failure
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: studio-log
+          path: packages/cli/testproject-empty/studio.log
+          retention-days: 7
+
       - name: Upload screenshots on failure
         uses: actions/upload-artifact@v4
         if: failure()
