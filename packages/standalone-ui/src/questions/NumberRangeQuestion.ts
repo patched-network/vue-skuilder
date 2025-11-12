@@ -1,5 +1,6 @@
 import { ViewData, Answer, Question } from '@vue-skuilder/courseware';
 import { FieldType, DataShape, DataShapeName } from '@vue-skuilder/common';
+import { markRaw } from 'vue';
 import NumberRangeQuestionView from './NumberRangeQuestionView.vue';
 
 export class NumberRangeQuestion extends Question {
@@ -14,7 +15,7 @@ export class NumberRangeQuestion extends Question {
     },
   ];
 
-  public static views = [{ name: 'NumberRangeQuestionView', component: NumberRangeQuestionView }];
+  public static views = [markRaw(NumberRangeQuestionView)];
 
   // @ts-expect-error TS6133: Used in Vue template
   private questionText: string;
