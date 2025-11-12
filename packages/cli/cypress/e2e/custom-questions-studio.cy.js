@@ -62,19 +62,16 @@ describe('Custom Questions - Studio Mode', () => {
     cy.get('[data-cy="course-card"]').first().contains('SimpleTextQuestionView');
   });
 
-  // it('should flush changes to static files', () => {
-  //   // Flush button is in the app bar (top of any page)
-  //   cy.visit('http://localhost:7174/browse');
+  it('should flush changes to static files', () => {
+    // Flush button is in the app bar (top of any page)
+    cy.visit('http://localhost:7174/');
 
-  //   // Find and click "Flush to Static" button in app bar
-  //   cy.contains('button', 'Flush to Static', { timeout: 10000 }).should('be.visible').click();
+    // Find and click "Flush to Static" button in app bar
+    cy.contains('button', 'Flush to Static', { timeout: 10000 }).should('be.visible').click();
 
-  //   // Wait for success dialog to appear
-  //   cy.contains('Course successfully saved to static files!', { timeout: 30000 }).should(
-  //     'be.visible'
-  //   );
-
-  //   // Close the dialog
-  //   cy.contains('button', 'Close').click();
-  // });
+    // Wait for success dialog to appear
+    cy.contains('Course successfully saved to static files!', { timeout: 30000 }).should(
+      'be.visible'
+    );
+  });
 });
