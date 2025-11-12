@@ -32,8 +32,8 @@
     "test:e2e:headless": "cypress run --spec 'cypress/e2e/scaffolded-app.cy.js'",
     "test:e2e:custom:studio": "cypress open --e2e --config baseUrl=http://localhost:7174",
     "test:e2e:custom:studio:headless": "cypress run --spec 'cypress/e2e/custom-questions-studio.cy.js' --config baseUrl=http://localhost:7174",
-    "test:e2e:custom:dev": "cypress open --e2e --config baseUrl=http://localhost:6173",
-    "test:e2e:custom:dev:headless": "cypress run --spec 'cypress/e2e/custom-questions-dev.cy.js' --config baseUrl=http://localhost:6173"
+    "test:e2e:custom:dev": "cypress open --e2e --config baseUrl=http://localhost:5173",
+    "test:e2e:custom:dev:headless": "cypress run --spec 'cypress/e2e/custom-questions-dev.cy.js'"
   },
   "keywords": [
     "cli",
