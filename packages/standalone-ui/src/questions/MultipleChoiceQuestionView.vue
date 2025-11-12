@@ -10,7 +10,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, PropType, defineOptions } from 'vue';
+import { ref, computed, PropType, defineOptions } from 'vue';
 import { useViewable, useQuestionView } from '@vue-skuilder/courseware';
 import { MultipleChoiceQuestion } from './MultipleChoiceQuestion';
 import { ViewData } from '@vue-skuilder/common';
@@ -20,27 +20,37 @@ defineOptions({
 });
 
 const props = defineProps({
-  questionText: {
-    type: String,
-    required: true,
-  },
-  options: {
-    type: Array as () => string[],
-    required: true,
-  },
   data: {
     type: Array as PropType<ViewData[]>,
     required: true,
   },
+  modifyDifficulty: {
+    type: Number,
+    required: false,
+    default: 0,
+  },
 });
+
+const emit = defineEmits(['emit-response']);
 
 const selectedAnswer = ref('');
 
-const viewableUtils = useViewable(props, () => {}, 'MultipleChoiceQuestionView');
+const viewableUtils = useViewable(props, emit, 'MultipleChoiceQuestionView');
 const questionUtils = useQuestionView<MultipleChoiceQuestion>(viewableUtils);
 
 // Initialize question
 questionUtils.question.value = new MultipleChoiceQuestion(props.data);
+
+// Extract question text and options from the question instance
+const questionText = computed(() => {
+  const question = new MultipleChoiceQuestion(props.data);
+  return (question as any)._questionText || '';
+});
+
+const options = computed(() => {
+  const question = new MultipleChoiceQuestion(props.data);
+  return (question as any).options || [];
+});
 
 const submitAnswer = () => {
   if (selectedAnswer.value) {
