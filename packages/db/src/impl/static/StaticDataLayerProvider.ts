@@ -138,7 +138,7 @@ export class StaticDataLayerProvider implements DataLayerProvider {
   }
 
   getCoursesDB(): CoursesDBInterface {
-    return new StaticCoursesDB(this.manifests);
+    return new StaticCoursesDB(this.manifests, this.dependencyNameToCourseId);
   }
 
   async getClassroomDB(
