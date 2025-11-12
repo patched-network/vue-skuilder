@@ -1,6 +1,6 @@
 <template>
   <v-app>
-    <v-app-bar color="primary">
+    <v-app-bar>
       <v-toolbar-title>
         <v-icon start>mdi-palette</v-icon>
         Skuilder Studio
