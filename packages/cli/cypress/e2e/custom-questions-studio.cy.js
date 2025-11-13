@@ -73,5 +73,14 @@ describe('Custom Questions - Studio Mode', () => {
     cy.contains('Course successfully saved to static files!', { timeout: 30000 }).should(
       'be.visible'
     );
+
+    // Give flush operation time to complete file writes
+    cy.wait(2000);
+
+    // Verify the flush created JSON files with our question content
+    cy.exec('find . -name "*.json" -exec grep -l "What is 2+2?" {} \\;').then((result) => {
+      expect(result.stdout.trim()).to.not.be.empty;
+      expect(result.code).to.equal(0);
+    });
   });
 });
