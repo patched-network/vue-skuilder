@@ -66,7 +66,7 @@ jobs:
          run: yarn build:lib
        - name: Start dev server and run tests
          run: |
-           yarn docs:dev &
+           yarn docs:dev > /tmp/vitepress.log 2>&1 &
            SERVER_PID=$!
            npx wait-on http://localhost:5173/vue-skuilder
            yarn docs:test
