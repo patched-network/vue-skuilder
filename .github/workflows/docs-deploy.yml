@@ -47,17 +47,37 @@ jobs:
         run: yarn build:lib
       - name: Build with VitePress
         run: yarn docs:build # or pnpm docs:build / yarn docs:build / bun run docs:build
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: docs/.vitepress/dist
-
+   
+  # Test Job
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+       - name: Checkout
+         uses: actions/checkout@v4
+       - name: Setup Node
+         uses: actions/setup-node@v4
+         with:
+           node-version: 22
+           cache: yarn
+       - name: Install dependencies
+         run: yarn install
+       - name: Build skuilder libraries
+         run: yarn build:lib
+       - name: Start dev server and run tests
+         run: |
+           yarn docs:dev &
+           SERVER_PID=$!
+           npx wait-on http://localhost:5173/vue-skuilder
+           yarn docs:test
+           kill $SERVER_PID
+       
   # Deployment job
   deploy:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    needs: build
+    needs: [build, test]
     runs-on: ubuntu-latest
     name: Deploy
     steps:
