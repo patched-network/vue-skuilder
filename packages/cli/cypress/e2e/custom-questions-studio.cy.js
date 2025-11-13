@@ -80,9 +80,20 @@ describe('Custom Questions - Studio Mode', () => {
 
   it('should verify flushed content exists in JSON files', () => {
     // Verify the flush created JSON files with our question content
-    cy.exec('find . -name "*.json" -exec grep -l "What is 2+2?" {} \\;', { failOnNonZeroExit: false }).then((result) => {
-      expect(result.stdout.trim()).to.not.be.empty;
-      expect(result.code).to.equal(0);
+    // Use a simpler command that's more reliable across environments
+    cy.exec('grep -r "What is 2+2?" . --include="*.json"', {
+      failOnNonZeroExit: false,
+      timeout: 30000
+    }).then((result) => {
+      // Debug: log the entire result object
+      cy.log('Exec result:', JSON.stringify(result));
+
+      // Check if command executed at all
+      expect(result.code, 'Command should execute and return exit code').to.not.be.undefined;
+
+      // Check if content was found in files
+      expect(result.stdout.trim(), 'Should find "What is 2+2?" in JSON files').to.not.be.empty;
+      expect(result.code, 'grep should find matches (exit code 0)').to.equal(0);
     });
   });
 });
