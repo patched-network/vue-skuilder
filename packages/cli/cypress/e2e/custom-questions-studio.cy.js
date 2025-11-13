@@ -76,9 +76,11 @@ describe('Custom Questions - Studio Mode', () => {
 
     // Give flush operation time to complete file writes
     cy.wait(2000);
+  });
 
+  it('should verify flushed content exists in JSON files', () => {
     // Verify the flush created JSON files with our question content
-    cy.exec('find . -name "*.json" -exec grep -l "What is 2+2?" {} \\;').then((result) => {
+    cy.exec('find . -name "*.json" -exec grep -l "What is 2+2?" {} \\;', { failOnNonZeroExit: false }).then((result) => {
       expect(result.stdout.trim()).to.not.be.empty;
       expect(result.code).to.equal(0);
     });
