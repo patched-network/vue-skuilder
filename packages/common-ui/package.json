@@ -58,7 +58,7 @@
     "@vitejs/plugin-vue": "^5.2.1",
     "@vue/eslint-config-typescript": "^14.4.0",
     "@vue/test-utils": "^2.4.6",
-    "cypress": "^14.2.1",
+    "cypress": "^15.6.0",
     "cypress-vite": "^1.6.0",
     "eslint": "^9.21.0",
     "eslint-config-prettier": "^10.0.2",
