@@ -66,10 +66,10 @@ jobs:
         run: yarn build:lib
       - name: Start dev server and run tests
         run: |
-          yarn docs:dev > /tmp/vitepress.log 2>&1 &
+          yarn docs:dev --host > /tmp/vitepress.log 2>&1 &
           SERVER_PID=$!
           # Wait for server with timeout, show logs on failure
-          npx wait-on http://localhost:5173/vue-skuilder --timeout 60000 || (echo "Server failed to start. Logs:" && cat /tmp/vitepress.log && exit 1)
+          npx wait-on http-get://localhost:5173/vue-skuilder --timeout 120000 --httpTimeout 30000 || (echo "Server failed to start. Logs:" && cat /tmp/vitepress.log && exit 1)
           yarn docs:test
           kill $SERVER_PID || true
 
