@@ -68,9 +68,10 @@ jobs:
         run: |
           yarn docs:dev > /tmp/vitepress.log 2>&1 &
           SERVER_PID=$!
-          npx wait-on http://localhost:5173/vue-skuilder
+          # Wait for server with timeout, show logs on failure
+          npx wait-on http://localhost:5173/vue-skuilder --timeout 60000 || (echo "Server failed to start. Logs:" && cat /tmp/vitepress.log && exit 1)
           yarn docs:test
-          kill $SERVER_PID
+          kill $SERVER_PID || true
 
   # Deployment job
   deploy:
