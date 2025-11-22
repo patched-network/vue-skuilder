@@ -196,6 +196,19 @@ async function launchStudio(coursePath: string, options: StudioOptions) {
     console.log(chalk.blue(`📋 .mcp.json content:`));
     console.log(chalk.gray(mcpJsonContent));
 
+    // Write .mcp.json file to current directory
+    const mcpJsonPath = path.join(process.cwd(), '.mcp.json');
+    try {
+      fs.writeFileSync(mcpJsonPath, mcpJsonContent, 'utf8');
+      console.log(chalk.green(`✅ MCP configuration written to: ${mcpJsonPath}`));
+    } catch (error) {
+      console.log(
+        chalk.yellow(
+          `⚠️  Failed to write .mcp.json file: ${error instanceof Error ? error.message : String(error)}`
+        )
+      );
+    }
+
     if (options.browser) {
       console.log(chalk.cyan(`🌐 Opening browser...`));
       await openBrowser(`http://localhost:${studioUIPort}`);
@@ -465,14 +478,18 @@ async function startStudioUIServer(
       await new Promise<void>((resolve, reject) => {
         const server = http.createServer((req, res) => {
           try {
-            console.log(chalk.gray(`   [Studio HTTP] ${req.method} ${req.url} from ${req.socket.remoteAddress}`));
+            console.log(
+              chalk.gray(
+                `   [Studio HTTP] ${req.method} ${req.url} from ${req.socket.remoteAddress}`
+              )
+            );
             const url = new URL(req.url || '/', `http://${req.headers.host || 'localhost:7174'}`);
 
             // Inject config for index.html
             if (url.pathname === '/' || url.pathname === '/index.html') {
-            const indexPath = path.join(studioSourcePath, 'index.html');
-            let html = fs.readFileSync(indexPath, 'utf8');
-            const connectionScript = `
+              const indexPath = path.join(studioSourcePath, 'index.html');
+              let html = fs.readFileSync(indexPath, 'utf8');
+              const connectionScript = `
               <script>
                 window.STUDIO_CONFIG = {
                   couchdb: {
@@ -491,19 +508,19 @@ async function startStudioUIServer(
                 };
               </script>
             `;
-            html = html.replace('</head>', connectionScript + '</head>');
-            res.setHeader('Content-Type', 'text/html');
-            res.end(html);
-            return;
-          }
+              html = html.replace('</head>', connectionScript + '</head>');
+              res.setHeader('Content-Type', 'text/html');
+              res.end(html);
+              return;
+            }
 
-          // Fallback to serve-static for all other assets
-          serve(req, res, () => {
-            // If serve-static doesn't find the file, it calls next().
-            // We can treat this as a 404, but for SPAs, we should serve index.html.
-            const indexPath = path.join(studioSourcePath, 'index.html');
-            let html = fs.readFileSync(indexPath, 'utf8');
-            const connectionScript = `
+            // Fallback to serve-static for all other assets
+            serve(req, res, () => {
+              // If serve-static doesn't find the file, it calls next().
+              // We can treat this as a 404, but for SPAs, we should serve index.html.
+              const indexPath = path.join(studioSourcePath, 'index.html');
+              let html = fs.readFileSync(indexPath, 'utf8');
+              const connectionScript = `
               <script>
                 window.STUDIO_CONFIG = {
                   couchdb: {
@@ -522,10 +539,10 @@ async function startStudioUIServer(
                 };
               </script>
             `;
-            html = html.replace('</head>', connectionScript + '</head>');
-            res.setHeader('Content-Type', 'text/html');
-            res.end(html);
-          });
+              html = html.replace('</head>', connectionScript + '</head>');
+              res.setHeader('Content-Type', 'text/html');
+              res.end(html);
+            });
           } catch (error) {
             console.error(chalk.red(`   [Studio HTTP] Error handling request: ${error}`));
             res.statusCode = 500;
@@ -535,17 +552,27 @@ async function startStudioUIServer(
 
         server.on('listening', () => {
           const addr = server.address();
-          console.log(chalk.gray(`   [Studio HTTP] Server listening event fired, address: ${JSON.stringify(addr)}`));
+          console.log(
+            chalk.gray(
+              `   [Studio HTTP] Server listening event fired, address: ${JSON.stringify(addr)}`
+            )
+          );
         });
 
         server.on('connection', (socket) => {
-          console.log(chalk.gray(`   [Studio HTTP] New connection from ${socket.remoteAddress}:${socket.remotePort}`));
+          console.log(
+            chalk.gray(
+              `   [Studio HTTP] New connection from ${socket.remoteAddress}:${socket.remotePort}`
+            )
+          );
         });
 
         server.listen(port, '0.0.0.0', () => {
           studioUIServer = server;
           const addr = server.address();
-          console.log(chalk.gray(`   [Studio HTTP] Listen callback fired, address: ${JSON.stringify(addr)}`));
+          console.log(
+            chalk.gray(`   [Studio HTTP] Listen callback fired, address: ${JSON.stringify(addr)}`)
+          );
           resolve();
         });
 
