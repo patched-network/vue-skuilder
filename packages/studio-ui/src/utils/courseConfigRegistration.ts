@@ -137,20 +137,6 @@ export function registerDataShape(
   dataShape: ProcessedDataShape,
   courseConfig: CourseConfig
 ): boolean {
-  if (isDataShapeSchemaAvailable(dataShape, courseConfig)) {
-    console.log(
-      `   ℹ️  DataShape '${dataShape.name}' from '${dataShape.course}' already registered with schema`
-    );
-    return false;
-  }
-
-  if (isDataShapeRegistered(dataShape, courseConfig)) {
-    console.log(
-      `   ℹ️  DataShape '${dataShape.name}' from '${dataShape.course}' already registered, but with no schema` +
-        `\n   ℹ️  Updating schema in-place`
-    );
-  }
-
   const namespacedName = NameSpacer.getDataShapeString({
     dataShape: dataShape.name,
     course: dataShape.course,
@@ -165,11 +151,41 @@ export function registerDataShape(
     serializedZodSchema = undefined;
   }
 
-  // Check if entry exists but without schema (legacy entry) - remove it
+  // Check if DataShape already exists
   const existingIndex = courseConfig.dataShapes.findIndex((ds) => ds.name === namespacedName);
+
   if (existingIndex !== -1) {
-    console.log(`   🔧 Replacing legacy DataShape entry: ${namespacedName}`);
-    courseConfig.dataShapes.splice(existingIndex, 1);
+    const existingDataShape = courseConfig.dataShapes[existingIndex];
+
+    // If existing schema matches new schema, no update needed
+    if (existingDataShape.serializedZodSchema === serializedZodSchema) {
+      console.log(
+        `   ℹ️  DataShape '${dataShape.name}' from '${dataShape.course}' already registered with identical schema`
+      );
+      return false;
+    }
+
+    // Schema has changed or was missing - update it
+    if (existingDataShape.serializedZodSchema) {
+      console.log(
+        `   🔄 DataShape '${dataShape.name}' from '${dataShape.course}' schema has changed, updating...`
+      );
+    } else {
+      console.log(
+        `   ℹ️  DataShape '${dataShape.name}' from '${dataShape.course}' already registered, but with no schema` +
+          `\n   ℹ️  Adding schema to existing entry`
+      );
+    }
+
+    // Update the existing entry
+    courseConfig.dataShapes[existingIndex] = {
+      name: namespacedName,
+      questionTypes: existingDataShape.questionTypes, // Preserve existing question type associations
+      serializedZodSchema,
+    };
+
+    console.log(`   ✅ Updated DataShape: ${namespacedName}`);
+    return true;
   }
 
   courseConfig.dataShapes.push({
