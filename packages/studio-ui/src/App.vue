@@ -8,14 +8,19 @@
       <v-spacer />
 
       <!-- Navigation buttons -->
-      <v-btn-group v-if="courseId" class="mr-4">
-        <v-btn :color="$route.name === 'browse' ? 'primary' : 'secondary'" @click="$router.push('/')">
+      <div v-if="courseId" class="d-flex mr-4">    
+        <v-btn 
+          :color="$route.name === 'browse' ? 'primary' : 'secondary'" 
+          @click="$router.push('/')"
+          class="mr-2"
+        >
           <v-icon start>mdi-magnify</v-icon>
           Browse Course
         </v-btn>
         <v-btn
           :color="$route.name === 'create-card' ? 'primary' : 'secondary'"
           @click="$router.push('/create-card')"
+          class="mr-2"
         >
           <v-icon start>mdi-card-plus</v-icon>
           Create Card
@@ -27,7 +32,7 @@
           <v-icon start>mdi-file-import</v-icon>
           Bulk Import
         </v-btn>
-      </v-btn-group>
+      </div>
 
       <studio-flush v-if="courseId" :course-id="courseId" />
     </v-app-bar>
