@@ -8,6 +8,7 @@ export default defineConfig({
   build: {
     target: 'es2020',
     minify: 'terser',
+    sourcemap: true,
     terserOptions: {
       keep_classnames: true,
     },
@@ -38,12 +39,12 @@ export default defineConfig({
           '@vue-skuilder/db': 'VueSkuilderDb',
           '@vue-skuilder/common': 'VueSkuilderCommon',
           '@vue-skuilder/common-ui': 'VueSkuilderCommonUI',
+          sourcemap: true,
         },
         // Preserve CSS in the output bundles
         assetFileNames: (assetInfo) => {
           return `assets/[name][extname]`;
         },
-        sourcemap: true,
       },
     },
     // This is crucial for component libraries - allow CSS to be in chunks
