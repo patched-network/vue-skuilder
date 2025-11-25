@@ -35,6 +35,7 @@
           <!-- Data Input Form from edit-ui package -->
           <data-input-form
             v-if="selectedDataShape"
+            :key="selectedDataShapeIndex"
             :course-id="courseId"
             :course-cfg="courseConfig"
             :data-shape="selectedDataShape"
