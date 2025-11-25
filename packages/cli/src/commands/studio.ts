@@ -812,18 +812,18 @@ async function buildStudioUIWithQuestions(
   const buildPath = await ensureBuildDirectory(coursePath, questionsHash);
 
   try {
-    // Handle special cases
-    if (questionsHash === 'no-questions') {
+    // Handle special cases (now version-aware)
+    if (questionsHash.startsWith('no-questions-')) {
       console.log(chalk.gray(`   No local questions detected, using default studio-ui`));
       return await buildDefaultStudioUI(buildPath);
     }
 
-    if (questionsHash === 'empty-questions') {
+    if (questionsHash.startsWith('empty-questions-')) {
       console.log(chalk.gray(`   Empty questions directory, using default studio-ui`));
       return await buildDefaultStudioUI(buildPath);
     }
 
-    if (questionsHash === 'hash-error') {
+    if (questionsHash.startsWith('hash-error-')) {
       const hashError = createStudioBuildError(
         StudioBuildErrorType.QUESTIONS_HASH_ERROR,
         'Questions directory could not be processed',

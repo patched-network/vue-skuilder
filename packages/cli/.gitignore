@@ -1,3 +1,7 @@
+# test projects created by localdev test scripts
 testproject
 testproject-empty
-userdb-Guest
+
+# artifacts from running cli
+userdb-sk*
+logs
