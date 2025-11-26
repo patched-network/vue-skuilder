@@ -4,12 +4,7 @@ import { isSuccessRow } from '../utils/index.js';
 export interface ShapeResource {
   name: string;
   description?: string;
-  fields: Array<{
-    name: string;
-    type: string;
-    required?: boolean;
-    description?: string;
-  }>;
+  schema: any; // The serialized Zod schema as JSON - this is what create_card validates against
   category?: string;
   examples?: any[];
 }
@@ -21,29 +16,37 @@ export interface ShapesCollection {
 }
 
 /**
- * Handle shapes://all resource - List all available DataShapes
+ * Handle shapes://all resource - List all available DataShapes for this course
  */
 export async function handleShapesAllResource(
-  _courseDB: CourseDBInterface
+  courseDB: CourseDBInterface
 ): Promise<ShapesCollection> {
   try {
-    // Import DataShapes from courseware backend (avoids Vue dependencies)
-    const { getAllDataShapesRaw } = await import('@vue-skuilder/courseware/backend');
-    const dataShapes = getAllDataShapesRaw();
+    // Get course-specific DataShapes from the course configuration
+    const config = await courseDB.getCourseConfig();
+    const dataShapes = config.dataShapes || [];
 
     // Transform DataShapes to ShapeResource format
-    const shapes: ShapeResource[] = dataShapes.map((shape) => ({
-      name: shape.name,
-      description: `DataShape for ${shape.name} content type`,
-      fields: shape.fields?.map((field: any) => ({
-        name: field.name,
-        type: field.type || 'string',
-        required: field.required || false,
-        description: field.description || `Field for ${field.name}`,
-      })) || [],
-      category: 'course-content',
-      examples: [], // Could be populated with example cards
-    }));
+    const shapes: ShapeResource[] = dataShapes.map((shape) => {
+      // Parse the serialized Zod schema if available
+      let schema: any = null;
+      if (shape.serializedZodSchema) {
+        try {
+          schema = JSON.parse(shape.serializedZodSchema);
+        } catch (error) {
+          console.warn(`Failed to parse schema for ${shape.name}:`, error);
+          schema = { error: 'Failed to parse schema' };
+        }
+      }
+
+      return {
+        name: shape.name,
+        description: `DataShape for ${shape.name} content type`,
+        schema, // Return the actual JSON schema that create_card validates against
+        category: 'course-content',
+        examples: [], // Could be populated with example cards
+      };
+    });
 
     const availableShapes = dataShapes.map((shape) => shape.name);
 
@@ -61,16 +64,16 @@ export async function handleShapesAllResource(
 }
 
 /**
- * Handle shapes://[shapeName] resource - Get specific DataShape definition
+ * Handle shapes://[shapeName] resource - Get specific DataShape definition for this course
  */
 export async function handleShapeSpecificResource(
   courseDB: CourseDBInterface,
   shapeName: string
 ): Promise<ShapeResource> {
   try {
-    // Import DataShapes from courseware backend (avoids Vue dependencies)
-    const { getAllDataShapesRaw } = await import('@vue-skuilder/courseware/backend');
-    const dataShapes = getAllDataShapesRaw();
+    // Get course-specific DataShapes from the course configuration
+    const config = await courseDB.getCourseConfig();
+    const dataShapes = config.dataShapes || [];
 
     // Find the specific shape
     const targetShape = dataShapes.find((shape) => shape.name === shapeName);
@@ -79,6 +82,17 @@ export async function handleShapeSpecificResource(
       throw new Error(
         `DataShape not found: ${shapeName}. Available shapes: ${availableShapes.join(', ')}`
       );
+    }
+
+    // Parse the serialized Zod schema
+    let schema: any = null;
+    if (targetShape.serializedZodSchema) {
+      try {
+        schema = JSON.parse(targetShape.serializedZodSchema);
+      } catch (error) {
+        console.warn(`Failed to parse schema for ${shapeName}:`, error);
+        schema = { error: 'Failed to parse schema' };
+      }
     }
 
     // Get examples by finding cards that use this shape
@@ -107,12 +121,7 @@ export async function handleShapeSpecificResource(
     return {
       name: targetShape.name,
       description: `DataShape definition for ${targetShape.name} content type`,
-      fields: targetShape.fields?.map((field: any) => ({
-        name: field.name,
-        type: field.type || 'string',
-        required: field.required || false,
-        description: field.description || `Field for ${field.name}`,
-      })) || [],
+      schema, // Return the actual JSON schema that create_card validates against
       category: 'course-content',
       examples,
     };
