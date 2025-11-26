@@ -4,6 +4,7 @@ export interface TagResource {
   name: string;
   description?: string;
   cardCount: number;
+  cardIds: string[];
   created?: string;
   author?: string;
   metadata?: any;
@@ -42,13 +43,11 @@ export async function handleTagsAllResource(
     const tags: TagResource[] = [];
     for (const stub of tagStubs) {
       if (stub.doc) {
-        // For each tag, we'd need to count associated cards
-        // Note: Current CourseDBInterface doesn't have a direct method for this
-        // This is a limitation we'll need to address
         tags.push({
           name: (stub.doc as any).name || stub.id,
           description: (stub.doc as any).snippet || `Tag: ${(stub.doc as any).name}`,
           cardCount: (stub.doc as any).taggedCards?.length || 0,
+          cardIds: [], // stub does not contain cardIDs
           created: (stub.doc as any).created,
           author: (stub.doc as any).author,
           metadata: (stub.doc as any).metadata
@@ -121,6 +120,7 @@ export async function handleTagSpecificResource(
       name: (tag as any).name || tagName,
       description: (tag as any).snippet || `Tag: ${tagName}`,
       cardCount: (tag as any).taggedCards?.length || 0,
+      cardIds: (tag as any).taggedCards || [],
       created: (tag as any).created,
       author: (tag as any).author,
       metadata: (tag as any).metadata
