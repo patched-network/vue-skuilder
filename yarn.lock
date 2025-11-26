@@ -6732,7 +6732,7 @@ __metadata:
     "@types/node": "npm:^20.2.5"
     "@typescript-eslint/eslint-plugin": "npm:^7.4.0"
     "@typescript-eslint/parser": "npm:^7.4.0"
-    axios: "npm:^1.7.4"
+    axios: "npm:^1.12.0"
     command-line-args: "npm:^5.2.1"
     eslint: "npm:^8.57.0"
     jest: "npm:^29.7.0"
@@ -6916,7 +6916,7 @@ __metadata:
     "@typescript-eslint/parser": "npm:^8.25.0"
     "@vue-skuilder/common": "workspace:^"
     "@vue-skuilder/db": "workspace:^"
-    axios: "npm:^1.7.4"
+    axios: "npm:^1.12.0"
     babel-jest: "npm:^29.6.1"
     cookie-parser: "npm:^1.4.7"
     cors: "npm:^2.8.5"
@@ -8103,7 +8103,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"axios@npm:^1.12.1":
+"axios@npm:^1.12.0, axios@npm:^1.12.1":
   version: 1.13.2
   resolution: "axios@npm:1.13.2"
   dependencies:
