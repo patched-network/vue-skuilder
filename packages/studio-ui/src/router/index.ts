@@ -22,6 +22,12 @@ const routes: RouteRecordRaw[] = [
     name: 'create-card',
     component: () => import('../views/CreateCardView.vue'),
   },
+  {
+    path: '/courses/:courseId/tags/:tagId',
+    name: 'tag-editor',
+    component: () => import('../views/TagEditorView.vue'),
+    props: true,
+  },
 ];
 
 const router = createRouter({

@@ -8,6 +8,13 @@
             <v-btn color="success" class="me-2" to="/study">Start Study Session</v-btn>
           </div>
         </template>
+        <template #tag-link="{ tag, courseId: id }">
+          <router-link :to="`/courses/${id}/tags/${tag.name}`">
+            <v-chip variant="tonal" class="me-2 mb-2">
+              {{ tag.name }}
+            </v-chip>
+          </router-link>
+        </template>
       </CourseInformation>
     </div>
     <div v-else class="text-center">
