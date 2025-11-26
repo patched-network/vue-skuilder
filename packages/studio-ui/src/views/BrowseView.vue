@@ -14,6 +14,13 @@
     <div v-else-if="courseId">
       <course-information :course-id="courseId" :view-lookup-function="viewLookupFunction" :edit-mode="'full'">
         <template #actions>&nbsp;</template>
+        <template #tag-link="{ tag, courseId: id }">
+          <router-link :to="`/courses/${id}/tags/${tag.name}`">
+            <v-chip variant="tonal" class="me-2 mb-2">
+              {{ tag.name }}
+            </v-chip>
+          </router-link>
+        </template>
       </course-information>
     </div>
 
