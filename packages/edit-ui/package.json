@@ -3,7 +3,7 @@
   "publishConfig": {
     "access": "public"
   },
-  "version": "0.1.16",
+  "version": "0.1.17",
   "main": "./dist/edit-ui.umd.js",
   "module": "./dist/edit-ui.es.js",
   "types": "./dist/index.d.ts",
@@ -65,5 +65,5 @@
     "vite": "^6.4.1",
     "vitest": "^3.0.5"
   },
-  "stableVersion": "0.1.16"
+  "stableVersion": "0.1.17"
 }
