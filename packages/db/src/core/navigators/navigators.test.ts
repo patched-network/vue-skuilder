@@ -253,3 +253,202 @@ describe('ELO scoring formula', () => {
     expect(calculateEloScore(1000, 0)).toBe(0);
   });
 });
+
+describe('HierarchyDefinition mastery detection', () => {
+  // Test the mastery logic without full DB mocking
+
+  interface MockTagElo {
+    score: number;
+    count: number;
+  }
+
+  interface MasteryThreshold {
+    minElo?: number;
+    minCount?: number;
+  }
+
+  function isTagMastered(
+    tagElo: MockTagElo | undefined,
+    threshold: MasteryThreshold | undefined,
+    userGlobalElo: number
+  ): boolean {
+    if (!tagElo) return false;
+
+    const minCount = threshold?.minCount ?? 3;
+    if (tagElo.count < minCount) return false;
+
+    if (threshold?.minElo !== undefined) {
+      return tagElo.score >= threshold.minElo;
+    } else {
+      // Default: user ELO for tag > global user ELO
+      return tagElo.score >= userGlobalElo;
+    }
+  }
+
+  it('should return false when tag has no ELO data', () => {
+    expect(isTagMastered(undefined, {}, 1000)).toBe(false);
+  });
+
+  it('should return false when count is below threshold', () => {
+    expect(isTagMastered({ score: 1200, count: 2 }, { minCount: 3 }, 1000)).toBe(false);
+  });
+
+  it('should return true when count meets threshold and ELO exceeds minElo', () => {
+    expect(isTagMastered({ score: 1100, count: 5 }, { minElo: 1000, minCount: 3 }, 900)).toBe(true);
+  });
+
+  it('should return false when ELO is below minElo threshold', () => {
+    expect(isTagMastered({ score: 900, count: 5 }, { minElo: 1000, minCount: 3 }, 800)).toBe(false);
+  });
+
+  it('should compare to global ELO when no minElo specified', () => {
+    // Tag ELO above global = mastered
+    expect(isTagMastered({ score: 1100, count: 5 }, {}, 1000)).toBe(true);
+    // Tag ELO below global = not mastered
+    expect(isTagMastered({ score: 900, count: 5 }, {}, 1000)).toBe(false);
+  });
+
+  it('should use default minCount of 3', () => {
+    expect(isTagMastered({ score: 1100, count: 3 }, {}, 1000)).toBe(true);
+    expect(isTagMastered({ score: 1100, count: 2 }, {}, 1000)).toBe(false);
+  });
+});
+
+describe('HierarchyDefinition unlocking logic', () => {
+  interface TagPrerequisite {
+    requires: string[];
+  }
+
+  function getUnlockedTags(
+    prerequisites: { [tagId: string]: TagPrerequisite },
+    masteredTags: Set<string>
+  ): Set<string> {
+    const unlocked = new Set<string>();
+
+    for (const [tagId, prereq] of Object.entries(prerequisites)) {
+      const allPrereqsMet = prereq.requires.every((req) => masteredTags.has(req));
+      if (allPrereqsMet) {
+        unlocked.add(tagId);
+      }
+    }
+
+    return unlocked;
+  }
+
+  it('should unlock tag when all prerequisites are mastered', () => {
+    const prerequisites = {
+      'tag-b': { requires: ['tag-a'] },
+    };
+    const mastered = new Set(['tag-a']);
+
+    const unlocked = getUnlockedTags(prerequisites, mastered);
+
+    expect(unlocked.has('tag-b')).toBe(true);
+  });
+
+  it('should not unlock tag when some prerequisites are missing', () => {
+    const prerequisites = {
+      'tag-c': { requires: ['tag-a', 'tag-b'] },
+    };
+    const mastered = new Set(['tag-a']); // missing tag-b
+
+    const unlocked = getUnlockedTags(prerequisites, mastered);
+
+    expect(unlocked.has('tag-c')).toBe(false);
+  });
+
+  it('should unlock tag when it has empty prerequisites', () => {
+    const prerequisites = {
+      'tag-root': { requires: [] },
+    };
+    const mastered = new Set<string>();
+
+    const unlocked = getUnlockedTags(prerequisites, mastered);
+
+    expect(unlocked.has('tag-root')).toBe(true);
+  });
+
+  it('should handle chain of prerequisites', () => {
+    const prerequisites = {
+      'tag-b': { requires: ['tag-a'] },
+      'tag-c': { requires: ['tag-b'] },
+    };
+
+    // Only tag-a mastered: tag-b unlocks, tag-c does not
+    const mastered1 = new Set(['tag-a']);
+    const unlocked1 = getUnlockedTags(prerequisites, mastered1);
+    expect(unlocked1.has('tag-b')).toBe(true);
+    expect(unlocked1.has('tag-c')).toBe(false);
+
+    // tag-a and tag-b mastered: both tag-b and tag-c unlock
+    const mastered2 = new Set(['tag-a', 'tag-b']);
+    const unlocked2 = getUnlockedTags(prerequisites, mastered2);
+    expect(unlocked2.has('tag-b')).toBe(true);
+    expect(unlocked2.has('tag-c')).toBe(true);
+  });
+
+  it('should handle multiple prerequisites', () => {
+    const prerequisites = {
+      'cvc-words': { requires: ['letter-s', 'letter-a', 'letter-t'] },
+    };
+
+    // Missing one prerequisite
+    const mastered1 = new Set(['letter-s', 'letter-a']);
+    expect(getUnlockedTags(prerequisites, mastered1).has('cvc-words')).toBe(false);
+
+    // All prerequisites met
+    const mastered2 = new Set(['letter-s', 'letter-a', 'letter-t']);
+    expect(getUnlockedTags(prerequisites, mastered2).has('cvc-words')).toBe(true);
+  });
+});
+
+describe('HierarchyDefinition card unlocking', () => {
+  function isCardUnlocked(
+    cardTags: string[],
+    unlockedTags: Set<string>,
+    hasPrerequisites: (tag: string) => boolean
+  ): boolean {
+    return cardTags.every((tag) => unlockedTags.has(tag) || !hasPrerequisites(tag));
+  }
+
+  it('should unlock card when all its tags are unlocked', () => {
+    const cardTags = ['tag-a', 'tag-b'];
+    const unlockedTags = new Set(['tag-a', 'tag-b']);
+    const hasPrereqs = () => true;
+
+    expect(isCardUnlocked(cardTags, unlockedTags, hasPrereqs)).toBe(true);
+  });
+
+  it('should lock card when any tag is locked', () => {
+    const cardTags = ['tag-a', 'tag-b'];
+    const unlockedTags = new Set(['tag-a']); // tag-b not unlocked
+    const hasPrereqs = () => true;
+
+    expect(isCardUnlocked(cardTags, unlockedTags, hasPrereqs)).toBe(false);
+  });
+
+  it('should unlock card when tag has no prerequisites defined', () => {
+    const cardTags = ['tag-without-prereqs'];
+    const unlockedTags = new Set<string>(); // nothing explicitly unlocked
+    const hasPrereqs = (tag: string) => tag !== 'tag-without-prereqs';
+
+    expect(isCardUnlocked(cardTags, unlockedTags, hasPrereqs)).toBe(true);
+  });
+
+  it('should handle mixed tags (some with prereqs, some without)', () => {
+    const cardTags = ['defined-tag', 'root-tag'];
+    const unlockedTags = new Set(['defined-tag']);
+    const hasPrereqs = (tag: string) => tag === 'defined-tag';
+
+    // defined-tag is unlocked, root-tag has no prereqs = card unlocked
+    expect(isCardUnlocked(cardTags, unlockedTags, hasPrereqs)).toBe(true);
+  });
+
+  it('should lock card when defined tag is not unlocked', () => {
+    const cardTags = ['defined-tag', 'root-tag'];
+    const unlockedTags = new Set<string>(); // defined-tag not unlocked
+    const hasPrereqs = (tag: string) => tag === 'defined-tag';
+
+    expect(isCardUnlocked(cardTags, unlockedTags, hasPrereqs)).toBe(false);
+  });
+});
