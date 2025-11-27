@@ -45,8 +45,8 @@ export class TagFilteredContentSource implements StudyContentSource {
         try {
           const tagDoc = await getTag(this.courseId, tagName);
           tagDoc.taggedCards.forEach(cardId => includedCardIds.add(cardId));
-        } catch (error) {
-          logger.warn(`[TagFilteredContentSource] Could not resolve tag "${tagName}" for inclusion.`);
+        } catch (error_) { // Renamed to error_ to avoid conflict with 'error' that's not used
+          logger.warn(`[TagFilteredContentSource] Could not resolve tag "${tagName}" for inclusion. Error: ${error_}`);
         }
       }
     }
@@ -57,8 +57,8 @@ export class TagFilteredContentSource implements StudyContentSource {
         try {
           const tagDoc = await getTag(this.courseId, tagName);
           tagDoc.taggedCards.forEach(cardId => excludedCardIds.add(cardId));
-        } catch (error) {
-          logger.warn(`[TagFilteredContentSource] Could not resolve tag "${tagName}" for exclusion.`);
+        } catch (error_) { // Renamed to error_
+          logger.warn(`[TagFilteredContentSource] Could not resolve tag "${tagName}" for exclusion. Error: ${error_}`);
         }
       }
     }
