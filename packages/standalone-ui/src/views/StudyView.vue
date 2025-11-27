@@ -26,17 +26,22 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { ContentSourceID, getDataLayer } from '@vue-skuilder/db';
+import { ContentSourceID, getDataLayer, StudyContentSource } from '@vue-skuilder/db';
 import { StudySession, type StudySessionConfig, useConfigStore } from '@vue-skuilder/common-ui';
 import { allCourseWare } from '@vue-skuilder/courseware';
 import ENV from '../ENVIRONMENT_VARS';
+import { useStudyConfigStore } from '../stores/studyConfig'; // Import the new store
+import { TagFilteredContentSource, TagFilter } from '@vue-skuilder/db/src/study/TagFilteredContentSource';
+import { CourseDB } from '@vue-skuilder/db/src/impl/couch'; // Needed if we want to add CourseDB as a source
 
 const user = getDataLayer().getUserDB();
 const dataLayer = getDataLayer();
 const configStore = useConfigStore();
+const studyConfigStore = useStudyConfigStore(); // Initialize the new store
+
 const sessionPrepared = ref(false);
 const sessionTimeLimit = ref(Number(configStore.config.sessionTimeLimit));
-const sessionContentSources = ref<ContentSourceID[]>([]);
+const sessionContentSources = ref<StudyContentSource[]>([]); // Changed type to StudyContentSource[]
 const studySessionConfig = ref<StudySessionConfig>({
   likesConfetti: configStore.config.likesConfetti,
 });
@@ -44,23 +49,32 @@ const studySessionConfig = ref<StudySessionConfig>({
 // Function to get view component from courses
 const getViewComponent = (view_id: string) => allCourseWare.getView(view_id);
 
-// Initialize study session with course from environment vars
+// Initialize study session
 const initStudySession = async () => {
-  // Check if course ID is valid
-  if (!ENV.STATIC_COURSE_ID || ENV.STATIC_COURSE_ID === 'not_set') {
-    console.error('[StudyView] No course ID specified in environment vars!');
-    return;
+  if (studyConfigStore.hasConfig) {
+    // Use TagFilteredContentSource if a filter is present
+    const courseId = (studyConfigStore.tagFilter as TagFilter).include[0]; // Assuming single course context for filtered sessions
+    if (!courseId) {
+      console.error('[StudyView] Course ID not found in TagFilter for filtered session.');
+      return;
+    }
+    sessionContentSources.value = [
+      new TagFilteredContentSource(courseId, studyConfigStore.tagFilter as TagFilter, user),
+    ];
+    sessionTimeLimit.value = studyConfigStore.timeLimit as number;
+    studyConfigStore.clearConfig(); // Clear the config after use
+    console.log(`[StudyView] Starting tag-filtered study session for course: ${courseId}`);
+  } else {
+    // Fallback to existing logic using STATIC_COURSE_ID
+    if (!ENV.STATIC_COURSE_ID || ENV.STATIC_COURSE_ID === 'not_set') {
+      console.error('[StudyView] No course ID specified in environment vars and no tag filter found!');
+      return;
+    }
+    console.log(`[StudyView] Starting default study session for course: ${ENV.STATIC_COURSE_ID}`);
+    sessionContentSources.value = [
+      new CourseDB(ENV.STATIC_COURSE_ID, () => Promise.resolve(user)), // CourseDB can also act as StudyContentSource
+    ];
   }
-
-  console.log(`[StudyView] Starting study session for course: ${ENV.STATIC_COURSE_ID}`);
-
-  // Set the content source to the course ID from environment vars
-  sessionContentSources.value = [
-    {
-      type: 'course',
-      id: ENV.STATIC_COURSE_ID,
-    },
-  ];
 
   // Mark the session as prepared
   sessionPrepared.value = true;
@@ -73,12 +87,6 @@ const handleSessionFinished = () => {
 
 // Initialize on component mount
 onMounted(async () => {
-  // user.value = await getCurrentUser();
-
-  // if (user.value) {
   await initStudySession();
-  // } else {
-  //   console.error('[StudyView] No user available!');
-  // }
 });
 </script>
