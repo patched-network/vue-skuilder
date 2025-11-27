@@ -1,6 +1,6 @@
-// packages/standalone-ui/src/stores/studyConfig.ts
+// packages/common-ui/src/stores/studyConfig.ts
 import { defineStore } from 'pinia';
-import { TagFilter } from '@vue-skuilder/db/src/study/TagFilteredContentSource'; // Import the TagFilter interface
+import type { TagFilter } from '@vue-skuilder/db/src/study/TagFilteredContentSource';
 
 interface StudyConfigState {
   tagFilter: TagFilter | null;
@@ -25,6 +25,6 @@ export const useStudyConfigStore = defineStore('studyConfig', {
     },
   },
   getters: {
-    hasConfig: (state) => state.tagFilter !== null && state.timeLimit !== null,
+    hasConfig: (state): boolean => state.tagFilter !== null && state.timeLimit !== null,
   },
 });
