@@ -362,92 +362,102 @@ class HierarchyDefinitionNavigator extends ContentNavigator {
 
 ### Phase 3: InterferenceMitigator Strategy (Filter/Delegate Pattern)
 
-**Goal**: Reduce scores for cards that share tags with recently-seen content.
+**Goal**: Avoid introducing confusable concepts while either is immature. Course authors define explicit interference relationships.
 
 **New file**: `packages/db/src/core/navigators/interferenceMitigator.ts`
 
 **Configuration schema**:
 ```typescript
 interface InterferenceConfig {
-  similarityDecay: number;      // How much similarity reduces score (default: 0.8)
-  lookbackCount: number;        // How many recent cards to consider (default: 10)
+  /** Groups of tags that interfere with each other */
+  interferenceSets: string[][];  // e.g., [["b", "d", "p"], ["d", "t"]]
+  
+  /** Threshold below which a tag is considered "immature" */
+  maturityThreshold?: {
+    minCount?: number;   // default: 10
+    minElo?: number;     // optional
+  };
+  
+  /** How much to reduce score for interfering cards (default: 0.8) */
+  interferenceDecay?: number;
+  
   delegateStrategy?: string;    // Strategy to wrap (default: "elo")
 }
 ```
 
-**Delegate pattern implementation**:
+**Example LP configuration**:
+```json
+{
+  "interferenceSets": [
+    ["b", "d", "p"],
+    ["d", "t"],
+    ["m", "n"]
+  ],
+  "maturityThreshold": { "minCount": 10 },
+  "interferenceDecay": 0.8
+}
+```
+
+**Algorithm**:
+1. Build interference map from config (tag → set of interfering tags)
+2. Identify user's **immature tags** (started but below maturity threshold)
+3. Compute **tags to avoid** = partners of immature tags (excluding already-immature ones)
+4. For each candidate card, reduce score if its tags overlap with avoid set
+
 ```typescript
 class InterferenceMitigatorNavigator extends ContentNavigator {
-  private delegate: ContentNavigator;
-  private config: InterferenceConfig;
+  private interferenceMap: Map<string, Set<string>>;  // Precomputed from config
   
   async getWeightedCards(limit: number): Promise<WeightedCard[]> {
-    // 1. Get candidates from delegate (over-fetch)
     const candidates = await this.delegate.getWeightedCards(limit * 3);
     
-    // 2. Get recently seen cards from user history
-    const recentCardIds = await this.getRecentlySeenCards();
-    const recentTags = await this.collectTags(recentCardIds);
+    // Identify what to avoid
+    const immatureTags = await this.getImmatureTags();
+    const tagsToAvoid = this.getTagsToAvoid(immatureTags);
     
-    // 3. Adjust scores based on tag similarity
-    const adjusted: WeightedCard[] = [];
-    for (const card of candidates) {
-      const cardTags = await this.course.getAppliedTags(card.cardId);
-      const similarity = this.jaccardSimilarity(cardTags, recentTags);
-      
-      // Reduce score by similarity
-      const adjustedScore = card.score * (1.0 - similarity * this.config.similarityDecay);
-      adjusted.push({ ...card, score: adjustedScore });
-    }
+    // Adjust scores
+    const adjusted = candidates.map(card => {
+      const cardTags = await this.getCardTags(card.cardId);
+      const multiplier = this.computeInterferenceMultiplier(cardTags, tagsToAvoid);
+      return { ...card, score: card.score * multiplier };
+    });
     
-    // 4. Re-sort by adjusted score
     adjusted.sort((a, b) => b.score - a.score);
     return adjusted.slice(0, limit);
   }
   
-  private jaccardSimilarity(tagsA: string[], tagsB: Set<string>): number {
-    const intersection = tagsA.filter(t => tagsB.has(t)).length;
-    const union = new Set([...tagsA, ...tagsB]).size;
-    return union === 0 ? 0 : intersection / union;
+  private async getImmatureTags(): Promise<Set<string>> {
+    // Tags where user has count > 0 but below maturity threshold
+    const userElo = await this.user.getCourseRegDoc(...).elo.tags;
+    // Return tags that are started but not yet mature
   }
   
-  private async getRecentlySeenCards(): Promise<string[]> {
-    const seenCards = await this.user.getSeenCards(this.course.getCourseID());
-    return seenCards.slice(-this.config.lookbackCount);
+  private getTagsToAvoid(immatureTags: Set<string>): Set<string> {
+    // For each immature tag, add its interference partners
+    // (but not if partner is also immature — already learning both)
   }
   
-  private async collectTags(cardIds: string[]): Promise<Set<string>> {
-    const tags = new Set<string>();
-    for (const cardId of cardIds) {
-      const cardTags = await this.course.getAppliedTags(cardId);
-      cardTags.forEach(t => tags.add(t));
-    }
-    return tags;
+  private computeInterferenceMultiplier(cardTags: string[], avoid: Set<string>): number {
+    const interferingCount = cardTags.filter(t => avoid.has(t)).length;
+    if (interferingCount === 0) return 1.0;
+    return Math.pow(1.0 - decay, interferingCount);  // More interference = lower score
   }
-  
-  // Legacy methods delegate through
-  async getNewCards(n) { return this.delegate.getNewCards(n); }
-  async getPendingReviews() { return this.delegate.getPendingReviews(); }
 }
 ```
 
-**Data access**: Strategy has `user: UserDBInterface` for history:
-- `getSeenCards(courseId)` — cards user has seen (last N for recency)
+**Key insight**: This is maturity-aware, not just recency-aware. The goal is to maximize conceptual distance when introducing new content while foundational concepts are still being learned.
 
-**Score adjustment**: Unlike Hierarchy (hard gate: 0 or passthrough), Interference is multiplicative:
-- `adjustedScore = delegateScore * (1.0 - similarity * decay)`
-- High similarity → lower score, but never hard-filtered
+**LP use case**: While learning `d`, prefer introducing `x` over `b` (visual similarity) or `t` (phonetic similarity). Once `d` is mature, `b` and `t` can be introduced freely.
 
-**LP use case**: Separates b/d, prevents similar-sounding letters (d/t) in sequence.
+**Future consideration**: Minimal-pair exercises (e.g., `bad` vs `dad`) for deliberate contrast when it IS time to introduce interfering concepts. May be a separate strategy or an extension.
 
 **Success criteria**:
-- [ ] InterferenceMitigatorNavigator implemented with delegate pattern
-- [ ] Jaccard similarity correctly computed
-- [ ] Recent history correctly retrieved from user
-- [ ] Cards with high tag overlap get reduced scores
-- [ ] Delegate's scores are preserved and adjusted (not replaced)
-- [ ] Unit tests for similarity calculation, score adjustment
-- [ ] Integration test: similar cards spaced apart in sequence
+- [x] InterferenceMitigatorNavigator implemented with delegate pattern
+- [x] Interference sets parsed from config, precomputed into map
+- [x] Immature tag detection (started but below threshold)
+- [x] Tags-to-avoid computation (partners of immature tags)
+- [x] Score reduction based on interference overlap
+- [x] Delegate's scores preserved and adjusted (multiplicative)
 
 **Estimated effort**: 3-4 hours
 
