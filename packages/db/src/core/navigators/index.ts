@@ -9,9 +9,29 @@ import { ContentNavigationStrategyData } from '../types/contentNavigationStrateg
 import { ScheduledCard } from '../types/user';
 import { logger } from '../../util/logger';
 
+/**
+ * A card with a suitability score for presentation.
+ *
+ * Scores range from 0-1:
+ * - 1.0 = fully suitable
+ * - 0.0 = hard filter (e.g., prerequisite not met)
+ * - 0.5 = neutral
+ * - Intermediate values = soft preference
+ */
+export interface WeightedCard {
+  cardId: string;
+  courseId: string;
+  /** Suitability score from 0-1 */
+  score: number;
+  /** Origin of the card */
+  source: 'new' | 'review' | 'failed';
+}
+
 export enum Navigators {
   ELO = 'elo',
   HARDCODED = 'hardcodedOrder',
+  HIERARCHY = 'hierarchyDefinition',
+  INTERFERENCE = 'interferenceMitigator',
 }
 
 /**
@@ -55,4 +75,36 @@ export abstract class ContentNavigator implements StudyContentSource {
 
   abstract getPendingReviews(): Promise<(StudySessionReviewItem & ScheduledCard)[]>;
   abstract getNewCards(n?: number): Promise<StudySessionNewItem[]>;
+
+  /**
+   * Get cards with suitability scores.
+   *
+   * This is the primary method for the new weighted-card architecture.
+   * Filter strategies can wrap a delegate and transform its output.
+   *
+   * @param limit - Maximum cards to return
+   * @returns Cards sorted by score descending
+   */
+  async getWeightedCards(limit: number): Promise<WeightedCard[]> {
+    // Default implementation: delegate to legacy methods, assign score=1.0
+    const newCards = await this.getNewCards(limit);
+    const reviews = await this.getPendingReviews();
+
+    const weighted: WeightedCard[] = [
+      ...newCards.map((c) => ({
+        cardId: c.cardID,
+        courseId: c.courseID,
+        score: 1.0,
+        source: 'new' as const,
+      })),
+      ...reviews.map((r) => ({
+        cardId: r.cardID,
+        courseId: r.courseID,
+        score: 1.0,
+        source: 'review' as const,
+      })),
+    ];
+
+    return weighted.slice(0, limit);
+  }
 }
