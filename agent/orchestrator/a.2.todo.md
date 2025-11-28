@@ -37,31 +37,48 @@ Extend `NavigationStrategyEditor.vue` to support creating all strategy types (no
 
 ---
 
-## Phase 2: Hierarchy Strategy Form
+## Phase 2: Hierarchy Strategy Form - COMPLETED
 
-### P2.1: Create HierarchyConfigForm Component
-- [ ] Create `HierarchyConfigForm.vue`
+### P2.1: Create HierarchyConfigForm Component - COMPLETED
+- [x] Create `HierarchyConfigForm.vue`
   - Props: `modelValue` (HierarchyConfig), `courseId` (for tag fetching)
   - Emits: `update:modelValue`
   - Fetch available tags from course
-- [ ] Implement prerequisite builder UI
+- [x] Implement prerequisite builder UI
   - Add prerequisite button (select tag, then add prerequisites for it)
   - For each prerequisite entry:
     - Tag selector (from course tags)
     - Optional mastery thresholds (minElo, minCount)
   - Remove prerequisite button
-- [ ] Add bulk text input support
+- [x] Add bulk text input support
   - Text area for JSON paste (with validation preview)
   - Convert between UI state and JSON representation
-- [ ] Add delegate strategy selector
-- [ ] Validate config using `HierarchyDefinitionNavigator.parseConfig()`
-  - Test with valid and invalid configs
+  - Dual mode tabs: Visual Editor / JSON Editor
+- [x] Add delegate strategy selector
+- [x] Validate config
+  - Basic validation (prerequisites must be object, circular dependency check)
   - Show validation errors in UI
 
-### P2.2: Test Hierarchy Strategy Creation
+### P2.2: Test Hierarchy Strategy Creation - READY FOR TESTING
 - [ ] Create a hierarchy strategy via UI
 - [ ] Verify it saves to database correctly
 - [ ] Verify it loads back into the editor (when editing is implemented)
+
+**Implementation Notes:**
+- Created HierarchyConfigForm.vue with dual input modes (Visual/JSON)
+- Visual mode features:
+  - Add/remove prerequisite rules (gated tags)
+  - For each rule: select tag, add multiple prerequisites
+  - Each prerequisite: tag selector, min count, optional min ELO
+  - Delegate strategy dropdown
+- JSON mode: paste/edit full config with validation
+- Loads course tags via getDataLayer().getCourseDB().getAllTags()
+- Basic circular dependency detection
+- Modified NavigationStrategyEditor to:
+  - Import and register HierarchyConfigForm
+  - Add getDefaultConfig() method for all strategy types
+  - Add watcher to reset config when strategy type changes
+  - Add hierarchy-specific validation in saveNewStrategy()
 
 ---
 

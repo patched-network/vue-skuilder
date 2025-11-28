@@ -47,6 +47,12 @@
               v-model="newStrategy.config"
             />
 
+            <hierarchy-config-form
+              v-else-if="newStrategy.type === 'hierarchy'"
+              v-model="newStrategy.config"
+              :course-id="courseId"
+            />
+
             <!-- Placeholder for other strategy types -->
             <v-alert v-else type="info" density="compact">
               Configuration form for {{ newStrategy.type }} strategy coming soon.
@@ -80,6 +86,7 @@ import { defineComponent } from 'vue';
 import type { ContentNavigationStrategyData } from '@vue-skuilder/db/src/core/types/contentNavigationStrategy';
 import NavigationStrategyList from './NavigationStrategyList.vue';
 import HardcodedOrderConfigForm from './HardcodedOrderConfigForm.vue';
+import HierarchyConfigForm from './HierarchyConfigForm.vue';
 import { getDataLayer, DocType, Navigators } from '@vue-skuilder/db';
 import { DocTypePrefixes } from '@vue-skuilder/db/src/core/types/types-legacy';
 
@@ -89,6 +96,7 @@ export default defineComponent({
   components: {
     NavigationStrategyList,
     HardcodedOrderConfigForm,
+    HierarchyConfigForm,
   },
 
   props: {
@@ -125,7 +133,46 @@ export default defineComponent({
     await this.loadStrategies();
   },
 
+  watch: {
+    'newStrategy.type'(newType: string) {
+      // Reset config when strategy type changes
+      this.newStrategy.config = this.getDefaultConfig(newType);
+    },
+  },
+
   methods: {
+    getDefaultConfig(strategyType: string) {
+      switch (strategyType) {
+        case 'hardcoded':
+          return { cardIds: [] };
+        case 'hierarchy':
+          return {
+            prerequisites: {},
+            delegateStrategy: 'elo',
+          };
+        case 'interference':
+          return {
+            interferenceSets: [],
+            maturityThreshold: {
+              minCount: 10,
+              minElapsedDays: 3,
+            },
+            defaultDecay: 0.8,
+            delegateStrategy: 'elo',
+          };
+        case 'relativePriority':
+          return {
+            tagPriorities: {},
+            defaultPriority: 0.5,
+            combineMode: 'max',
+            priorityInfluence: 0.5,
+            delegateStrategy: 'elo',
+          };
+        default:
+          return {};
+      }
+    },
+
     async loadStrategies() {
       this.loading = true;
       try {
@@ -180,11 +227,12 @@ export default defineComponent({
     },
 
     openCreateDialog() {
+      const defaultType = 'hardcoded';
       this.newStrategy = {
-        type: 'hardcoded',
+        type: defaultType,
         name: '',
         description: '',
-        config: { cardIds: [] },
+        config: this.getDefaultConfig(defaultType),
       };
       this.showCreateDialog = true;
     },
@@ -199,6 +247,14 @@ export default defineComponent({
       if (this.newStrategy.type === 'hardcoded' && this.newStrategy.config.cardIds.length === 0) {
         alert('At least one card ID is required for hardcoded order strategy.');
         return;
+      }
+
+      if (this.newStrategy.type === 'hierarchy') {
+        const prereqCount = Object.keys(this.newStrategy.config.prerequisites || {}).length;
+        if (prereqCount === 0) {
+          alert('At least one prerequisite rule is required for hierarchy strategy.');
+          return;
+        }
       }
 
       this.loading = true;
