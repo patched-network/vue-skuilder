@@ -32,6 +32,7 @@ export enum Navigators {
   HARDCODED = 'hardcodedOrder',
   HIERARCHY = 'hierarchyDefinition',
   INTERFERENCE = 'interferenceMitigator',
+  RELATIVE_PRIORITY = 'relativePriority',
 }
 
 /**

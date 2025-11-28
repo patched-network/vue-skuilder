@@ -452,3 +452,171 @@ describe('HierarchyDefinition card unlocking', () => {
     expect(isCardUnlocked(cardTags, unlockedTags, hasPrereqs)).toBe(false);
   });
 });
+
+describe('RelativePriority boost factor computation', () => {
+  // Test the boost factor formula: 1 + (priority - 0.5) * priorityInfluence
+
+  function computeBoostFactor(priority: number, priorityInfluence: number): number {
+    return 1 + (priority - 0.5) * priorityInfluence;
+  }
+
+  it('should return 1.0 for neutral priority (0.5)', () => {
+    expect(computeBoostFactor(0.5, 0.5)).toBe(1.0);
+    expect(computeBoostFactor(0.5, 1.0)).toBe(1.0);
+    expect(computeBoostFactor(0.5, 0.0)).toBe(1.0);
+  });
+
+  it('should boost high-priority content', () => {
+    // Priority 1.0 with influence 0.5 → boost of 1.25
+    expect(computeBoostFactor(1.0, 0.5)).toBeCloseTo(1.25);
+    // Priority 1.0 with influence 1.0 → boost of 1.5
+    expect(computeBoostFactor(1.0, 1.0)).toBeCloseTo(1.5);
+  });
+
+  it('should reduce low-priority content', () => {
+    // Priority 0.0 with influence 0.5 → factor of 0.75
+    expect(computeBoostFactor(0.0, 0.5)).toBeCloseTo(0.75);
+    // Priority 0.0 with influence 1.0 → factor of 0.5
+    expect(computeBoostFactor(0.0, 1.0)).toBeCloseTo(0.5);
+  });
+
+  it('should have no effect when influence is 0', () => {
+    expect(computeBoostFactor(1.0, 0.0)).toBe(1.0);
+    expect(computeBoostFactor(0.0, 0.0)).toBe(1.0);
+    expect(computeBoostFactor(0.75, 0.0)).toBe(1.0);
+  });
+
+  it('should scale linearly with priority', () => {
+    const influence = 0.5;
+    // 0.75 priority (halfway between 0.5 and 1.0)
+    expect(computeBoostFactor(0.75, influence)).toBeCloseTo(1.125);
+    // 0.25 priority (halfway between 0.0 and 0.5)
+    expect(computeBoostFactor(0.25, influence)).toBeCloseTo(0.875);
+  });
+});
+
+describe('RelativePriority tag priority combination', () => {
+  function computeCardPriority(
+    cardTags: string[],
+    tagPriorities: { [tagId: string]: number },
+    defaultPriority: number,
+    combineMode: 'max' | 'average' | 'min'
+  ): number {
+    if (cardTags.length === 0) {
+      return defaultPriority;
+    }
+
+    const priorities = cardTags.map((tag) => tagPriorities[tag] ?? defaultPriority);
+
+    switch (combineMode) {
+      case 'max':
+        return Math.max(...priorities);
+      case 'min':
+        return Math.min(...priorities);
+      case 'average':
+        return priorities.reduce((sum, p) => sum + p, 0) / priorities.length;
+      default:
+        return Math.max(...priorities);
+    }
+  }
+
+  const tagPriorities = {
+    'letter-s': 0.95,
+    'letter-t': 0.9,
+    'letter-x': 0.1,
+    'letter-z': 0.05,
+  };
+
+  it('should return default priority for cards with no tags', () => {
+    expect(computeCardPriority([], tagPriorities, 0.5, 'max')).toBe(0.5);
+  });
+
+  it('should return tag priority for single-tag card', () => {
+    expect(computeCardPriority(['letter-s'], tagPriorities, 0.5, 'max')).toBe(0.95);
+    expect(computeCardPriority(['letter-x'], tagPriorities, 0.5, 'max')).toBe(0.1);
+  });
+
+  it('should use default priority for unlisted tags', () => {
+    expect(computeCardPriority(['unknown-tag'], tagPriorities, 0.5, 'max')).toBe(0.5);
+  });
+
+  it('should use max mode correctly', () => {
+    // Mixed high and low priority tags
+    expect(computeCardPriority(['letter-s', 'letter-x'], tagPriorities, 0.5, 'max')).toBe(0.95);
+    expect(computeCardPriority(['letter-z', 'letter-x'], tagPriorities, 0.5, 'max')).toBe(0.1);
+  });
+
+  it('should use min mode correctly', () => {
+    expect(computeCardPriority(['letter-s', 'letter-x'], tagPriorities, 0.5, 'min')).toBe(0.1);
+    expect(computeCardPriority(['letter-s', 'letter-t'], tagPriorities, 0.5, 'min')).toBe(0.9);
+  });
+
+  it('should use average mode correctly', () => {
+    // Average of 0.95 and 0.10 = 0.525
+    expect(
+      computeCardPriority(['letter-s', 'letter-x'], tagPriorities, 0.5, 'average')
+    ).toBeCloseTo(0.525);
+    // Average of 0.95, 0.90, 0.10 = 0.65
+    expect(
+      computeCardPriority(['letter-s', 'letter-t', 'letter-x'], tagPriorities, 0.5, 'average')
+    ).toBeCloseTo(0.65);
+  });
+
+  it('should include default priority in average for mixed tags', () => {
+    // 'letter-s' = 0.95, 'unknown' = 0.5 (default), average = 0.725
+    expect(
+      computeCardPriority(['letter-s', 'unknown-tag'], tagPriorities, 0.5, 'average')
+    ).toBeCloseTo(0.725);
+  });
+});
+
+describe('RelativePriority score adjustment', () => {
+  function adjustScore(delegateScore: number, priority: number, priorityInfluence: number): number {
+    const boostFactor = 1 + (priority - 0.5) * priorityInfluence;
+    // Clamp to [0, 1]
+    return Math.max(0, Math.min(1, delegateScore * boostFactor));
+  }
+
+  it('should boost high-priority cards', () => {
+    // Delegate score 0.8, priority 1.0, influence 0.5 → 0.8 * 1.25 = 1.0 (clamped)
+    expect(adjustScore(0.8, 1.0, 0.5)).toBe(1.0);
+    // Delegate score 0.6, priority 1.0, influence 0.5 → 0.6 * 1.25 = 0.75
+    expect(adjustScore(0.6, 1.0, 0.5)).toBeCloseTo(0.75);
+  });
+
+  it('should reduce low-priority cards', () => {
+    // Delegate score 0.8, priority 0.0, influence 0.5 → 0.8 * 0.75 = 0.6
+    expect(adjustScore(0.8, 0.0, 0.5)).toBeCloseTo(0.6);
+  });
+
+  it('should leave neutral-priority cards unchanged', () => {
+    expect(adjustScore(0.8, 0.5, 0.5)).toBe(0.8);
+    expect(adjustScore(0.5, 0.5, 1.0)).toBe(0.5);
+  });
+
+  it('should clamp scores to maximum of 1.0', () => {
+    // High delegate score with high priority should cap at 1.0
+    expect(adjustScore(0.9, 1.0, 1.0)).toBe(1.0);
+    expect(adjustScore(1.0, 0.8, 0.5)).toBe(1.0);
+  });
+
+  it('should clamp scores to minimum of 0.0', () => {
+    // Low delegate score with low priority and high influence
+    // 0.3 * 0.5 = 0.15 (priority 0, influence 1.0)
+    expect(adjustScore(0.3, 0.0, 1.0)).toBeCloseTo(0.15);
+    // Edge case: should never go below 0
+    expect(adjustScore(0.1, 0.0, 1.0)).toBeGreaterThanOrEqual(0);
+  });
+
+  it('should preserve ordering for cards with different priorities', () => {
+    const delegateScore = 0.7;
+    const influence = 0.5;
+
+    const highPriorityScore = adjustScore(delegateScore, 0.95, influence);
+    const mediumPriorityScore = adjustScore(delegateScore, 0.5, influence);
+    const lowPriorityScore = adjustScore(delegateScore, 0.1, influence);
+
+    expect(highPriorityScore).toBeGreaterThan(mediumPriorityScore);
+    expect(mediumPriorityScore).toBeGreaterThan(lowPriorityScore);
+  });
+});

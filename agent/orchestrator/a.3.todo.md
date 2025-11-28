@@ -152,6 +152,58 @@
 
 ---
 
+## Phase 3.5: RelativePriority Strategy
+
+**Status**: COMPLETED
+
+**Goal**: Boost scores for high-utility content based on author-defined tag priorities. Prefer common, well-behaved patterns (like 's') over rare/irregular ones (like 'x', 'z').
+
+### Tasks
+
+- [x] p3.5.1: Create `RelativePriorityNavigator` class
+  - Created: `packages/db/src/core/navigators/relativePriority.ts`
+  - Extends `ContentNavigator`
+  - Has `delegate: ContentNavigator` field (lazy-initialized)
+
+- [x] p3.5.2: Define config interface
+  ```typescript
+  interface RelativePriorityConfig {
+    tagPriorities: { [tagId: string]: number };  // 0-1, where 1.0 = highest priority
+    defaultPriority?: number;                     // for unlisted tags (default: 0.5)
+    combineMode?: 'max' | 'average' | 'min';      // how to combine multiple tags
+    priorityInfluence?: number;                   // how strongly priority affects score (default: 0.5)
+    delegateStrategy?: string;                    // default: "elo"
+  }
+  ```
+
+- [x] p3.5.3: Implement boost factor computation
+  - Formula: `boostFactor = 1 + (priority - 0.5) * priorityInfluence`
+  - Priority 1.0 with influence 0.5 → boost 1.25 (25% higher)
+  - Priority 0.5 → boost 1.00 (neutral)
+  - Priority 0.0 with influence 0.5 → boost 0.75 (25% lower)
+
+- [x] p3.5.4: Implement `getWeightedCards(limit)`
+  - Get candidates from delegate
+  - Look up tags for each card
+  - Compute combined priority (max/average/min)
+  - Apply boost factor to delegate score
+  - Clamp to [0, 1] and sort
+
+- [x] p3.5.5: Register in factory
+  - Added to `Navigators` enum: `RELATIVE_PRIORITY = 'relativePriority'`
+
+- [x] p3.5.6: Add unit tests
+  - Added to `navigators.test.ts`:
+  - Boost factor computation (18 new tests)
+  - Tag priority combination (max/average/min modes)
+  - Score adjustment with clamping
+
+- [x] p3.5.7: Verify build and tests pass
+  - [x] Build: `yarn workspace @vue-skuilder/db build` ✓
+  - [x] Tests: 48 tests passing ✓
+
+---
+
 ## Phase 4: Orchestrator (DEFERRED)
 
 **Status**: NOT STARTED — not needed for LP MVP
@@ -163,11 +215,28 @@ Delegate pattern handles composition for now. Full orchestrator needed for:
 
 ---
 
+## Phase 4a: Production Integration (PLANNED)
+
+**Status**: NOT STARTED
+
+**Goal**: Wire SessionController to use `getWeightedCards()` so new strategies are actually exercised at runtime.
+
+### Key Gap
+Currently, `SessionController` still calls legacy `getNewCards()` / `getPendingReviews()`. The new `getWeightedCards()` API is implemented but not integrated.
+
+### Tasks (estimated)
+- [ ] p4a.1: Add parallel path in SessionController for weighted card selection
+- [ ] p4a.2: Extend `getDebugInfo()` to include active strategy info
+- [ ] p4a.3: Add strategy creation support (CLI or UI)
+
+---
+
 ## Notes for Implementers
 
 ### Key Files
 - `packages/db/src/core/navigators/index.ts` — ContentNavigator base, factory, Navigators enum
 - `packages/db/src/core/navigators/elo.ts` — Reference generator strategy
+- `packages/db/src/core/navigators/relativePriority.ts` — Priority-based score boosting
 - `packages/db/src/core/interfaces/userDB.ts` — UserDBInterface (history, ELO)
 - `packages/db/src/impl/couch/courseDB.ts` — Tag queries, ELO queries
 
@@ -185,11 +254,12 @@ Delegate pattern handles composition for now. Full orchestrator needed for:
 ### Delegate Pattern
 Filter strategies wrap a delegate and transform its output:
 ```
-Interference(delegate=Hierarchy(delegate=ELO))
+RelativePriority(delegate=Interference(delegate=Hierarchy(delegate=ELO)))
 ```
 - ELO generates candidates with scores
 - Hierarchy gates (filters locked cards, preserves scores)
 - Interference adjusts scores (multiplicative reduction for similar tags)
+- RelativePriority boosts/reduces scores based on tag utility
 
 ### Data Access (via constructor params)
 - `user: UserDBInterface`
