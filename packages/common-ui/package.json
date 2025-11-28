@@ -3,7 +3,7 @@
   "publishConfig": {
     "access": "public"
   },
-  "version": "0.1.16",
+  "version": "0.1.17",
   "main": "./dist/common-ui.umd.js",
   "module": "./dist/common-ui.es.js",
   "types": "./dist/index.d.ts",
@@ -70,5 +70,5 @@
     "vite-plugin-dts": "^4.5.3",
     "vitest": "^3.0.5"
   },
-  "stableVersion": "0.1.16"
+  "stableVersion": "0.1.17"
 }

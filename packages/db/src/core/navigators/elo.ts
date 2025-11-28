@@ -1,8 +1,8 @@
 import { ScheduledCard } from '../types/user';
 import { CourseDBInterface } from '../interfaces/courseDB';
 import { UserDBInterface } from '../interfaces/userDB';
-import { ContentNavigator } from './index';
-import { CourseElo } from '@vue-skuilder/common';
+import { ContentNavigator, WeightedCard } from './index';
+import { CourseElo, toCourseElo } from '@vue-skuilder/common';
 import { StudySessionReviewItem, StudySessionNewItem, QualifiedCardID } from '..';
 
 export default class ELONavigator extends ContentNavigator {
@@ -75,5 +75,62 @@ export default class ELONavigator extends ContentNavigator {
         status: 'new',
       };
     });
+  }
+
+  /**
+   * Get cards with suitability scores based on ELO distance.
+   *
+   * Cards closer to user's ELO get higher scores.
+   * Score formula: max(0, 1 - distance / 500)
+   */
+  async getWeightedCards(limit: number): Promise<WeightedCard[]> {
+    // Get user's ELO for this course
+    const courseReg = await this.user.getCourseRegDoc(this.course.getCourseID());
+    const userElo = toCourseElo(courseReg.elo);
+    const userGlobalElo = userElo.global.score;
+
+    // Get new cards (existing logic)
+    const newCards = await this.getNewCards(limit);
+
+    // Get reviews (existing logic)
+    const reviews = await this.getPendingReviews();
+
+    // Get ELO data for all cards in one batch
+    const allCardIds = [...newCards.map((c) => c.cardID), ...reviews.map((r) => r.cardID)];
+    const cardEloData = await this.course.getCardEloData(allCardIds);
+
+    // Build a map for quick lookup
+    const eloMap = new Map<string, number>();
+    allCardIds.forEach((id, i) => {
+      eloMap.set(id, cardEloData[i]?.global?.score ?? 1000);
+    });
+
+    // Score new cards by ELO distance
+    const scoredNew: WeightedCard[] = newCards.map((c) => {
+      const cardElo = eloMap.get(c.cardID) ?? 1000;
+      const distance = Math.abs(cardElo - userGlobalElo);
+      const score = Math.max(0, 1 - distance / 500);
+
+      return {
+        cardId: c.cardID,
+        courseId: c.courseID,
+        score,
+        source: 'new' as const,
+      };
+    });
+
+    // Score reviews (for now, score=1.0; future: score by overdueness)
+    const scoredReviews: WeightedCard[] = reviews.map((r) => ({
+      cardId: r.cardID,
+      courseId: r.courseID,
+      score: 1.0,
+      source: 'review' as const,
+    }));
+
+    // Combine and sort by score descending
+    const all = [...scoredNew, ...scoredReviews];
+    all.sort((a, b) => b.score - a.score);
+
+    return all.slice(0, limit);
   }
 }
