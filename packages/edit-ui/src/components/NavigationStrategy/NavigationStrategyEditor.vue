@@ -24,19 +24,33 @@
         Add New Strategy
       </v-btn>
 
-      <v-dialog v-model="showCreateDialog" max-width="600px">
+      <v-dialog v-model="showCreateDialog" max-width="800px">
         <v-card>
           <v-card-title>Create New Navigation Strategy</v-card-title>
           <v-card-text>
+            <v-select
+              v-model="newStrategy.type"
+              label="Strategy Type"
+              :items="strategyTypes"
+              item-title="label"
+              item-value="value"
+              required
+              class="mb-4"
+            ></v-select>
+
             <v-text-field v-model="newStrategy.name" label="Strategy Name" required></v-text-field>
             <v-text-field v-model="newStrategy.description" label="Description" required></v-text-field>
-            <v-textarea
-              v-model="newStrategy.cardIds"
-              label="Card IDs"
-              placeholder="Enter card IDs, one per line or separated by commas"
-              rows="10"
-              required
-            ></v-textarea>
+
+            <!-- Strategy-specific configuration forms -->
+            <hardcoded-order-config-form
+              v-if="newStrategy.type === 'hardcoded'"
+              v-model="newStrategy.config"
+            />
+
+            <!-- Placeholder for other strategy types -->
+            <v-alert v-else type="info" density="compact">
+              Configuration form for {{ newStrategy.type }} strategy coming soon.
+            </v-alert>
           </v-card-text>
           <v-card-actions>
             <v-spacer></v-spacer>
@@ -65,6 +79,7 @@
 import { defineComponent } from 'vue';
 import type { ContentNavigationStrategyData } from '@vue-skuilder/db/src/core/types/contentNavigationStrategy';
 import NavigationStrategyList from './NavigationStrategyList.vue';
+import HardcodedOrderConfigForm from './HardcodedOrderConfigForm.vue';
 import { getDataLayer, DocType, Navigators } from '@vue-skuilder/db';
 import { DocTypePrefixes } from '@vue-skuilder/db/src/core/types/types-legacy';
 
@@ -73,6 +88,7 @@ export default defineComponent({
 
   components: {
     NavigationStrategyList,
+    HardcodedOrderConfigForm,
   },
 
   props: {
@@ -89,10 +105,17 @@ export default defineComponent({
       showDeleteConfirm: false,
       strategyToDelete: null as ContentNavigationStrategyData | null,
       showCreateDialog: false,
+      strategyTypes: [
+        { label: 'Hardcoded Order', value: 'hardcoded' },
+        { label: 'Hierarchy Definition', value: 'hierarchy' },
+        { label: 'Interference Mitigator', value: 'interference' },
+        { label: 'Relative Priority', value: 'relativePriority' },
+      ],
       newStrategy: {
+        type: 'hardcoded' as string,
         name: '',
         description: '',
-        cardIds: '',
+        config: { cardIds: [] } as any, // Type varies by strategy type
       },
       defaultStrategyId: null as string | null,
     };
@@ -157,14 +180,24 @@ export default defineComponent({
     },
 
     openCreateDialog() {
-      this.newStrategy = { name: '', description: '', cardIds: '' };
+      this.newStrategy = {
+        type: 'hardcoded',
+        name: '',
+        description: '',
+        config: { cardIds: [] },
+      };
       this.showCreateDialog = true;
     },
 
     async saveNewStrategy() {
-      if (!this.newStrategy.name || !this.newStrategy.cardIds) {
-        // Basic validation
-        alert('Strategy Name and Card IDs are required.');
+      if (!this.newStrategy.name) {
+        alert('Strategy Name is required.');
+        return;
+      }
+
+      // Validate config based on strategy type
+      if (this.newStrategy.type === 'hardcoded' && this.newStrategy.config.cardIds.length === 0) {
+        alert('At least one card ID is required for hardcoded order strategy.');
         return;
       }
 
@@ -175,21 +208,33 @@ export default defineComponent({
         const userName = userDB.getUsername();
         const courseDB = dataLayer.getCourseDB(this.courseId);
 
-        // Process card IDs
-        const cardIdArray = this.newStrategy.cardIds
-          .split(/[\n,]+/)
-          .map((id) => id.trim())
-          .filter((id) => id);
+        // Map strategy type to implementing class
+        const implementingClassMap: Record<string, string> = {
+          hardcoded: Navigators.HARDCODED,
+          hierarchy: Navigators.HIERARCHY,
+          interference: Navigators.INTERFERENCE,
+          relativePriority: Navigators.RELATIVE_PRIORITY,
+        };
+
+        // Serialize config based on strategy type
+        let serializedData: string;
+        if (this.newStrategy.type === 'hardcoded') {
+          // Hardcoded stores just the array of card IDs
+          serializedData = JSON.stringify(this.newStrategy.config.cardIds);
+        } else {
+          // Other strategies store their full config object
+          serializedData = JSON.stringify(this.newStrategy.config);
+        }
 
         const strategyData: ContentNavigationStrategyData = {
           _id: `NAVIGATION_STRATEGY-${Date.now()}`,
           docType: DocType.NAVIGATION_STRATEGY,
           name: this.newStrategy.name,
           description: this.newStrategy.description,
-          implementingClass: Navigators.HARDCODED,
+          implementingClass: implementingClassMap[this.newStrategy.type],
           author: userName,
           course: this.courseId,
-          serializedData: JSON.stringify(cardIdArray),
+          serializedData,
         };
 
         await courseDB.addNavigationStrategy(strategyData);
