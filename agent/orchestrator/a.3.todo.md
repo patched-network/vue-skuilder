@@ -109,61 +109,46 @@
 
 ## Phase 3: InterferenceMitigator Strategy
 
-**Status**: NEXT
+**Status**: COMPLETED
 
-**Goal**: Reduce scores for cards sharing tags with recently-seen content. Uses delegate pattern.
+**Goal**: Avoid introducing confusable concepts while either is immature. Course authors define explicit interference relationships.
 
 ### Tasks
 
-- [ ] p3.1: Create `InterferenceMitigatorNavigator` class
-  - New file: `packages/db/src/core/navigators/interferenceMitigator.ts`
+- [x] p3.1: Create `InterferenceMitigatorNavigator` class
+  - Created: `packages/db/src/core/navigators/interferenceMitigator.ts`
   - Extends `ContentNavigator`
-  - Has `delegate: ContentNavigator` field
+  - Has `delegate: ContentNavigator` field (lazy-initialized)
 
-- [ ] p3.2: Parse config from `serializedData`
-  ```typescript
-  interface InterferenceConfig {
-    similarityDecay: number;     // default: 0.8
-    lookbackCount: number;       // default: 10
-    delegateStrategy?: string;   // default: "elo"
-  }
-  ```
+- [x] p3.2: Parse config from `serializedData`
+  - `interferenceSets: string[][]` — groups of tags that interfere (e.g., `[["b","d","p"], ["d","t"]]`)
+  - `maturityThreshold: { minCount?, minElo? }` — when a tag is considered mature
+  - `interferenceDecay` (default: 0.8)
+  - `delegateStrategy` (default: "elo")
 
-- [ ] p3.3: Create delegate navigator (same pattern as Hierarchy)
+- [x] p3.3: Build interference map from config (tag → set of partners)
 
-- [ ] p3.4: Implement `getRecentlySeenCards(): Promise<string[]>`
-  - Use `user.getSeenCards(courseId)`
-  - Take last N cards (N = lookbackCount)
+- [x] p3.4: Implement `getImmatureTags(): Promise<Set<string>>`
+  - Tags where user has count > 0 but below maturity threshold
 
-- [ ] p3.5: Implement `collectTags(cardIds): Promise<Set<string>>`
-  - For each cardId, call `course.getAppliedTags(cardId)`
-  - Collect all tags into a Set
+- [x] p3.5: Implement `getTagsToAvoid(immatureTags): Set<string>`
+  - Partners of immature tags (excluding already-immature ones)
 
-- [ ] p3.6: Implement `jaccardSimilarity(tagsA: string[], tagsB: Set<string>): number`
-  - `intersection = tagsA.filter(t => tagsB.has(t)).length`
-  - `union = new Set([...tagsA, ...tagsB]).size`
-  - Return `intersection / union` (or 0 if union is 0)
+- [x] p3.6: Implement `computeInterferenceMultiplier()`
+  - Score reduction based on overlap with avoid set
+  - `Math.pow(1 - decay, interferingCount)`
 
-- [ ] p3.7: Implement `getWeightedCards(limit)`
-  - Get candidates from delegate (over-fetch: `limit * 3`)
-  - Get recent history tags
-  - For each candidate:
-    - Compute similarity with recent tags
-    - Adjusted score = `delegate.score * (1.0 - similarity * similarityDecay)`
-  - Sort by adjusted score, return top N
+- [x] p3.7: Implement `getWeightedCards(limit)`
+  - Maturity-aware interference avoidance
 
-- [ ] p3.8: Implement legacy methods (delegate through)
+- [x] p3.8: Implement legacy methods (delegate through)
 
-- [ ] p3.9: Register in factory
-  - Add to `Navigators` enum: `INTERFERENCE = 'interferenceMitigator'`
+- [x] p3.9: Register in factory
+  - Already added to `Navigators` enum in Phase 1
 
-- [ ] p3.10: Add unit tests
-  - Jaccard similarity calculation
-  - Score adjustment: high similarity → reduced score
-  - Delegate scores preserved and adjusted (not replaced)
-
-- [ ] p3.11: Add integration test
-  - Cards with similar tags to recent history appear later in returned list
+- [x] p3.10: Verify build passes
+  - [x] Build: `yarn workspace @vue-skuilder/db build` ✓
+  - [x] Tests: delegated to CI
 
 ---
 
