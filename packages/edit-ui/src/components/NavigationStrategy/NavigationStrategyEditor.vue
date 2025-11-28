@@ -53,9 +53,21 @@
               :course-id="courseId"
             />
 
-            <!-- Placeholder for other strategy types -->
-            <v-alert v-else type="info" density="compact">
-              Configuration form for {{ newStrategy.type }} strategy coming soon.
+            <interference-config-form
+              v-else-if="newStrategy.type === 'interference'"
+              v-model="newStrategy.config"
+              :course-id="courseId"
+            />
+
+            <relative-priority-config-form
+              v-else-if="newStrategy.type === 'relativePriority'"
+              v-model="newStrategy.config"
+              :course-id="courseId"
+            />
+
+            <!-- Placeholder for unknown strategy types -->
+            <v-alert v-else type="warning" density="compact">
+              Unknown strategy type: {{ newStrategy.type }}
             </v-alert>
           </v-card-text>
           <v-card-actions>
@@ -87,6 +99,8 @@ import type { ContentNavigationStrategyData } from '@vue-skuilder/db/src/core/ty
 import NavigationStrategyList from './NavigationStrategyList.vue';
 import HardcodedOrderConfigForm from './HardcodedOrderConfigForm.vue';
 import HierarchyConfigForm from './HierarchyConfigForm.vue';
+import InterferenceConfigForm from './InterferenceConfigForm.vue';
+import RelativePriorityConfigForm from './RelativePriorityConfigForm.vue';
 import { getDataLayer, DocType, Navigators } from '@vue-skuilder/db';
 import { DocTypePrefixes } from '@vue-skuilder/db/src/core/types/types-legacy';
 
@@ -97,6 +111,8 @@ export default defineComponent({
     NavigationStrategyList,
     HardcodedOrderConfigForm,
     HierarchyConfigForm,
+    InterferenceConfigForm,
+    RelativePriorityConfigForm,
   },
 
   props: {
@@ -303,6 +319,20 @@ export default defineComponent({
         const prereqCount = Object.keys(this.newStrategy.config.prerequisites || {}).length;
         if (prereqCount === 0) {
           alert('At least one prerequisite rule is required for hierarchy strategy.');
+          return;
+        }
+      }
+
+      if (this.newStrategy.type === 'interference') {
+        if (!this.newStrategy.config.interferenceSets || this.newStrategy.config.interferenceSets.length === 0) {
+          alert('At least one interference group is required for interference strategy.');
+          return;
+        }
+      }
+
+      if (this.newStrategy.type === 'relativePriority') {
+        if (!this.newStrategy.config.tagPriorities || Object.keys(this.newStrategy.config.tagPriorities).length === 0) {
+          alert('At least one tag priority must be set for relative priority strategy.');
           return;
         }
       }
