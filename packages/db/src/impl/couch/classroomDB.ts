@@ -3,6 +3,7 @@ import {
   StudySessionNewItem,
   StudySessionReviewItem,
 } from '@db/core/interfaces/contentSource';
+import { WeightedCard } from '@db/core/navigators';
 import { ClassroomConfig } from '@vue-skuilder/common';
 import { ENV } from '@db/factory';
 import { logger } from '@db/util/logger';
@@ -188,6 +189,38 @@ export class StudentClassroomDB
         return true;
       }
     });
+  }
+
+  /**
+   * Get cards with suitability scores for presentation.
+   *
+   * This implementation wraps the legacy getNewCards/getPendingReviews methods,
+   * assigning score=1.0 to all cards. StudentClassroomDB does not currently
+   * support pluggable navigation strategies.
+   *
+   * @param limit - Maximum number of cards to return
+   * @returns Cards sorted by score descending (all scores = 1.0)
+   */
+  public async getWeightedCards(limit: number): Promise<WeightedCard[]> {
+    const [newCards, reviews] = await Promise.all([this.getNewCards(), this.getPendingReviews()]);
+
+    const weighted: WeightedCard[] = [
+      ...newCards.map((c) => ({
+        cardId: c.cardID,
+        courseId: c.courseID,
+        score: 1.0,
+        source: 'new' as const,
+      })),
+      ...reviews.map((r) => ({
+        cardId: r.cardID,
+        courseId: r.courseID,
+        score: 1.0,
+        source: 'review' as const,
+      })),
+    ];
+
+    // Sort by score descending (all 1.0 in this case) and limit
+    return weighted.slice(0, limit);
   }
 }
 

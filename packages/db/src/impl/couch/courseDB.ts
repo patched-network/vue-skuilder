@@ -34,7 +34,7 @@ import { DataLayerResult } from '@db/core/types/db';
 import { PouchError } from './types';
 import CourseLookup from './courseLookupDB';
 import { ContentNavigationStrategyData } from '@db/core/types/contentNavigationStrategy';
-import { ContentNavigator, Navigators } from '@db/core/navigators';
+import { ContentNavigator, Navigators, WeightedCard } from '@db/core/navigators';
 
 export class CoursesDB implements CoursesDBInterface {
   _courseIDs: string[] | undefined;
@@ -225,7 +225,7 @@ export class CourseDB implements StudyContentSource, CourseDBInterface {
     if (!doc.docType || !(doc.docType === DocType.CARD)) {
       throw new Error(`failed to remove ${id} from course ${this.id}. id does not point to a card`);
     }
-    
+
     // Remove card from all associated tags before deleting the card
     try {
       const appliedTags = await this.getAppliedTags(id);
@@ -235,7 +235,7 @@ export class CourseDB implements StudyContentSource, CourseDBInterface {
           await this.removeTagFromCard(id, tagId);
         })
       );
-      
+
       // Log any individual tag cleanup failures
       results.forEach((result, index) => {
         if (result.status === 'rejected') {
@@ -247,7 +247,7 @@ export class CourseDB implements StudyContentSource, CourseDBInterface {
       logger.error(`Error removing card ${id} from tags: ${error}`);
       // Continue with card deletion even if tag cleanup fails
     }
-    
+
     return this.db.remove(doc);
   }
 
@@ -589,6 +589,28 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
       return navigator.getPendingReviews();
     } catch (e) {
       logger.error(`[courseDB] Error surfacing a NavigationStrategy: ${e}`);
+      throw e;
+    }
+  }
+
+  /**
+   * Get cards with suitability scores for presentation.
+   *
+   * This is the PRIMARY API for content sources going forward. Delegates to the
+   * course's configured NavigationStrategy to get scored candidates.
+   *
+   * @param limit - Maximum number of cards to return
+   * @returns Cards sorted by score descending
+   */
+  public async getWeightedCards(limit: number): Promise<WeightedCard[]> {
+    const u = await this._getCurrentUser();
+
+    try {
+      const strategy = await this.surfaceNavigationStrategy();
+      const navigator = await ContentNavigator.create(u, this, strategy);
+      return navigator.getWeightedCards(limit);
+    } catch (e) {
+      logger.error(`[courseDB] Error getting weighted cards: ${e}`);
       throw e;
     }
   }

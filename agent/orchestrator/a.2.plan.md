@@ -95,7 +95,7 @@ RelativePriority(
 
 ### Documentation
 
-See `packages/db/src/core/navigators/ARCHITECTURE.md` for detailed implementation guide.
+See `packages/db/docs/navigators-architecture.md` for detailed implementation guide.
 
 ---
 

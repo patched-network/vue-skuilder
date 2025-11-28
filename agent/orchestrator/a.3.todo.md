@@ -217,12 +217,13 @@ Delegate pattern handles composition for now. Full orchestrator needed for:
 
 ## Phase 4a: Production Integration (IN PROGRESS)
 
-**Status**: PRE-WORK COMPLETE
+**Status**: CORE INTEGRATION COMPLETE
 
 **Goal**: Wire SessionController to use `getWeightedCards()` so new strategies are actually exercised at runtime.
 
-### Key Gap
-Currently, `SessionController` still calls legacy `getNewCards()` / `getPendingReviews()`. The new `getWeightedCards()` API is implemented but not integrated.
+### Key Gap (RESOLVED)
+~~Currently, `SessionController` still calls legacy `getNewCards()` / `getPendingReviews()`.~~ 
+SessionController now uses `getWeightedCards()` when available, with fallback to legacy methods.
 
 ### Pre-work: API Documentation & Deprecation Notices (COMPLETED)
 
@@ -254,10 +255,35 @@ evolution from legacy to new API and added deprecation notices.
   - Added "API Migration Strategy" section
   - Documents historical context and rationale
 
-### Tasks (estimated)
-- [ ] p4a.1: Add parallel path in SessionController for weighted card selection
-- [ ] p4a.2: Extend `getDebugInfo()` to include active strategy info
-- [ ] p4a.3: Add strategy creation support (CLI or UI)
+### Tasks
+
+- [x] p4a.1: Add parallel path in SessionController for weighted card selection
+  - Added `getWeightedContent()` method that uses `getWeightedCards()` API
+  - `prepareSession()` now checks for `getWeightedCards` support and uses new path
+  - Hybrid approach: fetches weighted scores for ordering, full review data for queue population
+  - Fallback to legacy methods for sources without `getWeightedCards()`
+
+- [x] p4a.1.1: Add `getWeightedCards()` to `StudyContentSource` interface
+  - File: `packages/db/src/core/interfaces/contentSource.ts`
+  - Added as optional method for backward compatibility
+
+- [x] p4a.1.2: Implement `getWeightedCards()` in `CourseDB`
+  - File: `packages/db/src/impl/couch/courseDB.ts`
+  - Delegates to `ContentNavigator.getWeightedCards()`
+
+- [x] p4a.1.3: Implement `getWeightedCards()` in `StudentClassroomDB`
+  - File: `packages/db/src/impl/couch/classroomDB.ts`
+  - Wraps legacy methods with score=1.0 (no pluggable strategies for classrooms yet)
+
+- [x] p4a.2: Extend `getDebugInfo()` to include active strategy info
+  - Added `api.mode` ('weighted' | 'legacy') and `api.description` to debug output
+
+- [ ] p4a.3: Add strategy creation support (CLI or UI) — FUTURE WORK
+
+### Documentation Updates
+
+- [x] Moved `ARCHITECTURE.md` from `src/core/navigators/` to `packages/db/docs/navigators-architecture.md`
+  - Avoids esbuild picking up .md files during dynamic import resolution
 
 ---
 
@@ -267,8 +293,11 @@ evolution from legacy to new API and added deprecation notices.
 - `packages/db/src/core/navigators/index.ts` — ContentNavigator base, factory, Navigators enum
 - `packages/db/src/core/navigators/elo.ts` — Reference generator strategy
 - `packages/db/src/core/navigators/relativePriority.ts` — Priority-based score boosting
+- `packages/db/src/core/interfaces/contentSource.ts` — StudyContentSource interface with getWeightedCards
 - `packages/db/src/core/interfaces/userDB.ts` — UserDBInterface (history, ELO)
-- `packages/db/src/impl/couch/courseDB.ts` — Tag queries, ELO queries
+- `packages/db/src/impl/couch/courseDB.ts` — Tag queries, ELO queries, getWeightedCards impl
+- `packages/db/src/study/SessionController.ts` — Session management, getWeightedContent()
+- `packages/db/docs/navigators-architecture.md` — Full API migration guide
 
 ### Commands
 - Build: `yarn workspace @vue-skuilder/db build`
