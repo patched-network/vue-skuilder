@@ -104,13 +104,23 @@ Both APIs coexist:
 - `getNewCards()` / `getPendingReviews()` remain for backward compatibility
 - Default `getWeightedCards()` implementation delegates to legacy methods
 
-### Phase 2: SessionController Integration (Next)
+### Phase 2: SessionController Integration (COMPLETE)
 
-`SessionController` will be updated to call `getWeightedCards()` instead of the legacy
-methods. The new/review distinction becomes metadata on the `WeightedCard.source` field,
-not a method split.
+`SessionController` now calls `getWeightedCards()` when available:
+- `prepareSession()` checks if sources support `getWeightedCards()`
+- New `getWeightedContent()` method fetches scored candidates
+- Hybrid approach: uses scores for ordering, full review data for queue population
+- Fallback to legacy methods for sources without `getWeightedCards()`
 
-### Phase 3: Deprecation
+The new/review distinction is preserved via `WeightedCard.source` field for queue routing.
+
+Key files modified:
+- `packages/db/src/study/SessionController.ts` — Added `getWeightedContent()`
+- `packages/db/src/impl/couch/courseDB.ts` — Added `getWeightedCards()` delegation
+- `packages/db/src/impl/couch/classroomDB.ts` — Added `getWeightedCards()` wrapper
+- `packages/db/src/core/interfaces/contentSource.ts` — Added optional `getWeightedCards()`
+
+### Phase 3: Deprecation (Future)
 
 Once SessionController migration is complete:
 - Legacy methods will be marked `@deprecated`
@@ -138,11 +148,17 @@ from any strategy filters out the card entirely.
 - **Queue management** — Maintains separate queues for new/review/failed cards
 - **Just-in-time fetching** — Requests small batches from sources as needed
 
-The controller will:
-1. Call `getWeightedCards(limit)` on its sources
-2. Sort candidates by score
-3. Map them back to appropriate queues based on `source` field
-4. Present cards in score order within queue constraints
+The controller now (as of Phase 2):
+1. Checks if sources support `getWeightedCards()` in `prepareSession()`
+2. Calls `getWeightedContent()` which:
+   - Fetches weighted cards for scoring information
+   - Fetches full review data via `getPendingReviews()` (needed for `ScheduledCard` fields)
+   - Builds a score lookup map from weighted results
+   - Sorts reviews by their weighted scores
+   - Adds new cards ordered by their weighted scores
+3. Falls back to legacy `getScheduledReviews()` / `getNewCards()` if sources don't support the new API
+
+Debug info now includes `api.mode` ('weighted' | 'legacy') to indicate which path is active.
 
 ## Interface Evolution Summary
 
@@ -225,8 +241,12 @@ class MyFilterNavigator extends ContentNavigator {
 
 ## Related Files
 
-- `packages/db/src/core/interfaces/contentSource.ts` — `StudyContentSource` interface
+- `packages/db/src/core/interfaces/contentSource.ts` — `StudyContentSource` interface (with optional `getWeightedCards`)
 - `packages/db/src/core/navigators/index.ts` — `ContentNavigator` base class, `WeightedCard`
 - `packages/db/src/core/navigators/elo.ts` — Reference generator implementation
 - `packages/db/src/core/navigators/hierarchyDefinition.ts` — Reference filter implementation
-- `packages/db/src/study/SessionController.ts` — Consumer of navigation strategies
+- `packages/db/src/core/navigators/interferenceMitigator.ts` — Interference avoidance filter
+- `packages/db/src/core/navigators/relativePriority.ts` — Priority-based score boosting filter
+- `packages/db/src/impl/couch/courseDB.ts` — `getWeightedCards()` implementation (delegates to navigator)
+- `packages/db/src/impl/couch/classroomDB.ts` — `getWeightedCards()` wrapper for classrooms
+- `packages/db/src/study/SessionController.ts` — Consumer of navigation strategies (`getWeightedContent()`)
