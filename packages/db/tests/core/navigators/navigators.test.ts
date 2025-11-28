@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { ContentNavigator, WeightedCard } from './index';
-import { StudySessionNewItem, StudySessionReviewItem } from '..';
-import { ScheduledCard } from '../types/user';
+import { ContentNavigator, WeightedCard } from '../../../src/core/navigators/index';
+import { StudySessionNewItem, StudySessionReviewItem } from '../../../src/core';
+import { ScheduledCard } from '../../../src/core/types/user';
 
 // Mock implementation of ContentNavigator for testing the default getWeightedCards
 class MockNavigator extends ContentNavigator {
