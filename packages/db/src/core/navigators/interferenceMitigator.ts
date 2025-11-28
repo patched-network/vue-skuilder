@@ -13,18 +13,28 @@ import { toCourseElo } from '@vue-skuilder/common';
  * The mitigator discourages introducing new concepts that interfere with
  * currently immature learnings.
  */
+/**
+ * A single interference group with its own decay coefficient.
+ */
+export interface InterferenceGroup {
+  /** Tags that interfere with each other in this group */
+  tags: string[];
+  /** How strongly these tags interfere (0-1, default: 0.8). Higher = stronger avoidance. */
+  decay?: number;
+}
+
 export interface InterferenceConfig {
   /**
    * Groups of tags that interfere with each other.
-   * Each group is a set of tags where learning one while another is immature
-   * causes confusion.
+   * Each group can have its own decay coefficient.
    *
-   * Example: [["b", "d", "p"], ["d", "t"], ["m", "n"]]
-   * - b, d, p are visually similar
-   * - d, t are phonetically similar
-   * - m, n are both visually and phonetically similar
+   * Example: [
+   *   { tags: ["b", "d", "p"], decay: 0.9 },  // visual similarity - strong
+   *   { tags: ["d", "t"], decay: 0.7 },       // phonetic similarity - moderate
+   *   { tags: ["m", "n"], decay: 0.8 }
+   * ]
    */
-  interferenceSets: string[][];
+  interferenceSets: InterferenceGroup[];
 
   /**
    * Threshold below which a tag is considered "immature" (still being learned).
@@ -35,19 +45,25 @@ export interface InterferenceConfig {
     minCount?: number;
     /** Minimum ELO score to be considered mature (optional) */
     minElo?: number;
+    /**
+     * Minimum elapsed time (in days) since first interaction to be considered mature.
+     * Prevents recent cramming success from indicating maturity.
+     * The skill should be "lindy" — maintained over time.
+     */
+    minElapsedDays?: number;
   };
 
   /**
-   * How much to reduce score for interfering cards (0-1, default: 0.8).
-   * 0 = no reduction, 1 = full reduction (score becomes 0)
+   * Default decay for groups that don't specify their own (0-1, default: 0.8).
    */
-  interferenceDecay?: number;
+  defaultDecay?: number;
 
   /** Strategy to delegate to for candidate generation (default: "elo") */
   delegateStrategy?: string;
 }
 
 const DEFAULT_MIN_COUNT = 10;
+const DEFAULT_MIN_ELAPSED_DAYS = 3;
 const DEFAULT_INTERFERENCE_DECAY = 0.8;
 
 /**
@@ -70,8 +86,8 @@ export default class InterferenceMitigatorNavigator extends ContentNavigator {
   private delegate: ContentNavigator | null = null;
   private strategyData: ContentNavigationStrategyData;
 
-  /** Precomputed map: tag -> set of tags it interferes with */
-  private interferenceMap: Map<string, Set<string>>;
+  /** Precomputed map: tag -> set of { partner, decay } it interferes with */
+  private interferenceMap: Map<string, Array<{ partner: string; decay: number }>>;
 
   constructor(
     user: UserDBInterface,
@@ -89,44 +105,64 @@ export default class InterferenceMitigatorNavigator extends ContentNavigator {
   private parseConfig(serializedData: string): InterferenceConfig {
     try {
       const parsed = JSON.parse(serializedData);
+      // Normalize legacy format (string[][]) to new format (InterferenceGroup[])
+      let sets: InterferenceGroup[] = parsed.interferenceSets || [];
+      if (sets.length > 0 && Array.isArray(sets[0])) {
+        // Legacy format: convert string[][] to InterferenceGroup[]
+        sets = (sets as unknown as string[][]).map((tags) => ({ tags }));
+      }
+
       return {
-        interferenceSets: parsed.interferenceSets || [],
+        interferenceSets: sets,
         maturityThreshold: {
           minCount: parsed.maturityThreshold?.minCount ?? DEFAULT_MIN_COUNT,
           minElo: parsed.maturityThreshold?.minElo,
+          minElapsedDays: parsed.maturityThreshold?.minElapsedDays ?? DEFAULT_MIN_ELAPSED_DAYS,
         },
-        interferenceDecay: parsed.interferenceDecay ?? DEFAULT_INTERFERENCE_DECAY,
+        defaultDecay: parsed.defaultDecay ?? DEFAULT_INTERFERENCE_DECAY,
         delegateStrategy: parsed.delegateStrategy || 'elo',
       };
     } catch {
       return {
         interferenceSets: [],
-        maturityThreshold: { minCount: DEFAULT_MIN_COUNT },
-        interferenceDecay: DEFAULT_INTERFERENCE_DECAY,
+        maturityThreshold: {
+          minCount: DEFAULT_MIN_COUNT,
+          minElapsedDays: DEFAULT_MIN_ELAPSED_DAYS,
+        },
+        defaultDecay: DEFAULT_INTERFERENCE_DECAY,
         delegateStrategy: 'elo',
       };
     }
   }
 
   /**
-   * Build a map from each tag to the set of tags it interferes with.
-   * If tags A, B, C are in an interference set, then:
-   * - A interferes with B and C
-   * - B interferes with A and C
-   * - C interferes with A and B
+   * Build a map from each tag to its interference partners with decay coefficients.
+   * If tags A, B, C are in an interference group with decay 0.8, then:
+   * - A interferes with B (decay 0.8) and C (decay 0.8)
+   * - B interferes with A (decay 0.8) and C (decay 0.8)
+   * - etc.
    */
-  private buildInterferenceMap(): Map<string, Set<string>> {
-    const map = new Map<string, Set<string>>();
+  private buildInterferenceMap(): Map<string, Array<{ partner: string; decay: number }>> {
+    const map = new Map<string, Array<{ partner: string; decay: number }>>();
 
     for (const group of this.config.interferenceSets) {
-      for (const tag of group) {
+      const decay = group.decay ?? this.config.defaultDecay ?? DEFAULT_INTERFERENCE_DECAY;
+
+      for (const tag of group.tags) {
         if (!map.has(tag)) {
-          map.set(tag, new Set());
+          map.set(tag, []);
         }
         const partners = map.get(tag)!;
-        for (const other of group) {
+        for (const other of group.tags) {
           if (other !== tag) {
-            partners.add(other);
+            // Check if partner already exists (from overlapping groups)
+            const existing = partners.find((p) => p.partner === other);
+            if (existing) {
+              // Use the stronger (higher) decay
+              existing.decay = Math.max(existing.decay, decay);
+            } else {
+              partners.push({ partner: other, decay });
+            }
           }
         }
       }
@@ -168,6 +204,13 @@ export default class InterferenceMitigatorNavigator extends ContentNavigator {
       const minCount = this.config.maturityThreshold?.minCount ?? DEFAULT_MIN_COUNT;
       const minElo = this.config.maturityThreshold?.minElo;
 
+      // TODO: To properly check elapsed time, we need access to first interaction timestamp.
+      // For now, we use count as a proxy (more interactions = more time elapsed).
+      // Future: query card history for earliest timestamp per tag.
+      const minElapsedDays =
+        this.config.maturityThreshold?.minElapsedDays ?? DEFAULT_MIN_ELAPSED_DAYS;
+      const minCountForElapsed = minElapsedDays * 2; // Rough proxy: ~2 interactions per day
+
       for (const [tagId, tagElo] of Object.entries(userElo.tags)) {
         // Only consider tags that have been started (count > 0)
         if (tagElo.count === 0) continue;
@@ -175,8 +218,9 @@ export default class InterferenceMitigatorNavigator extends ContentNavigator {
         // Check if below maturity threshold
         const belowCount = tagElo.count < minCount;
         const belowElo = minElo !== undefined && tagElo.score < minElo;
+        const belowElapsed = tagElo.count < minCountForElapsed; // Proxy for time
 
-        if (belowCount || belowElo) {
+        if (belowCount || belowElo || belowElapsed) {
           immature.add(tagId);
         }
       }
@@ -188,20 +232,22 @@ export default class InterferenceMitigatorNavigator extends ContentNavigator {
   }
 
   /**
-   * Get all tags that interfere with any immature tag.
+   * Get all tags that interfere with any immature tag, along with their decay coefficients.
    * These are the tags we want to avoid introducing.
    */
-  private getTagsToAvoid(immatureTags: Set<string>): Set<string> {
-    const avoid = new Set<string>();
+  private getTagsToAvoid(immatureTags: Set<string>): Map<string, number> {
+    const avoid = new Map<string, number>();
 
     for (const immatureTag of immatureTags) {
       const partners = this.interferenceMap.get(immatureTag);
       if (partners) {
-        for (const partner of partners) {
+        for (const { partner, decay } of partners) {
           // Avoid the partner, but not if it's also immature
           // (if both are immature, we're already learning both)
           if (!immatureTags.has(partner)) {
-            avoid.add(partner);
+            // Use the strongest (highest) decay if partner appears multiple times
+            const existing = avoid.get(partner) ?? 0;
+            avoid.set(partner, Math.max(existing, decay));
           }
         }
       }
@@ -227,21 +273,23 @@ export default class InterferenceMitigatorNavigator extends ContentNavigator {
    * Returns a multiplier (0-1) to apply to the card's score.
    * 1.0 = no interference, 0.0 = maximum interference
    */
-  private computeInterferenceMultiplier(cardTags: string[], tagsToAvoid: Set<string>): number {
+  private computeInterferenceMultiplier(
+    cardTags: string[],
+    tagsToAvoid: Map<string, number>
+  ): number {
     if (tagsToAvoid.size === 0) return 1.0;
 
-    // Count how many of the card's tags are in the avoid set
-    const interferingCount = cardTags.filter((t) => tagsToAvoid.has(t)).length;
+    let multiplier = 1.0;
 
-    if (interferingCount === 0) return 1.0;
+    for (const tag of cardTags) {
+      const decay = tagsToAvoid.get(tag);
+      if (decay !== undefined) {
+        // Each interfering tag applies its own decay multiplicatively
+        multiplier *= 1.0 - decay;
+      }
+    }
 
-    // Apply decay based on interference
-    const decay = this.config.interferenceDecay ?? DEFAULT_INTERFERENCE_DECAY;
-
-    // More interfering tags = stronger reduction
-    // One interfering tag: score * (1 - decay)
-    // All tags interfering: score * (1 - decay)^n approaches 0
-    return Math.pow(1.0 - decay, interferingCount);
+    return multiplier;
   }
 
   /**
