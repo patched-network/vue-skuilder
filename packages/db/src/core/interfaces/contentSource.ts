@@ -2,6 +2,7 @@ import { getDataLayer } from '@db/factory';
 import { UserDBInterface } from '..';
 import { StudentClassroomDB } from '../../impl/couch/classroomDB';
 import { ScheduledCard } from '@db/core/types/user';
+import { WeightedCard } from '../navigators';
 
 // ============================================================================
 // API MIGRATION NOTICE
@@ -110,6 +111,20 @@ export interface StudyContentSource {
    * @param n - Maximum number of new cards to return
    */
   getNewCards(n?: number): Promise<StudySessionNewItem[]>;
+
+  /**
+   * Get cards with suitability scores for presentation.
+   *
+   * This is the PRIMARY API for content sources going forward. Returns unified
+   * scored candidates that can be sorted and selected by SessionController.
+   *
+   * The `source` field on WeightedCard indicates origin ('new' | 'review' | 'failed')
+   * for queue routing purposes during the migration period.
+   *
+   * @param limit - Maximum number of cards to return
+   * @returns Cards sorted by score descending
+   */
+  getWeightedCards?(limit: number): Promise<WeightedCard[]>;
 }
 // #endregion docs_StudyContentSource
 

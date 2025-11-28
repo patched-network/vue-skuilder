@@ -15,6 +15,7 @@ import {
 import { CardRecord, CardHistory, CourseRegistrationDoc } from '@db/core';
 import { Loggable } from '@db/util';
 import { ScheduledCard } from '@db/core/types/user';
+import { WeightedCard } from '@db/core/navigators';
 
 function randomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -181,7 +182,15 @@ export class SessionController<TView = unknown> extends Loggable {
 
   public async prepareSession() {
     try {
-      await Promise.all([this.getScheduledReviews(), this.getNewCards()]);
+      // Use new getWeightedCards API if available, fall back to legacy methods
+      const hasWeightedCards = this.sources.some((s) => typeof s.getWeightedCards === 'function');
+
+      if (hasWeightedCards) {
+        await this.getWeightedContent();
+      } else {
+        // Legacy path: separate calls for reviews and new cards
+        await Promise.all([this.getScheduledReviews(), this.getNewCards()]);
+      }
     } catch (e) {
       this.error('Error preparing study session:', e);
     }
@@ -213,6 +222,11 @@ export class SessionController<TView = unknown> extends Loggable {
    * Used by SessionControllerDebug component for runtime inspection.
    */
   public getDebugInfo() {
+    // Check if sources support weighted cards
+    const supportsWeightedCards = this.sources.some(
+      (s) => typeof s.getWeightedCards === 'function'
+    );
+
     const extractQueueItems = (queue: ItemQueue<any>, limit: number = 10) => {
       const items = [];
       for (let i = 0; i < Math.min(queue.length, limit); i++) {
@@ -235,6 +249,12 @@ export class SessionController<TView = unknown> extends Loggable {
     };
 
     return {
+      api: {
+        mode: supportsWeightedCards ? 'weighted' : 'legacy',
+        description: supportsWeightedCards
+          ? 'Using getWeightedCards() API with scored candidates'
+          : 'Using legacy getNewCards()/getPendingReviews() API',
+      },
       reviewQueue: {
         length: this.reviewQ.length,
         dequeueCount: this.reviewQ.dequeueCount,
@@ -258,6 +278,112 @@ export class SessionController<TView = unknown> extends Loggable {
     };
   }
 
+  /**
+   * Fetch content using the new getWeightedCards API.
+   *
+   * This method uses getWeightedCards() to get scored candidates, then uses the
+   * scores to determine ordering. For reviews, we still need the full ScheduledCard
+   * data from getPendingReviews(), so we fetch both and use scores for ordering.
+   *
+   * The hybrid approach:
+   * 1. Fetch weighted cards to get scoring/ordering information
+   * 2. Fetch full review data via legacy getPendingReviews()
+   * 3. Order reviews by their weighted scores
+   * 4. Add new cards ordered by their weighted scores
+   */
+  private async getWeightedContent() {
+    const limit = 20; // Initial batch size per source
+
+    // Collect weighted cards for scoring, and full review data for queue population
+    const allWeighted: WeightedCard[] = [];
+    const allReviews: (StudySessionReviewItem & ScheduledCard)[] = [];
+    const allNewCards: StudySessionNewItem[] = [];
+
+    for (const source of this.sources) {
+      try {
+        // Always fetch full review data (we need ScheduledCard fields)
+        const reviews = await source.getPendingReviews().catch((error) => {
+          this.error(`Failed to get reviews for source:`, error);
+          return [];
+        });
+        allReviews.push(...reviews);
+
+        // Fetch weighted cards for scoring if available
+        if (typeof source.getWeightedCards === 'function') {
+          const weighted = await source.getWeightedCards(limit);
+          allWeighted.push(...weighted);
+        } else {
+          // Fallback: fetch new cards directly and assign score=1.0
+          const newCards = await source.getNewCards(limit);
+          allNewCards.push(...newCards);
+
+          // Create pseudo-weighted entries for ordering
+          allWeighted.push(
+            ...newCards.map((c) => ({
+              cardId: c.cardID,
+              courseId: c.courseID,
+              score: 1.0,
+              source: 'new' as const,
+            })),
+            ...reviews.map((r) => ({
+              cardId: r.cardID,
+              courseId: r.courseID,
+              score: 1.0,
+              source: 'review' as const,
+            }))
+          );
+        }
+      } catch (error) {
+        this.error(`Failed to get content from source:`, error);
+      }
+    }
+
+    // Build a score lookup map from weighted cards
+    const scoreMap = new Map<string, number>();
+    for (const w of allWeighted) {
+      const key = `${w.courseId}::${w.cardId}`;
+      scoreMap.set(key, w.score);
+    }
+
+    // Sort reviews by score (from weighted cards) descending
+    const scoredReviews = allReviews.map((r) => ({
+      review: r,
+      score: scoreMap.get(`${r.courseID}::${r.cardID}`) ?? 1.0,
+    }));
+    scoredReviews.sort((a, b) => b.score - a.score);
+
+    // Add reviews to queue in score order
+    let report = 'Weighted content session created with:\n';
+    for (const { review, score } of scoredReviews) {
+      this.reviewQ.add(review, review.cardID);
+      report += `Review: ${review.courseID}::${review.cardID} (score: ${score.toFixed(2)})\n`;
+    }
+
+    // Get new cards from weighted list (filter out reviews)
+    const newCardWeighted = allWeighted
+      .filter((w) => w.source === 'new')
+      .sort((a, b) => b.score - a.score);
+
+    // Add new cards to queue in score order
+    for (const card of newCardWeighted) {
+      const newItem: StudySessionNewItem = {
+        cardID: card.cardId,
+        courseID: card.courseId,
+        contentSourceType: 'course',
+        contentSourceID: card.courseId,
+        status: 'new',
+      };
+      this.newQ.add(newItem, card.cardId);
+      report += `New: ${card.courseId}::${card.cardId} (score: ${card.score.toFixed(2)})\n`;
+    }
+
+    this.log(report);
+  }
+
+  /**
+   * @deprecated Use getWeightedContent() instead. This method is kept for backward
+   * compatibility with sources that don't support getWeightedCards().
+   */
   private async getScheduledReviews() {
     const reviews = await Promise.all(
       this.sources.map((c) =>
@@ -289,6 +415,10 @@ export class SessionController<TView = unknown> extends Loggable {
     this.log(report);
   }
 
+  /**
+   * @deprecated Use getWeightedContent() instead. This method is kept for backward
+   * compatibility with sources that don't support getWeightedCards().
+   */
   private async getNewCards(n: number = 10) {
     const perCourse = Math.ceil(n / this.sources.length);
     const newContent = await Promise.all(this.sources.map((c) => c.getNewCards(perCourse)));
