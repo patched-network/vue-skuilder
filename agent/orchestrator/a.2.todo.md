@@ -59,10 +59,24 @@ Extend `NavigationStrategyEditor.vue` to support creating all strategy types (no
   - Basic validation (prerequisites must be object, circular dependency check)
   - Show validation errors in UI
 
-### P2.2: Test Hierarchy Strategy Creation - READY FOR TESTING
-- [ ] Create a hierarchy strategy via UI
-- [ ] Verify it saves to database correctly
-- [ ] Verify it loads back into the editor (when editing is implemented)
+### P2.2: Test Hierarchy Strategy Creation - COMPLETED
+- [x] Create a hierarchy strategy via UI
+- [x] Verify it saves to database correctly
+- [x] Verify it loads back into the editor - IMPLEMENTED
+
+### P2.3: Strategy Editing - COMPLETED
+- [x] Implement edit functionality
+  - Parse existing strategy data back to config format
+  - Populate dialog with existing strategy details
+  - Handle update vs create in save method
+  - Update dialog title and button text based on mode
+
+**Testing Notes:**
+- Visual UI mode working - tags load, prerequisite rules can be added/removed
+- JSON mode working - bidirectional sync between UI and JSON
+- Strategy saves to database correctly
+- Edit button now functional - loads existing strategies into dialog for editing
+- Update method correctly preserves _id and _rev when saving changes
 
 **Implementation Notes:**
 - Created HierarchyConfigForm.vue with dual input modes (Visual/JSON)
@@ -72,13 +86,19 @@ Extend `NavigationStrategyEditor.vue` to support creating all strategy types (no
   - Each prerequisite: tag selector, min count, optional min ELO
   - Delegate strategy dropdown
 - JSON mode: paste/edit full config with validation
-- Loads course tags via getDataLayer().getCourseDB().getAllTags()
+- Loads course tags via getDataLayer().getCourseDB().getCourseTagStubs()
 - Basic circular dependency detection
 - Modified NavigationStrategyEditor to:
   - Import and register HierarchyConfigForm
   - Add getDefaultConfig() method for all strategy types
+  - Add getStrategyTypeFromClass() to map Navigators enum back to UI types
+  - Add parseSerializedData() to deserialize config for editing
+  - Add editingStrategy state to track edit mode
   - Add watcher to reset config when strategy type changes
-  - Add hierarchy-specific validation in saveNewStrategy()
+  - Add hierarchy-specific validation in saveStrategy()
+  - Implement editStrategy() to populate dialog with existing data
+  - Updated saveStrategy() to handle both create and update cases
+  - Dialog title and button text change based on edit mode
 
 ---
 

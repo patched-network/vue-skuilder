@@ -26,7 +26,7 @@
 
       <v-dialog v-model="showCreateDialog" max-width="800px">
         <v-card>
-          <v-card-title>Create New Navigation Strategy</v-card-title>
+          <v-card-title>{{ editingStrategy ? 'Edit' : 'Create New' }} Navigation Strategy</v-card-title>
           <v-card-text>
             <v-select
               v-model="newStrategy.type"
@@ -61,7 +61,7 @@
           <v-card-actions>
             <v-spacer></v-spacer>
             <v-btn color="blue darken-1" text @click="showCreateDialog = false">Cancel</v-btn>
-            <v-btn color="blue darken-1" text @click="saveNewStrategy">Save</v-btn>
+            <v-btn color="blue darken-1" text @click="saveStrategy">{{ editingStrategy ? 'Update' : 'Save' }}</v-btn>
           </v-card-actions>
         </v-card>
       </v-dialog>
@@ -125,6 +125,7 @@ export default defineComponent({
         description: '',
         config: { cardIds: [] } as any, // Type varies by strategy type
       },
+      editingStrategy: null as ContentNavigationStrategyData | null,
       defaultStrategyId: null as string | null,
     };
   },
@@ -170,6 +171,40 @@ export default defineComponent({
           };
         default:
           return {};
+      }
+    },
+
+    // Map implementing class to strategy type
+    getStrategyTypeFromClass(implementingClass: string): string {
+      switch (implementingClass) {
+        case Navigators.HARDCODED:
+          return 'hardcoded';
+        case Navigators.HIERARCHY:
+          return 'hierarchy';
+        case Navigators.INTERFERENCE:
+          return 'interference';
+        case Navigators.RELATIVE_PRIORITY:
+          return 'relativePriority';
+        default:
+          return 'hardcoded';
+      }
+    },
+
+    // Parse serialized data back to config object
+    parseSerializedData(strategyType: string, serializedData: string): any {
+      try {
+        const parsed = JSON.parse(serializedData);
+
+        if (strategyType === 'hardcoded') {
+          // Hardcoded stores just the array, wrap it
+          return { cardIds: Array.isArray(parsed) ? parsed : [] };
+        } else {
+          // Other strategies store the full config object
+          return parsed;
+        }
+      } catch (error) {
+        console.error('Failed to parse strategy data:', error);
+        return this.getDefaultConfig(strategyType);
       }
     },
 
@@ -234,10 +269,25 @@ export default defineComponent({
         description: '',
         config: this.getDefaultConfig(defaultType),
       };
+      this.editingStrategy = null;
       this.showCreateDialog = true;
     },
 
-    async saveNewStrategy() {
+    editStrategy(strategy: ContentNavigationStrategyData) {
+      const strategyType = this.getStrategyTypeFromClass(strategy.implementingClass);
+      const config = this.parseSerializedData(strategyType, strategy.serializedData);
+
+      this.newStrategy = {
+        type: strategyType,
+        name: strategy.name,
+        description: strategy.description,
+        config,
+      };
+      this.editingStrategy = strategy;
+      this.showCreateDialog = true;
+    },
+
+    async saveStrategy() {
       if (!this.newStrategy.name) {
         alert('Strategy Name is required.');
         return;
@@ -282,31 +332,41 @@ export default defineComponent({
           serializedData = JSON.stringify(this.newStrategy.config);
         }
 
-        const strategyData: ContentNavigationStrategyData = {
-          _id: `NAVIGATION_STRATEGY-${Date.now()}`,
-          docType: DocType.NAVIGATION_STRATEGY,
-          name: this.newStrategy.name,
-          description: this.newStrategy.description,
-          implementingClass: implementingClassMap[this.newStrategy.type],
-          author: userName,
-          course: this.courseId,
-          serializedData,
-        };
+        if (this.editingStrategy) {
+          // Update existing strategy
+          const strategyData: ContentNavigationStrategyData = {
+            ...this.editingStrategy,
+            name: this.newStrategy.name,
+            description: this.newStrategy.description,
+            implementingClass: implementingClassMap[this.newStrategy.type],
+            serializedData,
+          };
 
-        await courseDB.addNavigationStrategy(strategyData);
+          await courseDB.updateNavigationStrategy(this.editingStrategy._id, strategyData);
+        } else {
+          // Create new strategy
+          const strategyData: ContentNavigationStrategyData = {
+            _id: `NAVIGATION_STRATEGY-${Date.now()}`,
+            docType: DocType.NAVIGATION_STRATEGY,
+            name: this.newStrategy.name,
+            description: this.newStrategy.description,
+            implementingClass: implementingClassMap[this.newStrategy.type],
+            author: userName,
+            course: this.courseId,
+            serializedData,
+          };
+
+          await courseDB.addNavigationStrategy(strategyData);
+        }
 
         this.showCreateDialog = false;
+        this.editingStrategy = null;
         await this.loadStrategies(); // Refresh the list
       } catch (error) {
         console.error('Failed to save new strategy:', error);
         alert('Error saving strategy. See console for details.');
       }
       this.loading = false;
-    },
-
-    editStrategy(strategy: ContentNavigationStrategyData) {
-      // Strategy editing is not yet implemented
-      console.log(`Editing strategy ${strategy._id} is not yet implemented`);
     },
 
     confirmDeleteStrategy(strategy: ContentNavigationStrategyData) {

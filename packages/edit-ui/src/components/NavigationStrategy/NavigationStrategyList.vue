@@ -24,7 +24,13 @@
 
           <template #append>
             <div class="d-flex">
-              <v-btn icon size="small" title="Edit Strategy (coming soon)" class="mr-1" disabled>
+              <v-btn
+                icon
+                size="small"
+                title="Edit Strategy"
+                class="mr-1"
+                @click="$emit('edit', strategy)"
+              >
                 <v-icon>mdi-pencil</v-icon>
               </v-btn>
 
