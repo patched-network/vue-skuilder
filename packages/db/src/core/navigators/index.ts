@@ -9,6 +9,39 @@ import { ContentNavigationStrategyData } from '../types/contentNavigationStrateg
 import { ScheduledCard } from '../types/user';
 import { logger } from '../../util/logger';
 
+// ============================================================================
+// NAVIGATION STRATEGY API
+// ============================================================================
+//
+// This module defines the ContentNavigator base class and the WeightedCard type,
+// which form the foundation of the pluggable navigation strategy system.
+//
+// KEY CONCEPTS:
+//
+// 1. WeightedCard - A card with a suitability score (0-1). This is the unified
+//    output format for all navigation strategies.
+//
+// 2. ContentNavigator - Abstract base class that strategies extend. Implements
+//    StudyContentSource for backward compatibility.
+//
+// 3. Generator vs Filter strategies:
+//    - Generators (ELO, SRS) produce candidate cards with scores
+//    - Filters (Hierarchy, Interference, RelativePriority) wrap a delegate
+//      and transform its output
+//
+// 4. Delegate pattern - Filter strategies compose by wrapping generators:
+//    RelativePriority(Interference(Hierarchy(ELO)))
+//
+// API EVOLUTION:
+// - getWeightedCards() is the PRIMARY API (new)
+// - getNewCards() / getPendingReviews() are LEGACY (kept for backward compat)
+// - SessionController will migrate to use getWeightedCards()
+// - Legacy methods will eventually be deprecated
+//
+// See: ARCHITECTURE.md in this directory for full migration guide.
+//
+// ============================================================================
+
 /**
  * A card with a suitability score for presentation.
  *
@@ -36,7 +69,33 @@ export enum Navigators {
 }
 
 /**
- * A content-navigator provides runtime steering of study sessions.
+ * Abstract base class for navigation strategies that steer study sessions.
+ *
+ * ContentNavigator implements StudyContentSource for backward compatibility,
+ * but the primary API going forward is getWeightedCards().
+ *
+ * ## Strategy Types
+ *
+ * **Generator strategies** produce candidate cards:
+ * - Override getWeightedCards() to generate and score candidates
+ * - Examples: ELO (skill proximity), SRS (review scheduling)
+ *
+ * **Filter strategies** transform delegate output:
+ * - Wrap another strategy via the delegate pattern
+ * - Override getWeightedCards() to filter/adjust delegate scores
+ * - Examples: HierarchyDefinition, InterferenceMitigator, RelativePriority
+ *
+ * ## API Migration
+ *
+ * The legacy getNewCards()/getPendingReviews() methods exist for backward
+ * compatibility with SessionController. Once SessionController migrates to
+ * use getWeightedCards(), these methods will be deprecated.
+ *
+ * New strategies should:
+ * 1. Implement getWeightedCards() as the primary logic
+ * 2. Optionally override legacy methods (base class provides defaults)
+ *
+ * See: ARCHITECTURE.md for full migration guide and design rationale.
  */
 export abstract class ContentNavigator implements StudyContentSource {
   /**
@@ -74,14 +133,58 @@ export abstract class ContentNavigator implements StudyContentSource {
     return new NavigatorImpl(user, course, strategyData);
   }
 
+  /**
+   * Get cards scheduled for review.
+   *
+   * @deprecated This method is part of the legacy StudyContentSource interface.
+   * New strategies should focus on implementing getWeightedCards() instead.
+   * This method will be deprecated once SessionController migrates to the new API.
+   *
+   * For filter strategies using the delegate pattern, this can simply delegate
+   * to the wrapped strategy.
+   */
   abstract getPendingReviews(): Promise<(StudySessionReviewItem & ScheduledCard)[]>;
+
+  /**
+   * Get new cards for introduction.
+   *
+   * @deprecated This method is part of the legacy StudyContentSource interface.
+   * New strategies should focus on implementing getWeightedCards() instead.
+   * This method will be deprecated once SessionController migrates to the new API.
+   *
+   * For filter strategies using the delegate pattern, this can simply delegate
+   * to the wrapped strategy.
+   *
+   * @param n - Maximum number of new cards to return
+   */
   abstract getNewCards(n?: number): Promise<StudySessionNewItem[]>;
 
   /**
    * Get cards with suitability scores.
    *
-   * This is the primary method for the new weighted-card architecture.
-   * Filter strategies can wrap a delegate and transform its output.
+   * **This is the PRIMARY API for navigation strategies.**
+   *
+   * Returns cards ranked by suitability score (0-1). Higher scores indicate
+   * better candidates for presentation.
+   *
+   * ## For Generator Strategies
+   * Override this method to generate candidates and compute scores based on
+   * your strategy's logic (e.g., ELO proximity, review urgency).
+   *
+   * ## For Filter Strategies
+   * Override this method to:
+   * 1. Get candidates from delegate: `delegate.getWeightedCards(limit * N)`
+   * 2. Transform/filter scores based on your logic
+   * 3. Re-sort and return top candidates
+   *
+   * ## Default Implementation
+   * The base class provides a backward-compatible default that:
+   * 1. Calls legacy getNewCards() and getPendingReviews()
+   * 2. Assigns score=1.0 to all cards
+   * 3. Returns combined results up to limit
+   *
+   * This allows existing strategies to work without modification while
+   * new strategies can override with proper scoring.
    *
    * @param limit - Maximum cards to return
    * @returns Cards sorted by score descending

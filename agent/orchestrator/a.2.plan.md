@@ -1,5 +1,104 @@
 # Plan: Scorable NavigationStrategy Architecture
 
+## API Migration Strategy
+
+> **Note**: This section documents the evolution from the legacy `getNewCards()` / `getPendingReviews()` 
+> interface to the new unified `getWeightedCards()` API. This context prevents future confusion about 
+> the interface design (avoiding Chesterton's Fence).
+
+### Historical Context
+
+The `StudyContentSource` interface was originally designed to abstract both 'classrooms' and 'courses' 
+as content sources. It exposed two methods:
+
+```typescript
+interface StudyContentSource {
+  getPendingReviews(): Promise<(StudySessionReviewItem & ScheduledCard)[]>;
+  getNewCards(n?: number): Promise<StudySessionNewItem[]>;
+}
+```
+
+These methods were **artifacts of two hard-coded NavigationStrategies** (before they had that name):
+1. **ELO proximity** — for selecting new cards matched to user skill level
+2. **SRS scheduling** — for surfacing cards due for review based on spaced repetition
+
+The new/review split reflected this implementation detail, not a fundamental abstraction.
+
+### The Problem
+
+As we added more sophisticated navigation strategies, the limitations became apparent:
+
+- **"What does 'get reviews' mean for an interference mitigator?"** — The concept doesn't map.
+- **SRS is just one strategy** — It votes for scheduled reviews, but that preference could be 
+  expressed as weighted scores like any other strategy.
+- **Some strategies generate candidates, others filter/score them** — The interface didn't 
+  accommodate this distinction cleanly.
+
+### The Solution: Weighted Cards
+
+The new API unifies card selection into a single scored candidate model:
+
+```typescript
+interface WeightedCard {
+  cardId: string;
+  courseId: string;
+  score: number;      // 0-1 suitability
+  source: 'new' | 'review' | 'failed';  // metadata, not API distinction
+}
+
+abstract class ContentNavigator implements StudyContentSource {
+  // THE NEW PRIMARY API
+  async getWeightedCards(limit: number): Promise<WeightedCard[]>;
+  
+  // LEGACY - kept for backward compatibility
+  abstract getPendingReviews(): Promise<...>;
+  abstract getNewCards(n?: number): Promise<...>;
+}
+```
+
+### Strategy Composition Model
+
+Strategies fall into two categories that compose via the delegate pattern:
+
+**Generator strategies** produce candidates:
+- ELO — generates cards near user skill, scores by distance
+- SRS — generates overdue reviews, scores by urgency
+- HardcodedOrder — returns fixed sequence
+
+**Filter strategies** wrap a delegate and transform output:
+- HierarchyDefinition — gates by prerequisites (score=0 or passthrough)
+- InterferenceMitigator — reduces scores for confusable content
+- RelativePriority — boosts scores for high-utility content
+
+Composition example:
+```
+RelativePriority(
+  delegate=InterferenceMitigator(
+    delegate=HierarchyDefinition(
+      delegate=ELO)))
+```
+
+### Migration Path
+
+1. **Phase 1 (Current)**: Both APIs coexist
+   - `getWeightedCards()` is the new primary API
+   - Legacy methods remain for backward compatibility
+   - Default `getWeightedCards()` delegates to legacy methods with score=1.0
+
+2. **Phase 2 (Next)**: SessionController integration
+   - SessionController calls `getWeightedCards()` instead of legacy methods
+   - new/review distinction becomes `WeightedCard.source` metadata
+
+3. **Phase 3 (Future)**: Deprecation
+   - Legacy methods marked `@deprecated`
+   - Eventually removed
+
+### Documentation
+
+See `packages/db/src/core/navigators/ARCHITECTURE.md` for detailed implementation guide.
+
+---
+
 ## Context
 
 This plan implements a scorable strategy architecture for content navigation, driven primarily by the LettersPractice (LP) use case but designed for content-agnostic reuse.

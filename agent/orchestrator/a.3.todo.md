@@ -215,14 +215,44 @@ Delegate pattern handles composition for now. Full orchestrator needed for:
 
 ---
 
-## Phase 4a: Production Integration (PLANNED)
+## Phase 4a: Production Integration (IN PROGRESS)
 
-**Status**: NOT STARTED
+**Status**: PRE-WORK COMPLETE
 
 **Goal**: Wire SessionController to use `getWeightedCards()` so new strategies are actually exercised at runtime.
 
 ### Key Gap
 Currently, `SessionController` still calls legacy `getNewCards()` / `getPendingReviews()`. The new `getWeightedCards()` API is implemented but not integrated.
+
+### Pre-work: API Documentation & Deprecation Notices (COMPLETED)
+
+To avoid future confusion about the interface design (Chesterton's Fence), we documented the 
+evolution from legacy to new API and added deprecation notices.
+
+- [x] p4a.0.1: Create ARCHITECTURE.md migration guide
+  - Created: `packages/db/src/core/navigators/ARCHITECTURE.md`
+  - Documents historical context (why getNewCards/getPendingReviews exist)
+  - Explains the problem (artifacts of hard-coded ELO + SRS strategies)
+  - Describes solution (unified getWeightedCards with scores)
+  - Shows generator vs filter strategy patterns
+  - Provides implementation examples
+
+- [x] p4a.0.2: Add deprecation notices to StudyContentSource
+  - File: `packages/db/src/core/interfaces/contentSource.ts`
+  - Added API migration notice block at top
+  - Added @deprecated JSDoc to interface and methods
+  - Explains migration path
+
+- [x] p4a.0.3: Add deprecation notices to ContentNavigator
+  - File: `packages/db/src/core/navigators/index.ts`
+  - Added module-level documentation block
+  - Added @deprecated JSDoc to legacy methods
+  - Expanded getWeightedCards() documentation
+
+- [x] p4a.0.4: Update plan document with migration strategy
+  - File: `agent/orchestrator/a.2.plan.md`
+  - Added "API Migration Strategy" section
+  - Documents historical context and rationale
 
 ### Tasks (estimated)
 - [ ] p4a.1: Add parallel path in SessionController for weighted card selection

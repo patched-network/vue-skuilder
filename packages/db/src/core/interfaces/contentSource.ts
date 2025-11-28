@@ -3,6 +3,38 @@ import { UserDBInterface } from '..';
 import { StudentClassroomDB } from '../../impl/couch/classroomDB';
 import { ScheduledCard } from '@db/core/types/user';
 
+// ============================================================================
+// API MIGRATION NOTICE
+// ============================================================================
+//
+// The StudyContentSource interface is being superseded by the ContentNavigator
+// class and its getWeightedCards() API. See:
+//   packages/db/src/core/navigators/ARCHITECTURE.md
+//
+// HISTORICAL CONTEXT:
+// - This interface was designed to abstract 'classrooms' and 'courses' as
+//   content sources for study sessions.
+// - getNewCards() and getPendingReviews() were artifacts of two hard-coded
+//   navigation strategies: ELO proximity (new) and SRS scheduling (reviews).
+// - The new/review split reflected implementation details, not fundamentals.
+//
+// THE PROBLEM:
+// - "What does 'get reviews' mean for an interference mitigator?" - it doesn't.
+// - SRS is just one strategy that could express review urgency as scores.
+// - Some strategies generate candidates, others filter/score them.
+//
+// THE SOLUTION:
+// - ContentNavigator.getWeightedCards() returns unified scored candidates.
+// - WeightedCard.source field distinguishes new/review/failed (metadata, not API).
+// - Strategies compose via delegate pattern (filter wraps generator).
+//
+// MIGRATION PATH:
+// 1. ContentNavigator implements StudyContentSource for backward compat
+// 2. SessionController will migrate to call getWeightedCards()
+// 3. Legacy methods will be deprecated, then removed
+//
+// ============================================================================
+
 export type StudySessionFailedItem = StudySessionFailedNewItem | StudySessionFailedReviewItem;
 
 export interface StudySessionFailedNewItem extends StudySessionItem {
@@ -46,8 +78,37 @@ export interface ContentSourceID {
 }
 
 // #region docs_StudyContentSource
+/**
+ * Interface for sources that provide study content to SessionController.
+ *
+ * @deprecated This interface will be superseded by ContentNavigator.getWeightedCards().
+ * The getNewCards/getPendingReviews split was an artifact of hard-coded ELO and SRS
+ * strategies. The new API returns unified WeightedCard[] with scores.
+ *
+ * MIGRATION:
+ * - Implement ContentNavigator instead of StudyContentSource directly
+ * - Override getWeightedCards() as the primary method
+ * - Legacy methods can delegate to getWeightedCards() or be left as-is
+ *
+ * See: packages/db/src/core/navigators/ARCHITECTURE.md
+ */
 export interface StudyContentSource {
+  /**
+   * Get cards scheduled for review based on SRS algorithm.
+   *
+   * @deprecated Will be replaced by getWeightedCards() which returns scored candidates.
+   * Review urgency will be expressed as a score rather than a separate method.
+   */
   getPendingReviews(): Promise<(StudySessionReviewItem & ScheduledCard)[]>;
+
+  /**
+   * Get new cards for introduction, typically ordered by ELO proximity.
+   *
+   * @deprecated Will be replaced by getWeightedCards() which returns scored candidates.
+   * New card selection and scoring will be unified with review scoring.
+   *
+   * @param n - Maximum number of new cards to return
+   */
   getNewCards(n?: number): Promise<StudySessionNewItem[]>;
 }
 // #endregion docs_StudyContentSource
