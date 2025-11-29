@@ -1,59 +1,131 @@
 <template>
   <div class="navigation-strategy-editor">
-    <div v-if="loading">
+    <div v-if="loading" class="text-center pa-4">
       <v-progress-circular indeterminate color="secondary"></v-progress-circular>
     </div>
-    <div v-else>
-      <h2 class="text-h5 mb-4">Navigation Strategies</h2>
+    <div v-else class="editor-layout">
+      <!-- Left Column: Strategy List -->
+      <div class="strategy-list-column">
+        <div class="d-flex align-center mb-2">
+          <h3 class="text-h6">Strategies</h3>
+          <v-spacer></v-spacer>
+          <v-btn size="small" color="primary" @click="startNewStrategy" density="compact">
+            <v-icon start size="small">mdi-plus</v-icon>
+            New
+          </v-btn>
+        </div>
 
-      <div v-if="strategies.length === 0" class="no-strategies">
-        <p>No navigation strategies defined for this course.</p>
+        <v-alert v-if="strategies.length === 0" type="info" density="compact">
+          No strategies defined
+        </v-alert>
+
+        <navigation-strategy-list
+          v-else
+          :strategies="strategies"
+          :default-strategy-id="defaultStrategyId"
+          @update:default-strategy="setDefaultStrategy"
+          @edit="editStrategy"
+          @delete="confirmDeleteStrategy"
+        />
       </div>
 
-      <navigation-strategy-list
-        v-else
-        :strategies="strategies"
-        :default-strategy-id="defaultStrategyId"
-        @update:default-strategy="setDefaultStrategy"
-        @edit="editStrategy"
-        @delete="confirmDeleteStrategy"
-      />
+      <!-- Right Column: Strategy Form -->
+      <div class="strategy-form-column">
+        <div class="form-header d-flex align-center mb-3">
+          <h3 class="text-h6">{{ editingStrategy ? 'Edit Strategy' : 'New Strategy' }}</h3>
+          <v-spacer></v-spacer>
+          <v-btn
+            v-if="editingStrategy"
+            size="small"
+            variant="text"
+            @click="cancelEdit"
+            density="compact"
+          >
+            Cancel
+          </v-btn>
+        </div>
 
-      <v-btn color="primary" class="mt-4" @click="openCreateDialog">
-        <v-icon start>mdi-plus</v-icon>
-        Add New Strategy
-      </v-btn>
+        <v-select
+          v-model="newStrategy.type"
+          label="Type"
+          :items="strategyTypes"
+          item-title="label"
+          item-value="value"
+          density="compact"
+          class="mb-3"
+        ></v-select>
 
-      <v-dialog v-model="showCreateDialog" max-width="600px">
-        <v-card>
-          <v-card-title>Create New Navigation Strategy</v-card-title>
-          <v-card-text>
-            <v-text-field v-model="newStrategy.name" label="Strategy Name" required></v-text-field>
-            <v-text-field v-model="newStrategy.description" label="Description" required></v-text-field>
-            <v-textarea
-              v-model="newStrategy.cardIds"
-              label="Card IDs"
-              placeholder="Enter card IDs, one per line or separated by commas"
-              rows="10"
-              required
-            ></v-textarea>
-          </v-card-text>
-          <v-card-actions>
-            <v-spacer></v-spacer>
-            <v-btn color="blue darken-1" text @click="showCreateDialog = false">Cancel</v-btn>
-            <v-btn color="blue darken-1" text @click="saveNewStrategy">Save</v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-dialog>
+        <v-text-field
+          v-model="newStrategy.name"
+          label="Name"
+          density="compact"
+          class="mb-3"
+        ></v-text-field>
 
+        <v-text-field
+          v-model="newStrategy.description"
+          label="Description"
+          density="compact"
+          class="mb-3"
+        ></v-text-field>
+
+        <!-- Strategy-specific configuration forms -->
+        <hardcoded-order-config-form
+          v-if="newStrategy.type === 'hardcoded'"
+          v-model="newStrategy.config"
+        />
+
+        <hierarchy-config-form
+          v-else-if="newStrategy.type === 'hierarchy'"
+          v-model="newStrategy.config"
+          :course-id="courseId"
+        />
+
+        <interference-config-form
+          v-else-if="newStrategy.type === 'interference'"
+          v-model="newStrategy.config"
+          :course-id="courseId"
+        />
+
+        <relative-priority-config-form
+          v-else-if="newStrategy.type === 'relativePriority'"
+          v-model="newStrategy.config"
+          :course-id="courseId"
+        />
+
+        <v-alert v-else type="warning" density="compact">
+          Unknown strategy type: {{ newStrategy.type }}
+        </v-alert>
+
+        <div class="form-actions mt-4">
+          <v-btn
+            color="primary"
+            @click="saveStrategy"
+            :disabled="!newStrategy.name"
+            size="small"
+          >
+            {{ editingStrategy ? 'Update' : 'Create' }}
+          </v-btn>
+          <v-btn
+            v-if="editingStrategy"
+            variant="text"
+            @click="cancelEdit"
+            size="small"
+          >
+            Cancel
+          </v-btn>
+        </div>
+      </div>
+
+      <!-- Delete Confirmation (still a dialog, but small) -->
       <v-dialog v-model="showDeleteConfirm" max-width="400px">
         <v-card>
-          <v-card-title class="text-h5">Delete Strategy</v-card-title>
-          <v-card-text> Are you sure you want to delete the strategy "{{ strategyToDelete?.name }}"? </v-card-text>
+          <v-card-title class="text-subtitle-1">Delete Strategy</v-card-title>
+          <v-card-text>Delete "{{ strategyToDelete?.name }}"?</v-card-text>
           <v-card-actions>
             <v-spacer></v-spacer>
-            <v-btn color="error" @click="deleteStrategy">Delete</v-btn>
-            <v-btn @click="showDeleteConfirm = false">Cancel</v-btn>
+            <v-btn size="small" @click="showDeleteConfirm = false">Cancel</v-btn>
+            <v-btn size="small" color="error" @click="deleteStrategy">Delete</v-btn>
           </v-card-actions>
         </v-card>
       </v-dialog>
@@ -65,6 +137,10 @@
 import { defineComponent } from 'vue';
 import type { ContentNavigationStrategyData } from '@vue-skuilder/db/src/core/types/contentNavigationStrategy';
 import NavigationStrategyList from './NavigationStrategyList.vue';
+import HardcodedOrderConfigForm from './HardcodedOrderConfigForm.vue';
+import HierarchyConfigForm from './HierarchyConfigForm.vue';
+import InterferenceConfigForm from './InterferenceConfigForm.vue';
+import RelativePriorityConfigForm from './RelativePriorityConfigForm.vue';
 import { getDataLayer, DocType, Navigators } from '@vue-skuilder/db';
 import { DocTypePrefixes } from '@vue-skuilder/db/src/core/types/types-legacy';
 
@@ -73,6 +149,10 @@ export default defineComponent({
 
   components: {
     NavigationStrategyList,
+    HardcodedOrderConfigForm,
+    HierarchyConfigForm,
+    InterferenceConfigForm,
+    RelativePriorityConfigForm,
   },
 
   props: {
@@ -88,12 +168,19 @@ export default defineComponent({
       loading: true,
       showDeleteConfirm: false,
       strategyToDelete: null as ContentNavigationStrategyData | null,
-      showCreateDialog: false,
+      strategyTypes: [
+        { label: 'Hardcoded Order', value: 'hardcoded' },
+        { label: 'Hierarchy Definition', value: 'hierarchy' },
+        { label: 'Interference Mitigator', value: 'interference' },
+        { label: 'Relative Priority', value: 'relativePriority' },
+      ],
       newStrategy: {
+        type: 'hardcoded' as string,
         name: '',
         description: '',
-        cardIds: '',
+        config: { cardIds: [] } as any,
       },
+      editingStrategy: null as ContentNavigationStrategyData | null,
       defaultStrategyId: null as string | null,
     };
   },
@@ -102,7 +189,80 @@ export default defineComponent({
     await this.loadStrategies();
   },
 
+  watch: {
+    'newStrategy.type'(newType: string) {
+      // Reset config when strategy type changes
+      this.newStrategy.config = this.getDefaultConfig(newType);
+    },
+  },
+
   methods: {
+    getDefaultConfig(strategyType: string) {
+      switch (strategyType) {
+        case 'hardcoded':
+          return { cardIds: [] };
+        case 'hierarchy':
+          return {
+            prerequisites: {},
+            delegateStrategy: 'elo',
+          };
+        case 'interference':
+          return {
+            interferenceSets: [],
+            maturityThreshold: {
+              minCount: 10,
+              minElapsedDays: 3,
+            },
+            defaultDecay: 0.8,
+            delegateStrategy: 'elo',
+          };
+        case 'relativePriority':
+          return {
+            tagPriorities: {},
+            defaultPriority: 0.5,
+            combineMode: 'max',
+            priorityInfluence: 0.5,
+            delegateStrategy: 'elo',
+          };
+        default:
+          return {};
+      }
+    },
+
+    // Map implementing class to strategy type
+    getStrategyTypeFromClass(implementingClass: string): string {
+      switch (implementingClass) {
+        case Navigators.HARDCODED:
+          return 'hardcoded';
+        case Navigators.HIERARCHY:
+          return 'hierarchy';
+        case Navigators.INTERFERENCE:
+          return 'interference';
+        case Navigators.RELATIVE_PRIORITY:
+          return 'relativePriority';
+        default:
+          return 'hardcoded';
+      }
+    },
+
+    // Parse serialized data back to config object
+    parseSerializedData(strategyType: string, serializedData: string): any {
+      try {
+        const parsed = JSON.parse(serializedData);
+
+        if (strategyType === 'hardcoded') {
+          // Hardcoded stores just the array, wrap it
+          return { cardIds: Array.isArray(parsed) ? parsed : [] };
+        } else {
+          // Other strategies store the full config object
+          return parsed;
+        }
+      } catch (error) {
+        console.error('Failed to parse strategy data:', error);
+        return this.getDefaultConfig(strategyType);
+      }
+    },
+
     async loadStrategies() {
       this.loading = true;
       try {
@@ -156,16 +316,66 @@ export default defineComponent({
       }
     },
 
-    openCreateDialog() {
-      this.newStrategy = { name: '', description: '', cardIds: '' };
-      this.showCreateDialog = true;
+    startNewStrategy() {
+      const defaultType = 'hardcoded';
+      this.newStrategy = {
+        type: defaultType,
+        name: '',
+        description: '',
+        config: this.getDefaultConfig(defaultType),
+      };
+      this.editingStrategy = null;
     },
 
-    async saveNewStrategy() {
-      if (!this.newStrategy.name || !this.newStrategy.cardIds) {
-        // Basic validation
-        alert('Strategy Name and Card IDs are required.');
+    cancelEdit() {
+      this.startNewStrategy();
+    },
+
+    editStrategy(strategy: ContentNavigationStrategyData) {
+      const strategyType = this.getStrategyTypeFromClass(strategy.implementingClass);
+      const config = this.parseSerializedData(strategyType, strategy.serializedData);
+
+      this.newStrategy = {
+        type: strategyType,
+        name: strategy.name,
+        description: strategy.description,
+        config,
+      };
+      this.editingStrategy = strategy;
+    },
+
+    async saveStrategy() {
+      if (!this.newStrategy.name) {
+        alert('Strategy Name is required.');
         return;
+      }
+
+      // Validate config based on strategy type
+      if (this.newStrategy.type === 'hardcoded' && this.newStrategy.config.cardIds.length === 0) {
+        alert('At least one card ID is required for hardcoded order strategy.');
+        return;
+      }
+
+      if (this.newStrategy.type === 'hierarchy') {
+        const prereqCount = Object.keys(this.newStrategy.config.prerequisites || {}).length;
+        if (prereqCount === 0) {
+          alert('At least one prerequisite rule is required for hierarchy strategy.');
+          return;
+        }
+      }
+
+      if (this.newStrategy.type === 'interference') {
+        if (!this.newStrategy.config.interferenceSets || this.newStrategy.config.interferenceSets.length === 0) {
+          alert('At least one interference group is required for interference strategy.');
+          return;
+        }
+      }
+
+      if (this.newStrategy.type === 'relativePriority') {
+        if (!this.newStrategy.config.tagPriorities || Object.keys(this.newStrategy.config.tagPriorities).length === 0) {
+          alert('At least one tag priority must be set for relative priority strategy.');
+          return;
+        }
       }
 
       this.loading = true;
@@ -175,37 +385,58 @@ export default defineComponent({
         const userName = userDB.getUsername();
         const courseDB = dataLayer.getCourseDB(this.courseId);
 
-        // Process card IDs
-        const cardIdArray = this.newStrategy.cardIds
-          .split(/[\n,]+/)
-          .map((id) => id.trim())
-          .filter((id) => id);
-
-        const strategyData: ContentNavigationStrategyData = {
-          _id: `NAVIGATION_STRATEGY-${Date.now()}`,
-          docType: DocType.NAVIGATION_STRATEGY,
-          name: this.newStrategy.name,
-          description: this.newStrategy.description,
-          implementingClass: Navigators.HARDCODED,
-          author: userName,
-          course: this.courseId,
-          serializedData: JSON.stringify(cardIdArray),
+        // Map strategy type to implementing class
+        const implementingClassMap: Record<string, string> = {
+          hardcoded: Navigators.HARDCODED,
+          hierarchy: Navigators.HIERARCHY,
+          interference: Navigators.INTERFERENCE,
+          relativePriority: Navigators.RELATIVE_PRIORITY,
         };
 
-        await courseDB.addNavigationStrategy(strategyData);
+        // Serialize config based on strategy type
+        let serializedData: string;
+        if (this.newStrategy.type === 'hardcoded') {
+          // Hardcoded stores just the array of card IDs
+          serializedData = JSON.stringify(this.newStrategy.config.cardIds);
+        } else {
+          // Other strategies store their full config object
+          serializedData = JSON.stringify(this.newStrategy.config);
+        }
 
-        this.showCreateDialog = false;
+        if (this.editingStrategy) {
+          // Update existing strategy
+          const strategyData: ContentNavigationStrategyData = {
+            ...this.editingStrategy,
+            name: this.newStrategy.name,
+            description: this.newStrategy.description,
+            implementingClass: implementingClassMap[this.newStrategy.type],
+            serializedData,
+          };
+
+          await courseDB.updateNavigationStrategy(this.editingStrategy._id, strategyData);
+        } else {
+          // Create new strategy
+          const strategyData: ContentNavigationStrategyData = {
+            _id: `NAVIGATION_STRATEGY-${Date.now()}`,
+            docType: DocType.NAVIGATION_STRATEGY,
+            name: this.newStrategy.name,
+            description: this.newStrategy.description,
+            implementingClass: implementingClassMap[this.newStrategy.type],
+            author: userName,
+            course: this.courseId,
+            serializedData,
+          };
+
+          await courseDB.addNavigationStrategy(strategyData);
+        }
+
         await this.loadStrategies(); // Refresh the list
+        this.startNewStrategy(); // Reset form
       } catch (error) {
         console.error('Failed to save new strategy:', error);
         alert('Error saving strategy. See console for details.');
       }
       this.loading = false;
-    },
-
-    editStrategy(strategy: ContentNavigationStrategyData) {
-      // Strategy editing is not yet implemented
-      console.log(`Editing strategy ${strategy._id} is not yet implemented`);
     },
 
     confirmDeleteStrategy(strategy: ContentNavigationStrategyData) {
@@ -254,14 +485,45 @@ export default defineComponent({
 
 <style scoped>
 .navigation-strategy-editor {
-  padding: 16px;
+  height: 100%;
+  overflow: hidden;
 }
 
-.no-strategies {
-  margin: 20px 0;
-  padding: 20px;
-  background-color: #f5f5f5;
-  border-radius: 4px;
-  text-align: center;
+.editor-layout {
+  display: grid;
+  grid-template-columns: 400px 1fr;
+  gap: 24px;
+  height: 100%;
+  overflow: hidden;
+}
+
+.strategy-list-column {
+  overflow-y: auto;
+  padding-right: 12px;
+}
+
+.strategy-form-column {
+  overflow-y: auto;
+  padding-left: 12px;
+  border-left: 1px solid #e0e0e0;
+}
+
+.form-actions {
+  display: flex;
+  gap: 8px;
+}
+
+@media (max-width: 960px) {
+  .editor-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+
+  .strategy-form-column {
+    border-left: none;
+    border-top: 1px solid #e0e0e0;
+    padding-left: 0;
+    padding-top: 12px;
+  }
 }
 </style>
