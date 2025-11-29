@@ -279,23 +279,36 @@ export default defineComponent({
     async initSession() {
       let sessionClassroomDBs: ClassroomDBInterface[] = [];
       try {
-        console.log(`[StudySession] starting study session w/ sources: ${JSON.stringify(this.contentSources)}`);
-        console.log('[StudySession] Beginning preparation process');
+        const studyConfigStore = useStudyConfigStore();
+        if (studyConfigStore.hasConfig) {
+          console.log('[StudySession] Found tag filter in store, initializing TagFilteredContentSource.');
+          const courseId = this.contentSources[0]?.id;
+          if (!courseId) {
+            throw new Error('Course ID must be provided via contentSources prop for a filtered session.');
+          }
+          this.sessionContentSources = markRaw([
+            new TagFilteredContentSource(courseId, studyConfigStore.tagFilter!, this.user),
+          ]);
+          studyConfigStore.clearConfig();
+        } else {
+          console.log(`[StudySession] starting study session w/ sources: ${JSON.stringify(this.contentSources)}`);
+          this.sessionContentSources = markRaw(
+            (
+              await Promise.all(
+                this.contentSources.map(async (s) => {
+                  try {
+                    return await getStudySource(s, this.user);
+                  } catch (e) {
+                    console.error(`Failed to load study source: ${s.type}/${s.id}`, e);
+                    return null;
+                  }
+                })
+              )
+            ).filter((s: unknown) => s !== null)
+          );
+        }
 
-        this.sessionContentSources = markRaw(
-          (
-            await Promise.all(
-              this.contentSources.map(async (s) => {
-                try {
-                  return await getStudySource(s, this.user);
-                } catch (e) {
-                  console.error(`Failed to load study source: ${s.type}/${s.id}`, e);
-                  return null;
-                }
-              })
-            )
-          ).filter((s: unknown) => s !== null)
-        );
+        console.log('[StudySession] Beginning preparation process');
 
         this.timeRemaining = this.sessionTimeLimit * 60;
 

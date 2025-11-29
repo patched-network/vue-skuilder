@@ -55,6 +55,12 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('../views/TagViewer.vue'),
     props: true,
   },
+  {
+    path: '/study/configure/:courseId',
+    name: 'course-tag-study-config',
+    component: () => import('../views/CourseTagStudyConfigView.vue'),
+    props: true,
+  },
 ];
 
 const router = createRouter({

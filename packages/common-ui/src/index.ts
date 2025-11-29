@@ -84,6 +84,7 @@ export * from './utils/passwordValidation';
 export * from './stores/useCardPreviewModeStore';
 export * from './stores/useAuthStore';
 export * from './stores/useConfigStore';
+export * from './stores/studyConfig';
 
 /*
   plugins
