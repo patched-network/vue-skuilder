@@ -142,7 +142,6 @@ import HierarchyConfigForm from './HierarchyConfigForm.vue';
 import InterferenceConfigForm from './InterferenceConfigForm.vue';
 import RelativePriorityConfigForm from './RelativePriorityConfigForm.vue';
 import { getDataLayer, DocType, Navigators } from '@vue-skuilder/db';
-import { DocTypePrefixes } from '@vue-skuilder/db/src/core/types/types-legacy';
 
 export default defineComponent({
   name: 'NavigationStrategyEditor',

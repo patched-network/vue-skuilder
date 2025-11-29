@@ -171,7 +171,7 @@
 import { defineComponent, ref, computed, watch, onMounted } from 'vue';
 import { getDataLayer } from '@vue-skuilder/db';
 
-interface RelativePriorityConfig {
+export interface RelativePriorityConfig {
   tagPriorities: { [tagId: string]: number };
   defaultPriority?: number;
   combineMode?: 'max' | 'average' | 'min';

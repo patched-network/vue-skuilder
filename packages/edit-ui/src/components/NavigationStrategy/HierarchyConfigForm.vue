@@ -159,7 +159,7 @@ interface TagPrerequisite {
   };
 }
 
-interface HierarchyConfig {
+export interface HierarchyConfig {
   prerequisites: {
     [tagId: string]: TagPrerequisite[];
   };

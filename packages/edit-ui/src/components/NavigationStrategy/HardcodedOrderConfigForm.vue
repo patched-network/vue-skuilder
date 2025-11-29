@@ -28,7 +28,7 @@ import { defineComponent, computed, ref, watch } from 'vue';
  * Configuration for hardcoded order strategy
  * Serialized format: JSON array of card IDs
  */
-interface HardcodedOrderConfig {
+export interface HardcodedOrderConfig {
   cardIds: string[];
 }
 
