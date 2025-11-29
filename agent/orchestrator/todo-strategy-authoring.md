@@ -1,6 +1,6 @@
-# TODO: NavigationStrategy Authoring Tools
+# NavigationStrategy Authoring Tools
 
-## Status: NOT STARTED
+## Status: UI COMPLETE ✅ (CLI/MCP Optional)
 
 ## Goal
 
@@ -8,25 +8,41 @@ Provide tools for course authors to create and configure NavigationStrategy docu
 without direct database manipulation. This includes UI components, CLI commands, and
 potentially MCP tools.
 
-## Current State
+**UI implementation completed.** CLI and MCP remain as optional future enhancements for
+scriptable/agent-based workflows.
 
-### What Exists
+## Current State (Updated)
+
+### What Exists ✅
 
 | Component | Location | Status |
 |-----------|----------|--------|
-| `NavigationStrategyEditor.vue` | `packages/edit-ui/src/components/NavigationStrategy/` | Only creates HARDCODED strategies |
-| `NavigationStrategyList.vue` | `packages/edit-ui/src/components/NavigationStrategy/` | Lists strategies, sets default |
-| `CourseDB.addNavigationStrategy()` | `packages/db/src/impl/couch/courseDB.ts` | DB write method exists |
-| `CourseDB.getAllNavigationStrategies()` | `packages/db/src/impl/couch/courseDB.ts` | DB read method exists |
-| `ContentNavigationStrategyData` | `packages/db/src/core/types/contentNavigationStrategy.ts` | Data schema exists |
+| `HardcodedOrderConfigForm.vue` | `packages/edit-ui/src/components/NavigationStrategy/` | ✅ Complete |
+| `HierarchyConfigForm.vue` | `packages/edit-ui/src/components/NavigationStrategy/` | ✅ Complete |
+| `InterferenceConfigForm.vue` | `packages/edit-ui/src/components/NavigationStrategy/` | ✅ Complete |
+| `RelativePriorityConfigForm.vue` | `packages/edit-ui/src/components/NavigationStrategy/` | ✅ Complete |
+| `NavigationStrategyEditor.vue` | `packages/edit-ui/src/components/NavigationStrategy/` | ✅ All strategy types supported |
+| `NavigationStrategyList.vue` | `packages/edit-ui/src/components/NavigationStrategy/` | ✅ Compact layout, edit/delete |
+| `CourseDB.addNavigationStrategy()` | `packages/db/src/impl/couch/courseDB.ts` | ✅ DB write method |
+| `CourseDB.updateNavigationStrategy()` | `packages/db/src/impl/couch/courseDB.ts` | ✅ DB update method |
+| `CourseDB.getAllNavigationStrategies()` | `packages/db/src/impl/couch/courseDB.ts` | ✅ DB read method |
 
-### What's Missing
+### What's Complete
 
-- UI forms for Hierarchy, Interference, RelativePriority configs
-- CLI commands for strategy creation
-- MCP tools for agent-based authoring
-- Validation of strategy configurations
-- Preview/testing of strategy behavior
+- ✅ UI forms for all four strategy types (Hardcoded, Hierarchy, Interference, RelativePriority)
+- ✅ Dual input modes (Visual Editor / JSON Editor) for each form
+- ✅ Tag loading from course database
+- ✅ Real-time validation with error messages
+- ✅ Edit functionality for existing strategies
+- ✅ Compact, non-modal two-column layout
+- ✅ Responsive design (desktop and mobile)
+- ✅ Full CRUD operations (Create, Read, Update, Delete)
+
+### What's Optional (Future Enhancements)
+
+- ⏸️ CLI commands for strategy creation (scriptable workflows)
+- ⏸️ MCP tools for agent-based authoring (LLM-guided config generation)
+- ⏸️ Strategy behavior preview/simulation
 
 ## Strategy Types and Their Configs
 
@@ -244,22 +260,28 @@ Add to `packages/mcp/src/tools/`:
 
 ---
 
-## Recommended Approach
+## Implementation Completed: UI-First Approach ✅
 
-**Phase 1: CLI (Quick Win)**
-- Fastest to implement
-- Enables immediate testing of strategies
-- Can be used by agents via terminal tool
+**Phase 1: UI Forms (COMPLETED)**
+- ✅ All four strategy configuration forms implemented
+- ✅ Visual editor with guided inputs
+- ✅ JSON editor for power users
+- ✅ Tag selectors, sliders, multi-selects
+- ✅ Validation and error messages
+- ✅ Edit/Create/Delete functionality
+- ✅ Compact two-column layout (list + form)
 
-**Phase 2: MCP Tools**
-- Natural extension of existing MCP infrastructure
-- Enables agent-driven course authoring
-- Config generation can be guided by prompts
+**Phase 2 (Optional): CLI Commands**
+- Scriptable strategy creation from JSON files
+- Bulk operations and automation
+- Terminal-based workflows
+- **Status:** Not started, optional enhancement
 
-**Phase 3: UI (Full Solution)**
-- User-friendly for course authors
-- Visual feedback and validation
-- Can reference CLI/MCP implementations for logic
+**Phase 3 (Optional): MCP Tools**
+- Agent-accessible strategy authoring
+- LLM-guided config generation
+- Extends existing MCP infrastructure
+- **Status:** Not started, optional enhancement
 
 ---
 
@@ -289,31 +311,83 @@ interface ValidationResult {
 
 ---
 
-## Files to Create/Modify
+## Files Created/Modified
 
-### Option A: UI
+### UI Implementation (COMPLETED ✅)
 
-| File | Action | Description |
-|------|--------|-------------|
-| `packages/edit-ui/src/components/NavigationStrategy/HierarchyConfigForm.vue` | CREATE | Hierarchy config form |
-| `packages/edit-ui/src/components/NavigationStrategy/InterferenceConfigForm.vue` | CREATE | Interference config form |
-| `packages/edit-ui/src/components/NavigationStrategy/RelativePriorityConfigForm.vue` | CREATE | Priority config form |
-| `packages/edit-ui/src/components/NavigationStrategy/NavigationStrategyEditor.vue` | MODIFY | Add type selector, conditional forms |
+| File | Action | Description | Status |
+|------|--------|-------------|--------|
+| `packages/edit-ui/src/components/NavigationStrategy/HardcodedOrderConfigForm.vue` | CREATED | Card ID list form | ✅ |
+| `packages/edit-ui/src/components/NavigationStrategy/HierarchyConfigForm.vue` | CREATED | Prerequisite gating config | ✅ |
+| `packages/edit-ui/src/components/NavigationStrategy/InterferenceConfigForm.vue` | CREATED | Interference groups config | ✅ |
+| `packages/edit-ui/src/components/NavigationStrategy/RelativePriorityConfigForm.vue` | CREATED | Tag priorities config | ✅ |
+| `packages/edit-ui/src/components/NavigationStrategy/NavigationStrategyEditor.vue` | MODIFIED | Two-column layout, all strategy types | ✅ |
+| `packages/edit-ui/src/components/NavigationStrategy/NavigationStrategyList.vue` | MODIFIED | Compact density, simplified display | ✅ |
 
-### Option B: CLI
+### CLI Implementation (OPTIONAL, NOT STARTED)
 
-| File | Action | Description |
-|------|--------|-------------|
-| `packages/cli/src/commands/strategy.ts` | CREATE | Strategy management commands |
-| `packages/cli/src/utils/strategy-validation.ts` | CREATE | Config validation utilities |
-| `packages/cli/src/index.ts` | MODIFY | Register strategy commands |
+| File | Action | Description | Status |
+|------|--------|-------------|--------|
+| `packages/cli/src/commands/strategy.ts` | CREATE | Strategy management commands | ⏸️ |
+| `packages/cli/src/utils/strategy-validation.ts` | CREATE | Config validation utilities | ⏸️ |
+| `packages/cli/src/index.ts` | MODIFY | Register strategy commands | ⏸️ |
 
-### Option C: MCP
+### MCP Implementation (OPTIONAL, NOT STARTED)
 
-| File | Action | Description |
-|------|--------|-------------|
-| `packages/mcp/src/tools/navigationStrategy.ts` | CREATE | Strategy creation tools |
-| `packages/mcp/src/index.ts` | MODIFY | Register new tools |
+| File | Action | Description | Status |
+|------|--------|-------------|--------|
+| `packages/mcp/src/tools/create-navigation-strategy.ts` | CREATE | Create strategy tool | ⏸️ |
+| `packages/mcp/src/tools/update-navigation-strategy.ts` | CREATE | Update strategy tool | ⏸️ |
+| `packages/mcp/src/tools/list-navigation-strategies.ts` | CREATE | List strategies tool | ⏸️ |
+| `packages/mcp/src/tools/delete-navigation-strategy.ts` | CREATE | Delete strategy tool | ⏸️ |
+| `packages/mcp/src/types/tools.ts` | MODIFY | Add strategy schemas | ⏸️ |
+| `packages/mcp/src/tools/index.ts` | MODIFY | Export new tools | ⏸️ |
+
+---
+
+## Key Features Delivered
+
+### Dual Input Modes
+All forms support two modes for flexibility:
+- **Visual Editor**: Guided UI with selectors, sliders, and inputs
+- **JSON Editor**: Direct JSON editing with real-time validation
+
+### Strategy-Specific Capabilities
+
+**HierarchyConfigForm:**
+- Add/remove prerequisite rules
+- Tag selectors for gated tags and their prerequisites
+- Mastery thresholds (minCount, minElo)
+- Delegate strategy selector
+
+**InterferenceConfigForm:**
+- Add/remove interference groups
+- Multi-tag selector for each group
+- Per-group decay sliders (0-1)
+- Maturity threshold configuration (minCount, minElo, minElapsedDays)
+- Default decay setting
+
+**RelativePriorityConfigForm:**
+- Individual priority sliders for all course tags
+- Default priority configuration
+- Combine mode selector (max/average/min)
+- Priority influence slider
+
+### User Experience
+- **Compact Layout**: Two-column design (strategy list + form)
+- **Always Visible**: No modal dialogs, form always accessible
+- **Responsive**: Works on desktop and mobile
+- **Real-time Validation**: Inline error messages
+- **Tag Loading**: Automatically fetches course tags
+- **Edit Support**: Click any strategy to edit
+
+---
+
+## Access
+
+The NavigationStrategy editor is accessible in:
+- **studio-ui**: `/course-editor` route → "Navigation" tab
+- **platform-ui**: `/edit/:courseId` route → "Navigation" tab
 
 ---
 
@@ -324,4 +398,4 @@ interface ValidationResult {
 - `packages/db/src/core/navigators/hierarchyDefinition.ts` — Config interface reference
 - `packages/db/src/core/navigators/interferenceMitigator.ts` — Config interface reference
 - `packages/db/src/core/navigators/relativePriority.ts` — Config interface reference
-- `packages/edit-ui/src/components/NavigationStrategy/` — Existing UI components
+- `packages/edit-ui/src/components/NavigationStrategy/` — UI components (all forms)
