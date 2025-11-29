@@ -1,91 +1,131 @@
 <template>
   <div class="navigation-strategy-editor">
-    <div v-if="loading">
+    <div v-if="loading" class="text-center pa-4">
       <v-progress-circular indeterminate color="secondary"></v-progress-circular>
     </div>
-    <div v-else>
-      <h2 class="text-h5 mb-4">Navigation Strategies</h2>
+    <div v-else class="editor-layout">
+      <!-- Left Column: Strategy List -->
+      <div class="strategy-list-column">
+        <div class="d-flex align-center mb-2">
+          <h3 class="text-h6">Strategies</h3>
+          <v-spacer></v-spacer>
+          <v-btn size="small" color="primary" @click="startNewStrategy" density="compact">
+            <v-icon start size="small">mdi-plus</v-icon>
+            New
+          </v-btn>
+        </div>
 
-      <div v-if="strategies.length === 0" class="no-strategies">
-        <p>No navigation strategies defined for this course.</p>
+        <v-alert v-if="strategies.length === 0" type="info" density="compact">
+          No strategies defined
+        </v-alert>
+
+        <navigation-strategy-list
+          v-else
+          :strategies="strategies"
+          :default-strategy-id="defaultStrategyId"
+          @update:default-strategy="setDefaultStrategy"
+          @edit="editStrategy"
+          @delete="confirmDeleteStrategy"
+        />
       </div>
 
-      <navigation-strategy-list
-        v-else
-        :strategies="strategies"
-        :default-strategy-id="defaultStrategyId"
-        @update:default-strategy="setDefaultStrategy"
-        @edit="editStrategy"
-        @delete="confirmDeleteStrategy"
-      />
+      <!-- Right Column: Strategy Form -->
+      <div class="strategy-form-column">
+        <div class="form-header d-flex align-center mb-3">
+          <h3 class="text-h6">{{ editingStrategy ? 'Edit Strategy' : 'New Strategy' }}</h3>
+          <v-spacer></v-spacer>
+          <v-btn
+            v-if="editingStrategy"
+            size="small"
+            variant="text"
+            @click="cancelEdit"
+            density="compact"
+          >
+            Cancel
+          </v-btn>
+        </div>
 
-      <v-btn color="primary" class="mt-4" @click="openCreateDialog">
-        <v-icon start>mdi-plus</v-icon>
-        Add New Strategy
-      </v-btn>
+        <v-select
+          v-model="newStrategy.type"
+          label="Type"
+          :items="strategyTypes"
+          item-title="label"
+          item-value="value"
+          density="compact"
+          class="mb-3"
+        ></v-select>
 
-      <v-dialog v-model="showCreateDialog" max-width="800px">
-        <v-card>
-          <v-card-title>{{ editingStrategy ? 'Edit' : 'Create New' }} Navigation Strategy</v-card-title>
-          <v-card-text>
-            <v-select
-              v-model="newStrategy.type"
-              label="Strategy Type"
-              :items="strategyTypes"
-              item-title="label"
-              item-value="value"
-              required
-              class="mb-4"
-            ></v-select>
+        <v-text-field
+          v-model="newStrategy.name"
+          label="Name"
+          density="compact"
+          class="mb-3"
+        ></v-text-field>
 
-            <v-text-field v-model="newStrategy.name" label="Strategy Name" required></v-text-field>
-            <v-text-field v-model="newStrategy.description" label="Description" required></v-text-field>
+        <v-text-field
+          v-model="newStrategy.description"
+          label="Description"
+          density="compact"
+          class="mb-3"
+        ></v-text-field>
 
-            <!-- Strategy-specific configuration forms -->
-            <hardcoded-order-config-form
-              v-if="newStrategy.type === 'hardcoded'"
-              v-model="newStrategy.config"
-            />
+        <!-- Strategy-specific configuration forms -->
+        <hardcoded-order-config-form
+          v-if="newStrategy.type === 'hardcoded'"
+          v-model="newStrategy.config"
+        />
 
-            <hierarchy-config-form
-              v-else-if="newStrategy.type === 'hierarchy'"
-              v-model="newStrategy.config"
-              :course-id="courseId"
-            />
+        <hierarchy-config-form
+          v-else-if="newStrategy.type === 'hierarchy'"
+          v-model="newStrategy.config"
+          :course-id="courseId"
+        />
 
-            <interference-config-form
-              v-else-if="newStrategy.type === 'interference'"
-              v-model="newStrategy.config"
-              :course-id="courseId"
-            />
+        <interference-config-form
+          v-else-if="newStrategy.type === 'interference'"
+          v-model="newStrategy.config"
+          :course-id="courseId"
+        />
 
-            <relative-priority-config-form
-              v-else-if="newStrategy.type === 'relativePriority'"
-              v-model="newStrategy.config"
-              :course-id="courseId"
-            />
+        <relative-priority-config-form
+          v-else-if="newStrategy.type === 'relativePriority'"
+          v-model="newStrategy.config"
+          :course-id="courseId"
+        />
 
-            <!-- Placeholder for unknown strategy types -->
-            <v-alert v-else type="warning" density="compact">
-              Unknown strategy type: {{ newStrategy.type }}
-            </v-alert>
-          </v-card-text>
-          <v-card-actions>
-            <v-spacer></v-spacer>
-            <v-btn color="blue darken-1" text @click="showCreateDialog = false">Cancel</v-btn>
-            <v-btn color="blue darken-1" text @click="saveStrategy">{{ editingStrategy ? 'Update' : 'Save' }}</v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-dialog>
+        <v-alert v-else type="warning" density="compact">
+          Unknown strategy type: {{ newStrategy.type }}
+        </v-alert>
 
+        <div class="form-actions mt-4">
+          <v-btn
+            color="primary"
+            @click="saveStrategy"
+            :disabled="!newStrategy.name"
+            size="small"
+          >
+            {{ editingStrategy ? 'Update' : 'Create' }}
+          </v-btn>
+          <v-btn
+            v-if="editingStrategy"
+            variant="text"
+            @click="cancelEdit"
+            size="small"
+          >
+            Cancel
+          </v-btn>
+        </div>
+      </div>
+
+      <!-- Delete Confirmation (still a dialog, but small) -->
       <v-dialog v-model="showDeleteConfirm" max-width="400px">
         <v-card>
-          <v-card-title class="text-h5">Delete Strategy</v-card-title>
-          <v-card-text> Are you sure you want to delete the strategy "{{ strategyToDelete?.name }}"? </v-card-text>
+          <v-card-title class="text-subtitle-1">Delete Strategy</v-card-title>
+          <v-card-text>Delete "{{ strategyToDelete?.name }}"?</v-card-text>
           <v-card-actions>
             <v-spacer></v-spacer>
-            <v-btn color="error" @click="deleteStrategy">Delete</v-btn>
-            <v-btn @click="showDeleteConfirm = false">Cancel</v-btn>
+            <v-btn size="small" @click="showDeleteConfirm = false">Cancel</v-btn>
+            <v-btn size="small" color="error" @click="deleteStrategy">Delete</v-btn>
           </v-card-actions>
         </v-card>
       </v-dialog>
@@ -128,7 +168,6 @@ export default defineComponent({
       loading: true,
       showDeleteConfirm: false,
       strategyToDelete: null as ContentNavigationStrategyData | null,
-      showCreateDialog: false,
       strategyTypes: [
         { label: 'Hardcoded Order', value: 'hardcoded' },
         { label: 'Hierarchy Definition', value: 'hierarchy' },
@@ -139,7 +178,7 @@ export default defineComponent({
         type: 'hardcoded' as string,
         name: '',
         description: '',
-        config: { cardIds: [] } as any, // Type varies by strategy type
+        config: { cardIds: [] } as any,
       },
       editingStrategy: null as ContentNavigationStrategyData | null,
       defaultStrategyId: null as string | null,
@@ -277,7 +316,7 @@ export default defineComponent({
       }
     },
 
-    openCreateDialog() {
+    startNewStrategy() {
       const defaultType = 'hardcoded';
       this.newStrategy = {
         type: defaultType,
@@ -286,7 +325,10 @@ export default defineComponent({
         config: this.getDefaultConfig(defaultType),
       };
       this.editingStrategy = null;
-      this.showCreateDialog = true;
+    },
+
+    cancelEdit() {
+      this.startNewStrategy();
     },
 
     editStrategy(strategy: ContentNavigationStrategyData) {
@@ -300,7 +342,6 @@ export default defineComponent({
         config,
       };
       this.editingStrategy = strategy;
-      this.showCreateDialog = true;
     },
 
     async saveStrategy() {
@@ -389,9 +430,8 @@ export default defineComponent({
           await courseDB.addNavigationStrategy(strategyData);
         }
 
-        this.showCreateDialog = false;
-        this.editingStrategy = null;
         await this.loadStrategies(); // Refresh the list
+        this.startNewStrategy(); // Reset form
       } catch (error) {
         console.error('Failed to save new strategy:', error);
         alert('Error saving strategy. See console for details.');
@@ -445,14 +485,45 @@ export default defineComponent({
 
 <style scoped>
 .navigation-strategy-editor {
-  padding: 16px;
+  height: 100%;
+  overflow: hidden;
 }
 
-.no-strategies {
-  margin: 20px 0;
-  padding: 20px;
-  background-color: #f5f5f5;
-  border-radius: 4px;
-  text-align: center;
+.editor-layout {
+  display: grid;
+  grid-template-columns: 400px 1fr;
+  gap: 24px;
+  height: 100%;
+  overflow: hidden;
+}
+
+.strategy-list-column {
+  overflow-y: auto;
+  padding-right: 12px;
+}
+
+.strategy-form-column {
+  overflow-y: auto;
+  padding-left: 12px;
+  border-left: 1px solid #e0e0e0;
+}
+
+.form-actions {
+  display: flex;
+  gap: 8px;
+}
+
+@media (max-width: 960px) {
+  .editor-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+
+  .strategy-form-column {
+    border-left: none;
+    border-top: 1px solid #e0e0e0;
+    padding-left: 0;
+    padding-top: 12px;
+  }
 }
 </style>

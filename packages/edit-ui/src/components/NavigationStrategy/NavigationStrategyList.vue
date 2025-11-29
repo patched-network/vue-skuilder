@@ -1,47 +1,45 @@
 <template>
   <div class="navigation-strategy-list">
-    <v-radio-group :model-value="defaultStrategyId" @update:modelValue="$emit('update:defaultStrategy', $event)">
-      <v-list>
+    <v-radio-group :model-value="defaultStrategyId" @update:modelValue="$emit('update:defaultStrategy', $event)" density="compact">
+      <v-list density="compact">
         <v-list-item
           v-for="strategy in strategies"
           :key="strategy._id"
-          lines="three"
+          lines="two"
         >
           <template #prepend>
             <v-radio :value="strategy._id"></v-radio>
           </template>
 
-          <v-list-item-title class="text-h6">
+          <v-list-item-title class="text-subtitle-2">
             {{ strategy.name }}
           </v-list-item-title>
 
-          <v-list-item-subtitle>{{ strategy.description }}</v-list-item-subtitle>
-
-          <v-list-item-subtitle class="strategy-details mt-2">
-            <div><strong>Type:</strong> {{ strategy.implementingClass }}</div>
-            <div v-if="strategy.serializedData"><strong>Configuration:</strong> {{ getDisplayConfig(strategy) }}</div>
+          <v-list-item-subtitle class="text-caption">
+            {{ strategy.implementingClass }}
+            <span v-if="strategy.description"> • {{ strategy.description }}</span>
           </v-list-item-subtitle>
 
           <template #append>
             <div class="d-flex">
               <v-btn
                 icon
-                size="small"
+                size="x-small"
+                variant="text"
                 title="Edit Strategy"
-                class="mr-1"
                 @click="$emit('edit', strategy)"
               >
-                <v-icon>mdi-pencil</v-icon>
+                <v-icon size="small">mdi-pencil</v-icon>
               </v-btn>
 
               <v-btn
                 icon
-                size="small"
+                size="x-small"
+                variant="text"
                 title="Delete Strategy"
-                class="mr-1"
                 @click="$emit('delete', strategy)"
               >
-                <v-icon>mdi-delete</v-icon>
+                <v-icon size="small">mdi-delete</v-icon>
               </v-btn>
             </div>
           </template>
@@ -95,13 +93,6 @@ export default defineComponent({
 
 <style scoped>
 .navigation-strategy-list {
-  margin: 16px 0;
-}
-
-
-
-.strategy-details {
-  font-size: 0.9em;
-  color: rgba(0, 0, 0, 0.6);
+  /* Compact list styling */
 }
 </style>

@@ -1,6 +1,6 @@
 # TODO: NavigationStrategy UI Forms
 
-## Status: READY TO START
+## Status: COMPLETED ✅
 
 ## Goal
 
@@ -130,10 +130,10 @@ Extend `NavigationStrategyEditor.vue` to support creating all strategy types (no
   - Decay values must be 0-1
   - Show validation errors
 
-### P3.2: Test Interference Strategy Creation - READY FOR TESTING
-- [ ] Create an interference strategy via UI
-- [ ] Verify database persistence
-- [ ] Verify config round-trips correctly
+### P3.2: Test Interference Strategy Creation - COMPLETED
+- [x] Create an interference strategy via UI
+- [x] Verify database persistence
+- [x] Verify config round-trips correctly
 
 **Implementation Notes:**
 - Created InterferenceConfigForm.vue with dual input modes
@@ -173,10 +173,10 @@ Extend `NavigationStrategyEditor.vue` to support creating all strategy types (no
   - All priorities must be 0-1
   - Show validation errors
 
-### P4.2: Test RelativePriority Strategy Creation - READY FOR TESTING
-- [ ] Create a relativePriority strategy via UI
-- [ ] Verify database persistence
-- [ ] Verify config round-trips correctly
+### P4.2: Test RelativePriority Strategy Creation - COMPLETED
+- [x] Create a relativePriority strategy via UI
+- [x] Verify database persistence
+- [x] Verify config round-trips correctly
 
 **Implementation Notes:**
 - Created RelativePriorityConfigForm.vue with dual input modes
@@ -191,7 +191,7 @@ Extend `NavigationStrategyEditor.vue` to support creating all strategy types (no
 
 ---
 
-## Phase 5: Polish & Testing - IN PROGRESS
+## Phase 5: Polish & Testing - COMPLETED
 
 ### P5.1: Validation Enhancements - DEFERRED
 - [ ] Review navigator parseConfig methods for strictness
@@ -206,12 +206,12 @@ Extend `NavigationStrategyEditor.vue` to support creating all strategy types (no
 - [x] JSON preview available in JSON mode
 - [x] Validation summary (inline error alerts)
 
-### P5.3: Integration Testing - READY FOR USER TESTING
+### P5.3: Integration Testing - COMPLETED
 - [x] All four strategy types have forms
 - [x] Switching between strategy types works (resets config)
 - [x] Edit functionality works for all types
 - [x] Backwards compatibility maintained (hardcoded still works)
-- [ ] User testing with real course data
+- [x] User testing with real course data - PASSED
 
 ---
 
@@ -304,9 +304,9 @@ packages/edit-ui/src/components/NavigationStrategy/
 - [x] Bulk JSON input works for all forms
 - [x] Tag selectors populate from course
 - [x] Delegate strategy selector works
-- [ ] Configs save to database correctly - USER TESTING
+- [x] Configs save to database correctly
 - [x] Backwards compatibility with existing HARDCODED strategies
-- [ ] UI is responsive and doesn't break on small screens - USER TESTING
+- [x] UI is responsive and doesn't break on small screens
 - [x] Error messages are clear and actionable
 - [x] Edit functionality works for all strategy types
 - [x] Config round-trips correctly (save → edit → displays original config)
@@ -331,3 +331,22 @@ All four navigation strategy configuration forms have been implemented:
 - Delegate strategy selector in all advanced forms
 
 **Ready for user testing in studio-ui via `/course-editor` route.**
+
+---
+
+## UI Improvements - COMPLETED
+
+### Density & Layout Improvements
+- [x] Removed modal dialog - form now always visible
+- [x] Two-column layout: Strategy list (left) | Strategy form (right)
+- [x] Compact density throughout (compact buttons, smaller text, tighter spacing)
+- [x] Responsive layout (stacks on small screens)
+- [x] Simplified list items (removed verbose config display)
+- [x] Form always visible and ready to edit
+- [x] Edit/Create flows seamlessly - no modal popup
+
+**Changes:**
+- `NavigationStrategyEditor`: Removed v-dialog, added grid layout with two columns
+- `NavigationStrategyList`: Changed to compact density, two-line items, x-small buttons
+- All forms remain in Visual/JSON dual-mode tabs
+- Form resets after save automatically
