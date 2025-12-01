@@ -9,6 +9,14 @@ const isDevelopment = typeof process !== 'undefined' && process.env.NODE_ENV ===
 const _isBrowser = typeof window !== 'undefined';
 
 export const logger = {
+  debug: (..._args: unknown[]): void => {},
+  info: (..._args: unknown[]): void => {},
+  warn: (..._args: unknown[]): void => {},
+  error: (..._args: unknown[]): void => {},
+  log: (..._args: unknown[]): void => {},
+};
+
+export const logger2 = {
   /**
    * Debug-level logging - only shown in development
    */
