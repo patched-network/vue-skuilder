@@ -144,7 +144,7 @@ export class PipelineAssembler {
       let config: Record<string, unknown> = {};
       try {
         config = JSON.parse(filter.serializedData || '{}');
-      } catch (e) {
+      } catch {
         warnings.push(`Failed to parse config for ${filter.name}, using empty config`);
         config = {};
       }
