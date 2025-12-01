@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import CompositeGenerator, { AggregationMode } from '../../../src/core/navigators/CompositeGenerator';
 import { ContentNavigator, WeightedCard } from '../../../src/core/navigators/index';
 import { StudySessionNewItem, StudySessionReviewItem } from '../../../src/core';
