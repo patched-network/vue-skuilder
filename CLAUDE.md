@@ -10,25 +10,22 @@ User often uses dictation software, which, in context, mangles things like `vue`
 
 ### Project Setup & Development
 - Setup: `yarn setup` (install dependencies, git submodules, build library packages)
-- Dev: `yarn dev` (starts CouchDB, platform-ui, express)
+- Dev: `yarn dev:platform` (starts CouchDB, platform-ui, express)
 - Build: `yarn build` (builds all packages in dependency order)
 - Clean: `yarn clean` (removes dist and node_modules)
 
 ### CouchDB Management
+
+Current repo has access to submodule with a test database with live courses, managed by a docker container.
+
 - Start: `yarn couchdb:start` or `yarn dev:couchdb`
 - Stop: `yarn couchdb:stop`
 - Status: `yarn couchdb:status`
 - Remove: `yarn couchdb:remove`
 
-### Testing Commands
-- Database E2E tests: `yarn workspace @vue-skuilder/e2e-db test` // known broken - only used for bespoke manual testing
-- Database E2E watch: `yarn workspace @vue-skuilder/e2e-db test:watch` // known broken - only used for bespoke manual testing
-- Unit tests (platform-ui): `yarn workspace @vue-skuilder/platform-ui test:unit`
-- Unit tests (common-ui): `yarn workspace @vue-skuilder/common-ui test:unit`
-- Unit tests (courses): `yarn workspace @vue-skuilder/courseware test`
-- Run single test: `yarn workspace @vue-skuilder/platform-ui test:unit <test-file-path>`
-- E2E tests (platform-ui): `yarn workspace @vue-skuilder/platform-ui test:e2e:headless`
-- E2E tests (standalone-ui): `yarn workspace @vue-skuilder/standalone-ui test:e2e:headless`
+### Testing
+
+Defer testing operations to CI in the pull-request cycle.
 
 ### Package-Specific Commands
 
@@ -36,10 +33,8 @@ User often uses dictation software, which, in context, mangles things like `vue`
 - Build common: `yarn workspace @vue-skuilder/common build`
 - Build db: `yarn workspace @vue-skuilder/db build`
 - Build express: `yarn workspace @vue-skuilder/express build`
-- Test express: `yarn workspace @vue-skuilder/express test`
 - Build mcp: `yarn workspace @vue-skuilder/mcp build`
 - Dev mcp: `yarn workspace @vue-skuilder/mcp dev` (build + MCP Inspector UI)
-- Test mcp: `yarn workspace @vue-skuilder/mcp test:cli`
 
 #### Frontend Packages
 - Build platform-ui: `yarn workspace @vue-skuilder/platform-ui build`
