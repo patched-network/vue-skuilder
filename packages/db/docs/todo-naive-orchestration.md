@@ -186,12 +186,13 @@ export function isFilter(impl: string): boolean {
 }
 ```
 
-### Phase 3: Pipeline Assembly (NOT STARTED)
+### Phase 3: Pipeline Assembly ✅ COMPLETE
 
-#### 3.1 New Class: `PipelineAssembler`
+#### 3.1 New Class: `PipelineAssembler` ✅
 
-Create a separate class to keep pipeline logic DB-implementation agnostic and prepare for
-future dynamic navigator selection.
+Created `PipelineAssembler` class to keep pipeline logic DB-implementation agnostic.
+
+File: `core/navigators/PipelineAssembler.ts`
 
 ```typescript
 // In packages/db/src/core/navigators/PipelineAssembler.ts
@@ -305,7 +306,11 @@ export class PipelineAssembler {
 }
 ```
 
-#### 3.2 Update `surfaceNavigationStrategy()` in CourseDB
+#### 3.2 Update `surfaceNavigationStrategy()` in CourseDB ✅
+
+Updated to use `PipelineAssembler` instead of manual strategy lookup.
+
+File: `impl/couch/courseDB.ts`
 
 ```typescript
 async surfaceNavigationStrategy(): Promise<ContentNavigationStrategyData> {

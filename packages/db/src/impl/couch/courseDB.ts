@@ -35,6 +35,7 @@ import { PouchError } from './types';
 import CourseLookup from './courseLookupDB';
 import { ContentNavigationStrategyData } from '@db/core/types/contentNavigationStrategy';
 import { ContentNavigator, Navigators, WeightedCard } from '@db/core/navigators';
+import { PipelineAssembler } from '@db/core/navigators/PipelineAssembler';
 
 export class CoursesDB implements CoursesDBInterface {
   _courseIDs: string[] | undefined;
@@ -520,33 +521,27 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
   }
 
   async surfaceNavigationStrategy(): Promise<ContentNavigationStrategyData> {
+    // Try assembled pipeline from existing strategy documents
     try {
-      const config = await this.getCourseConfig();
-      // @ts-expect-error tmp: defaultNavigationStrategyId property does not yet exist
-      if (config.defaultNavigationStrategyId) {
-        try {
-          // @ts-expect-error tmp: defaultNavigationStrategyId property does not yet exist
-          const strategy = await this.getNavigationStrategy(config.defaultNavigationStrategyId);
-          if (strategy) {
-            logger.debug(`Surfacing strategy ${strategy.name} from course config`);
-            return strategy;
-          }
-        } catch (e) {
-          logger.warn(
-            // @ts-expect-error tmp: defaultNavigationStrategyId property does not yet exist
-            `Failed to load strategy '${config.defaultNavigationStrategyId}' specified in course config. Falling back to ELO.`,
-            e
-          );
-        }
+      const allStrategies = await this.getAllNavigationStrategies();
+      const assembler = new PipelineAssembler();
+      const { pipeline, warnings } = assembler.assemble({ strategies: allStrategies });
+
+      // Log any warnings from assembly
+      for (const warning of warnings) {
+        logger.warn(`[PipelineAssembler] ${warning}`);
+      }
+
+      if (pipeline) {
+        logger.debug(`Using assembled pipeline: ${pipeline.implementingClass}`);
+        return pipeline;
       }
     } catch (e) {
-      logger.warn(
-        'Could not retrieve course config to determine navigation strategy. Falling back to ELO.',
-        e
-      );
+      logger.warn('Failed to assemble pipeline, falling back to default ELO:', e);
     }
 
-    logger.warn(`Returning hard-coded default ELO navigator`);
+    // FALLBACK: Hard-coded ELO (no strategy documents exist or assembly failed)
+    logger.debug('No strategy documents found, using default ELO');
     const ret: ContentNavigationStrategyData = {
       _id: 'NAVIGATION_STRATEGY-ELO',
       docType: DocType.NAVIGATION_STRATEGY,
@@ -556,7 +551,7 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
       course: this.id,
       serializedData: '', // serde is a noop for ELO navigator.
     };
-    return Promise.resolve(ret);
+    return ret;
   }
 
   ////////////////////////////////////
