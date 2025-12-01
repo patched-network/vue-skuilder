@@ -176,31 +176,33 @@ export default class HierarchyDefinitionNavigator extends ContentNavigator {
   /**
    * Get cards with prerequisite gating applied.
    *
-   * Cards with locked tags (unmet prerequisites) are filtered out.
+   * Cards with locked tags (unmet prerequisites) receive score: 0.
    * Cards with unlocked tags preserve their delegate score.
+   *
+   * Note: We return score: 0 instead of filtering so that:
+   * 1. Filter order doesn't matter (all filters are multipliers)
+   * 2. Future provenance tracking can see all candidates
    */
   async getWeightedCards(limit: number): Promise<WeightedCard[]> {
     const delegate = await this.getDelegate();
 
-    // Over-fetch to account for filtering
-    const candidates = await delegate.getWeightedCards(limit * 2);
+    // Get candidates from delegate
+    const candidates = await delegate.getWeightedCards(limit);
 
     // Get mastery state
     const masteredTags = await this.getMasteredTags();
     const unlockedTags = this.getUnlockedTags(masteredTags);
 
-    // Filter candidates
+    // Apply prerequisite gating as score multiplier
     const gated: WeightedCard[] = [];
 
     for (const card of candidates) {
       const isUnlocked = await this.isCardUnlocked(card.cardId, unlockedTags);
 
-      if (isUnlocked) {
-        gated.push(card); // Preserve delegate's score
-      }
-      // else: card is locked, filter out (implicit score=0)
-
-      if (gated.length >= limit) break;
+      gated.push({
+        ...card,
+        score: isUnlocked ? card.score : 0,
+      });
     }
 
     return gated;

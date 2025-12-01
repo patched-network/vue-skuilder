@@ -142,15 +142,21 @@ for (const card of candidates) {
 
 ## Implementation Plan
 
-### Phase 1: Filter API Normalization
+### Phase 1: Filter API Normalization ✅ COMPLETE
 
-#### 1.1 Update HierarchyDefinitionNavigator
+#### 1.1 Update HierarchyDefinitionNavigator ✅
 
-Change from hard filter to score multiplier (return `score: 0` for locked cards).
+Changed from hard filter to score multiplier (returns `score: 0` for locked cards).
 
-### Phase 2: Strategy Classification
+File: `core/navigators/hierarchyDefinition.ts`
 
-#### 2.1 Add Generator/Filter Classification
+### Phase 2: Strategy Classification ✅ COMPLETE
+
+#### 2.1 Add Generator/Filter Classification ✅
+
+Added `NavigatorRole` enum, `NavigatorRoles` registry, and `isGenerator()`/`isFilter()` helpers.
+
+File: `core/navigators/index.ts`
 
 Navigators need to self-identify as generators or filters:
 
@@ -180,7 +186,7 @@ export function isFilter(impl: string): boolean {
 }
 ```
 
-### Phase 3: Pipeline Assembly
+### Phase 3: Pipeline Assembly (NOT STARTED)
 
 #### 3.1 New Class: `PipelineAssembler`
 
