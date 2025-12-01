@@ -6,7 +6,16 @@ on:
   workflow_dispatch: # Allow manual triggering
   push:
     paths:
-      - '.github/workflows/nightly-e2e-platform-ui.yml'
+      - '.github/workflows/ci-e2e-platform-ui.yml'
+  pull_request:
+    paths:
+      - 'packages/platform-ui/**'
+      - 'packages/common/**'
+      - 'packages/db/**'
+      - 'packages/common-ui/**'
+      - 'packages/courseware/**'
+      - 'packages/edit-ui/**'
+      - '.github/workflows/build-platform-ui.yml'
 
 jobs:
   e2e-tests:
