@@ -25,7 +25,7 @@ Current repo has access to submodule with a test database with live courses, man
 
 ### Testing
 
-Defer testing operations to CI in the pull-request cycle.
+Defer *testing* operations to CI in the pull-request cycle.
 
 ### Package-Specific Commands
 
@@ -37,10 +37,14 @@ Defer testing operations to CI in the pull-request cycle.
 - Dev mcp: `yarn workspace @vue-skuilder/mcp dev` (build + MCP Inspector UI)
 
 #### Frontend Packages
+
+(apps)
 - Build platform-ui: `yarn workspace @vue-skuilder/platform-ui build`
-- Build common-ui: `yarn workspace @vue-skuilder/common-ui build`
-- Build courses: `yarn workspace @vue-skuilder/courseware build`
 - Build standalone-ui: `yarn workspace @vue-skuilder/standalone-ui build`
+
+(libraries)
+- Build common-ui: `yarn workspace @vue-skuilder/common-ui build`
+- Build courseware: `yarn workspace @vue-skuilder/courseware build`
 
 #### CLI & Tools
 - Build cli: `yarn workspace @vue-skuilder/cli build`
@@ -55,7 +59,6 @@ Defer testing operations to CI in the pull-request cycle.
 - Lint e2e-db: `yarn workspace @vue-skuilder/e2e-db lint:fix`
 - Lint cli: `yarn workspace @vue-skuilder/cli lint:fix`
 - Type check express: `yarn workspace @vue-skuilder/express type-check`
-- Type check e2e-db: `yarn workspace @vue-skuilder/e2e-db type-check`
 - Type check courses: `yarn workspace @vue-skuilder/courseware type-check`
 
 ## Style Guidelines
@@ -139,85 +142,11 @@ common → db → common-ui → courses → platform-ui
 ```
 
 ### Active Packages
-- **Backend**: `common`, `db`, `express`, `e2e-db`, `mcp`
+- **Backend**: `common`, `db`, `express`, `mcp`
 - **Frontend**: `platform-ui`, `common-ui`, `courses`, `standalone-ui`
 - **CLI**: `cli`
 
 ### Legacy/Inactive Packages
-- **client**: Legacy HTTP client library, minimal maintenance
-
-## MCP Package (`@vue-skuilder/mcp`)
-
-Model Context Protocol (MCP) server for Vue-Skuilder course content agent access.
-
-### Architecture
-Course-scoped MCP servers that accept CourseDBInterface injection:
-- **Resources**: Read-only data access (course, cards, tags, elo, shapes)
-- **Tools**: Content generation and management operations
-- **Prompts**: Templates for guided content creation
-
-### Build System
-Uses **tsup** for dual CommonJS/ESM output:
-- **ESM**: `dist/index.mjs` (primary)
-- **CommonJS**: `dist/index.js` (compatibility)  
-- **Types**: `dist/index.d.ts`
-- **Target**: ES2022 with source maps
-- **Code Splitting**: Disabled for single-file output
-
-### Available Resources (14 total)
-- `course://config` - Course configuration with metadata and ELO statistics
-- `cards://all` - All cards with pagination support
-- `cards://tag/{tagName}` - Filter cards by tag name
-- `cards://shape/{shapeName}` - Filter cards by DataShape
-- `cards://elo/{eloRange}` - Filter cards by ELO range (format: min-max)
-- `shapes://all` - List all available DataShapes
-- `shapes://{shapeName}` - Specific DataShape information
-- `tags://all` - List all available tags
-- `tags://stats` - Tag usage statistics
-- `tags://{tagName}` - Specific tag information
-- `tags://union/{tags}` - Cards with ANY of specified tags (format: tag1+tag2)
-- `tags://intersect/{tags}` - Cards with ALL of specified tags (format: tag1+tag2)
-- `tags://exclusive/{tags}` - Cards with first tag but NOT second (format: tag1-tag2)
-- `tags://distribution` - Frequency distribution of all tags
-
-### Available Tools (4 total)
-- `create_card` - Create new course cards with specified datashape and content
-- `update_card` - Update existing course cards (data, tags, ELO, sourceRef)
-- `tag_card` - Add or remove tags from course cards with optional ELO update
-- `delete_card` - Safely delete course cards with confirmation requirement
-
-### Available Prompts (2 total)
-- `fill-in-card-authoring` - Generate fill-in-the-blank or multiple-choice cards using Vue-Skuilder syntax
-- `elo-scoring-guidance` - Guidance for assigning ELO difficulty ratings to flashcard content
-
-### Key Features
-- **ELO-aware**: Native support for Vue-Skuilder's dynamic rating system
-- **DataShape aware**: Supports all Vue-Skuilder question types
-- **Source linking**: Git-based content provenance tracking
-- **Content generation**: Orchestrated courseware creation from source materials
-- **Strongly typed**: All resources, tools, and prompts use TypeScript constants
-
-### Usage
-```typescript
-import { MCPServer } from '@vue-skuilder/mcp';
-import { getDataLayer } from '@vue-skuilder/db';
-
-const courseDB = getDataLayer().getCourseDB('course-id');
-const server = new MCPServer(courseDB);
-```
-
-### Testing
-Use MCP Inspector for interactive testing:
-```bash
-yarn workspace @vue-skuilder/mcp dev  # Opens Inspector UI automatically
-```
-
-### Dependencies  
-- `@modelcontextprotocol/sdk` - MCP protocol implementation
-- `@vue-skuilder/db` - Database layer access
-- `@vue-skuilder/common` - Shared types and utilities
-- `@vue-skuilder/courseware` - DataShape definitions via `/backend` export
-- `zod` - Schema validation
-
-### Key Integration Point
-Uses `@vue-skuilder/courseware/backend` export to access DataShape definitions without importing Vue components or CSS files, solving Node.js ESM compatibility issues.
+- `client`: Legacy HTTP client library, minimal maintenance
+- `e2e-db`: e2e testing that never got off the ground.
+- `tuilder`: experimental
