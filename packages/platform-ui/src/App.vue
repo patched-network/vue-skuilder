@@ -1,5 +1,5 @@
 <template>
-  <v-app v-if="ready">
+  <v-app v-if="ready" data-cy="app">
     <v-navigation-drawer v-model="drawer" :elevation="2" :rail="rail" @click="rail = false">
       <v-list>
         <v-list-item to="/home" value="home">
