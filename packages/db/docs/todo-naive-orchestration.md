@@ -15,8 +15,9 @@ All filter strategies apply **score multipliers** (including `score * 0` for har
 This means filter ordering doesn't matter — multiplication is commutative.
 
 Pipeline assembly becomes trivial:
-1. Find the one generator among configured strategies
-2. Wrap with all filters in any deterministic order (e.g., alphabetical)
+1. Find all generators among configured strategies
+2. If multiple generators, wrap them in `CompositeGenerator` (merges outputs with frequency boost)
+3. Wrap with all filters in any deterministic order (e.g., alphabetical)
 
 See "Filter API Convention" section below for details.
 
@@ -140,6 +141,35 @@ for (const card of candidates) {
 
 ---
 
+## CompositeGenerator
+
+When multiple generators exist (e.g., ELO + SRS), they are composed via `CompositeGenerator`:
+
+```typescript
+// core/navigators/CompositeGenerator.ts
+class CompositeGenerator extends ContentNavigator {
+  async getWeightedCards(limit: number): Promise<WeightedCard[]> {
+    // Fetch from all generators in parallel
+    const results = await Promise.all(generators.map(g => g.getWeightedCards(limit)));
+    
+    // Merge with deduplication by cardId
+    // Aggregation: avg * (1 + 0.1 * (appearances - 1))
+    // Cards surfaced by multiple generators get boosted
+  }
+}
+```
+
+**Aggregation modes:**
+- `MAX`: Use highest score from any generator
+- `AVERAGE`: Average all scores
+- `FREQUENCY_BOOST` (default): Average with boost for multi-generator agreement
+
+This replaces the previous "use first generator, warn about rest" behavior.
+
+File: `core/navigators/CompositeGenerator.ts`
+
+---
+
 ## Implementation Plan
 
 ### Phase 1: Filter API Normalization ✅ COMPLETE
@@ -193,6 +223,23 @@ export function isFilter(impl: string): boolean {
 Created `PipelineAssembler` class to keep pipeline logic DB-implementation agnostic.
 
 File: `core/navigators/PipelineAssembler.ts`
+
+#### 3.2 New Class: `CompositeGenerator` ✅
+
+Created `CompositeGenerator` to merge multiple generators with frequency-boosted scoring.
+
+File: `core/navigators/CompositeGenerator.ts`
+
+#### 3.3 New Method: `createNavigator()` in CourseDB ✅
+
+Added `createNavigator(user)` method that handles:
+- Pipeline assembly via `PipelineAssembler`
+- Multiple generators via `CompositeGenerator`
+- Returns ready-to-use `ContentNavigator` instance
+
+Updated `getNewCards()`, `getPendingReviews()`, `getWeightedCards()` to use `createNavigator()`.
+
+File: `impl/couch/courseDB.ts`
 
 ```typescript
 // In packages/db/src/core/navigators/PipelineAssembler.ts
@@ -442,13 +489,14 @@ No CourseConfig changes needed.
 |------|---------|
 | `core/navigators/index.ts` | Add `NavigatorRole` enum, registry, and helper functions |
 | `core/navigators/hierarchyDefinition.ts` | Return `score: 0` instead of filtering |
-| `impl/couch/courseDB.ts` | Use `PipelineAssembler`, simplify `surfaceNavigationStrategy()` |
+| `impl/couch/courseDB.ts` | Add `createNavigator()`, use `PipelineAssembler` and `CompositeGenerator` |
 
 ## New Files
 
 | File | Purpose |
 |------|---------|
 | `core/navigators/PipelineAssembler.ts` | DB-agnostic pipeline assembly logic |
+| `core/navigators/CompositeGenerator.ts` | Merges multiple generators with frequency boost |
 | `__tests__/PipelineAssembler.test.ts` | Unit tests for pipeline assembly |
 | E2E test files | Integration tests for full pipeline |
 

@@ -15,8 +15,9 @@ import { logger } from '../../util/logger';
 // 3. Easy unit testing without DB mocking
 //
 // Pipeline assembly rules:
-// - Exactly one generator is required (ELO, SRS, HardcodedOrder)
-// - Zero or more filters can wrap the generator
+// - At least one generator is required (ELO, SRS, HardcodedOrder)
+// - Multiple generators are supported: caller should use CompositeGenerator to merge them
+// - Zero or more filters can wrap the generator(s)
 // - Filter order doesn't matter (all filters are score multipliers)
 // - Filters are chained alphabetically for deterministic behavior
 //
@@ -36,6 +37,11 @@ export interface PipelineAssemblerInput {
 export interface PipelineAssemblyResult {
   /** The assembled pipeline (outermost strategy), or null if assembly failed */
   pipeline: ContentNavigationStrategyData | null;
+  /**
+   * Generator strategies found. If multiple, caller should use CompositeGenerator.
+   * This is separate from pipeline because filters wrap around generators at runtime.
+   */
+  generators: ContentNavigationStrategyData[];
   /** Warnings encountered during assembly (logged but non-fatal) */
   warnings: string[];
 }
@@ -64,7 +70,7 @@ export class PipelineAssembler {
     const warnings: string[] = [];
 
     if (strategies.length === 0) {
-      return { pipeline: null, warnings };
+      return { pipeline: null, generators: [], warnings };
     }
 
     // Separate generators from filters
@@ -82,22 +88,24 @@ export class PipelineAssembler {
       }
     }
 
-    // Validate exactly one generator
+    // Validate at least one generator
     if (generators.length === 0) {
       warnings.push('No generator strategy found');
-      return { pipeline: null, warnings };
+      return { pipeline: null, generators: [], warnings };
     }
+
     if (generators.length > 1) {
-      warnings.push(
-        `Multiple generators found (${generators.map((g) => g.name).join(', ')}), using first: ${generators[0].name}`
+      logger.debug(
+        `[PipelineAssembler] Multiple generators found: ${generators.map((g) => g.name).join(', ')}. Caller should use CompositeGenerator.`
       );
     }
 
-    const generator = generators[0];
+    // Use first generator for pipeline building (caller handles multiple via CompositeGenerator)
+    const primaryGenerator = generators[0];
 
     if (filters.length === 0) {
-      // Just the generator, no filters
-      return { pipeline: generator, warnings };
+      // Just the generator(s), no filters
+      return { pipeline: primaryGenerator, generators, warnings };
     }
 
     // Sort filters alphabetically for deterministic ordering
@@ -105,8 +113,8 @@ export class PipelineAssembler {
     const sortedFilters = [...filters].sort((a, b) => a.name.localeCompare(b.name));
 
     // Build delegate chain
-    const pipeline = this.buildChain(generator, sortedFilters, warnings);
-    return { pipeline, warnings };
+    const pipeline = this.buildChain(primaryGenerator, sortedFilters, warnings);
+    return { pipeline, generators, warnings };
   }
 
   /**

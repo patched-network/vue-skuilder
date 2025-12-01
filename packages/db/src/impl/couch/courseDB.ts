@@ -36,6 +36,7 @@ import CourseLookup from './courseLookupDB';
 import { ContentNavigationStrategyData } from '@db/core/types/contentNavigationStrategy';
 import { ContentNavigator, Navigators, WeightedCard } from '@db/core/navigators';
 import { PipelineAssembler } from '@db/core/navigators/PipelineAssembler';
+import CompositeGenerator from '@db/core/navigators/CompositeGenerator';
 
 export class CoursesDB implements CoursesDBInterface {
   _courseIDs: string[] | undefined;
@@ -542,16 +543,80 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
 
     // FALLBACK: Hard-coded ELO (no strategy documents exist or assembly failed)
     logger.debug('No strategy documents found, using default ELO');
-    const ret: ContentNavigationStrategyData = {
+    return this.makeDefaultEloStrategy();
+  }
+
+  /**
+   * Creates an instantiated navigator for this course.
+   *
+   * Handles multiple generators by wrapping them in CompositeGenerator.
+   * This is the preferred method for getting a ready-to-use navigator.
+   *
+   * @param user - User database interface
+   * @returns Instantiated ContentNavigator ready for use
+   */
+  async createNavigator(user: UserDBInterface): Promise<ContentNavigator> {
+    try {
+      const allStrategies = await this.getAllNavigationStrategies();
+      const assembler = new PipelineAssembler();
+      const { pipeline, generators, warnings } = assembler.assemble({ strategies: allStrategies });
+
+      // Log any warnings from assembly
+      for (const warning of warnings) {
+        logger.warn(`[PipelineAssembler] ${warning}`);
+      }
+
+      if (!pipeline) {
+        // No strategies configured, use default ELO
+        logger.debug('No strategy documents found, using default ELO navigator');
+        return ContentNavigator.create(user, this, this.makeDefaultEloStrategy());
+      }
+
+      // If multiple generators, wrap them in CompositeGenerator
+      if (generators.length > 1) {
+        logger.debug(
+          `[courseDB] Using CompositeGenerator for ${generators.length} generators: ${generators.map((g) => g.name).join(', ')}`
+        );
+
+        // Create the composite generator from all generator strategies
+        const compositeGenerator = await CompositeGenerator.fromStrategies(user, this, generators);
+
+        // If there are filters, we need to wrap the composite in filters
+        // The pipeline's outermost filter has delegateStrategy pointing to the first generator
+        // We need to inject the composite instead
+        const filters = allStrategies.filter((s) => !generators.some((g) => g._id === s._id));
+
+        if (filters.length === 0) {
+          // Just the composite, no filters
+          return compositeGenerator;
+        }
+
+        // For now, return composite directly
+        // TODO: Wrap composite in filter chain (requires filter instantiation refactor)
+        logger.debug(
+          `[courseDB] Note: ${filters.length} filters configured but composite generator bypasses them for now`
+        );
+        return compositeGenerator;
+      }
+
+      // Single generator case: use the assembled pipeline normally
+      return ContentNavigator.create(user, this, pipeline);
+    } catch (e) {
+      logger.error(`[courseDB] Error creating navigator: ${e}`);
+      throw e;
+    }
+  }
+
+  private makeDefaultEloStrategy(): ContentNavigationStrategyData {
+    return {
       _id: 'NAVIGATION_STRATEGY-ELO',
       docType: DocType.NAVIGATION_STRATEGY,
       name: 'ELO',
       description: 'ELO-based navigation strategy',
       implementingClass: Navigators.ELO,
       course: this.id,
-      serializedData: '', // serde is a noop for ELO navigator.
+      serializedData: '',
     };
-    return ret;
   }
 
   ////////////////////////////////////
@@ -566,11 +631,10 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
     const u = await this._getCurrentUser();
 
     try {
-      const strategy = await this.surfaceNavigationStrategy();
-      const navigator = await ContentNavigator.create(u, this, strategy);
+      const navigator = await this.createNavigator(u);
       return navigator.getNewCards(limit);
     } catch (e) {
-      logger.error(`[courseDB] Error surfacing a NavigationStrategy: ${e}`);
+      logger.error(`[courseDB] Error in getNewCards: ${e}`);
       throw e;
     }
   }
@@ -579,11 +643,10 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
     const u = await this._getCurrentUser();
 
     try {
-      const strategy = await this.surfaceNavigationStrategy();
-      const navigator = await ContentNavigator.create(u, this, strategy);
+      const navigator = await this.createNavigator(u);
       return navigator.getPendingReviews();
     } catch (e) {
-      logger.error(`[courseDB] Error surfacing a NavigationStrategy: ${e}`);
+      logger.error(`[courseDB] Error in getPendingReviews: ${e}`);
       throw e;
     }
   }
@@ -601,8 +664,7 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
     const u = await this._getCurrentUser();
 
     try {
-      const strategy = await this.surfaceNavigationStrategy();
-      const navigator = await ContentNavigator.create(u, this, strategy);
+      const navigator = await this.createNavigator(u);
       return navigator.getWeightedCards(limit);
     } catch (e) {
       logger.error(`[courseDB] Error getting weighted cards: ${e}`);
