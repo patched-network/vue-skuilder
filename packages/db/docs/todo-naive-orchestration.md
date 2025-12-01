@@ -182,96 +182,141 @@ export function isFilter(impl: string): boolean {
 
 ### Phase 3: Pipeline Assembly
 
-#### 3.1 New Method: `assemblePipeline()`
+#### 3.1 New Class: `PipelineAssembler`
+
+Create a separate class to keep pipeline logic DB-implementation agnostic and prepare for
+future dynamic navigator selection.
 
 ```typescript
-// In packages/db/src/impl/couch/courseDB.ts
+// In packages/db/src/core/navigators/PipelineAssembler.ts
 
-/**
- * Assembles a navigation pipeline from all NAVIGATION_STRATEGY documents.
- * 
- * 1. Fetches all strategy documents via getAllNavigationStrategies()
- * 2. Separates into generators and filters
- * 3. Validates exactly one generator exists
- * 4. Chains filters around generator (order doesn't matter — all are multipliers)
- * 5. Returns outermost strategy config
- */
-private async assemblePipeline(): Promise<ContentNavigationStrategyData | null> {
-  const allStrategies = await this.getAllNavigationStrategies();
-  
-  if (allStrategies.length === 0) {
-    return null; // Caller falls back to default ELO
-  }
-  
-  // Separate generators from filters
-  const generators = allStrategies.filter(s => isGenerator(s.implementingClass));
-  const filters = allStrategies.filter(s => isFilter(s.implementingClass));
-  
-  // Validate exactly one generator
-  if (generators.length === 0) {
-    logger.warn('No generator strategy found, falling back to default');
-    return null;
-  }
-  if (generators.length > 1) {
-    throw new Error(
-      `Expected 1 generator, found ${generators.length}: ${generators.map(g => g.name).join(', ')}`
-    );
-  }
-  
-  const generator = generators[0];
-  
-  if (filters.length === 0) {
-    // Just the generator, no filters
-    return generator;
-  }
-  
-  // Sort filters alphabetically for deterministic ordering
-  // (Order doesn't affect results since all filters are multipliers)
-  const sortedFilters = filters.sort((a, b) => a.name.localeCompare(b.name));
-  
-  // Build delegate chain: last filter wraps ... wraps first filter wraps generator
-  return this.buildChain(generator, sortedFilters);
+import { ContentNavigationStrategyData } from '../types/contentNavigationStrategy';
+import { isGenerator, isFilter } from './index';
+import { logger } from '../../util/logger';
+
+export interface PipelineAssemblerInput {
+  strategies: ContentNavigationStrategyData[];
 }
 
-private buildChain(
-  generator: ContentNavigationStrategyData,
-  filters: ContentNavigationStrategyData[]
-): ContentNavigationStrategyData {
-  // Each filter's serializedData gets delegateStrategy pointing to previous
-  let previousImpl = generator.implementingClass;
-  let outermost: ContentNavigationStrategyData = generator;
-  
-  for (const filter of filters) {
-    // Parse existing config, inject delegateStrategy
-    let config: Record<string, unknown> = {};
-    try {
-      config = JSON.parse(filter.serializedData || '{}');
-    } catch {
-      config = {};
-    }
-    config.delegateStrategy = previousImpl;
+export interface PipelineAssemblyResult {
+  pipeline: ContentNavigationStrategyData | null;
+  warnings: string[];
+}
+
+/**
+ * Assembles navigation strategies into a delegate chain.
+ * 
+ * DB-agnostic: receives strategy documents, returns assembled pipeline.
+ * Prepares for future dynamic/evolutionary selection by isolating assembly logic.
+ */
+export class PipelineAssembler {
+  /**
+   * Assembles a navigation pipeline from strategy documents.
+   * 
+   * 1. Separates into generators and filters
+   * 2. Validates exactly one generator exists
+   * 3. Chains filters around generator (order doesn't matter — all are multipliers)
+   * 4. Skips filters that fail to load, logs warnings
+   * 5. Returns outermost strategy config
+   */
+  assemble(input: PipelineAssemblerInput): PipelineAssemblyResult {
+    const { strategies } = input;
+    const warnings: string[] = [];
     
-    outermost = {
-      ...filter,
-      serializedData: JSON.stringify(config),
-    };
-    previousImpl = filter.implementingClass;
+    if (strategies.length === 0) {
+      return { pipeline: null, warnings };
+    }
+    
+    // Separate generators from filters
+    const generators: ContentNavigationStrategyData[] = [];
+    const filters: ContentNavigationStrategyData[] = [];
+    
+    for (const s of strategies) {
+      if (isGenerator(s.implementingClass)) {
+        generators.push(s);
+      } else if (isFilter(s.implementingClass)) {
+        filters.push(s);
+      } else {
+        // Unknown strategy type — skip with warning
+        warnings.push(`Unknown strategy type '${s.implementingClass}', skipping: ${s.name}`);
+      }
+    }
+    
+    // Validate exactly one generator
+    if (generators.length === 0) {
+      warnings.push('No generator strategy found');
+      return { pipeline: null, warnings };
+    }
+    if (generators.length > 1) {
+      warnings.push(
+        `Multiple generators found (${generators.map(g => g.name).join(', ')}), using first: ${generators[0].name}`
+      );
+    }
+    
+    const generator = generators[0];
+    
+    if (filters.length === 0) {
+      return { pipeline: generator, warnings };
+    }
+    
+    // Sort filters alphabetically for deterministic ordering
+    // (Order doesn't affect results since all filters are multipliers)
+    const sortedFilters = filters.sort((a, b) => a.name.localeCompare(b.name));
+    
+    // Build delegate chain
+    const pipeline = this.buildChain(generator, sortedFilters, warnings);
+    return { pipeline, warnings };
   }
   
-  return outermost;
+  private buildChain(
+    generator: ContentNavigationStrategyData,
+    filters: ContentNavigationStrategyData[],
+    warnings: string[]
+  ): ContentNavigationStrategyData {
+    let previousImpl = generator.implementingClass;
+    let outermost: ContentNavigationStrategyData = generator;
+    
+    for (const filter of filters) {
+      // Parse existing config, inject delegateStrategy
+      let config: Record<string, unknown> = {};
+      try {
+        config = JSON.parse(filter.serializedData || '{}');
+      } catch (e) {
+        warnings.push(`Failed to parse config for ${filter.name}, using empty config`);
+        config = {};
+      }
+      config.delegateStrategy = previousImpl;
+      
+      outermost = {
+        ...filter,
+        serializedData: JSON.stringify(config),
+      };
+      previousImpl = filter.implementingClass;
+    }
+    
+    return outermost;
+  }
 }
 ```
 
-#### 3.2 Update `surfaceNavigationStrategy()`
+#### 3.2 Update `surfaceNavigationStrategy()` in CourseDB
 
 ```typescript
 async surfaceNavigationStrategy(): Promise<ContentNavigationStrategyData> {
   // Try assembled pipeline from existing strategy documents
   try {
-    const assembled = await this.assemblePipeline();
-    if (assembled) {
-      logger.debug(`Using assembled pipeline: ${assembled.implementingClass}`);
-      return assembled;
+    const allStrategies = await this.getAllNavigationStrategies();
+    const assembler = new PipelineAssembler();
+    const { pipeline, warnings } = assembler.assemble({ strategies: allStrategies });
+    
+    // Log any warnings from assembly
+    for (const warning of warnings) {
+      logger.warn(`[PipelineAssembler] ${warning}`);
+    }
+    
+    if (pipeline) {
+      logger.debug(`Using assembled pipeline: ${pipeline.implementingClass}`);
+      return pipeline;
     }
   } catch (e) {
     logger.warn('Failed to assemble pipeline, falling back:', e);
@@ -291,22 +336,35 @@ derived from existing `NAVIGATION_STRATEGY` documents.
 #### 4.1 Unit Tests
 
 ```typescript
-describe('assemblePipeline', () => {
-  it('returns null when no strategy documents exist', async () => { ... });
+describe('PipelineAssembler', () => {
+  it('returns null pipeline when no strategy documents exist', () => { ... });
   
-  it('throws when multiple generators exist', async () => { ... });
+  it('warns and uses first generator when multiple exist', () => {
+    // Given: [elo1, elo2, hierarchyDefinition]
+    // Expect: pipeline uses elo1, warnings includes "Multiple generators"
+  });
   
-  it('returns generator directly when no filters exist', async () => { ... });
+  it('returns generator directly when no filters exist', () => { ... });
   
-  it('chains filters alphabetically around generator', async () => {
+  it('chains filters alphabetically around generator', () => {
     // Given docs: [elo, relativePriority, hierarchyDefinition]
     // Sorted filters: [hierarchyDefinition, relativePriority]
     // Chain: relativePriority(delegate=hierarchy(delegate=elo))
   });
   
-  it('preserves filter-specific config while injecting delegateStrategy', async () => {
+  it('preserves filter-specific config while injecting delegateStrategy', () => {
     // Given: relativePriority doc with tagPriorities in serializedData
     // Expect: both tagPriorities and delegateStrategy in final serializedData
+  });
+  
+  it('skips unknown strategy types with warning', () => {
+    // Given: [elo, unknownType, hierarchyDefinition]
+    // Expect: pipeline assembled without unknownType, warning logged
+  });
+  
+  it('warns on malformed serializedData but continues', () => {
+    // Given: filter with invalid JSON in serializedData
+    // Expect: uses empty config, warning logged
   });
 });
 
@@ -373,13 +431,14 @@ No CourseConfig changes needed.
 |------|---------|
 | `core/navigators/index.ts` | Add `NavigatorRole` enum, registry, and helper functions |
 | `core/navigators/hierarchyDefinition.ts` | Return `score: 0` instead of filtering |
-| `impl/couch/courseDB.ts` | Add `assemblePipeline()`, `buildChain()`, simplify `surfaceNavigationStrategy()` |
+| `impl/couch/courseDB.ts` | Use `PipelineAssembler`, simplify `surfaceNavigationStrategy()` |
 
 ## New Files
 
 | File | Purpose |
 |------|---------|
-| `__tests__/pipeline.test.ts` | Unit tests for pipeline assembly |
+| `core/navigators/PipelineAssembler.ts` | DB-agnostic pipeline assembly logic |
+| `__tests__/PipelineAssembler.test.ts` | Unit tests for pipeline assembly |
 | E2E test files | Integration tests for full pipeline |
 
 ---
