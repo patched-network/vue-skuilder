@@ -2,6 +2,10 @@
 
 ## Status: FOUNDATIONAL WORK COMPLETE, ORCHESTRATION NOT STARTED
 
+> **Prerequisite:** `packages/db/docs/todo-naive-orchestration.md` — Pipeline assembly must be
+> working before evolutionary selection can be layered on top. This document describes the
+> "grander vision"; naive orchestration is the foundation.
+
 This document tracks progress toward the "grander vision" of dynamic orchestration with
 evolutionary pressures, as outlined in `u.3.strategic-nuggets.md`.
 
@@ -30,11 +34,17 @@ A self-improving courseware system where:
 | `InterferenceMitigator` strategy | ✅ Done | Confusable concept separation |
 | `RelativePriority` strategy | ✅ Done | Utility-based content ordering |
 | `SessionController` integration | ✅ Done | `getWeightedCards()` is live |
+| Pipeline assembly | ❌ Not done | See `todo-naive-orchestration.md` |
 
 **What this enables:**
 - Multiple strategies can coexist and be configured per-course
 - Strategies return graded suitability scores (0-1), not just binary include/exclude
 - Composition allows layering strategies: `Priority(Interference(Hierarchy(ELO)))`
+
+**What's missing for basic operation:**
+- No pipeline configuration in CourseConfig (`navigationPipeline` field)
+- No assembly logic to chain configured strategies
+- Currently falls back to hard-coded ELO navigator
 
 ---
 

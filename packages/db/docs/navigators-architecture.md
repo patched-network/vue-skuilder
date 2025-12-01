@@ -95,6 +95,36 @@ The flow:
 3. **InterferenceMitigator** reduces scores for similar tags while immature
 4. **RelativePriority** boosts high-utility content (common letters first)
 
+## Known Gap: Pipeline Assembly
+
+> **Status:** See `todo-naive-orchestration.md` for implementation plan.
+
+The delegate pattern described above is **implemented** in individual navigators but **not
+yet wired up** at the course level. Currently:
+
+```typescript
+// courseDB.surfaceNavigationStrategy() returns ONE strategy:
+// 1. Tries config.defaultNavigationStrategyId (property doesn't exist yet)
+// 2. Falls back to hard-coded ELO navigator
+```
+
+**What's missing:**
+
+1. **Pipeline configuration** — No `navigationPipeline` field in CourseConfig
+2. **Pipeline assembly** — No code to chain filters around a generator
+3. **Strategy classification** — No registry of which navigators are generators vs filters
+
+**What exists but is unused:**
+
+- `getAllNavigationStrategies()` — can retrieve stored strategy documents
+- Filter navigators with `delegateStrategy` config — support for chaining
+
+The delegate pattern works at the navigator level (each filter can specify its delegate via
+`serializedData.delegateStrategy`), but there's no orchestration layer that assembles the
+configured pipeline and returns the outermost strategy.
+
+---
+
 ## Migration Path
 
 ### Phase 1: Parallel APIs (Current State)
@@ -250,3 +280,10 @@ class MyFilterNavigator extends ContentNavigator {
 - `packages/db/src/impl/couch/courseDB.ts` — `getWeightedCards()` implementation (delegates to navigator)
 - `packages/db/src/impl/couch/classroomDB.ts` — `getWeightedCards()` wrapper for classrooms
 - `packages/db/src/study/SessionController.ts` — Consumer of navigation strategies (`getWeightedContent()`)
+
+## Related TODOs
+
+- `todo-naive-orchestration.md` — **NEXT:** Pipeline assembly and configuration
+- `todo-provenance.md` — Audit trail for surfaced content
+- `todo-pipeline-optimization.md` — Batch tag lookups to reduce queries
+- `agent/orchestrator/todo-evolutionary-orchestration.md` — Future: multi-arm bandit selection
