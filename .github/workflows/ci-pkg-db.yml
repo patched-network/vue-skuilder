@@ -1,0 +1,43 @@
+name: ci-pkg-db
+on:
+  pull_request:
+    paths:
+      - 'packages/db/**'
+      - 'packages/common/**'
+      - '.github/workflows/ci-pkg-db.yml'
+      - 'package.json'
+      - 'yarn.lock'
+
+jobs:
+  test-db-package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'yarn'
+
+      - name: Install Yarn
+        run: corepack enable
+
+      - name: Install dependencies
+        run: yarn
+
+      - name: Build common package
+        run: yarn workspace @vue-skuilder/common build
+
+      - name: Build db package
+        run: yarn workspace @vue-skuilder/db build
+
+      - name: Run unit tests
+        run: yarn workspace @vue-skuilder/db test
+
+      - name: Type check
+        run: yarn workspace @vue-skuilder/db type-check
+
+      - name: Lint
+        run: yarn workspace @vue-skuilder/db lint:check

@@ -1,5 +1,6 @@
 {
   "name": "@vue-skuilder/db",
+  "type": "module",
   "publishConfig": {
     "access": "public"
   },
@@ -39,6 +40,8 @@
     "build": "tsup",
     "build:debug": "tsup --sourcemap inline",
     "dev": "tsup --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "lint": "npx eslint .",
     "lint:fix": "npx eslint . --fix",
     "lint:check": "npx eslint . --max-warnings 0"
@@ -55,7 +58,9 @@
   "devDependencies": {
     "@types/uuid": "^10.0.0",
     "tsup": "^8.0.2",
-    "typescript": "~5.7.2"
+    "typescript": "~5.7.2",
+    "vite": "^6.4.1",
+    "vitest": "^4.0.14"
   },
   "stableVersion": "0.1.17"
 }

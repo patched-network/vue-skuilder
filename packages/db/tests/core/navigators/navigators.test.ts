@@ -453,6 +453,68 @@ describe('HierarchyDefinition card unlocking', () => {
   });
 });
 
+describe('HierarchyDefinition score multiplier behavior', () => {
+  /**
+   * Tests the filter API convention: filters use score multipliers, not hard filtering.
+   * Locked cards receive score: 0 instead of being removed from results.
+   *
+   * This is critical for:
+   * - Order-independent filter composition (multiplication is commutative)
+   * - Future provenance tracking (all candidates visible, including score: 0)
+   */
+  function applyHierarchyGating(
+    cards: Array<{ cardId: string; score: number }>,
+    unlockedCards: Set<string>
+  ): Array<{ cardId: string; score: number }> {
+    return cards.map((card) => ({
+      ...card,
+      score: unlockedCards.has(card.cardId) ? card.score : 0,
+    }));
+  }
+
+  it('should return score: 0 for locked cards instead of filtering', () => {
+    const cards = [
+      { cardId: 'unlocked-card', score: 0.8 },
+      { cardId: 'locked-card', score: 0.9 },
+    ];
+    const unlockedCards = new Set(['unlocked-card']);
+
+    const result = applyHierarchyGating(cards, unlockedCards);
+
+    expect(result).toHaveLength(2);
+    expect(result.find((c) => c.cardId === 'unlocked-card')!.score).toBe(0.8);
+    expect(result.find((c) => c.cardId === 'locked-card')!.score).toBe(0);
+  });
+
+  it('should preserve score for unlocked cards', () => {
+    const cards = [
+      { cardId: 'card-1', score: 0.9 },
+      { cardId: 'card-2', score: 0.7 },
+    ];
+    const unlockedCards = new Set(['card-1', 'card-2']);
+
+    const result = applyHierarchyGating(cards, unlockedCards);
+
+    expect(result).toHaveLength(2);
+    expect(result[0].score).toBe(0.9);
+    expect(result[1].score).toBe(0.7);
+  });
+
+  it('should set all cards to score: 0 when none are unlocked', () => {
+    const cards = [
+      { cardId: 'card-1', score: 0.8 },
+      { cardId: 'card-2', score: 0.6 },
+    ];
+    const unlockedCards = new Set<string>();
+
+    const result = applyHierarchyGating(cards, unlockedCards);
+
+    expect(result).toHaveLength(2);
+    expect(result[0].score).toBe(0);
+    expect(result[1].score).toBe(0);
+  });
+});
+
 describe('RelativePriority boost factor computation', () => {
   // Test the boost factor formula: 1 + (priority - 0.5) * priorityInfluence
 
