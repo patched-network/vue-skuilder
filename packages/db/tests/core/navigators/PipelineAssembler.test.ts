@@ -59,14 +59,22 @@ describe('PipelineAssembler', () => {
       expect(result.warnings).toEqual([]);
     });
 
-    it('warns when no generator found', () => {
+    it('uses default ELO when filters exist but no generator', () => {
       const hierarchy = createStrategy('hierarchy', 'hierarchyDefinition');
       const input: PipelineAssemblerInput = { strategies: [hierarchy] };
       const result = assembler.assemble(input);
 
-      expect(result.pipeline).toBeNull();
-      expect(result.generators).toEqual([]);
-      expect(result.warnings).toContain('No generator strategy found');
+      // Should create a default ELO generator and wrap it with the filter
+      expect(result.pipeline).toBeDefined();
+      expect(result.pipeline!.implementingClass).toBe('hierarchyDefinition');
+      expect(result.generators).toHaveLength(1);
+      expect(result.generators[0].implementingClass).toBe('elo');
+      expect(result.generators[0].name).toBe('ELO (default)');
+      expect(result.warnings).toEqual([]);
+
+      // Check delegate chain points to default ELO
+      const config = JSON.parse(result.pipeline!.serializedData);
+      expect(config.delegateStrategy).toBe('elo');
     });
   });
 
@@ -89,9 +97,17 @@ describe('PipelineAssembler', () => {
 
     it('chains multiple filters alphabetically around generator', () => {
       const elo = createStrategy('elo', 'elo');
-      const relativePriority = createStrategy('relative-priority', 'relativePriority', '{"tagPriorities": {}}');
+      const relativePriority = createStrategy(
+        'relative-priority',
+        'relativePriority',
+        '{"tagPriorities": {}}'
+      );
       const hierarchy = createStrategy('hierarchy', 'hierarchyDefinition', '{"prerequisites": {}}');
-      const interference = createStrategy('interference', 'interferenceMitigator', '{"interferenceSets": []}');
+      const interference = createStrategy(
+        'interference',
+        'interferenceMitigator',
+        '{"interferenceSets": []}'
+      );
 
       const input: PipelineAssemblerInput = {
         strategies: [elo, relativePriority, hierarchy, interference],
@@ -144,7 +160,9 @@ describe('PipelineAssembler', () => {
 
       expect(result.pipeline).toBeDefined();
       expect(result.generators).toEqual([elo]);
-      expect(result.warnings).toContain("Unknown strategy type 'unknownStrategyType', skipping: unknown");
+      expect(result.warnings).toContain(
+        "Unknown strategy type 'unknownStrategyType', skipping: unknown"
+      );
     });
 
     it('warns on malformed serializedData but continues', () => {
