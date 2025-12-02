@@ -45,10 +45,11 @@ Cypress.Commands.add('registerForCourse', (courseName) => {
 
   if (courseName) {
     // Find and join a specific course by name
-    cy.contains(courseName)
-      .closest('[data-cy="available-course-card"]')
-      .find('[data-cy="register-course-button"]')
-      .click();
+    cy.visit(`/quilts/${courseName}`)
+    
+    cy.get(`[data-cy="register-btn"]`, {
+      timeout: 30_000
+    }).click()
   } else {
     // Join the first available course
     cy.get('[data-cy="available-course-card"]')
