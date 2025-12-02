@@ -1,5 +1,6 @@
 import { ContentNavigationStrategyData } from '../types/contentNavigationStrategy';
-import { isGenerator, isFilter } from './index';
+import { isGenerator, isFilter, Navigators } from './index';
+import { DocType } from '../types/types-legacy';
 import { logger } from '../../util/logger';
 
 // ============================================================================
@@ -88,10 +89,17 @@ export class PipelineAssembler {
       }
     }
 
-    // Validate at least one generator
+    // If no generator but filters exist, use default ELO generator
     if (generators.length === 0) {
-      warnings.push('No generator strategy found');
-      return { pipeline: null, generators: [], warnings };
+      if (filters.length > 0) {
+        logger.debug(
+          '[PipelineAssembler] No generator found, using default ELO with configured filters'
+        );
+        generators.push(this.makeDefaultEloStrategy());
+      } else {
+        warnings.push('No generator strategy found');
+        return { pipeline: null, generators: [], warnings };
+      }
     }
 
     if (generators.length > 1) {
@@ -162,5 +170,20 @@ export class PipelineAssembler {
     );
 
     return outermost;
+  }
+
+  /**
+   * Creates a default ELO generator strategy.
+   * Used when filters are configured but no generator is specified.
+   */
+  private makeDefaultEloStrategy(): ContentNavigationStrategyData {
+    return {
+      _id: 'NAVIGATION_STRATEGY-ELO-default',
+      docType: DocType.NAVIGATION_STRATEGY,
+      name: 'ELO (default)',
+      description: 'Default ELO-based generator',
+      implementingClass: Navigators.ELO,
+      serializedData: '',
+    };
   }
 }
