@@ -13,6 +13,8 @@ export default defineConfig({
       exclude: ['**/*.spec.ts', '**/*.test.ts'],
       // Include only necessary files
       include: ['src/**/*.ts', 'src/**/*.d.ts', 'src/**/*.vue'],
+      // Keep external imports as package names instead of resolving to relative paths
+      aliasesExclude: [/@vue-skuilder\/.*/],
     }),
   ],
   resolve: createBaseResolve(resolve(__dirname, '../..'), {
