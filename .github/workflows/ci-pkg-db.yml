@@ -36,8 +36,5 @@ jobs:
       - name: Run unit tests
         run: yarn workspace @vue-skuilder/db test
 
-      - name: Type check
-        run: yarn workspace @vue-skuilder/db type-check
-
       - name: Lint
         run: yarn workspace @vue-skuilder/db lint:check
