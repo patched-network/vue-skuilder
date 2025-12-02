@@ -9,7 +9,7 @@
         <transition name="component-fade" mode="out-in">
           <div v-if="userIsRegistered">
             <router-link :to="`/study/${id}`" class="me-2">
-              <v-btn color="success">Start a study session</v-btn>
+              <v-btn color="success" data-cy="focused-study-session-btn">Start a study session *</v-btn>
             </router-link>
             <router-link v-if="mode === 'full'" :to="`/edit/${id}`" class="me-2">
               <v-btn data-cy="add-content-btn" color="indigo-lighten-1">
