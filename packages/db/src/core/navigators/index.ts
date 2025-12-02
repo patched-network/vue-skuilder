@@ -68,6 +68,62 @@ export enum Navigators {
   RELATIVE_PRIORITY = 'relativePriority',
 }
 
+// ============================================================================
+// NAVIGATOR ROLE CLASSIFICATION
+// ============================================================================
+//
+// Navigators are classified as either generators or filters:
+// - Generators: Produce candidate cards (ELO, SRS, HardcodedOrder)
+// - Filters: Transform/score candidates from a delegate (all others)
+//
+// This classification enables automatic pipeline assembly:
+// 1. Find the one generator
+// 2. Chain all filters around it (order doesn't matter - all are multipliers)
+//
+// ============================================================================
+
+/**
+ * Role classification for navigation strategies.
+ *
+ * - GENERATOR: Produces candidate cards with initial scores
+ * - FILTER: Wraps a delegate and transforms its scores (must be a multiplier)
+ */
+export enum NavigatorRole {
+  GENERATOR = 'generator',
+  FILTER = 'filter',
+}
+
+/**
+ * Registry mapping navigator implementations to their roles.
+ */
+export const NavigatorRoles: Record<Navigators, NavigatorRole> = {
+  [Navigators.ELO]: NavigatorRole.GENERATOR,
+  [Navigators.HARDCODED]: NavigatorRole.GENERATOR,
+  [Navigators.HIERARCHY]: NavigatorRole.FILTER,
+  [Navigators.INTERFERENCE]: NavigatorRole.FILTER,
+  [Navigators.RELATIVE_PRIORITY]: NavigatorRole.FILTER,
+};
+
+/**
+ * Check if a navigator implementation is a generator.
+ *
+ * @param impl - Navigator implementation name (e.g., 'elo', 'hierarchyDefinition')
+ * @returns true if the navigator is a generator, false otherwise
+ */
+export function isGenerator(impl: string): boolean {
+  return NavigatorRoles[impl as Navigators] === NavigatorRole.GENERATOR;
+}
+
+/**
+ * Check if a navigator implementation is a filter.
+ *
+ * @param impl - Navigator implementation name (e.g., 'elo', 'hierarchyDefinition')
+ * @returns true if the navigator is a filter, false otherwise
+ */
+export function isFilter(impl: string): boolean {
+  return NavigatorRoles[impl as Navigators] === NavigatorRole.FILTER;
+}
+
 /**
  * Abstract base class for navigation strategies that steer study sessions.
  *

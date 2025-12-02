@@ -2,12 +2,66 @@
 
 ## Status: NOT STARTED
 
-## Problem
+## Preferred Direction: Eliminate Delegate Pattern
+
+The current delegate-chain architecture is over-engineered. A simpler model:
+
+**Current (complex):**
+```
+Filter3(delegate=Filter2(delegate=Filter1(delegate=Generator)))
+```
+Each filter wraps another, creating nested instantiation. Filters need `delegateStrategy` 
+config, lazy delegate creation, `serializedData` parsing, etc.
+
+**Simpler model:**
+```
+cards = Generator.getWeightedCards()
+cards = Filter1.transform(cards)
+cards = Filter2.transform(cards)
+cards = Filter3.transform(cards)
+```
+
+Generators produce a list. Filters are pure functions on that list. No wrapping, no 
+delegates, no `serializedData.delegateStrategy`.
+
+```typescript
+interface CardFilter {
+  transform(cards: WeightedCard[], context: FilterContext): Promise<WeightedCard[]>;
+}
+
+class Pipeline {
+  async getWeightedCards(limit: number): Promise<WeightedCard[]> {
+    // 1. Collect from all generators (via CompositeGenerator if multiple)
+    let cards = await this.generator.getWeightedCards(limit);
+    
+    // 2. Run through filters sequentially
+    for (const filter of this.filters) {
+      cards = await filter.transform(cards, this.context);
+    }
+    
+    return cards.sort((a, b) => b.score - a.score).slice(0, limit);
+  }
+}
+```
+
+**Benefits:**
+- No nested instantiation complexity
+- Filters don't need to know about delegates
+- Easy to add/remove/reorder filters
+- Natural place to hydrate shared data (tags, etc.) before filter pass
+- Aligns with "all filters are multipliers" convention
+
+**Migration:** Existing delegate-based filters can be wrapped with a thin adapter, or 
+rewritten to the simpler `transform()` interface. External API unchanged.
+
+---
+
+## Secondary Problem: Redundant Tag Queries
 
 In the current delegate-chain architecture, each filter strategy independently queries
 for card tags, resulting in redundant database operations.
 
-### Current Flow
+### Current Flow (Delegate Pattern)
 
 ```
 RelativePriority.getWeightedCards()
@@ -293,5 +347,6 @@ Batch queries are also more efficient than individual queries due to reduced rou
 ## Related Documents
 
 - `packages/db/docs/navigators-architecture.md` — Current architecture
+- `packages/db/docs/todo-naive-orchestration.md` — Pipeline assembly (current implementation)
 - `todo-evolutionary-orchestration.md` — Future orchestrator (may subsume pipeline)
 - `todo-provenance.md` — Audit trail (may benefit from hydration)

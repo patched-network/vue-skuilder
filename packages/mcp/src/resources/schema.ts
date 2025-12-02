@@ -48,13 +48,21 @@ export async function handleSchemaResource(
       // Map Vue-Skuilder field types to JSON Schema types
       const jsonType = field.type === 'int' ? 'integer' : 'string';
       
+      let description: string = '';
+      
+      if (field.validator) {
+        description += `Instructions: ${field.validator.instructions}\t`,
+        description += `Placeholder: ${field.validator.placeholder}`
+      } else {
+        description = `Field ${field.name} (${field.type})`
+      }
+      
       jsonSchema.properties[field.name] = {
         type: jsonType,
-        description: field.description || `Field ${field.name} (${field.type})`,
+        description
       };
-      if (field.required) {
-        jsonSchema.required.push(field.name);
-      }
+      
+      jsonSchema.required.push(field.name);
     }
   }
 

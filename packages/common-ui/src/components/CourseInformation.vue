@@ -19,7 +19,7 @@
       <!-- Default fallback content if no actions slot provided -->
       <transition name="component-fade" mode="out-in">
         <div v-if="userIsRegistered">
-          <v-btn color="success" class="me-2">Start a study session</v-btn>
+          <v-btn color="success" data-cy="focused-study-session-btn" class="me-2">Start ad study session</v-btn>
           <v-btn v-if="editMode === 'full'" data-cy="add-content-btn" color="indigo-lighten-1" class="me-2">
             <v-icon start>mdi-plus</v-icon>
             Add content
@@ -45,7 +45,7 @@
     </slot>
 
     <slot name="additional-content"></slot>
-
+    
     <v-card class="my-2">
       <v-toolbar density="compact">
         <v-toolbar-title>Tags</v-toolbar-title>

@@ -1,5 +1,5 @@
 <template>
-  <v-app v-if="ready">
+  <v-app v-if="ready" data-cy="app">
     <v-navigation-drawer v-model="drawer" :elevation="2" :rail="rail" @click="rail = false">
       <v-list>
         <v-list-item to="/home" value="home">
@@ -101,7 +101,7 @@ defineOptions({
 
 // const build = ref('0.0.2');
 const latestBuild = ref('');
-const drawer = ref(true);
+const drawer = ref(false);
 const authStore = useAuthStore();
 const configStore = useConfigStore();
 const theme = useTheme();

@@ -201,7 +201,7 @@ interface InterferenceGroup {
   decay?: number;
 }
 
-interface InterferenceConfig {
+export interface InterferenceConfig {
   interferenceSets: InterferenceGroup[];
   maturityThreshold?: {
     minCount?: number;
