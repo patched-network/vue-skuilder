@@ -6,7 +6,6 @@
  */
 
 const isDevelopment = typeof process !== 'undefined' && process.env.NODE_ENV === 'development';
-const _isBrowser = typeof window !== 'undefined';
 
 export const logger = {
   /**
