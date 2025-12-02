@@ -204,7 +204,9 @@ export default class RelativePriorityNavigator extends ContentNavigator {
     // Adjust scores based on priority
     const adjusted: WeightedCard[] = await Promise.all(
       candidates.map(async (card) => {
-        const cardTags = await this.course.getAppliedTags(card.cardId);
+        const cardTags = (await this.course.getAppliedTags(card.cardId)).rows
+          .map(r => r.doc?.name)
+          .filter((x): x is string => !!x);
         const priority = this.computeCardPriority(cardTags);
         const boostFactor = this.computeBoostFactor(priority);
 
