@@ -84,7 +84,7 @@ export default class InterferenceMitigatorNavigator extends ContentNavigator {
   private course: CourseDBInterface;
   private config: InterferenceConfig;
   private delegate: ContentNavigator | null = null;
-  private strategyData: ContentNavigationStrategyData;
+  private _strategyData: ContentNavigationStrategyData;
 
   /** Precomputed map: tag -> set of { partner, decay } it interferes with */
   private interferenceMap: Map<string, Array<{ partner: string; decay: number }>>;
@@ -92,13 +92,13 @@ export default class InterferenceMitigatorNavigator extends ContentNavigator {
   constructor(
     user: UserDBInterface,
     course: CourseDBInterface,
-    strategyData: ContentNavigationStrategyData
+    _strategyData: ContentNavigationStrategyData
   ) {
     super();
     this.user = user;
     this.course = course;
-    this.strategyData = strategyData;
-    this.config = this.parseConfig(strategyData.serializedData);
+    this._strategyData = _strategyData;
+    this.config = this.parseConfig(_strategyData.serializedData);
     this.interferenceMap = this.buildInterferenceMap();
   }
 
@@ -178,6 +178,7 @@ export default class InterferenceMitigatorNavigator extends ContentNavigator {
     if (!this.delegate) {
       const delegateStrategyData: ContentNavigationStrategyData = {
         _id: `NAVIGATION_STRATEGY-${this.config.delegateStrategy}-delegate`,
+        course: this.course.getCourseID(),
         docType: DocType.NAVIGATION_STRATEGY,
         name: `${this.config.delegateStrategy} (delegate)`,
         description: 'Delegate strategy for interference mitigator',
@@ -270,26 +271,54 @@ export default class InterferenceMitigatorNavigator extends ContentNavigator {
 
   /**
    * Compute interference score reduction for a card.
-   * Returns a multiplier (0-1) to apply to the card's score.
-   * 1.0 = no interference, 0.0 = maximum interference
+   * Returns: { multiplier, interfering tags, reason }
    */
-  private computeInterferenceMultiplier(
+  private computeInterferenceEffect(
     cardTags: string[],
-    tagsToAvoid: Map<string, number>
-  ): number {
-    if (tagsToAvoid.size === 0) return 1.0;
+    tagsToAvoid: Map<string, number>,
+    immatureTags: Set<string>
+  ): { multiplier: number; interferingTags: string[]; reason: string } {
+    if (tagsToAvoid.size === 0) {
+      return {
+        multiplier: 1.0,
+        interferingTags: [],
+        reason: 'No interference detected',
+      };
+    }
 
     let multiplier = 1.0;
+    const interferingTags: string[] = [];
 
     for (const tag of cardTags) {
       const decay = tagsToAvoid.get(tag);
       if (decay !== undefined) {
-        // Each interfering tag applies its own decay multiplicatively
+        interferingTags.push(tag);
         multiplier *= 1.0 - decay;
       }
     }
 
-    return multiplier;
+    if (interferingTags.length === 0) {
+      return {
+        multiplier: 1.0,
+        interferingTags: [],
+        reason: 'No interference detected',
+      };
+    }
+
+    // Find which immature tags these interfere with
+    const causingTags = new Set<string>();
+    for (const tag of interferingTags) {
+      for (const immatureTag of immatureTags) {
+        const partners = this.interferenceMap.get(immatureTag);
+        if (partners?.some((p) => p.partner === tag)) {
+          causingTags.add(immatureTag);
+        }
+      }
+    }
+
+    const reason = `Interferes with immature tags ${Array.from(causingTags).join(', ')} (tags: ${interferingTags.join(', ')}, multiplier: ${multiplier.toFixed(2)})`;
+
+    return { multiplier, interferingTags, reason };
   }
 
   /**
@@ -313,11 +342,28 @@ export default class InterferenceMitigatorNavigator extends ContentNavigator {
 
     for (const card of candidates) {
       const cardTags = await this.getCardTags(card.cardId);
-      const multiplier = this.computeInterferenceMultiplier(cardTags, tagsToAvoid);
+      const { multiplier, reason } = this.computeInterferenceEffect(
+        cardTags,
+        tagsToAvoid,
+        immatureTags
+      );
+      const finalScore = card.score * multiplier;
+
+      const action =
+        multiplier < 1.0 ? 'penalized' : multiplier > 1.0 ? 'boosted' : 'passed';
 
       adjusted.push({
         ...card,
-        score: card.score * multiplier,
+        score: finalScore,
+        provenance: [
+          ...card.provenance,
+          {
+            strategy: 'interferenceMitigator',
+            action,
+            score: finalScore,
+            reason,
+          },
+        ],
       });
     }
 

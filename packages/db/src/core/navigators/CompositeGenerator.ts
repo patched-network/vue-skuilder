@@ -85,6 +85,7 @@ export default class CompositeGenerator extends ContentNavigator {
    * Get weighted cards from all generators, merge and deduplicate.
    *
    * Cards appearing in multiple generators receive a score boost.
+   * Provenance tracks which generators produced each card and how scores were aggregated.
    */
   async getWeightedCards(limit: number): Promise<WeightedCard[]> {
     // Fetch from all generators in parallel
@@ -104,15 +105,68 @@ export default class CompositeGenerator extends ContentNavigator {
     const merged: WeightedCard[] = [];
     for (const [, cards] of byCardId) {
       const aggregatedScore = this.aggregateScores(cards);
-      // Use the first card's metadata, but with aggregated score
+      const finalScore = Math.min(1.0, aggregatedScore); // Clamp to [0, 1]
+
+      // Merge provenance from all generators that produced this card
+      const mergedProvenance = cards.flatMap((c) => c.provenance);
+
+      // Determine action based on whether score changed
+      const initialScore = cards[0].score;
+      const action =
+        finalScore > initialScore ? 'boosted' : finalScore < initialScore ? 'penalized' : 'passed';
+
+      // Build reason explaining the aggregation
+      const reason = this.buildAggregationReason(cards, finalScore);
+
+      // Append composite provenance entry
       merged.push({
         ...cards[0],
-        score: Math.min(1.0, aggregatedScore), // Clamp to [0, 1]
+        score: finalScore,
+        provenance: [
+          ...mergedProvenance,
+          {
+            strategy: 'composite',
+            action,
+            score: finalScore,
+            reason,
+          },
+        ],
       });
     }
 
     // Sort by score descending and limit
     return merged.sort((a, b) => b.score - a.score).slice(0, limit);
+  }
+
+  /**
+   * Build human-readable reason for score aggregation.
+   */
+  private buildAggregationReason(cards: WeightedCard[], finalScore: number): string {
+    const count = cards.length;
+    const scores = cards.map((c) => c.score.toFixed(2)).join(', ');
+
+    if (count === 1) {
+      return `Single generator, score ${finalScore.toFixed(2)}`;
+    }
+
+    const strategies = cards.map((c) => c.provenance[0]?.strategy || 'unknown').join(', ');
+
+    switch (this.aggregationMode) {
+      case AggregationMode.MAX:
+        return `Max of ${count} generators (${strategies}): scores [${scores}] → ${finalScore.toFixed(2)}`;
+
+      case AggregationMode.AVERAGE:
+        return `Average of ${count} generators (${strategies}): scores [${scores}] → ${finalScore.toFixed(2)}`;
+
+      case AggregationMode.FREQUENCY_BOOST: {
+        const avg = cards.reduce((sum, c) => sum + c.score, 0) / count;
+        const boost = 1 + FREQUENCY_BOOST_FACTOR * (count - 1);
+        return `Frequency boost from ${count} generators (${strategies}): avg ${avg.toFixed(2)} × ${boost.toFixed(2)} → ${finalScore.toFixed(2)}`;
+      }
+
+      default:
+        return `Aggregated from ${count} generators: ${finalScore.toFixed(2)}`;
+    }
   }
 
   /**

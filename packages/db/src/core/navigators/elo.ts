@@ -115,17 +115,36 @@ export default class ELONavigator extends ContentNavigator {
         cardId: c.cardID,
         courseId: c.courseID,
         score,
-        source: 'new' as const,
+        provenance: [
+          {
+            strategy: 'elo',
+            action: 'generated',
+            score,
+            reason: `ELO distance ${Math.round(distance)} (card: ${Math.round(cardElo)}, user: ${Math.round(userGlobalElo)}), new card`,
+          },
+        ],
       };
     });
 
     // Score reviews (for now, score=1.0; future: score by overdueness)
-    const scoredReviews: WeightedCard[] = reviews.map((r) => ({
-      cardId: r.cardID,
-      courseId: r.courseID,
-      score: 1.0,
-      source: 'review' as const,
-    }));
+    const scoredReviews: WeightedCard[] = reviews.map((r) => {
+      const cardElo = eloMap.get(r.cardID) ?? 1000;
+      const distance = Math.abs(cardElo - userGlobalElo);
+
+      return {
+        cardId: r.cardID,
+        courseId: r.courseID,
+        score: 1.0,
+        provenance: [
+          {
+            strategy: 'elo',
+            action: 'generated',
+            score: 1.0,
+            reason: `ELO distance ${Math.round(distance)} (card: ${Math.round(cardElo)}, user: ${Math.round(userGlobalElo)}), review`,
+          },
+        ],
+      };
+    });
 
     // Combine and sort by score descending
     const all = [...scoredNew, ...scoredReviews];

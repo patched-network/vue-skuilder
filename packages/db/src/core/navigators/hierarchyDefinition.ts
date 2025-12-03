@@ -54,18 +54,18 @@ export default class HierarchyDefinitionNavigator extends ContentNavigator {
   private course: CourseDBInterface;
   private config: HierarchyConfig;
   private delegate: ContentNavigator | null = null;
-  private strategyData: ContentNavigationStrategyData;
+  private _strategyData: ContentNavigationStrategyData;
 
   constructor(
     user: UserDBInterface,
     course: CourseDBInterface,
-    strategyData: ContentNavigationStrategyData
+    _strategyData: ContentNavigationStrategyData
   ) {
     super();
     this.user = user;
     this.course = course;
-    this.strategyData = strategyData;
-    this.config = this.parseConfig(strategyData.serializedData);
+    this._strategyData = _strategyData;
+    this.config = this.parseConfig(_strategyData.serializedData);
   }
 
   private parseConfig(serializedData: string): HierarchyConfig {
@@ -91,6 +91,7 @@ export default class HierarchyDefinitionNavigator extends ContentNavigator {
     if (!this.delegate) {
       const delegateStrategyData: ContentNavigationStrategyData = {
         _id: `NAVIGATION_STRATEGY-${this.config.delegateStrategy}-delegate`,
+        course: this.course.getCourseID(),
         docType: DocType.NAVIGATION_STRATEGY,
         name: `${this.config.delegateStrategy} (delegate)`,
         description: 'Delegate strategy for hierarchy definition',
@@ -181,7 +182,7 @@ export default class HierarchyDefinitionNavigator extends ContentNavigator {
    *
    * Note: We return score: 0 instead of filtering so that:
    * 1. Filter order doesn't matter (all filters are multipliers)
-   * 2. Future provenance tracking can see all candidates
+   * 2. Provenance tracking shows all candidates and gating decisions
    */
   async getWeightedCards(limit: number): Promise<WeightedCard[]> {
     const delegate = await this.getDelegate();
@@ -197,11 +198,26 @@ export default class HierarchyDefinitionNavigator extends ContentNavigator {
     const gated: WeightedCard[] = [];
 
     for (const card of candidates) {
-      const isUnlocked = await this.isCardUnlocked(card.cardId, unlockedTags);
+      const { isUnlocked, reason } = await this.checkCardUnlock(
+        card.cardId,
+        unlockedTags,
+        masteredTags
+      );
+      const finalScore = isUnlocked ? card.score : 0;
+      const action = isUnlocked ? 'passed' : 'penalized';
 
       gated.push({
         ...card,
-        score: isUnlocked ? card.score : 0,
+        score: finalScore,
+        provenance: [
+          ...card.provenance,
+          {
+            strategy: 'hierarchyDefinition',
+            action,
+            score: finalScore,
+            reason,
+          },
+        ],
       });
     }
 
@@ -209,20 +225,46 @@ export default class HierarchyDefinitionNavigator extends ContentNavigator {
   }
 
   /**
-   * Check if a card is unlocked based on its tags
+   * Check if a card is unlocked and generate reason.
    */
-  private async isCardUnlocked(cardId: string, unlockedTags: Set<string>): Promise<boolean> {
+  private async checkCardUnlock(
+    cardId: string,
+    unlockedTags: Set<string>,
+    masteredTags: Set<string>
+  ): Promise<{ isUnlocked: boolean; reason: string }> {
     try {
       const tagResponse = await this.course.getAppliedTags(cardId);
       const cardTags = tagResponse.rows.map((row) => row.value?.name || row.key);
 
-      // Card is unlocked if ALL its tags are either:
-      // 1. Explicitly unlocked (prerequisites met)
-      // 2. Have no prerequisites defined (always unlocked)
-      return cardTags.every((tag) => unlockedTags.has(tag) || !this.hasPrerequisites(tag));
+      // Check each tag's prerequisite status
+      const lockedTags = cardTags.filter(
+        (tag) => this.hasPrerequisites(tag) && !unlockedTags.has(tag)
+      );
+
+      if (lockedTags.length === 0) {
+        const tagList = cardTags.length > 0 ? cardTags.join(', ') : 'none';
+        return {
+          isUnlocked: true,
+          reason: `Prerequisites met, tags: ${tagList}`,
+        };
+      }
+
+      // Find missing prerequisites for locked tags
+      const missingPrereqs = lockedTags.flatMap((tag) => {
+        const prereqs = this.config.prerequisites[tag] || [];
+        return prereqs.filter((p) => !masteredTags.has(p.tag)).map((p) => p.tag);
+      });
+
+      return {
+        isUnlocked: false,
+        reason: `Blocked: missing prerequisites ${missingPrereqs.join(', ')} for tags ${lockedTags.join(', ')}`,
+      };
     } catch {
       // If we can't get tags, assume unlocked (fail open)
-      return true;
+      return {
+        isUnlocked: true,
+        reason: 'Prerequisites check skipped (tag lookup failed)',
+      };
     }
   }
 

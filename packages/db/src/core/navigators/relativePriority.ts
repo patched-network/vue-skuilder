@@ -89,18 +89,18 @@ export default class RelativePriorityNavigator extends ContentNavigator {
   private course: CourseDBInterface;
   private config: RelativePriorityConfig;
   private delegate: ContentNavigator | null = null;
-  private strategyData: ContentNavigationStrategyData;
+  private _strategyData: ContentNavigationStrategyData;
 
   constructor(
     user: UserDBInterface,
     course: CourseDBInterface,
-    strategyData: ContentNavigationStrategyData
+    _strategyData: ContentNavigationStrategyData
   ) {
     super();
     this.user = user;
     this.course = course;
-    this.strategyData = strategyData;
-    this.config = this.parseConfig(strategyData.serializedData);
+    this._strategyData = _strategyData;
+    this.config = this.parseConfig(_strategyData.serializedData);
   }
 
   private parseConfig(serializedData: string): RelativePriorityConfig {
@@ -132,6 +132,7 @@ export default class RelativePriorityNavigator extends ContentNavigator {
     if (!this.delegate) {
       const delegateStrategyData: ContentNavigationStrategyData = {
         _id: `NAVIGATION_STRATEGY-${this.config.delegateStrategy}-delegate`,
+        course: this.course.getCourseID(),
         docType: DocType.NAVIGATION_STRATEGY,
         name: `${this.config.delegateStrategy} (delegate)`,
         description: 'Delegate strategy for relative priority',
@@ -205,15 +206,31 @@ export default class RelativePriorityNavigator extends ContentNavigator {
     const adjusted: WeightedCard[] = await Promise.all(
       candidates.map(async (card) => {
         const cardTags = (await this.course.getAppliedTags(card.cardId)).rows
-          .map(r => r.doc?.name)
+          .map((r) => r.doc?.name)
           .filter((x): x is string => !!x);
         const priority = this.computeCardPriority(cardTags);
         const boostFactor = this.computeBoostFactor(priority);
+        const finalScore = Math.max(0, Math.min(1, card.score * boostFactor));
+
+        // Determine action based on boost factor
+        const action =
+          boostFactor > 1.0 ? 'boosted' : boostFactor < 1.0 ? 'penalized' : 'passed';
+
+        // Build reason explaining priority adjustment
+        const reason = this.buildPriorityReason(cardTags, priority, boostFactor, finalScore);
 
         return {
           ...card,
-          // Apply boost factor, clamp to [0, 1] range
-          score: Math.max(0, Math.min(1, card.score * boostFactor)),
+          score: finalScore,
+          provenance: [
+            ...card.provenance,
+            {
+              strategy: 'relativePriority',
+              action,
+              score: finalScore,
+              reason,
+            },
+          ],
         };
       })
     );
@@ -223,6 +240,31 @@ export default class RelativePriorityNavigator extends ContentNavigator {
 
     // Return up to limit
     return adjusted.slice(0, limit);
+  }
+
+  /**
+   * Build human-readable reason for priority adjustment.
+   */
+  private buildPriorityReason(
+    cardTags: string[],
+    priority: number,
+    boostFactor: number,
+    finalScore: number
+  ): string {
+    if (cardTags.length === 0) {
+      return `No tags, neutral priority (${priority.toFixed(2)})`;
+    }
+
+    const tagList = cardTags.slice(0, 3).join(', ');
+    const more = cardTags.length > 3 ? ` (+${cardTags.length - 3} more)` : '';
+
+    if (boostFactor === 1.0) {
+      return `Neutral priority (${priority.toFixed(2)}) for tags: ${tagList}${more}`;
+    } else if (boostFactor > 1.0) {
+      return `High-priority tags: ${tagList}${more} (priority ${priority.toFixed(2)} → boost ${boostFactor.toFixed(2)}x → ${finalScore.toFixed(2)})`;
+    } else {
+      return `Low-priority tags: ${tagList}${more} (priority ${priority.toFixed(2)} → reduce ${boostFactor.toFixed(2)}x → ${finalScore.toFixed(2)})`;
+    }
   }
 
   /**
