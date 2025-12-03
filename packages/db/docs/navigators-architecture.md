@@ -38,16 +38,23 @@ As we added more sophisticated navigation strategies, the limitations became app
 - **Some strategies generate candidates, others filter/score them** — the interface didn't
   accommodate this distinction.
 
-### The Solution: Weighted Cards
+### The Solution: Weighted Cards with Provenance
 
-The new API unifies card selection into a single scored candidate model:
+The new API unifies card selection into a single scored candidate model with full audit trails:
 
 ```typescript
+interface StrategyContribution {
+  strategy: string;           // e.g., 'elo', 'hierarchyDefinition'
+  action: 'generated' | 'passed' | 'boosted' | 'penalized';
+  score: number;              // Score after this strategy's processing
+  reason: string;             // Human-readable explanation (required)
+}
+
 interface WeightedCard {
   cardId: string;
   courseId: string;
-  score: number;      // 0-1 suitability
-  source: 'new' | 'review' | 'failed';
+  score: number;              // 0-1 suitability (final score)
+  provenance: StrategyContribution[];  // Audit trail of scoring decisions
 }
 
 abstract class ContentNavigator {
@@ -154,6 +161,42 @@ Once SessionController migration is complete:
 - New strategy implementations can skip implementing them (base class provides defaults)
 - Eventually, legacy methods will be removed
 
+## Provenance Tracking
+
+Each card includes a provenance trail documenting how it was scored:
+
+```typescript
+// Example: Card that went through full pipeline
+provenance: [
+  {
+    strategy: 'elo',
+    action: 'generated',
+    score: 0.85,
+    reason: 'ELO distance 75 (card: 1025, user: 1100), new card'
+  },
+  {
+    strategy: 'hierarchyDefinition',
+    action: 'passed',
+    score: 0.85,
+    reason: 'Prerequisites met, tags: letter-sounds'
+  },
+  {
+    strategy: 'interferenceMitigator',
+    action: 'penalized',
+    score: 0.68,
+    reason: 'Interferes with immature tags d (tags: b, multiplier: 0.80)'
+  },
+  {
+    strategy: 'relativePriority',
+    action: 'boosted',
+    score: 0.78,
+    reason: 'High-priority tags: s (priority 0.95 → boost 1.15x → 0.78)'
+  }
+]
+```
+
+**Extracting origin:** Use the `getCardOrigin(card)` helper to extract whether a card is 'new', 'review', or 'failed' from the provenance trail.
+
 ## Score Semantics
 
 Scores range from 0-1 with the following semantics:
@@ -167,6 +210,8 @@ Scores range from 0-1 with the following semantics:
 
 Scores are typically combined multiplicatively when strategies are chained. A score of 0
 from any strategy filters out the card entirely.
+
+**Provenance tracks score evolution:** Each entry in the provenance array shows the score after that strategy processed the card, creating a complete audit trail.
 
 ## SessionController Interaction
 
@@ -213,12 +258,20 @@ class MyGeneratorNavigator extends ContentNavigator {
   async getWeightedCards(limit: number): Promise<WeightedCard[]> {
     // Generate and score candidates
     const candidates = await this.findCandidates(limit);
-    return candidates.map(c => ({
-      cardId: c.id,
-      courseId: this.course.getCourseID(),
-      score: this.computeScore(c),
-      source: 'new',
-    }));
+    return candidates.map(c => {
+      const score = this.computeScore(c);
+      return {
+        cardId: c.id,
+        courseId: this.course.getCourseID(),
+        score,
+        provenance: [{
+          strategy: 'myGenerator',
+          action: 'generated',
+          score,
+          reason: `My scoring logic: ${this.explainScore(c)}, new card`
+        }]
+      };
+    });
   }
 
   // Legacy methods - can use base class default or implement
@@ -232,11 +285,11 @@ class MyGeneratorNavigator extends ContentNavigator {
 ```typescript
 class MyFilterNavigator extends ContentNavigator {
   private delegate: ContentNavigator | null = null;
-  
+
   private async getDelegate(): Promise<ContentNavigator> {
     if (!this.delegate) {
       this.delegate = await ContentNavigator.create(
-        this.user, 
+        this.user,
         this.course,
         { implementingClass: this.config.delegateStrategy || 'elo', ... }
       );
@@ -247,10 +300,29 @@ class MyFilterNavigator extends ContentNavigator {
   async getWeightedCards(limit: number): Promise<WeightedCard[]> {
     const delegate = await this.getDelegate();
     const candidates = await delegate.getWeightedCards(limit * 2);
-    
-    // Transform scores
+
+    // Transform scores and append provenance
     return candidates
-      .map(c => ({ ...c, score: this.adjustScore(c) }))
+      .map(c => {
+        const adjustedScore = this.adjustScore(c);
+        const action = adjustedScore > c.score ? 'boosted'
+                     : adjustedScore < c.score ? 'penalized'
+                     : 'passed';
+
+        return {
+          ...c,
+          score: adjustedScore,
+          provenance: [
+            ...c.provenance,
+            {
+              strategy: 'myFilter',
+              action,
+              score: adjustedScore,
+              reason: this.explainAdjustment(c, adjustedScore)
+            }
+          ]
+        };
+      })
       .filter(c => c.score > 0)
       .sort((a, b) => b.score - a.score)
       .slice(0, limit);
@@ -282,6 +354,5 @@ class MyFilterNavigator extends ContentNavigator {
 
 ## Related TODOs
 
-- `todo-provenance.md` — Audit trail for surfaced content
 - `todo-pipeline-optimization.md` — Batch tag lookups, future: eliminate delegate pattern
 - `agent/orchestrator/todo-evolutionary-orchestration.md` — Future: multi-arm bandit selection
