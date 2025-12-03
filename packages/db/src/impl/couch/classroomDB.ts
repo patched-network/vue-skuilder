@@ -209,13 +209,27 @@ export class StudentClassroomDB
         cardId: c.cardID,
         courseId: c.courseID,
         score: 1.0,
-        source: 'new' as const,
+        provenance: [
+          {
+            strategy: 'classroom',
+            action: 'generated' as const,
+            score: 1.0,
+            reason: 'Classroom legacy getNewCards(), new card',
+          },
+        ],
       })),
       ...reviews.map((r) => ({
         cardId: r.cardID,
         courseId: r.courseID,
         score: 1.0,
-        source: 'review' as const,
+        provenance: [
+          {
+            strategy: 'classroom',
+            action: 'generated' as const,
+            score: 1.0,
+            reason: 'Classroom legacy getPendingReviews(), review',
+          },
+        ],
       })),
     ];
 
