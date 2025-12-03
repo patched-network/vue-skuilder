@@ -135,7 +135,7 @@ export async function packCourse(data: PackCourseData): Promise<PackCourseRespon
           };
         },
         async writeFile(filePath: string, data: string | Buffer): Promise<void> {
-          await fs.writeFile(filePath, data);
+          await fs.writeFile(filePath, data as string | Uint8Array);
         },
         async writeJson(filePath: string, data: unknown, options?: { spaces?: number }): Promise<void> {
           await fs.writeJson(filePath, data, options);
