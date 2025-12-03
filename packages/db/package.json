@@ -59,7 +59,7 @@
     "@types/uuid": "^10.0.0",
     "tsup": "^8.0.2",
     "typescript": "~5.9.3",
-    "vite": "^6.4.1",
+    "vite": "^7.2.6",
     "vitest": "^4.0.14"
   },
   "stableVersion": "0.1.17"
