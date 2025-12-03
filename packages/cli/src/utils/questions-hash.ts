@@ -54,7 +54,7 @@ export async function hashQuestionsDirectory(coursePath: string): Promise<string
       // Include relative path, modification time, and content in hash
       hash.update(relativePath);
       hash.update(stat.mtime.toISOString());
-      hash.update(content);
+      hash.update(content as Uint8Array);
     }
 
     // Include CLI version in hash for cache invalidation on CLI updates

@@ -194,9 +194,9 @@ async function writePackedData(
       
       // Ensure directory exists
       await fs.ensureDir(path.dirname(fullAttachmentPath));
-      
+
       // Write binary file
-      await fs.writeFile(fullAttachmentPath, attachmentData.buffer);
+      await fs.writeFile(fullAttachmentPath, attachmentData.buffer as Uint8Array);
       attachmentCount++;
     }
     

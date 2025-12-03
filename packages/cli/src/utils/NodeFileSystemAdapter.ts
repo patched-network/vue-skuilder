@@ -65,7 +65,7 @@ export class NodeFileSystemAdapter implements FileSystemAdapter {
 
   async writeFile(filePath: string, data: string | Buffer): Promise<void> {
     try {
-      await fse.writeFile(filePath, data);
+      await fse.writeFile(filePath, data as string | Uint8Array);
     } catch (error) {
       throw new FileSystemError(
         `Failed to write file: ${error instanceof Error ? error.message : String(error)}`,
