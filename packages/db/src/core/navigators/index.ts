@@ -18,8 +18,9 @@ import { logger } from '../../util/logger';
 //
 // KEY CONCEPTS:
 //
-// 1. WeightedCard - A card with a suitability score (0-1). This is the unified
-//    output format for all navigation strategies.
+// 1. WeightedCard - A card with a suitability score (0-1) and provenance trail.
+//    The provenance tracks how each strategy in the pipeline contributed to
+//    the card's final score, ensuring transparency and debuggability.
 //
 // 2. ContentNavigator - Abstract base class that strategies extend. Implements
 //    StudyContentSource for backward compatibility.
@@ -32,6 +33,9 @@ import { logger } from '../../util/logger';
 // 4. Delegate pattern - Filter strategies compose by wrapping generators:
 //    RelativePriority(Interference(Hierarchy(ELO)))
 //
+// 5. Provenance tracking - Each strategy adds an entry explaining its contribution.
+//    This makes the system transparent and debuggable.
+//
 // API EVOLUTION:
 // - getWeightedCards() is the PRIMARY API (new)
 // - getNewCards() / getPendingReviews() are LEGACY (kept for backward compat)
@@ -43,21 +47,92 @@ import { logger } from '../../util/logger';
 // ============================================================================
 
 /**
- * A card with a suitability score for presentation.
+ * Tracks a single strategy's contribution to a card's final score.
+ *
+ * Each strategy in the pipeline adds a StrategyContribution entry to the
+ * card's provenance array, creating an audit trail of scoring decisions.
+ */
+export interface StrategyContribution {
+  /** Which strategy processed this card (e.g., 'elo', 'hierarchyDefinition') */
+  strategy: string;
+
+  /**
+   * What the strategy did:
+   * - 'generated': Strategy produced this card (generators only)
+   * - 'passed': Strategy evaluated but didn't change score (transparent pass-through)
+   * - 'boosted': Strategy increased the score
+   * - 'penalized': Strategy decreased the score
+   */
+  action: 'generated' | 'passed' | 'boosted' | 'penalized';
+
+  /** Score after this strategy's processing */
+  score: number;
+
+  /**
+   * Human-readable explanation of the strategy's decision.
+   *
+   * Examples:
+   * - "ELO distance 75, new card"
+   * - "Prerequisites met: letter-sounds"
+   * - "Interferes with immature tag 'd' (decay 0.8)"
+   * - "High-priority tag 's' (0.95) → boost 1.15x"
+   *
+   * Required for transparency - silent adjusters are anti-patterns.
+   */
+  reason: string;
+}
+
+/**
+ * A card with a suitability score and provenance trail.
  *
  * Scores range from 0-1:
  * - 1.0 = fully suitable
  * - 0.0 = hard filter (e.g., prerequisite not met)
  * - 0.5 = neutral
  * - Intermediate values = soft preference
+ *
+ * Provenance tracks the scoring pipeline:
+ * - First entry: Generator that produced the card
+ * - Subsequent entries: Filters that transformed the score
+ * - Each entry includes action and human-readable reason
  */
 export interface WeightedCard {
   cardId: string;
   courseId: string;
   /** Suitability score from 0-1 */
   score: number;
-  /** Origin of the card */
-  source: 'new' | 'review' | 'failed';
+  /**
+   * Audit trail of strategy contributions.
+   * First entry is from the generator, subsequent entries from filters.
+   */
+  provenance: StrategyContribution[];
+}
+
+/**
+ * Extract card origin from provenance trail.
+ *
+ * The first provenance entry (from the generator) indicates whether
+ * this is a new card, review, or failed card. We parse the reason
+ * string to extract this information.
+ *
+ * @param card - Card with provenance trail
+ * @returns Card origin ('new', 'review', or 'failed')
+ */
+export function getCardOrigin(card: WeightedCard): 'new' | 'review' | 'failed' {
+  if (card.provenance.length === 0) {
+    throw new Error('Card has no provenance - cannot determine origin');
+  }
+
+  const firstEntry = card.provenance[0];
+  const reason = firstEntry.reason.toLowerCase();
+
+  if (reason.includes('failed')) {
+    return 'failed';
+  }
+  if (reason.includes('review')) {
+    return 'review';
+  }
+  return 'new';
 }
 
 export enum Navigators {
@@ -216,34 +291,38 @@ export abstract class ContentNavigator implements StudyContentSource {
   abstract getNewCards(n?: number): Promise<StudySessionNewItem[]>;
 
   /**
-   * Get cards with suitability scores.
+   * Get cards with suitability scores and provenance trails.
    *
    * **This is the PRIMARY API for navigation strategies.**
    *
    * Returns cards ranked by suitability score (0-1). Higher scores indicate
-   * better candidates for presentation.
+   * better candidates for presentation. Each card includes a provenance trail
+   * documenting how strategies contributed to the final score.
    *
    * ## For Generator Strategies
    * Override this method to generate candidates and compute scores based on
-   * your strategy's logic (e.g., ELO proximity, review urgency).
+   * your strategy's logic (e.g., ELO proximity, review urgency). Create the
+   * initial provenance entry with action='generated'.
    *
    * ## For Filter Strategies
    * Override this method to:
    * 1. Get candidates from delegate: `delegate.getWeightedCards(limit * N)`
    * 2. Transform/filter scores based on your logic
-   * 3. Re-sort and return top candidates
+   * 3. Append provenance entry documenting your contribution
+   * 4. Re-sort and return top candidates
    *
    * ## Default Implementation
    * The base class provides a backward-compatible default that:
    * 1. Calls legacy getNewCards() and getPendingReviews()
    * 2. Assigns score=1.0 to all cards
-   * 3. Returns combined results up to limit
+   * 3. Creates minimal provenance from legacy methods
+   * 4. Returns combined results up to limit
    *
    * This allows existing strategies to work without modification while
-   * new strategies can override with proper scoring.
+   * new strategies can override with proper scoring and provenance.
    *
    * @param limit - Maximum cards to return
-   * @returns Cards sorted by score descending
+   * @returns Cards sorted by score descending, with provenance trails
    */
   async getWeightedCards(limit: number): Promise<WeightedCard[]> {
     // Default implementation: delegate to legacy methods, assign score=1.0
@@ -255,13 +334,27 @@ export abstract class ContentNavigator implements StudyContentSource {
         cardId: c.cardID,
         courseId: c.courseID,
         score: 1.0,
-        source: 'new' as const,
+        provenance: [
+          {
+            strategy: 'legacy',
+            action: 'generated' as const,
+            score: 1.0,
+            reason: 'Generated via legacy getNewCards(), new card',
+          },
+        ],
       })),
       ...reviews.map((r) => ({
         cardId: r.cardID,
         courseId: r.courseID,
         score: 1.0,
-        source: 'review' as const,
+        provenance: [
+          {
+            strategy: 'legacy',
+            action: 'generated' as const,
+            score: 1.0,
+            reason: 'Generated via legacy getPendingReviews(), review',
+          },
+        ],
       })),
     ];
 
