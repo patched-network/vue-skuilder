@@ -15,7 +15,7 @@ import {
 import { CardRecord, CardHistory, CourseRegistrationDoc } from '@db/core';
 import { Loggable } from '@db/util';
 import { ScheduledCard } from '@db/core/types/user';
-import { WeightedCard } from '@db/core/navigators';
+import { WeightedCard, getCardOrigin } from '@db/core/navigators';
 
 function randomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -323,13 +323,27 @@ export class SessionController<TView = unknown> extends Loggable {
               cardId: c.cardID,
               courseId: c.courseID,
               score: 1.0,
-              source: 'new' as const,
+              provenance: [
+                {
+                  strategy: 'legacy',
+                  action: 'generated' as const,
+                  score: 1.0,
+                  reason: 'Fallback to legacy getNewCards(), new card',
+                },
+              ],
             })),
             ...reviews.map((r) => ({
               cardId: r.cardID,
               courseId: r.courseID,
               score: 1.0,
-              source: 'review' as const,
+              provenance: [
+                {
+                  strategy: 'legacy',
+                  action: 'generated' as const,
+                  score: 1.0,
+                  reason: 'Fallback to legacy getPendingReviews(), review',
+                },
+              ],
             }))
           );
         }
@@ -361,7 +375,7 @@ export class SessionController<TView = unknown> extends Loggable {
 
     // Get new cards from weighted list (filter out reviews)
     const newCardWeighted = allWeighted
-      .filter((w) => w.source === 'new')
+      .filter((w) => getCardOrigin(w) === 'new')
       .sort((a, b) => b.score - a.score);
 
     // Add new cards to queue in score order
