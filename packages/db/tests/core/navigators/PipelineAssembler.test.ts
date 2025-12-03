@@ -16,6 +16,7 @@ describe('PipelineAssembler', () => {
   ): ContentNavigationStrategyData {
     return {
       _id: `NAVIGATION_STRATEGY-${name}`,
+      course: 'test-course',
       docType: DocType.NAVIGATION_STRATEGY,
       name,
       description: `Test strategy: ${name}`,
