@@ -95,7 +95,9 @@ export class PipelineAssembler {
         logger.debug(
           '[PipelineAssembler] No generator found, using default ELO with configured filters'
         );
-        generators.push(this.makeDefaultEloStrategy());
+        // Get course ID from the first filter (they all belong to the same course)
+        const courseId = filters[0].course;
+        generators.push(this.makeDefaultEloStrategy(courseId));
       } else {
         warnings.push('No generator strategy found');
         return { pipeline: null, generators: [], warnings };
@@ -176,9 +178,10 @@ export class PipelineAssembler {
    * Creates a default ELO generator strategy.
    * Used when filters are configured but no generator is specified.
    */
-  private makeDefaultEloStrategy(): ContentNavigationStrategyData {
+  private makeDefaultEloStrategy(courseId: string): ContentNavigationStrategyData {
     return {
       _id: 'NAVIGATION_STRATEGY-ELO-default',
+      course: courseId,
       docType: DocType.NAVIGATION_STRATEGY,
       name: 'ELO (default)',
       description: 'Default ELO-based generator',

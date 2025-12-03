@@ -6,22 +6,16 @@ import { CourseElo, toCourseElo } from '@vue-skuilder/common';
 import { StudySessionReviewItem, StudySessionNewItem, QualifiedCardID } from '..';
 
 export default class ELONavigator extends ContentNavigator {
-  user: UserDBInterface;
-  course: CourseDBInterface;
-
   constructor(
     user: UserDBInterface,
-    course: CourseDBInterface
+    course: CourseDBInterface,
+    strategyData?: { name: string; _id: string }
     // The ELO strategy is non-parameterized.
     //
     // It instead relies on existing meta data from the course and user with respect to
-    //
-    //
-    // strategy?: ContentNavigationStrategyData
+    // ELO scores - it uses those to select cards matched to user skill level.
   ) {
-    super();
-    this.user = user;
-    this.course = course;
+    super(user, course, strategyData as any);
   }
 
   async getPendingReviews(): Promise<(StudySessionReviewItem & ScheduledCard)[]> {
@@ -115,17 +109,40 @@ export default class ELONavigator extends ContentNavigator {
         cardId: c.cardID,
         courseId: c.courseID,
         score,
-        source: 'new' as const,
+        provenance: [
+          {
+            strategy: 'elo',
+            strategyName: this.strategyName || 'ELO',
+            strategyId: this.strategyId || 'NAVIGATION_STRATEGY-ELO-default',
+            action: 'generated',
+            score,
+            reason: `ELO distance ${Math.round(distance)} (card: ${Math.round(cardElo)}, user: ${Math.round(userGlobalElo)}), new card`,
+          },
+        ],
       };
     });
 
     // Score reviews (for now, score=1.0; future: score by overdueness)
-    const scoredReviews: WeightedCard[] = reviews.map((r) => ({
-      cardId: r.cardID,
-      courseId: r.courseID,
-      score: 1.0,
-      source: 'review' as const,
-    }));
+    const scoredReviews: WeightedCard[] = reviews.map((r) => {
+      const cardElo = eloMap.get(r.cardID) ?? 1000;
+      const distance = Math.abs(cardElo - userGlobalElo);
+
+      return {
+        cardId: r.cardID,
+        courseId: r.courseID,
+        score: 1.0,
+        provenance: [
+          {
+            strategy: 'elo',
+            strategyName: this.strategyName || 'ELO',
+            strategyId: this.strategyId || 'NAVIGATION_STRATEGY-ELO-default',
+            action: 'generated',
+            score: 1.0,
+            reason: `ELO distance ${Math.round(distance)} (card: ${Math.round(cardElo)}, user: ${Math.round(userGlobalElo)}), review`,
+          },
+        ],
+      };
+    });
 
     // Combine and sort by score descending
     const all = [...scoredNew, ...scoredReviews];

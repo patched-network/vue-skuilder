@@ -4,6 +4,31 @@ import { ContentNavigator, WeightedCard } from '../../../src/core/navigators/ind
 import { StudySessionNewItem, StudySessionReviewItem } from '../../../src/core';
 import { ScheduledCard } from '../../../src/core/types/user';
 
+// Test helper to create weighted cards with provenance
+function makeWeightedCard(
+  cardId: string,
+  courseId: string,
+  score: number,
+  origin: 'new' | 'review' | 'failed' = 'new',
+  strategy: string = 'test'
+): WeightedCard {
+  return {
+    cardId,
+    courseId,
+    score,
+    provenance: [
+      {
+        strategy,
+        strategyName: 'Test Strategy',
+        strategyId: 'TEST_STRATEGY',
+        action: 'generated',
+        score,
+        reason: `Test card, ${origin}`,
+      },
+    ],
+  };
+}
+
 // Mock ContentNavigator for testing
 class MockGenerator extends ContentNavigator {
   private mockWeightedCards: WeightedCard[] = [];
@@ -57,8 +82,8 @@ describe('CompositeGenerator', () => {
     it('returns cards from single generator unchanged', async () => {
       const generator = new MockGenerator();
       generator.setWeightedCards([
-        { cardId: 'card-1', courseId: 'course-1', score: 0.8, source: 'new' },
-        { cardId: 'card-2', courseId: 'course-1', score: 0.6, source: 'review' },
+        makeWeightedCard('card-1', 'course-1', 0.8, 'new'),
+        makeWeightedCard('card-2', 'course-1', 0.6, 'review'),
       ]);
 
       const composite = new CompositeGenerator([generator]);
@@ -74,9 +99,9 @@ describe('CompositeGenerator', () => {
     it('respects limit parameter', async () => {
       const generator = new MockGenerator();
       generator.setWeightedCards([
-        { cardId: 'card-1', courseId: 'course-1', score: 0.9, source: 'new' },
-        { cardId: 'card-2', courseId: 'course-1', score: 0.8, source: 'new' },
-        { cardId: 'card-3', courseId: 'course-1', score: 0.7, source: 'new' },
+        makeWeightedCard('card-1', 'course-1', 0.9, 'new'),
+        makeWeightedCard('card-2', 'course-1', 0.8, 'new'),
+        makeWeightedCard('card-3', 'course-1', 0.7, 'new'),
       ]);
 
       const composite = new CompositeGenerator([generator]);
@@ -92,14 +117,14 @@ describe('CompositeGenerator', () => {
     it('deduplicates cards appearing in multiple generators', async () => {
       const gen1 = new MockGenerator();
       gen1.setWeightedCards([
-        { cardId: 'card-1', courseId: 'course-1', score: 0.8, source: 'new' },
-        { cardId: 'card-2', courseId: 'course-1', score: 0.6, source: 'new' },
+        makeWeightedCard('card-1', 'course-1', 0.8, 'new'),
+        makeWeightedCard('card-2', 'course-1', 0.6, 'new'),
       ]);
 
       const gen2 = new MockGenerator();
       gen2.setWeightedCards([
-        { cardId: 'card-1', courseId: 'course-1', score: 0.7, source: 'new' },
-        { cardId: 'card-3', courseId: 'course-1', score: 0.5, source: 'new' },
+        makeWeightedCard('card-1', 'course-1', 0.7, 'new'),
+        makeWeightedCard('card-3', 'course-1', 0.5, 'new'),
       ]);
 
       const composite = new CompositeGenerator([gen1, gen2], AggregationMode.AVERAGE);
@@ -117,10 +142,10 @@ describe('CompositeGenerator', () => {
   describe('aggregation mode: MAX', () => {
     it('uses maximum score from any generator', async () => {
       const gen1 = new MockGenerator();
-      gen1.setWeightedCards([{ cardId: 'card-1', courseId: 'course-1', score: 0.6, source: 'new' }]);
+      gen1.setWeightedCards([makeWeightedCard('card-1', 'course-1', 0.6, 'new')]);
 
       const gen2 = new MockGenerator();
-      gen2.setWeightedCards([{ cardId: 'card-1', courseId: 'course-1', score: 0.9, source: 'new' }]);
+      gen2.setWeightedCards([makeWeightedCard('card-1', 'course-1', 0.9, 'new')]);
 
       const composite = new CompositeGenerator([gen1, gen2], AggregationMode.MAX);
       const result = await composite.getWeightedCards(10);
@@ -133,10 +158,10 @@ describe('CompositeGenerator', () => {
   describe('aggregation mode: AVERAGE', () => {
     it('averages scores from multiple generators', async () => {
       const gen1 = new MockGenerator();
-      gen1.setWeightedCards([{ cardId: 'card-1', courseId: 'course-1', score: 0.8, source: 'new' }]);
+      gen1.setWeightedCards([makeWeightedCard('card-1', 'course-1', 0.8, 'new')]);
 
       const gen2 = new MockGenerator();
-      gen2.setWeightedCards([{ cardId: 'card-1', courseId: 'course-1', score: 0.6, source: 'new' }]);
+      gen2.setWeightedCards([makeWeightedCard('card-1', 'course-1', 0.6, 'new')]);
 
       const composite = new CompositeGenerator([gen1, gen2], AggregationMode.AVERAGE);
       const result = await composite.getWeightedCards(10);
@@ -147,13 +172,13 @@ describe('CompositeGenerator', () => {
 
     it('averages scores from three generators', async () => {
       const gen1 = new MockGenerator();
-      gen1.setWeightedCards([{ cardId: 'card-1', courseId: 'course-1', score: 0.9, source: 'new' }]);
+      gen1.setWeightedCards([makeWeightedCard('card-1', 'course-1', 0.9, 'new')]);
 
       const gen2 = new MockGenerator();
-      gen2.setWeightedCards([{ cardId: 'card-1', courseId: 'course-1', score: 0.6, source: 'new' }]);
+      gen2.setWeightedCards([makeWeightedCard('card-1', 'course-1', 0.6, 'new')]);
 
       const gen3 = new MockGenerator();
-      gen3.setWeightedCards([{ cardId: 'card-1', courseId: 'course-1', score: 0.6, source: 'new' }]);
+      gen3.setWeightedCards([makeWeightedCard('card-1', 'course-1', 0.6, 'new')]);
 
       const composite = new CompositeGenerator([gen1, gen2, gen3], AggregationMode.AVERAGE);
       const result = await composite.getWeightedCards(10);
@@ -166,10 +191,10 @@ describe('CompositeGenerator', () => {
   describe('aggregation mode: FREQUENCY_BOOST (default)', () => {
     it('applies frequency boost for cards appearing in multiple generators', async () => {
       const gen1 = new MockGenerator();
-      gen1.setWeightedCards([{ cardId: 'card-1', courseId: 'course-1', score: 0.8, source: 'new' }]);
+      gen1.setWeightedCards([makeWeightedCard('card-1', 'course-1', 0.8, 'new')]);
 
       const gen2 = new MockGenerator();
-      gen2.setWeightedCards([{ cardId: 'card-1', courseId: 'course-1', score: 0.6, source: 'new' }]);
+      gen2.setWeightedCards([makeWeightedCard('card-1', 'course-1', 0.6, 'new')]);
 
       const composite = new CompositeGenerator([gen1, gen2]); // default mode
       const result = await composite.getWeightedCards(10);
@@ -183,13 +208,13 @@ describe('CompositeGenerator', () => {
 
     it('applies larger boost for cards in three generators', async () => {
       const gen1 = new MockGenerator();
-      gen1.setWeightedCards([{ cardId: 'card-1', courseId: 'course-1', score: 0.6, source: 'new' }]);
+      gen1.setWeightedCards([makeWeightedCard('card-1', 'course-1', 0.6, 'new')]);
 
       const gen2 = new MockGenerator();
-      gen2.setWeightedCards([{ cardId: 'card-1', courseId: 'course-1', score: 0.6, source: 'new' }]);
+      gen2.setWeightedCards([makeWeightedCard('card-1', 'course-1', 0.6, 'new')]);
 
       const gen3 = new MockGenerator();
-      gen3.setWeightedCards([{ cardId: 'card-1', courseId: 'course-1', score: 0.6, source: 'new' }]);
+      gen3.setWeightedCards([makeWeightedCard('card-1', 'course-1', 0.6, 'new')]);
 
       const composite = new CompositeGenerator([gen1, gen2, gen3]);
       const result = await composite.getWeightedCards(10);
@@ -203,10 +228,10 @@ describe('CompositeGenerator', () => {
 
     it('does not boost cards appearing in only one generator', async () => {
       const gen1 = new MockGenerator();
-      gen1.setWeightedCards([{ cardId: 'card-1', courseId: 'course-1', score: 0.8, source: 'new' }]);
+      gen1.setWeightedCards([makeWeightedCard('card-1', 'course-1', 0.8, 'new')]);
 
       const gen2 = new MockGenerator();
-      gen2.setWeightedCards([{ cardId: 'card-2', courseId: 'course-1', score: 0.6, source: 'new' }]);
+      gen2.setWeightedCards([makeWeightedCard('card-2', 'course-1', 0.6, 'new')]);
 
       const composite = new CompositeGenerator([gen1, gen2]);
       const result = await composite.getWeightedCards(10);
@@ -223,10 +248,10 @@ describe('CompositeGenerator', () => {
   describe('score clamping', () => {
     it('clamps boosted scores to maximum of 1.0', async () => {
       const gen1 = new MockGenerator();
-      gen1.setWeightedCards([{ cardId: 'card-1', courseId: 'course-1', score: 0.9, source: 'new' }]);
+      gen1.setWeightedCards([makeWeightedCard('card-1', 'course-1', 0.9, 'new')]);
 
       const gen2 = new MockGenerator();
-      gen2.setWeightedCards([{ cardId: 'card-1', courseId: 'course-1', score: 0.9, source: 'new' }]);
+      gen2.setWeightedCards([makeWeightedCard('card-1', 'course-1', 0.9, 'new')]);
 
       const composite = new CompositeGenerator([gen1, gen2]);
       const result = await composite.getWeightedCards(10);
@@ -239,13 +264,13 @@ describe('CompositeGenerator', () => {
 
     it('clamps to 1.0 when boosted score exceeds maximum', async () => {
       const gen1 = new MockGenerator();
-      gen1.setWeightedCards([{ cardId: 'card-1', courseId: 'course-1', score: 1.0, source: 'new' }]);
+      gen1.setWeightedCards([makeWeightedCard('card-1', 'course-1', 1.0, 'new')]);
 
       const gen2 = new MockGenerator();
-      gen2.setWeightedCards([{ cardId: 'card-1', courseId: 'course-1', score: 1.0, source: 'new' }]);
+      gen2.setWeightedCards([makeWeightedCard('card-1', 'course-1', 1.0, 'new')]);
 
       const gen3 = new MockGenerator();
-      gen3.setWeightedCards([{ cardId: 'card-1', courseId: 'course-1', score: 1.0, source: 'new' }]);
+      gen3.setWeightedCards([makeWeightedCard('card-1', 'course-1', 1.0, 'new')]);
 
       const composite = new CompositeGenerator([gen1, gen2, gen3]);
       const result = await composite.getWeightedCards(10);
@@ -260,9 +285,9 @@ describe('CompositeGenerator', () => {
     it('returns cards sorted by score descending', async () => {
       const gen1 = new MockGenerator();
       gen1.setWeightedCards([
-        { cardId: 'card-low', courseId: 'course-1', score: 0.3, source: 'new' },
-        { cardId: 'card-high', courseId: 'course-1', score: 0.9, source: 'new' },
-        { cardId: 'card-med', courseId: 'course-1', score: 0.6, source: 'new' },
+        makeWeightedCard('card-low', 'course-1', 0.3, 'new'),
+        makeWeightedCard('card-high', 'course-1', 0.9, 'new'),
+        makeWeightedCard('card-med', 'course-1', 0.6, 'new'),
       ]);
 
       const composite = new CompositeGenerator([gen1]);
@@ -277,13 +302,13 @@ describe('CompositeGenerator', () => {
     it('boosts cards appearing in multiple generators to top of list', async () => {
       const gen1 = new MockGenerator();
       gen1.setWeightedCards([
-        { cardId: 'card-boosted', courseId: 'course-1', score: 0.5, source: 'new' },
-        { cardId: 'card-single', courseId: 'course-1', score: 0.6, source: 'new' },
+        makeWeightedCard('card-boosted', 'course-1', 0.5, 'new'),
+        makeWeightedCard('card-single', 'course-1', 0.6, 'new'),
       ]);
 
       const gen2 = new MockGenerator();
       gen2.setWeightedCards([
-        { cardId: 'card-boosted', courseId: 'course-1', score: 0.5, source: 'new' },
+        makeWeightedCard('card-boosted', 'course-1', 0.5, 'new'),
       ]);
 
       const composite = new CompositeGenerator([gen1, gen2]);
@@ -387,13 +412,14 @@ describe('CompositeGenerator', () => {
         contentSourceID: 'course-1',
         status: 'review',
         reviewID: 'review-1',
-        qualifiedID: 'course-1-card-1',
         _id: 'scheduled-1',
         cardId: 'card-1',
         courseId: 'course-1',
         scheduledFor: 'course',
         schedulingAgentId: 'agent-1',
-      };
+        reviewTime: new Date(),
+        scheduledAt: new Date(),
+      } as unknown as StudySessionReviewItem & ScheduledCard;
 
       const review2: StudySessionReviewItem & ScheduledCard = {
         cardID: 'card-2',
@@ -402,13 +428,14 @@ describe('CompositeGenerator', () => {
         contentSourceID: 'course-1',
         status: 'review',
         reviewID: 'review-2',
-        qualifiedID: 'course-1-card-2',
         _id: 'scheduled-2',
         cardId: 'card-2',
         courseId: 'course-1',
         scheduledFor: 'course',
         schedulingAgentId: 'agent-1',
-      };
+        reviewTime: new Date(),
+        scheduledAt: new Date(),
+      } as unknown as StudySessionReviewItem & ScheduledCard;
 
       const gen1 = new MockGenerator();
       gen1.setReviews([review1, review2]);

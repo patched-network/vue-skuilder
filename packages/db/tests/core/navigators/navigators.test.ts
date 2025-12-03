@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { ContentNavigator, WeightedCard } from '../../../src/core/navigators/index';
+import { ContentNavigator, WeightedCard, getCardOrigin } from '../../../src/core/navigators/index';
 import { StudySessionNewItem, StudySessionReviewItem } from '../../../src/core';
 import { ScheduledCard } from '../../../src/core/types/user';
 
@@ -26,31 +26,53 @@ class MockNavigator extends ContentNavigator {
 }
 
 describe('WeightedCard', () => {
-  it('should have correct structure', () => {
+  it('should have correct structure with provenance', () => {
     const card: WeightedCard = {
       cardId: 'card-1',
       courseId: 'course-1',
       score: 0.8,
-      source: 'new',
+      provenance: [
+        {
+          strategy: 'test',
+          strategyName: 'Test Strategy',
+          strategyId: 'TEST_STRATEGY',
+          action: 'generated',
+          score: 0.8,
+          reason: 'Test card, new',
+        },
+      ],
     };
 
     expect(card.cardId).toBe('card-1');
     expect(card.courseId).toBe('course-1');
     expect(card.score).toBe(0.8);
-    expect(card.source).toBe('new');
+    expect(card.provenance).toHaveLength(1);
+    expect(card.provenance[0].strategy).toBe('test');
+    expect(card.provenance[0].strategyName).toBe('Test Strategy');
+    expect(card.provenance[0].strategyId).toBe('TEST_STRATEGY');
+    expect(card.provenance[0].reason).toBe('Test card, new');
   });
 
-  it('should accept all valid source types', () => {
-    const sources: Array<'new' | 'review' | 'failed'> = ['new', 'review', 'failed'];
+  it('should support getCardOrigin helper for all origin types', () => {
+    const origins: Array<'new' | 'review' | 'failed'> = ['new', 'review', 'failed'];
 
-    sources.forEach((source) => {
+    origins.forEach((origin) => {
       const card: WeightedCard = {
         cardId: 'card-1',
         courseId: 'course-1',
         score: 1.0,
-        source,
+        provenance: [
+          {
+            strategy: 'test',
+            strategyName: 'Test Strategy',
+            strategyId: 'TEST_STRATEGY',
+            action: 'generated',
+            score: 1.0,
+            reason: `Test card, ${origin}`,
+          },
+        ],
       };
-      expect(card.source).toBe(source);
+      expect(getCardOrigin(card)).toBe(origin);
     });
   });
 });
@@ -109,10 +131,11 @@ describe('ContentNavigator.getWeightedCards', () => {
 
     const result = await navigator.getWeightedCards(10);
 
-    expect(result[0].source).toBe('new');
+    expect(getCardOrigin(result[0])).toBe('new');
+    expect(result[0].provenance[0].reason).toContain('new');
   });
 
-  it('should mark reviews with source="review"', async () => {
+  it('should mark reviews with origin="review"', async () => {
     navigator.setMockReviews([
       {
         cardID: 'review-1',
@@ -121,18 +144,20 @@ describe('ContentNavigator.getWeightedCards', () => {
         contentSourceID: 'course-1',
         status: 'review',
         reviewID: 'review-id-1',
-        qualifiedID: 'course-1-review-1',
         _id: 'scheduled-1',
         cardId: 'review-1',
         courseId: 'course-1',
         scheduledFor: 'course',
         schedulingAgentId: 'agent-1',
-      } as StudySessionReviewItem & ScheduledCard,
+        reviewTime: new Date(),
+        scheduledAt: new Date(),
+      } as unknown as StudySessionReviewItem & ScheduledCard,
     ]);
 
     const result = await navigator.getWeightedCards(10);
 
-    expect(result[0].source).toBe('review');
+    expect(getCardOrigin(result[0])).toBe('review');
+    expect(result[0].provenance[0].reason).toContain('review');
   });
 
   it('should respect limit parameter', async () => {
@@ -183,21 +208,22 @@ describe('ContentNavigator.getWeightedCards', () => {
         contentSourceID: 'course-1',
         status: 'review',
         reviewID: 'review-id-1',
-        qualifiedID: 'course-1-review-1',
         _id: 'scheduled-1',
         cardId: 'review-1',
         courseId: 'course-1',
         scheduledFor: 'course',
         schedulingAgentId: 'agent-1',
-      } as StudySessionReviewItem & ScheduledCard,
+        reviewTime: new Date(),
+        scheduledAt: new Date(),
+      } as unknown as StudySessionReviewItem & ScheduledCard,
     ]);
 
     const result = await navigator.getWeightedCards(10);
 
     expect(result).toHaveLength(2);
-    const sources = result.map((c) => c.source);
-    expect(sources).toContain('new');
-    expect(sources).toContain('review');
+    const origins = result.map((c) => getCardOrigin(c));
+    expect(origins).toContain('new');
+    expect(origins).toContain('review');
   });
 
   it('should correctly map cardID to cardId and courseID to courseId', async () => {
