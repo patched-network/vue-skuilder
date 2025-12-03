@@ -95,33 +95,30 @@ The flow:
 3. **InterferenceMitigator** reduces scores for similar tags while immature
 4. **RelativePriority** boosts high-utility content (common letters first)
 
-## Known Gap: Pipeline Assembly
+**Note:** All filters apply score multipliers (including `score: 0` for exclusion).
+This makes filter order irrelevant — multiplication is commutative.
 
-> **Status:** See `todo-naive-orchestration.md` for implementation plan.
+## Pipeline Assembly (COMPLETE)
 
-The delegate pattern described above is **implemented** in individual navigators but **not
-yet wired up** at the course level. Currently:
+Pipeline assembly is now automatic based on `NAVIGATION_STRATEGY` documents in the course:
 
 ```typescript
-// courseDB.surfaceNavigationStrategy() returns ONE strategy:
-// 1. Tries config.defaultNavigationStrategyId (property doesn't exist yet)
-// 2. Falls back to hard-coded ELO navigator
+// courseDB.createNavigator(user) assembles the pipeline:
+// 1. Fetches all NAVIGATION_STRATEGY documents
+// 2. Separates generators from filters
+// 3. If multiple generators, wraps in CompositeGenerator
+// 4. If no generator but filters exist, uses default ELO
+// 5. Chains filters around generator(s)
 ```
 
-**What's missing:**
+**Key components:**
 
-1. **Pipeline configuration** — No `navigationPipeline` field in CourseConfig
-2. **Pipeline assembly** — No code to chain filters around a generator
-3. **Strategy classification** — No registry of which navigators are generators vs filters
+- `PipelineAssembler` — DB-agnostic assembly logic (`core/navigators/PipelineAssembler.ts`)
+- `CompositeGenerator` — Merges multiple generators with frequency boost (`core/navigators/CompositeGenerator.ts`)
+- `NavigatorRole` enum — Classifies navigators as generators or filters (`core/navigators/index.ts`)
 
-**What exists but is unused:**
-
-- `getAllNavigationStrategies()` — can retrieve stored strategy documents
-- Filter navigators with `delegateStrategy` config — support for chaining
-
-The delegate pattern works at the navigator level (each filter can specify its delegate via
-`serializedData.delegateStrategy`), but there's no orchestration layer that assembles the
-configured pipeline and returns the outermost strategy.
+**Filter convention:** All filters are score multipliers (including `score: 0` for hard exclusions).
+This means filter order doesn't matter — they're applied alphabetically for determinism.
 
 ---
 
@@ -272,18 +269,19 @@ class MyFilterNavigator extends ContentNavigator {
 ## Related Files
 
 - `packages/db/src/core/interfaces/contentSource.ts` — `StudyContentSource` interface (with optional `getWeightedCards`)
-- `packages/db/src/core/navigators/index.ts` — `ContentNavigator` base class, `WeightedCard`
+- `packages/db/src/core/navigators/index.ts` — `ContentNavigator` base class, `WeightedCard`, `NavigatorRole`
+- `packages/db/src/core/navigators/PipelineAssembler.ts` — Assembles strategy docs into pipeline
+- `packages/db/src/core/navigators/CompositeGenerator.ts` — Merges multiple generators
 - `packages/db/src/core/navigators/elo.ts` — Reference generator implementation
 - `packages/db/src/core/navigators/hierarchyDefinition.ts` — Reference filter implementation
 - `packages/db/src/core/navigators/interferenceMitigator.ts` — Interference avoidance filter
 - `packages/db/src/core/navigators/relativePriority.ts` — Priority-based score boosting filter
-- `packages/db/src/impl/couch/courseDB.ts` — `getWeightedCards()` implementation (delegates to navigator)
+- `packages/db/src/impl/couch/courseDB.ts` — `createNavigator()`, `getWeightedCards()` implementation
 - `packages/db/src/impl/couch/classroomDB.ts` — `getWeightedCards()` wrapper for classrooms
 - `packages/db/src/study/SessionController.ts` — Consumer of navigation strategies (`getWeightedContent()`)
 
 ## Related TODOs
 
-- `todo-naive-orchestration.md` — **NEXT:** Pipeline assembly and configuration
 - `todo-provenance.md` — Audit trail for surfaced content
-- `todo-pipeline-optimization.md` — Batch tag lookups to reduce queries
+- `todo-pipeline-optimization.md` — Batch tag lookups, future: eliminate delegate pattern
 - `agent/orchestrator/todo-evolutionary-orchestration.md` — Future: multi-arm bandit selection
