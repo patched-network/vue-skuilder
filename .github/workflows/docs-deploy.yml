@@ -6,7 +6,15 @@ name: docs-deploy
 on:
   push:
     branches: [master]
-
+  pull_request:
+    paths:
+      - 'docs/**'
+      - 'packages/common/**'
+      - 'packages/db/**'
+      - 'packages/common-ui/**'
+      - 'packages/courseware/**'
+      - 'packages/edit-ui/**'
+      - '.github/workflows/docs-deploy.yml'
   workflow_dispatch:
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
@@ -83,6 +91,7 @@ jobs:
     needs: [build, test]
     runs-on: ubuntu-latest
     name: Deploy
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
