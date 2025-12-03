@@ -44,7 +44,9 @@ The new API unifies card selection into a single scored candidate model with ful
 
 ```typescript
 interface StrategyContribution {
-  strategy: string;           // e.g., 'elo', 'hierarchyDefinition'
+  strategy: string;           // Type: 'elo', 'hierarchyDefinition', 'interferenceMitigator'
+  strategyName: string;       // Human-readable name: "Interference: b/d/p confusion"
+  strategyId: string;         // Document _id: 'NAVIGATION_STRATEGY-interference-bdp'
   action: 'generated' | 'passed' | 'boosted' | 'penalized';
   score: number;              // Score after this strategy's processing
   reason: string;             // Human-readable explanation (required)
@@ -170,30 +172,45 @@ Each card includes a provenance trail documenting how it was scored:
 provenance: [
   {
     strategy: 'elo',
+    strategyName: 'ELO (default)',
+    strategyId: 'NAVIGATION_STRATEGY-ELO-default',
     action: 'generated',
     score: 0.85,
     reason: 'ELO distance 75 (card: 1025, user: 1100), new card'
   },
   {
     strategy: 'hierarchyDefinition',
+    strategyName: 'Hierarchy: Phonics Basics',
+    strategyId: 'NAVIGATION_STRATEGY-hierarchy-phonics-basics',
     action: 'passed',
     score: 0.85,
     reason: 'Prerequisites met, tags: letter-sounds'
   },
   {
     strategy: 'interferenceMitigator',
+    strategyName: 'Interference: b/d/p confusion',
+    strategyId: 'NAVIGATION_STRATEGY-interference-bdp-confusion',
     action: 'penalized',
     score: 0.68,
     reason: 'Interferes with immature tags d (tags: b, multiplier: 0.80)'
   },
   {
     strategy: 'relativePriority',
+    strategyName: 'Priority: Common letters first',
+    strategyId: 'NAVIGATION_STRATEGY-priority-common-letters',
     action: 'boosted',
     score: 0.78,
     reason: 'High-priority tags: s (priority 0.95 → boost 1.15x → 0.78)'
   }
 ]
 ```
+
+**Strategy identification:** Each provenance entry includes three fields:
+- `strategy`: The implementing class (type) - useful for programmatic filtering
+- `strategyName`: Human-readable name from ContentNavigationStrategyData.name - for display/UI
+- `strategyId`: The unique document ID (ContentNavigationStrategyData._id) - identifies the specific instance
+
+The `strategyId` can be used to fetch the full strategy configuration document. The `strategyName` provides immediate human-readable context without requiring a database lookup. This enables courses to have multiple instances of the same strategy type with different configurations.
 
 **Extracting origin:** Use the `getCardOrigin(card)` helper to extract whether a card is 'new', 'review', or 'failed' from the provenance trail.
 
@@ -251,10 +268,42 @@ ContentNavigator implements StudyContentSource
 
 ## For Implementers
 
+### Common Constructor Pattern
+
+All standard navigators extend `ContentNavigator` and call the base class constructor to initialize common fields:
+
+```typescript
+constructor(
+  user: UserDBInterface,
+  course: CourseDBInterface,
+  strategyData: ContentNavigationStrategyData
+) {
+  super(user, course, strategyData);  // Initializes user, course, strategyName, strategyId
+  // ... strategy-specific initialization
+}
+```
+
+The base class automatically extracts and stores:
+- `this.user` - User interface
+- `this.course` - Course interface
+- `this.strategyName` - Human-readable name from `strategyData.name`
+- `this.strategyId` - Unique document ID from `strategyData._id`
+
+These protected fields are available to all subclasses.
+
 ### Creating a New Generator Strategy
 
 ```typescript
 class MyGeneratorNavigator extends ContentNavigator {
+  constructor(
+    user: UserDBInterface,
+    course: CourseDBInterface,
+    strategyData: ContentNavigationStrategyData
+  ) {
+    super(user, course, strategyData);
+    // ... initialize strategy-specific config
+  }
+
   async getWeightedCards(limit: number): Promise<WeightedCard[]> {
     // Generate and score candidates
     const candidates = await this.findCandidates(limit);
@@ -266,6 +315,8 @@ class MyGeneratorNavigator extends ContentNavigator {
         score,
         provenance: [{
           strategy: 'myGenerator',
+          strategyName: this.strategyName || 'My Generator',
+          strategyId: this.strategyId || 'NAVIGATION_STRATEGY-my-generator',
           action: 'generated',
           score,
           reason: `My scoring logic: ${this.explainScore(c)}, new card`
@@ -285,6 +336,15 @@ class MyGeneratorNavigator extends ContentNavigator {
 ```typescript
 class MyFilterNavigator extends ContentNavigator {
   private delegate: ContentNavigator | null = null;
+
+  constructor(
+    user: UserDBInterface,
+    course: CourseDBInterface,
+    strategyData: ContentNavigationStrategyData
+  ) {
+    super(user, course, strategyData);
+    // ... initialize filter-specific config
+  }
 
   private async getDelegate(): Promise<ContentNavigator> {
     if (!this.delegate) {
@@ -316,6 +376,8 @@ class MyFilterNavigator extends ContentNavigator {
             ...c.provenance,
             {
               strategy: 'myFilter',
+              strategyName: this.strategyName || 'My Filter',
+              strategyId: this.strategyId || 'NAVIGATION_STRATEGY-my-filter',
               action,
               score: adjustedScore,
               reason: this.explainAdjustment(c, adjustedScore)

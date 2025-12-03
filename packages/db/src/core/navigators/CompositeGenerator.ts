@@ -126,6 +126,8 @@ export default class CompositeGenerator extends ContentNavigator {
           ...mergedProvenance,
           {
             strategy: 'composite',
+            strategyName: 'Composite Generator',
+            strategyId: 'COMPOSITE_GENERATOR',
             action,
             score: finalScore,
             reason,

@@ -80,8 +80,6 @@ const DEFAULT_INTERFERENCE_DECAY = 0.8;
  * on interference relationships with immature tags.
  */
 export default class InterferenceMitigatorNavigator extends ContentNavigator {
-  private user: UserDBInterface;
-  private course: CourseDBInterface;
   private config: InterferenceConfig;
   private delegate: ContentNavigator | null = null;
   private _strategyData: ContentNavigationStrategyData;
@@ -94,9 +92,7 @@ export default class InterferenceMitigatorNavigator extends ContentNavigator {
     course: CourseDBInterface,
     _strategyData: ContentNavigationStrategyData
   ) {
-    super();
-    this.user = user;
-    this.course = course;
+    super(user, course, _strategyData);
     this._strategyData = _strategyData;
     this.config = this.parseConfig(_strategyData.serializedData);
     this.interferenceMap = this.buildInterferenceMap();
@@ -359,6 +355,8 @@ export default class InterferenceMitigatorNavigator extends ContentNavigator {
           ...card.provenance,
           {
             strategy: 'interferenceMitigator',
+            strategyName: this.strategyName || 'Interference Mitigator',
+            strategyId: this.strategyId || 'NAVIGATION_STRATEGY-interference',
             action,
             score: finalScore,
             reason,

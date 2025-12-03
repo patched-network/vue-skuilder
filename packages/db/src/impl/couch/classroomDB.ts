@@ -212,6 +212,8 @@ export class StudentClassroomDB
         provenance: [
           {
             strategy: 'classroom',
+            strategyName: 'Classroom',
+            strategyId: 'CLASSROOM',
             action: 'generated' as const,
             score: 1.0,
             reason: 'Classroom legacy getNewCards(), new card',
@@ -225,6 +227,8 @@ export class StudentClassroomDB
         provenance: [
           {
             strategy: 'classroom',
+            strategyName: 'Classroom',
+            strategyId: 'CLASSROOM',
             action: 'generated' as const,
             score: 1.0,
             reason: 'Classroom legacy getPendingReviews(), review',

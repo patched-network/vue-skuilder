@@ -326,6 +326,7 @@ export class SessionController<TView = unknown> extends Loggable {
               provenance: [
                 {
                   strategy: 'legacy',
+                  strategyId: 'Legacy Fallback',
                   action: 'generated' as const,
                   score: 1.0,
                   reason: 'Fallback to legacy getNewCards(), new card',
@@ -339,6 +340,7 @@ export class SessionController<TView = unknown> extends Loggable {
               provenance: [
                 {
                   strategy: 'legacy',
+                  strategyId: 'Legacy Fallback',
                   action: 'generated' as const,
                   score: 1.0,
                   reason: 'Fallback to legacy getPendingReviews(), review',

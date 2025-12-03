@@ -6,17 +6,13 @@ import { logger } from '../../util/logger';
 
 export default class HardcodedOrderNavigator extends ContentNavigator {
   private orderedCardIds: string[] = [];
-  private user: UserDBInterface;
-  private course: CourseDBInterface;
 
   constructor(
     user: UserDBInterface,
     course: CourseDBInterface,
     strategyData: ContentNavigationStrategyData
   ) {
-    super();
-    this.user = user;
-    this.course = course;
+    super(user, course, strategyData);
 
     if (strategyData.serializedData) {
       try {
@@ -92,6 +88,8 @@ export default class HardcodedOrderNavigator extends ContentNavigator {
         provenance: [
           {
             strategy: 'hardcodedOrder',
+            strategyName: this.strategyName || 'Hardcoded Order',
+            strategyId: this.strategyId || 'NAVIGATION_STRATEGY-hardcoded',
             action: 'generated',
             score,
             reason: `Position ${position} of ${totalCards} in fixed sequence, new card`,
@@ -108,6 +106,8 @@ export default class HardcodedOrderNavigator extends ContentNavigator {
       provenance: [
         {
           strategy: 'hardcodedOrder',
+          strategyName: this.strategyName || 'Hardcoded Order',
+          strategyId: this.strategyId || 'NAVIGATION_STRATEGY-hardcoded',
           action: 'generated',
           score: 1.0,
           reason: 'Scheduled review, highest priority',

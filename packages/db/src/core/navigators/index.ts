@@ -53,8 +53,37 @@ import { logger } from '../../util/logger';
  * card's provenance array, creating an audit trail of scoring decisions.
  */
 export interface StrategyContribution {
-  /** Which strategy processed this card (e.g., 'elo', 'hierarchyDefinition') */
+  /**
+   * Strategy type (implementing class name).
+   * Examples: 'elo', 'hierarchyDefinition', 'interferenceMitigator'
+   */
   strategy: string;
+
+  /**
+   * Human-readable name identifying this specific strategy instance.
+   * Extracted from ContentNavigationStrategyData.name.
+   * Courses may have multiple instances of the same strategy type with
+   * different configurations.
+   *
+   * Examples:
+   * - "ELO (default)"
+   * - "Interference: b/d/p confusion"
+   * - "Interference: phonetic confusables"
+   * - "Priority: Common letters first"
+   */
+  strategyName: string;
+
+  /**
+   * Unique database document ID for this strategy instance.
+   * Extracted from ContentNavigationStrategyData._id.
+   * Use this to fetch the full strategy configuration document.
+   *
+   * Examples:
+   * - "NAVIGATION_STRATEGY-ELO-default"
+   * - "NAVIGATION_STRATEGY-interference-bdp"
+   * - "NAVIGATION_STRATEGY-priority-common-letters"
+   */
+  strategyId: string;
 
   /**
    * What the strategy did:
@@ -229,10 +258,43 @@ export function isFilter(impl: string): boolean {
  * See: ARCHITECTURE.md for full migration guide and design rationale.
  */
 export abstract class ContentNavigator implements StudyContentSource {
+  /** User interface for this navigation session */
+  protected user?: UserDBInterface;
+
+  /** Course interface for this navigation session */
+  protected course?: CourseDBInterface;
+
+  /** Human-readable name for this strategy instance (from ContentNavigationStrategyData.name) */
+  protected strategyName?: string;
+
+  /** Unique document ID for this strategy instance (from ContentNavigationStrategyData._id) */
+  protected strategyId?: string;
+
   /**
+   * Constructor for standard navigators.
+   * Call this from subclass constructors to initialize common fields.
    *
-   * @param user
-   * @param strategyData
+   * Note: CompositeGenerator doesn't use this pattern and should call super() without args.
+   */
+  constructor(
+    user?: UserDBInterface,
+    course?: CourseDBInterface,
+    strategyData?: ContentNavigationStrategyData
+  ) {
+    if (user && course && strategyData) {
+      this.user = user;
+      this.course = course;
+      this.strategyName = strategyData.name;
+      this.strategyId = strategyData._id;
+    }
+  }
+
+  /**
+   * Factory method to create navigator instances dynamically.
+   *
+   * @param user - User interface
+   * @param course - Course interface
+   * @param strategyData - Strategy configuration document
    * @returns the runtime object used to steer a study session.
    */
   static async create(
@@ -337,6 +399,8 @@ export abstract class ContentNavigator implements StudyContentSource {
         provenance: [
           {
             strategy: 'legacy',
+            strategyName: this.strategyName || 'Legacy API',
+            strategyId: this.strategyId || 'legacy-fallback',
             action: 'generated' as const,
             score: 1.0,
             reason: 'Generated via legacy getNewCards(), new card',
@@ -350,6 +414,8 @@ export abstract class ContentNavigator implements StudyContentSource {
         provenance: [
           {
             strategy: 'legacy',
+            strategyName: this.strategyName || 'Legacy API',
+            strategyId: this.strategyId || 'legacy-fallback',
             action: 'generated' as const,
             score: 1.0,
             reason: 'Generated via legacy getPendingReviews(), review',

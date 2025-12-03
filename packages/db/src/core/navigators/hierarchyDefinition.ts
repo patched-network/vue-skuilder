@@ -50,8 +50,6 @@ const DEFAULT_MIN_COUNT = 3;
  * Tags with no prerequisites are always unlocked.
  */
 export default class HierarchyDefinitionNavigator extends ContentNavigator {
-  private user: UserDBInterface;
-  private course: CourseDBInterface;
   private config: HierarchyConfig;
   private delegate: ContentNavigator | null = null;
   private _strategyData: ContentNavigationStrategyData;
@@ -61,9 +59,7 @@ export default class HierarchyDefinitionNavigator extends ContentNavigator {
     course: CourseDBInterface,
     _strategyData: ContentNavigationStrategyData
   ) {
-    super();
-    this.user = user;
-    this.course = course;
+    super(user, course, _strategyData);
     this._strategyData = _strategyData;
     this.config = this.parseConfig(_strategyData.serializedData);
   }
@@ -213,6 +209,8 @@ export default class HierarchyDefinitionNavigator extends ContentNavigator {
           ...card.provenance,
           {
             strategy: 'hierarchyDefinition',
+            strategyName: this.strategyName || 'Hierarchy Definition',
+            strategyId: this.strategyId || 'NAVIGATION_STRATEGY-hierarchy',
             action,
             score: finalScore,
             reason,

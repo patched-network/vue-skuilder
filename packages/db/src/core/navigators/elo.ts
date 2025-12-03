@@ -6,22 +6,16 @@ import { CourseElo, toCourseElo } from '@vue-skuilder/common';
 import { StudySessionReviewItem, StudySessionNewItem, QualifiedCardID } from '..';
 
 export default class ELONavigator extends ContentNavigator {
-  user: UserDBInterface;
-  course: CourseDBInterface;
-
   constructor(
     user: UserDBInterface,
-    course: CourseDBInterface
+    course: CourseDBInterface,
+    strategyData?: { name: string; _id: string }
     // The ELO strategy is non-parameterized.
     //
     // It instead relies on existing meta data from the course and user with respect to
-    //
-    //
-    // strategy?: ContentNavigationStrategyData
+    // ELO scores - it uses those to select cards matched to user skill level.
   ) {
-    super();
-    this.user = user;
-    this.course = course;
+    super(user, course, strategyData as any);
   }
 
   async getPendingReviews(): Promise<(StudySessionReviewItem & ScheduledCard)[]> {
@@ -118,6 +112,8 @@ export default class ELONavigator extends ContentNavigator {
         provenance: [
           {
             strategy: 'elo',
+            strategyName: this.strategyName || 'ELO',
+            strategyId: this.strategyId || 'NAVIGATION_STRATEGY-ELO-default',
             action: 'generated',
             score,
             reason: `ELO distance ${Math.round(distance)} (card: ${Math.round(cardElo)}, user: ${Math.round(userGlobalElo)}), new card`,
@@ -138,6 +134,8 @@ export default class ELONavigator extends ContentNavigator {
         provenance: [
           {
             strategy: 'elo',
+            strategyName: this.strategyName || 'ELO',
+            strategyId: this.strategyId || 'NAVIGATION_STRATEGY-ELO-default',
             action: 'generated',
             score: 1.0,
             reason: `ELO distance ${Math.round(distance)} (card: ${Math.round(cardElo)}, user: ${Math.round(userGlobalElo)}), review`,

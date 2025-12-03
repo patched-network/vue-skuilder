@@ -19,6 +19,8 @@ function makeWeightedCard(
     provenance: [
       {
         strategy,
+        strategyName: 'Test Strategy',
+        strategyId: 'TEST_STRATEGY',
         action: 'generated',
         score,
         reason: `Test card, ${origin}`,

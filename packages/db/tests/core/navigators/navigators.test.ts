@@ -34,6 +34,8 @@ describe('WeightedCard', () => {
       provenance: [
         {
           strategy: 'test',
+          strategyName: 'Test Strategy',
+          strategyId: 'TEST_STRATEGY',
           action: 'generated',
           score: 0.8,
           reason: 'Test card, new',
@@ -46,6 +48,8 @@ describe('WeightedCard', () => {
     expect(card.score).toBe(0.8);
     expect(card.provenance).toHaveLength(1);
     expect(card.provenance[0].strategy).toBe('test');
+    expect(card.provenance[0].strategyName).toBe('Test Strategy');
+    expect(card.provenance[0].strategyId).toBe('TEST_STRATEGY');
     expect(card.provenance[0].reason).toBe('Test card, new');
   });
 
@@ -60,6 +64,8 @@ describe('WeightedCard', () => {
         provenance: [
           {
             strategy: 'test',
+            strategyName: 'Test Strategy',
+            strategyId: 'TEST_STRATEGY',
             action: 'generated',
             score: 1.0,
             reason: `Test card, ${origin}`,

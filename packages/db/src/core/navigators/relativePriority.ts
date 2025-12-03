@@ -85,8 +85,6 @@ const DEFAULT_COMBINE_MODE: 'max' | 'average' | 'min' = 'max';
  * rare ones (x, z, q) by assigning higher priority weights to common letters.
  */
 export default class RelativePriorityNavigator extends ContentNavigator {
-  private user: UserDBInterface;
-  private course: CourseDBInterface;
   private config: RelativePriorityConfig;
   private delegate: ContentNavigator | null = null;
   private _strategyData: ContentNavigationStrategyData;
@@ -96,9 +94,7 @@ export default class RelativePriorityNavigator extends ContentNavigator {
     course: CourseDBInterface,
     _strategyData: ContentNavigationStrategyData
   ) {
-    super();
-    this.user = user;
-    this.course = course;
+    super(user, course, _strategyData);
     this._strategyData = _strategyData;
     this.config = this.parseConfig(_strategyData.serializedData);
   }
@@ -226,6 +222,8 @@ export default class RelativePriorityNavigator extends ContentNavigator {
             ...card.provenance,
             {
               strategy: 'relativePriority',
+              strategyName: this.strategyName || 'Relative Priority',
+              strategyId: this.strategyId || 'NAVIGATION_STRATEGY-priority',
               action,
               score: finalScore,
               reason,
