@@ -4,6 +4,7 @@ import { UserDBInterface } from '../interfaces/userDB';
 import { ScheduledCard } from '../types/user';
 import { ContentNavigator, WeightedCard } from './index';
 import { CardFilter, FilterContext } from './filters/types';
+import { CardGenerator, GeneratorContext } from './generators/types';
 import { StudySessionNewItem, StudySessionReviewItem } from '../interfaces/contentSource';
 import { logger } from '../../util/logger';
 
@@ -13,22 +14,18 @@ import { logger } from '../../util/logger';
 //
 // Executes a navigation pipeline: generator → filters → sorted results.
 //
-// This replaces the delegate-wrapping pattern with a simpler model:
-//
-//   OLD (complex):
-//     Filter3(delegate=Filter2(delegate=Filter1(delegate=Generator)))
-//
-//   NEW (simple):
-//     cards = generator.getWeightedCards()
-//     cards = filter1.transform(cards, context)
-//     cards = filter2.transform(cards, context)
-//     cards = filter3.transform(cards, context)
+// Architecture:
+//   cards = generator.getWeightedCards(limit, context)
+//   cards = filter1.transform(cards, context)
+//   cards = filter2.transform(cards, context)
+//   cards = filter3.transform(cards, context)
+//   return sorted(cards).slice(0, limit)
 //
 // Benefits:
+// - Clear separation: generators produce, filters transform
 // - No nested instantiation complexity
-// - Filters don't need to know about delegates
-// - Easy to add/remove/reorder filters
-// - Shared context built once, passed to all filters
+// - Filters don't need to know about each other
+// - Shared context built once, passed to all stages
 //
 // ============================================================================
 
@@ -51,7 +48,7 @@ import { logger } from '../../util/logger';
  * ```
  */
 export class Pipeline extends ContentNavigator {
-  private generator: ContentNavigator;
+  private generator: CardGenerator;
   private filters: CardFilter[];
 
   /**
@@ -63,7 +60,7 @@ export class Pipeline extends ContentNavigator {
    * @param course - Course database interface
    */
   constructor(
-    generator: ContentNavigator,
+    generator: CardGenerator,
     filters: CardFilter[],
     user: UserDBInterface,
     course: CourseDBInterface
@@ -75,7 +72,7 @@ export class Pipeline extends ContentNavigator {
     this.course = course;
 
     logger.debug(
-      `[Pipeline] Created with generator and ${filters.length} filters: ${filters.map((f) => f.name).join(', ')}`
+      `[Pipeline] Created with generator '${generator.name}' and ${filters.length} filters: ${filters.map((f) => f.name).join(', ')}`
     );
   }
 
@@ -83,7 +80,7 @@ export class Pipeline extends ContentNavigator {
    * Get weighted cards by running generator and applying filters.
    *
    * 1. Build shared context (user ELO, etc.)
-   * 2. Get candidates from generator
+   * 2. Get candidates from generator (passing context)
    * 3. Apply each filter sequentially
    * 4. Remove zero-score cards
    * 5. Sort by score descending
@@ -100,10 +97,12 @@ export class Pipeline extends ContentNavigator {
     const overFetchMultiplier = 2 + this.filters.length * 0.5;
     const fetchLimit = Math.ceil(limit * overFetchMultiplier);
 
-    logger.debug(`[Pipeline] Fetching ${fetchLimit} candidates from generator`);
+    logger.debug(
+      `[Pipeline] Fetching ${fetchLimit} candidates from generator '${this.generator.name}'`
+    );
 
-    // Get candidates from generator
-    let cards = await this.generator.getWeightedCards(fetchLimit);
+    // Get candidates from generator, passing context
+    let cards = await this.generator.getWeightedCards(fetchLimit, context);
 
     logger.debug(`[Pipeline] Generator returned ${cards.length} candidates`);
 
@@ -134,12 +133,14 @@ export class Pipeline extends ContentNavigator {
   }
 
   /**
-   * Build shared context for filters.
+   * Build shared context for generator and filters.
    *
    * Called once per getWeightedCards() invocation.
-   * Contains data that multiple filters might need.
+   * Contains data that the generator and multiple filters might need.
+   *
+   * The context satisfies both GeneratorContext and FilterContext interfaces.
    */
-  private async buildContext(): Promise<FilterContext> {
+  private async buildContext(): Promise<GeneratorContext & FilterContext> {
     let userElo = 1000; // Default ELO
 
     try {
@@ -167,18 +168,31 @@ export class Pipeline extends ContentNavigator {
 
   /**
    * Get new cards via legacy API.
-   * Delegates to the generator.
+   * Delegates to the generator if it supports the legacy interface.
    */
   async getNewCards(n?: number): Promise<StudySessionNewItem[]> {
-    return this.generator.getNewCards(n);
+    // Check if generator has legacy method (ContentNavigator-based generators do)
+    if ('getNewCards' in this.generator && typeof this.generator.getNewCards === 'function') {
+      return (this.generator as ContentNavigator).getNewCards(n);
+    }
+    // Pure CardGenerator without legacy support - return empty
+    return [];
   }
 
   /**
    * Get pending reviews via legacy API.
-   * Delegates to the generator.
+   * Delegates to the generator if it supports the legacy interface.
    */
   async getPendingReviews(): Promise<(StudySessionReviewItem & ScheduledCard)[]> {
-    return this.generator.getPendingReviews();
+    // Check if generator has legacy method (ContentNavigator-based generators do)
+    if (
+      'getPendingReviews' in this.generator &&
+      typeof this.generator.getPendingReviews === 'function'
+    ) {
+      return (this.generator as ContentNavigator).getPendingReviews();
+    }
+    // Pure CardGenerator without legacy support - return empty
+    return [];
   }
 
   /**

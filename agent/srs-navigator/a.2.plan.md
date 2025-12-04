@@ -411,22 +411,24 @@ async getWeightedCards(limit: number): Promise<WeightedCard[]> {
 - [x] p6.7: Update `Pipeline` to use `CardGenerator` and pass context to generator
 - [x] p6.8: Clean up delegate pattern references in index.ts comments (126 tests passing)
 
-### Phase 7: Add CardFilter Interface to Existing Filters, Remove Delegate
-- [ ] p7.1: Update `HierarchyDefinitionNavigator` to implement `CardFilter`
+### Phase 7: Add CardFilter Interface to Existing Filters, Remove Delegate ✅ COMPLETED
+- [x] p7.1: Update `HierarchyDefinitionNavigator` to implement `CardFilter`
   - Add `implements CardFilter`
   - Add `transform()` method (extract logic from `getWeightedCards`)
   - Remove `getDelegate()`, `delegate` field, `delegateStrategy` config
-  - Stub or remove legacy methods (`getNewCards`, `getPendingReviews`)
-- [ ] p7.2: Update `InterferenceMitigatorNavigator` to implement `CardFilter`
+  - Stub legacy methods (`getNewCards`, `getPendingReviews` return empty)
+  - `getWeightedCards()` now throws (filters should not be used as generators)
+- [x] p7.2: Update `InterferenceMitigatorNavigator` to implement `CardFilter`
   - Add `implements CardFilter`
   - Add `transform()` method (extract logic from `getWeightedCards`)
   - Remove `getDelegate()`, `delegate` field, `delegateStrategy` config
-  - Stub or remove legacy methods
-- [ ] p7.3: Update `RelativePriorityNavigator` to implement `CardFilter`
+  - Stub legacy methods, `getWeightedCards()` throws
+- [x] p7.3: Update `RelativePriorityNavigator` to implement `CardFilter`
   - Add `implements CardFilter`
   - Add `transform()` method (extract logic from `getWeightedCards`)
   - Remove `getDelegate()`, `delegate` field, `delegateStrategy` config
-  - Stub or remove legacy methods
+  - Stub legacy methods, `getWeightedCards()` throws
+- [x] p7.4: All 126 tests passing
 
 ### Phase 8: PipelineAssembler Rewrite
 - [ ] p8.1: Update `PipelineAssembler` to instantiate generators and filters directly
