@@ -1,10 +1,45 @@
-import { CourseDBInterface, QualifiedCardID, StudySessionNewItem, StudySessionReviewItem, UserDBInterface } from '..';
+import {
+  CourseDBInterface,
+  QualifiedCardID,
+  StudySessionNewItem,
+  StudySessionReviewItem,
+  UserDBInterface,
+} from '..';
 import { ContentNavigationStrategyData } from '../types/contentNavigationStrategy';
 import { ScheduledCard } from '../types/user';
 import { ContentNavigator, WeightedCard } from './index';
+import { CardGenerator, GeneratorContext } from './generators/types';
 import { logger } from '../../util/logger';
 
-export default class HardcodedOrderNavigator extends ContentNavigator {
+// ============================================================================
+// HARDCODED ORDER NAVIGATOR
+// ============================================================================
+//
+// A generator strategy that presents cards in a fixed, author-defined order.
+//
+// Use case: When course authors want explicit control over content sequencing,
+// e.g., teaching letters in a specific pedagogical order.
+//
+// The order is defined in serializedData as a JSON array of card IDs.
+// Earlier positions in the array get higher scores.
+//
+// ============================================================================
+
+/**
+ * A navigation strategy that presents cards in a fixed order.
+ *
+ * Implements CardGenerator for use in Pipeline architecture.
+ * Also extends ContentNavigator for backward compatibility with legacy code.
+ *
+ * Scoring:
+ * - Earlier cards in the sequence get higher scores
+ * - Reviews get score 1.0 (highest priority)
+ * - New cards scored by position: 1.0 - (position / total) * 0.5
+ */
+export default class HardcodedOrderNavigator extends ContentNavigator implements CardGenerator {
+  /** Human-readable name for CardGenerator interface */
+  name: string;
+
   private orderedCardIds: string[] = [];
 
   constructor(
@@ -13,6 +48,7 @@ export default class HardcodedOrderNavigator extends ContentNavigator {
     strategyData: ContentNavigationStrategyData
   ) {
     super(user, course, strategyData);
+    this.name = strategyData.name || 'Hardcoded Order';
 
     if (strategyData.serializedData) {
       try {
@@ -41,9 +77,7 @@ export default class HardcodedOrderNavigator extends ContentNavigator {
   async getNewCards(limit: number = 99): Promise<StudySessionNewItem[]> {
     const activeCardIds = (await this.user.getActiveCards()).map((c: QualifiedCardID) => c.cardID);
 
-    const newCardIds = this.orderedCardIds.filter(
-      (cardId) => !activeCardIds.includes(cardId)
-    );
+    const newCardIds = this.orderedCardIds.filter((cardId) => !activeCardIds.includes(cardId));
 
     const cardsToReturn = newCardIds.slice(0, limit);
 
@@ -64,15 +98,19 @@ export default class HardcodedOrderNavigator extends ContentNavigator {
    * Earlier cards in the sequence get higher scores.
    * Score formula: 1.0 - (position / totalCards) * 0.5
    * This ensures scores range from 1.0 (first card) to 0.5+ (last card).
+   *
+   * This method supports both the legacy signature (limit only) and the
+   * CardGenerator interface signature (limit, context).
+   *
+   * @param limit - Maximum number of cards to return
+   * @param _context - Optional GeneratorContext (currently unused, but required for interface)
    */
-  async getWeightedCards(limit: number): Promise<WeightedCard[]> {
+  async getWeightedCards(limit: number, _context?: GeneratorContext): Promise<WeightedCard[]> {
     const activeCardIds = (await this.user.getActiveCards()).map((c: QualifiedCardID) => c.cardID);
     const reviews = await this.getPendingReviews();
 
     // Filter out already-active cards
-    const newCardIds = this.orderedCardIds.filter(
-      (cardId) => !activeCardIds.includes(cardId)
-    );
+    const newCardIds = this.orderedCardIds.filter((cardId) => !activeCardIds.includes(cardId));
 
     const totalCards = newCardIds.length;
 
@@ -88,7 +126,7 @@ export default class HardcodedOrderNavigator extends ContentNavigator {
         provenance: [
           {
             strategy: 'hardcodedOrder',
-            strategyName: this.strategyName || 'Hardcoded Order',
+            strategyName: this.strategyName || this.name,
             strategyId: this.strategyId || 'NAVIGATION_STRATEGY-hardcoded',
             action: 'generated',
             score,
@@ -106,7 +144,7 @@ export default class HardcodedOrderNavigator extends ContentNavigator {
       provenance: [
         {
           strategy: 'hardcodedOrder',
-          strategyName: this.strategyName || 'Hardcoded Order',
+          strategyName: this.strategyName || this.name,
           strategyId: this.strategyId || 'NAVIGATION_STRATEGY-hardcoded',
           action: 'generated',
           score: 1.0,

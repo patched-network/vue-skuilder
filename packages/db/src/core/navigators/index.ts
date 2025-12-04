@@ -6,8 +6,12 @@ import {
   StudySessionNewItem,
 } from '..';
 
-// Re-export filter types (Pipeline is imported directly to avoid circular deps)
+// Re-export filter types
 export { CardFilter, FilterContext, CardFilterFactory } from './filters/types';
+
+// Re-export generator types
+export { CardGenerator, GeneratorContext, CardGeneratorFactory } from './generators/types';
+
 import { ContentNavigationStrategyData } from '../types/contentNavigationStrategy';
 import { ScheduledCard } from '../types/user';
 import { logger } from '../../util/logger';
@@ -25,27 +29,22 @@ import { logger } from '../../util/logger';
 //    The provenance tracks how each strategy in the pipeline contributed to
 //    the card's final score, ensuring transparency and debuggability.
 //
-// 2. ContentNavigator - Abstract base class that strategies extend. Implements
-//    StudyContentSource for backward compatibility.
+// 2. ContentNavigator - Abstract base class for backward compatibility.
+//    New code should use CardGenerator or CardFilter interfaces directly.
 //
-// 3. Generator vs Filter strategies:
-//    - Generators (ELO, SRS) produce candidate cards with scores
-//    - Filters (Hierarchy, Interference, RelativePriority) wrap a delegate
-//      and transform its output
+// 3. CardGenerator vs CardFilter:
+//    - Generators (ELO, SRS, HardcodedOrder) produce candidate cards with scores
+//    - Filters (Hierarchy, Interference, Priority, EloDistance) transform scores
 //
-// 4. Delegate pattern - Filter strategies compose by wrapping generators:
-//    RelativePriority(Interference(Hierarchy(ELO)))
+// 4. Pipeline architecture:
+//    Pipeline(generator, [filter1, filter2, ...]) executes:
+//      cards = generator.getWeightedCards()
+//      cards = filter1.transform(cards, context)
+//      cards = filter2.transform(cards, context)
+//      return sorted(cards)
 //
 // 5. Provenance tracking - Each strategy adds an entry explaining its contribution.
 //    This makes the system transparent and debuggable.
-//
-// API EVOLUTION:
-// - getWeightedCards() is the PRIMARY API (new)
-// - getNewCards() / getPendingReviews() are LEGACY (kept for backward compat)
-// - SessionController will migrate to use getWeightedCards()
-// - Legacy methods will eventually be deprecated
-//
-// See: ARCHITECTURE.md in this directory for full migration guide.
 //
 // ============================================================================
 
@@ -182,11 +181,12 @@ export enum Navigators {
 //
 // Navigators are classified as either generators or filters:
 // - Generators: Produce candidate cards (ELO, SRS, HardcodedOrder)
-// - Filters: Transform/score candidates from a delegate (all others)
+// - Filters: Transform/score candidates (Hierarchy, Interference, RelativePriority)
 //
-// This classification enables automatic pipeline assembly:
-// 1. Find the one generator
-// 2. Chain all filters around it (order doesn't matter - all are multipliers)
+// This classification is used by PipelineAssembler to build pipelines:
+// 1. Instantiate generators (possibly into a CompositeGenerator)
+// 2. Instantiate filters
+// 3. Create Pipeline(generator, filters)
 //
 // ============================================================================
 
@@ -194,7 +194,7 @@ export enum Navigators {
  * Role classification for navigation strategies.
  *
  * - GENERATOR: Produces candidate cards with initial scores
- * - FILTER: Wraps a delegate and transforms its scores (must be a multiplier)
+ * - FILTER: Transforms cards with score multipliers
  */
 export enum NavigatorRole {
   GENERATOR = 'generator',
@@ -234,33 +234,14 @@ export function isFilter(impl: string): boolean {
 }
 
 /**
- * Abstract base class for navigation strategies that steer study sessions.
+ * Abstract base class for navigation strategies.
  *
- * ContentNavigator implements StudyContentSource for backward compatibility,
- * but the primary API going forward is getWeightedCards().
+ * This class exists primarily for backward compatibility with legacy code.
+ * New code should use CardGenerator or CardFilter interfaces directly.
  *
- * ## Strategy Types
- *
- * **Generator strategies** produce candidate cards:
- * - Override getWeightedCards() to generate and score candidates
- * - Examples: ELO (skill proximity), SRS (review scheduling)
- *
- * **Filter strategies** transform delegate output:
- * - Wrap another strategy via the delegate pattern
- * - Override getWeightedCards() to filter/adjust delegate scores
- * - Examples: HierarchyDefinition, InterferenceMitigator, RelativePriority
- *
- * ## API Migration
- *
- * The legacy getNewCards()/getPendingReviews() methods exist for backward
- * compatibility with SessionController. Once SessionController migrates to
- * use getWeightedCards(), these methods will be deprecated.
- *
- * New strategies should:
- * 1. Implement getWeightedCards() as the primary logic
- * 2. Optionally override legacy methods (base class provides defaults)
- *
- * See: ARCHITECTURE.md for full migration guide and design rationale.
+ * The class implements StudyContentSource for compatibility with SessionController.
+ * Once SessionController migrates to use getWeightedCards() exclusively,
+ * the legacy methods can be removed.
  */
 export abstract class ContentNavigator implements StudyContentSource {
   /** User interface for this navigation session */
@@ -335,11 +316,7 @@ export abstract class ContentNavigator implements StudyContentSource {
    * Get cards scheduled for review.
    *
    * @deprecated This method is part of the legacy StudyContentSource interface.
-   * New strategies should focus on implementing getWeightedCards() instead.
-   * This method will be deprecated once SessionController migrates to the new API.
-   *
-   * For filter strategies using the delegate pattern, this can simply delegate
-   * to the wrapped strategy.
+   * New strategies should focus on implementing CardGenerator.getWeightedCards() instead.
    */
   abstract getPendingReviews(): Promise<(StudySessionReviewItem & ScheduledCard)[]>;
 
@@ -347,11 +324,7 @@ export abstract class ContentNavigator implements StudyContentSource {
    * Get new cards for introduction.
    *
    * @deprecated This method is part of the legacy StudyContentSource interface.
-   * New strategies should focus on implementing getWeightedCards() instead.
-   * This method will be deprecated once SessionController migrates to the new API.
-   *
-   * For filter strategies using the delegate pattern, this can simply delegate
-   * to the wrapped strategy.
+   * New strategies should focus on implementing CardGenerator.getWeightedCards() instead.
    *
    * @param n - Maximum number of new cards to return
    */
@@ -366,17 +339,10 @@ export abstract class ContentNavigator implements StudyContentSource {
    * better candidates for presentation. Each card includes a provenance trail
    * documenting how strategies contributed to the final score.
    *
-   * ## For Generator Strategies
+   * ## For Generators
    * Override this method to generate candidates and compute scores based on
    * your strategy's logic (e.g., ELO proximity, review urgency). Create the
    * initial provenance entry with action='generated'.
-   *
-   * ## For Filter Strategies
-   * Override this method to:
-   * 1. Get candidates from delegate: `delegate.getWeightedCards(limit * N)`
-   * 2. Transform/filter scores based on your logic
-   * 3. Append provenance entry documenting your contribution
-   * 4. Re-sort and return top candidates
    *
    * ## Default Implementation
    * The base class provides a backward-compatible default that:

@@ -5,6 +5,7 @@ import { UserDBInterface } from '../interfaces/userDB';
 import { ContentNavigator, WeightedCard } from './index';
 import { ContentNavigationStrategyData } from '../types/contentNavigationStrategy';
 import { StudySessionReviewItem, StudySessionNewItem } from '../interfaces/contentSource';
+import { CardGenerator, GeneratorContext } from './generators/types';
 
 // ============================================================================
 // SRS NAVIGATOR
@@ -36,6 +37,9 @@ export interface SRSConfig {
 /**
  * A navigation strategy that scores review cards by urgency.
  *
+ * Implements CardGenerator for use in Pipeline architecture.
+ * Also extends ContentNavigator for backward compatibility with legacy code.
+ *
  * Higher scores indicate more urgent reviews:
  * - Cards that are more overdue (relative to their interval) score higher
  * - Cards with shorter intervals (recent learning) score higher
@@ -43,13 +47,17 @@ export interface SRSConfig {
  * Only returns cards that are actually due (reviewTime has passed).
  * Does not generate new cards - use with CompositeGenerator for mixed content.
  */
-export default class SRSNavigator extends ContentNavigator {
+export default class SRSNavigator extends ContentNavigator implements CardGenerator {
+  /** Human-readable name for CardGenerator interface */
+  name: string;
+
   constructor(
     user: UserDBInterface,
     course: CourseDBInterface,
     strategyData?: ContentNavigationStrategyData
   ) {
     super(user, course, strategyData as ContentNavigationStrategyData);
+    this.name = strategyData?.name || 'SRS';
   }
 
   /**
@@ -60,8 +68,14 @@ export default class SRSNavigator extends ContentNavigator {
    * - Interval recency: exponential decay favoring shorter intervals
    *
    * Cards not yet due are excluded (not scored as 0).
+   *
+   * This method supports both the legacy signature (limit only) and the
+   * CardGenerator interface signature (limit, context).
+   *
+   * @param limit - Maximum number of cards to return
+   * @param _context - Optional GeneratorContext (currently unused, but required for interface)
    */
-  async getWeightedCards(limit: number): Promise<WeightedCard[]> {
+  async getWeightedCards(limit: number, _context?: GeneratorContext): Promise<WeightedCard[]> {
     if (!this.user || !this.course) {
       throw new Error('SRSNavigator requires user and course to be set');
     }
@@ -82,7 +96,7 @@ export default class SRSNavigator extends ContentNavigator {
         provenance: [
           {
             strategy: 'srs',
-            strategyName: this.strategyName || 'SRS',
+            strategyName: this.strategyName || this.name,
             strategyId: this.strategyId || 'NAVIGATION_STRATEGY-SRS-default',
             action: 'generated' as const,
             score,

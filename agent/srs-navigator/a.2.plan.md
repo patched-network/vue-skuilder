@@ -401,12 +401,15 @@ async getWeightedCards(limit: number): Promise<WeightedCard[]> {
 - [x] p5.2: Update provenance to say "new card" only (already was)
 - [x] p5.3: Update tests (all 120 tests still passing)
 
-### Phase 6: CardGenerator Interface + Generator Updates
-- [ ] p6.1: Create `core/navigators/generators/types.ts` with `CardGenerator` interface and `GeneratorContext`
-- [ ] p6.2: Update `ELONavigator` to implement `CardGenerator`
-- [ ] p6.3: Update `SRSNavigator` to implement `CardGenerator`
-- [ ] p6.4: Update `HardcodedOrderNavigator` to implement `CardGenerator`
-- [ ] p6.5: Export `CardGenerator` from `core/navigators/index.ts`
+### Phase 6: CardGenerator Interface + Generator Updates ✅ COMPLETED
+- [x] p6.1: Create `core/navigators/generators/types.ts` with `CardGenerator` interface and `GeneratorContext`
+- [x] p6.2: Update `ELONavigator` to implement `CardGenerator`
+- [x] p6.3: Update `SRSNavigator` to implement `CardGenerator`
+- [x] p6.4: Update `HardcodedOrderNavigator` to implement `CardGenerator`
+- [x] p6.5: Export `CardGenerator` from `core/navigators/index.ts`
+- [x] p6.6: Update `CompositeGenerator` to use `CardGenerator` interface
+- [x] p6.7: Update `Pipeline` to use `CardGenerator` and pass context to generator
+- [x] p6.8: Clean up delegate pattern references in index.ts comments (126 tests passing)
 
 ### Phase 7: Convert Filters to Pure CardFilter
 - [ ] p7.1: Convert `HierarchyDefinitionNavigator` to factory function `createHierarchyFilter()` returning `CardFilter`

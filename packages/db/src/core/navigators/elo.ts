@@ -4,8 +4,38 @@ import { UserDBInterface } from '../interfaces/userDB';
 import { ContentNavigator, WeightedCard } from './index';
 import { CourseElo, toCourseElo } from '@vue-skuilder/common';
 import { StudySessionReviewItem, StudySessionNewItem, QualifiedCardID } from '..';
+import { CardGenerator, GeneratorContext } from './generators/types';
 
-export default class ELONavigator extends ContentNavigator {
+// ============================================================================
+// ELO NAVIGATOR
+// ============================================================================
+//
+// A generator strategy that selects new cards based on ELO proximity.
+//
+// Cards closer to the user's skill level (ELO) receive higher scores.
+// This ensures learners see content matched to their current ability.
+//
+// NOTE: This generator only handles NEW cards. Reviews are handled by
+// SRSNavigator. Use CompositeGenerator to combine both.
+//
+// ============================================================================
+
+/**
+ * A navigation strategy that scores new cards by ELO proximity.
+ *
+ * Implements CardGenerator for use in Pipeline architecture.
+ * Also extends ContentNavigator for backward compatibility with legacy code.
+ *
+ * Higher scores indicate better ELO match:
+ * - Cards at user's ELO level score highest
+ * - Score decreases with ELO distance
+ *
+ * Only returns new cards - use SRSNavigator for reviews.
+ */
+export default class ELONavigator extends ContentNavigator implements CardGenerator {
+  /** Human-readable name for CardGenerator interface */
+  name: string;
+
   constructor(
     user: UserDBInterface,
     course: CourseDBInterface,
@@ -16,6 +46,7 @@ export default class ELONavigator extends ContentNavigator {
     // ELO scores - it uses those to select cards matched to user skill level.
   ) {
     super(user, course, strategyData as any);
+    this.name = strategyData?.name || 'ELO';
   }
 
   async getPendingReviews(): Promise<(StudySessionReviewItem & ScheduledCard)[]> {
@@ -72,36 +103,41 @@ export default class ELONavigator extends ContentNavigator {
   }
 
   /**
-   * Get cards with suitability scores based on ELO distance.
+   * Get new cards with suitability scores based on ELO distance.
    *
    * Cards closer to user's ELO get higher scores.
    * Score formula: max(0, 1 - distance / 500)
+   *
+   * NOTE: This generator only handles NEW cards. Reviews are handled by
+   * SRSNavigator. Use CompositeGenerator to combine both.
+   *
+   * This method supports both the legacy signature (limit only) and the
+   * CardGenerator interface signature (limit, context).
+   *
+   * @param limit - Maximum number of cards to return
+   * @param context - Optional GeneratorContext (used when called via Pipeline)
    */
-  async getWeightedCards(limit: number): Promise<WeightedCard[]> {
-    // Get user's ELO for this course
-    const courseReg = await this.user.getCourseRegDoc(this.course.getCourseID());
-    const userElo = toCourseElo(courseReg.elo);
-    const userGlobalElo = userElo.global.score;
+  async getWeightedCards(limit: number, context?: GeneratorContext): Promise<WeightedCard[]> {
+    // Determine user ELO - from context if available, otherwise fetch
+    let userGlobalElo: number;
+    if (context?.userElo !== undefined) {
+      userGlobalElo = context.userElo;
+    } else {
+      const courseReg = await this.user.getCourseRegDoc(this.course.getCourseID());
+      const userElo = toCourseElo(courseReg.elo);
+      userGlobalElo = userElo.global.score;
+    }
 
     // Get new cards (existing logic)
     const newCards = await this.getNewCards(limit);
 
-    // Get reviews (existing logic)
-    const reviews = await this.getPendingReviews();
-
     // Get ELO data for all cards in one batch
-    const allCardIds = [...newCards.map((c) => c.cardID), ...reviews.map((r) => r.cardID)];
-    const cardEloData = await this.course.getCardEloData(allCardIds);
-
-    // Build a map for quick lookup
-    const eloMap = new Map<string, number>();
-    allCardIds.forEach((id, i) => {
-      eloMap.set(id, cardEloData[i]?.global?.score ?? 1000);
-    });
+    const cardIds = newCards.map((c) => c.cardID);
+    const cardEloData = await this.course.getCardEloData(cardIds);
 
     // Score new cards by ELO distance
-    const scoredNew: WeightedCard[] = newCards.map((c) => {
-      const cardElo = eloMap.get(c.cardID) ?? 1000;
+    const scored: WeightedCard[] = newCards.map((c, i) => {
+      const cardElo = cardEloData[i]?.global?.score ?? 1000;
       const distance = Math.abs(cardElo - userGlobalElo);
       const score = Math.max(0, 1 - distance / 500);
 
@@ -112,7 +148,7 @@ export default class ELONavigator extends ContentNavigator {
         provenance: [
           {
             strategy: 'elo',
-            strategyName: this.strategyName || 'ELO',
+            strategyName: this.strategyName || this.name,
             strategyId: this.strategyId || 'NAVIGATION_STRATEGY-ELO-default',
             action: 'generated',
             score,
@@ -122,32 +158,9 @@ export default class ELONavigator extends ContentNavigator {
       };
     });
 
-    // Score reviews (for now, score=1.0; future: score by overdueness)
-    const scoredReviews: WeightedCard[] = reviews.map((r) => {
-      const cardElo = eloMap.get(r.cardID) ?? 1000;
-      const distance = Math.abs(cardElo - userGlobalElo);
+    // Sort by score descending
+    scored.sort((a, b) => b.score - a.score);
 
-      return {
-        cardId: r.cardID,
-        courseId: r.courseID,
-        score: 1.0,
-        provenance: [
-          {
-            strategy: 'elo',
-            strategyName: this.strategyName || 'ELO',
-            strategyId: this.strategyId || 'NAVIGATION_STRATEGY-ELO-default',
-            action: 'generated',
-            score: 1.0,
-            reason: `ELO distance ${Math.round(distance)} (card: ${Math.round(cardElo)}, user: ${Math.round(userGlobalElo)}), review`,
-          },
-        ],
-      };
-    });
-
-    // Combine and sort by score descending
-    const all = [...scoredNew, ...scoredReviews];
-    all.sort((a, b) => b.score - a.score);
-
-    return all.slice(0, limit);
+    return scored.slice(0, limit);
   }
 }
