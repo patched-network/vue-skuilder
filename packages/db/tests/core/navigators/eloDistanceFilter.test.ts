@@ -1,10 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import {
-  createEloDistanceFilter,
-  DEFAULT_HALF_LIFE,
-  DEFAULT_MIN_MULTIPLIER,
-  DEFAULT_MAX_MULTIPLIER,
-} from '../../../src/core/navigators/filters/eloDistance';
+import { createEloDistanceFilter } from '../../../src/core/navigators/filters/eloDistance';
 import { WeightedCard } from '../../../src/core/navigators/index';
 import { FilterContext } from '../../../src/core/navigators/filters/types';
 import { CourseDBInterface } from '../../../src/core/interfaces/courseDB';

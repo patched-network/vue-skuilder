@@ -31,6 +31,7 @@ import type { CardGenerator, GeneratorContext } from './generators/types';
  * Configuration for the SRS strategy.
  * Currently minimal - the algorithm is not parameterized.
  */
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface SRSConfig {
   // Future: configurable urgency curves, thresholds, etc.
 }
