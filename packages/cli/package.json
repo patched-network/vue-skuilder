@@ -69,11 +69,11 @@
     "@types/inquirer": "^9.0.0",
     "@types/node": "^22",
     "@types/serve-static": "^1.15.0",
-    "@vitejs/plugin-vue": "^5.2.1",
+    "@vitejs/plugin-vue": "^6.0.0",
     "@vue-skuilder/studio-ui": "workspace:*",
     "cypress": "^15.6.0",
     "typescript": "~5.9.3",
-    "vite": "^6.4.1",
+    "vite": "^7.0.0",
     "vue-tsc": "^1.8.0",
     "wait-on": "8.0.2"
   },
