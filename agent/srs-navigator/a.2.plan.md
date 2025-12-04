@@ -396,22 +396,42 @@ async getWeightedCards(limit: number): Promise<WeightedCard[]> {
 - [x] p4.3: Create `createDefaultPipeline()` helper
 - [ ] p4.4: Integration test: default navigator returns both new + review cards (deferred to CI)
 
-### Phase 5: ELO Navigator Cleanup
-- [ ] p5.1: Remove review handling from ELONavigator.getWeightedCards()
-- [ ] p5.2: Update provenance to say "new card" only
-- [ ] p5.3: Update tests
+### Phase 5: ELO Navigator Cleanup ✅ COMPLETED
+- [x] p5.1: Remove review handling from ELONavigator.getWeightedCards()
+- [x] p5.2: Update provenance to say "new card" only (already was)
+- [x] p5.3: Update tests (all 120 tests still passing)
 
-### Phase 6: Filter Adapters
-- [ ] p6.1: Add `implements CardFilter` + `transform()` to HierarchyDefinitionNavigator
-- [ ] p6.2: Add `implements CardFilter` + `transform()` to InterferenceMitigatorNavigator
-- [ ] p6.3: Add `implements CardFilter` + `transform()` to RelativePriorityNavigator
-- [ ] p6.4: Update PipelineAssembler to use filter interface
+### Phase 6: CardGenerator Interface + Generator Updates
+- [ ] p6.1: Create `core/navigators/generators/types.ts` with `CardGenerator` interface and `GeneratorContext`
+- [ ] p6.2: Update `ELONavigator` to implement `CardGenerator`
+- [ ] p6.3: Update `SRSNavigator` to implement `CardGenerator`
+- [ ] p6.4: Update `HardcodedOrderNavigator` to implement `CardGenerator`
+- [ ] p6.5: Export `CardGenerator` from `core/navigators/index.ts`
 
-### Phase 7: Deprecation + Cleanup
-- [ ] p7.1: Mark `getDelegate()` pattern as @deprecated
-- [ ] p7.2: Mark `delegateStrategy` in serializedData as @deprecated
-- [ ] p7.3: Update navigators-architecture.md
-- [ ] p7.4: Update todo-pipeline-optimization.md (mark complete)
+### Phase 7: Convert Filters to Pure CardFilter
+- [ ] p7.1: Convert `HierarchyDefinitionNavigator` to factory function `createHierarchyFilter()` returning `CardFilter`
+  - Remove class, `extends ContentNavigator`, `getDelegate()`, legacy methods
+  - Keep config parsing and core logic (mastery checking, unlock gating)
+- [ ] p7.2: Convert `InterferenceMitigatorNavigator` to factory function `createInterferenceFilter()` returning `CardFilter`
+  - Remove class, `extends ContentNavigator`, `getDelegate()`, legacy methods
+  - Keep config parsing and interference map logic
+- [ ] p7.3: Convert `RelativePriorityNavigator` to factory function `createPriorityFilter()` returning `CardFilter`
+  - Remove class, `extends ContentNavigator`, `getDelegate()`, legacy methods
+  - Keep config parsing and boost calculation logic
+
+### Phase 8: PipelineAssembler Rewrite
+- [ ] p8.1: Update `PipelineAssembler` to instantiate generators and filters directly
+  - Remove `buildChain()` method entirely
+  - Return a `Pipeline` instance (not a strategy config for delegate wrapping)
+- [ ] p8.2: Remove `delegateStrategy` handling from all config parsing
+- [ ] p8.3: Update `NavigatorRoles` registry if needed (generators vs filters now type-enforced)
+
+### Phase 9: Cleanup
+- [ ] p9.1: Remove delegate pattern comments/docs from `core/navigators/index.ts`
+- [ ] p9.2: Update `ContentNavigator` base class (remove delegate-related guidance)
+- [ ] p9.3: Update navigators-architecture.md (if exists)
+- [ ] p9.4: Update todo-pipeline-optimization.md (mark complete)
+- [ ] p9.5: Verify all tests pass
 
 ## Out of Scope (Future)
 
