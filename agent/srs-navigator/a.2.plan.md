@@ -390,10 +390,11 @@ async getWeightedCards(limit: number): Promise<WeightedCard[]> {
 - [x] p3.1: Create `core/navigators/filters/eloDistance.ts`
 - [x] p3.2: Unit tests for distance thresholds (9 tests passing)
 
-### Phase 4: Default Behavior Update
-- [ ] p4.1: Update `courseDB.createNavigator()` for no-strategy case
-- [ ] p4.2: Create `makeDefaultSrsStrategy()` helper
-- [ ] p4.3: Integration test: default navigator returns both new + review cards
+### Phase 4: Default Behavior Update ✅ COMPLETED
+- [x] p4.1: Update `courseDB.createNavigator()` for no-strategy case
+- [x] p4.2: Create `makeDefaultSrsStrategy()` helper
+- [x] p4.3: Create `createDefaultPipeline()` helper
+- [ ] p4.4: Integration test: default navigator returns both new + review cards (deferred to CI)
 
 ### Phase 5: ELO Navigator Cleanup
 - [ ] p5.1: Remove review handling from ELONavigator.getWeightedCards()

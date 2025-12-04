@@ -35,8 +35,12 @@ import { PouchError } from './types';
 import CourseLookup from './courseLookupDB';
 import { ContentNavigationStrategyData } from '@db/core/types/contentNavigationStrategy';
 import { ContentNavigator, Navigators, WeightedCard } from '@db/core/navigators';
+import { Pipeline } from '@db/core/navigators/Pipeline';
 import { PipelineAssembler } from '@db/core/navigators/PipelineAssembler';
 import CompositeGenerator from '@db/core/navigators/CompositeGenerator';
+import ELONavigator from '@db/core/navigators/elo';
+import SRSNavigator from '@db/core/navigators/srs';
+import { createEloDistanceFilter } from '@db/core/navigators/filters/eloDistance';
 
 export class CoursesDB implements CoursesDBInterface {
   _courseIDs: string[] | undefined;
@@ -567,9 +571,11 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
       }
 
       if (!pipeline) {
-        // No strategies configured, use default ELO
-        logger.debug('No strategy documents found, using default ELO navigator');
-        return ContentNavigator.create(user, this, this.makeDefaultEloStrategy());
+        // No strategies configured: use Pipeline(Composite(ELO, SRS), [eloDistanceFilter])
+        logger.debug(
+          '[courseDB] No strategy documents found, using default Pipeline(Composite(ELO, SRS), [eloDistanceFilter])'
+        );
+        return this.createDefaultPipeline(user);
       }
 
       // If multiple generators, wrap them in CompositeGenerator
@@ -609,14 +615,44 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
 
   private makeDefaultEloStrategy(): ContentNavigationStrategyData {
     return {
-      _id: 'NAVIGATION_STRATEGY-ELO',
+      _id: 'NAVIGATION_STRATEGY-ELO-default',
       docType: DocType.NAVIGATION_STRATEGY,
-      name: 'ELO',
-      description: 'ELO-based navigation strategy',
+      name: 'ELO (default)',
+      description: 'Default ELO-based navigation strategy for new cards',
       implementingClass: Navigators.ELO,
       course: this.id,
       serializedData: '',
     };
+  }
+
+  private makeDefaultSrsStrategy(): ContentNavigationStrategyData {
+    return {
+      _id: 'NAVIGATION_STRATEGY-SRS-default',
+      docType: DocType.NAVIGATION_STRATEGY,
+      name: 'SRS (default)',
+      description: 'Default SRS-based navigation strategy for reviews',
+      implementingClass: Navigators.SRS,
+      course: this.id,
+      serializedData: '',
+    };
+  }
+
+  /**
+   * Creates the default navigation pipeline for courses with no configured strategies.
+   *
+   * Default: Pipeline(Composite(ELO, SRS), [eloDistanceFilter])
+   * - ELO generator: scores new cards by skill proximity
+   * - SRS generator: scores reviews by overdueness and interval recency
+   * - ELO distance filter: penalizes cards far from user's current level
+   */
+  private createDefaultPipeline(user: UserDBInterface): Pipeline {
+    const eloNavigator = new ELONavigator(user, this, this.makeDefaultEloStrategy());
+    const srsNavigator = new SRSNavigator(user, this, this.makeDefaultSrsStrategy());
+
+    const compositeGenerator = new CompositeGenerator([eloNavigator, srsNavigator]);
+    const eloDistanceFilter = createEloDistanceFilter();
+
+    return new Pipeline(compositeGenerator, [eloDistanceFilter], user, this);
   }
 
   ////////////////////////////////////

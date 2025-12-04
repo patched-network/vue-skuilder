@@ -6,8 +6,7 @@ import {
   StudySessionNewItem,
 } from '..';
 
-// Re-export Pipeline and filter types
-export { Pipeline } from './Pipeline';
+// Re-export filter types (Pipeline is imported directly to avoid circular deps)
 export { CardFilter, FilterContext, CardFilterFactory } from './filters/types';
 import { ContentNavigationStrategyData } from '../types/contentNavigationStrategy';
 import { ScheduledCard } from '../types/user';

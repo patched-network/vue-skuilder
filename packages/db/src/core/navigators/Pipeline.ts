@@ -1,5 +1,4 @@
 import { toCourseElo } from '@vue-skuilder/common';
-import { StudyContentSource } from '../interfaces/contentSource';
 import { CourseDBInterface } from '../interfaces/courseDB';
 import { UserDBInterface } from '../interfaces/userDB';
 import { ScheduledCard } from '../types/user';
@@ -51,11 +50,9 @@ import { logger } from '../../util/logger';
  * const cards = await pipeline.getWeightedCards(20);
  * ```
  */
-export class Pipeline implements StudyContentSource {
+export class Pipeline extends ContentNavigator {
   private generator: ContentNavigator;
   private filters: CardFilter[];
-  private user: UserDBInterface;
-  private course: CourseDBInterface;
 
   /**
    * Create a new pipeline.
@@ -71,6 +68,7 @@ export class Pipeline implements StudyContentSource {
     user: UserDBInterface,
     course: CourseDBInterface
   ) {
+    super();
     this.generator = generator;
     this.filters = filters;
     this.user = user;
@@ -113,9 +111,7 @@ export class Pipeline implements StudyContentSource {
     for (const filter of this.filters) {
       const beforeCount = cards.length;
       cards = await filter.transform(cards, context);
-      logger.debug(
-        `[Pipeline] Filter '${filter.name}': ${beforeCount} → ${cards.length} cards`
-      );
+      logger.debug(`[Pipeline] Filter '${filter.name}': ${beforeCount} → ${cards.length} cards`);
     }
 
     // Remove zero-score cards (hard filtered)
@@ -147,7 +143,7 @@ export class Pipeline implements StudyContentSource {
     let userElo = 1000; // Default ELO
 
     try {
-      const courseReg = await this.user.getCourseRegDoc(this.course.getCourseID());
+      const courseReg = await this.user!.getCourseRegDoc(this.course!.getCourseID());
       const courseElo = toCourseElo(courseReg.elo);
       userElo = courseElo.global.score;
     } catch (e) {
@@ -155,8 +151,8 @@ export class Pipeline implements StudyContentSource {
     }
 
     return {
-      user: this.user,
-      course: this.course,
+      user: this.user!,
+      course: this.course!,
       userElo,
     };
   }
@@ -183,5 +179,12 @@ export class Pipeline implements StudyContentSource {
    */
   async getPendingReviews(): Promise<(StudySessionReviewItem & ScheduledCard)[]> {
     return this.generator.getPendingReviews();
+  }
+
+  /**
+   * Get the course ID for this pipeline.
+   */
+  getCourseID(): string {
+    return this.course!.getCourseID();
   }
 }
