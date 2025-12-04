@@ -411,16 +411,22 @@ async getWeightedCards(limit: number): Promise<WeightedCard[]> {
 - [x] p6.7: Update `Pipeline` to use `CardGenerator` and pass context to generator
 - [x] p6.8: Clean up delegate pattern references in index.ts comments (126 tests passing)
 
-### Phase 7: Convert Filters to Pure CardFilter
-- [ ] p7.1: Convert `HierarchyDefinitionNavigator` to factory function `createHierarchyFilter()` returning `CardFilter`
-  - Remove class, `extends ContentNavigator`, `getDelegate()`, legacy methods
-  - Keep config parsing and core logic (mastery checking, unlock gating)
-- [ ] p7.2: Convert `InterferenceMitigatorNavigator` to factory function `createInterferenceFilter()` returning `CardFilter`
-  - Remove class, `extends ContentNavigator`, `getDelegate()`, legacy methods
-  - Keep config parsing and interference map logic
-- [ ] p7.3: Convert `RelativePriorityNavigator` to factory function `createPriorityFilter()` returning `CardFilter`
-  - Remove class, `extends ContentNavigator`, `getDelegate()`, legacy methods
-  - Keep config parsing and boost calculation logic
+### Phase 7: Add CardFilter Interface to Existing Filters, Remove Delegate
+- [ ] p7.1: Update `HierarchyDefinitionNavigator` to implement `CardFilter`
+  - Add `implements CardFilter`
+  - Add `transform()` method (extract logic from `getWeightedCards`)
+  - Remove `getDelegate()`, `delegate` field, `delegateStrategy` config
+  - Stub or remove legacy methods (`getNewCards`, `getPendingReviews`)
+- [ ] p7.2: Update `InterferenceMitigatorNavigator` to implement `CardFilter`
+  - Add `implements CardFilter`
+  - Add `transform()` method (extract logic from `getWeightedCards`)
+  - Remove `getDelegate()`, `delegate` field, `delegateStrategy` config
+  - Stub or remove legacy methods
+- [ ] p7.3: Update `RelativePriorityNavigator` to implement `CardFilter`
+  - Add `implements CardFilter`
+  - Add `transform()` method (extract logic from `getWeightedCards`)
+  - Remove `getDelegate()`, `delegate` field, `delegateStrategy` config
+  - Stub or remove legacy methods
 
 ### Phase 8: PipelineAssembler Rewrite
 - [ ] p8.1: Update `PipelineAssembler` to instantiate generators and filters directly
