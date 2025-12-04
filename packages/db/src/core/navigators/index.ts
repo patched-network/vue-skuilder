@@ -5,6 +5,10 @@ import {
   StudySessionReviewItem,
   StudySessionNewItem,
 } from '..';
+
+// Re-export Pipeline and filter types
+export { Pipeline } from './Pipeline';
+export { CardFilter, FilterContext, CardFilterFactory } from './filters/types';
 import { ContentNavigationStrategyData } from '../types/contentNavigationStrategy';
 import { ScheduledCard } from '../types/user';
 import { logger } from '../../util/logger';
