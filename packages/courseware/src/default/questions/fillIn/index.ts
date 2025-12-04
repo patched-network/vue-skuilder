@@ -11,9 +11,8 @@ import { BlanksCardDataShapes } from './shapes.js';
 // Re-export for backward compatibility
 export { BlanksCardDataShapes } from './shapes.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-// @ts-expect-error
-const val: Validator = {
+// @ts-expect-error Legacy validator code kept for reference but not currently used
+const _val: Validator = {
   test: (input) => {
     console.log(`Testing md input: ${input}`);
     // const sections = parseBlanksMarkdown(input);
