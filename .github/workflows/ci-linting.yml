@@ -31,37 +31,74 @@ jobs:
       - name: Install dependencies
         run: yarn install --immutable
 
-      - name: Lint backend packages
+      - name: Run linting on all packages
         run: |
-          echo "Linting @vue-skuilder/common..."
+          set +e  # Don't exit on first failure
+          EXIT_CODE=0
+
+          echo "🔍 Linting all packages..."
+          echo ""
+
+          # Backend packages
+          echo "📦 Linting @vue-skuilder/common..."
           yarn workspace @vue-skuilder/common lint:check
+          if [ $? -ne 0 ]; then EXIT_CODE=1; echo "❌ @vue-skuilder/common FAILED"; else echo "✅ @vue-skuilder/common passed"; fi
+          echo ""
 
-          echo "Linting @vue-skuilder/db..."
+          echo "📦 Linting @vue-skuilder/db..."
           yarn workspace @vue-skuilder/db lint:check
+          if [ $? -ne 0 ]; then EXIT_CODE=1; echo "❌ @vue-skuilder/db FAILED"; else echo "✅ @vue-skuilder/db passed"; fi
+          echo ""
 
-          echo "Linting @vue-skuilder/express..."
+          echo "📦 Linting @vue-skuilder/express..."
           yarn workspace @vue-skuilder/express lint:check
+          if [ $? -ne 0 ]; then EXIT_CODE=1; echo "❌ @vue-skuilder/express FAILED"; else echo "✅ @vue-skuilder/express passed"; fi
+          echo ""
 
-          echo "Linting @vue-skuilder/cli..."
+          echo "📦 Linting @vue-skuilder/cli..."
           yarn workspace @vue-skuilder/cli lint:check
+          if [ $? -ne 0 ]; then EXIT_CODE=1; echo "❌ @vue-skuilder/cli FAILED"; else echo "✅ @vue-skuilder/cli passed"; fi
+          echo ""
 
-          echo "Linting @vue-skuilder/e2e-db..."
+          echo "📦 Linting @vue-skuilder/e2e-db..."
           yarn workspace @vue-skuilder/e2e-db lint:check
+          if [ $? -ne 0 ]; then EXIT_CODE=1; echo "❌ @vue-skuilder/e2e-db FAILED"; else echo "✅ @vue-skuilder/e2e-db passed"; fi
+          echo ""
 
-      - name: Lint frontend packages
-        run: |
-          echo "Linting @vue-skuilder/common-ui..."
+          # Frontend packages
+          echo "📦 Linting @vue-skuilder/common-ui..."
           yarn workspace @vue-skuilder/common-ui lint:check
+          if [ $? -ne 0 ]; then EXIT_CODE=1; echo "❌ @vue-skuilder/common-ui FAILED"; else echo "✅ @vue-skuilder/common-ui passed"; fi
+          echo ""
 
-          echo "Linting @vue-skuilder/platform-ui..."
+          echo "📦 Linting @vue-skuilder/platform-ui..."
           yarn workspace @vue-skuilder/platform-ui lint:check
+          if [ $? -ne 0 ]; then EXIT_CODE=1; echo "❌ @vue-skuilder/platform-ui FAILED"; else echo "✅ @vue-skuilder/platform-ui passed"; fi
+          echo ""
 
-          echo "Linting @vue-skuilder/studio-ui..."
+          echo "📦 Linting @vue-skuilder/studio-ui..."
           yarn workspace @vue-skuilder/studio-ui lint:check
+          if [ $? -ne 0 ]; then EXIT_CODE=1; echo "❌ @vue-skuilder/studio-ui FAILED"; else echo "✅ @vue-skuilder/studio-ui passed"; fi
+          echo ""
 
-      - name: Linting completed
-        run: |
-          echo "✅ All linting checks passed"
-          echo "📦 Packages checked:"
-          echo "   Backend: common, db, express, cli, e2e-db"
-          echo "   Frontend: common-ui, platform-ui, studio-ui"
+          echo "📦 Linting @vue-skuilder/courseware..."
+          yarn workspace @vue-skuilder/courseware lint:check
+          if [ $? -ne 0 ]; then EXIT_CODE=1; echo "❌ @vue-skuilder/courseware FAILED"; else echo "✅ @vue-skuilder/courseware passed"; fi
+          echo ""
+
+          echo "📦 Linting @vue-skuilder/mcp..."
+          yarn workspace @vue-skuilder/mcp lint:check
+          if [ $? -ne 0 ]; then EXIT_CODE=1; echo "❌ @vue-skuilder/mcp FAILED"; else echo "✅ @vue-skuilder/mcp passed"; fi
+          echo ""
+
+          # Summary and exit with collected status
+          echo "================================"
+          if [ $EXIT_CODE -eq 0 ]; then
+            echo "✅ All packages passed linting"
+          else
+            echo "❌ One or more packages failed linting"
+            echo "Review the output above for details"
+          fi
+          echo "================================"
+
+          exit $EXIT_CODE
