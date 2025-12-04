@@ -374,21 +374,21 @@ async getWeightedCards(limit: number): Promise<WeightedCard[]> {
 
 ## Phases / Task Chunks
 
-### Phase 1: SRS Generator (standalone value)
-- [ ] p1.1: Create `core/navigators/srs.ts`
-- [ ] p1.2: Add `SRS` to `Navigators` enum in `index.ts`
-- [ ] p1.3: Add `NavigatorRole.GENERATOR` for SRS
-- [ ] p1.4: Unit tests for overdueness scoring
+### Phase 1: SRS Generator (standalone value) ✅ COMPLETED
+- [x] p1.1: Create `core/navigators/srs.ts`
+- [x] p1.2: Add `SRS` to `Navigators` enum in `index.ts`
+- [x] p1.3: Add `NavigatorRole.GENERATOR` for SRS
+- [x] p1.4: Unit tests for overdueness scoring (15 tests passing)
 
-### Phase 2: Pipeline + CardFilter Infrastructure
-- [ ] p2.1: Create `core/navigators/filters/types.ts` (CardFilter, FilterContext)
-- [ ] p2.2: Create `core/navigators/Pipeline.ts`
-- [ ] p2.3: Implement `StudyContentSource` in Pipeline
-- [ ] p2.4: Unit tests for Pipeline
+### Phase 2: Pipeline + CardFilter Infrastructure ✅ COMPLETED
+- [x] p2.1: Create `core/navigators/filters/types.ts` (CardFilter, FilterContext)
+- [x] p2.2: Create `core/navigators/Pipeline.ts`
+- [x] p2.3: Implement `StudyContentSource` in Pipeline
+- [x] p2.4: Unit tests for Pipeline (14 tests passing)
 
-### Phase 3: ELO Distance Filter
-- [ ] p3.1: Create `core/navigators/filters/eloDistance.ts`
-- [ ] p3.2: Unit tests for distance thresholds
+### Phase 3: ELO Distance Filter ✅ COMPLETED
+- [x] p3.1: Create `core/navigators/filters/eloDistance.ts`
+- [x] p3.2: Unit tests for distance thresholds (9 tests passing)
 
 ### Phase 4: Default Behavior Update
 - [ ] p4.1: Update `courseDB.createNavigator()` for no-strategy case
