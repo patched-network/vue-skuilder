@@ -1,11 +1,12 @@
 import { toCourseElo } from '@vue-skuilder/common';
-import { CourseDBInterface } from '../interfaces/courseDB';
-import { UserDBInterface } from '../interfaces/userDB';
-import { ScheduledCard } from '../types/user';
-import { ContentNavigator, WeightedCard } from './index';
-import { CardFilter, FilterContext } from './filters/types';
-import { CardGenerator, GeneratorContext } from './generators/types';
-import { StudySessionNewItem, StudySessionReviewItem } from '../interfaces/contentSource';
+import type { CourseDBInterface } from '../interfaces/courseDB';
+import type { UserDBInterface } from '../interfaces/userDB';
+import type { ScheduledCard } from '../types/user';
+import { ContentNavigator } from './index';
+import type { WeightedCard } from './index';
+import type { CardFilter, FilterContext } from './filters/types';
+import type { CardGenerator, GeneratorContext } from './generators/types';
+import type { StudySessionNewItem, StudySessionReviewItem } from '../interfaces/contentSource';
 import { logger } from '../../util/logger';
 
 // ============================================================================

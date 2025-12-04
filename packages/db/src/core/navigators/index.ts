@@ -7,10 +7,10 @@ import {
 } from '..';
 
 // Re-export filter types
-export { CardFilter, FilterContext, CardFilterFactory } from './filters/types';
+export type { CardFilter, FilterContext, CardFilterFactory } from './filters/types';
 
 // Re-export generator types
-export { CardGenerator, GeneratorContext, CardGeneratorFactory } from './generators/types';
+export type { CardGenerator, GeneratorContext, CardGeneratorFactory } from './generators/types';
 
 import { ContentNavigationStrategyData } from '../types/contentNavigationStrategy';
 import { ScheduledCard } from '../types/user';

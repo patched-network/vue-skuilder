@@ -1,12 +1,12 @@
-import { ContentNavigationStrategyData } from '../types/contentNavigationStrategy';
+import type { ContentNavigationStrategyData } from '../types/contentNavigationStrategy';
 import { ContentNavigator, isGenerator, isFilter, Navigators } from './index';
-import { CardFilter } from './filters/types';
-import { CardGenerator } from './generators/types';
+import type { CardFilter } from './filters/types';
+import type { CardGenerator } from './generators/types';
 import { Pipeline } from './Pipeline';
 import { DocType } from '../types/types-legacy';
 import { logger } from '../../util/logger';
-import { CourseDBInterface } from '../interfaces/courseDB';
-import { UserDBInterface } from '../interfaces/userDB';
+import type { CourseDBInterface } from '../interfaces/courseDB';
+import type { UserDBInterface } from '../interfaces/userDB';
 import CompositeGenerator from './CompositeGenerator';
 
 // ============================================================================

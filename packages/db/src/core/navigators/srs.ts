@@ -1,11 +1,12 @@
 import moment from 'moment';
-import { ScheduledCard } from '../types/user';
-import { CourseDBInterface } from '../interfaces/courseDB';
-import { UserDBInterface } from '../interfaces/userDB';
-import { ContentNavigator, WeightedCard } from './index';
-import { ContentNavigationStrategyData } from '../types/contentNavigationStrategy';
-import { StudySessionReviewItem, StudySessionNewItem } from '../interfaces/contentSource';
-import { CardGenerator, GeneratorContext } from './generators/types';
+import type { ScheduledCard } from '../types/user';
+import type { CourseDBInterface } from '../interfaces/courseDB';
+import type { UserDBInterface } from '../interfaces/userDB';
+import { ContentNavigator } from './index';
+import type { WeightedCard } from './index';
+import type { ContentNavigationStrategyData } from '../types/contentNavigationStrategy';
+import type { StudySessionReviewItem, StudySessionNewItem } from '../interfaces/contentSource';
+import type { CardGenerator, GeneratorContext } from './generators/types';
 
 // ============================================================================
 // SRS NAVIGATOR

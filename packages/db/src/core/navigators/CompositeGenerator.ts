@@ -1,10 +1,11 @@
-import { ContentNavigator, WeightedCard } from './index';
-import { ContentNavigationStrategyData } from '../types/contentNavigationStrategy';
-import { CourseDBInterface } from '../interfaces/courseDB';
-import { UserDBInterface } from '../interfaces/userDB';
-import { StudySessionNewItem, StudySessionReviewItem } from '../interfaces/contentSource';
-import { ScheduledCard } from '../types/user';
-import { CardGenerator, GeneratorContext } from './generators/types';
+import { ContentNavigator } from './index';
+import type { WeightedCard } from './index';
+import type { ContentNavigationStrategyData } from '../types/contentNavigationStrategy';
+import type { CourseDBInterface } from '../interfaces/courseDB';
+import type { UserDBInterface } from '../interfaces/userDB';
+import type { StudySessionNewItem, StudySessionReviewItem } from '../interfaces/contentSource';
+import type { ScheduledCard } from '../types/user';
+import type { CardGenerator, GeneratorContext } from './generators/types';
 import { logger } from '../../util/logger';
 
 // ============================================================================

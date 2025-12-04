@@ -1,6 +1,6 @@
-import { WeightedCard } from '../index';
-import { CourseDBInterface } from '../../interfaces/courseDB';
-import { UserDBInterface } from '../../interfaces/userDB';
+import type { WeightedCard } from '../index';
+import type { CourseDBInterface } from '../../interfaces/courseDB';
+import type { UserDBInterface } from '../../interfaces/userDB';
 
 // ============================================================================
 // CARD FILTER INTERFACE

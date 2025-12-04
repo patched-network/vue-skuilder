@@ -1,2 +1,2 @@
 // Generator types and interfaces
-export { CardGenerator, GeneratorContext, CardGeneratorFactory } from './types';
+export type { CardGenerator, GeneratorContext, CardGeneratorFactory } from './types';

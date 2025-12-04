@@ -1,10 +1,11 @@
-import { ScheduledCard } from '../types/user';
-import { CourseDBInterface } from '../interfaces/courseDB';
-import { UserDBInterface } from '../interfaces/userDB';
-import { ContentNavigator, WeightedCard } from './index';
-import { ContentNavigationStrategyData } from '../types/contentNavigationStrategy';
-import { StudySessionReviewItem, StudySessionNewItem } from '..';
-import { CardFilter, FilterContext } from './filters/types';
+import type { ScheduledCard } from '../types/user';
+import type { CourseDBInterface } from '../interfaces/courseDB';
+import type { UserDBInterface } from '../interfaces/userDB';
+import { ContentNavigator } from './index';
+import type { WeightedCard } from './index';
+import type { ContentNavigationStrategyData } from '../types/contentNavigationStrategy';
+import type { StudySessionReviewItem, StudySessionNewItem } from '..';
+import type { CardFilter, FilterContext } from './filters/types';
 
 /**
  * Configuration for the RelativePriority strategy.

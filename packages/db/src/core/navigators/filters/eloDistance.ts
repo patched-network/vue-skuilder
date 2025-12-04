@@ -1,5 +1,5 @@
-import { WeightedCard } from '../index';
-import { CardFilter, FilterContext } from './types';
+import type { WeightedCard } from '../index';
+import type { CardFilter, FilterContext } from './types';
 
 // ============================================================================
 // ELO DISTANCE FILTER

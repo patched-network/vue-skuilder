@@ -1,14 +1,15 @@
-import {
+import type {
   CourseDBInterface,
   QualifiedCardID,
   StudySessionNewItem,
   StudySessionReviewItem,
   UserDBInterface,
 } from '..';
-import { ContentNavigationStrategyData } from '../types/contentNavigationStrategy';
-import { ScheduledCard } from '../types/user';
-import { ContentNavigator, WeightedCard } from './index';
-import { CardGenerator, GeneratorContext } from './generators/types';
+import type { ContentNavigationStrategyData } from '../types/contentNavigationStrategy';
+import type { ScheduledCard } from '../types/user';
+import { ContentNavigator } from './index';
+import type { WeightedCard } from './index';
+import type { CardGenerator, GeneratorContext } from './generators/types';
 import { logger } from '../../util/logger';
 
 // ============================================================================

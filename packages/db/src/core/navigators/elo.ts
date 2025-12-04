@@ -1,10 +1,12 @@
-import { ScheduledCard } from '../types/user';
-import { CourseDBInterface } from '../interfaces/courseDB';
-import { UserDBInterface } from '../interfaces/userDB';
-import { ContentNavigator, WeightedCard } from './index';
-import { CourseElo, toCourseElo } from '@vue-skuilder/common';
-import { StudySessionReviewItem, StudySessionNewItem, QualifiedCardID } from '..';
-import { CardGenerator, GeneratorContext } from './generators/types';
+import type { ScheduledCard } from '../types/user';
+import type { CourseDBInterface } from '../interfaces/courseDB';
+import type { UserDBInterface } from '../interfaces/userDB';
+import { ContentNavigator } from './index';
+import type { WeightedCard } from './index';
+import type { CourseElo } from '@vue-skuilder/common';
+import { toCourseElo } from '@vue-skuilder/common';
+import type { StudySessionReviewItem, StudySessionNewItem, QualifiedCardID } from '..';
+import type { CardGenerator, GeneratorContext } from './generators/types';
 
 // ============================================================================
 // ELO NAVIGATOR
