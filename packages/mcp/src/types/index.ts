@@ -26,7 +26,7 @@ export interface ELOContext {
 }
 
 export interface ContentWithELO {
-  content: any;
+  content: unknown;
   estimatedElo: number;
   eloConfidence: number;
   referenceCards?: string[];

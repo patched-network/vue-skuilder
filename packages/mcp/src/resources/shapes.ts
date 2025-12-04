@@ -4,9 +4,9 @@ import { isSuccessRow } from '../utils/index.js';
 export interface ShapeResource {
   name: string;
   description?: string;
-  schema: any; // The serialized Zod schema as JSON - this is what create_card validates against
+  schema: unknown; // The serialized Zod schema as JSON - this is what create_card validates against
   category?: string;
-  examples?: any[];
+  examples?: unknown[];
 }
 
 export interface ShapesCollection {
@@ -29,7 +29,7 @@ export async function handleShapesAllResource(
     // Transform DataShapes to ShapeResource format
     const shapes: ShapeResource[] = dataShapes.map((shape) => {
       // Parse the serialized Zod schema if available
-      let schema: any = null;
+      let schema: unknown = null;
       if (shape.serializedZodSchema) {
         try {
           schema = JSON.parse(shape.serializedZodSchema);
@@ -85,7 +85,7 @@ export async function handleShapeSpecificResource(
     }
 
     // Parse the serialized Zod schema
-    let schema: any = null;
+    let schema: unknown = null;
     if (targetShape.serializedZodSchema) {
       try {
         schema = JSON.parse(targetShape.serializedZodSchema);
@@ -96,7 +96,7 @@ export async function handleShapeSpecificResource(
     }
 
     // Get examples by finding cards that use this shape
-    let examples: any[] = [];
+    let examples: unknown[] = [];
     try {
       // Get a few cards that use this shape to provide examples
       const cards = await courseDB.getCardsByELO(1500, 10); // Get some sample cards
@@ -104,8 +104,8 @@ export async function handleShapeSpecificResource(
         const cardDocs = await courseDB.getCourseDocs(cards.map(c=>c.cardID).slice(0, 5)); // Limit to 5 examples
         examples = [];
         for (const row of cardDocs.rows) {
-          if (isSuccessRow(row) && (row.doc as any).shape?.name === shapeName) {
-            const data = (row.doc as any)?.data;
+          if (isSuccessRow(row) && (row.doc as unknown).shape?.name === shapeName) {
+            const data = (row.doc as unknown)?.data;
             if (data) {
               examples.push(data);
               if (examples.length >= 3) break; // Max 3 examples

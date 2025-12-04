@@ -1,4 +1,4 @@
-/* eslint-disable max-len */
+ 
 export function createEloScoringGuidancePrompt(): string {
   return `# GUIDE: ELO Scoring for Content
 

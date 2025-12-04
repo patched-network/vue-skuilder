@@ -25,7 +25,7 @@ export async function handleUpdateCard(
     // Verify the card exists
     try {
       await courseDB.getCourseDoc(validatedInput.cardId);
-    } catch (error) {
+    } catch {
       throw new Error(`Card not found: ${validatedInput.cardId}`);
     }
 
@@ -35,7 +35,7 @@ export async function handleUpdateCard(
         const courseElo = toCourseElo(validatedInput.elo);
         await courseDB.updateCardElo(validatedInput.cardId, courseElo);
         changes.elo = true;
-      } catch (error) {
+      } catch {
         logToolWarning(TOOL_NAME, `Failed to update ELO for card ${validatedInput.cardId}`, error);
         throw new Error(`Failed to update ELO: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
@@ -64,7 +64,7 @@ export async function handleUpdateCard(
             }
             
             await courseDB.addTagToCard(validatedInput.cardId, tagName);
-          } catch (error) {
+          } catch {
             logToolWarning(TOOL_NAME, `Failed to add tag ${tagName} to card`, error);
             // Continue with other tags
           }
@@ -74,7 +74,7 @@ export async function handleUpdateCard(
         for (const tagName of tagsToRemove) {
           try {
             await courseDB.removeTagFromCard(validatedInput.cardId, tagName);
-          } catch (error) {
+          } catch {
             logToolWarning(TOOL_NAME, `Failed to remove tag ${tagName} from card`, error);
             // Continue with other tags
           }
@@ -83,7 +83,7 @@ export async function handleUpdateCard(
         if (tagsToAdd.length > 0 || tagsToRemove.length > 0) {
           changes.tags = true;
         }
-      } catch (error) {
+      } catch {
         logToolWarning(TOOL_NAME, `Failed to update tags for card ${validatedInput.cardId}`, error);
         throw new Error(`Failed to update tags: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
@@ -109,7 +109,7 @@ export async function handleUpdateCard(
     logToolSuccess(TOOL_NAME, output);
     return output;
 
-  } catch (error) {
+  } catch {
     handleToolError(error, TOOL_NAME);
   }
 }

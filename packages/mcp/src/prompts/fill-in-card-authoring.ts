@@ -1,4 +1,4 @@
-/* eslint-disable max-len */
+ 
 export function createFillInCardAuthoringPrompt(): string {
   return `# GUIDE: Authoring "fillIn" type Flashcards
 

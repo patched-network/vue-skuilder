@@ -492,9 +492,8 @@ export class MCPServer {
       {
         title: 'Create Card',
         description: 'Create a new course card with specified datashape and content',
-        inputSchema: CreateCardInputMCPSchema as any,
+        inputSchema: CreateCardInputMCPSchema,
       },
-      // @ts-ignore - MCP SDK type incompatibility with Zod v4
       async (input) => {
         const createInput = input as CreateCardInput;
         this.logger.info(`MCP Server: Creating card with datashape '${createInput.datashape}'`);
@@ -517,9 +516,8 @@ export class MCPServer {
       {
         title: 'Update Card',
         description: 'Update an existing course card (data, tags, ELO, sourceRef)',
-        inputSchema: UpdateCardInputMCPSchema as any,
+        inputSchema: UpdateCardInputMCPSchema,
       },
-      // @ts-ignore - MCP SDK type incompatibility with Zod v4
       async (input) => {
         const updateInput = input as UpdateCardInput;
         this.logger.info(`MCP Server: Updating card ${updateInput.cardId}`);
@@ -542,9 +540,8 @@ export class MCPServer {
       {
         title: 'Tag Card',
         description: 'Add or remove tags from a course card with optional ELO update',
-        inputSchema: TagCardInputMCPSchema as any,
+        inputSchema: TagCardInputMCPSchema,
       },
-      // @ts-ignore - MCP SDK type incompatibility with Zod v4
       async (input) => {
         const tagInput = input as TagCardInput;
         this.logger.info(`MCP Server: ${tagInput.action === 'add' ? 'Adding' : 'Removing'} tags [${tagInput.tags.join(', ')}] ${tagInput.action === 'add' ? 'to' : 'from'} card ${tagInput.cardId}`);
@@ -567,9 +564,8 @@ export class MCPServer {
       {
         title: 'Delete Card',
         description: 'Safely delete a course card with confirmation requirement',
-        inputSchema: DeleteCardInputMCPSchema as any,
+        inputSchema: DeleteCardInputMCPSchema,
       },
-      // @ts-ignore - MCP SDK type incompatibility with Zod v4
       async (input) => {
         const deleteInput = input as DeleteCardInput;
         this.logger.warn(`MCP Server: Deleting card ${deleteInput.cardId}${deleteInput.reason ? ` (reason: ${deleteInput.reason})` : ''}`);

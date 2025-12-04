@@ -26,7 +26,7 @@ export async function handleDeleteCard(
     let cardExists = true;
     try {
       await courseDB.getCourseDoc(validatedInput.cardId);
-    } catch (error) {
+    } catch {
       cardExists = false;
     }
 
@@ -42,9 +42,9 @@ export async function handleDeleteCard(
     let cardInfo = '';
     try {
       const cardDoc = await courseDB.getCourseDoc(validatedInput.cardId);
-      const cardData = cardDoc as any;
+      const cardData = cardDoc as unknown;
       cardInfo = `Card: ${cardData.shape?.name || 'unknown shape'}`;
-    } catch (error) {
+    } catch {
       logToolWarning(TOOL_NAME, 'Could not fetch card info before deletion', error);
     }
 
@@ -70,7 +70,7 @@ export async function handleDeleteCard(
           message: `Failed to delete card: ${result.rev || 'Unknown error'}`
         };
       }
-    } catch (error) {
+    } catch {
       logToolError(TOOL_NAME, `Error deleting card ${validatedInput.cardId}`, error);
       return {
         cardId: validatedInput.cardId,
@@ -79,7 +79,7 @@ export async function handleDeleteCard(
       };
     }
 
-  } catch (error) {
+  } catch {
     handleToolError(error, TOOL_NAME);
   }
 }

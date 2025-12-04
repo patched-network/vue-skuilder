@@ -15,18 +15,18 @@ export function handleToolError(error: unknown, context: string): never {
 }
 
 // Logging utilities
-export function logToolStart(toolName: string, input: any): void {
+export function logToolStart(toolName: string, input: unknown): void {
   console.log(`[${toolName}] Starting with input:`, JSON.stringify(input, null, 2));
 }
 
-export function logToolSuccess(toolName: string, result: any): void {
+export function logToolSuccess(toolName: string, result: unknown): void {
   console.log(`[${toolName}] Completed successfully:`, JSON.stringify(result, null, 2));
 }
 
-export function logToolWarning(toolName: string, message: string, details?: any): void {
+export function logToolWarning(toolName: string, message: string, details?: unknown): void {
   console.warn(`[${toolName}] Warning: ${message}`, details || '');
 }
 
-export function logToolError(toolName: string, message: string, error?: any): void {
+export function logToolError(toolName: string, message: string, error?: unknown): void {
   console.error(`[${toolName}] Error: ${message}`, error || '');
 }

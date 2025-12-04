@@ -6,7 +6,7 @@ import { isSuccessRow } from '../utils/index.js';
 export interface CardResourceData {
   cardId: string;
   datashape: string;
-  data: any;
+  data: unknown;
   tags: string[];
   elo?: number;
   created?: string;
@@ -71,12 +71,12 @@ export async function handleCardsAllResource(
         const doc = row.doc;
         cards.push({
           cardId: doc._id,
-          datashape: (doc as any).shape?.name || 'unknown',
-          data: (doc as any).data || {},
+          datashape: (doc as unknown).shape?.name || 'unknown',
+          data: (doc as unknown).data || {},
           tags: [], // Will be populated separately if needed
           elo: eloMap.get(doc._id),
-          created: (doc as any).created,
-          modified: (doc as any).modified
+          created: (doc as unknown).created,
+          modified: (doc as unknown).modified
         });
       }
     }
@@ -166,10 +166,10 @@ export async function handleCardsShapeResource(
     
     // Filter by shape and collect card IDs
     const filteredCardIds: string[] = [];
-    const allFilteredRows: any[] = [];
+    const allFilteredRows: unknown[] = [];
     
     for (const row of cardDocs.rows) {
-      if (isSuccessRow(row) && (row.doc as any).shape?.name === shapeName) {
+      if (isSuccessRow(row) && (row.doc as unknown).shape?.name === shapeName) {
         allFilteredRows.push(row);
         filteredCardIds.push(row.doc._id);
       }
@@ -190,12 +190,12 @@ export async function handleCardsShapeResource(
         const doc = row.doc;
         cards.push({
           cardId: doc._id,
-          datashape: (doc as any).shape?.name || 'unknown',
-          data: (doc as any).data || {},
+          datashape: (doc as unknown).shape?.name || 'unknown',
+          data: (doc as unknown).data || {},
           tags: [],
           elo: eloMap.get(doc._id),
-          created: (doc as any).created,
-          modified: (doc as any).modified
+          created: (doc as unknown).created,
+          modified: (doc as unknown).modified
         });
       }
     }
@@ -288,12 +288,12 @@ export async function handleCardsEloResource(
         const doc = row.doc;
         cardsData.push({
           cardId: doc._id,
-          datashape: (doc as any).shape?.name || 'unknown',
-          data: (doc as any).data || {},
+          datashape: (doc as unknown).shape?.name || 'unknown',
+          data: (doc as unknown).data || {},
           tags: [],
           elo: eloMap.get(doc._id),
-          created: (doc as any).created,
-          modified: (doc as any).modified
+          created: (doc as unknown).created,
+          modified: (doc as unknown).modified
         });
       }
     }

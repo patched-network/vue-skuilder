@@ -26,7 +26,7 @@ function reconstructDataShapeFromConfig(
 
   if (jsonSchema.properties) {
     for (const [fieldName, fieldSchema] of Object.entries(jsonSchema.properties)) {
-      const schema = fieldSchema as any;
+      const schema = fieldSchema as unknown;
 
       // Map JSON Schema types to FieldType enum
       let fieldType: FieldType = FieldType.STRING; // default
@@ -60,7 +60,7 @@ function reconstructDataShapeFromConfig(
   }
 
   return {
-    name: dataShapeName as any, // Cast to DataShapeName - it's just a string at runtime
+    name: dataShapeName as unknown, // Cast to DataShapeName - it's just a string at runtime
     fields,
   };
 }
@@ -98,10 +98,10 @@ export async function handleCreateCard(
     }
 
     // Extract courseware name and local datashape name from fully-qualified name
-    let shapeDescriptor: any;
+    let shapeDescriptor: unknown;
     try {
       shapeDescriptor = NameSpacer.getDataShapeDescriptor(validatedInput.datashape);
-    } catch (error) {
+    } catch {
       const errorMsg = `Malformed datashape name: ${validatedInput.datashape}. Expected format: course.datashape.name`;
       logToolWarning(TOOL_NAME, errorMsg);
       throw new Error(errorMsg);
@@ -157,7 +157,7 @@ export async function handleCreateCard(
 
     logToolSuccess(TOOL_NAME, output);
     return output;
-  } catch (error) {
+  } catch {
     handleToolError(error, TOOL_NAME);
   }
 }

@@ -16,7 +16,7 @@ export async function handleTagCard(
     // Verify the card exists
     try {
       await courseDB.getCourseDoc(validatedInput.cardId);
-    } catch (error) {
+    } catch {
       throw new Error(`Card not found: ${validatedInput.cardId}`);
     }
 
@@ -48,7 +48,7 @@ export async function handleTagCard(
           await courseDB.removeTagFromCard(validatedInput.cardId, tagName);
           tagsProcessed.push(tagName);
         }
-      } catch (error) {
+      } catch {
         logToolWarning(TOOL_NAME, `Failed to ${validatedInput.action} tag ${tagName}`, error);
         success = false;
         // Continue with other tags
@@ -62,7 +62,7 @@ export async function handleTagCard(
       currentTags = currentTagsResponse.rows
         .map(row => row.doc?.name)
         .filter(Boolean) as string[];
-    } catch (error) {
+    } catch {
       logToolWarning(TOOL_NAME, 'Failed to fetch current tags', error);
     }
 
@@ -77,7 +77,7 @@ export async function handleTagCard(
     logToolSuccess(TOOL_NAME, output);
     return output;
 
-  } catch (error) {
+  } catch {
     handleToolError(error, TOOL_NAME);
   }
 }

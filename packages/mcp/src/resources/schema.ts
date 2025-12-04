@@ -38,7 +38,7 @@ export async function handleSchemaResource(
   // Generate JSON Schema from DataShape fields
   const jsonSchema = {
     type: 'object',
-    properties: {} as any,
+    properties: {} as unknown,
     required: [] as string[],
     title: dataShape.name,
   };
@@ -49,10 +49,10 @@ export async function handleSchemaResource(
       const jsonType = field.type === 'int' ? 'integer' : 'string';
       
       let description: string = '';
-      
+
       if (field.validator) {
-        description += `Instructions: ${field.validator.instructions}\t`,
-        description += `Placeholder: ${field.validator.placeholder}`
+        description += `Instructions: ${field.validator.instructions}\t`;
+        description += `Placeholder: ${field.validator.placeholder}`;
       } else {
         description = `Field ${field.name} (${field.type})`
       }

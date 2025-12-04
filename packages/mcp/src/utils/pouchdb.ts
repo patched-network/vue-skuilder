@@ -2,15 +2,15 @@
  * Type guard for successful PouchDB rows
  * Filters out error rows and ensures doc property exists
  */
-export function isSuccessRow<T = any>(row: any): row is { doc: NonNullable<T>; id: string; key: string; value: any } {
-  return row.doc != null && !('error' in row);
+export function isSuccessRow<T = unknown>(row: unknown): row is { doc: NonNullable<T>; id: string; key: string; value: unknown } {
+  return typeof row === 'object' && row !== null && 'doc' in row && row.doc != null && !('error' in row);
 }
 
 /**
  * Safely extracts documents from PouchDB AllDocsResponse
  * Returns only successful rows with valid documents
  */
-export function extractSuccessfulDocs<T>(rows: any[]): T[] {
+export function extractSuccessfulDocs<T>(rows: unknown[]): T[] {
   const docs: T[] = [];
   for (const row of rows) {
     if (isSuccessRow(row)) {
@@ -24,7 +24,7 @@ export function extractSuccessfulDocs<T>(rows: any[]): T[] {
  * Safely filters and maps PouchDB rows with type safety
  */
 export function filterAndMapDocs<T, R>(
-  rows: any[],
+  rows: unknown[],
   filterFn: (doc: T) => boolean,
   mapFn: (doc: T) => R
 ): R[] {

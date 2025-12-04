@@ -7,7 +7,7 @@ export interface TagResource {
   cardIds: string[];
   created?: string;
   author?: string;
-  metadata?: any;
+  metadata?: unknown;
 }
 
 export interface TagsCollection {
@@ -44,13 +44,13 @@ export async function handleTagsAllResource(
     for (const stub of tagStubs) {
       if (stub.doc) {
         tags.push({
-          name: (stub.doc as any).name || stub.id,
-          description: (stub.doc as any).snippet || `Tag: ${(stub.doc as any).name}`,
-          cardCount: (stub.doc as any).taggedCards?.length || 0,
+          name: (stub.doc as unknown).name || stub.id,
+          description: (stub.doc as unknown).snippet || `Tag: ${(stub.doc as unknown).name}`,
+          cardCount: (stub.doc as unknown).taggedCards?.length || 0,
           cardIds: [], // stub does not contain cardIDs
-          created: (stub.doc as any).created,
-          author: (stub.doc as any).author,
-          metadata: (stub.doc as any).metadata
+          created: (stub.doc as unknown).created,
+          author: (stub.doc as unknown).author,
+          metadata: (stub.doc as unknown).metadata
         });
       }
     }
@@ -117,13 +117,13 @@ export async function handleTagSpecificResource(
     }
 
     return {
-      name: (tag as any).name || tagName,
-      description: (tag as any).snippet || `Tag: ${tagName}`,
-      cardCount: (tag as any).taggedCards?.length || 0,
-      cardIds: (tag as any).taggedCards || [],
-      created: (tag as any).created,
-      author: (tag as any).author,
-      metadata: (tag as any).metadata
+      name: (tag as unknown).name || tagName,
+      description: (tag as unknown).snippet || `Tag: ${tagName}`,
+      cardCount: (tag as unknown).taggedCards?.length || 0,
+      cardIds: (tag as unknown).taggedCards || [],
+      created: (tag as unknown).created,
+      author: (tag as unknown).author,
+      metadata: (tag as unknown).metadata
     };
 
   } catch (error) {
@@ -223,7 +223,7 @@ export async function handleTagsExclusiveResource(
     try {
       await courseDB.getTag(includeTag);
       await courseDB.getTag(excludeTag);
-    } catch (error) {
+    } catch {
       throw new Error(`One or both tags not found: ${includeTag}, ${excludeTag}`);
     }
 
