@@ -50,10 +50,10 @@
   "devDependencies": {
     "@types/cypress": "1.1.6",
     "@types/events": "^3",
-    "@vitejs/plugin-vue": "^5.2.1",
+    "@vitejs/plugin-vue": "^6.0.0",
     "cypress": "^15.6.0",
     "typescript": "^5.9.3",
-    "vite": "^6.4.1",
+    "vite": "^7.0.0",
     "vite-plugin-dts": "^4.3.0",
     "vue-tsc": "^1.8.0",
     "wait-on": "8.0.2"
