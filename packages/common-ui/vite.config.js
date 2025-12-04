@@ -30,6 +30,7 @@ export default defineConfig({
         '@vojtechlanka/vue-tags-input',
         'vuedraggable',
         'sortablejs',
+        'moment',
       ],
       output: {
         // Global variables to use in UMD build for externalized deps
