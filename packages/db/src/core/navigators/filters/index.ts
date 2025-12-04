@@ -2,4 +2,5 @@
 export type { CardFilter, FilterContext, CardFilterFactory } from './types';
 
 // Filter implementations
-export { createEloDistanceFilter, EloDistanceConfig } from './eloDistance';
+export { createEloDistanceFilter } from './eloDistance';
+export type { EloDistanceConfig } from './eloDistance';
