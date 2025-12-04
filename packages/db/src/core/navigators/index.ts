@@ -166,6 +166,7 @@ export function getCardOrigin(card: WeightedCard): 'new' | 'review' | 'failed' {
 
 export enum Navigators {
   ELO = 'elo',
+  SRS = 'srs',
   HARDCODED = 'hardcodedOrder',
   HIERARCHY = 'hierarchyDefinition',
   INTERFERENCE = 'interferenceMitigator',
@@ -202,6 +203,7 @@ export enum NavigatorRole {
  */
 export const NavigatorRoles: Record<Navigators, NavigatorRole> = {
   [Navigators.ELO]: NavigatorRole.GENERATOR,
+  [Navigators.SRS]: NavigatorRole.GENERATOR,
   [Navigators.HARDCODED]: NavigatorRole.GENERATOR,
   [Navigators.HIERARCHY]: NavigatorRole.FILTER,
   [Navigators.INTERFERENCE]: NavigatorRole.FILTER,
