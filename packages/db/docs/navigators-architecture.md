@@ -2,173 +2,141 @@
 
 ## Overview
 
-This document describes the evolution of the NavigationStrategy API and provides guidance
-for migrating from the legacy `getNewCards()` / `getPendingReviews()` interface to the new
-unified `getWeightedCards()` API.
+The navigation strategy system selects and scores cards for study sessions. It uses a
+**Pipeline architecture** where generators produce candidates and filters transform scores.
 
-## Historical Context
+## Core Concepts
 
-### The Original Design
+### WeightedCard
 
-The `StudyContentSource` interface was originally conceived to abstract both 'classrooms'
-and 'courses' as sources of study content. It exposed two methods:
+A card with a suitability score and audit trail:
 
 ```typescript
-interface StudyContentSource {
-  getPendingReviews(): Promise<(StudySessionReviewItem & ScheduledCard)[]>;
-  getNewCards(n?: number): Promise<StudySessionNewItem[]>;
-}
-```
-
-These methods were artifacts of two **hard-coded NavigationStrategies** (before they had
-that name):
-
-1. **ELO proximity** — for selecting new cards matched to user skill level
-2. **SRS scheduling** — for surfacing cards due for review based on spaced repetition
-
-The new/review split reflected this implementation detail, not a fundamental abstraction.
-
-### The Problem
-
-As we added more sophisticated navigation strategies, the limitations became apparent:
-
-- **What does "get reviews" mean for an interference mitigator?** The concept doesn't map.
-- **SRS is just one strategy** — it votes for scheduled reviews, but that preference could
-  be expressed as weighted scores like any other strategy.
-- **Some strategies generate candidates, others filter/score them** — the interface didn't
-  accommodate this distinction.
-
-### The Solution: Weighted Cards with Provenance
-
-The new API unifies card selection into a single scored candidate model with full audit trails:
-
-```typescript
-interface StrategyContribution {
-  strategy: string;           // Type: 'elo', 'hierarchyDefinition', 'interferenceMitigator'
-  strategyName: string;       // Human-readable name: "Interference: b/d/p confusion"
-  strategyId: string;         // Document _id: 'NAVIGATION_STRATEGY-interference-bdp'
-  action: 'generated' | 'passed' | 'boosted' | 'penalized';
-  score: number;              // Score after this strategy's processing
-  reason: string;             // Human-readable explanation (required)
-}
-
 interface WeightedCard {
   cardId: string;
   courseId: string;
-  score: number;              // 0-1 suitability (final score)
-  provenance: StrategyContribution[];  // Audit trail of scoring decisions
+  score: number;              // 0-1 suitability score
+  provenance: StrategyContribution[];  // Audit trail
 }
 
-abstract class ContentNavigator {
-  // THE NEW PRIMARY API
-  async getWeightedCards(limit: number): Promise<WeightedCard[]>;
-  
-  // LEGACY - kept for backward compatibility
-  abstract getPendingReviews(): Promise<...>;
-  abstract getNewCards(n?: number): Promise<...>;
+interface StrategyContribution {
+  strategy: string;           // Type: 'elo', 'srs', 'hierarchyDefinition'
+  strategyName: string;       // Human-readable: "ELO (default)"
+  strategyId: string;         // Document ID: 'NAVIGATION_STRATEGY-ELO-default'
+  action: 'generated' | 'passed' | 'boosted' | 'penalized';
+  score: number;              // Score after this strategy
+  reason: string;             // Human-readable explanation
 }
 ```
 
-## The Delegate Pattern
+### CardGenerator
 
-Navigation strategies fall into two categories:
-
-### Generator Strategies
-Generate candidate cards with scores based on their own logic.
-
-- **ELO** — Generates cards near user skill level, scores by ELO distance
-- **SRS** — Generates overdue reviews, scores by overdueness
-- **HardcodedOrder** — Returns a fixed sequence of cards
-
-### Filter/Decorator Strategies
-Wrap a delegate strategy and transform its output.
-
-- **HierarchyDefinition** — Filters out cards whose prerequisites aren't met
-- **InterferenceMitigator** — Reduces scores for confusable content
-- **RelativePriority** — Boosts scores for high-utility content
-
-### Composition
-
-Filter strategies wrap generators (or other filters) to form a pipeline:
-
-```
-RelativePriority(
-  delegate=InterferenceMitigator(
-    delegate=HierarchyDefinition(
-      delegate=ELO)))
-```
-
-The flow:
-1. **ELO** generates candidates scored by skill proximity
-2. **HierarchyDefinition** gates locked cards (score=0 or passthrough)
-3. **InterferenceMitigator** reduces scores for similar tags while immature
-4. **RelativePriority** boosts high-utility content (common letters first)
-
-**Note:** All filters apply score multipliers (including `score: 0` for exclusion).
-This makes filter order irrelevant — multiplication is commutative.
-
-## Pipeline Assembly (COMPLETE)
-
-Pipeline assembly is now automatic based on `NAVIGATION_STRATEGY` documents in the course:
+Produces candidate cards with initial scores:
 
 ```typescript
-// courseDB.createNavigator(user) assembles the pipeline:
-// 1. Fetches all NAVIGATION_STRATEGY documents
-// 2. Separates generators from filters
-// 3. If multiple generators, wraps in CompositeGenerator
-// 4. If no generator but filters exist, uses default ELO
-// 5. Chains filters around generator(s)
+interface CardGenerator {
+  name: string;
+  getWeightedCards(limit: number, context: GeneratorContext): Promise<WeightedCard[]>;
+}
 ```
 
-**Key components:**
+**Implementations:**
+- `ELONavigator` — New cards scored by ELO proximity to user skill
+- `SRSNavigator` — Review cards scored by overdueness and interval recency
+- `HardcodedOrderNavigator` — Fixed sequence defined by course author
+- `CompositeGenerator` — Merges multiple generators with frequency boost
 
-- `PipelineAssembler` — DB-agnostic assembly logic (`core/navigators/PipelineAssembler.ts`)
-- `CompositeGenerator` — Merges multiple generators with frequency boost (`core/navigators/CompositeGenerator.ts`)
-- `NavigatorRole` enum — Classifies navigators as generators or filters (`core/navigators/index.ts`)
+### CardFilter
 
-**Filter convention:** All filters are score multipliers (including `score: 0` for hard exclusions).
-This means filter order doesn't matter — they're applied alphabetically for determinism.
+Transforms card scores (pure function, no side effects):
 
----
+```typescript
+interface CardFilter {
+  name: string;
+  transform(cards: WeightedCard[], context: FilterContext): Promise<WeightedCard[]>;
+}
+```
 
-## Migration Path
+**Implementations:**
+- `HierarchyDefinitionNavigator` — Gates cards by prerequisite mastery (score=0 if locked)
+- `InterferenceMitigatorNavigator` — Reduces scores for confusable content
+- `RelativePriorityNavigator` — Boosts scores for high-utility content
+- `createEloDistanceFilter()` — Penalizes cards far from user's current ELO
 
-### Phase 1: Parallel APIs (Current State)
+### Pipeline
 
-Both APIs coexist:
-- `getWeightedCards()` is the new primary API
-- `getNewCards()` / `getPendingReviews()` remain for backward compatibility
-- Default `getWeightedCards()` implementation delegates to legacy methods
+Orchestrates generator and filters:
 
-### Phase 2: SessionController Integration (COMPLETE)
+```typescript
+class Pipeline {
+  constructor(
+    generator: CardGenerator,
+    filters: CardFilter[],
+    user: UserDBInterface,
+    course: CourseDBInterface
+  )
 
-`SessionController` now calls `getWeightedCards()` when available:
-- `prepareSession()` checks if sources support `getWeightedCards()`
-- New `getWeightedContent()` method fetches scored candidates
-- Hybrid approach: uses scores for ordering, full review data for queue population
-- Fallback to legacy methods for sources without `getWeightedCards()`
+  async getWeightedCards(limit: number): Promise<WeightedCard[]> {
+    const context = await this.buildContext();
+    let cards = await this.generator.getWeightedCards(fetchLimit, context);
+    
+    for (const filter of this.filters) {
+      cards = await filter.transform(cards, context);
+    }
+    
+    return cards.filter(c => c.score > 0)
+                .sort((a, b) => b.score - a.score)
+                .slice(0, limit);
+  }
+}
+```
 
-The new/review distinction is preserved via `WeightedCard.source` field for queue routing.
+## Pipeline Assembly
 
-Key files modified:
-- `packages/db/src/study/SessionController.ts` — Added `getWeightedContent()`
-- `packages/db/src/impl/couch/courseDB.ts` — Added `getWeightedCards()` delegation
-- `packages/db/src/impl/couch/classroomDB.ts` — Added `getWeightedCards()` wrapper
-- `packages/db/src/core/interfaces/contentSource.ts` — Added optional `getWeightedCards()`
+`PipelineAssembler` builds pipelines from strategy documents:
 
-### Phase 3: Deprecation (Future)
+```typescript
+const assembler = new PipelineAssembler();
+const { pipeline, warnings } = await assembler.assemble({
+  strategies: allStrategies,
+  user,
+  course,
+});
+```
 
-Once SessionController migration is complete:
-- Legacy methods will be marked `@deprecated`
-- New strategy implementations can skip implementing them (base class provides defaults)
-- Eventually, legacy methods will be removed
+Assembly logic:
+1. Separate strategies into generators and filters by `NavigatorRole`
+2. Instantiate generators — wrap multiple in `CompositeGenerator`
+3. Instantiate filters — sorted alphabetically for determinism
+4. Return `Pipeline(generator, filters)`
+
+If no strategies are configured, `courseDB.createNavigator()` returns a default pipeline:
+```typescript
+Pipeline(
+  CompositeGenerator([ELONavigator, SRSNavigator]),
+  [eloDistanceFilter]
+)
+```
+
+## Score Semantics
+
+| Score | Meaning |
+|-------|---------|
+| 1.0 | Fully suitable |
+| 0.5 | Neutral |
+| 0.0 | Exclude (hard filter) |
+| 0.x | Proportional suitability |
+
+**All filters are multipliers.** This means:
+- Filter order doesn't affect final scores (multiplication is commutative)
+- Score 0 from any filter excludes the card
+- Filters are applied alphabetically for determinism
 
 ## Provenance Tracking
 
-Each card includes a provenance trail documenting how it was scored:
+Each card's provenance shows how it was scored:
 
 ```typescript
-// Example: Card that went through full pipeline
 provenance: [
   {
     strategy: 'elo',
@@ -181,240 +149,117 @@ provenance: [
   {
     strategy: 'hierarchyDefinition',
     strategyName: 'Hierarchy: Phonics Basics',
-    strategyId: 'NAVIGATION_STRATEGY-hierarchy-phonics-basics',
+    strategyId: 'NAVIGATION_STRATEGY-hierarchy-phonics',
     action: 'passed',
     score: 0.85,
     reason: 'Prerequisites met, tags: letter-sounds'
   },
   {
-    strategy: 'interferenceMitigator',
-    strategyName: 'Interference: b/d/p confusion',
-    strategyId: 'NAVIGATION_STRATEGY-interference-bdp-confusion',
+    strategy: 'eloDistance',
+    strategyName: 'ELO Distance Filter',
+    strategyId: 'ELO_DISTANCE_FILTER',
     action: 'penalized',
-    score: 0.68,
-    reason: 'Interferes with immature tags d (tags: b, multiplier: 0.80)'
-  },
-  {
-    strategy: 'relativePriority',
-    strategyName: 'Priority: Common letters first',
-    strategyId: 'NAVIGATION_STRATEGY-priority-common-letters',
-    action: 'boosted',
-    score: 0.78,
-    reason: 'High-priority tags: s (priority 0.95 → boost 1.15x → 0.78)'
+    score: 0.72,
+    reason: 'ELO distance 150 (card: 1150, user: 1000) → 0.85x'
   }
 ]
 ```
 
-**Strategy identification:** Each provenance entry includes three fields:
-- `strategy`: The implementing class (type) - useful for programmatic filtering
-- `strategyName`: Human-readable name from ContentNavigationStrategyData.name - for display/UI
-- `strategyId`: The unique document ID (ContentNavigationStrategyData._id) - identifies the specific instance
+Use `getCardOrigin(card)` to extract 'new', 'review', or 'failed' from provenance.
 
-The `strategyId` can be used to fetch the full strategy configuration document. The `strategyName` provides immediate human-readable context without requiring a database lookup. This enables courses to have multiple instances of the same strategy type with different configurations.
+## Creating New Strategies
 
-**Extracting origin:** Use the `getCardOrigin(card)` helper to extract whether a card is 'new', 'review', or 'failed' from the provenance trail.
-
-## Score Semantics
-
-Scores range from 0-1 with the following semantics:
-
-| Score | Meaning |
-|-------|---------|
-| 1.0 | Fully suitable — strong candidate |
-| 0.5 | Neutral — no preference |
-| 0.0 | Hard filter — exclude from consideration |
-| 0.x | Soft preference — proportional suitability |
-
-Scores are typically combined multiplicatively when strategies are chained. A score of 0
-from any strategy filters out the card entirely.
-
-**Provenance tracks score evolution:** Each entry in the provenance array shows the score after that strategy processed the card, creating a complete audit trail.
-
-## SessionController Interaction
-
-`SessionController` manages:
-- **Time budgeting** — Stops session based on configured duration
-- **Queue management** — Maintains separate queues for new/review/failed cards
-- **Just-in-time fetching** — Requests small batches from sources as needed
-
-The controller now (as of Phase 2):
-1. Checks if sources support `getWeightedCards()` in `prepareSession()`
-2. Calls `getWeightedContent()` which:
-   - Fetches weighted cards for scoring information
-   - Fetches full review data via `getPendingReviews()` (needed for `ScheduledCard` fields)
-   - Builds a score lookup map from weighted results
-   - Sorts reviews by their weighted scores
-   - Adds new cards ordered by their weighted scores
-3. Falls back to legacy `getScheduledReviews()` / `getNewCards()` if sources don't support the new API
-
-Debug info now includes `api.mode` ('weighted' | 'legacy') to indicate which path is active.
-
-## Interface Evolution Summary
-
-```
-BEFORE (hard-coded strategies):
-
-StudyContentSource
-├── getNewCards()       ← ELO-based selection
-└── getPendingReviews() ← SRS-based scheduling
-
-AFTER (pluggable strategies):
-
-ContentNavigator implements StudyContentSource
-├── getWeightedCards()  ← PRIMARY: unified scored candidates
-├── getNewCards()       ← LEGACY: backward compat, eventually deprecated  
-└── getPendingReviews() ← LEGACY: backward compat, eventually deprecated
-```
-
-## For Implementers
-
-### Common Constructor Pattern
-
-All standard navigators extend `ContentNavigator` and call the base class constructor to initialize common fields:
+### Generator
 
 ```typescript
-constructor(
-  user: UserDBInterface,
-  course: CourseDBInterface,
-  strategyData: ContentNavigationStrategyData
-) {
-  super(user, course, strategyData);  // Initializes user, course, strategyName, strategyId
-  // ... strategy-specific initialization
+class MyGenerator extends ContentNavigator implements CardGenerator {
+  name = 'My Generator';
+
+  async getWeightedCards(limit: number, context?: GeneratorContext): Promise<WeightedCard[]> {
+    const candidates = await this.findCandidates(limit);
+    
+    return candidates.map(c => ({
+      cardId: c.id,
+      courseId: this.course.getCourseID(),
+      score: this.computeScore(c),
+      provenance: [{
+        strategy: 'myGenerator',
+        strategyName: this.name,
+        strategyId: this.strategyId || 'MY_GENERATOR',
+        action: 'generated',
+        score: this.computeScore(c),
+        reason: 'Explanation here, new card'
+      }]
+    }));
+  }
+
+  // Legacy methods - stub or implement for backward compat
+  async getNewCards() { return []; }
+  async getPendingReviews() { return []; }
 }
 ```
 
-The base class automatically extracts and stores:
-- `this.user` - User interface
-- `this.course` - Course interface
-- `this.strategyName` - Human-readable name from `strategyData.name`
-- `this.strategyId` - Unique document ID from `strategyData._id`
+Register in `NavigatorRoles` as `NavigatorRole.GENERATOR`.
 
-These protected fields are available to all subclasses.
-
-### Creating a New Generator Strategy
+### Filter
 
 ```typescript
-class MyGeneratorNavigator extends ContentNavigator {
-  constructor(
-    user: UserDBInterface,
-    course: CourseDBInterface,
-    strategyData: ContentNavigationStrategyData
-  ) {
-    super(user, course, strategyData);
-    // ... initialize strategy-specific config
-  }
+class MyFilter extends ContentNavigator implements CardFilter {
+  name = 'My Filter';
 
-  async getWeightedCards(limit: number): Promise<WeightedCard[]> {
-    // Generate and score candidates
-    const candidates = await this.findCandidates(limit);
-    return candidates.map(c => {
-      const score = this.computeScore(c);
+  async transform(cards: WeightedCard[], context: FilterContext): Promise<WeightedCard[]> {
+    return cards.map(card => {
+      const multiplier = this.computeMultiplier(card, context);
+      const newScore = card.score * multiplier;
+      const action = multiplier < 1 ? 'penalized' : multiplier > 1 ? 'boosted' : 'passed';
+      
       return {
-        cardId: c.id,
-        courseId: this.course.getCourseID(),
-        score,
-        provenance: [{
-          strategy: 'myGenerator',
-          strategyName: this.strategyName || 'My Generator',
-          strategyId: this.strategyId || 'NAVIGATION_STRATEGY-my-generator',
-          action: 'generated',
-          score,
-          reason: `My scoring logic: ${this.explainScore(c)}, new card`
+        ...card,
+        score: newScore,
+        provenance: [...card.provenance, {
+          strategy: 'myFilter',
+          strategyName: this.name,
+          strategyId: this.strategyId || 'MY_FILTER',
+          action,
+          score: newScore,
+          reason: 'Explanation here'
         }]
       };
     });
   }
 
-  // Legacy methods - can use base class default or implement
-  async getNewCards(n?: number) { /* ... */ }
-  async getPendingReviews() { /* ... */ }
+  // Legacy methods - filters don't generate cards
+  async getWeightedCards() { throw new Error('Use transform() via Pipeline'); }
+  async getNewCards() { return []; }
+  async getPendingReviews() { return []; }
 }
 ```
 
-### Creating a New Filter Strategy
+Register in `NavigatorRoles` as `NavigatorRole.FILTER`.
 
-```typescript
-class MyFilterNavigator extends ContentNavigator {
-  private delegate: ContentNavigator | null = null;
+## File Reference
 
-  constructor(
-    user: UserDBInterface,
-    course: CourseDBInterface,
-    strategyData: ContentNavigationStrategyData
-  ) {
-    super(user, course, strategyData);
-    // ... initialize filter-specific config
-  }
-
-  private async getDelegate(): Promise<ContentNavigator> {
-    if (!this.delegate) {
-      this.delegate = await ContentNavigator.create(
-        this.user,
-        this.course,
-        { implementingClass: this.config.delegateStrategy || 'elo', ... }
-      );
-    }
-    return this.delegate;
-  }
-
-  async getWeightedCards(limit: number): Promise<WeightedCard[]> {
-    const delegate = await this.getDelegate();
-    const candidates = await delegate.getWeightedCards(limit * 2);
-
-    // Transform scores and append provenance
-    return candidates
-      .map(c => {
-        const adjustedScore = this.adjustScore(c);
-        const action = adjustedScore > c.score ? 'boosted'
-                     : adjustedScore < c.score ? 'penalized'
-                     : 'passed';
-
-        return {
-          ...c,
-          score: adjustedScore,
-          provenance: [
-            ...c.provenance,
-            {
-              strategy: 'myFilter',
-              strategyName: this.strategyName || 'My Filter',
-              strategyId: this.strategyId || 'NAVIGATION_STRATEGY-my-filter',
-              action,
-              score: adjustedScore,
-              reason: this.explainAdjustment(c, adjustedScore)
-            }
-          ]
-        };
-      })
-      .filter(c => c.score > 0)
-      .sort((a, b) => b.score - a.score)
-      .slice(0, limit);
-  }
-
-  // Legacy methods delegate through
-  async getNewCards(n?: number) {
-    return (await this.getDelegate()).getNewCards(n);
-  }
-  async getPendingReviews() {
-    return (await this.getDelegate()).getPendingReviews();
-  }
-}
-```
-
-## Related Files
-
-- `packages/db/src/core/interfaces/contentSource.ts` — `StudyContentSource` interface (with optional `getWeightedCards`)
-- `packages/db/src/core/navigators/index.ts` — `ContentNavigator` base class, `WeightedCard`, `NavigatorRole`
-- `packages/db/src/core/navigators/PipelineAssembler.ts` — Assembles strategy docs into pipeline
-- `packages/db/src/core/navigators/CompositeGenerator.ts` — Merges multiple generators
-- `packages/db/src/core/navigators/elo.ts` — Reference generator implementation
-- `packages/db/src/core/navigators/hierarchyDefinition.ts` — Reference filter implementation
-- `packages/db/src/core/navigators/interferenceMitigator.ts` — Interference avoidance filter
-- `packages/db/src/core/navigators/relativePriority.ts` — Priority-based score boosting filter
-- `packages/db/src/impl/couch/courseDB.ts` — `createNavigator()`, `getWeightedCards()` implementation
-- `packages/db/src/impl/couch/classroomDB.ts` — `getWeightedCards()` wrapper for classrooms
-- `packages/db/src/study/SessionController.ts` — Consumer of navigation strategies (`getWeightedContent()`)
+| File | Purpose |
+|------|---------|
+| `core/navigators/index.ts` | `ContentNavigator`, `WeightedCard`, `NavigatorRole` |
+| `core/navigators/generators/types.ts` | `CardGenerator`, `GeneratorContext` |
+| `core/navigators/filters/types.ts` | `CardFilter`, `FilterContext` |
+| `core/navigators/Pipeline.ts` | Pipeline orchestration |
+| `core/navigators/PipelineAssembler.ts` | Builds Pipeline from strategy docs |
+| `core/navigators/CompositeGenerator.ts` | Merges multiple generators |
+| `core/navigators/elo.ts` | ELO generator |
+| `core/navigators/srs.ts` | SRS generator |
+| `core/navigators/hardcodedOrder.ts` | Fixed-order generator |
+| `core/navigators/hierarchyDefinition.ts` | Prerequisite filter |
+| `core/navigators/interferenceMitigator.ts` | Interference filter |
+| `core/navigators/relativePriority.ts` | Priority filter |
+| `core/navigators/filters/eloDistance.ts` | ELO distance filter |
+| `impl/couch/courseDB.ts` | `createNavigator()` entry point |
 
 ## Related TODOs
 
-- `todo-pipeline-optimization.md` — Batch tag lookups, future: eliminate delegate pattern
-- `agent/orchestrator/todo-evolutionary-orchestration.md` — Future: multi-arm bandit selection
+- `todo-pipeline-optimization.md` - Batch tag hydration for filter efficiency
+- `todo-strategy-authoring.md` - ux and dx for authoring strategies
+- todo-pipeline-optimization.md - 
+- todo-strategy-state-storage
+- todo-evolutionary-orchestration

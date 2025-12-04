@@ -430,19 +430,24 @@ async getWeightedCards(limit: number): Promise<WeightedCard[]> {
   - Stub legacy methods, `getWeightedCards()` throws
 - [x] p7.4: All 126 tests passing
 
-### Phase 8: PipelineAssembler Rewrite
-- [ ] p8.1: Update `PipelineAssembler` to instantiate generators and filters directly
-  - Remove `buildChain()` method entirely
-  - Return a `Pipeline` instance (not a strategy config for delegate wrapping)
-- [ ] p8.2: Remove `delegateStrategy` handling from all config parsing
-- [ ] p8.3: Update `NavigatorRoles` registry if needed (generators vs filters now type-enforced)
+### Phase 8: PipelineAssembler Rewrite ✅ COMPLETED
+- [x] p8.1: Update `PipelineAssembler` to instantiate generators and filters directly
+  - Removed `buildChain()` method entirely
+  - Now returns a `Pipeline` instance directly
+  - Method is now async to support dynamic instantiation
+- [x] p8.2: Remove `delegateStrategy` handling from all config parsing (done in Phase 7)
+- [x] p8.3: Updated `PipelineAssemblerInput` to include `user` and `course` for instantiation
+- [x] p8.4: Updated `PipelineAssemblyResult` to return `Pipeline | null` instead of strategy config
+- [x] p8.5: Updated `courseDB.createNavigator()` to use new async assembler interface
+- [x] p8.6: Removed `surfaceNavigationStrategy()` from interface and implementations (obsoleted by `createNavigator()`)
+- [x] p8.7: Updated PipelineAssembler tests for new async interface (123 tests passing)
 
-### Phase 9: Cleanup
-- [ ] p9.1: Remove delegate pattern comments/docs from `core/navigators/index.ts`
-- [ ] p9.2: Update `ContentNavigator` base class (remove delegate-related guidance)
-- [ ] p9.3: Update navigators-architecture.md (if exists)
-- [ ] p9.4: Update todo-pipeline-optimization.md (mark complete)
-- [ ] p9.5: Verify all tests pass
+### Phase 9: Cleanup ✅ COMPLETED
+- [x] p9.1: Remove delegate pattern comments/docs from `core/navigators/index.ts` (done in Phase 6)
+- [x] p9.2: Update `ContentNavigator` base class (done in Phase 6)
+- [x] p9.3: Update navigators-architecture.md (rewrote for Pipeline architecture)
+- [x] p9.4: Update todo-pipeline-optimization.md (trimmed to remaining work: batch tag hydration)
+- [x] p9.5: Verify all tests pass (123 tests passing)
 
 ## Out of Scope (Future)
 
