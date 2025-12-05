@@ -80,7 +80,7 @@
 import SessionConfiguration from '@pui/components/Study/SessionConfiguration.vue';
 import { getCurrentUser, useConfigStore } from '@vue-skuilder/common-ui';
 import { useDataInputFormStore } from '@vue-skuilder/edit-ui';
-import { CourseConfig } from '@vue-skuilder/common';
+import { CourseConfig, TagFilter, hasActiveFilter } from '@vue-skuilder/common';
 import { StudySession, type StudySessionConfig } from '@vue-skuilder/common-ui';
 import { allCourseWare } from '@vue-skuilder/courseware';
 import { ContentSourceID, UserDBInterface, getDataLayer } from '@vue-skuilder/db';
@@ -197,7 +197,19 @@ export default defineComponent({
     }
 
     if (singletonStudyCourseID) {
-      this.initStudySession([{ type: 'course', id: singletonStudyCourseID }], this.sessionTimeLimit);
+      // Parse tag filter from query params
+      const tagFilter = this.parseTagFilterFromQuery();
+      const source: ContentSourceID = {
+        type: 'course',
+        id: singletonStudyCourseID,
+      };
+
+      if (hasActiveFilter(tagFilter)) {
+        source.tagFilter = tagFilter;
+        console.log(`[Study] Tag filter from query params:`, tagFilter);
+      }
+
+      this.initStudySession([source], this.sessionTimeLimit);
     }
   },
 
@@ -240,6 +252,38 @@ export default defineComponent({
       this.sessionError = true;
       this.errorMessage = message || 'An error occurred while preparing your study session.';
       this.sessionPrepared = false;
+    },
+
+    /**
+     * Parse tag filter from URL query parameters.
+     *
+     * Supports:
+     * - ?include=tagA,tagB&exclude=tagC
+     * - Comma-separated values for multiple tags
+     *
+     * @returns TagFilter parsed from query, or empty filter if no params
+     */
+    parseTagFilterFromQuery(): TagFilter {
+      const includeParam = this.$route.query.include;
+      const excludeParam = this.$route.query.exclude;
+
+      const parseParam = (param: string | string[] | undefined | null): string[] => {
+        if (!param) return [];
+        if (Array.isArray(param)) {
+          // Handle repeated params: ?include=a&include=b
+          return param.flatMap((p) => (p ? p.split(',').map((t) => t.trim()) : [])).filter(Boolean);
+        }
+        // Handle comma-separated: ?include=a,b
+        return param
+          .split(',')
+          .map((t) => t.trim())
+          .filter(Boolean);
+      };
+
+      return {
+        include: parseParam(includeParam as string | string[] | undefined),
+        exclude: parseParam(excludeParam as string | string[] | undefined),
+      };
     },
   },
 });
