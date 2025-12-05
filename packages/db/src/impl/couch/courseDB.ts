@@ -270,16 +270,6 @@ export class CourseDB implements StudyContentSource, CourseDBInterface {
       }
     });
 
-    await Promise.all(
-      cards.rows.map((r) => {
-        return async () => {
-          if (isSuccessRow(r)) {
-            ret[r.id] = r.doc!.id_displayable_data;
-          }
-        };
-      })
-    );
-
     return ret;
   }
 
