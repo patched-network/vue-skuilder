@@ -4,7 +4,7 @@
 Briefly, `skuilder` is a set of [npm packages](https://npmjs.org/org/vue-skuilder) that provide:
 - a modular and extensible architecture for interactive tutoring systems
 - skeleton implementations suitable for a variety of contexts (eg: community platform, SaaS, static deployments)
-- a cli to help tie things together and scaffold applications
+- a CLI to help tie things together and scaffold applications
 
 ## ... *Why* is Skuilder?
 
@@ -16,25 +16,31 @@ The overall vision is to simplify the production of top-tier interactive educati
 
 ... to SRS applications by replacing complex config and [canonical death spirals](https://www.lesswrong.com/posts/7Q7DPSk4iGFJd8DRk/an-opinionated-guide-to-using-anki-correctly) with simpler *goals* + *time commitment* configuration. We want our apps to immediately maximize time-on-task for learners.
 
-This work is *complete-ish*.
+**Status**: ✅ Core session management and time-based study flow implemented.
 
 ### Encourage richer interaction
 
 Second, we'd like to apply the paradigm to a __broader set of skills__ than has traditionally been targeted. SRS is a proven paradigm for knowledge building, but we expect it can be taken from 'mere' retrieval into contexts with procedural and even creative aspects. The move is from a knowledge-builder to a **sk**ill-b**uilder**.
 
-This work is *complete-ish*.
+**Status**: ✅ Extensible card system supports custom question types, multi-dimensional performance evaluation, and compositional skill hierarchies.
 
 ### Discover blended pedagogical models
 
-Third, we'd like to intelligently blend the SRS paradigm with heirarchical knowledge graphs, dynamic high-demensional dificulty sorting, and other bespoke tutoring intervtions. We'd like this blending to be responsive to revealed deficiencies in userbase progress through course materials, and we'd like these learning bottlenecks to be surfaced automaticlly. Further, we're interested in generalized A/B or marketplace mechanisms for pedagogical strategies over given curricula.
+We'd like to intelligently blend SRS with hierarchical knowledge graphs, dynamic difficulty matching, and other tutoring interventions. This blending should be responsive to revealed deficiencies in learner progress, and learning bottlenecks should surface automatically.
 
-This work is *in progress*, with a dynamic high-dimensional difficuty sorting default pedagogy, and existing API definitions and data storage hooks for custom "ContentNavigationStrategies".
+**Status**: 🟡 In progress.
+- ✅ Dual-dynamic ELO system (user + card ratings co-evolve)
+- ✅ Configurable navigation strategies (prerequisites, interference avoidance, priority ordering)
+- ✅ Visual authoring UI for strategy configuration
+- 🔜 Per-tag skill targeting, strategy composition, evolutionary orchestration
+
+See the [Pedagogy System](./learn/pedagogy) doc for details.
 
 ### Create an open-source Curriculum Package Manager
 
-Finally, we aim to specify a format to declare, package, and re-use educational content.
+We aim to specify a format to declare, package, and re-use educational content.
 
-This work is *in design phase*, but will lean on existing mechanisms for declaring contents of serialized courses.
+**Status**: 🟡 Design phase. Static course bundling works today; package management semantics are in development.
 
 ## Tech Stack
 
@@ -52,24 +58,20 @@ This is developer documentation, mainly intended for persons interested in build
 
 ### Organization
 
-The __Learn__ section
+The __Learn__ section provides conceptual background on the architecture and its components.
 
-The __Do__ section is a guided tutorial that . Open it side-by-side with your terminal, IDE, or claude-code(-clone).
-
-<!--The __Reference__ section leans into the nitty-gritty details. You can probably leave it alone until either:
-- you're
---->
+The __Do__ section is a guided tutorial. Open it side-by-side with your terminal, IDE, or claude-code.
 
 ### Caveat and Working Assumption
 
-This documentation is both *in-progess* and also not really intended to be fully comprehensive.
+This documentation is both *in-progress* and not intended to be fully comprehensive.
 
 The project's modular components require a little cajoling to work together in different contexts (eg, static-site vs live backend, standalone course vs course development platform). This site focuses on **standalone** courses built for **static deployment** and browser-local user data, as described in the [quickstart](./do/quickstart) document.
 
-All "general purpose" information should be reliable, but specifics in the vein of "`foo` must be exported from `bar`" may apply to the specific assumed context.
+General information should be reliable, but specifics like "`foo` must be exported from `bar`" may apply only to the assumed context.
 
 ## Contributing
 
-External collaboration welcome. First and foremost, run the [quickstart](./do/quickstart) and raise [issues](https://github.com/patched-network/vue-skuilder/issues) wheverver you stub your toes.
+External collaboration welcome. First and foremost, run the [quickstart](./do/quickstart) and raise [issues](https://github.com/patched-network/vue-skuilder/issues) wherever you stub your toes.
 
 Small PRs that present as unambiguous wins are always welcome. Before working on a major PR, consider raising the work as a github issue or being in touch through [this contact form](https://patched.network/contact/).
