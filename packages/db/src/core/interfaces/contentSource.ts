@@ -3,6 +3,8 @@ import { UserDBInterface } from '..';
 import { StudentClassroomDB } from '../../impl/couch/classroomDB';
 import { ScheduledCard } from '@db/core/types/user';
 import { WeightedCard } from '../navigators';
+import { TagFilter, hasActiveFilter } from '@vue-skuilder/common';
+import { TagFilteredContentSource } from '../../study/TagFilteredContentSource';
 
 // ============================================================================
 // API MIGRATION NOTICE
@@ -76,6 +78,11 @@ export interface StudySessionItem {
 export interface ContentSourceID {
   type: 'course' | 'classroom';
   id: string;
+  /**
+   * Optional tag filter for scoped study sessions.
+   * When present, creates a TagFilteredContentSource instead of a regular course source.
+   */
+  tagFilter?: TagFilter;
 }
 
 // #region docs_StudyContentSource
@@ -135,11 +142,12 @@ export async function getStudySource(
   if (source.type === 'classroom') {
     return await StudentClassroomDB.factory(source.id, user);
   } else {
-    // if (source.type === 'course') - removed so tsc is certain something returns
-    // return new CourseDB(source.id, async () => {
-    //   return user;
-    // });
+    // Check if this is a tag-filtered course source
+    if (hasActiveFilter(source.tagFilter)) {
+      return new TagFilteredContentSource(source.id, source.tagFilter!, user);
+    }
 
+    // Regular course source
     return getDataLayer().getCourseDB(source.id) as unknown as StudyContentSource;
   }
 }

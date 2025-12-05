@@ -6,8 +6,8 @@
     <v-alert v-if="courseLoadError" type="warning" class="mb-4">
       Unable to load course data. Some features may be unavailable.
     </v-alert>
-    
-    <v-alert v-if="classroomLoadError" type="warning" class="mb-4">  
+
+    <v-alert v-if="classroomLoadError" type="warning" class="mb-4">
       Unable to load classroom data. You can still study individual courses.
     </v-alert>
 
@@ -15,46 +15,68 @@
       <!-- Left Column: Course Selection -->
       <div class="course-selection-container">
         <div class="text-h6 mb-3">Select Quilts to Study</div>
-        <table width="100%">
-          <thead>
-            <tr>
-              <th>
-                <v-checkbox
-                  id="SelectAll"
-                  ref="selectAll"
-                  v-model="allSelected"
-                  autofocus
-                  label="Select All"
-                  @update:model-value="toggleAll"
-                ></v-checkbox>
-              </th>
 
-              <th>
-                Reviews
-                <!-- <v-icon>info</v-icon> -->
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="classroom in activeClasses" :key="classroom.classID">
-              <td>
-                <v-checkbox v-model="classroom.selected" :label="`Class: ${classroom.name}`" @click.capture="update" />
-              </td>
-              <td>-</td>
-            </tr>
-            <tr v-for="course in activeCourses" :key="course.courseID">
-              <td>
-                <v-checkbox
-                  v-model="course.selected"
-                  data-cy="course-checkbox"
-                  :label="`q/${course.name}`"
-                  @click.capture="update"
-                />
-              </td>
-              <td>{{ course.reviews }}</td>
-            </tr>
-          </tbody>
-        </table>
+        <!-- Classrooms -->
+        <div v-for="classroom in activeClasses" :key="classroom.classID" class="course-row">
+          <div class="course-row-header">
+            <v-checkbox
+              v-model="classroom.selected"
+              :label="`Class: ${classroom.name}`"
+              hide-details
+              @click.capture="update"
+            />
+            <span class="reviews-count">-</span>
+          </div>
+        </div>
+
+        <!-- Courses -->
+        <div v-for="course in activeCourses" :key="course.courseID" class="course-row">
+          <div class="course-row-header">
+            <v-checkbox
+              v-model="course.selected"
+              data-cy="course-checkbox"
+              :label="`q/${course.name}`"
+              hide-details
+              @click.capture="update"
+            />
+            <div class="course-row-actions">
+              <span class="reviews-count">{{ course.reviews }}</span>
+              <v-btn
+                v-if="course.selected"
+                variant="text"
+                size="small"
+                :color="hasActiveTagFilter(course) ? 'primary' : 'default'"
+                @click="toggleTagFilter(course.courseID)"
+              >
+                <v-icon start size="small">mdi-filter-variant</v-icon>
+                {{ hasActiveTagFilter(course) ? 'Filtered' : 'Filter' }}
+                <v-icon end size="small">
+                  {{ expandedFilters[course.courseID] ? 'mdi-chevron-up' : 'mdi-chevron-down' }}
+                </v-icon>
+              </v-btn>
+            </div>
+          </div>
+
+          <!-- Tag Filter Widget (expandable) -->
+          <v-expand-transition>
+            <div v-if="course.selected && expandedFilters[course.courseID]" class="tag-filter-container">
+              <CourseTagFilterWidget :course-id="course.courseID" v-model="course.tagFilter" />
+            </div>
+          </v-expand-transition>
+        </div>
+
+        <!-- Select All -->
+        <div class="select-all-row mt-3">
+          <v-checkbox
+            id="SelectAll"
+            ref="selectAll"
+            v-model="allSelected"
+            autofocus
+            label="Select All"
+            hide-details
+            @update:model-value="toggleAll"
+          ></v-checkbox>
+        </div>
       </div>
 
       <!-- Right Column: Time Configuration and Start Button -->
@@ -80,10 +102,18 @@
             />
           </div>
 
+          <!-- Filter Summary -->
+          <div v-if="hasAnyActiveFilter" class="filter-summary mb-4">
+            <v-icon size="small" color="primary" class="mr-1">mdi-filter</v-icon>
+            <span class="text-caption">
+              {{ activeFilterCount }} course{{ activeFilterCount > 1 ? 's' : '' }} with tag filters
+            </span>
+          </div>
+
           <SkMouseTrapToolTip
             hotkey="enter"
             command="Start Session"
-            :disabled="!activeCourses.length && !activeClasses.length"
+            :disabled="!hasSelectedSources"
             highlight-effect="scale"
           >
             <v-btn
@@ -92,6 +122,7 @@
               size="large"
               block
               class="start-btn"
+              :disabled="!hasSelectedSources"
               @click="startSession"
             >
               <v-icon start>mdi-play</v-icon>
@@ -114,13 +145,20 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import { SkldrMouseTrap, getCurrentUser, SkMouseTrapToolTip } from '@vue-skuilder/common-ui';
+import { SkldrMouseTrap, getCurrentUser, SkMouseTrapToolTip, CourseTagFilterWidget } from '@vue-skuilder/common-ui';
 import { CourseRegistration, UserDBInterface, getDataLayer, ContentSourceID } from '@vue-skuilder/db';
+import { TagFilter, hasActiveFilter } from '@vue-skuilder/common';
 
 export interface SessionConfigMetaData {
   selected: boolean;
   name: string;
   reviews: number;
+  tagFilter?: TagFilter;
+}
+
+// Extended ContentSourceID that can carry tag filter configuration
+export interface TagFilteredContentSourceID extends ContentSourceID {
+  tagFilter?: TagFilter;
 }
 
 export default defineComponent({
@@ -128,6 +166,7 @@ export default defineComponent({
 
   components: {
     SkMouseTrapToolTip,
+    CourseTagFilterWidget,
   },
 
   props: {
@@ -151,7 +190,22 @@ export default defineComponent({
       timeLimit: this.initialTimeLimit,
       courseLoadError: false,
       classroomLoadError: false,
+      expandedFilters: {} as Record<string, boolean>,
     };
+  },
+
+  computed: {
+    hasSelectedSources(): boolean {
+      return this.activeCourses.some((c) => c.selected) || this.activeClasses.some((c) => c.selected);
+    },
+
+    hasAnyActiveFilter(): boolean {
+      return this.activeCourses.some((c) => c.selected && this.hasActiveTagFilter(c));
+    },
+
+    activeFilterCount(): number {
+      return this.activeCourses.filter((c) => c.selected && this.hasActiveTagFilter(c)).length;
+    },
   },
 
   watch: {
@@ -167,7 +221,7 @@ export default defineComponent({
   beforeUnmount() {
     // Clean up registered hotkeys when component unmounts
     if (this.registeredHotkeys) {
-      this.registeredHotkeys.forEach(key => {
+      this.registeredHotkeys.forEach((key) => {
         SkldrMouseTrap.removeBinding(key);
       });
     }
@@ -180,7 +234,7 @@ export default defineComponent({
     this.setHotkeys();
     const [coursesResult, classroomsResult] = await Promise.allSettled([
       this.getActiveCourses(),
-      this.getActiveClassrooms()
+      this.getActiveClassrooms(),
     ]);
 
     // Handle course loading failure
@@ -189,25 +243,30 @@ export default defineComponent({
       this.courseLoadError = true;
     }
 
-    // Handle classroom loading failure  
+    // Handle classroom loading failure
     if (classroomsResult.status === 'rejected') {
       console.error('Failed to load classrooms:', classroomsResult.reason);
       this.classroomLoadError = true;
     }
 
-    if (this.activeCourses.length === 0 && this.activeClasses.length === 0 && !this.courseLoadError && !this.classroomLoadError) {
+    if (
+      this.activeCourses.length === 0 &&
+      this.activeClasses.length === 0 &&
+      !this.courseLoadError &&
+      !this.classroomLoadError
+    ) {
       this.hasRegistrations = false;
     }
   },
 
   mounted() {
-    document.getElementById('SelectAll')!.focus();
+    document.getElementById('SelectAll')?.focus();
   },
 
   unmounted() {
     // Clean up registered hotkeys when component unmounts
     if (this.registeredHotkeys) {
-      this.registeredHotkeys.forEach(key => {
+      this.registeredHotkeys.forEach((key) => {
         SkldrMouseTrap.removeBinding(key);
       });
     }
@@ -240,25 +299,44 @@ export default defineComponent({
       console.log(JSON.stringify(this.activeCourses));
     },
 
+    toggleTagFilter(courseID: string): void {
+      this.expandedFilters[courseID] = !this.expandedFilters[courseID];
+    },
+
+    hasActiveTagFilter(course: CourseRegistration & SessionConfigMetaData): boolean {
+      return hasActiveFilter(course.tagFilter);
+    },
+
     startSession() {
       // Clean up any registered hotkeys before starting session
       if (this.registeredHotkeys) {
-        this.registeredHotkeys.forEach(key => {
+        this.registeredHotkeys.forEach((key) => {
           SkldrMouseTrap.removeBinding(key);
         });
       }
-      const selectedCourses: ContentSourceID[] = this.activeCourses
+
+      // Build sources with optional tag filters
+      const selectedCourses: TagFilteredContentSourceID[] = this.activeCourses
         .filter((c) => c.selected)
-        .map((c) => ({
-          type: 'course',
-          id: c.courseID,
-        }));
+        .map((c) => {
+          const source: TagFilteredContentSourceID = {
+            type: 'course',
+            id: c.courseID,
+          };
+          // Only include tagFilter if it has active constraints
+          if (hasActiveFilter(c.tagFilter)) {
+            source.tagFilter = c.tagFilter;
+          }
+          return source;
+        });
+
       const selectedClassrooms: ContentSourceID[] = this.activeClasses
         .filter((cl) => cl.selected)
         .map((cl) => ({
           type: 'classroom',
           id: cl.classID,
         }));
+
       const allSelectedSources = [...selectedCourses, ...selectedClassrooms];
       this.$emit('initStudySession', allSelectedSources, this.timeLimit);
     },
@@ -291,6 +369,7 @@ export default defineComponent({
         selected: true,
         name: '',
         reviews: 0,
+        tagFilter: undefined,
       }));
 
       Promise.all(
@@ -325,23 +404,13 @@ export default defineComponent({
         },
       ];
       SkldrMouseTrap.addBinding(hotkeys);
-      this.registeredHotkeys = hotkeys.map(k => k.hotkey);
+      this.registeredHotkeys = hotkeys.map((k) => k.hotkey);
     },
   },
 });
 </script>
 
 <style scoped>
-td {
-  text-align: center;
-  align-content: center;
-}
-
-.cb {
-  align-content: center !important;
-  text-align: center !important;
-}
-
 /* Layout for session configuration */
 .session-layout {
   display: flex;
@@ -372,6 +441,50 @@ td {
 /* Course selection styles */
 .course-selection-container {
   width: 100%;
+}
+
+.course-row {
+  border-bottom: 1px solid rgba(var(--v-border-color), 0.12);
+  padding: 8px 0;
+}
+
+.course-row-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.course-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.reviews-count {
+  min-width: 32px;
+  text-align: center;
+  color: rgba(var(--v-theme-on-surface), 0.6);
+}
+
+.tag-filter-container {
+  padding: 12px 0 12px 32px;
+  background-color: rgba(var(--v-theme-surface-variant), 0.3);
+  border-radius: 4px;
+  margin-top: 8px;
+}
+
+.select-all-row {
+  padding-top: 8px;
+  border-top: 2px solid rgba(var(--v-border-color), 0.24);
+}
+
+.filter-summary {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  background-color: rgba(var(--v-theme-primary), 0.08);
+  border-radius: 4px;
 }
 
 /* Media queries for desktop layout */
