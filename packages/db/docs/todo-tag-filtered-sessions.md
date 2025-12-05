@@ -1,6 +1,6 @@
 # TODO: Tag-Filtered Study Sessions
 
-## Status: NOT STARTED
+## Status: IN PROGRESS
 
 ## Overview
 
@@ -92,12 +92,15 @@ SessionConfiguration.vue
 
 ## Implementation Steps
 
-### Step 1: Create TagFilter Types
+### Step 1: Create TagFilter Types ✅
 
-- [ ] Create `packages/common/src/types/tagFilter.ts`
-- [ ] Define `TagFilter` interface
-- [ ] Define `CourseSessionConfig` interface  
-- [ ] Export from `packages/common/src/index.ts`
+- [x] Create `packages/common/src/interfaces/TagFilter.ts`
+- [x] Define `TagFilter` interface
+- [x] Add `emptyTagFilter()` helper function
+- [x] Add `hasActiveFilter()` helper function
+- [x] Export from `packages/common/src/interfaces/index.ts`
+
+Note: `CourseSessionConfig` deferred - will be defined inline in `SessionConfiguration.vue` metadata.
 
 ### Step 2: Create TagFilteredContentSource
 
