@@ -1,85 +1,85 @@
 {
-  "name": "@vue-skuilder/cli",
-  "publishConfig": {
-    "access": "public"
-  },
-  "version": "0.1.17",
-  "type": "module",
-  "description": "CLI scaffolding tool for vue-skuilder projects",
-  "bin": {
-    "skuilder": "./dist/cli.js"
-  },
-  "main": "dist/cli.js",
-  "types": "dist/cli.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/cli.d.ts",
-      "import": "./dist/cli.js"
-    }
-  },
-  "scripts": {
-    "build": "rm -rf dist && tsc && npm run embed:studio-ui-src && npm run embed:templates && npm run embed:standalone-ui",
-    "embed:studio-ui-src": "mkdir -p dist/studio-ui-src && cp -r ../studio-ui/src/* dist/studio-ui-src/ && cp ../studio-ui/package.json dist/studio-ui-src/ && cp ../studio-ui/vite.config.ts dist/studio-ui-src/ && cp ../studio-ui/tsconfig.json dist/studio-ui-src/ && cp ../studio-ui/index.html dist/studio-ui-src/ && sed -i 's|resolve(__dirname, \\.\\., \\.\\.)|resolve(__dirname)|' dist/studio-ui-src/vite.config.ts && sed -i 's|/src/main.ts|./main.ts|' dist/studio-ui-src/index.html",
-    "embed:templates": "mkdir -p dist/templates && cp -r templates/.skuilder dist/templates/",
-    "embed:standalone-ui": "mkdir -p dist/standalone-ui-template && cp -r ../standalone-ui/src dist/standalone-ui-template/ && cp ../standalone-ui/package.json dist/standalone-ui-template/ && cp ../standalone-ui/tsconfig.json dist/standalone-ui-template/ && cp ../standalone-ui/vite.config.ts dist/standalone-ui-template/ && cp ../standalone-ui/index.html dist/standalone-ui-template/ && (cp ../standalone-ui/.gitignore dist/standalone-ui-template/ 2>/dev/null || true)",
-    "dev": "tsc --watch",
-    "lint": "npx eslint .",
-    "lint:fix": "npx eslint . --fix",
-    "lint:check": "npx eslint . --max-warnings 0",
-    "try:init": "node dist/cli.js init testproject --dangerously-clobber --no-interactive --data-layer static --import-course-data --import-server-url http://localhost:5984 --import-username admin --import-password password --import-course-ids 2aeb8315ef78f3e89ca386992d00825b && cd testproject && npm i && npm install --save-dev @vue-skuilder/cli@file:.. && npm install @vue-skuilder/db@file:../../db @vue-skuilder/courseware@file:../../courseware @vue-skuilder/common-ui@file:../../common-ui @vue-skuilder/express@file:../../express",
-    "try:init:empty": "node dist/cli.js init testproject-empty --dangerously-clobber --no-interactive --data-layer static && cd testproject-empty && npm i && npm install --save-dev @vue-skuilder/cli@file:.. && npm install @vue-skuilder/db@file:../../db @vue-skuilder/courseware@file:../../courseware @vue-skuilder/common-ui@file:../../common-ui @vue-skuilder/express@file:../../express",
-    "test:e2e": "cypress open --e2e",
-    "test:e2e:headless": "cypress run --spec 'cypress/e2e/scaffolded-app.cy.js'",
-    "test:e2e:custom:studio": "cypress open --e2e --config baseUrl=http://localhost:7174",
-    "test:e2e:custom:studio:headless": "cypress run --spec 'cypress/e2e/custom-questions-studio.cy.js' --config baseUrl=http://localhost:7174",
-    "test:e2e:custom:dev": "cypress open --e2e --config baseUrl=http://localhost:5173",
-    "test:e2e:custom:dev:headless": "cypress run --spec 'cypress/e2e/custom-questions-dev.cy.js'"
-  },
-  "keywords": [
-    "cli",
-    "scaffolding",
-    "vue",
-    "skuilder",
-    "education",
-    "course"
-  ],
-  "dependencies": {
-    "@mdi/font": "^7.3.67",
-    "@vue-skuilder/common": "workspace:*",
-    "@vue-skuilder/common-ui": "workspace:*",
-    "@vue-skuilder/courseware": "workspace:*",
-    "@vue-skuilder/db": "workspace:*",
-    "@vue-skuilder/edit-ui": "workspace:*",
-    "@vue-skuilder/express": "workspace:*",
-    "@vue-skuilder/mcp": "workspace:*",
-    "chalk": "^5.3.0",
-    "commander": "^11.0.0",
-    "fs-extra": "^11.2.0",
-    "inquirer": "^9.2.0",
-    "leveldown": "^6.1.1",
-    "pinia": "^2.3.0",
-    "pouchdb": "^9.0.0",
-    "serve-static": "^1.15.0",
-    "vue": "^3.5.13",
-    "vue-router": "^4.2.0",
-    "vuetify": "^3.7.0"
-  },
-  "devDependencies": {
-    "@types/fs-extra": "^11.0.0",
-    "@types/inquirer": "^9.0.0",
-    "@types/node": "^22",
-    "@types/serve-static": "^1.15.0",
-    "@vitejs/plugin-vue": "^6.0.0",
-    "@vue-skuilder/studio-ui": "workspace:*",
-    "cypress": "^15.6.0",
-    "typescript": "~5.9.3",
-    "vite": "^7.0.0",
-    "vue-tsc": "^1.8.0",
-    "wait-on": "8.0.2"
-  },
-  "engines": {
-    "node": ">=18.0.0"
-  },
-  "packageManager": "yarn@4.6.0",
-  "stableVersion": "0.1.17"
+    "name": "@vue-skuilder/cli",
+    "publishConfig": {
+        "access": "public"
+    },
+    "version": "0.1.17",
+    "type": "module",
+    "description": "CLI scaffolding tool for vue-skuilder projects",
+    "bin": {
+        "skuilder": "./dist/cli.js"
+    },
+    "main": "dist/cli.js",
+    "types": "dist/cli.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/cli.d.ts",
+            "import": "./dist/cli.js"
+        }
+    },
+    "scripts": {
+        "build": "rm -rf dist && tsc && npm run embed:studio-ui-src && npm run embed:templates && npm run embed:standalone-ui",
+        "embed:studio-ui-src": "mkdir -p dist/studio-ui-src && cp -r ../studio-ui/src/* dist/studio-ui-src/ && cp ../studio-ui/package.json dist/studio-ui-src/ && cp ../studio-ui/vite.config.ts dist/studio-ui-src/ && cp ../studio-ui/tsconfig.json dist/studio-ui-src/ && cp ../studio-ui/index.html dist/studio-ui-src/ && sed -i 's|resolve(__dirname, \\.\\., \\.\\.)|resolve(__dirname)|' dist/studio-ui-src/vite.config.ts && sed -i 's|/src/main.ts|./main.ts|' dist/studio-ui-src/index.html",
+        "embed:templates": "mkdir -p dist/templates && cp -r templates/.skuilder dist/templates/",
+        "embed:standalone-ui": "mkdir -p dist/standalone-ui-template && cp -r ../standalone-ui/src dist/standalone-ui-template/ && cp ../standalone-ui/package.json dist/standalone-ui-template/ && cp ../standalone-ui/tsconfig.json dist/standalone-ui-template/ && cp ../standalone-ui/vite.config.ts dist/standalone-ui-template/ && cp ../standalone-ui/index.html dist/standalone-ui-template/ && (cp ../standalone-ui/.gitignore dist/standalone-ui-template/ 2>/dev/null || true)",
+        "dev": "tsc --watch",
+        "lint": "npx eslint .",
+        "lint:fix": "npx eslint . --fix",
+        "lint:check": "npx eslint . --max-warnings 0",
+        "try:init": "node dist/cli.js init testproject --dangerously-clobber --no-interactive --data-layer static --import-course-data --import-server-url http://localhost:5984 --import-username admin --import-password password --import-course-ids 2aeb8315ef78f3e89ca386992d00825b && cd testproject && npm i && npm install --save-dev @vue-skuilder/cli@file:.. && npm install @vue-skuilder/common@file:../../common @vue-skuilder/db@file:../../db @vue-skuilder/courseware@file:../../courseware @vue-skuilder/common-ui@file:../../common-ui @vue-skuilder/express@file:../../express",
+        "try:init:empty": "node dist/cli.js init testproject-empty --dangerously-clobber --no-interactive --data-layer static && cd testproject-empty && npm i && npm install --save-dev @vue-skuilder/cli@file:.. && npm install @vue-skuilder/common@file:../../common @vue-skuilder/db@file:../../db @vue-skuilder/courseware@file:../../courseware @vue-skuilder/common-ui@file:../../common-ui @vue-skuilder/express@file:../../express",
+        "test:e2e": "cypress open --e2e",
+        "test:e2e:headless": "cypress run --spec 'cypress/e2e/scaffolded-app.cy.js'",
+        "test:e2e:custom:studio": "cypress open --e2e --config baseUrl=http://localhost:7174",
+        "test:e2e:custom:studio:headless": "cypress run --spec 'cypress/e2e/custom-questions-studio.cy.js' --config baseUrl=http://localhost:7174",
+        "test:e2e:custom:dev": "cypress open --e2e --config baseUrl=http://localhost:5173",
+        "test:e2e:custom:dev:headless": "cypress run --spec 'cypress/e2e/custom-questions-dev.cy.js'"
+    },
+    "keywords": [
+        "cli",
+        "scaffolding",
+        "vue",
+        "skuilder",
+        "education",
+        "course"
+    ],
+    "dependencies": {
+        "@mdi/font": "^7.3.67",
+        "@vue-skuilder/common": "workspace:*",
+        "@vue-skuilder/common-ui": "workspace:*",
+        "@vue-skuilder/courseware": "workspace:*",
+        "@vue-skuilder/db": "workspace:*",
+        "@vue-skuilder/edit-ui": "workspace:*",
+        "@vue-skuilder/express": "workspace:*",
+        "@vue-skuilder/mcp": "workspace:*",
+        "chalk": "^5.3.0",
+        "commander": "^11.0.0",
+        "fs-extra": "^11.2.0",
+        "inquirer": "^9.2.0",
+        "leveldown": "^6.1.1",
+        "pinia": "^2.3.0",
+        "pouchdb": "^9.0.0",
+        "serve-static": "^1.15.0",
+        "vue": "^3.5.13",
+        "vue-router": "^4.2.0",
+        "vuetify": "^3.7.0"
+    },
+    "devDependencies": {
+        "@types/fs-extra": "^11.0.0",
+        "@types/inquirer": "^9.0.0",
+        "@types/node": "^22",
+        "@types/serve-static": "^1.15.0",
+        "@vitejs/plugin-vue": "^6.0.0",
+        "@vue-skuilder/studio-ui": "workspace:*",
+        "cypress": "^15.6.0",
+        "typescript": "~5.9.3",
+        "vite": "^7.0.0",
+        "vue-tsc": "^1.8.0",
+        "wait-on": "8.0.2"
+    },
+    "engines": {
+        "node": ">=18.0.0"
+    },
+    "packageManager": "yarn@4.6.0",
+    "stableVersion": "0.1.17"
 }
