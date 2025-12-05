@@ -38,7 +38,9 @@
     "dev": "vite build --watch",
     "type-check": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "lint": "eslint . --fix",
+    "lint:check": "eslint ."
   },
   "dependencies": {
     "@vue-skuilder/common": "workspace:*",
@@ -51,7 +53,13 @@
   },
   "devDependencies": {
     "@types/lodash": "^4.14.195",
+    "@typescript-eslint/eslint-plugin": "^8.25.0",
+    "@typescript-eslint/parser": "^8.25.0",
     "@vitejs/plugin-vue": "^6.0.0",
+    "@vue/eslint-config-typescript": "^14.4.0",
+    "eslint": "^9.21.0",
+    "eslint-config-prettier": "^10.0.2",
+    "eslint-plugin-vue": "^9.32.0",
     "jsdom": "^26.0.0",
     "typescript": "^5.9.3",
     "vite": "^7.0.0",

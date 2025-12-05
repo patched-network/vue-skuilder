@@ -1,9 +1,11 @@
-import { ContentNavigator, WeightedCard } from './index';
-import { ContentNavigationStrategyData } from '../types/contentNavigationStrategy';
-import { CourseDBInterface } from '../interfaces/courseDB';
-import { UserDBInterface } from '../interfaces/userDB';
-import { StudySessionNewItem, StudySessionReviewItem } from '../interfaces/contentSource';
-import { ScheduledCard } from '../types/user';
+import { ContentNavigator } from './index';
+import type { WeightedCard } from './index';
+import type { ContentNavigationStrategyData } from '../types/contentNavigationStrategy';
+import type { CourseDBInterface } from '../interfaces/courseDB';
+import type { UserDBInterface } from '../interfaces/userDB';
+import type { StudySessionNewItem, StudySessionReviewItem } from '../interfaces/contentSource';
+import type { ScheduledCard } from '../types/user';
+import type { CardGenerator, GeneratorContext } from './generators/types';
 import { logger } from '../../util/logger';
 
 // ============================================================================
@@ -40,15 +42,21 @@ const FREQUENCY_BOOST_FACTOR = 0.1;
 /**
  * Composes multiple generators into a single generator.
  *
+ * Implements CardGenerator for use in Pipeline architecture.
+ * Also extends ContentNavigator for backward compatibility.
+ *
  * Fetches candidates from all generators, deduplicates by cardId,
  * and aggregates scores based on the configured mode.
  */
-export default class CompositeGenerator extends ContentNavigator {
-  private generators: ContentNavigator[];
+export default class CompositeGenerator extends ContentNavigator implements CardGenerator {
+  /** Human-readable name for CardGenerator interface */
+  name: string = 'Composite Generator';
+
+  private generators: CardGenerator[];
   private aggregationMode: AggregationMode;
 
   constructor(
-    generators: ContentNavigator[],
+    generators: CardGenerator[],
     aggregationMode: AggregationMode = DEFAULT_AGGREGATION_MODE
   ) {
     super();
@@ -78,7 +86,8 @@ export default class CompositeGenerator extends ContentNavigator {
     const generators = await Promise.all(
       strategies.map((s) => ContentNavigator.create(user, course, s))
     );
-    return new CompositeGenerator(generators, aggregationMode);
+    // Cast is safe because we know these are generators
+    return new CompositeGenerator(generators as unknown as CardGenerator[], aggregationMode);
   }
 
   /**
@@ -86,10 +95,18 @@ export default class CompositeGenerator extends ContentNavigator {
    *
    * Cards appearing in multiple generators receive a score boost.
    * Provenance tracks which generators produced each card and how scores were aggregated.
+   *
+   * This method supports both the legacy signature (limit only) and the
+   * CardGenerator interface signature (limit, context).
+   *
+   * @param limit - Maximum number of cards to return
+   * @param context - Optional GeneratorContext passed to child generators
    */
-  async getWeightedCards(limit: number): Promise<WeightedCard[]> {
+  async getWeightedCards(limit: number, context?: GeneratorContext): Promise<WeightedCard[]> {
     // Fetch from all generators in parallel
-    const results = await Promise.all(this.generators.map((g) => g.getWeightedCards(limit)));
+    const results = await Promise.all(
+      this.generators.map((g) => g.getWeightedCards(limit, context))
+    );
 
     // Group by cardId
     const byCardId = new Map<string, WeightedCard[]>();
@@ -199,7 +216,12 @@ export default class CompositeGenerator extends ContentNavigator {
    * Get new cards from all generators, merged and deduplicated.
    */
   async getNewCards(n?: number): Promise<StudySessionNewItem[]> {
-    const results = await Promise.all(this.generators.map((g) => g.getNewCards(n)));
+    // For legacy method, need to filter to generators that have getNewCards
+    const legacyGenerators = this.generators.filter(
+      (g): g is CardGenerator & ContentNavigator => g instanceof ContentNavigator
+    );
+
+    const results = await Promise.all(legacyGenerators.map((g) => g.getNewCards(n)));
 
     // Deduplicate by cardID
     const seen = new Set<string>();
@@ -221,7 +243,12 @@ export default class CompositeGenerator extends ContentNavigator {
    * Get pending reviews from all generators, merged and deduplicated.
    */
   async getPendingReviews(): Promise<(StudySessionReviewItem & ScheduledCard)[]> {
-    const results = await Promise.all(this.generators.map((g) => g.getPendingReviews()));
+    // For legacy method, need to filter to generators that have getPendingReviews
+    const legacyGenerators = this.generators.filter(
+      (g): g is CardGenerator & ContentNavigator => g instanceof ContentNavigator
+    );
+
+    const results = await Promise.all(legacyGenerators.map((g) => g.getPendingReviews()));
 
     // Deduplicate by cardID
     const seen = new Set<string>();

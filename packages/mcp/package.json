@@ -18,7 +18,10 @@
     "test:resources": "yarn test:cli --method resources/list",
     "test:tools": "yarn test:cli --method tools/list",
     "test:prompts": "yarn test:cli --method prompts/list",
-    "server": "node dist/examples/local-dev.mjs"
+    "server": "node dist/examples/local-dev.mjs",
+    "lint": "npx eslint .",
+    "lint:fix": "npx eslint . --fix",
+    "lint:check": "npx eslint . --max-warnings 0"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.22.0",

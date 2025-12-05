@@ -276,7 +276,6 @@ export class ForkFinder extends Question {
       1
     );
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const totalWeight = pieces.reduce((sum, [_, weight]) => sum + weight, 0);
     let random = Math.random() * totalWeight;
 

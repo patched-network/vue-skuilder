@@ -4,8 +4,9 @@ layout: home
 
 hero:
   name: "vue-skuilder"
-  text: "open toolkit for adaptive tutoring systems"
-  tagline: Portable courseware for composable curricula.
+  # text: "open toolkit for adaptive tutoring systems"
+  # tagline: Portable courseware for composable curricula.
+  tagline: "AGPL toolkit for adaptive tutoring systems"
   actions:
     - theme: brand
       text: What is Skuilder?
@@ -20,10 +21,10 @@ hero:
 features:
   - title: Fully <a href="extend/custom-cards">Extensible</a> Flash Cards
     details: Build <strong><em>whatever</em></strong> types of content that you'd like. Midi interfaces, chess boards, you name it.
-  - title:  <a href="pedagogy">Pluggable</a> Pedagogy
+  - title:  <a href="learn/pedagogy">Pluggable</a> Pedagogy
     details: "Mix and match naive SRS, ELO-based skill matching, and defined heirarchical paths. Or: bring fully custom implementations."
-  - title: Local First, Platform <a href="data-layer">Capable</a>
+  - title: Local First, Platform <a href="learn/data-layer">Capable</a>
     details: User and course data comfortable on the server, but also browser-local and via static-site deployments.
-  - title: Agents <a href="mcp">Welcome</a> <small>(but not required!)</small>
+  - title: Agents <a href="extend/mcp">Welcome</a> <small>(but not required!)</small>
     details: Expose <strong>MCP</strong> servers for agent-assisted content authoring and course inspection.
 ---

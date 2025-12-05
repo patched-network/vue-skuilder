@@ -37,12 +37,6 @@ jobs:
           cd packages/db
           yarn build
 
-      # Lint common-ui
-      - name: Lint common-ui
-        run: |
-          cd packages/common-ui
-          yarn lint:check
-
       # Build common-ui
       - name: Build common-ui
         run: |

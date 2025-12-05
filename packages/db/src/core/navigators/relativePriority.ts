@@ -1,9 +1,11 @@
-import { ScheduledCard } from '../types/user';
-import { CourseDBInterface } from '../interfaces/courseDB';
-import { UserDBInterface } from '../interfaces/userDB';
-import { ContentNavigator, WeightedCard } from './index';
-import { ContentNavigationStrategyData } from '../types/contentNavigationStrategy';
-import { StudySessionReviewItem, StudySessionNewItem, DocType } from '..';
+import type { ScheduledCard } from '../types/user';
+import type { CourseDBInterface } from '../interfaces/courseDB';
+import type { UserDBInterface } from '../interfaces/userDB';
+import { ContentNavigator } from './index';
+import type { WeightedCard } from './index';
+import type { ContentNavigationStrategyData } from '../types/contentNavigationStrategy';
+import type { StudySessionReviewItem, StudySessionNewItem } from '..';
+import type { CardFilter, FilterContext } from './filters/types';
 
 /**
  * Configuration for the RelativePriority strategy.
@@ -61,9 +63,6 @@ export interface RelativePriorityConfig {
    * - Priority 0.0 with influence 0.5 → boost of 0.75
    */
   priorityInfluence?: number;
-
-  /** Strategy to delegate to for candidate generation (default: "elo") */
-  delegateStrategy?: string;
 }
 
 const DEFAULT_PRIORITY = 0.5;
@@ -71,23 +70,25 @@ const DEFAULT_PRIORITY_INFLUENCE = 0.5;
 const DEFAULT_COMBINE_MODE: 'max' | 'average' | 'min' = 'max';
 
 /**
- * A navigation strategy that boosts scores for high-utility content.
+ * A filter strategy that boosts scores for high-utility content.
  *
  * Course authors assign priority weights to tags. Cards with high-priority
  * tags get boosted scores, making them more likely to be presented first.
  * This allows teaching the most useful, well-behaved concepts before
  * moving on to rarer or more irregular ones.
  *
- * Uses the delegate pattern: wraps another strategy and adjusts its scores
- * based on the priority of each card's tags.
- *
  * Example: When teaching phonics, prioritize common letters (s, t, a) over
  * rare ones (x, z, q) by assigning higher priority weights to common letters.
+ *
+ * Implements CardFilter for use in Pipeline architecture.
+ * Also extends ContentNavigator for backward compatibility.
  */
-export default class RelativePriorityNavigator extends ContentNavigator {
+export default class RelativePriorityNavigator extends ContentNavigator implements CardFilter {
   private config: RelativePriorityConfig;
-  private delegate: ContentNavigator | null = null;
   private _strategyData: ContentNavigationStrategyData;
+
+  /** Human-readable name for CardFilter interface */
+  name: string;
 
   constructor(
     user: UserDBInterface,
@@ -97,6 +98,7 @@ export default class RelativePriorityNavigator extends ContentNavigator {
     super(user, course, _strategyData);
     this._strategyData = _strategyData;
     this.config = this.parseConfig(_strategyData.serializedData);
+    this.name = _strategyData.name || 'Relative Priority';
   }
 
   private parseConfig(serializedData: string): RelativePriorityConfig {
@@ -107,7 +109,6 @@ export default class RelativePriorityNavigator extends ContentNavigator {
         defaultPriority: parsed.defaultPriority ?? DEFAULT_PRIORITY,
         combineMode: parsed.combineMode ?? DEFAULT_COMBINE_MODE,
         priorityInfluence: parsed.priorityInfluence ?? DEFAULT_PRIORITY_INFLUENCE,
-        delegateStrategy: parsed.delegateStrategy || 'elo',
       };
     } catch {
       // Return safe defaults if parsing fails
@@ -116,28 +117,8 @@ export default class RelativePriorityNavigator extends ContentNavigator {
         defaultPriority: DEFAULT_PRIORITY,
         combineMode: DEFAULT_COMBINE_MODE,
         priorityInfluence: DEFAULT_PRIORITY_INFLUENCE,
-        delegateStrategy: 'elo',
       };
     }
-  }
-
-  /**
-   * Lazily initializes and returns the delegate navigator.
-   */
-  private async getDelegate(): Promise<ContentNavigator> {
-    if (!this.delegate) {
-      const delegateStrategyData: ContentNavigationStrategyData = {
-        _id: `NAVIGATION_STRATEGY-${this.config.delegateStrategy}-delegate`,
-        course: this.course.getCourseID(),
-        docType: DocType.NAVIGATION_STRATEGY,
-        name: `${this.config.delegateStrategy} (delegate)`,
-        description: 'Delegate strategy for relative priority',
-        implementingClass: this.config.delegateStrategy || 'elo',
-        serializedData: '{}',
-      };
-      this.delegate = await ContentNavigator.create(this.user, this.course, delegateStrategyData);
-    }
-    return this.delegate;
   }
 
   /**
@@ -185,62 +166,6 @@ export default class RelativePriorityNavigator extends ContentNavigator {
   }
 
   /**
-   * Get weighted cards with priority-adjusted scores.
-   *
-   * Cards with high-priority tags get boosted scores.
-   * Cards with low-priority tags get reduced scores.
-   * Cards with neutral priority (0.5) are unchanged.
-   */
-  async getWeightedCards(limit: number): Promise<WeightedCard[]> {
-    const delegate = await this.getDelegate();
-
-    // Get candidates from delegate
-    // Over-fetch slightly to account for score reordering
-    const candidates = await delegate.getWeightedCards(Math.ceil(limit * 1.5));
-
-    // Adjust scores based on priority
-    const adjusted: WeightedCard[] = await Promise.all(
-      candidates.map(async (card) => {
-        const cardTags = (await this.course.getAppliedTags(card.cardId)).rows
-          .map((r) => r.doc?.name)
-          .filter((x): x is string => !!x);
-        const priority = this.computeCardPriority(cardTags);
-        const boostFactor = this.computeBoostFactor(priority);
-        const finalScore = Math.max(0, Math.min(1, card.score * boostFactor));
-
-        // Determine action based on boost factor
-        const action =
-          boostFactor > 1.0 ? 'boosted' : boostFactor < 1.0 ? 'penalized' : 'passed';
-
-        // Build reason explaining priority adjustment
-        const reason = this.buildPriorityReason(cardTags, priority, boostFactor, finalScore);
-
-        return {
-          ...card,
-          score: finalScore,
-          provenance: [
-            ...card.provenance,
-            {
-              strategy: 'relativePriority',
-              strategyName: this.strategyName || 'Relative Priority',
-              strategyId: this.strategyId || 'NAVIGATION_STRATEGY-priority',
-              action,
-              score: finalScore,
-              reason,
-            },
-          ],
-        };
-      })
-    );
-
-    // Sort by adjusted score descending
-    adjusted.sort((a, b) => b.score - a.score);
-
-    // Return up to limit
-    return adjusted.slice(0, limit);
-  }
-
-  /**
    * Build human-readable reason for priority adjustment.
    */
   private buildPriorityReason(
@@ -266,18 +191,77 @@ export default class RelativePriorityNavigator extends ContentNavigator {
   }
 
   /**
-   * Legacy method: delegates to wrapped strategy.
+   * Get tags for a single card.
    */
-  async getNewCards(n?: number): Promise<StudySessionNewItem[]> {
-    const delegate = await this.getDelegate();
-    return delegate.getNewCards(n);
+  private async getCardTags(cardId: string, course: CourseDBInterface): Promise<string[]> {
+    try {
+      const tagResponse = await course.getAppliedTags(cardId);
+      return tagResponse.rows.map((r) => r.doc?.name).filter((x): x is string => !!x);
+    } catch {
+      return [];
+    }
   }
 
   /**
-   * Legacy method: delegates to wrapped strategy.
+   * CardFilter.transform implementation.
+   *
+   * Apply priority-adjusted scoring. Cards with high-priority tags get boosted,
+   * cards with low-priority tags get reduced scores.
    */
+  async transform(cards: WeightedCard[], context: FilterContext): Promise<WeightedCard[]> {
+    const adjusted: WeightedCard[] = await Promise.all(
+      cards.map(async (card) => {
+        const cardTags = await this.getCardTags(card.cardId, context.course);
+        const priority = this.computeCardPriority(cardTags);
+        const boostFactor = this.computeBoostFactor(priority);
+        const finalScore = Math.max(0, Math.min(1, card.score * boostFactor));
+
+        // Determine action based on boost factor
+        const action = boostFactor > 1.0 ? 'boosted' : boostFactor < 1.0 ? 'penalized' : 'passed';
+
+        // Build reason explaining priority adjustment
+        const reason = this.buildPriorityReason(cardTags, priority, boostFactor, finalScore);
+
+        return {
+          ...card,
+          score: finalScore,
+          provenance: [
+            ...card.provenance,
+            {
+              strategy: 'relativePriority',
+              strategyName: this.strategyName || this.name,
+              strategyId: this.strategyId || 'NAVIGATION_STRATEGY-priority',
+              action,
+              score: finalScore,
+              reason,
+            },
+          ],
+        };
+      })
+    );
+
+    return adjusted;
+  }
+
+  /**
+   * Legacy getWeightedCards - now throws as filters should not be used as generators.
+   *
+   * Use transform() via Pipeline instead.
+   */
+  async getWeightedCards(_limit: number): Promise<WeightedCard[]> {
+    throw new Error(
+      'RelativePriorityNavigator is a filter and should not be used as a generator. ' +
+        'Use Pipeline with a generator and this filter via transform().'
+    );
+  }
+
+  // Legacy methods - stub implementations since filters don't generate cards
+
+  async getNewCards(_n?: number): Promise<StudySessionNewItem[]> {
+    return [];
+  }
+
   async getPendingReviews(): Promise<(StudySessionReviewItem & ScheduledCard)[]> {
-    const delegate = await this.getDelegate();
-    return delegate.getPendingReviews();
+    return [];
   }
 }

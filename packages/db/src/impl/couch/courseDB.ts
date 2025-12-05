@@ -35,8 +35,12 @@ import { PouchError } from './types';
 import CourseLookup from './courseLookupDB';
 import { ContentNavigationStrategyData } from '@db/core/types/contentNavigationStrategy';
 import { ContentNavigator, Navigators, WeightedCard } from '@db/core/navigators';
+import { Pipeline } from '@db/core/navigators/Pipeline';
 import { PipelineAssembler } from '@db/core/navigators/PipelineAssembler';
 import CompositeGenerator from '@db/core/navigators/CompositeGenerator';
+import ELONavigator from '@db/core/navigators/elo';
+import SRSNavigator from '@db/core/navigators/srs';
+import { createEloDistanceFilter } from '@db/core/navigators/filters/eloDistance';
 
 export class CoursesDB implements CoursesDBInterface {
   _courseIDs: string[] | undefined;
@@ -521,31 +525,6 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
     return Promise.resolve();
   }
 
-  async surfaceNavigationStrategy(): Promise<ContentNavigationStrategyData> {
-    // Try assembled pipeline from existing strategy documents
-    try {
-      const allStrategies = await this.getAllNavigationStrategies();
-      const assembler = new PipelineAssembler();
-      const { pipeline, warnings } = assembler.assemble({ strategies: allStrategies });
-
-      // Log any warnings from assembly
-      for (const warning of warnings) {
-        logger.warn(`[PipelineAssembler] ${warning}`);
-      }
-
-      if (pipeline) {
-        logger.debug(`Using assembled pipeline: ${pipeline.implementingClass}`);
-        return pipeline;
-      }
-    } catch (e) {
-      logger.warn('Failed to assemble pipeline, falling back to default ELO:', e);
-    }
-
-    // FALLBACK: Hard-coded ELO (no strategy documents exist or assembly failed)
-    logger.debug('No strategy documents found, using default ELO');
-    return this.makeDefaultEloStrategy();
-  }
-
   /**
    * Creates an instantiated navigator for this course.
    *
@@ -558,8 +537,23 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
   async createNavigator(user: UserDBInterface): Promise<ContentNavigator> {
     try {
       const allStrategies = await this.getAllNavigationStrategies();
+
+      if (allStrategies.length === 0) {
+        // No strategies configured: use default Pipeline(Composite(ELO, SRS), [eloDistanceFilter])
+        logger.debug(
+          '[courseDB] No strategy documents found, using default Pipeline(Composite(ELO, SRS), [eloDistanceFilter])'
+        );
+        return this.createDefaultPipeline(user);
+      }
+
+      // Use PipelineAssembler to build a Pipeline from strategy documents
       const assembler = new PipelineAssembler();
-      const { pipeline, generators, warnings } = assembler.assemble({ strategies: allStrategies });
+      const { pipeline, generatorStrategies, filterStrategies, warnings } =
+        await assembler.assemble({
+          strategies: allStrategies,
+          user,
+          course: this,
+        });
 
       // Log any warnings from assembly
       for (const warning of warnings) {
@@ -567,40 +561,15 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
       }
 
       if (!pipeline) {
-        // No strategies configured, use default ELO
-        logger.debug('No strategy documents found, using default ELO navigator');
-        return ContentNavigator.create(user, this, this.makeDefaultEloStrategy());
+        // Assembly failed - fall back to default
+        logger.debug('[courseDB] Pipeline assembly failed, using default pipeline');
+        return this.createDefaultPipeline(user);
       }
 
-      // If multiple generators, wrap them in CompositeGenerator
-      if (generators.length > 1) {
-        logger.debug(
-          `[courseDB] Using CompositeGenerator for ${generators.length} generators: ${generators.map((g) => g.name).join(', ')}`
-        );
-
-        // Create the composite generator from all generator strategies
-        const compositeGenerator = await CompositeGenerator.fromStrategies(user, this, generators);
-
-        // If there are filters, we need to wrap the composite in filters
-        // The pipeline's outermost filter has delegateStrategy pointing to the first generator
-        // We need to inject the composite instead
-        const filters = allStrategies.filter((s) => !generators.some((g) => g._id === s._id));
-
-        if (filters.length === 0) {
-          // Just the composite, no filters
-          return compositeGenerator;
-        }
-
-        // For now, return composite directly
-        // TODO: Wrap composite in filter chain (requires filter instantiation refactor)
-        logger.debug(
-          `[courseDB] Note: ${filters.length} filters configured but composite generator bypasses them for now`
-        );
-        return compositeGenerator;
-      }
-
-      // Single generator case: use the assembled pipeline normally
-      return ContentNavigator.create(user, this, pipeline);
+      logger.debug(
+        `[courseDB] Using assembled pipeline with ${generatorStrategies.length} generator(s) and ${filterStrategies.length} filter(s)`
+      );
+      return pipeline;
     } catch (e) {
       logger.error(`[courseDB] Error creating navigator: ${e}`);
       throw e;
@@ -609,14 +578,44 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
 
   private makeDefaultEloStrategy(): ContentNavigationStrategyData {
     return {
-      _id: 'NAVIGATION_STRATEGY-ELO',
+      _id: 'NAVIGATION_STRATEGY-ELO-default',
       docType: DocType.NAVIGATION_STRATEGY,
-      name: 'ELO',
-      description: 'ELO-based navigation strategy',
+      name: 'ELO (default)',
+      description: 'Default ELO-based navigation strategy for new cards',
       implementingClass: Navigators.ELO,
       course: this.id,
       serializedData: '',
     };
+  }
+
+  private makeDefaultSrsStrategy(): ContentNavigationStrategyData {
+    return {
+      _id: 'NAVIGATION_STRATEGY-SRS-default',
+      docType: DocType.NAVIGATION_STRATEGY,
+      name: 'SRS (default)',
+      description: 'Default SRS-based navigation strategy for reviews',
+      implementingClass: Navigators.SRS,
+      course: this.id,
+      serializedData: '',
+    };
+  }
+
+  /**
+   * Creates the default navigation pipeline for courses with no configured strategies.
+   *
+   * Default: Pipeline(Composite(ELO, SRS), [eloDistanceFilter])
+   * - ELO generator: scores new cards by skill proximity
+   * - SRS generator: scores reviews by overdueness and interval recency
+   * - ELO distance filter: penalizes cards far from user's current level
+   */
+  private createDefaultPipeline(user: UserDBInterface): Pipeline {
+    const eloNavigator = new ELONavigator(user, this, this.makeDefaultEloStrategy());
+    const srsNavigator = new SRSNavigator(user, this, this.makeDefaultSrsStrategy());
+
+    const compositeGenerator = new CompositeGenerator([eloNavigator, srsNavigator]);
+    const eloDistanceFilter = createEloDistanceFilter();
+
+    return new Pipeline(compositeGenerator, [eloDistanceFilter], user, this);
   }
 
   ////////////////////////////////////

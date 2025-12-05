@@ -25,7 +25,9 @@ Current repo has access to submodule with a test database with live courses, man
 
 ### Testing
 
-Defer *testing* operations to CI in the pull-request cycle.
+- Defer *testing* operations to CI in the pull-request cycle.
+- Prefer *e2e* or *integration* testing strategies to
+- Specifically, avoid verbose new tests for new code that amount to "the new code does what the new code does". Program optimistically - we will "find bugs once" in the pragmatic programmer sense.
 
 ### Package-Specific Commands
 

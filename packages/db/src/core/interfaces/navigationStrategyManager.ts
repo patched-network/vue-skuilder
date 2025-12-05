@@ -33,11 +33,6 @@ export interface NavigationStrategyManager {
    */
   updateNavigationStrategy(id: string, data: ContentNavigationStrategyData): Promise<void>;
 
-  /**
-   * @returns A content navigation strategy suitable to the current context.
-   */
-  surfaceNavigationStrategy(): Promise<ContentNavigationStrategyData>;
-
   // [ ] addons here like:
   //     - determining Navigation Strategy from context of current user
   //     - determining weighted averages of navigation strategies

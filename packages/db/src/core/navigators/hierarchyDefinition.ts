@@ -1,9 +1,11 @@
-import { ScheduledCard } from '../types/user';
-import { CourseDBInterface } from '../interfaces/courseDB';
-import { UserDBInterface } from '../interfaces/userDB';
-import { ContentNavigator, WeightedCard } from './index';
-import { ContentNavigationStrategyData } from '../types/contentNavigationStrategy';
-import { StudySessionReviewItem, StudySessionNewItem, DocType } from '..';
+import type { ScheduledCard } from '../types/user';
+import type { CourseDBInterface } from '../interfaces/courseDB';
+import type { UserDBInterface } from '../interfaces/userDB';
+import { ContentNavigator } from './index';
+import type { WeightedCard } from './index';
+import type { ContentNavigationStrategyData } from '../types/contentNavigationStrategy';
+import type { StudySessionReviewItem, StudySessionNewItem } from '..';
+import type { CardFilter, FilterContext } from './filters/types';
 import { toCourseElo } from '@vue-skuilder/common';
 
 /**
@@ -30,29 +32,31 @@ export interface HierarchyConfig {
   prerequisites: {
     [tagId: string]: TagPrerequisite[];
   };
-  /** Strategy to delegate to for candidate generation (default: "elo") */
-  delegateStrategy?: string;
 }
 
 const DEFAULT_MIN_COUNT = 3;
 
 /**
- * A navigation strategy that gates cards based on prerequisite mastery.
+ * A filter strategy that gates cards based on prerequisite mastery.
  *
  * Cards are locked until the user masters all prerequisite tags.
- * This implements the delegate pattern: it wraps another strategy
- * and filters its output based on prerequisite constraints.
+ * Locked cards receive score: 0 (hard filter).
  *
  * Mastery is determined by:
  * - User's ELO for the tag exceeds threshold (or avgElo if not specified)
  * - User has minimum interaction count with the tag
  *
  * Tags with no prerequisites are always unlocked.
+ *
+ * Implements CardFilter for use in Pipeline architecture.
+ * Also extends ContentNavigator for backward compatibility.
  */
-export default class HierarchyDefinitionNavigator extends ContentNavigator {
+export default class HierarchyDefinitionNavigator extends ContentNavigator implements CardFilter {
   private config: HierarchyConfig;
-  private delegate: ContentNavigator | null = null;
   private _strategyData: ContentNavigationStrategyData;
+
+  /** Human-readable name for CardFilter interface */
+  name: string;
 
   constructor(
     user: UserDBInterface,
@@ -62,6 +66,7 @@ export default class HierarchyDefinitionNavigator extends ContentNavigator {
     super(user, course, _strategyData);
     this._strategyData = _strategyData;
     this.config = this.parseConfig(_strategyData.serializedData);
+    this.name = _strategyData.name || 'Hierarchy Definition';
   }
 
   private parseConfig(serializedData: string): HierarchyConfig {
@@ -69,34 +74,13 @@ export default class HierarchyDefinitionNavigator extends ContentNavigator {
       const parsed = JSON.parse(serializedData);
       return {
         prerequisites: parsed.prerequisites || {},
-        delegateStrategy: parsed.delegateStrategy || 'elo',
       };
     } catch {
       // Return safe defaults if parsing fails
       return {
         prerequisites: {},
-        delegateStrategy: 'elo',
       };
     }
-  }
-
-  /**
-   * Lazily create the delegate navigator
-   */
-  private async getDelegate(): Promise<ContentNavigator> {
-    if (!this.delegate) {
-      const delegateStrategyData: ContentNavigationStrategyData = {
-        _id: `NAVIGATION_STRATEGY-${this.config.delegateStrategy}-delegate`,
-        course: this.course.getCourseID(),
-        docType: DocType.NAVIGATION_STRATEGY,
-        name: `${this.config.delegateStrategy} (delegate)`,
-        description: 'Delegate strategy for hierarchy definition',
-        implementingClass: this.config.delegateStrategy || 'elo',
-        serializedData: '{}',
-      };
-      this.delegate = await ContentNavigator.create(this.user, this.course, delegateStrategyData);
-    }
-    return this.delegate;
   }
 
   /**
@@ -124,11 +108,11 @@ export default class HierarchyDefinitionNavigator extends ContentNavigator {
    * Get the set of tags the user has mastered.
    * A tag is "mastered" if it appears as a prerequisite somewhere and meets its threshold.
    */
-  private async getMasteredTags(): Promise<Set<string>> {
+  private async getMasteredTags(context: FilterContext): Promise<Set<string>> {
     const mastered = new Set<string>();
 
     try {
-      const courseReg = await this.user.getCourseRegDoc(this.course.getCourseID());
+      const courseReg = await context.user.getCourseRegDoc(context.course.getCourseID());
       const userElo = toCourseElo(courseReg.elo);
 
       // Collect all unique prerequisite tags and check mastery for each
@@ -171,67 +155,16 @@ export default class HierarchyDefinitionNavigator extends ContentNavigator {
   }
 
   /**
-   * Get cards with prerequisite gating applied.
-   *
-   * Cards with locked tags (unmet prerequisites) receive score: 0.
-   * Cards with unlocked tags preserve their delegate score.
-   *
-   * Note: We return score: 0 instead of filtering so that:
-   * 1. Filter order doesn't matter (all filters are multipliers)
-   * 2. Provenance tracking shows all candidates and gating decisions
-   */
-  async getWeightedCards(limit: number): Promise<WeightedCard[]> {
-    const delegate = await this.getDelegate();
-
-    // Get candidates from delegate
-    const candidates = await delegate.getWeightedCards(limit);
-
-    // Get mastery state
-    const masteredTags = await this.getMasteredTags();
-    const unlockedTags = this.getUnlockedTags(masteredTags);
-
-    // Apply prerequisite gating as score multiplier
-    const gated: WeightedCard[] = [];
-
-    for (const card of candidates) {
-      const { isUnlocked, reason } = await this.checkCardUnlock(
-        card.cardId,
-        unlockedTags,
-        masteredTags
-      );
-      const finalScore = isUnlocked ? card.score : 0;
-      const action = isUnlocked ? 'passed' : 'penalized';
-
-      gated.push({
-        ...card,
-        score: finalScore,
-        provenance: [
-          ...card.provenance,
-          {
-            strategy: 'hierarchyDefinition',
-            strategyName: this.strategyName || 'Hierarchy Definition',
-            strategyId: this.strategyId || 'NAVIGATION_STRATEGY-hierarchy',
-            action,
-            score: finalScore,
-            reason,
-          },
-        ],
-      });
-    }
-
-    return gated;
-  }
-
-  /**
    * Check if a card is unlocked and generate reason.
    */
   private async checkCardUnlock(
     cardId: string,
+    course: CourseDBInterface,
     unlockedTags: Set<string>,
     masteredTags: Set<string>
   ): Promise<{ isUnlocked: boolean; reason: string }> {
     try {
-      const tagResponse = await this.course.getAppliedTags(cardId);
+      const tagResponse = await course.getAppliedTags(cardId);
       const cardTags = tagResponse.rows.map((row) => row.value?.name || row.key);
 
       // Check each tag's prerequisite status
@@ -266,15 +199,68 @@ export default class HierarchyDefinitionNavigator extends ContentNavigator {
     }
   }
 
-  // Legacy methods delegate through
+  /**
+   * CardFilter.transform implementation.
+   *
+   * Apply prerequisite gating to cards. Cards with locked tags receive score: 0.
+   */
+  async transform(cards: WeightedCard[], context: FilterContext): Promise<WeightedCard[]> {
+    // Get mastery state
+    const masteredTags = await this.getMasteredTags(context);
+    const unlockedTags = this.getUnlockedTags(masteredTags);
 
-  async getNewCards(n?: number): Promise<StudySessionNewItem[]> {
-    const delegate = await this.getDelegate();
-    return delegate.getNewCards(n);
+    // Apply prerequisite gating as score multiplier
+    const gated: WeightedCard[] = [];
+
+    for (const card of cards) {
+      const { isUnlocked, reason } = await this.checkCardUnlock(
+        card.cardId,
+        context.course,
+        unlockedTags,
+        masteredTags
+      );
+      const finalScore = isUnlocked ? card.score : 0;
+      const action = isUnlocked ? 'passed' : 'penalized';
+
+      gated.push({
+        ...card,
+        score: finalScore,
+        provenance: [
+          ...card.provenance,
+          {
+            strategy: 'hierarchyDefinition',
+            strategyName: this.strategyName || this.name,
+            strategyId: this.strategyId || 'NAVIGATION_STRATEGY-hierarchy',
+            action,
+            score: finalScore,
+            reason,
+          },
+        ],
+      });
+    }
+
+    return gated;
+  }
+
+  /**
+   * Legacy getWeightedCards - now throws as filters should not be used as generators.
+   *
+   * Use transform() via Pipeline instead.
+   */
+  async getWeightedCards(_limit: number): Promise<WeightedCard[]> {
+    throw new Error(
+      'HierarchyDefinitionNavigator is a filter and should not be used as a generator. ' +
+        'Use Pipeline with a generator and this filter via transform().'
+    );
+  }
+
+  // Legacy methods - stub implementations since filters don't generate cards
+
+  async getNewCards(_n?: number): Promise<StudySessionNewItem[]> {
+    return [];
   }
 
   async getPendingReviews(): Promise<(StudySessionReviewItem & ScheduledCard)[]> {
-    const delegate = await this.getDelegate();
-    return delegate.getPendingReviews();
+    return [];
   }
 }

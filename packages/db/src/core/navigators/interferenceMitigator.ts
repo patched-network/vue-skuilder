@@ -1,9 +1,11 @@
-import { ScheduledCard } from '../types/user';
-import { CourseDBInterface } from '../interfaces/courseDB';
-import { UserDBInterface } from '../interfaces/userDB';
-import { ContentNavigator, WeightedCard } from './index';
-import { ContentNavigationStrategyData } from '../types/contentNavigationStrategy';
-import { StudySessionReviewItem, StudySessionNewItem, DocType } from '..';
+import type { ScheduledCard } from '../types/user';
+import type { CourseDBInterface } from '../interfaces/courseDB';
+import type { UserDBInterface } from '../interfaces/userDB';
+import { ContentNavigator } from './index';
+import type { WeightedCard } from './index';
+import type { ContentNavigationStrategyData } from '../types/contentNavigationStrategy';
+import type { StudySessionReviewItem, StudySessionNewItem } from '..';
+import type { CardFilter, FilterContext } from './filters/types';
 import { toCourseElo } from '@vue-skuilder/common';
 
 /**
@@ -57,9 +59,6 @@ export interface InterferenceConfig {
    * Default decay for groups that don't specify their own (0-1, default: 0.8).
    */
   defaultDecay?: number;
-
-  /** Strategy to delegate to for candidate generation (default: "elo") */
-  delegateStrategy?: string;
 }
 
 const DEFAULT_MIN_COUNT = 10;
@@ -67,7 +66,7 @@ const DEFAULT_MIN_ELAPSED_DAYS = 3;
 const DEFAULT_INTERFERENCE_DECAY = 0.8;
 
 /**
- * A navigation strategy that avoids introducing confusable concepts simultaneously.
+ * A filter strategy that avoids introducing confusable concepts simultaneously.
  *
  * When a user is learning a concept (tag is "immature"), this strategy reduces
  * scores for cards tagged with interfering concepts. This encourages the system
@@ -76,13 +75,15 @@ const DEFAULT_INTERFERENCE_DECAY = 0.8;
  * Example: While learning 'd', prefer introducing 'x' over 'b' (visual interference)
  * or 't' (phonetic interference).
  *
- * Uses the delegate pattern: wraps another strategy and adjusts its scores based
- * on interference relationships with immature tags.
+ * Implements CardFilter for use in Pipeline architecture.
+ * Also extends ContentNavigator for backward compatibility.
  */
-export default class InterferenceMitigatorNavigator extends ContentNavigator {
+export default class InterferenceMitigatorNavigator extends ContentNavigator implements CardFilter {
   private config: InterferenceConfig;
-  private delegate: ContentNavigator | null = null;
   private _strategyData: ContentNavigationStrategyData;
+
+  /** Human-readable name for CardFilter interface */
+  name: string;
 
   /** Precomputed map: tag -> set of { partner, decay } it interferes with */
   private interferenceMap: Map<string, Array<{ partner: string; decay: number }>>;
@@ -96,6 +97,7 @@ export default class InterferenceMitigatorNavigator extends ContentNavigator {
     this._strategyData = _strategyData;
     this.config = this.parseConfig(_strategyData.serializedData);
     this.interferenceMap = this.buildInterferenceMap();
+    this.name = _strategyData.name || 'Interference Mitigator';
   }
 
   private parseConfig(serializedData: string): InterferenceConfig {
@@ -116,7 +118,6 @@ export default class InterferenceMitigatorNavigator extends ContentNavigator {
           minElapsedDays: parsed.maturityThreshold?.minElapsedDays ?? DEFAULT_MIN_ELAPSED_DAYS,
         },
         defaultDecay: parsed.defaultDecay ?? DEFAULT_INTERFERENCE_DECAY,
-        delegateStrategy: parsed.delegateStrategy || 'elo',
       };
     } catch {
       return {
@@ -126,7 +127,6 @@ export default class InterferenceMitigatorNavigator extends ContentNavigator {
           minElapsedDays: DEFAULT_MIN_ELAPSED_DAYS,
         },
         defaultDecay: DEFAULT_INTERFERENCE_DECAY,
-        delegateStrategy: 'elo',
       };
     }
   }
@@ -168,34 +168,15 @@ export default class InterferenceMitigatorNavigator extends ContentNavigator {
   }
 
   /**
-   * Lazily create the delegate navigator
-   */
-  private async getDelegate(): Promise<ContentNavigator> {
-    if (!this.delegate) {
-      const delegateStrategyData: ContentNavigationStrategyData = {
-        _id: `NAVIGATION_STRATEGY-${this.config.delegateStrategy}-delegate`,
-        course: this.course.getCourseID(),
-        docType: DocType.NAVIGATION_STRATEGY,
-        name: `${this.config.delegateStrategy} (delegate)`,
-        description: 'Delegate strategy for interference mitigator',
-        implementingClass: this.config.delegateStrategy || 'elo',
-        serializedData: '{}',
-      };
-      this.delegate = await ContentNavigator.create(this.user, this.course, delegateStrategyData);
-    }
-    return this.delegate;
-  }
-
-  /**
    * Get the set of tags that are currently immature for this user.
    * A tag is immature if the user has interacted with it but hasn't
    * reached the maturity threshold.
    */
-  private async getImmatureTags(): Promise<Set<string>> {
+  private async getImmatureTags(context: FilterContext): Promise<Set<string>> {
     const immature = new Set<string>();
 
     try {
-      const courseReg = await this.user.getCourseRegDoc(this.course.getCourseID());
+      const courseReg = await context.user.getCourseRegDoc(context.course.getCourseID());
       const userElo = toCourseElo(courseReg.elo);
 
       const minCount = this.config.maturityThreshold?.minCount ?? DEFAULT_MIN_COUNT;
@@ -256,9 +237,9 @@ export default class InterferenceMitigatorNavigator extends ContentNavigator {
   /**
    * Get tags for a single card
    */
-  private async getCardTags(cardId: string): Promise<string[]> {
+  private async getCardTags(cardId: string, course: CourseDBInterface): Promise<string[]> {
     try {
-      const tagResponse = await this.course.getAppliedTags(cardId);
+      const tagResponse = await course.getAppliedTags(cardId);
       return tagResponse.rows.map((row) => row.value?.name || row.key).filter(Boolean);
     } catch {
       return [];
@@ -318,26 +299,21 @@ export default class InterferenceMitigatorNavigator extends ContentNavigator {
   }
 
   /**
-   * Get cards with interference-aware scoring.
+   * CardFilter.transform implementation.
    *
-   * Cards with tags that interfere with immature learnings get reduced scores.
-   * This encourages introducing new concepts that are distant from current focus.
+   * Apply interference-aware scoring. Cards with tags that interfere with
+   * immature learnings get reduced scores.
    */
-  async getWeightedCards(limit: number): Promise<WeightedCard[]> {
-    const delegate = await this.getDelegate();
-
-    // Over-fetch to allow for score reordering
-    const candidates = await delegate.getWeightedCards(limit * 3);
-
+  async transform(cards: WeightedCard[], context: FilterContext): Promise<WeightedCard[]> {
     // Identify what to avoid
-    const immatureTags = await this.getImmatureTags();
+    const immatureTags = await this.getImmatureTags(context);
     const tagsToAvoid = this.getTagsToAvoid(immatureTags);
 
     // Adjust scores based on interference
     const adjusted: WeightedCard[] = [];
 
-    for (const card of candidates) {
-      const cardTags = await this.getCardTags(card.cardId);
+    for (const card of cards) {
+      const cardTags = await this.getCardTags(card.cardId, context.course);
       const { multiplier, reason } = this.computeInterferenceEffect(
         cardTags,
         tagsToAvoid,
@@ -345,8 +321,7 @@ export default class InterferenceMitigatorNavigator extends ContentNavigator {
       );
       const finalScore = card.score * multiplier;
 
-      const action =
-        multiplier < 1.0 ? 'penalized' : multiplier > 1.0 ? 'boosted' : 'passed';
+      const action = multiplier < 1.0 ? 'penalized' : multiplier > 1.0 ? 'boosted' : 'passed';
 
       adjusted.push({
         ...card,
@@ -355,7 +330,7 @@ export default class InterferenceMitigatorNavigator extends ContentNavigator {
           ...card.provenance,
           {
             strategy: 'interferenceMitigator',
-            strategyName: this.strategyName || 'Interference Mitigator',
+            strategyName: this.strategyName || this.name,
             strategyId: this.strategyId || 'NAVIGATION_STRATEGY-interference',
             action,
             score: finalScore,
@@ -365,21 +340,28 @@ export default class InterferenceMitigatorNavigator extends ContentNavigator {
       });
     }
 
-    // Re-sort by adjusted score
-    adjusted.sort((a, b) => b.score - a.score);
-
-    return adjusted.slice(0, limit);
+    return adjusted;
   }
 
-  // Legacy methods delegate through
+  /**
+   * Legacy getWeightedCards - now throws as filters should not be used as generators.
+   *
+   * Use transform() via Pipeline instead.
+   */
+  async getWeightedCards(_limit: number): Promise<WeightedCard[]> {
+    throw new Error(
+      'InterferenceMitigatorNavigator is a filter and should not be used as a generator. ' +
+        'Use Pipeline with a generator and this filter via transform().'
+    );
+  }
 
-  async getNewCards(n?: number): Promise<StudySessionNewItem[]> {
-    const delegate = await this.getDelegate();
-    return delegate.getNewCards(n);
+  // Legacy methods - stub implementations since filters don't generate cards
+
+  async getNewCards(_n?: number): Promise<StudySessionNewItem[]> {
+    return [];
   }
 
   async getPendingReviews(): Promise<(StudySessionReviewItem & ScheduledCard)[]> {
-    const delegate = await this.getDelegate();
-    return delegate.getPendingReviews();
+    return [];
   }
 }

@@ -391,10 +391,6 @@ export class StaticCourseDB implements CourseDBInterface {
     throw new Error('Cannot update navigation strategies in static mode');
   }
 
-  async surfaceNavigationStrategy(): Promise<ContentNavigationStrategyData> {
-    return this.getNavigationStrategy('ELO');
-  }
-
   // Study Content Source implementation
   async getPendingReviews(): Promise<(StudySessionReviewItem & ScheduledCard)[]> {
     // In static mode, reviews would be stored locally
