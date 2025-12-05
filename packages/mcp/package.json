@@ -24,7 +24,7 @@
     "lint:check": "npx eslint . --max-warnings 0"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.22.0",
+    "@modelcontextprotocol/sdk": "^1.24.0",
     "@vue-skuilder/common": "workspace:*",
     "@vue-skuilder/courseware": "workspace:*",
     "@vue-skuilder/db": "workspace:*",
