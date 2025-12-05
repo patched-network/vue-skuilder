@@ -80,8 +80,7 @@ export class AdminDB implements AdminDBInterface {
       }
     }
 
-    const dbs = await Promise.all(promisedCRDbs);
-    return dbs.map((db) => {
+    return promisedCRDbs.map((db) => {
       return {
         ...db.getConfig(),
         _id: db._id,

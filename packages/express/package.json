@@ -39,7 +39,7 @@
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
-    "express": "^4.21.2",
+    "express": "^4.22.1",
     "express-rate-limit": "^7.5.0",
     "ffmpeg-static": "^5.2.0",
     "fs-extra": "^11.2.0",
@@ -66,8 +66,8 @@
     "@types/morgan": "^1.9.9",
     "@types/node": "^22",
     "@types/pouchdb": "^6.4.2",
-    "@typescript-eslint/eslint-plugin": "^8.25.0",
-    "@typescript-eslint/parser": "^8.25.0",
+    "@typescript-eslint/eslint-plugin": "^8.48.1",
+    "@typescript-eslint/parser": "^8.48.1",
     "babel-jest": "^29.6.1",
     "eslint": "^9.21.0",
     "eslint-config-prettier": "^10.0.2",
@@ -80,7 +80,7 @@
     "ts-node": "^10.9.2",
     "tsx": "^4.19.2",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.25.0"
+    "typescript-eslint": "^8.48.1"
   },
   "stableVersion": "0.1.17"
 }
