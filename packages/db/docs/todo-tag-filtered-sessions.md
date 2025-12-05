@@ -102,16 +102,22 @@ SessionConfiguration.vue
 
 Note: `CourseSessionConfig` deferred - will be defined inline in `SessionConfiguration.vue` metadata.
 
-### Step 2: Create TagFilteredContentSource
+### Step 2: Create TagFilteredContentSource ✅
 
 Resurrect from PR #982 with updates:
 
-- [ ] Create `packages/db/src/study/TagFilteredContentSource.ts`
-- [ ] Implement `resolveFilteredCardIds()` using `getTag()`
-- [ ] Implement `getNewCards()` - filter to eligible, exclude active
-- [ ] Implement `getPendingReviews()` - filter reviews to eligible cards
-- [ ] Implement `getWeightedCards()` - wrap legacy methods with score=1.0
-- [ ] Export from `packages/db/src/index.ts`
+- [x] Create `packages/db/src/study/TagFilteredContentSource.ts`
+- [x] Implement `resolveFilteredCardIds()` using `getTag()`
+- [x] Implement `getNewCards()` - filter to eligible, exclude active
+- [x] Implement `getPendingReviews()` - filter reviews to eligible cards
+- [x] Implement `getWeightedCards()` - wrap legacy methods with score=1.0
+- [x] Export from `packages/db/src/study/index.ts` (which re-exports via `packages/db/src/index.ts`)
+
+Features implemented:
+- Caches resolved card IDs for session efficiency
+- Reviews prioritized over new cards in `getWeightedCards()`
+- Provenance tracking for debugging
+- `clearCache()` method if tag data changes mid-session
 
 ### Step 3: Create CourseTagFilterWidget Component
 
