@@ -139,56 +139,36 @@ Features implemented:
 - Exclude dropdown hides tags already in include list
 - Reactive two-way binding via v-model
 
-### Step 4: Modify SessionConfiguration.vue
+### Step 4: Modify SessionConfiguration.vue ✅
 
 Update existing component to support per-course tag filtering:
 
-- [ ] Add `tagFilter?: TagFilter` to `SessionConfigMetaData` interface
-- [ ] Add "Customize" button/expander per course row
-- [ ] Embed `CourseTagFilterWidget` in expanded state
-- [ ] Update `startSession()` to build mixed source array:
+- [x] Add `tagFilter?: TagFilter` to `SessionConfigMetaData` interface
+- [x] Add `TagFilteredContentSourceID` interface extending `ContentSourceID`
+- [x] Add "Filter" button/expander per course row (only shown when selected)
+- [x] Embed `CourseTagFilterWidget` in expanded state with `v-expand-transition`
+- [x] Add `expandedFilters` state to track which courses have filter UI open
+- [x] Add computed properties: `hasSelectedSources`, `hasAnyActiveFilter`, `activeFilterCount`
+- [x] Add filter summary in settings panel showing active filter count
+- [x] Update `startSession()` to include `tagFilter` in `ContentSourceID` when active
+- [x] Restyle from table to flex-based layout for better widget embedding
 
-```typescript
-startSession() {
-  const sources: StudyContentSource[] = [];
-  
-  for (const course of this.activeCourses.filter(c => c.selected)) {
-    if (course.tagFilter && course.tagFilter.include.length > 0) {
-      sources.push(new TagFilteredContentSource(
-        course.courseID,
-        course.tagFilter,
-        this.user!
-      ));
-    } else {
-      sources.push({ type: 'course', id: course.courseID });
-    }
-  }
-  
-  // ... emit with sources
-}
-```
+### Step 5: Update ContentSourceID Handling ✅
 
-### Step 5: Update ContentSourceID Handling
+**Decision: Option A** - Extend `ContentSourceID` to carry optional `tagFilter`.
 
-The current flow uses `ContentSourceID` objects that get resolved later.
-We need to either:
+This approach:
+- Minimizes changes to parent components (`Study.vue`)
+- Keeps source resolution in `getStudySource()` where it belongs
+- Is backward compatible (tagFilter is optional)
 
-**Option A**: Extend `ContentSourceID` to carry optional `tagFilter`:
-```typescript
-interface ContentSourceID {
-  type: 'course' | 'classroom' | 'tag-filtered';
-  id: string;
-  tagFilter?: TagFilter;
-}
-```
+Changes made:
+- [x] Add optional `tagFilter?: TagFilter` to `ContentSourceID` interface
+- [x] Update `getStudySource()` to check for `hasActiveFilter(source.tagFilter)`
+- [x] Create `TagFilteredContentSource` when tag filter is present
+- [x] Fall back to regular course source otherwise
 
-**Option B**: Resolve sources in `SessionConfiguration.vue` and pass actual `StudyContentSource[]`:
-- Requires changing `initStudySession` event signature
-- More explicit but larger change
-
-- [ ] Decide on approach and implement
-
-### Step 6: Integration Testing
+### Step 6: Integration Testing (TODO)
 
 - [ ] Test session with single filtered course
 - [ ] Test session with multiple courses (mixed filtered/unfiltered)
