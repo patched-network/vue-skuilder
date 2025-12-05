@@ -97,3 +97,4 @@ export { default as CourseInformation } from './components/CourseInformation.vue
 export { default as CardBrowser } from './components/CardBrowser.vue';
 export { default as CourseCardBrowser } from './components/CourseCardBrowser.vue';
 export { default as TagsInput } from './components/TagsInput.vue';
+export { default as CourseTagFilterWidget } from './components/CourseTagFilterWidget.vue';

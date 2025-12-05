@@ -119,17 +119,25 @@ Features implemented:
 - Provenance tracking for debugging
 - `clearCache()` method if tag data changes mid-session
 
-### Step 3: Create CourseTagFilterWidget Component
+### Step 3: Create CourseTagFilterWidget Component ✅
 
 Inline widget for tag filter configuration (not a full-page component):
 
-- [ ] Create `packages/common-ui/src/components/CourseTagFilterWidget.vue`
-- [ ] Props: `courseId: string`, `modelValue: TagFilter | undefined`
-- [ ] Emits: `update:modelValue`
-- [ ] Fetches course tags on mount via `getCourseTagStubs()`
-- [ ] Two `v-select` components for include/exclude
-- [ ] Compact design suitable for embedding in course row
-- [ ] Export from `packages/common-ui/src/index.ts`
+- [x] Create `packages/common-ui/src/components/CourseTagFilterWidget.vue`
+- [x] Props: `courseId: string`, `modelValue: TagFilter | undefined`
+- [x] Emits: `update:modelValue`
+- [x] Fetches course tags on mount via `getCourseTagStubs()`
+- [x] Two `v-autocomplete` components for include/exclude with fuzzy filtering
+- [x] Shows tag snippets as subtitles in dropdown
+- [x] Compact design suitable for embedding in course row
+- [x] Filter summary display when active
+- [x] Export from `packages/common-ui/src/index.ts`
+
+Features implemented:
+- Fuzzy filter for typing to search (handles large tag sets)
+- Color-coded chips (primary for include, error for exclude)
+- Exclude dropdown hides tags already in include list
+- Reactive two-way binding via v-model
 
 ### Step 4: Modify SessionConfiguration.vue
 
