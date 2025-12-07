@@ -23,7 +23,9 @@
     "dev": "tsx watch src/app.ts",
     "build": "yarn clean && tsc && cp -r assets dist/",
     "start": "node dist/app.js",
-    "test": "jest --config jest.config.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "lint": "npx eslint .",
     "lint:fix": "npx eslint . --fix",
     "lint:check": "npx eslint . --max-warnings 0",
@@ -51,9 +53,6 @@
     "winston-daily-rotate-file": "^5.0.0"
   },
   "devDependencies": {
-    "@babel/core": "^7.26.9",
-    "@babel/preset-env": "^7.26.9",
-    "@babel/preset-typescript": "^7.26.0",
     "@tsconfig/node18": "^18.2.4",
     "@types/cookie-parser": "^1.4.8",
     "@types/cors": "^2.8.17",
@@ -62,25 +61,21 @@
     "@types/express-rate-limit": "^6.0.2",
     "@types/ffmpeg-static": "^2.0.0",
     "@types/hashids": "^1.0.30",
-    "@types/jest": "^29.5.14",
     "@types/morgan": "^1.9.9",
     "@types/node": "^22",
     "@types/pouchdb": "^6.4.2",
     "@typescript-eslint/eslint-plugin": "^8.48.1",
     "@typescript-eslint/parser": "^8.48.1",
-    "babel-jest": "^29.6.1",
     "eslint": "^9.21.0",
     "eslint-config-prettier": "^10.0.2",
     "eslint-plugin-prettier": "^5.2.3",
-    "jest": "^29.6.1",
-    "jest-environment-node": "^29.7.0",
     "prettier": "^3.0.0",
     "rimraf": "*",
-    "ts-jest": "^29.2.5",
     "ts-node": "^10.9.2",
     "tsx": "^4.19.2",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.48.1"
+    "typescript-eslint": "^8.48.1",
+    "vitest": "^4.0.15"
   },
   "stableVersion": "0.1.18"
 }

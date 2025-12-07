@@ -43,7 +43,9 @@ describe('serverRequest', () => {
     };
 
     // eslint-disable-next-line
-    global.XMLHttpRequest = vi.fn(() => mockXHR) as any;
+    global.XMLHttpRequest = vi.fn(function (this: any) {
+      return mockXHR;
+    }) as any;
   });
 
   test('configures XMLHttpRequest correctly', async () => {
