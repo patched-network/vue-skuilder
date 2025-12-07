@@ -3,7 +3,7 @@ import backendConfig from '../../eslint.config.backend.mjs';
 export default [
   ...backendConfig,
   {
-    ignores: ['node_modules/**', 'userdb-*/**', 'eslint.config.mjs', 'jest.config.js'],
+    ignores: ['node_modules/**', 'userdb-*/**', 'eslint.config.mjs', 'vitest.config.ts'],
   },
   {
     languageOptions: {
@@ -12,7 +12,7 @@ export default [
         tsconfigRootDir: import.meta.dirname,
       },
       globals: {
-        // Jest globals
+        // Vitest globals
         describe: 'readonly',
         it: 'readonly',
         expect: 'readonly',
@@ -20,7 +20,7 @@ export default [
         afterEach: 'readonly',
         beforeAll: 'readonly',
         afterAll: 'readonly',
-        jest: 'readonly',
+        vi: 'readonly',
       },
     },
     rules: {
@@ -29,7 +29,7 @@ export default [
       '@typescript-eslint/explicit-function-return-type': 'off', // Test functions don't need return types
       'no-var': 'off', // var is required in declare global blocks
       'no-console': 'off', // Tests can use console for debugging
-      '@typescript-eslint/no-namespace': 'off', // Namespaces needed for Jest matcher declarations
+      '@typescript-eslint/no-namespace': 'off', // Namespaces needed for custom matcher declarations
     },
   },
 ];

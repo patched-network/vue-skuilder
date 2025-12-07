@@ -20,6 +20,6 @@
     "noEmit": false
   },
   // Changed from "files" to "include" for better project structure
-  "include": ["src/**/*", "vitest.config.ts"],
-  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts", "vitest.config.ts"]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts"]
 }
