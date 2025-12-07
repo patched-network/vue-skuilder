@@ -18,13 +18,13 @@ This document tracks implementation of unified strategy state storage, enabling 
 
 ### p1.1 Add DocType
 
-- [x] Add `STRATEGY_STATE = 'STRATEGY_STATE'` to `DocType` enum in `packages/db/src/core/types/types-legacy.ts`
-- [x] Add prefix to `DocTypePrefixes`: `[DocType.STRATEGY_STATE]: 'STRATEGY_STATE'`
+- [ ] Add `STRATEGY_STATE = 'STRATEGY_STATE'` to `DocType` enum in `packages/db/src/core/types/types-legacy.ts`
+- [ ] Add prefix to `DocTypePrefixes`: `[DocType.STRATEGY_STATE]: 'STRATEGY_STATE'`
 
 ### p1.2 Create StrategyState type definition
 
-- [x] Create `packages/db/src/core/types/strategyState.ts`
-- [x] Define `StrategyStateDoc` interface:
+- [ ] Create `packages/db/src/core/types/strategyState.ts`
+- [ ] Define `StrategyStateDoc` interface:
   ```
   interface StrategyStateDoc<T = unknown> {
     _id: `STRATEGY_STATE-${courseId}-${strategyKey}`;
@@ -35,19 +35,19 @@ This document tracks implementation of unified strategy state storage, enabling 
     updatedAt: string; // ISO timestamp
   }
   ```
-- [x] Export from `packages/db/src/core/types/index.ts` (if exists) or from types-legacy
+- [ ] Export from `packages/db/src/core/types/index.ts` (if exists) or from types-legacy
 
 ### p1.3 Add UserDBInterface methods
 
-- [x] Add to `UserDBReader` in `packages/db/src/core/interfaces/userDB.ts`:
+- [ ] Add to `UserDBReader` in `packages/db/src/core/interfaces/userDB.ts`:
   - `getStrategyState<T>(courseId: string, strategyKey: string): Promise<T | null>`
-- [x] Add to `UserDBWriter`:
+- [ ] Add to `UserDBWriter`:
   - `putStrategyState<T>(courseId: string, strategyKey: string, data: T): Promise<void>`
   - `deleteStrategyState(courseId: string, strategyKey: string): Promise<void>`
 
 ### p1.4 Implement in BaseUserDB
 
-- [x] Implement `getStrategyState()` in `packages/db/src/impl/common/BaseUserDB.ts`:
+- [ ] Implement `getStrategyState()` in `packages/db/src/impl/common/BaseUserDB.ts`:
   - Build doc ID: `STRATEGY_STATE-${courseId}-${strategyKey}`
   - Try `localDB.get()`, return `null` on 404
   - Return `doc.data` on success
