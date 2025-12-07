@@ -4,8 +4,8 @@
         "module": "CommonJS",
         "moduleResolution": "Node",
         "noEmit": true,
-        "types": ["jest", "node"]
+        "types": ["vitest/globals", "node"]
     },
-    "include": ["src/**/*"],
+    "include": ["src/**/*", "vitest.config.ts"],
     "exclude": ["node_modules", "dist"]
 }

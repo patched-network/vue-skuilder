@@ -1,4 +1,4 @@
-import { beforeAll, afterAll, beforeEach } from '@jest/globals';
+import { beforeAll, afterAll, beforeEach, expect } from 'vitest';
 import { DatabaseManager } from './database';
 import { TestDataFactory } from '../helpers/test-data-factory';
 
@@ -6,17 +6,7 @@ import { TestDataFactory } from '../helpers/test-data-factory';
 let databaseManager: DatabaseManager;
 let testDataFactory: TestDataFactory;
 
-// Extend Jest's expect with custom matchers
-declare global {
-  namespace jest {
-    interface Matchers<R> {
-      toExistInDatabase(): R;
-      toBeRemovedFromDatabase(): R;
-    }
-  }
-}
-
-// Custom Jest matchers
+// Custom Vitest matchers
 expect.extend({
   async toExistInDatabase(received: { username: string; documentId: string }) {
     const exists = await databaseManager.documentExists(received.username, received.documentId);

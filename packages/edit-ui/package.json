@@ -63,7 +63,7 @@
     "sass": "^1.83.0",
     "typescript": "~5.9.3",
     "vite": "^7.0.0",
-    "vitest": "^3.0.5"
+    "vitest": "^4.0.15"
   },
   "stableVersion": "0.1.18"
 }
