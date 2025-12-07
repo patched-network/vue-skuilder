@@ -2,7 +2,7 @@
 
 This document tracks implementation of unified strategy state storage, enabling both explicit user preferences and learned/temporal strategy state.
 
-**Status**: Phase 1 COMPLETED, Phase 2 NEXT
+**Status**: Phase 1 COMPLETED, Phase 2 COMPLETED, Phase 3 NEXT
 
 ## Context
 
@@ -49,25 +49,25 @@ This document tracks implementation of unified strategy state storage, enabling 
 
 ---
 
-## Phase 2: Add ContentNavigator Helper Methods
+## Phase 2: Add ContentNavigator Helper Methods — COMPLETED
 
 **Goal**: Provide convenient protected methods on `ContentNavigator` for strategies to read/write their state.
 
-### p2.1 Add helper methods to ContentNavigator
+### p2.1 Add helper methods to ContentNavigator ✅
 
-- [ ] In `packages/db/src/core/navigators/index.ts`, add to `ContentNavigator`:
-  ```
-  protected async getStrategyState<T>(): Promise<T | null>
-  protected async putStrategyState<T>(data: T): Promise<void>
-  protected get strategyKey(): string  // default: this.constructor.name
-  ```
-- [ ] Helpers should use `this.user.getStrategyState()` / `putStrategyState()`
-- [ ] Helpers should use `this.course.getCourseID()` for courseId
+- [x] In `packages/db/src/core/navigators/index.ts`, add to `ContentNavigator`:
+  - `protected get strategyKey(): string` — defaults to `this.constructor.name`
+  - `protected async getStrategyState<T>(): Promise<T | null>`
+  - `protected async putStrategyState<T>(data: T): Promise<void>`
+- [x] Helpers use `this.user.getStrategyState()` / `putStrategyState()`
+- [x] Helpers use `this.course.getCourseID()` for courseId
 
-### p2.2 Handle missing user/course
+### p2.2 Handle missing user/course ✅
 
-- [ ] Helpers should throw meaningful error if `this.user` or `this.course` is undefined
-- [ ] Consider: should `getStrategyState()` return null or throw if navigator not properly initialized?
+- [x] Helpers throw meaningful error if `this.user` or `this.course` is undefined
+- [x] Decision: throw on uninitialized navigator (fail-fast, not silent null)
+
+**Build verified**: `yarn workspace @vue-skuilder/db build` succeeds
 
 ---
 

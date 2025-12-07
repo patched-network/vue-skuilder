@@ -275,6 +275,58 @@ export abstract class ContentNavigator implements StudyContentSource {
     }
   }
 
+  // ============================================================================
+  // STRATEGY STATE HELPERS
+  // ============================================================================
+  //
+  // These methods allow strategies to persist their own state (user preferences,
+  // learned patterns, temporal tracking) in the user database.
+  //
+  // ============================================================================
+
+  /**
+   * Unique key identifying this strategy for state storage.
+   *
+   * Defaults to the constructor name (e.g., "UserTagPreferenceFilter").
+   * Override in subclasses if multiple instances of the same strategy type
+   * need separate state storage.
+   */
+  protected get strategyKey(): string {
+    return this.constructor.name;
+  }
+
+  /**
+   * Get this strategy's persisted state for the current course.
+   *
+   * @returns The strategy's data payload, or null if no state exists
+   * @throws Error if user or course is not initialized
+   */
+  protected async getStrategyState<T>(): Promise<T | null> {
+    if (!this.user || !this.course) {
+      throw new Error(
+        `Cannot get strategy state: navigator not properly initialized. ` +
+          `Ensure user and course are provided to constructor.`
+      );
+    }
+    return this.user.getStrategyState<T>(this.course.getCourseID(), this.strategyKey);
+  }
+
+  /**
+   * Persist this strategy's state for the current course.
+   *
+   * @param data - The strategy's data payload to store
+   * @throws Error if user or course is not initialized
+   */
+  protected async putStrategyState<T>(data: T): Promise<void> {
+    if (!this.user || !this.course) {
+      throw new Error(
+        `Cannot put strategy state: navigator not properly initialized. ` +
+          `Ensure user and course are provided to constructor.`
+      );
+    }
+    return this.user.putStrategyState<T>(this.course.getCourseID(), this.strategyKey, data);
+  }
+
   /**
    * Factory method to create navigator instances dynamically.
    *
