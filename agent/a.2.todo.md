@@ -2,7 +2,19 @@
 
 This document tracks implementation of unified strategy state storage, enabling both explicit user preferences and learned/temporal strategy state.
 
-**Status**: Phase 1 COMPLETED, Phase 2 COMPLETED, Phase 3 NEXT
+**Status**: Phase 1 COMPLETED, Phase 2 COMPLETED, Phase 3 COMPLETED, Phase 4 NEXT
+
+## Semantic Clarification: Goals vs Preferences
+
+| Type | Defines | Example | Affects Progress | Status |
+|------|---------|---------|------------------|--------|
+| **Goal** | Destination (what to learn) | "Master ear-training" | Yes | Stub created |
+| **Preference** | Path (how to learn) | "Skip text-heavy cards" | No | Implemented |
+| **Inferred** | Learned patterns | "User prefers visual" | No | Stub created |
+
+- Goals enable curriculum composition (physics defers calculus prereqs to a calculus curriculum)
+- Preferences are pure path constraints within a curriculum
+- Inferred preferences are future work for adaptive learning
 
 ## Context
 
@@ -71,46 +83,53 @@ This document tracks implementation of unified strategy state storage, enabling 
 
 ---
 
-## Phase 3: Implement `UserTagPreferenceFilter`
+## Phase 3: Implement `UserTagPreferenceFilter` — COMPLETED
 
 **Goal**: A filter that reads user tag preferences from strategy state and adjusts card scores.
 
-### p3.1 Define preference schema
+### p3.1 Define preference schema ✅
 
-- [ ] Create `packages/db/src/core/navigators/filters/userTagPreference.ts`
-- [ ] Define `UserTagPreferenceState` interface:
-  ```
-  interface UserTagPreferenceState {
-    include: string[];       // Tags to boost
-    exclude: string[];       // Tags to exclude (score=0)
-    boost: Record<string, number>;  // Tag -> multiplier
-    source: 'user' | 'inferred';
-    updatedAt: string;
-  }
-  ```
+- [x] Create `packages/db/src/core/navigators/filters/userTagPreference.ts`
+- [x] Define `UserTagPreferenceState` interface with `prefer`, `avoid`, `boost`, `updatedAt`
+- [x] Renamed fields from `include`/`exclude` to `prefer`/`avoid` to clarify preference semantics
+- [x] Removed `source` field — this impl is for explicit user config only
 
-### p3.2 Implement filter
+### p3.2 Implement filter ✅
 
-- [ ] Create `UserTagPreferenceFilter` class extending `ContentNavigator` implementing `CardFilter`
-- [ ] `transform()` implementation:
-  - Read state via `this.getStrategyState<UserTagPreferenceState>()`
-  - If no state, pass through unchanged (no-op)
-  - For each card:
-    - Get card tags (need to hydrate from course DB)
-    - If any `exclude` tag present → `score = 0`
-    - If any `include` tag present → apply boost multiplier
-    - Append provenance entry
-- [ ] Handle tag hydration efficiently (batch lookup if FilterContext provides it, else individual)
+- [x] Create `UserTagPreferenceFilter` class extending `ContentNavigator` implementing `CardFilter`
+- [x] `transform()` implementation:
+  - Reads state via `this.getStrategyState<UserTagPreferenceState>()`
+  - If no state, passes through with "no preferences" provenance
+  - For each card: checks exclusions first (score=0), then applies boost multipliers
+  - Appends detailed provenance entry
+- [x] Tag hydration via `course.getAppliedTags()` (per-card, consistent with other filters)
 
-### p3.3 Register in NavigatorRoles
+### p3.3 Register in NavigatorRoles ✅
 
-- [ ] Add `USER_TAG_PREFERENCE = 'userTagPreference'` to `Navigators` enum
-- [ ] Add `[Navigators.USER_TAG_PREFERENCE]: NavigatorRole.FILTER` to `NavigatorRoles`
+- [x] Add `USER_TAG_PREFERENCE = 'userTagPreference'` to `Navigators` enum
+- [x] Add `[Navigators.USER_TAG_PREFERENCE]: NavigatorRole.FILTER` to `NavigatorRoles`
 
-### p3.4 Export and document
+### p3.4 Export and document ✅
 
-- [ ] Export from `packages/db/src/core/navigators/filters/index.ts`
-- [ ] Add to `packages/db/docs/navigators-architecture.md` file reference table
+- [x] Export from `packages/db/src/core/navigators/filters/index.ts`
+- [x] Add to `packages/db/docs/navigators-architecture.md`:
+  - Added to filter implementations list
+  - Added new "Strategy State Storage" section documenting the API
+  - Added files to reference table
+
+**Build verified**: `yarn workspace @vue-skuilder/db build` succeeds
+
+### p3.5 Create stubs for related navigators ✅
+
+- [x] Create `packages/db/src/core/navigators/userGoal.ts` (stub)
+  - Documents goal semantics: destination definition, progress scoping
+  - Documents curriculum composition pattern (cross-curriculum dependencies)
+  - Defines placeholder `UserGoalState` interface
+- [x] Create `packages/db/src/core/navigators/inferredPreference.ts` (stub)
+  - Documents inference signals: dismissal patterns, time-on-card, error patterns
+  - Documents transparency requirements: visible, explainable, overridable
+  - Defines placeholder `InferredPreferenceState` interface
+- [x] Update `packages/db/docs/navigators-architecture.md` with goals vs preferences table
 
 ---
 
@@ -162,5 +181,7 @@ This document tracks implementation of unified strategy state storage, enabling 
 | 2 | `packages/db/src/core/navigators/index.ts` | MODIFY - add helpers |
 | 3 | `packages/db/src/core/navigators/filters/userTagPreference.ts` | CREATE |
 | 3 | `packages/db/src/core/navigators/filters/index.ts` | MODIFY - export |
+| 3 | `packages/db/src/core/navigators/userGoal.ts` | CREATE - stub |
+| 3 | `packages/db/src/core/navigators/inferredPreference.ts` | CREATE - stub |
 | 3 | `packages/db/docs/navigators-architecture.md` | MODIFY - document |
 | 4 | `packages/platform-ui/src/components/...` | CREATE - UI component |

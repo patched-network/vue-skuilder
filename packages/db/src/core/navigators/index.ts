@@ -173,6 +173,7 @@ export enum Navigators {
   HIERARCHY = 'hierarchyDefinition',
   INTERFERENCE = 'interferenceMitigator',
   RELATIVE_PRIORITY = 'relativePriority',
+  USER_TAG_PREFERENCE = 'userTagPreference',
 }
 
 // ============================================================================
@@ -211,6 +212,7 @@ export const NavigatorRoles: Record<Navigators, NavigatorRole> = {
   [Navigators.HIERARCHY]: NavigatorRole.FILTER,
   [Navigators.INTERFERENCE]: NavigatorRole.FILTER,
   [Navigators.RELATIVE_PRIORITY]: NavigatorRole.FILTER,
+  [Navigators.USER_TAG_PREFERENCE]: NavigatorRole.FILTER,
 };
 
 /**
