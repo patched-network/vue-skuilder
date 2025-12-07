@@ -1,4 +1,4 @@
-import { DocType, DocTypePrefixes } from '@db/core';
+import { DocType, DocTypePrefixes, StrategyStateDoc, buildStrategyStateId } from '@db/core';
 import { getCardHistoryID } from '@db/core/util';
 import { CourseElo, Status } from '@vue-skuilder/common';
 import moment, { Moment } from 'moment';
@@ -1046,6 +1046,61 @@ Currently logged-in as ${this._username}.`
   public async updateUserElo(courseId: string, elo: CourseElo): Promise<PouchDB.Core.Response> {
     return updateUserElo(this._username, courseId, elo);
   }
+
+  public async getStrategyState<T>(courseId: string, strategyKey: string): Promise<T | null> {
+    const docId = buildStrategyStateId(courseId, strategyKey);
+    try {
+      const doc = await this.localDB.get<StrategyStateDoc<T>>(docId);
+      return doc.data;
+    } catch (e) {
+      const err = e as PouchError;
+      if (err.status === 404) {
+        return null;
+      }
+      throw e;
+    }
+  }
+
+  public async putStrategyState<T>(courseId: string, strategyKey: string, data: T): Promise<void> {
+    const docId = buildStrategyStateId(courseId, strategyKey);
+    let existingRev: string | undefined;
+
+    try {
+      const existing = await this.localDB.get<StrategyStateDoc<T>>(docId);
+      existingRev = existing._rev;
+    } catch (e) {
+      const err = e as PouchError;
+      if (err.status !== 404) {
+        throw e;
+      }
+    }
+
+    const doc: StrategyStateDoc<T> = {
+      _id: docId,
+      _rev: existingRev,
+      docType: DocType.STRATEGY_STATE,
+      courseId,
+      strategyKey,
+      data,
+      updatedAt: new Date().toISOString(),
+    };
+
+    await this.localDB.put(doc);
+  }
+
+  public async deleteStrategyState(courseId: string, strategyKey: string): Promise<void> {
+    const docId = buildStrategyStateId(courseId, strategyKey);
+    try {
+      const doc = await this.localDB.get(docId);
+      await this.localDB.remove(doc);
+    } catch (e) {
+      const err = e as PouchError;
+      if (err.status === 404) {
+        return;
+      }
+      throw e;
+    }
+  }
 }
 
 export function accomodateGuest(): {
@@ -1056,7 +1111,9 @@ export function accomodateGuest(): {
 
   // Check if localStorage is available (browser environment)
   if (typeof localStorage === 'undefined') {
-    logger.log('[funnel] localStorage not available (Node.js environment), returning default guest');
+    logger.log(
+      '[funnel] localStorage not available (Node.js environment), returning default guest'
+    );
     return {
       username: GuestUsername + 'nodejs-test',
       firstVisit: true,
@@ -1125,11 +1182,21 @@ export function accomodateGuest(): {
       bytes[8] = (bytes[8] & 0x3f) | 0x80; // Variant 10
 
       const uuid = [
-        Array.from(bytes.slice(0, 4)).map(b => b.toString(16).padStart(2, '0')).join(''),
-        Array.from(bytes.slice(4, 6)).map(b => b.toString(16).padStart(2, '0')).join(''),
-        Array.from(bytes.slice(6, 8)).map(b => b.toString(16).padStart(2, '0')).join(''),
-        Array.from(bytes.slice(8, 10)).map(b => b.toString(16).padStart(2, '0')).join(''),
-        Array.from(bytes.slice(10, 16)).map(b => b.toString(16).padStart(2, '0')).join(''),
+        Array.from(bytes.slice(0, 4))
+          .map((b) => b.toString(16).padStart(2, '0'))
+          .join(''),
+        Array.from(bytes.slice(4, 6))
+          .map((b) => b.toString(16).padStart(2, '0'))
+          .join(''),
+        Array.from(bytes.slice(6, 8))
+          .map((b) => b.toString(16).padStart(2, '0'))
+          .join(''),
+        Array.from(bytes.slice(8, 10))
+          .map((b) => b.toString(16).padStart(2, '0'))
+          .join(''),
+        Array.from(bytes.slice(10, 16))
+          .map((b) => b.toString(16).padStart(2, '0'))
+          .join(''),
       ].join('-');
 
       logger.log('[funnel] Generated UUID using crypto.getRandomValues():', uuid);

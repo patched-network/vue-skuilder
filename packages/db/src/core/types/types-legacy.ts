@@ -19,6 +19,7 @@ export enum DocType {
   SCHEDULED_CARD = 'SCHEDULED_CARD',
   TAG = 'TAG',
   NAVIGATION_STRATEGY = 'NAVIGATION_STRATEGY',
+  STRATEGY_STATE = 'STRATEGY_STATE',
 }
 
 export interface QualifiedCardID {
@@ -103,6 +104,7 @@ export const DocTypePrefixes = {
   [DocType.VIEW]: 'VIEW',
   [DocType.PEDAGOGY]: 'PEDAGOGY',
   [DocType.NAVIGATION_STRATEGY]: 'NAVIGATION_STRATEGY',
+  [DocType.STRATEGY_STATE]: 'STRATEGY_STATE',
 } as const;
 
 export interface CardHistory<T extends CardRecord> {

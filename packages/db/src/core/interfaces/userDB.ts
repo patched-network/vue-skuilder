@@ -57,6 +57,18 @@ export interface UserDBReader {
   getActivityRecords(): Promise<ActivityRecord[]>;
 
   /**
+   * Get strategy-specific state for a course.
+   *
+   * Strategies use this to persist preferences, learned patterns, or temporal
+   * tracking data across sessions. Each strategy owns its own namespace.
+   *
+   * @param courseId - The course this state applies to
+   * @param strategyKey - Unique key identifying the strategy (typically class name)
+   * @returns The strategy's data payload, or null if no state exists
+   */
+  getStrategyState<T>(courseId: string, strategyKey: string): Promise<T | null>;
+
+  /**
    * Get user's classroom registrations
    */
   getUserClassrooms(): Promise<ClassroomRegistrationDoc>;
@@ -132,6 +144,26 @@ export interface UserDBWriter extends DocumentUpdater {
    * Reset all user data (progress, registrations, etc.) while preserving authentication
    */
   resetUserData(): Promise<{ status: Status; error?: string }>;
+
+  /**
+   * Store strategy-specific state for a course.
+   *
+   * Strategies use this to persist preferences, learned patterns, or temporal
+   * tracking data across sessions. Each strategy owns its own namespace.
+   *
+   * @param courseId - The course this state applies to
+   * @param strategyKey - Unique key identifying the strategy (typically class name)
+   * @param data - The strategy's data payload to store
+   */
+  putStrategyState<T>(courseId: string, strategyKey: string, data: T): Promise<void>;
+
+  /**
+   * Delete strategy-specific state for a course.
+   *
+   * @param courseId - The course this state applies to
+   * @param strategyKey - Unique key identifying the strategy (typically class name)
+   */
+  deleteStrategyState(courseId: string, strategyKey: string): Promise<void>;
 }
 
 /**

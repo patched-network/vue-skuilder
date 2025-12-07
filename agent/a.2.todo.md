@@ -2,6 +2,8 @@
 
 This document tracks implementation of unified strategy state storage, enabling both explicit user preferences and learned/temporal strategy state.
 
+**Status**: Phase 1 COMPLETED, Phase 2 NEXT
+
 ## Context
 
 - Assessment: `a.1.assessment.md`
@@ -12,50 +14,38 @@ This document tracks implementation of unified strategy state storage, enabling 
 
 ---
 
-## Phase 1: Add `STRATEGY_STATE` DocType and Storage Methods
+## Phase 1: Add `STRATEGY_STATE` DocType and Storage Methods — COMPLETED
 
 **Goal**: Establish the doc type and UserDB read/write methods.
 
-### p1.1 Add DocType
+### p1.1 Add DocType ✅
 
-- [ ] Add `STRATEGY_STATE = 'STRATEGY_STATE'` to `DocType` enum in `packages/db/src/core/types/types-legacy.ts`
-- [ ] Add prefix to `DocTypePrefixes`: `[DocType.STRATEGY_STATE]: 'STRATEGY_STATE'`
+- [x] Add `STRATEGY_STATE = 'STRATEGY_STATE'` to `DocType` enum in `packages/db/src/core/types/types-legacy.ts`
+- [x] Add prefix to `DocTypePrefixes`: `[DocType.STRATEGY_STATE]: 'STRATEGY_STATE'`
 
-### p1.2 Create StrategyState type definition
+### p1.2 Create StrategyState type definition ✅
 
-- [ ] Create `packages/db/src/core/types/strategyState.ts`
-- [ ] Define `StrategyStateDoc` interface:
-  ```
-  interface StrategyStateDoc<T = unknown> {
-    _id: `STRATEGY_STATE-${courseId}-${strategyKey}`;
-    docType: DocType.STRATEGY_STATE;
-    courseId: string;
-    strategyKey: string;
-    data: T;
-    updatedAt: string; // ISO timestamp
-  }
-  ```
-- [ ] Export from `packages/db/src/core/types/index.ts` (if exists) or from types-legacy
+- [x] Create `packages/db/src/core/types/strategyState.ts`
+- [x] Define `StrategyStateId` template literal type: `` `STRATEGY_STATE::${string}::${string}` ``
+- [x] Define `StrategyStateDoc<T>` interface with typed `_id`, `docType`, `courseId`, `strategyKey`, `data`, `updatedAt`
+- [x] Define `buildStrategyStateId()` helper returning `StrategyStateId`
+- [x] Export from `packages/db/src/core/index.ts`
 
-### p1.3 Add UserDBInterface methods
+**Note**: Uses `::` separator (not `-`) to avoid ambiguity with hyphenated course GUIDs, consistent with `{courseID}::{cardID}` pattern elsewhere.
 
-- [ ] Add to `UserDBReader` in `packages/db/src/core/interfaces/userDB.ts`:
-  - `getStrategyState<T>(courseId: string, strategyKey: string): Promise<T | null>`
-- [ ] Add to `UserDBWriter`:
-  - `putStrategyState<T>(courseId: string, strategyKey: string, data: T): Promise<void>`
-  - `deleteStrategyState(courseId: string, strategyKey: string): Promise<void>`
+### p1.3 Add UserDBInterface methods ✅
 
-### p1.4 Implement in BaseUserDB
+- [x] Add `getStrategyState<T>()` to `UserDBReader`
+- [x] Add `putStrategyState<T>()` to `UserDBWriter`
+- [x] Add `deleteStrategyState()` to `UserDBWriter`
 
-- [ ] Implement `getStrategyState()` in `packages/db/src/impl/common/BaseUserDB.ts`:
-  - Build doc ID: `STRATEGY_STATE-${courseId}-${strategyKey}`
-  - Try `localDB.get()`, return `null` on 404
-  - Return `doc.data` on success
-- [ ] Implement `putStrategyState()`:
-  - Get existing doc (if any) for `_rev`
-  - Put doc with updated `data` and `updatedAt`
-- [ ] Implement `deleteStrategyState()`:
-  - Get doc, call `localDB.remove()` if exists
+### p1.4 Implement in BaseUserDB ✅
+
+- [x] Implement `getStrategyState()`: builds doc ID, returns `doc.data` or `null` on 404
+- [x] Implement `putStrategyState()`: gets existing `_rev` if present, puts doc with updated timestamp
+- [x] Implement `deleteStrategyState()`: removes doc if exists, no-op on 404
+
+**Build verified**: `yarn workspace @vue-skuilder/db build` succeeds
 
 ---
 
