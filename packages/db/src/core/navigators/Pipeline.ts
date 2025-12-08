@@ -82,10 +82,11 @@ export class Pipeline extends ContentNavigator {
    *
    * 1. Build shared context (user ELO, etc.)
    * 2. Get candidates from generator (passing context)
-   * 3. Apply each filter sequentially
-   * 4. Remove zero-score cards
-   * 5. Sort by score descending
-   * 6. Return top N
+   * 3. Batch hydrate tags for all candidates
+   * 4. Apply each filter sequentially
+   * 5. Remove zero-score cards
+   * 6. Sort by score descending
+   * 7. Return top N
    *
    * @param limit - Maximum number of cards to return
    * @returns Cards sorted by score descending
@@ -106,6 +107,9 @@ export class Pipeline extends ContentNavigator {
     let cards = await this.generator.getWeightedCards(fetchLimit, context);
 
     logger.debug(`[Pipeline] Generator returned ${cards.length} candidates`);
+
+    // Batch hydrate tags before filters run
+    cards = await this.hydrateTags(cards);
 
     // Apply filters sequentially
     for (const filter of this.filters) {
@@ -131,6 +135,32 @@ export class Pipeline extends ContentNavigator {
     );
 
     return result;
+  }
+
+  /**
+   * Batch hydrate tags for all cards.
+   *
+   * Fetches tags for all cards in a single database query and attaches them
+   * to the WeightedCard objects. Filters can then use card.tags instead of
+   * making individual getAppliedTags() calls.
+   *
+   * @param cards - Cards to hydrate
+   * @returns Cards with tags populated
+   */
+  private async hydrateTags(cards: WeightedCard[]): Promise<WeightedCard[]> {
+    if (cards.length === 0) {
+      return cards;
+    }
+
+    const cardIds = cards.map((c) => c.cardId);
+    const tagsByCard = await this.course!.getAppliedTagsBatch(cardIds);
+
+    logger.debug(`[Pipeline] Hydrated tags for ${cards.length} cards`);
+
+    return cards.map((card) => ({
+      ...card,
+      tags: tagsByCard.get(card.cardId) ?? [],
+    }));
   }
 
   /**

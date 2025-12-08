@@ -34,18 +34,18 @@
 
 ---
 
-## Phase 3: Pipeline Integration
+## Phase 3: Pipeline Integration ✅
 
-### p3.1 Add hydrateTags method to Pipeline
-- [ ] Create private `hydrateTags(cards: WeightedCard[]): Promise<WeightedCard[]>` method
-- [ ] Handle empty cards array early return
-- [ ] Extract cardIds and call `getAppliedTagsBatch()`
-- [ ] Map tags onto cards, defaulting to empty array
+### p3.1 Add hydrateTags method to Pipeline ✅
+- [x] Create private `hydrateTags(cards: WeightedCard[]): Promise<WeightedCard[]>` method
+- [x] Handle empty cards array early return
+- [x] Extract cardIds and call `getAppliedTagsBatch()`
+- [x] Map tags onto cards, defaulting to empty array
 - File: `packages/db/src/core/navigators/Pipeline.ts`
 
-### p3.2 Integrate hydration into getWeightedCards
-- [ ] Call `hydrateTags()` after generator, before filters loop
-- [ ] Add debug logging for hydration step
+### p3.2 Integrate hydration into getWeightedCards ✅
+- [x] Call `hydrateTags()` after generator, before filters loop
+- [x] Add debug logging for hydration step
 - File: `packages/db/src/core/navigators/Pipeline.ts`
 
 ---
