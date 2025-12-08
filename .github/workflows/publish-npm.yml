@@ -123,40 +123,40 @@ jobs:
           NPM_TAG="${{ steps.extract_version.outputs.NPM_TAG }}"
 
           echo "Publishing @vue-skuilder/common..."
-          cd packages/common && yarn npm publish --access public --tag $NPM_TAG --provenance && cd ../..
+          cd packages/common && yarn npm publish --access public --tag $NPM_TAG && cd ../..
 
           echo "Publishing @vue-skuilder/db..."
-          cd packages/db && yarn npm publish --access public --tag $NPM_TAG --provenance && cd ../..
+          cd packages/db && yarn npm publish --access public --tag $NPM_TAG && cd ../..
 
           echo "Publishing @vue-skuilder/common-ui..."
-          cd packages/common-ui && yarn npm publish --access public --tag $NPM_TAG --provenance && cd ../..
+          cd packages/common-ui && yarn npm publish --access public --tag $NPM_TAG && cd ../..
 
           echo "Publishing @vue-skuilder/edit-ui..."
-          cd packages/edit-ui && yarn npm publish --access public --tag $NPM_TAG --provenance && cd ../..
+          cd packages/edit-ui && yarn npm publish --access public --tag $NPM_TAG && cd ../..
 
           echo "Publishing @vue-skuilder/courseware..."
-          cd packages/courseware && yarn npm publish --access public --tag $NPM_TAG --provenance && cd ../..
+          cd packages/courseware && yarn npm publish --access public --tag $NPM_TAG && cd ../..
 
           echo "Publishing @vue-skuilder/client..."
-          cd packages/client && yarn npm publish --access public --tag $NPM_TAG --provenance && cd ../..
+          cd packages/client && yarn npm publish --access public --tag $NPM_TAG && cd ../..
 
           echo "Publishing @vue-skuilder/platform-ui..."
-          cd packages/platform-ui && yarn npm publish --access public --tag $NPM_TAG --provenance && cd ../..
+          cd packages/platform-ui && yarn npm publish --access public --tag $NPM_TAG && cd ../..
 
           echo "Publishing @vue-skuilder/standalone-ui..."
-          cd packages/standalone-ui && yarn npm publish --access public --tag $NPM_TAG --provenance && cd ../..
+          cd packages/standalone-ui && yarn npm publish --access public --tag $NPM_TAG && cd ../..
 
           echo "Publishing @vue-skuilder/mcp..."
-          cd packages/mcp && yarn npm publish --access public --tag $NPM_TAG --provenance && cd ../..
+          cd packages/mcp && yarn npm publish --access public --tag $NPM_TAG && cd ../..
 
           # echo "Publishing @vue-skuilder/tuilder..."
-          # cd packages/tuilder && yarn npm publish --access public --tag $NPM_TAG --provenance && cd ../..
+          # cd packages/tuilder && yarn npm publish --access public --tag $NPM_TAG && cd ../..
 
           echo "Publishing @vue-skuilder/express..."
-          cd packages/express && yarn npm publish --access public --tag $NPM_TAG --provenance && cd ../..
+          cd packages/express && yarn npm publish --access public --tag $NPM_TAG && cd ../..
 
           echo "Publishing @vue-skuilder/cli (scoped)..."
-          cd packages/cli && yarn npm publish --access public --tag $NPM_TAG --provenance && cd ../..
+          cd packages/cli && yarn npm publish --access public --tag $NPM_TAG && cd ../..
 
           # Dual-publish CLI as unscoped 'skuilder' package
           echo "Publishing CLI as 'skuilder'..."
@@ -173,7 +173,7 @@ jobs:
           "
 
           # Use yarn npm publish to maintain workspace dependency resolution
-          yarn npm publish --access public --tag $NPM_TAG --provenance
+          yarn npm publish --access public --tag $NPM_TAG
           cd ../..
           
           echo "All packages published successfully!"
