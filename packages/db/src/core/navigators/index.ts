@@ -137,6 +137,11 @@ export interface WeightedCard {
    * First entry is from the generator, subsequent entries from filters.
    */
   provenance: StrategyContribution[];
+  /**
+   * Pre-fetched tags. Populated by Pipeline before filters run.
+   * Filters should use this instead of querying getAppliedTags() individually.
+   */
+  tags?: string[];
 }
 
 /**

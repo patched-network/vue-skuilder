@@ -93,6 +93,19 @@ export interface CourseDBInterface extends NavigationStrategyManager {
   getAppliedTags(cardId: string): Promise<PouchDB.Query.Response<TagStub>>;
 
   /**
+   * Get tags for multiple cards in a single batch query.
+   * More efficient than calling getAppliedTags() for each card.
+   *
+   * This method reduces redundant database operations when multiple filters
+   * need tag data for the same cards. The Pipeline uses this to pre-hydrate
+   * tags on WeightedCard objects before filters run.
+   *
+   * @param cardIds - Array of card IDs to fetch tags for
+   * @returns Map from cardId to array of tag names
+   */
+  getAppliedTagsBatch(cardIds: string[]): Promise<Map<string, string[]>>;
+
+  /**
    * Add a tag to a card
    */
   addTagToCard(cardId: string, tagId: string, updateELO?: boolean): Promise<PouchDB.Core.Response>;
