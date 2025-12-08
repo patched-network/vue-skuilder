@@ -2,7 +2,7 @@
 
 This document tracks implementation of unified strategy state storage, enabling both explicit user preferences and learned/temporal strategy state.
 
-**Status**: Phase 1 COMPLETED, Phase 2 COMPLETED, Phase 3 COMPLETED, Phase 4 NEXT
+**Status**: Phase 1 COMPLETED, Phase 2 COMPLETED, Phase 3 COMPLETED, Phase 4 COMPLETED, Phase 5 PENDING
 
 ## Semantic Clarification: Goals vs Preferences
 
@@ -133,28 +133,163 @@ This document tracks implementation of unified strategy state storage, enabling 
 
 ---
 
-## Phase 4: Build UI for Tag Preferences
+## Phase 4: Build UI for Tag Preferences — COMPLETED
 
 **Goal**: Users can configure their tag preferences for courses that support this filter.
 
-### p4.1 Identify UI location
+### p4.1 Identify UI location ✅
 
-- [ ] Determine where preferences UI lives (course settings page? onboarding?)
-- [ ] Confirm course must have `UserTagPreferenceFilter` in its strategy config
+- [x] User profile page (`/user/:username`) — course selector + preferences component
+- [x] Course information page (for registered users) — expandable preferences panel
+- [x] Generic component in common-ui; course-specific UIs can customize
 
-### p4.2 Create preferences component
+### p4.2 Create preferences component ✅
 
-- [ ] Create Vue component for tag preference editing
-- [ ] Component should:
-  - Fetch available tags from course DB
-  - Display current preferences (from strategy state)
-  - Allow add/remove include/exclude tags
-  - Save to strategy state via user DB
+- [x] Create `UserTagPreferences.vue` in `packages/common-ui/src/components/`
+- [x] Component features:
+  - Fetches available tags from course DB via `getCourseTagStubs()`
+  - Displays current preferences (avoid/prefer lists with chips)
+  - Autocomplete for adding tags with snippets
+  - Visual distinction: red chips for avoid, green for prefer
+  - Reset/Save buttons with loading states
+  - Change detection to enable/disable save button
+- [x] Export from `packages/common-ui/src/index.ts`
 
-### p4.3 Wire up to user DB
+### p4.3 Wire up to platform-ui ✅
 
-- [ ] Use `userDB.putStrategyState()` to persist preferences
-- [ ] Handle optimistic updates / loading states
+- [x] Add to User.vue:
+  - Course selector dropdown for registered courses
+  - Embedded `UserTagPreferences` component
+- [x] Add to CourseInformationWrapper.vue:
+  - Expandable panel for registered users
+  - Appears in "additional-content" slot
+
+### p4.4 Integration ✅
+
+- [x] Uses `userDB.getStrategyState()` / `putStrategyState()` for persistence
+- [x] Uses `STRATEGY_KEY = 'UserTagPreferenceFilter'` to match filter
+- [x] Emits `preferences-saved` and `preferences-changed` events
+
+**Build verified**: Both `@vue-skuilder/common-ui` and `@vue-skuilder/platform-ui` build successfully
+
+---
+
+## Phase 5: Simplify Tag Preferences to Single Slider Model — PENDING
+
+**Goal**: Replace separate `prefer`/`avoid` lists with a unified slider-based approach using only the `boost` multiplier record.
+
+**Breaking Change**: This is a breaking schema change. No migration needed as this is an active dev branch not yet in production.
+
+### p5.1 Update UserTagPreferenceState schema ✅
+
+**File**: `packages/db/src/core/navigators/filters/userTagPreference.ts`
+
+- [x] Remove `prefer: string[]` and `avoid: string[]` fields
+- [x] Keep only `boost: Record<string, number>` and `updatedAt: string`
+- [x] Update interface documentation to explain slider semantics:
+  - `0` = banish/exclude (card score = 0)
+  - `0.5` = penalize by 50%
+  - `1.0` = neutral/no effect (default)
+  - `2.0` = 2x preference boost
+  - etc.
+- [x] Remove `DEFAULT_BOOST` constant (no longer needed)
+
+### p5.2 Refactor UserTagPreferenceFilter.transform() ✅
+
+**File**: `packages/db/src/core/navigators/filters/userTagPreference.ts`
+
+- [x] Remove `hasAvoidedTag()` helper method
+- [x] Remove `computeBoost()` helper method
+- [x] Add new `computeMultiplier()` helper method
+- [x] Simplify `transform()` logic:
+  - If no state or empty `boost` record, pass through unchanged
+  - For each card with tags:
+    - Look up tag in `boost` record
+    - If tag found: apply multiplier (0 = exclude, 1 = neutral, >1 = boost)
+    - If multiple tags match: use max multiplier among matching tags
+    - Append provenance with clear reason
+- [x] Update `buildReason()` to reflect new semantics:
+  - "Excluded by user preference: {tag} (0x)"
+  - "Penalized by user preference: {tag} (0.5x)"
+  - "Neutral - no preference effect"
+  - "Boosted by user preference: {tag} (2x)"
+
+**Build verified**: `yarn workspace @vue-skuilder/db build` succeeds
+
+### p5.3 Refactor UserTagPreferences.vue component
+
+**File**: `packages/common-ui/src/components/UserTagPreferences.vue`
+
+- [ ] Remove separate "Avoid" and "Prefer" sections
+- [ ] Add single section: "Tag Preferences" with unified tag list
+- [ ] Replace chip-based display with tag + slider rows:
+  - Tag name (chip or text)
+  - Slider (v-slider) with current multiplier
+  - Remove/delete button (v-btn with icon, e.g., mdi-delete or mdi-close)
+- [ ] Slider configuration:
+  - Default value: `1.0` when tag added
+  - Initial range: `0` to `2`
+  - Step: `0.01`
+  - Show current value next to slider (e.g., "1.5x")
+- [ ] Dynamic range expansion:
+  - When slider reaches max value, show (+) button
+  - (+) button increments max range by 1 (e.g., 2 → 3 → 4)
+  - Cap at absolute max (default `10`, configurable via props)
+- [ ] Keep autocomplete for adding tags (existing implementation)
+- [ ] Update data model:
+  - Remove `preferences.prefer` and `preferences.avoid`
+  - Keep only `preferences.boost`
+  - Same for `savedPreferences`
+
+### p5.4 Add slider configuration props
+
+**File**: `packages/common-ui/src/components/UserTagPreferences.vue`
+
+- [ ] Add new prop `sliderConfig` with type:
+  ```typescript
+  interface SliderConfig {
+    min?: number;        // default: 0
+    startingMax?: number; // default: 2
+    absoluteMax?: number; // default: 10
+  }
+  ```
+- [ ] Default values: `{ min: 0, startingMax: 2, absoluteMax: 10 }`
+- [ ] Make prop optional (use defaults if not provided)
+- [ ] Track per-tag current max in component state (for dynamic expansion)
+
+### p5.5 Update component methods
+
+**File**: `packages/common-ui/src/components/UserTagPreferences.vue`
+
+- [ ] Remove `addAvoidTag()`, `removeAvoidTag()`, `addPreferTag()`, `removePreferTag()`
+- [ ] Add unified methods:
+  - `addTag(tagName: string)`: adds to `boost` record with value `1.0`
+  - `removeTag(tagName: string)`: removes from `boost` record
+  - `updateBoost(tagName: string, value: number)`: updates multiplier
+  - `expandSliderRange(tagName: string)`: increments max for this tag's slider
+- [ ] Update `hasChanges` computed to compare only `boost` records
+- [ ] Update `savePreferences()` to save simplified schema
+- [ ] Update `loadPreferences()` to load simplified schema
+
+### p5.6 Update visuals (Vuetify 3)
+
+**File**: `packages/common-ui/src/components/UserTagPreferences.vue`
+
+- [ ] Use `v-list` or `v-card` for each tag row
+- [ ] Layout per tag:
+  - Tag name (left-aligned)
+  - `v-slider` (flexible width, middle)
+  - Current value display (e.g., "1.5x", right of slider)
+  - (+) button when at max (conditional, v-if)
+  - Delete icon button (right-aligned)
+- [ ] KISS approach: no color zones, plain slider
+- [ ] Keep existing autocomplete styling
+
+### p5.7 Update Files Summary table
+
+**File**: `agent/a.2.todo.md`
+
+- [x] Add Phase 5 entries to Files Summary table at end of document
 
 ---
 
@@ -184,4 +319,9 @@ This document tracks implementation of unified strategy state storage, enabling 
 | 3 | `packages/db/src/core/navigators/userGoal.ts` | CREATE - stub |
 | 3 | `packages/db/src/core/navigators/inferredPreference.ts` | CREATE - stub |
 | 3 | `packages/db/docs/navigators-architecture.md` | MODIFY - document |
-| 4 | `packages/platform-ui/src/components/...` | CREATE - UI component |
+| 4 | `packages/common-ui/src/components/UserTagPreferences.vue` | CREATE |
+| 4 | `packages/common-ui/src/index.ts` | MODIFY - export |
+| 4 | `packages/platform-ui/src/views/User.vue` | MODIFY - add preferences |
+| 4 | `packages/platform-ui/src/components/Courses/CourseInformationWrapper.vue` | MODIFY - add panel |
+| 5 | `packages/db/src/core/navigators/filters/userTagPreference.ts` | MODIFY - simplify schema and logic |
+| 5 | `packages/common-ui/src/components/UserTagPreferences.vue` | MODIFY - slider-based UI |
