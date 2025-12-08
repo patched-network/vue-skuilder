@@ -9,7 +9,7 @@ The navigation strategy system selects and scores cards for study sessions. It u
 
 ### WeightedCard
 
-A card with a suitability score and audit trail:
+A card with a suitability score, audit trail, and pre-fetched data:
 
 ```typescript
 interface WeightedCard {
@@ -17,6 +17,7 @@ interface WeightedCard {
   courseId: string;
   score: number;              // 0-1 suitability score
   provenance: StrategyContribution[];  // Audit trail
+  tags?: string[];            // Pre-fetched tags (hydrated by Pipeline)
 }
 
 interface StrategyContribution {
@@ -57,6 +58,9 @@ interface CardFilter {
 }
 ```
 
+Filters receive cards with pre-hydrated data (e.g., `card.tags`) from Pipeline, eliminating
+redundant database queries.
+
 **Implementations:**
 - `HierarchyDefinitionNavigator` — Gates cards by prerequisite mastery (score=0 if locked)
 - `InterferenceMitigatorNavigator` — Reduces scores for confusable content
@@ -66,7 +70,7 @@ interface CardFilter {
 
 ### Pipeline
 
-Orchestrates generator and filters:
+Orchestrates generator, data hydration, and filters:
 
 ```typescript
 class Pipeline {
@@ -78,19 +82,32 @@ class Pipeline {
   )
 
   async getWeightedCards(limit: number): Promise<WeightedCard[]> {
+    // Build shared context (user ELO, etc.)
     const context = await this.buildContext();
+
+    // Generate candidates
     let cards = await this.generator.getWeightedCards(fetchLimit, context);
-    
+
+    // Hydrate shared data (tags, etc.) in single batch query
+    cards = await this.hydrateTags(cards);
+
+    // Apply filters sequentially
     for (const filter of this.filters) {
       cards = await filter.transform(cards, context);
     }
-    
+
     return cards.filter(c => c.score > 0)
                 .sort((a, b) => b.score - a.score)
                 .slice(0, limit);
   }
 }
 ```
+
+**Responsibilities:**
+- **Context building** — Fetches shared data (user ELO) once for all strategies
+- **Data hydration** — Pre-fetches commonly needed data (tags) in batch queries
+- **Filter orchestration** — Applies filters in sequence, accumulating provenance
+- **Result selection** — Removes zero-scores, sorts, and returns top N
 
 ## Pipeline Assembly
 
@@ -345,8 +362,9 @@ return { ...card, score: card.score * multiplier };
 | `core/types/strategyState.ts` | `StrategyStateDoc`, `StrategyStateId` |
 | `impl/couch/courseDB.ts` | `createNavigator()` entry point |
 
-## Related TODOs
+## Related Documentation
 
-- `todo-pipeline-optimization.md` — Batch tag hydration for filter efficiency
+- `todo-pipeline-optimization.md` — Batch tag hydration implementation (✅ completed)
 - `todo-strategy-authoring.md` — UX and DX for authoring strategies
 - `todo-evolutionary-orchestration.md` — Long-term adaptive strategy vision
+- `devlog/1004` — Implementation details for tag hydration optimization
