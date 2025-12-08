@@ -4,12 +4,6 @@ on:
   push:
     tags:
       - 'v*'
-  workflow_dispatch:
-    inputs:
-      dry_run:
-        description: 'Dry run mode (test without publishing)'
-        type: boolean
-        default: true
 
 jobs:
   publish:
@@ -37,34 +31,25 @@ jobs:
       - name: Extract version from tag
         id: extract_version
         run: |
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            # Manual trigger - use version from package.json
-            VERSION=$(cd packages/common && node -p "require('./package.json').version")
-            echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
-            echo "NPM_TAG=test" >> $GITHUB_OUTPUT
-            echo "📌 Manual run - version: $VERSION, tag: test"
+          # Remove 'v' prefix from tag
+          VERSION=${GITHUB_REF_NAME#v}
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "📌 Expected version: $VERSION"
+          
+          # Determine npm tag based on version format
+          if [[ "$VERSION" =~ -[0-9]+$ ]]; then
+            NPM_TAG="alpha"
+            echo "🚨 Decorated version detected, using --tag alpha"
           else
-            # Tag trigger - extract from tag name
-            VERSION=${GITHUB_REF_NAME#v}
-            echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
-            echo "📌 Expected version: $VERSION"
-
-            # Determine npm tag based on version format
-            if [[ "$VERSION" =~ -[0-9]+$ ]]; then
-              NPM_TAG="alpha"
-              echo "🚨 Decorated version detected, using --tag alpha"
-            else
-              NPM_TAG="latest"
-              echo "✅ Stable version, using --tag latest"
-            fi
-            echo "NPM_TAG=$NPM_TAG" >> $GITHUB_OUTPUT
+            NPM_TAG="latest"
+            echo "✅ Stable version, using --tag latest"
           fi
+          echo "NPM_TAG=$NPM_TAG" >> $GITHUB_OUTPUT
 
       - name: Verify package versions match tag
-        if: github.event_name == 'push'
         run: |
           VERSION=${{ steps.extract_version.outputs.VERSION }}
-
+          
           # Verify all packages have the correct version
           for package in common db common-ui courseware edit-ui client platform-ui standalone-ui express mcp cli; do
             PACKAGE_VERSION=$(cd packages/$package && node -p "require('./package.json').version")
@@ -74,7 +59,7 @@ jobs:
             fi
             echo "✅ packages/$package version $PACKAGE_VERSION matches tag"
           done
-
+          
           echo "✅ All package versions verified"
 
       - name: Lint packages
@@ -88,37 +73,37 @@ jobs:
         run: |
           echo "Building common package..."
           yarn workspace @vue-skuilder/common build
-
+          
           echo "Building db package..."
           yarn workspace @vue-skuilder/db build
-
+          
           echo "Building common-ui package..."
           yarn workspace @vue-skuilder/common-ui build
-
+          
           echo "Building courseware package..."
           yarn workspace @vue-skuilder/courseware build
 
           echo "Building edit-ui package..."
           yarn workspace @vue-skuilder/edit-ui build
-
+          
           echo "Building client package..."
           yarn workspace @vue-skuilder/client build
-
+          
           echo "Building platform-ui package..."
           yarn workspace @vue-skuilder/platform-ui build
-
+          
           echo "Building standalone-ui package..."
           yarn workspace @vue-skuilder/standalone-ui build
-
+          
           echo "Building express package..."
           yarn workspace @vue-skuilder/express build
-
+          
           # echo "Building tuilder package..."
           # yarn workspace @vue-skuilder/tuilder build
-
+          
           echo "Building mcp package..."
           yarn workspace @vue-skuilder/mcp build
-
+          
           echo "Building cli package..."
           yarn workspace @vue-skuilder/cli build
 
@@ -132,8 +117,13 @@ jobs:
             echo "✓ @vue-skuilder/$package build output verified"
           done
 
+      - name: Configure Yarn for OIDC publishing
+        run: |
+          yarn config set npmAlwaysAuth true
+          yarn config set npmAuthToken $NODE_AUTH_TOKEN
+          yarn config set npmRegistryServer https://registry.npmjs.org
+
       - name: Publish packages in dependency order
-        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'false')
         run: |
           set -e
           NPM_TAG="${{ steps.extract_version.outputs.NPM_TAG }}"
@@ -192,17 +182,13 @@ jobs:
           yarn npm publish --access public --tag $NPM_TAG
           cd ../..
           echo "All packages published successfully!"
-        env:
-          YARN_NPM_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: NPM publish completed
-        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'false')
         run: |
           echo "✅ All vue-skuilder packages published to NPM registry"
           echo "📦 Packages published:"
           echo "   - @vue-skuilder/common"
-          echo "   - @vue-skuilder/db"
+          echo "   - @vue-skuilder/db" 
           echo "   - @vue-skuilder/common-ui"
           echo "   - @vue-skuilder/courseware"
           echo "   - @vue-skuilder/edit-ui"

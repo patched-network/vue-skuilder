@@ -3,7 +3,7 @@
   "publishConfig": {
     "access": "public"
   },
-  "version": "0.1.18",
+  "version": "0.1.20",
   "description": "an API",
   "main": "dist/index.js",
   "type": "module",
@@ -31,7 +31,7 @@
     "lint:check": "npx eslint . --max-warnings 0",
     "type-check": "tsc --noEmit"
   },
-  "packageManager": "yarn@4.6.0",
+  "packageManager": "yarn@4.12.0",
   "author": "Colin Kennedy",
   "license": "GPL-3.0-or-later",
   "dependencies": {
@@ -77,5 +77,5 @@
     "typescript-eslint": "^8.48.1",
     "vitest": "^4.0.15"
   },
-  "stableVersion": "0.1.18"
+  "stableVersion": "0.1.20"
 }
