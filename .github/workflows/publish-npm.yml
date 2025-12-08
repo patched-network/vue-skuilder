@@ -117,60 +117,51 @@ jobs:
             echo "✓ @vue-skuilder/$package build output verified"
           done
 
-      - name: Configure Yarn npm authentication
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: |
-          yarn config set npmAuthToken $NODE_AUTH_TOKEN
-          yarn config set npmRegistryServer https://registry.npmjs.org
-
       - name: Publish packages in dependency order
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           set -e
           NPM_TAG="${{ steps.extract_version.outputs.NPM_TAG }}"
-          
+
           echo "Publishing @vue-skuilder/common..."
-          cd packages/common && yarn npm publish --access public --tag $NPM_TAG && cd ../..
-          
+          cd packages/common && yarn npm publish --access public --tag $NPM_TAG --provenance && cd ../..
+
           echo "Publishing @vue-skuilder/db..."
-          cd packages/db && yarn npm publish --access public --tag $NPM_TAG && cd ../..
-          
+          cd packages/db && yarn npm publish --access public --tag $NPM_TAG --provenance && cd ../..
+
           echo "Publishing @vue-skuilder/common-ui..."
-          cd packages/common-ui && yarn npm publish --access public --tag $NPM_TAG && cd ../..
-          
+          cd packages/common-ui && yarn npm publish --access public --tag $NPM_TAG --provenance && cd ../..
+
           echo "Publishing @vue-skuilder/edit-ui..."
-          cd packages/edit-ui && yarn npm publish --access public --tag $NPM_TAG && cd ../..
-          
+          cd packages/edit-ui && yarn npm publish --access public --tag $NPM_TAG --provenance && cd ../..
+
           echo "Publishing @vue-skuilder/courseware..."
-          cd packages/courseware && yarn npm publish --access public --tag $NPM_TAG && cd ../..
-          
+          cd packages/courseware && yarn npm publish --access public --tag $NPM_TAG --provenance && cd ../..
+
           echo "Publishing @vue-skuilder/client..."
-          cd packages/client && yarn npm publish --access public --tag $NPM_TAG && cd ../..
-          
+          cd packages/client && yarn npm publish --access public --tag $NPM_TAG --provenance && cd ../..
+
           echo "Publishing @vue-skuilder/platform-ui..."
-          cd packages/platform-ui && yarn npm publish --access public --tag $NPM_TAG && cd ../..
-          
+          cd packages/platform-ui && yarn npm publish --access public --tag $NPM_TAG --provenance && cd ../..
+
           echo "Publishing @vue-skuilder/standalone-ui..."
-          cd packages/standalone-ui && yarn npm publish --access public --tag $NPM_TAG && cd ../..
-          
+          cd packages/standalone-ui && yarn npm publish --access public --tag $NPM_TAG --provenance && cd ../..
+
           echo "Publishing @vue-skuilder/mcp..."
-          cd packages/mcp && yarn npm publish --access public --tag $NPM_TAG && cd ../..
-          
+          cd packages/mcp && yarn npm publish --access public --tag $NPM_TAG --provenance && cd ../..
+
           # echo "Publishing @vue-skuilder/tuilder..."
-          # cd packages/tuilder && yarn npm publish --access public --tag $NPM_TAG && cd ../..
-          
+          # cd packages/tuilder && yarn npm publish --access public --tag $NPM_TAG --provenance && cd ../..
+
           echo "Publishing @vue-skuilder/express..."
-          cd packages/express && yarn npm publish --access public --tag $NPM_TAG && cd ../..
-          
+          cd packages/express && yarn npm publish --access public --tag $NPM_TAG --provenance && cd ../..
+
           echo "Publishing @vue-skuilder/cli (scoped)..."
-          cd packages/cli && yarn npm publish --access public --tag $NPM_TAG && cd ../..
-          
+          cd packages/cli && yarn npm publish --access public --tag $NPM_TAG --provenance && cd ../..
+
           # Dual-publish CLI as unscoped 'skuilder' package
           echo "Publishing CLI as 'skuilder'..."
           cd packages/cli
-          
+
           # Modify package.json for unscoped publish
           node -e "
             const fs = require('fs');
@@ -180,9 +171,9 @@ jobs:
             delete pkg.publishConfig;
             fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
           "
-          
+
           # Use yarn npm publish to maintain workspace dependency resolution
-          yarn npm publish --access public --tag $NPM_TAG
+          yarn npm publish --access public --tag $NPM_TAG --provenance
           cd ../..
           
           echo "All packages published successfully!"
