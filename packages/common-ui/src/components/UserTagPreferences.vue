@@ -72,7 +72,7 @@
                   <v-slider
                     :model-value="preferences.boost[tagName]"
                     :min="sliderConfigResolved.min"
-                    :max="tagMaxRanges[tagName] || sliderConfigResolved.startingMax"
+                    :max="globalSliderMax"
                     :step="0.01"
                     hide-details
                     class="flex-grow-1"
@@ -89,16 +89,15 @@
                     {{ formatMultiplier(preferences.boost[tagName]) }}
                   </span>
 
-                  <!-- Expand range button (when at max) -->
+                  <!-- Expand range button (always visible) -->
                   <v-btn
-                    v-if="preferences.boost[tagName] >= (tagMaxRanges[tagName] || sliderConfigResolved.startingMax) && (tagMaxRanges[tagName] || sliderConfigResolved.startingMax) < sliderConfigResolved.absoluteMax"
                     icon="mdi-plus"
                     size="small"
                     variant="text"
                     density="compact"
+                    :disabled="globalSliderMax >= sliderConfigResolved.absoluteMax"
                     @click="expandSliderRange(tagName)"
                   />
-                  <div v-else style="width: 40px;" />
 
                   <!-- Delete button -->
                   <v-btn
@@ -264,6 +263,18 @@ export default defineComponent({
     },
 
     /**
+     * Global max for all sliders (highest tagMaxRanges value)
+     * Ensures all sliders have the same visual scale
+     */
+    globalSliderMax(): number {
+      const maxValues = Object.values(this.tagMaxRanges);
+      if (maxValues.length === 0) {
+        return this.sliderConfigResolved.startingMax;
+      }
+      return Math.max(...maxValues);
+    },
+
+    /**
      * Tags available to add (not already in preferences)
      */
     availableTagsToAdd(): Tag[] {
@@ -342,10 +353,22 @@ export default defineComponent({
         // Store saved state for comparison
         this.savedPreferences.boost = { ...this.preferences.boost };
 
-        // Initialize tag max ranges to starting max
+        // Initialize tag max ranges, auto-expanding if saved value exceeds startingMax
         this.tagMaxRanges = {};
         Object.keys(this.preferences.boost).forEach((tag) => {
-          this.tagMaxRanges[tag] = this.sliderConfigResolved.startingMax;
+          const savedValue = this.preferences.boost[tag];
+          const startingMax = this.sliderConfigResolved.startingMax;
+
+          // If saved value exceeds startingMax, expand range to accommodate it
+          // (capped at absoluteMax)
+          if (savedValue > startingMax) {
+            this.tagMaxRanges[tag] = Math.min(
+              Math.ceil(savedValue),
+              this.sliderConfigResolved.absoluteMax
+            );
+          } else {
+            this.tagMaxRanges[tag] = startingMax;
+          }
         });
       } catch (e) {
         console.error('Failed to load preferences:', e);
@@ -388,12 +411,22 @@ export default defineComponent({
     },
 
     /**
-     * Expand the slider range for a specific tag by 1
+     * Expand the global slider range by 1 and move the triggering tag's slider to new max
      */
     expandSliderRange(tagName: string) {
-      const currentMax = this.tagMaxRanges[tagName] || this.sliderConfigResolved.startingMax;
-      if (currentMax < this.sliderConfigResolved.absoluteMax) {
-        this.tagMaxRanges[tagName] = currentMax + 1;
+      const currentGlobalMax = this.globalSliderMax;
+      if (currentGlobalMax < this.sliderConfigResolved.absoluteMax) {
+        const newGlobalMax = currentGlobalMax + 1;
+
+        // Expand all tag ranges to the new global max
+        // (ensures all sliders stay synchronized)
+        Object.keys(this.tagMaxRanges).forEach((tag) => {
+          this.tagMaxRanges[tag] = Math.max(this.tagMaxRanges[tag], newGlobalMax);
+        });
+
+        // Move the triggering tag's slider to new max
+        this.preferences.boost[tagName] = newGlobalMax;
+        this.$emit('preferences-changed', this.preferences);
       }
     },
 
@@ -418,10 +451,20 @@ export default defineComponent({
       this.saveSuccess = false;
       this.saveError = '';
 
-      // Reset tag max ranges
+      // Reset tag max ranges, auto-expanding if saved value exceeds startingMax
       this.tagMaxRanges = {};
       Object.keys(this.preferences.boost).forEach((tag) => {
-        this.tagMaxRanges[tag] = this.sliderConfigResolved.startingMax;
+        const savedValue = this.preferences.boost[tag];
+        const startingMax = this.sliderConfigResolved.startingMax;
+
+        if (savedValue > startingMax) {
+          this.tagMaxRanges[tag] = Math.min(
+            Math.ceil(savedValue),
+            this.sliderConfigResolved.absoluteMax
+          );
+        } else {
+          this.tagMaxRanges[tag] = startingMax;
+        }
       });
     },
 
