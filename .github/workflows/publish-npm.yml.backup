@@ -1,0 +1,203 @@
+name: Publish to NPM
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'yarn'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install Yarn
+        run: corepack enable
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Extract version from tag
+        id: extract_version
+        run: |
+          # Remove 'v' prefix from tag
+          VERSION=${GITHUB_REF_NAME#v}
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "📌 Expected version: $VERSION"
+          
+          # Determine npm tag based on version format
+          if [[ "$VERSION" =~ -[0-9]+$ ]]; then
+            NPM_TAG="alpha"
+            echo "🚨 Decorated version detected, using --tag alpha"
+          else
+            NPM_TAG="latest"
+            echo "✅ Stable version, using --tag latest"
+          fi
+          echo "NPM_TAG=$NPM_TAG" >> $GITHUB_OUTPUT
+
+      - name: Verify package versions match tag
+        run: |
+          VERSION=${{ steps.extract_version.outputs.VERSION }}
+          
+          # Verify all packages have the correct version
+          for package in common db common-ui courseware edit-ui client platform-ui standalone-ui express mcp cli; do
+            PACKAGE_VERSION=$(cd packages/$package && node -p "require('./package.json').version")
+            if [ "$PACKAGE_VERSION" != "$VERSION" ]; then
+              echo "❌ Version mismatch in packages/$package: expected $VERSION, found $PACKAGE_VERSION"
+              exit 1
+            fi
+            echo "✅ packages/$package version $PACKAGE_VERSION matches tag"
+          done
+          
+          echo "✅ All package versions verified"
+
+      - name: Lint packages
+        run: |
+          yarn workspace @vue-skuilder/common lint:check
+          yarn workspace @vue-skuilder/db lint:check
+          yarn workspace @vue-skuilder/express lint:check
+          yarn workspace @vue-skuilder/cli lint:check
+
+      - name: Build packages in dependency order
+        run: |
+          echo "Building common package..."
+          yarn workspace @vue-skuilder/common build
+          
+          echo "Building db package..."
+          yarn workspace @vue-skuilder/db build
+          
+          echo "Building common-ui package..."
+          yarn workspace @vue-skuilder/common-ui build
+          
+          echo "Building courseware package..."
+          yarn workspace @vue-skuilder/courseware build
+
+          echo "Building edit-ui package..."
+          yarn workspace @vue-skuilder/edit-ui build
+          
+          echo "Building client package..."
+          yarn workspace @vue-skuilder/client build
+          
+          echo "Building platform-ui package..."
+          yarn workspace @vue-skuilder/platform-ui build
+          
+          echo "Building standalone-ui package..."
+          yarn workspace @vue-skuilder/standalone-ui build
+          
+          echo "Building express package..."
+          yarn workspace @vue-skuilder/express build
+          
+          # echo "Building tuilder package..."
+          # yarn workspace @vue-skuilder/tuilder build
+          
+          echo "Building mcp package..."
+          yarn workspace @vue-skuilder/mcp build
+          
+          echo "Building cli package..."
+          yarn workspace @vue-skuilder/cli build
+
+      - name: Verify build outputs
+        run: |
+          for package in common db common-ui courseware edit-ui client platform-ui standalone-ui express mcp cli; do
+            if [ ! -d "packages/$package/dist" ]; then
+              echo "Error: dist directory not found for @vue-skuilder/$package"
+              exit 1
+            fi
+            echo "✓ @vue-skuilder/$package build output verified"
+          done
+
+      - name: Configure Yarn for OIDC publishing
+        run: |
+          yarn config set npmAlwaysAuth true
+          yarn config set npmAuthToken $NODE_AUTH_TOKEN
+          yarn config set npmRegistryServer https://registry.npmjs.org
+
+      - name: Publish packages in dependency order
+        run: |
+          set -e
+          NPM_TAG="${{ steps.extract_version.outputs.NPM_TAG }}"
+
+          echo "Publishing @vue-skuilder/common..."
+          cd packages/common && yarn npm publish --access public --tag $NPM_TAG && cd ../..
+
+          echo "Publishing @vue-skuilder/db..."
+          cd packages/db && yarn npm publish --access public --tag $NPM_TAG && cd ../..
+
+          echo "Publishing @vue-skuilder/common-ui..."
+          cd packages/common-ui && yarn npm publish --access public --tag $NPM_TAG && cd ../..
+
+          echo "Publishing @vue-skuilder/edit-ui..."
+          cd packages/edit-ui && yarn npm publish --access public --tag $NPM_TAG && cd ../..
+
+          echo "Publishing @vue-skuilder/courseware..."
+          cd packages/courseware && yarn npm publish --access public --tag $NPM_TAG && cd ../..
+
+          echo "Publishing @vue-skuilder/client..."
+          cd packages/client && yarn npm publish --access public --tag $NPM_TAG && cd ../..
+
+          echo "Publishing @vue-skuilder/platform-ui..."
+          cd packages/platform-ui && yarn npm publish --access public --tag $NPM_TAG && cd ../..
+
+          echo "Publishing @vue-skuilder/standalone-ui..."
+          cd packages/standalone-ui && yarn npm publish --access public --tag $NPM_TAG && cd ../..
+
+          echo "Publishing @vue-skuilder/mcp..."
+          cd packages/mcp && yarn npm publish --access public --tag $NPM_TAG && cd ../..
+
+          # echo "Publishing @vue-skuilder/tuilder..."
+          # cd packages/tuilder && yarn npm publish --access public --tag $NPM_TAG && cd ../..
+
+          echo "Publishing @vue-skuilder/express..."
+          cd packages/express && yarn npm publish --access public --tag $NPM_TAG && cd ../..
+
+          echo "Publishing @vue-skuilder/cli (scoped)..."
+          cd packages/cli && yarn npm publish --access public --tag $NPM_TAG && cd ../..
+
+          # Dual-publish CLI as unscoped 'skuilder' package
+          echo "Publishing CLI as 'skuilder'..."
+          cd packages/cli
+
+          # Modify package.json for unscoped publish
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            pkg.name = 'skuilder';
+            pkg.description = 'CLI tool for scaffolding Skuilder course applications';
+            delete pkg.publishConfig;
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
+          "
+
+          # Use yarn npm publish to maintain workspace dependency resolution
+          yarn npm publish --access public --tag $NPM_TAG
+          cd ../..
+          echo "All packages published successfully!"
+
+      - name: NPM publish completed
+        run: |
+          echo "✅ All vue-skuilder packages published to NPM registry"
+          echo "📦 Packages published:"
+          echo "   - @vue-skuilder/common"
+          echo "   - @vue-skuilder/db" 
+          echo "   - @vue-skuilder/common-ui"
+          echo "   - @vue-skuilder/courseware"
+          echo "   - @vue-skuilder/edit-ui"
+          echo "   - @vue-skuilder/client"
+          echo "   - @vue-skuilder/platform-ui"
+          echo "   - @vue-skuilder/standalone-ui"
+          echo "   - @vue-skuilder/express"
+          echo "   - @vue-skuilder/mcp"
+          echo "   - @vue-skuilder/cli"
+          echo "   - skuilder (CLI unscoped)"
+          echo ""
+          echo "🚀 GitHub release will be created by the 'Publish GitHub Release' workflow"
