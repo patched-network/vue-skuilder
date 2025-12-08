@@ -15,42 +15,30 @@
       </v-alert>
 
       <div v-else-if="!loading">
-        <!-- Avoid Tags Section -->
+        <!-- Tag Preferences Section -->
         <div class="mb-6">
           <h3 class="text-subtitle-1 font-weight-bold mb-2">
-            <v-icon start size="small">mdi-eye-off</v-icon>
-            Avoid These Topics
+            <v-icon start size="small">mdi-tune-variant</v-icon>
+            Tag Preferences
           </h3>
           <p class="text-body-2 text-medium-emphasis mb-3">
-            Cards with these tags won't be shown during study sessions.
+            Adjust how much you want to see cards with specific tags. 0 = exclude, 1 = neutral, higher = prefer more.
           </p>
 
-          <v-chip-group column>
-            <v-chip
-              v-for="tag in preferences.avoid"
-              :key="`avoid-${tag}`"
-              closable
-              color="error"
-              variant="tonal"
-              @click:close="removeAvoidTag(tag)"
-            >
-              {{ tag }}
-            </v-chip>
-          </v-chip-group>
-
+          <!-- Tag autocomplete -->
           <v-autocomplete
-            v-model="tagToAvoid"
-            :items="availableTagsForAvoid"
+            v-model="tagToAdd"
+            :items="availableTagsToAdd"
             item-title="name"
             item-value="name"
-            label="Add tag to avoid"
+            label="Add tag preference"
             placeholder="Search tags..."
             density="compact"
             variant="outlined"
             clearable
             hide-details
-            class="mt-2"
-            @update:model-value="addAvoidTag"
+            class="mb-4"
+            @update:model-value="addTag"
           >
             <template #item="{ props, item }">
               <v-list-item v-bind="props">
@@ -60,65 +48,74 @@
               </v-list-item>
             </template>
           </v-autocomplete>
-        </div>
 
-        <v-divider class="my-4" />
-
-        <!-- Prefer Tags Section -->
-        <div class="mb-6">
-          <h3 class="text-subtitle-1 font-weight-bold mb-2">
-            <v-icon start size="small">mdi-star</v-icon>
-            Prefer These Topics
-          </h3>
-          <p class="text-body-2 text-medium-emphasis mb-3">
-            Cards with these tags will be prioritized during study sessions.
-          </p>
-
-          <v-chip-group column>
-            <v-chip
-              v-for="tag in preferences.prefer"
-              :key="`prefer-${tag}`"
-              closable
-              color="success"
-              variant="tonal"
-              @click:close="removePreferTag(tag)"
+          <!-- Tag slider list -->
+          <v-list v-if="tagNames.length > 0" class="mt-4">
+            <v-list-item
+              v-for="tagName in tagNames"
+              :key="tagName"
+              class="px-0"
             >
-              {{ tag }}
-              <template #append>
-                <v-tooltip location="top">
-                  <template #activator="{ props }">
-                    <span v-bind="props" class="ml-1 text-caption">
-                      {{ formatBoost(preferences.boost[tag]) }}
-                    </span>
-                  </template>
-                  Boost multiplier
-                </v-tooltip>
+              <template #default>
+                <div class="d-flex align-center ga-3 w-100">
+                  <!-- Tag name -->
+                  <v-chip
+                    size="small"
+                    variant="tonal"
+                    class="flex-shrink-0"
+                    style="min-width: 120px;"
+                  >
+                    {{ tagName }}
+                  </v-chip>
+
+                  <!-- Slider -->
+                  <v-slider
+                    :model-value="preferences.boost[tagName]"
+                    :min="sliderConfigResolved.min"
+                    :max="tagMaxRanges[tagName] || sliderConfigResolved.startingMax"
+                    :step="0.01"
+                    hide-details
+                    class="flex-grow-1"
+                    thumb-label
+                    @update:model-value="(val: number) => updateBoost(tagName, val)"
+                  >
+                    <template #thumb-label="{ modelValue }">
+                      {{ formatMultiplier(modelValue) }}
+                    </template>
+                  </v-slider>
+
+                  <!-- Current value display -->
+                  <span class="text-body-2 flex-shrink-0" style="min-width: 60px; text-align: right;">
+                    {{ formatMultiplier(preferences.boost[tagName]) }}
+                  </span>
+
+                  <!-- Expand range button (when at max) -->
+                  <v-btn
+                    v-if="preferences.boost[tagName] >= (tagMaxRanges[tagName] || sliderConfigResolved.startingMax) && (tagMaxRanges[tagName] || sliderConfigResolved.startingMax) < sliderConfigResolved.absoluteMax"
+                    icon="mdi-plus"
+                    size="small"
+                    variant="text"
+                    density="compact"
+                    @click="expandSliderRange(tagName)"
+                  />
+                  <div v-else style="width: 40px;" />
+
+                  <!-- Delete button -->
+                  <v-btn
+                    icon="mdi-delete"
+                    size="small"
+                    variant="text"
+                    density="compact"
+                    @click="removeTag(tagName)"
+                  />
+                </div>
               </template>
-            </v-chip>
-          </v-chip-group>
+            </v-list-item>
+          </v-list>
 
-          <v-autocomplete
-            v-model="tagToPrefer"
-            :items="availableTagsForPrefer"
-            item-title="name"
-            item-value="name"
-            label="Add tag to prefer"
-            placeholder="Search tags..."
-            density="compact"
-            variant="outlined"
-            clearable
-            hide-details
-            class="mt-2"
-            @update:model-value="addPreferTag"
-          >
-            <template #item="{ props, item }">
-              <v-list-item v-bind="props">
-                <template #subtitle>
-                  {{ item.raw.snippet }}
-                </template>
-              </v-list-item>
-            </template>
-          </v-autocomplete>
+          <v-alert v-else type="info" variant="tonal" class="mt-4">
+            No tag preferences configured yet. Add tags above to get started.
+          </v-alert>
         </div>
 
         <!-- Status / Feedback -->
@@ -167,13 +164,25 @@ import { getCurrentUser } from '../stores/useAuthStore';
  * User's tag preference state, matching the backend schema.
  */
 interface UserTagPreferenceState {
-  prefer: string[];
-  avoid: string[];
   boost: Record<string, number>;
   updatedAt: string;
 }
 
-const DEFAULT_BOOST = 1.5;
+/**
+ * Slider configuration for tag preferences.
+ */
+interface SliderConfig {
+  min?: number;        // default: 0
+  startingMax?: number; // default: 2
+  absoluteMax?: number; // default: 10
+}
+
+const DEFAULT_SLIDER_CONFIG: Required<SliderConfig> = {
+  min: 0,
+  startingMax: 2,
+  absoluteMax: 10,
+};
+
 const STRATEGY_KEY = 'UserTagPreferenceFilter';
 
 export default defineComponent({
@@ -189,6 +198,16 @@ export default defineComponent({
       required: false,
       default: '',
     },
+
+    /**
+     * Slider configuration (min, startingMax, absoluteMax).
+     * All fields optional, defaults: { min: 0, startingMax: 2, absoluteMax: 10 }
+     */
+    sliderConfig: {
+      type: Object as PropType<SliderConfig>,
+      required: false,
+      default: () => ({}),
+    },
   },
 
   emits: ['preferences-saved', 'preferences-changed'],
@@ -202,24 +221,22 @@ export default defineComponent({
 
       // Current working state
       preferences: {
-        prefer: [] as string[],
-        avoid: [] as string[],
         boost: {} as Record<string, number>,
       },
 
       // Saved state for comparison
       savedPreferences: {
-        prefer: [] as string[],
-        avoid: [] as string[],
         boost: {} as Record<string, number>,
       },
+
+      // Per-tag current max range (for dynamic expansion)
+      tagMaxRanges: {} as Record<string, number>,
 
       // Available tags from course
       availableTags: [] as Tag[],
 
-      // Autocomplete models
-      tagToAvoid: null as string | null,
-      tagToPrefer: null as string | null,
+      // Autocomplete model
+      tagToAdd: null as string | null,
 
       // DB references
       courseDB: null as CourseDBInterface | null,
@@ -229,18 +246,28 @@ export default defineComponent({
 
   computed: {
     /**
-     * Tags available to add to "avoid" list (not already avoided or preferred)
+     * Resolved slider config with defaults
      */
-    availableTagsForAvoid(): Tag[] {
-      const usedTags = new Set([...this.preferences.avoid, ...this.preferences.prefer]);
-      return this.availableTags.filter((t) => !usedTags.has(t.name));
+    sliderConfigResolved(): Required<SliderConfig> {
+      return {
+        min: this.sliderConfig.min ?? DEFAULT_SLIDER_CONFIG.min,
+        startingMax: this.sliderConfig.startingMax ?? DEFAULT_SLIDER_CONFIG.startingMax,
+        absoluteMax: this.sliderConfig.absoluteMax ?? DEFAULT_SLIDER_CONFIG.absoluteMax,
+      };
     },
 
     /**
-     * Tags available to add to "prefer" list (not already avoided or preferred)
+     * List of tag names that have preferences (sorted alphabetically)
      */
-    availableTagsForPrefer(): Tag[] {
-      const usedTags = new Set([...this.preferences.avoid, ...this.preferences.prefer]);
+    tagNames(): string[] {
+      return Object.keys(this.preferences.boost).sort();
+    },
+
+    /**
+     * Tags available to add (not already in preferences)
+     */
+    availableTagsToAdd(): Tag[] {
+      const usedTags = new Set(Object.keys(this.preferences.boost));
       return this.availableTags.filter((t) => !usedTags.has(t.name));
     },
 
@@ -248,12 +275,20 @@ export default defineComponent({
      * Check if current preferences differ from saved state
      */
     hasChanges(): boolean {
-      const currentAvoid = [...this.preferences.avoid].sort().join(',');
-      const savedAvoid = [...this.savedPreferences.avoid].sort().join(',');
-      const currentPrefer = [...this.preferences.prefer].sort().join(',');
-      const savedPrefer = [...this.savedPreferences.prefer].sort().join(',');
+      const currentTags = Object.keys(this.preferences.boost).sort();
+      const savedTags = Object.keys(this.savedPreferences.boost).sort();
 
-      return currentAvoid !== savedAvoid || currentPrefer !== savedPrefer;
+      if (currentTags.length !== savedTags.length) {
+        return true;
+      }
+
+      if (currentTags.join(',') !== savedTags.join(',')) {
+        return true;
+      }
+
+      return currentTags.some(
+        (tag) => this.preferences.boost[tag] !== this.savedPreferences.boost[tag]
+      );
     },
   },
 
@@ -298,20 +333,20 @@ export default defineComponent({
         );
 
         if (state) {
-          this.preferences.prefer = [...state.prefer];
-          this.preferences.avoid = [...state.avoid];
           this.preferences.boost = { ...state.boost };
         } else {
           // No preferences yet - start fresh
-          this.preferences.prefer = [];
-          this.preferences.avoid = [];
           this.preferences.boost = {};
         }
 
         // Store saved state for comparison
-        this.savedPreferences.prefer = [...this.preferences.prefer];
-        this.savedPreferences.avoid = [...this.preferences.avoid];
         this.savedPreferences.boost = { ...this.preferences.boost };
+
+        // Initialize tag max ranges to starting max
+        this.tagMaxRanges = {};
+        Object.keys(this.preferences.boost).forEach((tag) => {
+          this.tagMaxRanges[tag] = this.sliderConfigResolved.startingMax;
+        });
       } catch (e) {
         console.error('Failed to load preferences:', e);
         this.saveError = 'Failed to load preferences. Please try again.';
@@ -321,75 +356,73 @@ export default defineComponent({
     },
 
     /**
-     * Add a tag to the avoid list
+     * Add a tag to preferences with default multiplier of 1.0
      */
-    addAvoidTag(tagName: string | null) {
-      if (tagName && !this.preferences.avoid.includes(tagName)) {
-        this.preferences.avoid.push(tagName);
+    addTag(tagName: string | null) {
+      if (tagName && !(tagName in this.preferences.boost)) {
+        this.preferences.boost[tagName] = 1.0;
+        this.tagMaxRanges[tagName] = this.sliderConfigResolved.startingMax;
         this.$emit('preferences-changed', this.preferences);
       }
       // Clear the autocomplete
       this.$nextTick(() => {
-        this.tagToAvoid = null;
+        this.tagToAdd = null;
       });
     },
 
     /**
-     * Remove a tag from the avoid list
+     * Remove a tag from preferences
      */
-    removeAvoidTag(tagName: string) {
-      const index = this.preferences.avoid.indexOf(tagName);
-      if (index > -1) {
-        this.preferences.avoid.splice(index, 1);
-        this.$emit('preferences-changed', this.preferences);
+    removeTag(tagName: string) {
+      delete this.preferences.boost[tagName];
+      delete this.tagMaxRanges[tagName];
+      this.$emit('preferences-changed', this.preferences);
+    },
+
+    /**
+     * Update boost multiplier for a tag
+     */
+    updateBoost(tagName: string, value: number) {
+      this.preferences.boost[tagName] = value;
+      this.$emit('preferences-changed', this.preferences);
+    },
+
+    /**
+     * Expand the slider range for a specific tag by 1
+     */
+    expandSliderRange(tagName: string) {
+      const currentMax = this.tagMaxRanges[tagName] || this.sliderConfigResolved.startingMax;
+      if (currentMax < this.sliderConfigResolved.absoluteMax) {
+        this.tagMaxRanges[tagName] = currentMax + 1;
       }
     },
 
     /**
-     * Add a tag to the prefer list
+     * Format multiplier for display
      */
-    addPreferTag(tagName: string | null) {
-      if (tagName && !this.preferences.prefer.includes(tagName)) {
-        this.preferences.prefer.push(tagName);
-        // Set default boost
-        this.preferences.boost[tagName] = DEFAULT_BOOST;
-        this.$emit('preferences-changed', this.preferences);
+    formatMultiplier(value: number): string {
+      if (value === 0) {
+        return '0x';
       }
-      // Clear the autocomplete
-      this.$nextTick(() => {
-        this.tagToPrefer = null;
-      });
-    },
-
-    /**
-     * Remove a tag from the prefer list
-     */
-    removePreferTag(tagName: string) {
-      const index = this.preferences.prefer.indexOf(tagName);
-      if (index > -1) {
-        this.preferences.prefer.splice(index, 1);
-        delete this.preferences.boost[tagName];
-        this.$emit('preferences-changed', this.preferences);
+      if (value < 0.1) {
+        return value.toFixed(2) + 'x';
       }
-    },
-
-    /**
-     * Format boost multiplier for display
-     */
-    formatBoost(boost: number | undefined): string {
-      const value = boost ?? DEFAULT_BOOST;
-      return `${value.toFixed(1)}x`;
+      return value.toFixed(1) + 'x';
     },
 
     /**
      * Reset to last saved state
      */
     resetToSaved() {
-      this.preferences.prefer = [...this.savedPreferences.prefer];
-      this.preferences.avoid = [...this.savedPreferences.avoid];
       this.preferences.boost = { ...this.savedPreferences.boost };
       this.saveSuccess = false;
       this.saveError = '';
+
+      // Reset tag max ranges
+      this.tagMaxRanges = {};
+      Object.keys(this.preferences.boost).forEach((tag) => {
+        this.tagMaxRanges[tag] = this.sliderConfigResolved.startingMax;
+      });
     },
 
     /**
@@ -407,8 +440,6 @@ export default defineComponent({
 
       try {
         const state: UserTagPreferenceState = {
-          prefer: [...this.preferences.prefer],
-          avoid: [...this.preferences.avoid],
           boost: { ...this.preferences.boost },
           updatedAt: new Date().toISOString(),
         };
@@ -420,8 +451,6 @@ export default defineComponent({
         );
 
         // Update saved state
-        this.savedPreferences.prefer = [...this.preferences.prefer];
-        this.savedPreferences.avoid = [...this.preferences.avoid];
         this.savedPreferences.boost = { ...this.preferences.boost };
 
         this.saveSuccess = true;
