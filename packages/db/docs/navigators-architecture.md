@@ -293,20 +293,33 @@ interface StrategyStateDoc<T> {
 
 ```typescript
 interface UserTagPreferenceState {
-  prefer: string[];               // Tags to boost (learning style)
-  avoid: string[];                // Tags to avoid (accessibility)
-  boost: Record<string, number>;  // Tag-specific multipliers
+  /**
+   * Tag-specific multipliers.
+   * - 0 = exclude (card score = 0)
+   * - 0.5 = penalize by 50%
+   * - 1.0 = neutral/no effect
+   * - 2.0 = 2x preference boost
+   * - Higher = stronger preference
+   */
+  boost: Record<string, number>;
   updatedAt: string;
 }
 
 // In filter's transform():
 const prefs = await this.getStrategyState<UserTagPreferenceState>();
-if (prefs?.avoid.some(tag => cardTags.includes(tag))) {
-  return { ...card, score: 0 };
+if (!prefs || Object.keys(prefs.boost).length === 0) {
+  return cards; // No preferences configured
 }
+
+// Apply multipliers (max wins when multiple tags match)
+const multiplier = computeMultiplier(cardTags, prefs.boost);
+return { ...card, score: card.score * multiplier };
 ```
 
-UI components write to the same storage location using `userDB.putStrategyState()`.
+**UI Component**: `packages/common-ui/src/components/UserTagPreferences.vue`
+- Slider-based interface (0-2 default range, expandable to 10)
+- All sliders share global max for consistent visual comparison
+- Writes to strategy state via `userDB.putStrategyState()`
 
 ## File Reference
 
@@ -326,6 +339,7 @@ UI components write to the same storage location using `userDB.putStrategyState(
 | `core/navigators/relativePriority.ts` | Priority filter |
 | `core/navigators/filters/eloDistance.ts` | ELO distance filter |
 | `core/navigators/filters/userTagPreference.ts` | User tag preference filter |
+| `common-ui/.../UserTagPreferences.vue` | UI for tag preference sliders |
 | `core/navigators/userGoal.ts` | User goal navigator (stub) |
 | `core/navigators/inferredPreference.ts` | Inferred preference navigator (stub) |
 | `core/types/strategyState.ts` | `StrategyStateDoc`, `StrategyStateId` |
