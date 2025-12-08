@@ -34,7 +34,7 @@ jobs:
       - name: Install dependencies
         run: yarn install --immutable
 
-      - name: Extract version info
+      - name: Extract version from tag
         id: extract_version
         run: |
           if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
@@ -47,7 +47,9 @@ jobs:
             # Tag trigger - extract from tag name
             VERSION=${GITHUB_REF_NAME#v}
             echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+            echo "📌 Expected version: $VERSION"
 
+            # Determine npm tag based on version format
             if [[ "$VERSION" =~ -[0-9]+$ ]]; then
               NPM_TAG="alpha"
               echo "🚨 Decorated version detected, using --tag alpha"
@@ -58,53 +60,158 @@ jobs:
             echo "NPM_TAG=$NPM_TAG" >> $GITHUB_OUTPUT
           fi
 
-      - name: Build common package (test)
+      - name: Verify package versions match tag
+        if: github.event_name == 'push'
         run: |
-          echo "Building @vue-skuilder/common..."
+          VERSION=${{ steps.extract_version.outputs.VERSION }}
+
+          # Verify all packages have the correct version
+          for package in common db common-ui courseware edit-ui client platform-ui standalone-ui express mcp cli; do
+            PACKAGE_VERSION=$(cd packages/$package && node -p "require('./package.json').version")
+            if [ "$PACKAGE_VERSION" != "$VERSION" ]; then
+              echo "❌ Version mismatch in packages/$package: expected $VERSION, found $PACKAGE_VERSION"
+              exit 1
+            fi
+            echo "✅ packages/$package version $PACKAGE_VERSION matches tag"
+          done
+
+          echo "✅ All package versions verified"
+
+      - name: Lint packages
+        run: |
+          yarn workspace @vue-skuilder/common lint:check
+          yarn workspace @vue-skuilder/db lint:check
+          yarn workspace @vue-skuilder/express lint:check
+          yarn workspace @vue-skuilder/cli lint:check
+
+      - name: Build packages in dependency order
+        run: |
+          echo "Building common package..."
           yarn workspace @vue-skuilder/common build
 
-      - name: Verify build output
+          echo "Building db package..."
+          yarn workspace @vue-skuilder/db build
+
+          echo "Building common-ui package..."
+          yarn workspace @vue-skuilder/common-ui build
+
+          echo "Building courseware package..."
+          yarn workspace @vue-skuilder/courseware build
+
+          echo "Building edit-ui package..."
+          yarn workspace @vue-skuilder/edit-ui build
+
+          echo "Building client package..."
+          yarn workspace @vue-skuilder/client build
+
+          echo "Building platform-ui package..."
+          yarn workspace @vue-skuilder/platform-ui build
+
+          echo "Building standalone-ui package..."
+          yarn workspace @vue-skuilder/standalone-ui build
+
+          echo "Building express package..."
+          yarn workspace @vue-skuilder/express build
+
+          # echo "Building tuilder package..."
+          # yarn workspace @vue-skuilder/tuilder build
+
+          echo "Building mcp package..."
+          yarn workspace @vue-skuilder/mcp build
+
+          echo "Building cli package..."
+          yarn workspace @vue-skuilder/cli build
+
+      - name: Verify build outputs
         run: |
-          if [ ! -d "packages/common/dist" ]; then
-            echo "❌ Error: dist directory not found for @vue-skuilder/common"
-            exit 1
-          fi
-          echo "✅ @vue-skuilder/common build output verified"
+          for package in common db common-ui courseware edit-ui client platform-ui standalone-ui express mcp cli; do
+            if [ ! -d "packages/$package/dist" ]; then
+              echo "Error: dist directory not found for @vue-skuilder/$package"
+              exit 1
+            fi
+            echo "✓ @vue-skuilder/$package build output verified"
+          done
 
-      - name: Debug environment
-        run: |
-          echo "NODE_AUTH_TOKEN is set: ${{ secrets.NPM_TOKEN != '' }}"
-          echo "Working directory: $(pwd)"
-          echo "Yarn version: $(yarn --version)"
-          cd packages/common
-          echo "Package version: $(node -p "require('./package.json').version")"
-          echo "Package name: $(node -p "require('./package.json').name")"
-
-      - name: Test publish (dry run)
-        if: github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'true'
-        run: |
-          NPM_TAG="${{ steps.extract_version.outputs.NPM_TAG }}"
-
-          echo "Testing publish of @vue-skuilder/common with --dry-run..."
-          cd packages/common
-          yarn npm publish --access public --tag $NPM_TAG --dry-run
-
-          echo "✅ Dry run successful!"
-          echo "To publish for real, re-run workflow with dry_run=false"
-        env:
-          YARN_NPM_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: Publish common package (REAL)
+      - name: Publish packages in dependency order
         if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'false')
         run: |
+          set -e
           NPM_TAG="${{ steps.extract_version.outputs.NPM_TAG }}"
 
           echo "Publishing @vue-skuilder/common..."
-          cd packages/common
-          yarn npm publish --access public --tag $NPM_TAG
+          cd packages/common && yarn npm publish --access public --tag $NPM_TAG && cd ../..
 
-          echo "✅ Published @vue-skuilder/common"
+          echo "Publishing @vue-skuilder/db..."
+          cd packages/db && yarn npm publish --access public --tag $NPM_TAG && cd ../..
+
+          echo "Publishing @vue-skuilder/common-ui..."
+          cd packages/common-ui && yarn npm publish --access public --tag $NPM_TAG && cd ../..
+
+          echo "Publishing @vue-skuilder/edit-ui..."
+          cd packages/edit-ui && yarn npm publish --access public --tag $NPM_TAG && cd ../..
+
+          echo "Publishing @vue-skuilder/courseware..."
+          cd packages/courseware && yarn npm publish --access public --tag $NPM_TAG && cd ../..
+
+          echo "Publishing @vue-skuilder/client..."
+          cd packages/client && yarn npm publish --access public --tag $NPM_TAG && cd ../..
+
+          echo "Publishing @vue-skuilder/platform-ui..."
+          cd packages/platform-ui && yarn npm publish --access public --tag $NPM_TAG && cd ../..
+
+          echo "Publishing @vue-skuilder/standalone-ui..."
+          cd packages/standalone-ui && yarn npm publish --access public --tag $NPM_TAG && cd ../..
+
+          echo "Publishing @vue-skuilder/mcp..."
+          cd packages/mcp && yarn npm publish --access public --tag $NPM_TAG && cd ../..
+
+          # echo "Publishing @vue-skuilder/tuilder..."
+          # cd packages/tuilder && yarn npm publish --access public --tag $NPM_TAG && cd ../..
+
+          echo "Publishing @vue-skuilder/express..."
+          cd packages/express && yarn npm publish --access public --tag $NPM_TAG && cd ../..
+
+          echo "Publishing @vue-skuilder/cli (scoped)..."
+          cd packages/cli && yarn npm publish --access public --tag $NPM_TAG && cd ../..
+
+          # Dual-publish CLI as unscoped 'skuilder' package
+          echo "Publishing CLI as 'skuilder'..."
+          cd packages/cli
+
+          # Modify package.json for unscoped publish
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            pkg.name = 'skuilder';
+            pkg.description = 'CLI tool for scaffolding Skuilder course applications';
+            delete pkg.publishConfig;
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
+          "
+
+          # Use yarn npm publish to maintain workspace dependency resolution
+          yarn npm publish --access public --tag $NPM_TAG
+          cd ../..
+          echo "All packages published successfully!"
         env:
           YARN_NPM_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: NPM publish completed
+        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'false')
+        run: |
+          echo "✅ All vue-skuilder packages published to NPM registry"
+          echo "📦 Packages published:"
+          echo "   - @vue-skuilder/common"
+          echo "   - @vue-skuilder/db"
+          echo "   - @vue-skuilder/common-ui"
+          echo "   - @vue-skuilder/courseware"
+          echo "   - @vue-skuilder/edit-ui"
+          echo "   - @vue-skuilder/client"
+          echo "   - @vue-skuilder/platform-ui"
+          echo "   - @vue-skuilder/standalone-ui"
+          echo "   - @vue-skuilder/express"
+          echo "   - @vue-skuilder/mcp"
+          echo "   - @vue-skuilder/cli"
+          echo "   - skuilder (CLI unscoped)"
+          echo ""
+          echo "🚀 GitHub release will be created by the 'Publish GitHub Release' workflow"
