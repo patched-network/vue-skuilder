@@ -102,6 +102,7 @@ function createMockContext(): { user: UserDBInterface; course: CourseDBInterface
 
   const mockCourse = {
     getCourseID: vi.fn().mockReturnValue('test-course'),
+    getAppliedTagsBatch: vi.fn().mockResolvedValue(new Map()),
   } as unknown as CourseDBInterface;
 
   return { user: mockUser, course: mockCourse };
