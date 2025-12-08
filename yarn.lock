@@ -2199,22 +2199,22 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@modelcontextprotocol/inspector-cli@npm:^0.17.2":
-  version: 0.17.2
-  resolution: "@modelcontextprotocol/inspector-cli@npm:0.17.2"
+"@modelcontextprotocol/inspector-cli@npm:^0.17.5":
+  version: 0.17.5
+  resolution: "@modelcontextprotocol/inspector-cli@npm:0.17.5"
   dependencies:
     "@modelcontextprotocol/sdk": "npm:^1.20.1"
     commander: "npm:^13.1.0"
     spawn-rx: "npm:^5.1.2"
   bin:
     mcp-inspector-cli: build/cli.js
-  checksum: 10c0/a401cd76942a025b320ea4cc042efcf637f79da70a1460a117654ead53b753d8b7ade3ae5665eca1c76fc0341ef969bb7f98de8cc6f3c710c891d55f9a8140be
+  checksum: 10c0/5655a827a80470e657052b6636cc8bd5cb2b5b66271ddeb3b00155b43bbcecf20977d41476e9a0db77d488ef054d998ed5e7af98f9f263b2ff40154ce8f9491c
   languageName: node
   linkType: hard
 
-"@modelcontextprotocol/inspector-client@npm:^0.17.2":
-  version: 0.17.2
-  resolution: "@modelcontextprotocol/inspector-client@npm:0.17.2"
+"@modelcontextprotocol/inspector-client@npm:^0.17.5":
+  version: 0.17.5
+  resolution: "@modelcontextprotocol/inspector-client@npm:0.17.5"
   dependencies:
     "@modelcontextprotocol/sdk": "npm:^1.20.1"
     "@radix-ui/react-checkbox": "npm:^1.1.4"
@@ -2243,13 +2243,13 @@ __metadata:
     zod: "npm:^3.25.76"
   bin:
     mcp-inspector-client: bin/start.js
-  checksum: 10c0/86ee50a181965e945cbdafc546e3edcd37fab18289d25d9f46198c62c19bdc57966381615239ceaa7a3f6e105c40f77f9356c8e44141fa24bea4c99ee2cf4895
+  checksum: 10c0/ebdb731c4deb99eb79494a9cf5350b19a6af31f2a8b05ee6e221d07697def417287b3432aa43fe856c9a00d9a460f1c7f94ff3b0c3b882b9ed2d4d848e28b147
   languageName: node
   linkType: hard
 
-"@modelcontextprotocol/inspector-server@npm:^0.17.2":
-  version: 0.17.2
-  resolution: "@modelcontextprotocol/inspector-server@npm:0.17.2"
+"@modelcontextprotocol/inspector-server@npm:^0.17.5":
+  version: 0.17.5
+  resolution: "@modelcontextprotocol/inspector-server@npm:0.17.5"
   dependencies:
     "@modelcontextprotocol/sdk": "npm:^1.20.1"
     cors: "npm:^2.8.5"
@@ -2260,18 +2260,18 @@ __metadata:
     zod: "npm:^3.25.76"
   bin:
     mcp-inspector-server: build/index.js
-  checksum: 10c0/3d4a0cec8c4b02dfa24a49f0d11b48a5e3ad61282785a9d9a3fc9f07194ced91c67bbc3774e3818bf4f0d431074e967097602e69d904d4f991efba497bc871d8
+  checksum: 10c0/3e2a5ca73d17a5975787b75650ce5200b18918f7fbc8d5519a38aa2ccfd5ba390c1de9a95e44c32a0eceab78702b9751ef55fd32824cac86d620f8d758b71b03
   languageName: node
   linkType: hard
 
 "@modelcontextprotocol/inspector@npm:^0.17.2":
-  version: 0.17.2
-  resolution: "@modelcontextprotocol/inspector@npm:0.17.2"
+  version: 0.17.5
+  resolution: "@modelcontextprotocol/inspector@npm:0.17.5"
   dependencies:
-    "@modelcontextprotocol/inspector-cli": "npm:^0.17.2"
-    "@modelcontextprotocol/inspector-client": "npm:^0.17.2"
-    "@modelcontextprotocol/inspector-server": "npm:^0.17.2"
-    "@modelcontextprotocol/sdk": "npm:^1.20.1"
+    "@modelcontextprotocol/inspector-cli": "npm:^0.17.5"
+    "@modelcontextprotocol/inspector-client": "npm:^0.17.5"
+    "@modelcontextprotocol/inspector-server": "npm:^0.17.5"
+    "@modelcontextprotocol/sdk": "npm:^1.23.0"
     concurrently: "npm:^9.2.0"
     node-fetch: "npm:^3.3.2"
     open: "npm:^10.2.0"
@@ -2281,7 +2281,7 @@ __metadata:
     zod: "npm:^3.25.76"
   bin:
     mcp-inspector: cli/build/cli.js
-  checksum: 10c0/feca40d294033990595103c7159744b6f99b97ee65cfb4c993b56d27bbc2e11c671f0ae33e3c31bc67fa6fe8d9385ab933a0770c095e8ac1171031f2d5e14830
+  checksum: 10c0/8d8358f5abbf117005bfa638b92f1c0ebc6681e720baf04a156f8405d29ec93379260476388aa076d307a20c5a464158c8c339f21197ad29df147ef1fb459cbb
   languageName: node
   linkType: hard
 
@@ -2311,7 +2311,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@modelcontextprotocol/sdk@npm:^1.24.3":
+"@modelcontextprotocol/sdk@npm:^1.23.0, @modelcontextprotocol/sdk@npm:^1.24.3":
   version: 1.24.3
   resolution: "@modelcontextprotocol/sdk@npm:1.24.3"
   dependencies:
