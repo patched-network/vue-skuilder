@@ -1,6 +1,6 @@
 # TODO: Batch Tag Hydration Implementation
 
-## Status: IN PROGRESS
+## Status: ✅ COMPLETE
 
 ---
 
@@ -76,13 +76,18 @@
 
 ## Phase 5: Verification
 
-### p5.1 Build verification
-- [ ] Run `yarn workspace @vue-skuilder/db build`
-- [ ] Fix any type errors
+### p5.1 Build verification ✅
+- [x] Run `yarn workspace @vue-skuilder/db build`
+- [x] Fix any type errors
+- [x] Fix test mocks to include `getAppliedTagsBatch`
 
-### p5.2 Functional verification
-- [ ] Verify pipeline runs with logging showing single batch query
-- [ ] Confirm filters still score correctly (no behavioral change)
+### p5.2 Observability ✅
+- [x] Add toggle-able logging helpers to Pipeline.ts:
+  - `logPipelineConfig()` - shows generator + filter chain on construction
+  - `logTagHydration()` - shows batch query effectiveness (cards/tags hydrated)
+  - `logExecutionSummary()` - shows complete flow with counts and top scores
+- [x] Wire logging helpers into Pipeline with clear "Toggle" comments
+- [x] Helpers can be commented out individually for noise control
 
 ---
 

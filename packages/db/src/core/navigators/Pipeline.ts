@@ -10,6 +10,88 @@ import type { StudySessionNewItem, StudySessionReviewItem } from '../interfaces/
 import { logger } from '../../util/logger';
 
 // ============================================================================
+// PIPELINE LOGGING HELPERS
+// ============================================================================
+//
+// Focused logging functions that can be toggled by commenting single lines.
+// Use these to inspect pipeline behavior in development/production.
+//
+
+/**
+ * Log pipeline configuration on construction.
+ * Shows generator and filter chain structure.
+ */
+function logPipelineConfig(generator: CardGenerator, filters: CardFilter[]): void {
+  const filterList = filters.length > 0
+    ? '\n    - ' + filters.map(f => f.name).join('\n    - ')
+    : ' none';
+
+  logger.info(
+    `[Pipeline] Configuration:\n` +
+    `  Generator: ${generator.name}\n` +
+    `  Filters:${filterList}`
+  );
+}
+
+/**
+ * Log tag hydration results.
+ * Shows effectiveness of batch query (how many cards/tags were hydrated).
+ */
+function logTagHydration(cards: WeightedCard[], tagsByCard: Map<string, string[]>): void {
+  const totalTags = Array.from(tagsByCard.values()).reduce((sum, tags) => sum + tags.length, 0);
+  const cardsWithTags = Array.from(tagsByCard.values()).filter(tags => tags.length > 0).length;
+
+  logger.debug(
+    `[Pipeline] Tag hydration: ${cards.length} cards, ` +
+    `${cardsWithTags} have tags (${totalTags} total tags) - single batch query`
+  );
+}
+
+/**
+ * Log pipeline execution summary.
+ * Shows complete flow from generator through filters to final results.
+ */
+function logExecutionSummary(
+  generatorName: string,
+  generatedCount: number,
+  filterCount: number,
+  finalCount: number,
+  topScores: number[]
+): void {
+  const scoreDisplay = topScores.length > 0
+    ? topScores.map(s => s.toFixed(2)).join(', ')
+    : 'none';
+
+  logger.info(
+    `[Pipeline] Execution: ${generatorName} produced ${generatedCount} → ` +
+    `${filterCount} filters → ${finalCount} results (top scores: ${scoreDisplay})`
+  );
+}
+
+/**
+ * Log provenance trails for cards.
+ * Shows the complete scoring history for each card through the pipeline.
+ * Useful for debugging why cards scored the way they did.
+ */
+function logCardProvenance(cards: WeightedCard[], maxCards: number = 3): void {
+  const cardsToLog = cards.slice(0, maxCards);
+
+  logger.debug(`[Pipeline] Provenance for top ${cardsToLog.length} cards:`);
+
+  for (const card of cardsToLog) {
+    logger.debug(`[Pipeline]   ${card.cardId} (final score: ${card.score.toFixed(3)}):`);
+
+    for (const entry of card.provenance) {
+      const scoreChange = entry.score.toFixed(3);
+      const action = entry.action.padEnd(9); // Align columns
+      logger.debug(
+        `[Pipeline]     ${action} ${scoreChange} - ${entry.strategyName}: ${entry.reason}`
+      );
+    }
+  }
+}
+
+// ============================================================================
 // PIPELINE
 // ============================================================================
 //
@@ -72,9 +154,8 @@ export class Pipeline extends ContentNavigator {
     this.user = user;
     this.course = course;
 
-    logger.debug(
-      `[Pipeline] Created with generator '${generator.name}' and ${filters.length} filters: ${filters.map((f) => f.name).join(', ')}`
-    );
+    // Toggle pipeline configuration logging:
+    logPipelineConfig(generator, filters);
   }
 
   /**
@@ -105,8 +186,9 @@ export class Pipeline extends ContentNavigator {
 
     // Get candidates from generator, passing context
     let cards = await this.generator.getWeightedCards(fetchLimit, context);
+    const generatedCount = cards.length;
 
-    logger.debug(`[Pipeline] Generator returned ${cards.length} candidates`);
+    logger.debug(`[Pipeline] Generator returned ${generatedCount} candidates`);
 
     // Batch hydrate tags before filters run
     cards = await this.hydrateTags(cards);
@@ -127,12 +209,12 @@ export class Pipeline extends ContentNavigator {
     // Return top N
     const result = cards.slice(0, limit);
 
-    logger.debug(
-      `[Pipeline] Returning ${result.length} cards (top scores: ${result
-        .slice(0, 3)
-        .map((c) => c.score.toFixed(2))
-        .join(', ')}...)`
-    );
+    // Toggle execution summary logging:
+    const topScores = result.slice(0, 3).map(c => c.score);
+    logExecutionSummary(this.generator.name, generatedCount, this.filters.length, result.length, topScores);
+
+    // Toggle provenance logging (shows scoring history for top cards):
+    logCardProvenance(result, 3);
 
     return result;
   }
@@ -155,7 +237,8 @@ export class Pipeline extends ContentNavigator {
     const cardIds = cards.map((c) => c.cardId);
     const tagsByCard = await this.course!.getAppliedTagsBatch(cardIds);
 
-    logger.debug(`[Pipeline] Hydrated tags for ${cards.length} cards`);
+    // Toggle tag hydration logging:
+    logTagHydration(cards, tagsByCard);
 
     return cards.map((card) => ({
       ...card,
