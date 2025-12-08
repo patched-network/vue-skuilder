@@ -1,6 +1,8 @@
 # TODO: Pipeline Optimization - Batch Tag Hydration
 
-## Status: NOT STARTED
+## Status: PLANNED
+
+> **Implementation Plan:** See `agent/batch-tag-hydration/` for detailed assessment, plan, and TODO.
 
 ## Problem
 
