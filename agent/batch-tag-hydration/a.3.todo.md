@@ -17,19 +17,19 @@
 
 ---
 
-## Phase 2: Backend Implementations
+## Phase 2: Backend Implementations ✅
 
-### p2.1 CouchDB Implementation
-- [ ] Implement `getAppliedTagsBatch()` in CourseDB class
-- [ ] Use CouchDB `keys` query parameter for batch lookup
-- [ ] Initialize all requested cardIds with empty arrays
-- [ ] Populate from query results, handling missing/null tag names
+### p2.1 CouchDB Implementation ✅
+- [x] Implement `getAppliedTagsBatch()` in CourseDB class
+- [x] Use CouchDB `keys` query parameter for batch lookup
+- [x] Initialize all requested cardIds with empty arrays
+- [x] Populate from query results, handling missing/null tag names
 - File: `packages/db/src/impl/couch/courseDB.ts`
 
-### p2.2 Static Implementation
-- [ ] Implement `getAppliedTagsBatch()` in StaticCourseDB class
-- [ ] Use existing `tagsIndex.byCard` for O(1) lookups
-- [ ] Return empty arrays for cards not found in index
+### p2.2 Static Implementation ✅
+- [x] Implement `getAppliedTagsBatch()` in StaticCourseDB class
+- [x] Use existing `tagsIndex.byCard` for O(1) lookups
+- [x] Return empty arrays for cards not found in index
 - File: `packages/db/src/impl/static/courseDB.ts`
 
 ---

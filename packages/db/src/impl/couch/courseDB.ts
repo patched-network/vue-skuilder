@@ -369,6 +369,36 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
     }
   }
 
+  async getAppliedTagsBatch(cardIds: string[]): Promise<Map<string, string[]>> {
+    if (cardIds.length === 0) {
+      return new Map();
+    }
+
+    const db = getCourseDB(this.id);
+    const result = await db.query<TagStub>('getTags', {
+      keys: cardIds,
+      include_docs: false,
+    });
+
+    const tagsByCard = new Map<string, string[]>();
+
+    // Initialize all requested cards with empty arrays
+    for (const cardId of cardIds) {
+      tagsByCard.set(cardId, []);
+    }
+
+    // Populate from query results
+    for (const row of result.rows) {
+      const cardId = row.key as string;
+      const tagName = row.value?.name;
+      if (tagName && tagsByCard.has(cardId)) {
+        tagsByCard.get(cardId)!.push(tagName);
+      }
+    }
+
+    return tagsByCard;
+  }
+
   async addTagToCard(
     cardId: string,
     tagId: string,
