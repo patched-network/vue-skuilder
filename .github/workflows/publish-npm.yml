@@ -117,6 +117,12 @@ jobs:
             echo "✓ @vue-skuilder/$package build output verified"
           done
 
+      - name: Configure Yarn for OIDC publishing
+        run: |
+          yarn config set npmAlwaysAuth true
+          yarn config set npmAuthToken $NODE_AUTH_TOKEN
+          yarn config set npmRegistryServer https://registry.npmjs.org
+
       - name: Publish packages in dependency order
         run: |
           set -e
