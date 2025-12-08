@@ -50,27 +50,26 @@
 
 ---
 
-## Phase 4: Filter Updates
+## Phase 4: Filter Updates ✅
 
-### p4.1 Update HierarchyDefinitionNavigator
-- [ ] Modify `checkCardUnlock()` or tag lookup to accept `WeightedCard` with `tags` field
-- [ ] Check `card.tags` before calling `getAppliedTags()`
-- [ ] Maintain fallback to `getAppliedTags()` for backward compat
+### p4.1 Update HierarchyDefinitionNavigator ✅
+- [x] Modify `checkCardUnlock()` to accept `WeightedCard` and use `card.tags ?? []`
+- [x] Remove fallback helper - rely on Pipeline hydration
 - File: `packages/db/src/core/navigators/hierarchyDefinition.ts`
 
-### p4.2 Update InterferenceMitigatorNavigator
-- [ ] Modify `getCardTags()` to accept optional pre-hydrated tags
-- [ ] Prefer `card.tags` when available in `transform()`
+### p4.2 Update InterferenceMitigatorNavigator ✅
+- [x] Simplify `getCardTags()` to synchronous `card.tags ?? []`
+- [x] Remove async fallback - rely on Pipeline hydration
 - File: `packages/db/src/core/navigators/interferenceMitigator.ts`
 
-### p4.3 Update RelativePriorityNavigator
-- [ ] Modify `getCardTags()` to check `card.tags` first
-- [ ] Pass card to method instead of just cardId
+### p4.3 Update RelativePriorityNavigator ✅
+- [x] Simplify `getCardTags()` to synchronous `card.tags ?? []`
+- [x] Remove async fallback - rely on Pipeline hydration
 - File: `packages/db/src/core/navigators/relativePriority.ts`
 
-### p4.4 Update UserTagPreferenceFilter
-- [ ] Modify `getCardTags()` to check `card.tags` first
-- [ ] Update `transform()` to pass full card to `getCardTags()`
+### p4.4 Update UserTagPreferenceFilter ✅
+- [x] Simplify `getCardTags()` to synchronous `card.tags ?? []`
+- [x] Remove async fallback - rely on Pipeline hydration
 - File: `packages/db/src/core/navigators/filters/userTagPreference.ts`
 
 ---

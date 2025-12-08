@@ -191,18 +191,6 @@ export default class RelativePriorityNavigator extends ContentNavigator implemen
   }
 
   /**
-   * Get tags for a single card.
-   */
-  private async getCardTags(cardId: string, course: CourseDBInterface): Promise<string[]> {
-    try {
-      const tagResponse = await course.getAppliedTags(cardId);
-      return tagResponse.rows.map((r) => r.doc?.name).filter((x): x is string => !!x);
-    } catch {
-      return [];
-    }
-  }
-
-  /**
    * CardFilter.transform implementation.
    *
    * Apply priority-adjusted scoring. Cards with high-priority tags get boosted,
@@ -211,7 +199,7 @@ export default class RelativePriorityNavigator extends ContentNavigator implemen
   async transform(cards: WeightedCard[], context: FilterContext): Promise<WeightedCard[]> {
     const adjusted: WeightedCard[] = await Promise.all(
       cards.map(async (card) => {
-        const cardTags = await this.getCardTags(card.cardId, context.course);
+        const cardTags = card.tags ?? [];
         const priority = this.computeCardPriority(cardTags);
         const boostFactor = this.computeBoostFactor(priority);
         const finalScore = Math.max(0, Math.min(1, card.score * boostFactor));

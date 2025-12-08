@@ -158,14 +158,14 @@ export default class HierarchyDefinitionNavigator extends ContentNavigator imple
    * Check if a card is unlocked and generate reason.
    */
   private async checkCardUnlock(
-    cardId: string,
+    card: WeightedCard,
     course: CourseDBInterface,
     unlockedTags: Set<string>,
     masteredTags: Set<string>
   ): Promise<{ isUnlocked: boolean; reason: string }> {
     try {
-      const tagResponse = await course.getAppliedTags(cardId);
-      const cardTags = tagResponse.rows.map((row) => row.value?.name || row.key);
+      // Pipeline hydrates tags before filters run
+      const cardTags = card.tags ?? [];
 
       // Check each tag's prerequisite status
       const lockedTags = cardTags.filter(
@@ -214,7 +214,7 @@ export default class HierarchyDefinitionNavigator extends ContentNavigator imple
 
     for (const card of cards) {
       const { isUnlocked, reason } = await this.checkCardUnlock(
-        card.cardId,
+        card,
         context.course,
         unlockedTags,
         masteredTags

@@ -93,18 +93,6 @@ export default class UserTagPreferenceFilter extends ContentNavigator implements
   }
 
   /**
-   * Get tags for a single card.
-   */
-  private async getCardTags(cardId: string, course: CourseDBInterface): Promise<string[]> {
-    try {
-      const tagResponse = await course.getAppliedTags(cardId);
-      return tagResponse.rows.map((r) => r.value?.name || r.key).filter(Boolean);
-    } catch {
-      return [];
-    }
-  }
-
-  /**
    * Compute multiplier for a card based on its tags and user preferences.
    * Returns the maximum multiplier among all matching tags, or 1.0 if no matches.
    */
@@ -184,7 +172,7 @@ export default class UserTagPreferenceFilter extends ContentNavigator implements
     // Process each card
     const adjusted: WeightedCard[] = await Promise.all(
       cards.map(async (card) => {
-        const cardTags = await this.getCardTags(card.cardId, context.course);
+        const cardTags = card.tags ?? [];
 
         // Compute multiplier based on card tags and user preferences
         const multiplier = this.computeMultiplier(cardTags, prefs.boost);

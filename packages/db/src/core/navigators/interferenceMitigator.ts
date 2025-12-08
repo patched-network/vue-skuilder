@@ -235,18 +235,6 @@ export default class InterferenceMitigatorNavigator extends ContentNavigator imp
   }
 
   /**
-   * Get tags for a single card
-   */
-  private async getCardTags(cardId: string, course: CourseDBInterface): Promise<string[]> {
-    try {
-      const tagResponse = await course.getAppliedTags(cardId);
-      return tagResponse.rows.map((row) => row.value?.name || row.key).filter(Boolean);
-    } catch {
-      return [];
-    }
-  }
-
-  /**
    * Compute interference score reduction for a card.
    * Returns: { multiplier, interfering tags, reason }
    */
@@ -313,7 +301,7 @@ export default class InterferenceMitigatorNavigator extends ContentNavigator imp
     const adjusted: WeightedCard[] = [];
 
     for (const card of cards) {
-      const cardTags = await this.getCardTags(card.cardId, context.course);
+      const cardTags = card.tags ?? [];
       const { multiplier, reason } = this.computeInterferenceEffect(
         cardTags,
         tagsToAvoid,
