@@ -3,6 +3,7 @@
 export * from './interfaces';
 export * from './types/types-legacy';
 export * from './types/user';
+export * from './types/strategyState';
 export * from '../util/Loggable';
 export * from './util';
 export * from './navigators';

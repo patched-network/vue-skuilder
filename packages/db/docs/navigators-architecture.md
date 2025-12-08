@@ -61,6 +61,7 @@ interface CardFilter {
 - `HierarchyDefinitionNavigator` — Gates cards by prerequisite mastery (score=0 if locked)
 - `InterferenceMitigatorNavigator` — Reduces scores for confusable content
 - `RelativePriorityNavigator` — Boosts scores for high-utility content
+- `UserTagPreferenceFilter` — Applies user-configured tag preferences (path constraints)
 - `createEloDistanceFilter()` — Penalizes cards far from user's current ELO
 
 ### Pipeline
@@ -237,6 +238,89 @@ class MyFilter extends ContentNavigator implements CardFilter {
 
 Register in `NavigatorRoles` as `NavigatorRole.FILTER`.
 
+## Strategy State Storage
+
+Strategies can persist user-scoped state (preferences, learned patterns, temporal tracking)
+using the `STRATEGY_STATE` document type in the user database.
+
+### Goals vs Preferences vs Inferred
+
+The system distinguishes three types of user-scoped navigation data:
+
+| Type | Defines | Example | Affects ELO | Implementation |
+|------|---------|---------|-------------|----------------|
+| **Goal** | Destination (what to learn) | "Master ear-training" | Yes | `userGoal.ts` (stub) |
+| **Preference** | Path (how to learn) | "Skip text-heavy cards" | No | `filters/userTagPreference.ts` |
+| **Inferred** | Learned patterns | "User prefers visual" | No | `inferredPreference.ts` (stub) |
+
+- **Goals** redefine the optimization target — they scope which content matters for progress
+- **Preferences** constrain the path — they affect card selection without changing progress tracking
+- **Inferred** preferences are learned from behavior — they act as soft suggestions
+
+See stub files for detailed architectural intent on goals and inferred preferences.
+
+### Storage API
+
+`ContentNavigator` provides protected helper methods:
+
+```typescript
+// Get this strategy's persisted state for the current course
+protected async getStrategyState<T>(): Promise<T | null>
+
+// Persist this strategy's state for the current course  
+protected async putStrategyState<T>(data: T): Promise<void>
+
+// Override to customize the storage key (default: constructor name)
+protected get strategyKey(): string
+```
+
+### Document Format
+
+```typescript
+interface StrategyStateDoc<T> {
+  _id: StrategyStateId;  // "STRATEGY_STATE::{courseId}::{strategyKey}"
+  docType: DocType.STRATEGY_STATE;
+  courseId: string;
+  strategyKey: string;
+  data: T;               // Strategy-specific payload
+  updatedAt: string;     // ISO timestamp
+}
+```
+
+### Example: User Tag Preferences
+
+`UserTagPreferenceFilter` reads user preferences from strategy state:
+
+```typescript
+interface UserTagPreferenceState {
+  /**
+   * Tag-specific multipliers.
+   * - 0 = exclude (card score = 0)
+   * - 0.5 = penalize by 50%
+   * - 1.0 = neutral/no effect
+   * - 2.0 = 2x preference boost
+   * - Higher = stronger preference
+   */
+  boost: Record<string, number>;
+  updatedAt: string;
+}
+
+// In filter's transform():
+const prefs = await this.getStrategyState<UserTagPreferenceState>();
+if (!prefs || Object.keys(prefs.boost).length === 0) {
+  return cards; // No preferences configured
+}
+
+// Apply multipliers (max wins when multiple tags match)
+const multiplier = computeMultiplier(cardTags, prefs.boost);
+return { ...card, score: card.score * multiplier };
+```
+
+**UI Component**: `packages/common-ui/src/components/UserTagPreferences.vue`
+- Slider-based interface (0-2 default range, expandable to 10)
+- All sliders share global max for consistent visual comparison
+- Writes to strategy state via `userDB.putStrategyState()`
+
 ## File Reference
 
 | File | Purpose |
@@ -254,12 +338,15 @@ Register in `NavigatorRoles` as `NavigatorRole.FILTER`.
 | `core/navigators/interferenceMitigator.ts` | Interference filter |
 | `core/navigators/relativePriority.ts` | Priority filter |
 | `core/navigators/filters/eloDistance.ts` | ELO distance filter |
+| `core/navigators/filters/userTagPreference.ts` | User tag preference filter |
+| `common-ui/.../UserTagPreferences.vue` | UI for tag preference sliders |
+| `core/navigators/userGoal.ts` | User goal navigator (stub) |
+| `core/navigators/inferredPreference.ts` | Inferred preference navigator (stub) |
+| `core/types/strategyState.ts` | `StrategyStateDoc`, `StrategyStateId` |
 | `impl/couch/courseDB.ts` | `createNavigator()` entry point |
 
 ## Related TODOs
 
-- `todo-pipeline-optimization.md` - Batch tag hydration for filter efficiency
-- `todo-strategy-authoring.md` - ux and dx for authoring strategies
-- todo-pipeline-optimization.md - 
-- todo-strategy-state-storage
-- todo-evolutionary-orchestration
+- `todo-pipeline-optimization.md` — Batch tag hydration for filter efficiency
+- `todo-strategy-authoring.md` — UX and DX for authoring strategies
+- `todo-evolutionary-orchestration.md` — Long-term adaptive strategy vision

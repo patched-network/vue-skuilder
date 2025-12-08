@@ -1,6 +1,11 @@
 <template>
   <div>
-    <course-information :course-id="courseId" :view-lookup-function="viewLookup" :edit-mode="editMode">
+    <course-information
+      :course-id="courseId"
+      :view-lookup-function="viewLookup"
+      :edit-mode="editMode"
+      :user-is-registered="userIsRegistered"
+    >
       <template #header="{ courseConfig: config }">
         <h1 class="text-h4 mb-2"><router-link to="/q">Quilts</router-link> / {{ config.name }}</h1>
       </template>
@@ -46,6 +51,19 @@
 
       <template #additional-content>
         <midi-config v-if="isPianoCourse" :_id="courseId" :user="user" class="my-3" />
+
+        <!-- Learning Preferences for registered users -->
+        <v-expansion-panels v-if="userIsRegistered" class="my-3">
+          <v-expansion-panel>
+            <v-expansion-panel-title>
+              <v-icon start>mdi-tune</v-icon>
+              Learning Preferences
+            </v-expansion-panel-title>
+            <v-expansion-panel-text>
+              <user-tag-preferences :course-id="courseId" />
+            </v-expansion-panel-text>
+          </v-expansion-panel>
+        </v-expansion-panels>
       </template>
     </course-information>
   </div>
@@ -53,7 +71,7 @@
 
 <script lang="ts">
 import { defineComponent, PropType } from 'vue';
-import { CourseInformation, getCurrentUser } from '@vue-skuilder/common-ui';
+import { CourseInformation, getCurrentUser, UserTagPreferences } from '@vue-skuilder/common-ui';
 import { MidiConfig, allCourseWare } from '@vue-skuilder/courseware';
 import { UserDBInterface, getDataLayer } from '@vue-skuilder/db';
 import { CourseConfig } from '@vue-skuilder/common';
@@ -64,6 +82,7 @@ export default defineComponent({
   components: {
     CourseInformation,
     MidiConfig,
+    UserTagPreferences,
   },
 
   props: {
@@ -78,6 +97,7 @@ export default defineComponent({
       courseConfig: {} as CourseConfig,
       user: null as UserDBInterface | null,
       editMode: 'full' as 'none' | 'readonly' | 'full',
+      userIsRegistered: false,
     };
   },
 
@@ -92,6 +112,16 @@ export default defineComponent({
     const courseDB = dataLayer.getCourseDB(this.courseId);
     this.courseConfig = await courseDB.getCourseConfig();
     this.user = await getCurrentUser();
+
+    // Check if user is registered
+    if (this.user) {
+      const userCourses = await this.user.getCourseRegistrationsDoc();
+      this.userIsRegistered =
+        this.user.getUsername() === 'admin' ||
+        userCourses.courses.some(
+          (c) => c.courseID === this.courseId && (c.status === 'active' || c.status === undefined)
+        );
+    }
 
     // Determine edit mode based on data layer capabilities
     this.editMode = dataLayer.isReadOnly() ? 'readonly' : 'full';

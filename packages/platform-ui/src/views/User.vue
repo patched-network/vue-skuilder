@@ -24,12 +24,44 @@
       v-model="selectedLanguages"
       @update:model-value="updateLanguage"
     /> -->
+
+    <v-divider class="my-6" />
+
+    <h2 class="text-h4 mb-4">Learning Preferences:</h2>
+    <p class="text-body-2 text-medium-emphasis mb-4">Customize how content is presented in your registered courses.</p>
+
+    <v-select
+      v-model="selectedCourseId"
+      :items="registeredCourses"
+      item-title="name"
+      item-value="courseID"
+      label="Select a course"
+      variant="outlined"
+      density="comfortable"
+      class="mb-4"
+      style="max-width: 400px"
+    >
+      <template #item="{ props, item }">
+        <v-list-item v-bind="props">
+          <template #subtitle>
+            {{ item.raw.courseID }}
+          </template>
+        </v-list-item>
+      </template>
+    </v-select>
+
+    <user-tag-preferences
+      v-if="selectedCourseId"
+      :course-id="selectedCourseId"
+      @preferences-saved="onPreferencesSaved"
+    />
   </div>
 </template>
 
 <script lang="ts">
-import { getCurrentUser, useConfigStore } from '@vue-skuilder/common-ui';
-import { UserDBInterface } from '@vue-skuilder/db';
+import { getCurrentUser, useConfigStore, UserTagPreferences } from '@vue-skuilder/common-ui';
+import { UserDBInterface, getDataLayer } from '@vue-skuilder/db';
+import { CourseConfig } from '@vue-skuilder/common';
 import confetti from 'canvas-confetti';
 import { defineComponent, PropType } from 'vue';
 import { useRoute } from 'vue-router';
@@ -41,6 +73,10 @@ interface Language {
 
 export default defineComponent({
   name: 'UserSettings',
+
+  components: {
+    UserTagPreferences,
+  },
 
   props: {
     username: {
@@ -75,6 +111,8 @@ export default defineComponent({
         },
       ] as Language[],
       selectedLanguages: [] as string[],
+      registeredCourses: [] as CourseConfig[],
+      selectedCourseId: '' as string,
     };
   },
 
@@ -83,6 +121,9 @@ export default defineComponent({
     this.configLanguages.forEach((l) => {
       console.log(`afweatifvwzeatfvwzeta` + l.name);
     });
+
+    // Load registered courses for preferences selector
+    await this.loadRegisteredCourses();
   },
 
   methods: {
@@ -101,6 +142,35 @@ export default defineComponent({
           },
         });
       }
+    },
+
+    async loadRegisteredCourses(): Promise<void> {
+      try {
+        const activeCourses = await this.u.getActiveCourses();
+        const dataLayer = getDataLayer();
+
+        // Fetch course configs for display names
+        const courseConfigs = await Promise.all(
+          activeCourses.map(async (reg) => {
+            try {
+              const courseDB = dataLayer.getCourseDB(reg.courseID);
+              return await courseDB.getCourseConfig();
+            } catch {
+              // Return minimal config if fetch fails
+              return { courseID: reg.courseID, name: reg.courseID } as CourseConfig;
+            }
+          })
+        );
+
+        this.registeredCourses = courseConfigs.filter(Boolean);
+      } catch (e) {
+        console.error('Failed to load registered courses:', e);
+      }
+    },
+
+    onPreferencesSaved(): void {
+      // Could show a snackbar or other feedback here
+      console.log('Preferences saved for course:', this.selectedCourseId);
     },
   },
 });
