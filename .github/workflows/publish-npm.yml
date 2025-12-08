@@ -81,7 +81,7 @@ jobs:
           echo "Package name: $(node -p "require('./package.json').name")"
 
       - name: Test publish (dry run)
-        if: github.event.inputs.dry_run == 'true' || github.event_name == 'workflow_dispatch'
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'true'
         run: |
           NPM_TAG="${{ steps.extract_version.outputs.NPM_TAG }}"
 
@@ -96,7 +96,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish common package (REAL)
-        if: github.event.inputs.dry_run == 'false' && github.event_name != 'push'
+        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'false')
         run: |
           NPM_TAG="${{ steps.extract_version.outputs.NPM_TAG }}"
 
