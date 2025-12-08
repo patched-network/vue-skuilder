@@ -196,7 +196,7 @@ export default class RelativePriorityNavigator extends ContentNavigator implemen
    * Apply priority-adjusted scoring. Cards with high-priority tags get boosted,
    * cards with low-priority tags get reduced scores.
    */
-  async transform(cards: WeightedCard[], context: FilterContext): Promise<WeightedCard[]> {
+  async transform(cards: WeightedCard[], _context: FilterContext): Promise<WeightedCard[]> {
     const adjusted: WeightedCard[] = await Promise.all(
       cards.map(async (card) => {
         const cardTags = card.tags ?? [];

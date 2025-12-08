@@ -147,9 +147,10 @@ export default class UserTagPreferenceFilter extends ContentNavigator implements
    *    - If multiple tags match: use max multiplier
    *    - Append provenance with clear reason
    */
-  async transform(cards: WeightedCard[], context: FilterContext): Promise<WeightedCard[]> {
+  async transform(cards: WeightedCard[], _context: FilterContext): Promise<WeightedCard[]> {
     // Read user preferences from strategy state
     const prefs = await this.getStrategyState<UserTagPreferenceState>();
+    
 
     // No preferences configured → pass through unchanged
     if (!prefs || Object.keys(prefs.boost).length === 0) {
