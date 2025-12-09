@@ -185,20 +185,15 @@ export class SessionController<TView = unknown> extends Loggable {
   }
 
   public async prepareSession() {
-    try {
-      // All content sources must implement getWeightedCards()
-      if (this.sources.some((s) => typeof s.getWeightedCards !== 'function')) {
-        throw new Error(
-          '[SessionController] All content sources must implement getWeightedCards(). ' +
-          'Legacy getNewCards()/getPendingReviews() API is no longer supported.'
-        );
-      }
-
-      await this.getWeightedContent();
-    } catch (e) {
-      this.error('Error preparing study session:', e);
+    // All content sources must implement getWeightedCards()
+    if (this.sources.some((s) => typeof s.getWeightedCards !== 'function')) {
+      throw new Error(
+        '[SessionController] All content sources must implement getWeightedCards(). ' +
+        'Legacy getNewCards()/getPendingReviews() API is no longer supported.'
+      );
     }
 
+    await this.getWeightedContent();
     await this.hydrationService.ensureHydratedCards();
 
     this._intervalHandle = setInterval(() => {
@@ -319,7 +314,19 @@ export class SessionController<TView = unknown> extends Loggable {
         allReviews.push(...reviews);
       } catch (error) {
         this.error(`Failed to get content from source ${i}:`, error);
+        // Re-throw if this is the only source - we can't proceed without any content
+        if (this.sources.length === 1) {
+          throw new Error(`Cannot start session: failed to load content from source ${i}`);
+        }
       }
+    }
+
+    // Verify we got content from at least one source
+    if (batches.length === 0) {
+      throw new Error(
+        `Cannot start session: failed to load content from all ${this.sources.length} source(s). ` +
+        `Check logs for details.`
+      );
     }
 
     // Mix weighted cards across sources using configured strategy
