@@ -6,7 +6,7 @@ Database abstraction layer providing unified interfaces for CouchDB/PouchDB and 
 - Build: `yarn workspace @vue-skuilder/db build`
 - Dev (watch): `yarn workspace @vue-skuilder/db dev`
 - Lint: `yarn workspace @vue-skuilder/db lint:fix`
-- Type check: `tsc --noEmit` (no dedicated script)
+- Test: `yarn workspace @vue-skuilder/db test`
 
 ## Build System
 Uses **tsup** for dual CommonJS/ESM output:
