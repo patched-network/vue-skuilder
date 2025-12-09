@@ -17,10 +17,6 @@ import { Loggable } from '@db/util';
 import { ScheduledCard } from '@db/core/types/user';
 import { WeightedCard, getCardOrigin } from '@db/core/navigators';
 
-function randomInt(min: number, max: number): number {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
 export interface StudySessionRecord {
   card: {
     course_id: string;
@@ -182,15 +178,15 @@ export class SessionController<TView = unknown> extends Loggable {
 
   public async prepareSession() {
     try {
-      // Use new getWeightedCards API if available, fall back to legacy methods
-      const hasWeightedCards = this.sources.some((s) => typeof s.getWeightedCards === 'function');
-
-      if (hasWeightedCards) {
-        await this.getWeightedContent();
-      } else {
-        // Legacy path: separate calls for reviews and new cards
-        await Promise.all([this.getScheduledReviews(), this.getNewCards()]);
+      // All content sources must implement getWeightedCards()
+      if (this.sources.some((s) => typeof s.getWeightedCards !== 'function')) {
+        throw new Error(
+          '[SessionController] All content sources must implement getWeightedCards(). ' +
+          'Legacy getNewCards()/getPendingReviews() API is no longer supported.'
+        );
       }
+
+      await this.getWeightedContent();
     } catch (e) {
       this.error('Error preparing study session:', e);
     }
@@ -398,67 +394,6 @@ export class SessionController<TView = unknown> extends Loggable {
     this.log(report);
   }
 
-  /**
-   * @deprecated Use getWeightedContent() instead. This method is kept for backward
-   * compatibility with sources that don't support getWeightedCards().
-   */
-  private async getScheduledReviews() {
-    const reviews = await Promise.all(
-      this.sources.map((c) =>
-        c.getPendingReviews().catch((error) => {
-          this.error(`Failed to get reviews for source ${c}:`, error);
-          return [];
-        })
-      )
-    );
-
-    const dueCards: (StudySessionReviewItem & ScheduledCard)[] = [];
-
-    while (reviews.length != 0 && reviews.some((r) => r.length > 0)) {
-      // pick a random review source
-      const index = randomInt(0, reviews.length - 1);
-      const source = reviews[index];
-
-      if (source.length === 0) {
-        reviews.splice(index, 1);
-        continue;
-      } else {
-        dueCards.push(source.shift()!);
-      }
-    }
-
-    let report = 'Review session created with:\n';
-    this.reviewQ.addAll(dueCards, (c) => c.cardID);
-    report += dueCards.map((card) => `Card ${card.courseID}::${card.cardID} `).join('\n');
-    this.log(report);
-  }
-
-  /**
-   * @deprecated Use getWeightedContent() instead. This method is kept for backward
-   * compatibility with sources that don't support getWeightedCards().
-   */
-  private async getNewCards(n: number = 10) {
-    const perCourse = Math.ceil(n / this.sources.length);
-    const newContent = await Promise.all(this.sources.map((c) => c.getNewCards(perCourse)));
-
-    // [ ] is this a noop?
-    newContent.forEach((newContentFromSource) => {
-      newContentFromSource.filter((c) => {
-        return this._sessionRecord.find((record) => record.card.card_id === c.cardID) === undefined;
-      });
-    });
-
-    while (n > 0 && newContent.some((nc) => nc.length > 0)) {
-      for (let i = 0; i < newContent.length; i++) {
-        if (newContent[i].length > 0) {
-          const item = newContent[i].splice(0, 1)[0];
-          this.log(`Adding new card: ${item.courseID}::${item.cardID}`);
-          this.newQ.add(item, item.cardID);
-          n--;
-        }
-      }
-    }
-  }
 
   private _selectNextItemToHydrate(): StudySessionItem | null {
     const choice = Math.random();
