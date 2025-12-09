@@ -15,11 +15,8 @@ import {
 import { CardRecord, CardHistory, CourseRegistrationDoc } from '@db/core';
 import { Loggable } from '@db/util';
 import { ScheduledCard } from '@db/core/types/user';
-import { WeightedCard, getCardOrigin } from '@db/core/navigators';
-
-function randomInt(min: number, max: number): number {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
+import { getCardOrigin } from '@db/core/navigators';
+import { SourceMixer, QuotaRoundRobinMixer, SourceBatch } from './SourceMixer';
 
 export interface StudySessionRecord {
   card: {
@@ -63,6 +60,7 @@ export class SessionController<TView = unknown> extends Loggable {
   private srsService: SrsService;
   private eloService: EloService;
   private hydrationService: CardHydrationService<TView>;
+  private mixer: SourceMixer;
 
   private sources: StudyContentSource[];
   // dataLayer and getViewComponent now injected into CardHydrationService
@@ -95,16 +93,22 @@ export class SessionController<TView = unknown> extends Loggable {
   private _intervalHandle: NodeJS.Timeout;
 
   /**
-   *
+   * @param sources - Array of content sources to mix for the session
+   * @param time - Session duration in seconds
+   * @param dataLayer - Data layer provider
+   * @param getViewComponent - Function to resolve view components
+   * @param mixer - Optional source mixer strategy (defaults to QuotaRoundRobinMixer)
    */
   constructor(
     sources: StudyContentSource[],
     time: number,
     dataLayer: DataLayerProvider,
-    getViewComponent: (viewId: string) => TView
+    getViewComponent: (viewId: string) => TView,
+    mixer?: SourceMixer
   ) {
     super();
 
+    this.mixer = mixer || new QuotaRoundRobinMixer();
     this.srsService = new SrsService(dataLayer.getUserDB());
     this.eloService = new EloService(dataLayer, dataLayer.getUserDB());
 
@@ -181,20 +185,15 @@ export class SessionController<TView = unknown> extends Loggable {
   }
 
   public async prepareSession() {
-    try {
-      // Use new getWeightedCards API if available, fall back to legacy methods
-      const hasWeightedCards = this.sources.some((s) => typeof s.getWeightedCards === 'function');
-
-      if (hasWeightedCards) {
-        await this.getWeightedContent();
-      } else {
-        // Legacy path: separate calls for reviews and new cards
-        await Promise.all([this.getScheduledReviews(), this.getNewCards()]);
-      }
-    } catch (e) {
-      this.error('Error preparing study session:', e);
+    // All content sources must implement getWeightedCards()
+    if (this.sources.some((s) => typeof s.getWeightedCards !== 'function')) {
+      throw new Error(
+        '[SessionController] All content sources must implement getWeightedCards(). ' +
+        'Legacy getNewCards()/getPendingReviews() API is no longer supported.'
+      );
     }
 
+    await this.getWeightedContent();
     await this.hydrationService.ensureHydratedCards();
 
     this._intervalHandle = setInterval(() => {
@@ -279,91 +278,68 @@ export class SessionController<TView = unknown> extends Loggable {
   }
 
   /**
-   * Fetch content using the new getWeightedCards API.
+   * Fetch content using the getWeightedCards API and mix across sources.
    *
-   * This method uses getWeightedCards() to get scored candidates, then uses the
-   * scores to determine ordering. For reviews, we still need the full ScheduledCard
-   * data from getPendingReviews(), so we fetch both and use scores for ordering.
-   *
-   * The hybrid approach:
-   * 1. Fetch weighted cards to get scoring/ordering information
-   * 2. Fetch full review data via legacy getPendingReviews()
-   * 3. Order reviews by their weighted scores
-   * 4. Add new cards ordered by their weighted scores
+   * This method:
+   * 1. Fetches weighted cards from each source
+   * 2. Fetches full review data (we need ScheduledCard fields for queue)
+   * 3. Uses SourceMixer to balance content across sources
+   * 4. Populates review and new card queues with mixed results
    */
   private async getWeightedContent() {
     const limit = 20; // Initial batch size per source
 
-    // Collect weighted cards for scoring, and full review data for queue population
-    const allWeighted: WeightedCard[] = [];
+    // Collect batches from each source
+    const batches: SourceBatch[] = [];
     const allReviews: (StudySessionReviewItem & ScheduledCard)[] = [];
-    const allNewCards: StudySessionNewItem[] = [];
 
-    for (const source of this.sources) {
+    for (let i = 0; i < this.sources.length; i++) {
+      const source = this.sources[i];
       try {
-        // Always fetch full review data (we need ScheduledCard fields)
+        // Fetch weighted cards for mixing
+        const weighted = await source.getWeightedCards!(limit);
+
+        // Fetch full review data (we need ScheduledCard fields)
         const reviews = await source.getPendingReviews().catch((error) => {
-          this.error(`Failed to get reviews for source:`, error);
+          this.error(`Failed to get reviews for source ${i}:`, error);
           return [];
         });
+
+        batches.push({
+          sourceIndex: i,
+          weighted,
+          reviews,
+        });
+
         allReviews.push(...reviews);
-
-        // Fetch weighted cards for scoring if available
-        if (typeof source.getWeightedCards === 'function') {
-          const weighted = await source.getWeightedCards(limit);
-          allWeighted.push(...weighted);
-        } else {
-          // Fallback: fetch new cards directly and assign score=1.0
-          const newCards = await source.getNewCards(limit);
-          allNewCards.push(...newCards);
-
-          // Create pseudo-weighted entries for ordering
-          allWeighted.push(
-            ...newCards.map((c) => ({
-              cardId: c.cardID,
-              courseId: c.courseID,
-              score: 1.0,
-              provenance: [
-                {
-                  strategy: 'legacy',
-                  strategyName: 'Legacy Fallback',
-                  strategyId: 'legacy-fallback',
-                  action: 'generated' as const,
-                  score: 1.0,
-                  reason: 'Fallback to legacy getNewCards(), new card',
-                },
-              ],
-            })),
-            ...reviews.map((r) => ({
-              cardId: r.cardID,
-              courseId: r.courseID,
-              score: 1.0,
-              provenance: [
-                {
-                  strategy: 'legacy',
-                  strategyName: 'Legacy Fallback',
-                  strategyId: 'legacy-fallback',
-                  action: 'generated' as const,
-                  score: 1.0,
-                  reason: 'Fallback to legacy getPendingReviews(), review',
-                },
-              ],
-            }))
-          );
-        }
       } catch (error) {
-        this.error(`Failed to get content from source:`, error);
+        this.error(`Failed to get content from source ${i}:`, error);
+        // Re-throw if this is the only source - we can't proceed without any content
+        if (this.sources.length === 1) {
+          throw new Error(`Cannot start session: failed to load content from source ${i}`);
+        }
       }
     }
 
-    // Build a score lookup map from weighted cards
+    // Verify we got content from at least one source
+    if (batches.length === 0) {
+      throw new Error(
+        `Cannot start session: failed to load content from all ${this.sources.length} source(s). ` +
+        `Check logs for details.`
+      );
+    }
+
+    // Mix weighted cards across sources using configured strategy
+    const mixedWeighted = this.mixer.mix(batches, limit * this.sources.length);
+
+    // Build score lookup map from mixed results
     const scoreMap = new Map<string, number>();
-    for (const w of allWeighted) {
+    for (const w of mixedWeighted) {
       const key = `${w.courseId}::${w.cardId}`;
       scoreMap.set(key, w.score);
     }
 
-    // Sort reviews by score (from weighted cards) descending
+    // Sort reviews by their mixed scores
     const scoredReviews = allReviews.map((r) => ({
       review: r,
       score: scoreMap.get(`${r.courseID}::${r.cardID}`) ?? 1.0,
@@ -371,18 +347,16 @@ export class SessionController<TView = unknown> extends Loggable {
     scoredReviews.sort((a, b) => b.score - a.score);
 
     // Add reviews to queue in score order
-    let report = 'Weighted content session created with:\n';
+    let report = 'Mixed content session created with:\n';
     for (const { review, score } of scoredReviews) {
       this.reviewQ.add(review, review.cardID);
       report += `Review: ${review.courseID}::${review.cardID} (score: ${score.toFixed(2)})\n`;
     }
 
-    // Get new cards from weighted list (filter out reviews)
-    const newCardWeighted = allWeighted
-      .filter((w) => getCardOrigin(w) === 'new')
-      .sort((a, b) => b.score - a.score);
+    // Get new cards from mixed results (filter out reviews)
+    const newCardWeighted = mixedWeighted.filter((w) => getCardOrigin(w) === 'new');
 
-    // Add new cards to queue in score order
+    // Add new cards to queue in mixed order
     for (const card of newCardWeighted) {
       const newItem: StudySessionNewItem = {
         cardID: card.cardId,
@@ -398,67 +372,6 @@ export class SessionController<TView = unknown> extends Loggable {
     this.log(report);
   }
 
-  /**
-   * @deprecated Use getWeightedContent() instead. This method is kept for backward
-   * compatibility with sources that don't support getWeightedCards().
-   */
-  private async getScheduledReviews() {
-    const reviews = await Promise.all(
-      this.sources.map((c) =>
-        c.getPendingReviews().catch((error) => {
-          this.error(`Failed to get reviews for source ${c}:`, error);
-          return [];
-        })
-      )
-    );
-
-    const dueCards: (StudySessionReviewItem & ScheduledCard)[] = [];
-
-    while (reviews.length != 0 && reviews.some((r) => r.length > 0)) {
-      // pick a random review source
-      const index = randomInt(0, reviews.length - 1);
-      const source = reviews[index];
-
-      if (source.length === 0) {
-        reviews.splice(index, 1);
-        continue;
-      } else {
-        dueCards.push(source.shift()!);
-      }
-    }
-
-    let report = 'Review session created with:\n';
-    this.reviewQ.addAll(dueCards, (c) => c.cardID);
-    report += dueCards.map((card) => `Card ${card.courseID}::${card.cardID} `).join('\n');
-    this.log(report);
-  }
-
-  /**
-   * @deprecated Use getWeightedContent() instead. This method is kept for backward
-   * compatibility with sources that don't support getWeightedCards().
-   */
-  private async getNewCards(n: number = 10) {
-    const perCourse = Math.ceil(n / this.sources.length);
-    const newContent = await Promise.all(this.sources.map((c) => c.getNewCards(perCourse)));
-
-    // [ ] is this a noop?
-    newContent.forEach((newContentFromSource) => {
-      newContentFromSource.filter((c) => {
-        return this._sessionRecord.find((record) => record.card.card_id === c.cardID) === undefined;
-      });
-    });
-
-    while (n > 0 && newContent.some((nc) => nc.length > 0)) {
-      for (let i = 0; i < newContent.length; i++) {
-        if (newContent[i].length > 0) {
-          const item = newContent[i].splice(0, 1)[0];
-          this.log(`Adding new card: ${item.courseID}::${item.cardID}`);
-          this.newQ.add(item, item.cardID);
-          n--;
-        }
-      }
-    }
-  }
 
   private _selectNextItemToHydrate(): StudySessionItem | null {
     const choice = Math.random();

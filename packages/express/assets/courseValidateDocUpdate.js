@@ -50,7 +50,8 @@ function(newDoc, oldDoc, userCtx, secObj) {
   }
   
   // Special case for design documents - only admins can modify (handled above)
-  if (newDoc._id.startsWith('_design/')) {
+  // Use indexOf instead of startsWith for CouchDB SpiderMonkey compatibility (ES5)
+  if (newDoc._id.indexOf('_design/') === 0) {
     throw({forbidden: "Only admins can modify design documents"});
   }
 }
