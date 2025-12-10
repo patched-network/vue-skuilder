@@ -22,14 +22,11 @@ import { logger } from '../../util/logger';
  * Shows generator and filter chain structure.
  */
 function logPipelineConfig(generator: CardGenerator, filters: CardFilter[]): void {
-  const filterList = filters.length > 0
-    ? '\n    - ' + filters.map(f => f.name).join('\n    - ')
-    : ' none';
+  const filterList =
+    filters.length > 0 ? '\n    - ' + filters.map((f) => f.name).join('\n    - ') : ' none';
 
   logger.info(
-    `[Pipeline] Configuration:\n` +
-    `  Generator: ${generator.name}\n` +
-    `  Filters:${filterList}`
+    `[Pipeline] Configuration:\n` + `  Generator: ${generator.name}\n` + `  Filters:${filterList}`
   );
 }
 
@@ -39,11 +36,11 @@ function logPipelineConfig(generator: CardGenerator, filters: CardFilter[]): voi
  */
 function logTagHydration(cards: WeightedCard[], tagsByCard: Map<string, string[]>): void {
   const totalTags = Array.from(tagsByCard.values()).reduce((sum, tags) => sum + tags.length, 0);
-  const cardsWithTags = Array.from(tagsByCard.values()).filter(tags => tags.length > 0).length;
+  const cardsWithTags = Array.from(tagsByCard.values()).filter((tags) => tags.length > 0).length;
 
   logger.debug(
     `[Pipeline] Tag hydration: ${cards.length} cards, ` +
-    `${cardsWithTags} have tags (${totalTags} total tags) - single batch query`
+      `${cardsWithTags} have tags (${totalTags} total tags) - single batch query`
   );
 }
 
@@ -58,13 +55,12 @@ function logExecutionSummary(
   finalCount: number,
   topScores: number[]
 ): void {
-  const scoreDisplay = topScores.length > 0
-    ? topScores.map(s => s.toFixed(2)).join(', ')
-    : 'none';
+  const scoreDisplay =
+    topScores.length > 0 ? topScores.map((s) => s.toFixed(2)).join(', ') : 'none';
 
   logger.info(
     `[Pipeline] Execution: ${generatorName} produced ${generatedCount} → ` +
-    `${filterCount} filters → ${finalCount} results (top scores: ${scoreDisplay})`
+      `${filterCount} filters → ${finalCount} results (top scores: ${scoreDisplay})`
   );
 }
 
@@ -154,6 +150,14 @@ export class Pipeline extends ContentNavigator {
     this.user = user;
     this.course = course;
 
+    course
+      .getCourseConfig()
+      .then((cfg) => {
+        logger.debug(`[pipeline] Crated pipeline for ${cfg.name}`);
+      })
+      .catch((e) => {
+        logger.error(`[pipeline] Failed to lookup courseCfg: ${e}`);
+      });
     // Toggle pipeline configuration logging:
     logPipelineConfig(generator, filters);
   }
@@ -210,8 +214,14 @@ export class Pipeline extends ContentNavigator {
     const result = cards.slice(0, limit);
 
     // Toggle execution summary logging:
-    const topScores = result.slice(0, 3).map(c => c.score);
-    logExecutionSummary(this.generator.name, generatedCount, this.filters.length, result.length, topScores);
+    const topScores = result.slice(0, 3).map((c) => c.score);
+    logExecutionSummary(
+      this.generator.name,
+      generatedCount,
+      this.filters.length,
+      result.length,
+      topScores
+    );
 
     // Toggle provenance logging (shows scoring history for top cards):
     logCardProvenance(result, 3);

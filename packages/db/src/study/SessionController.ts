@@ -115,9 +115,7 @@ export class SessionController<TView = unknown> extends Loggable {
     this.hydrationService = new CardHydrationService<TView>(
       getViewComponent,
       (courseId: string) => dataLayer.getCourseDB(courseId),
-      () => this._selectNextItemToHydrate(),
-      (item: StudySessionItem) => this.removeItemFromQueue(item),
-      () => this.hasAvailableCards()
+      () => this._getItemsToHydrate()
     );
 
     this.services = {
@@ -189,7 +187,7 @@ export class SessionController<TView = unknown> extends Loggable {
     if (this.sources.some((s) => typeof s.getWeightedCards !== 'function')) {
       throw new Error(
         '[SessionController] All content sources must implement getWeightedCards(). ' +
-        'Legacy getNewCards()/getPendingReviews() API is no longer supported.'
+          'Legacy getNewCards()/getPendingReviews() API is no longer supported.'
       );
     }
 
@@ -239,14 +237,6 @@ export class SessionController<TView = unknown> extends Loggable {
       return items;
     };
 
-    const extractHydratedItems = () => {
-      // We can't easily iterate the hydrated queue without dequeuing,
-      // so we'll just report the count via hydratedCache.count below
-
-      const items: any[] = [];
-      return items;
-    };
-
     return {
       api: {
         mode: supportsWeightedCards ? 'weighted' : 'legacy',
@@ -271,8 +261,7 @@ export class SessionController<TView = unknown> extends Loggable {
       },
       hydratedCache: {
         count: this.hydrationService.hydratedCount,
-        failedCacheSize: this.hydrationService.failedCacheSize,
-        items: extractHydratedItems(),
+        cardIds: this.hydrationService.getHydratedCardIds(),
       },
     };
   }
@@ -325,7 +314,7 @@ export class SessionController<TView = unknown> extends Loggable {
     if (batches.length === 0) {
       throw new Error(
         `Cannot start session: failed to load content from all ${this.sources.length} source(s). ` +
-        `Check logs for details.`
+          `Check logs for details.`
       );
     }
 
@@ -372,7 +361,32 @@ export class SessionController<TView = unknown> extends Loggable {
     this.log(report);
   }
 
+  /**
+   * Returns items that should be pre-hydrated.
+   * Deterministic: top N items from each queue to ensure coverage.
+   * Failed queue items will typically already be hydrated (from initial render).
+   */
+  private _getItemsToHydrate(): StudySessionItem[] {
+    const items: StudySessionItem[] = [];
+    const ITEMS_PER_QUEUE = 2;
 
+    for (let i = 0; i < Math.min(ITEMS_PER_QUEUE, this.reviewQ.length); i++) {
+      items.push(this.reviewQ.peek(i));
+    }
+    for (let i = 0; i < Math.min(ITEMS_PER_QUEUE, this.newQ.length); i++) {
+      items.push(this.newQ.peek(i));
+    }
+    for (let i = 0; i < Math.min(ITEMS_PER_QUEUE, this.failedQ.length); i++) {
+      items.push(this.failedQ.peek(i));
+    }
+
+    return items;
+  }
+
+  /**
+   * Selects the next item to present to the user.
+   * Nondeterministic: uses probability to balance between queues based on session state.
+   */
   private _selectNextItemToHydrate(): StudySessionItem | null {
     const choice = Math.random();
     let newBound: number = 0.1;
@@ -456,22 +470,28 @@ export class SessionController<TView = unknown> extends Loggable {
       return null;
     }
 
-    let card = this.hydrationService.dequeueHydratedCard();
-
-    // If no hydrated card but source cards available, wait for hydration
-    if (!card && this.hasAvailableCards()) {
-      card = await this.hydrationService.waitForHydratedCard();
+    // Get what SessionController thinks should be next
+    const nextItem = this._selectNextItemToHydrate();
+    if (!nextItem) {
+      this._currentCard = null;
+      return null;
     }
+
+    // Look up in hydration cache
+    let card = this.hydrationService.getHydratedCard(nextItem.cardID);
+
+    // If not ready, wait for it
+    if (!card) {
+      card = await this.hydrationService.waitForCard(nextItem.cardID);
+    }
+
+    // Remove from source queue now that we're consuming it
+    this.removeItemFromQueue(nextItem);
 
     // Trigger background hydration to maintain cache (async, non-blocking)
     await this.hydrationService.ensureHydratedCards();
 
-    if (card) {
-      this._currentCard = card;
-    } else {
-      this._currentCard = null;
-    }
-
+    this._currentCard = card;
     return card;
   }
 
@@ -530,9 +550,11 @@ export class SessionController<TView = unknown> extends Loggable {
       // }
 
       if (action === 'dismiss-success') {
+        // Remove from hydration cache to free memory
+        this.hydrationService.removeCard(this._currentCard.item.cardID);
         // schedule a review - currently done in Study.vue
       } else if (action === 'marked-failed') {
-        this.hydrationService.cacheFailedCard(this._currentCard);
+        // Card stays in hydration cache for re-use (no removeCard call)
 
         let failedItem: StudySessionFailedItem;
 
@@ -557,26 +579,25 @@ export class SessionController<TView = unknown> extends Loggable {
 
         this.failedQ.add(failedItem, failedItem.cardID);
       } else if (action === 'dismiss-error') {
-        // some error logging?
+        // Remove from cache on error as well
+        this.hydrationService.removeCard(this._currentCard.item.cardID);
       } else if (action === 'dismiss-failed') {
-        // handled by Study.vue
+        // Remove from cache - card has been fully processed after failure cleanup
+        this.hydrationService.removeCard(this._currentCard.item.cardID);
       }
     }
   }
 
-  private hasAvailableCards(): boolean {
-    return this.reviewQ.length > 0 || this.newQ.length > 0 || this.failedQ.length > 0;
-  }
-
   /**
-   * Helper method for CardHydrationService to remove items from appropriate queue.
+   * Remove an item from its source queue after consumption by nextCard().
    */
   private removeItemFromQueue(item: StudySessionItem): void {
-    if (this.reviewQ.peek(0) === item) {
+    // Check each queue - item should be at the front of one of them
+    if (this.reviewQ.peek(0)?.cardID === item.cardID) {
       this.reviewQ.dequeue((queueItem) => queueItem.cardID);
-    } else if (this.newQ.peek(0) === item) {
+    } else if (this.newQ.peek(0)?.cardID === item.cardID) {
       this.newQ.dequeue((queueItem) => queueItem.cardID);
-    } else {
+    } else if (this.failedQ.peek(0)?.cardID === item.cardID) {
       this.failedQ.dequeue((queueItem) => queueItem.cardID);
     }
   }

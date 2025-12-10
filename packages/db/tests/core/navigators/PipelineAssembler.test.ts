@@ -157,6 +157,7 @@ describe('PipelineAssembler', () => {
 
   const mockCourse = {
     getCourseID: vi.fn().mockReturnValue('test-course'),
+    getCourseConfig: vi.fn().mockResolvedValue({ name: 'Test Course', id: 'test-course' }),
     getCardEloData: vi.fn().mockResolvedValue([]),
     getAppliedTags: vi.fn().mockResolvedValue({ rows: [] }),
   };
