@@ -1,5 +1,5 @@
 import { CourseConfig, CourseElo, DataShape, SkuilderCourseData } from '@vue-skuilder/common';
-import { StudySessionItem } from './contentSource';
+import { StudyContentSource, StudySessionItem } from './contentSource';
 import { TagStub, Tag, QualifiedCardID } from '../types/types-legacy';
 import { DataLayerResult } from '../types/db';
 import { NavigationStrategyManager } from './navigationStrategyManager';
@@ -26,7 +26,7 @@ export interface CourseInfo {
   registeredUsers: number;
 }
 
-export interface CourseDBInterface extends NavigationStrategyManager {
+export interface CourseDBInterface extends NavigationStrategyManager, StudyContentSource {
   /**
    * Get course config
    */

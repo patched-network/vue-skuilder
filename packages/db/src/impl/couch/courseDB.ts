@@ -93,7 +93,7 @@ function randIntWeightedTowardZero(n: number) {
   return Math.floor(Math.random() * Math.random() * Math.random() * n);
 }
 
-export class CourseDB implements StudyContentSource, CourseDBInterface {
+export class CourseDB implements CourseDBInterface {
   // private log(msg: string): void {
   //   log(`CourseLog: ${this.id}\n  ${msg}`);
   // }
