@@ -313,7 +313,7 @@ export class Pipeline extends ContentNavigator {
       'getPendingReviews' in this.generator &&
       typeof this.generator.getPendingReviews === 'function'
     ) {
-      return (this.generator as ContentNavigator).getPendingReviews();
+      return (this.generator as unknown as ContentNavigator).getPendingReviews();
     }
     // Pure CardGenerator without legacy support - return empty
     return [];
