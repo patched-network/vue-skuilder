@@ -95,6 +95,7 @@ export default class SRSNavigator extends ContentNavigator implements CardGenera
         cardId: review.cardId,
         courseId: review.courseId,
         score,
+        reviewID: review._id,
         provenance: [
           {
             strategy: 'srs',

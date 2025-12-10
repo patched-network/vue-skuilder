@@ -142,6 +142,12 @@ export interface WeightedCard {
    * Filters should use this instead of querying getAppliedTags() individually.
    */
   tags?: string[];
+  /**
+   * Review document ID (_id from ScheduledCard).
+   * Present when this card originated from SRS review scheduling.
+   * Used by SessionController to track review outcomes and maintain review state.
+   */
+  reviewID?: string;
 }
 
 /**

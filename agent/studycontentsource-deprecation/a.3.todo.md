@@ -1,13 +1,13 @@
 # Todo: Remove Deprecated StudyContentSource Methods
 
-## Phase 1: Extend WeightedCard Interface
-- [ ] p1.1 Add optional `reviewID?: string` field to `WeightedCard` interface in `packages/db/src/core/navigators/index.ts`
-- [ ] p1.2 Add JSDoc comment explaining field usage (present for SRS review cards, used by SessionController)
-- [ ] p1.3 Verify TypeScript compilation succeeds
+## Phase 1: Extend WeightedCard Interface - COMPLETED
+- [x] p1.1 Add optional `reviewID?: string` field to `WeightedCard` interface in `packages/db/src/core/navigators/index.ts`
+- [x] p1.2 Add JSDoc comment explaining field usage (present for SRS review cards, used by SessionController)
+- [x] p1.3 Verify TypeScript compilation succeeds
 
-## Phase 2: Update SRS Navigator
-- [ ] p2.1 Modify `getWeightedCards()` in `packages/db/src/core/navigators/srs.ts` to populate `reviewID: review._id` in returned WeightedCard objects
-- [ ] p2.2 Verify TypeScript compilation succeeds
+## Phase 2: Update SRS Navigator - COMPLETED
+- [x] p2.1 Modify `getWeightedCards()` in `packages/db/src/core/navigators/srs.ts` to populate `reviewID: review._id` in returned WeightedCard objects
+- [x] p2.2 Verify TypeScript compilation succeeds
 
 ## Phase 3: Refactor SessionController
 - [ ] p3.1 Replace `getPendingReviews()` call in `SessionController.getWeightedContent()` (line ~292) with logic to extract reviews from weighted cards using `getCardOrigin()`
