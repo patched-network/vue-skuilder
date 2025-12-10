@@ -14,7 +14,6 @@ import {
 
 import { CardRecord, CardHistory, CourseRegistrationDoc } from '@db/core';
 import { Loggable } from '@db/util';
-import { ScheduledCard } from '@db/core/types/user';
 import { getCardOrigin } from '@db/core/navigators';
 import { SourceMixer, QuotaRoundRobinMixer, SourceBatch } from './SourceMixer';
 
@@ -29,6 +28,7 @@ export interface StudySessionRecord {
 }
 
 import { DataLayerProvider } from '@db/core';
+import { logger } from '@db/util/logger';
 
 export type SessionAction =
   | 'dismiss-success'
@@ -280,7 +280,7 @@ export class SessionController<TView = unknown> extends Loggable {
 
     // Collect batches from each source
     const batches: SourceBatch[] = [];
-    const allReviews: (StudySessionReviewItem & ScheduledCard)[] = [];
+    const allReviews: StudySessionReviewItem[] = [];
 
     for (let i = 0; i < this.sources.length; i++) {
       const source = this.sources[i];
@@ -288,11 +288,21 @@ export class SessionController<TView = unknown> extends Loggable {
         // Fetch weighted cards for mixing
         const weighted = await source.getWeightedCards!(limit);
 
-        // Fetch full review data (we need ScheduledCard fields)
-        const reviews = await source.getPendingReviews().catch((error) => {
-          this.error(`Failed to get reviews for source ${i}:`, error);
-          return [];
-        });
+        // Extract reviews from weighted cards
+        const reviews: StudySessionReviewItem[] = weighted
+          .filter((w) => getCardOrigin(w) === 'review')
+          .map((w) => ({
+            cardID: w.cardId,
+            courseID: w.courseId,
+            contentSourceType: 'course' as const,
+            contentSourceID: w.courseId,
+            reviewID: w.reviewID!,
+            status: 'review' as const,
+          }));
+
+        logger.debug(
+          `[reviews] fetched ${reviews.length} reviews -${reviews.map((r) => `\n\t${r.contentSourceID}::${r.cardID}`)}`
+        );
 
         batches.push({
           sourceIndex: i,

@@ -1,5 +1,5 @@
 import { WeightedCard } from '@db/core/navigators';
-import { StudySessionReviewItem, ScheduledCard } from '@db/core';
+import { StudySessionReviewItem } from '@db/core';
 
 /**
  * Represents a batch of content fetched from a single StudyContentSource.
@@ -7,7 +7,7 @@ import { StudySessionReviewItem, ScheduledCard } from '@db/core';
 export interface SourceBatch {
   sourceIndex: number;
   weighted: WeightedCard[];
-  reviews: (StudySessionReviewItem & ScheduledCard)[];
+  reviews: StudySessionReviewItem[];
 }
 
 /**

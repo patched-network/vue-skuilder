@@ -9,11 +9,12 @@
 - [x] p2.1 Modify `getWeightedCards()` in `packages/db/src/core/navigators/srs.ts` to populate `reviewID: review._id` in returned WeightedCard objects
 - [x] p2.2 Verify TypeScript compilation succeeds
 
-## Phase 3: Refactor SessionController
-- [ ] p3.1 Replace `getPendingReviews()` call in `SessionController.getWeightedContent()` (line ~292) with logic to extract reviews from weighted cards using `getCardOrigin()`
-- [ ] p3.2 Map filtered weighted cards to `StudySessionReviewItem` format, preserving `reviewID` field
-- [ ] p3.3 Remove the allReviews array accumulation of separately-fetched reviews
-- [ ] p3.4 Verify SessionController compiles and review queue population logic is preserved
+## Phase 3: Refactor SessionController - COMPLETED
+- [x] p3.1 Replace `getPendingReviews()` call in `SessionController.getWeightedContent()` (line ~292) with logic to extract reviews from weighted cards using `getCardOrigin()`
+- [x] p3.2 Map filtered weighted cards to `StudySessionReviewItem` format, preserving `reviewID` field
+- [x] p3.3 Update `SourceBatch.reviews` type from intersection type to `StudySessionReviewItem[]`
+- [x] p3.4 Remove unused `ScheduledCard` import from SessionController
+- [x] p3.5 Verify SessionController compiles and review queue population logic is preserved
 
 ## Phase 4: Remove HardcodedOrderNavigator
 - [ ] p4.1 Delete file `packages/db/src/core/navigators/hardcodedOrder.ts`
