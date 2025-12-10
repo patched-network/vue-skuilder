@@ -11,7 +11,7 @@ import {
 
 import { filterAllDocsByPrefix, getCourseDB, getCourseDoc, getCourseDocs } from '.';
 import UpdateQueue from './updateQueue';
-import { StudyContentSource, StudySessionItem } from '../../core/interfaces/contentSource';
+import { StudySessionItem } from '../../core/interfaces/contentSource';
 import {
   CardData,
   DocType,
