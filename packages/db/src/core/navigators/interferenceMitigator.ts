@@ -1,10 +1,8 @@
-import type { ScheduledCard } from '../types/user';
 import type { CourseDBInterface } from '../interfaces/courseDB';
 import type { UserDBInterface } from '../interfaces/userDB';
 import { ContentNavigator } from './index';
 import type { WeightedCard } from './index';
 import type { ContentNavigationStrategyData } from '../types/contentNavigationStrategy';
-import type { StudySessionReviewItem, StudySessionNewItem } from '..';
 import type { CardFilter, FilterContext } from './filters/types';
 import { toCourseElo } from '@vue-skuilder/common';
 
@@ -80,7 +78,6 @@ const DEFAULT_INTERFERENCE_DECAY = 0.8;
  */
 export default class InterferenceMitigatorNavigator extends ContentNavigator implements CardFilter {
   private config: InterferenceConfig;
-  private _strategyData: ContentNavigationStrategyData;
 
   /** Human-readable name for CardFilter interface */
   name: string;
@@ -91,13 +88,12 @@ export default class InterferenceMitigatorNavigator extends ContentNavigator imp
   constructor(
     user: UserDBInterface,
     course: CourseDBInterface,
-    _strategyData: ContentNavigationStrategyData
+    strategyData: ContentNavigationStrategyData
   ) {
-    super(user, course, _strategyData);
-    this._strategyData = _strategyData;
-    this.config = this.parseConfig(_strategyData.serializedData);
+    super(user, course, strategyData);
+    this.config = this.parseConfig(strategyData.serializedData);
     this.interferenceMap = this.buildInterferenceMap();
-    this.name = _strategyData.name || 'Interference Mitigator';
+    this.name = strategyData.name || 'Interference Mitigator';
   }
 
   private parseConfig(serializedData: string): InterferenceConfig {
@@ -341,15 +337,5 @@ export default class InterferenceMitigatorNavigator extends ContentNavigator imp
       'InterferenceMitigatorNavigator is a filter and should not be used as a generator. ' +
         'Use Pipeline with a generator and this filter via transform().'
     );
-  }
-
-  // Legacy methods - stub implementations since filters don't generate cards
-
-  async getNewCards(_n?: number): Promise<StudySessionNewItem[]> {
-    return [];
-  }
-
-  async getPendingReviews(): Promise<(StudySessionReviewItem & ScheduledCard)[]> {
-    return [];
   }
 }

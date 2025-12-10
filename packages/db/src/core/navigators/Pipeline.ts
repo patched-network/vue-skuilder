@@ -1,12 +1,10 @@
 import { toCourseElo } from '@vue-skuilder/common';
 import type { CourseDBInterface } from '../interfaces/courseDB';
 import type { UserDBInterface } from '../interfaces/userDB';
-import type { ScheduledCard } from '../types/user';
 import { ContentNavigator } from './index';
 import type { WeightedCard } from './index';
 import type { CardFilter, FilterContext } from './filters/types';
 import type { CardGenerator, GeneratorContext } from './generators/types';
-import type { StudySessionNewItem, StudySessionReviewItem } from '../interfaces/contentSource';
 import { logger } from '../../util/logger';
 
 // ============================================================================
@@ -280,43 +278,6 @@ export class Pipeline extends ContentNavigator {
       course: this.course!,
       userElo,
     };
-  }
-
-  // ===========================================================================
-  // Legacy StudyContentSource methods
-  // ===========================================================================
-  //
-  // These delegate to the generator for backward compatibility.
-  // Eventually SessionController will use getWeightedCards() exclusively.
-  //
-
-  /**
-   * Get new cards via legacy API.
-   * Delegates to the generator if it supports the legacy interface.
-   */
-  async getNewCards(n?: number): Promise<StudySessionNewItem[]> {
-    // Check if generator has legacy method (ContentNavigator-based generators do)
-    if ('getNewCards' in this.generator && typeof this.generator.getNewCards === 'function') {
-      return (this.generator as ContentNavigator).getNewCards(n);
-    }
-    // Pure CardGenerator without legacy support - return empty
-    return [];
-  }
-
-  /**
-   * Get pending reviews via legacy API.
-   * Delegates to the generator if it supports the legacy interface.
-   */
-  async getPendingReviews(): Promise<(StudySessionReviewItem & ScheduledCard)[]> {
-    // Check if generator has legacy method (ContentNavigator-based generators do)
-    if (
-      'getPendingReviews' in this.generator &&
-      typeof this.generator.getPendingReviews === 'function'
-    ) {
-      return (this.generator as unknown as ContentNavigator).getPendingReviews();
-    }
-    // Pure CardGenerator without legacy support - return empty
-    return [];
   }
 
   /**

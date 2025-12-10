@@ -3,8 +3,6 @@ import type { WeightedCard } from './index';
 import type { ContentNavigationStrategyData } from '../types/contentNavigationStrategy';
 import type { CourseDBInterface } from '../interfaces/courseDB';
 import type { UserDBInterface } from '../interfaces/userDB';
-import type { StudySessionNewItem, StudySessionReviewItem } from '../interfaces/contentSource';
-import type { ScheduledCard } from '../types/user';
 import type { CardGenerator, GeneratorContext } from './generators/types';
 import { logger } from '../../util/logger';
 
@@ -100,9 +98,16 @@ export default class CompositeGenerator extends ContentNavigator implements Card
    * CardGenerator interface signature (limit, context).
    *
    * @param limit - Maximum number of cards to return
-   * @param context - Optional GeneratorContext passed to child generators
+   * @param context - GeneratorContext passed to child generators (required when called via Pipeline)
    */
   async getWeightedCards(limit: number, context?: GeneratorContext): Promise<WeightedCard[]> {
+    if (!context) {
+      throw new Error(
+        'CompositeGenerator.getWeightedCards requires a GeneratorContext. ' +
+          'It should be called via Pipeline, not directly.'
+      );
+    }
+
     // Fetch from all generators in parallel
     const results = await Promise.all(
       this.generators.map((g) => g.getWeightedCards(limit, context))
@@ -210,59 +215,5 @@ export default class CompositeGenerator extends ContentNavigator implements Card
       default:
         return scores[0];
     }
-  }
-
-  /**
-   * Get new cards from all generators, merged and deduplicated.
-   */
-  async getNewCards(n?: number): Promise<StudySessionNewItem[]> {
-    // For legacy method, need to filter to generators that have getNewCards
-    const legacyGenerators = this.generators.filter(
-      (g): g is CardGenerator & ContentNavigator => g instanceof ContentNavigator
-    );
-
-    const results = await Promise.all(legacyGenerators.map((g) => g.getNewCards(n)));
-
-    // Deduplicate by cardID
-    const seen = new Set<string>();
-    const merged: StudySessionNewItem[] = [];
-
-    for (const cards of results) {
-      for (const card of cards) {
-        if (!seen.has(card.cardID)) {
-          seen.add(card.cardID);
-          merged.push(card);
-        }
-      }
-    }
-
-    return n ? merged.slice(0, n) : merged;
-  }
-
-  /**
-   * Get pending reviews from all generators, merged and deduplicated.
-   */
-  async getPendingReviews(): Promise<(StudySessionReviewItem & ScheduledCard)[]> {
-    // For legacy method, need to filter to generators that have getPendingReviews
-    const legacyGenerators = this.generators.filter(
-      (g): g is CardGenerator & ContentNavigator => g instanceof ContentNavigator
-    );
-
-    const results = await Promise.all(legacyGenerators.map((g) => g.getPendingReviews()));
-
-    // Deduplicate by cardID
-    const seen = new Set<string>();
-    const merged: (StudySessionReviewItem & ScheduledCard)[] = [];
-
-    for (const reviews of results) {
-      for (const review of reviews) {
-        if (!seen.has(review.cardID)) {
-          seen.add(review.cardID);
-          merged.push(review);
-        }
-      }
-    }
-
-    return merged;
   }
 }

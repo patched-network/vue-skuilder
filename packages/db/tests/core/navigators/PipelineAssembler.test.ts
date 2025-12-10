@@ -19,12 +19,6 @@ vi.mock('../../../src/core/navigators/elo', () => ({
     async getWeightedCards() {
       return [];
     }
-    async getNewCards() {
-      return [];
-    }
-    async getPendingReviews() {
-      return [];
-    }
   },
 }));
 
@@ -37,12 +31,6 @@ vi.mock('../../../src/core/navigators/srs', () => ({
       public strategyData: any
     ) {}
     async getWeightedCards() {
-      return [];
-    }
-    async getNewCards() {
-      return [];
-    }
-    async getPendingReviews() {
       return [];
     }
   },
@@ -64,12 +52,6 @@ vi.mock('../../../src/core/navigators/hierarchyDefinition', () => ({
     async getWeightedCards() {
       throw new Error('Filter should not be used as generator');
     }
-    async getNewCards() {
-      return [];
-    }
-    async getPendingReviews() {
-      return [];
-    }
   },
 }));
 
@@ -89,12 +71,6 @@ vi.mock('../../../src/core/navigators/interferenceMitigator', () => ({
     async getWeightedCards() {
       throw new Error('Filter should not be used as generator');
     }
-    async getNewCards() {
-      return [];
-    }
-    async getPendingReviews() {
-      return [];
-    }
   },
 }));
 
@@ -113,12 +89,6 @@ vi.mock('../../../src/core/navigators/relativePriority', () => ({
     }
     async getWeightedCards() {
       throw new Error('Filter should not be used as generator');
-    }
-    async getNewCards() {
-      return [];
-    }
-    async getPendingReviews() {
-      return [];
     }
   },
 }));

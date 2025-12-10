@@ -1,11 +1,6 @@
-import {
-  StudyContentSource,
-  StudySessionNewItem,
-  StudySessionReviewItem,
-} from '@db/core/interfaces/contentSource';
+import { StudyContentSource } from '@db/core/interfaces/contentSource';
 import { WeightedCard } from '@db/core/navigators';
 import { UserDBInterface } from '@db/core';
-import { ScheduledCard } from '@db/core/types/user';
 import { TagFilter, hasActiveFilter } from '@vue-skuilder/common';
 import { getTag } from '../impl/couch/courseDB';
 import { logger } from '@db/util/logger';
@@ -113,122 +108,84 @@ export class TagFilteredContentSource implements StudyContentSource {
   }
 
   /**
-   * Gets new cards that match the tag filter and are not already active for the user.
+   * Get cards with suitability scores for presentation.
+   *
+   * Filters cards by tag inclusion/exclusion and assigns score=1.0 to all.
+   * TagFilteredContentSource does not currently support pluggable navigation
+   * strategies - it returns flat-scored candidates.
+   *
+   * @param limit - Maximum number of cards to return
+   * @returns Cards sorted by score descending (all scores = 1.0)
    */
-  public async getNewCards(limit?: number): Promise<StudySessionNewItem[]> {
+  public async getWeightedCards(limit: number): Promise<WeightedCard[]> {
     if (!hasActiveFilter(this.filter)) {
-      logger.warn('[TagFilteredContentSource] getNewCards called with no active filter');
+      logger.warn('[TagFilteredContentSource] getWeightedCards called with no active filter');
       return [];
     }
 
     const eligibleCardIds = await this.resolveFilteredCardIds();
+
+    // Get new cards: eligible cards that are not already active
     const activeCards = await this.user.getActiveCards();
     const activeCardIds = new Set(activeCards.map((c) => c.cardID));
 
-    const newItems: StudySessionNewItem[] = [];
+    const newCardWeighted: WeightedCard[] = [];
     for (const cardId of eligibleCardIds) {
       if (!activeCardIds.has(cardId)) {
-        newItems.push({
-          courseID: this.courseId,
-          cardID: cardId,
-          contentSourceType: 'course',
-          contentSourceID: this.courseId,
-          status: 'new',
+        newCardWeighted.push({
+          cardId,
+          courseId: this.courseId,
+          score: 1.0,
+          provenance: [
+            {
+              strategy: 'tagFilter',
+              strategyName: 'Tag Filter',
+              strategyId: 'TAG_FILTER',
+              action: 'generated' as const,
+              score: 1.0,
+              reason: `Tag-filtered new card (tags: ${this.filter.include.join(', ')})`,
+            },
+          ],
         });
       }
 
-      if (limit !== undefined && newItems.length >= limit) {
+      if (newCardWeighted.length >= limit) {
         break;
       }
     }
 
-    logger.info(`[TagFilteredContentSource] Found ${newItems.length} new cards matching filter`);
-    return newItems;
-  }
+    logger.info(
+      `[TagFilteredContentSource] Found ${newCardWeighted.length} new cards matching filter`
+    );
 
-  /**
-   * Gets pending reviews, filtered to only include cards that match the tag filter.
-   */
-  public async getPendingReviews(): Promise<(StudySessionReviewItem & ScheduledCard)[]> {
-    if (!hasActiveFilter(this.filter)) {
-      logger.warn('[TagFilteredContentSource] getPendingReviews called with no active filter');
-      return [];
-    }
-
-    const eligibleCardIds = await this.resolveFilteredCardIds();
+    // Get pending reviews: reviews for cards in the eligible set
     const allReviews = await this.user.getPendingReviews(this.courseId);
-
-    const filteredReviews = allReviews.filter((review) => {
-      return eligibleCardIds.has(review.cardId);
-    });
+    const filteredReviews = allReviews.filter((review) => eligibleCardIds.has(review.cardId));
 
     logger.info(
       `[TagFilteredContentSource] Found ${filteredReviews.length} pending reviews matching filter ` +
         `(of ${allReviews.length} total)`
     );
 
-    return filteredReviews.map((r) => ({
-      ...r,
-      courseID: r.courseId,
-      cardID: r.cardId,
-      contentSourceType: 'course' as const,
-      contentSourceID: this.courseId,
+    const reviewWeighted: WeightedCard[] = filteredReviews.map((r) => ({
+      cardId: r.cardId,
+      courseId: r.courseId,
+      score: 1.0,
       reviewID: r._id,
-      status: 'review' as const,
+      provenance: [
+        {
+          strategy: 'tagFilter',
+          strategyName: 'Tag Filter',
+          strategyId: 'TAG_FILTER',
+          action: 'generated' as const,
+          score: 1.0,
+          reason: `Tag-filtered review (tags: ${this.filter.include.join(', ')})`,
+        },
+      ],
     }));
-  }
-
-  /**
-   * Get cards with suitability scores for presentation.
-   *
-   * This implementation wraps the legacy getNewCards/getPendingReviews methods,
-   * assigning score=1.0 to all cards. TagFilteredContentSource does not currently
-   * support pluggable navigation strategies - it returns flat-scored candidates.
-   *
-   * @param limit - Maximum number of cards to return
-   * @returns Cards sorted by score descending (all scores = 1.0)
-   */
-  public async getWeightedCards(limit: number): Promise<WeightedCard[]> {
-    const [newCards, reviews] = await Promise.all([
-      this.getNewCards(limit),
-      this.getPendingReviews(),
-    ]);
-
-    const weighted: WeightedCard[] = [
-      ...reviews.map((r) => ({
-        cardId: r.cardID,
-        courseId: r.courseID,
-        score: 1.0,
-        provenance: [
-          {
-            strategy: 'tagFilter',
-            strategyName: 'Tag Filter',
-            strategyId: 'TAG_FILTER',
-            action: 'generated' as const,
-            score: 1.0,
-            reason: `Tag-filtered review (tags: ${this.filter.include.join(', ')})`,
-          },
-        ],
-      })),
-      ...newCards.map((c) => ({
-        cardId: c.cardID,
-        courseId: c.courseID,
-        score: 1.0,
-        provenance: [
-          {
-            strategy: 'tagFilter',
-            strategyName: 'Tag Filter',
-            strategyId: 'TAG_FILTER',
-            action: 'generated' as const,
-            score: 1.0,
-            reason: `Tag-filtered new card (tags: ${this.filter.include.join(', ')})`,
-          },
-        ],
-      })),
-    ];
 
     // Reviews first, then new cards; respect limit
-    return weighted.slice(0, limit);
+    return [...reviewWeighted, ...newCardWeighted].slice(0, limit);
   }
 
   /**

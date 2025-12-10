@@ -1,15 +1,11 @@
-import {
-  StudyContentSource,
-  StudySessionNewItem,
-  StudySessionReviewItem,
-} from '@db/core/interfaces/contentSource';
+import { StudyContentSource } from '@db/core/interfaces/contentSource';
 import { WeightedCard } from '@db/core/navigators';
 import { ClassroomConfig } from '@vue-skuilder/common';
 import { ENV } from '@db/factory';
 import { logger } from '@db/util/logger';
 import moment from 'moment';
 import pouch from './pouchdb-setup';
-import { getCourseDB, getStartAndEndKeys, createPouchDBConfig, REVIEW_TIME_FORMAT } from '.';
+import { getStartAndEndKeys, createPouchDBConfig, REVIEW_TIME_FORMAT } from '.';
 import { CourseDB, getTag } from './courseDB';
 
 import { UserDBInterface } from '@db/core';
@@ -20,7 +16,6 @@ import {
   StudentClassroomDBInterface,
   TeacherClassroomDBInterface,
 } from '@db/core/interfaces/classroomDB';
-import { ScheduledCard } from '@db/core/types/user';
 
 const classroomLookupDBTitle = 'classdb-lookup';
 export const CLASSROOM_CONFIG = 'ClassroomConfig';
@@ -122,93 +117,30 @@ export class StudentClassroomDB
     void this.userMessages.on('change', f);
   }
 
-  public async getPendingReviews(): Promise<(StudySessionReviewItem & ScheduledCard)[]> {
-    const u = this._user;
-    return (await u.getPendingReviews())
-      .filter((r) => r.scheduledFor === 'classroom' && r.schedulingAgentId === this._id)
-      .map((r) => {
-        return {
-          ...r,
-          qualifiedID: `${r.courseId}-${r.cardId}`,
-          courseID: r.courseId,
-          cardID: r.cardId,
-          contentSourceType: 'classroom',
-          contentSourceID: this._id,
-          reviewID: r._id,
-          status: 'review',
-        };
-      });
-  }
-
-  public async getNewCards(): Promise<StudySessionNewItem[]> {
-    const activeCards = await this._user.getActiveCards();
-    const now = moment.utc();
-    const assigned = await this.getAssignedContent();
-    const due = assigned.filter((c) => now.isAfter(moment.utc(c.activeOn, REVIEW_TIME_FORMAT)));
-
-    logger.info(`Due content: ${JSON.stringify(due)}`);
-
-    let ret: StudySessionNewItem[] = [];
-
-    for (let i = 0; i < due.length; i++) {
-      const content = due[i];
-
-      if (content.type === 'course') {
-        const db = new CourseDB(content.courseID, async () => this._user);
-        ret = ret.concat(await db.getNewCards());
-      } else if (content.type === 'tag') {
-        const tagDoc = await getTag(content.courseID, content.tagID);
-
-        ret = ret.concat(
-          tagDoc.taggedCards.map((c) => {
-            return {
-              courseID: content.courseID,
-              cardID: c,
-              qualifiedID: `${content.courseID}-${c}`,
-              contentSourceType: 'classroom',
-              contentSourceID: this._id,
-              status: 'new',
-            };
-          })
-        );
-      } else if (content.type === 'card') {
-        // returning card docs - not IDs
-        ret.push(await getCourseDB(content.courseID).get(content.cardID));
-      }
-    }
-
-    logger.info(
-      `New Cards from classroom ${this._cfg.name}: ${ret.map((c) => `${c.courseID}-${c.cardID}`)}`
-    );
-
-    return ret.filter((c) => {
-      if (activeCards.some((ac) => c.cardID === ac.cardID)) {
-        // [ ] almost certainly broken after removing qualifiedID from StudySessionItem
-        return false;
-      } else {
-        return true;
-      }
-    });
-  }
-
   /**
    * Get cards with suitability scores for presentation.
    *
-   * This implementation wraps the legacy getNewCards/getPendingReviews methods,
-   * assigning score=1.0 to all cards. StudentClassroomDB does not currently
-   * support pluggable navigation strategies.
+   * Gathers new cards from assigned content (courses, tags, cards) and
+   * pending reviews scheduled for this classroom. Assigns score=1.0 to all.
    *
    * @param limit - Maximum number of cards to return
    * @returns Cards sorted by score descending (all scores = 1.0)
    */
   public async getWeightedCards(limit: number): Promise<WeightedCard[]> {
-    const [newCards, reviews] = await Promise.all([this.getNewCards(), this.getPendingReviews()]);
+    const weighted: WeightedCard[] = [];
 
-    const weighted: WeightedCard[] = [
-      ...newCards.map((c) => ({
-        cardId: c.cardID,
-        courseId: c.courseID,
+    // Get pending reviews for this classroom
+    const allUserReviews = await this._user.getPendingReviews();
+    const classroomReviews = allUserReviews.filter(
+      (r) => r.scheduledFor === 'classroom' && r.schedulingAgentId === this._id
+    );
+
+    for (const r of classroomReviews) {
+      weighted.push({
+        cardId: r.cardId,
+        courseId: r.courseId,
         score: 1.0,
+        reviewID: r._id,
         provenance: [
           {
             strategy: 'classroom',
@@ -216,29 +148,94 @@ export class StudentClassroomDB
             strategyId: 'CLASSROOM',
             action: 'generated' as const,
             score: 1.0,
-            reason: 'Classroom legacy getNewCards(), new card',
+            reason: 'Classroom scheduled review',
           },
         ],
-      })),
-      ...reviews.map((r) => ({
-        cardId: r.cardID,
-        courseId: r.courseID,
-        score: 1.0,
-        provenance: [
-          {
-            strategy: 'classroom',
-            strategyName: 'Classroom',
-            strategyId: 'CLASSROOM',
-            action: 'generated' as const,
-            score: 1.0,
-            reason: 'Classroom legacy getPendingReviews(), review',
-          },
-        ],
-      })),
-    ];
+      });
+    }
 
-    // Sort by score descending (all 1.0 in this case) and limit
-    return weighted.slice(0, limit);
+    // Get new cards from assigned content
+    const activeCards = await this._user.getActiveCards();
+    const activeCardIds = new Set(activeCards.map((ac) => ac.cardID));
+    const now = moment.utc();
+    const assigned = await this.getAssignedContent();
+    const due = assigned.filter((c) => now.isAfter(moment.utc(c.activeOn, REVIEW_TIME_FORMAT)));
+
+    logger.info(`[StudentClassroomDB] Due content: ${JSON.stringify(due)}`);
+
+    for (const content of due) {
+      if (content.type === 'course') {
+        // Get weighted cards from the course directly
+        const db = new CourseDB(content.courseID, async () => this._user);
+        const courseCards = await db.getWeightedCards(limit);
+        for (const card of courseCards) {
+          if (!activeCardIds.has(card.cardId)) {
+            weighted.push({
+              ...card,
+              provenance: [
+                ...card.provenance,
+                {
+                  strategy: 'classroom',
+                  strategyName: 'Classroom',
+                  strategyId: 'CLASSROOM',
+                  action: 'passed' as const,
+                  score: card.score,
+                  reason: `Assigned via classroom from course ${content.courseID}`,
+                },
+              ],
+            });
+          }
+        }
+      } else if (content.type === 'tag') {
+        const tagDoc = await getTag(content.courseID, content.tagID);
+
+        for (const cardId of tagDoc.taggedCards) {
+          if (!activeCardIds.has(cardId)) {
+            weighted.push({
+              cardId,
+              courseId: content.courseID,
+              score: 1.0,
+              provenance: [
+                {
+                  strategy: 'classroom',
+                  strategyName: 'Classroom',
+                  strategyId: 'CLASSROOM',
+                  action: 'generated' as const,
+                  score: 1.0,
+                  reason: `Classroom assigned tag: ${content.tagID}, new card`,
+                },
+              ],
+            });
+          }
+        }
+      } else if (content.type === 'card') {
+        if (!activeCardIds.has(content.cardID)) {
+          weighted.push({
+            cardId: content.cardID,
+            courseId: content.courseID,
+            score: 1.0,
+            provenance: [
+              {
+                strategy: 'classroom',
+                strategyName: 'Classroom',
+                strategyId: 'CLASSROOM',
+                action: 'generated' as const,
+                score: 1.0,
+                reason: 'Classroom assigned card, new card',
+              },
+            ],
+          });
+        }
+      }
+    }
+
+    logger.info(
+      `[StudentClassroomDB] New cards from classroom ${this._cfg.name}: ` +
+        `${weighted.length} total (reviews + new)`
+    );
+
+    // Sort by score descending and limit
+    return weighted.sort((a, b) => b.score - a.score).slice(0, limit);
   }
 }
 

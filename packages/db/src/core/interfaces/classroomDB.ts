@@ -1,6 +1,4 @@
 import { ClassroomConfig } from '@vue-skuilder/common';
-import { ScheduledCard } from '../types/user';
-import { StudySessionNewItem, StudySessionReviewItem } from './contentSource';
 
 /**
  * Classroom management
@@ -29,17 +27,11 @@ export interface TeacherClassroomDBInterface extends ClassroomDBInterface {
   removeContent?(content: AssignedContent): Promise<void>;
 }
 
-export interface StudentClassroomDBInterface extends ClassroomDBInterface {
-  /**
-   * For student interfaces: get pending reviews
-   */
-  getPendingReviews?(): Promise<(StudySessionReviewItem & ScheduledCard)[]>;
-
-  /**
-   * For student interfaces: get new cards
-   */
-  getNewCards?(limit?: number): Promise<StudySessionNewItem[]>;
-}
+/**
+ * Student-facing classroom interface.
+ * Content is accessed via StudyContentSource.getWeightedCards().
+ */
+export type StudentClassroomDBInterface = ClassroomDBInterface;
 
 export type AssignedContent = AssignedCourse | AssignedTag | AssignedCard;
 

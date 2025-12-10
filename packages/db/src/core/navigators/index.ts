@@ -1,10 +1,4 @@
-import {
-  StudyContentSource,
-  UserDBInterface,
-  CourseDBInterface,
-  StudySessionReviewItem,
-  StudySessionNewItem,
-} from '..';
+import { StudyContentSource, UserDBInterface, CourseDBInterface } from '..';
 
 // Re-export filter types
 export type { CardFilter, FilterContext, CardFilterFactory } from './filters/types';
@@ -13,7 +7,6 @@ export type { CardFilter, FilterContext, CardFilterFactory } from './filters/typ
 export type { CardGenerator, GeneratorContext, CardGeneratorFactory } from './generators/types';
 
 import { ContentNavigationStrategyData } from '../types/contentNavigationStrategy';
-import { ScheduledCard } from '../types/user';
 import { logger } from '../../util/logger';
 
 // ============================================================================
@@ -256,10 +249,10 @@ export function isFilter(impl: string): boolean {
  */
 export abstract class ContentNavigator implements StudyContentSource {
   /** User interface for this navigation session */
-  protected user?: UserDBInterface;
+  protected user: UserDBInterface;
 
   /** Course interface for this navigation session */
-  protected course?: CourseDBInterface;
+  protected course: CourseDBInterface;
 
   /** Human-readable name for this strategy instance (from ContentNavigationStrategyData.name) */
   protected strategyName?: string;
@@ -271,16 +264,17 @@ export abstract class ContentNavigator implements StudyContentSource {
    * Constructor for standard navigators.
    * Call this from subclass constructors to initialize common fields.
    *
-   * Note: CompositeGenerator doesn't use this pattern and should call super() without args.
+   * Note: CompositeGenerator and Pipeline call super() without args, then set
+   * user/course fields directly if needed.
    */
   constructor(
     user?: UserDBInterface,
     course?: CourseDBInterface,
     strategyData?: ContentNavigationStrategyData
   ) {
-    if (user && course && strategyData) {
-      this.user = user;
-      this.course = course;
+    this.user = user!;
+    this.course = course!;
+    if (strategyData) {
       this.strategyName = strategyData.name;
       this.strategyId = strategyData._id;
     }
@@ -376,24 +370,6 @@ export abstract class ContentNavigator implements StudyContentSource {
   }
 
   /**
-   * Get cards scheduled for review.
-   *
-   * @deprecated This method is part of the legacy StudyContentSource interface.
-   * New strategies should focus on implementing CardGenerator.getWeightedCards() instead.
-   */
-  abstract getPendingReviews(): Promise<(StudySessionReviewItem & ScheduledCard)[]>;
-
-  /**
-   * Get new cards for introduction.
-   *
-   * @deprecated This method is part of the legacy StudyContentSource interface.
-   * New strategies should focus on implementing CardGenerator.getWeightedCards() instead.
-   *
-   * @param n - Maximum number of new cards to return
-   */
-  abstract getNewCards(n?: number): Promise<StudySessionNewItem[]>;
-
-  /**
    * Get cards with suitability scores and provenance trails.
    *
    * **This is the PRIMARY API for navigation strategies.**
@@ -402,62 +378,26 @@ export abstract class ContentNavigator implements StudyContentSource {
    * better candidates for presentation. Each card includes a provenance trail
    * documenting how strategies contributed to the final score.
    *
+   * ## Implementation Required
+   * All navigation strategies MUST override this method. The base class does
+   * not provide a default implementation.
+   *
    * ## For Generators
    * Override this method to generate candidates and compute scores based on
    * your strategy's logic (e.g., ELO proximity, review urgency). Create the
    * initial provenance entry with action='generated'.
    *
-   * ## Default Implementation
-   * The base class provides a backward-compatible default that:
-   * 1. Calls legacy getNewCards() and getPendingReviews()
-   * 2. Assigns score=1.0 to all cards
-   * 3. Creates minimal provenance from legacy methods
-   * 4. Returns combined results up to limit
-   *
-   * This allows existing strategies to work without modification while
-   * new strategies can override with proper scoring and provenance.
+   * ## For Filters
+   * Filters should implement the CardFilter interface instead and be composed
+   * via Pipeline. Filters do not directly implement getWeightedCards().
    *
    * @param limit - Maximum cards to return
    * @returns Cards sorted by score descending, with provenance trails
    */
-  async getWeightedCards(limit: number): Promise<WeightedCard[]> {
-    // Default implementation: delegate to legacy methods, assign score=1.0
-    const newCards = await this.getNewCards(limit);
-    const reviews = await this.getPendingReviews();
-
-    const weighted: WeightedCard[] = [
-      ...newCards.map((c) => ({
-        cardId: c.cardID,
-        courseId: c.courseID,
-        score: 1.0,
-        provenance: [
-          {
-            strategy: 'legacy',
-            strategyName: this.strategyName || 'Legacy API',
-            strategyId: this.strategyId || 'legacy-fallback',
-            action: 'generated' as const,
-            score: 1.0,
-            reason: 'Generated via legacy getNewCards(), new card',
-          },
-        ],
-      })),
-      ...reviews.map((r) => ({
-        cardId: r.cardID,
-        courseId: r.courseID,
-        score: 1.0,
-        provenance: [
-          {
-            strategy: 'legacy',
-            strategyName: this.strategyName || 'Legacy API',
-            strategyId: this.strategyId || 'legacy-fallback',
-            action: 'generated' as const,
-            score: 1.0,
-            reason: 'Generated via legacy getPendingReviews(), review',
-          },
-        ],
-      })),
-    ];
-
-    return weighted.slice(0, limit);
+  async getWeightedCards(_limit: number): Promise<WeightedCard[]> {
+    throw new Error(
+      `${this.constructor.name} must implement getWeightedCards(). ` +
+        `The legacy getPendingReviews/getNewCards methods have been removed.`
+    );
   }
 }

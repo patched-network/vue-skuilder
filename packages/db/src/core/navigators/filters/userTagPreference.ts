@@ -1,10 +1,8 @@
-import type { ScheduledCard } from '../../types/user';
 import type { CourseDBInterface } from '../../interfaces/courseDB';
 import type { UserDBInterface } from '../../interfaces/userDB';
 import { ContentNavigator } from '../index';
 import type { WeightedCard } from '../index';
 import type { ContentNavigationStrategyData } from '../../types/contentNavigationStrategy';
-import type { StudySessionReviewItem, StudySessionNewItem } from '../..';
 import type { CardFilter, FilterContext } from './types';
 
 // ============================================================================
@@ -97,9 +95,7 @@ export default class UserTagPreferenceFilter extends ContentNavigator implements
    * Returns the maximum multiplier among all matching tags, or 1.0 if no matches.
    */
   private computeMultiplier(cardTags: string[], boostMap: Record<string, number>): number {
-    const multipliers = cardTags
-      .map((tag) => boostMap[tag])
-      .filter((val) => val !== undefined);
+    const multipliers = cardTags.map((tag) => boostMap[tag]).filter((val) => val !== undefined);
 
     if (multipliers.length === 0) {
       return 1.0;
@@ -150,7 +146,6 @@ export default class UserTagPreferenceFilter extends ContentNavigator implements
   async transform(cards: WeightedCard[], _context: FilterContext): Promise<WeightedCard[]> {
     // Read user preferences from strategy state
     const prefs = await this.getStrategyState<UserTagPreferenceState>();
-    
 
     // No preferences configured → pass through unchanged
     if (!prefs || Object.keys(prefs.boost).length === 0) {
@@ -218,15 +213,5 @@ export default class UserTagPreferenceFilter extends ContentNavigator implements
       'UserTagPreferenceFilter is a filter and should not be used as a generator. ' +
         'Use Pipeline with a generator and this filter via transform().'
     );
-  }
-
-  // Legacy methods - stub implementations since filters don't generate cards
-
-  async getNewCards(_n?: number): Promise<StudySessionNewItem[]> {
-    return [];
-  }
-
-  async getPendingReviews(): Promise<(StudySessionReviewItem & ScheduledCard)[]> {
-    return [];
   }
 }
