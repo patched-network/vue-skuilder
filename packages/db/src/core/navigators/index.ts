@@ -33,7 +33,7 @@ import { logger } from '../../util/logger';
 //    New code should use CardGenerator or CardFilter interfaces directly.
 //
 // 3. CardGenerator vs CardFilter:
-//    - Generators (ELO, SRS, HardcodedOrder) produce candidate cards with scores
+//    - Generators (ELO, SRS) produce candidate cards with scores
 //    - Filters (Hierarchy, Interference, Priority, EloDistance) transform scores
 //
 // 4. Pipeline architecture:
@@ -180,7 +180,6 @@ export function getCardOrigin(card: WeightedCard): 'new' | 'review' | 'failed' {
 export enum Navigators {
   ELO = 'elo',
   SRS = 'srs',
-  HARDCODED = 'hardcodedOrder',
   HIERARCHY = 'hierarchyDefinition',
   INTERFERENCE = 'interferenceMitigator',
   RELATIVE_PRIORITY = 'relativePriority',
@@ -192,7 +191,7 @@ export enum Navigators {
 // ============================================================================
 //
 // Navigators are classified as either generators or filters:
-// - Generators: Produce candidate cards (ELO, SRS, HardcodedOrder)
+// - Generators: Produce candidate cards (ELO, SRS)
 // - Filters: Transform/score candidates (Hierarchy, Interference, RelativePriority)
 //
 // This classification is used by PipelineAssembler to build pipelines:
@@ -219,7 +218,6 @@ export enum NavigatorRole {
 export const NavigatorRoles: Record<Navigators, NavigatorRole> = {
   [Navigators.ELO]: NavigatorRole.GENERATOR,
   [Navigators.SRS]: NavigatorRole.GENERATOR,
-  [Navigators.HARDCODED]: NavigatorRole.GENERATOR,
   [Navigators.HIERARCHY]: NavigatorRole.FILTER,
   [Navigators.INTERFERENCE]: NavigatorRole.FILTER,
   [Navigators.RELATIVE_PRIORITY]: NavigatorRole.FILTER,

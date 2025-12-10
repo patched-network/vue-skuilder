@@ -9,7 +9,7 @@ import type { UserDBInterface } from '../../interfaces/userDB';
 // Generators produce candidate cards with initial scores.
 // They are the "source" stage of a navigation pipeline.
 //
-// Examples: ELO (skill proximity), SRS (review scheduling), HardcodedOrder
+// Examples: ELO (skill proximity), SRS (review scheduling)
 //
 // Generators differ from filters:
 // - Generators: produce candidates from DB queries, assign initial scores

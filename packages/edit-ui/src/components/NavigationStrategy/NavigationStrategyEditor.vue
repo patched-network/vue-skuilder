@@ -70,13 +70,8 @@
         ></v-text-field>
 
         <!-- Strategy-specific configuration forms -->
-        <hardcoded-order-config-form
-          v-if="newStrategy.type === 'hardcoded'"
-          v-model="newStrategy.config"
-        />
-
         <hierarchy-config-form
-          v-else-if="newStrategy.type === 'hierarchy'"
+          v-if="newStrategy.type === 'hierarchy'"
           v-model="newStrategy.config"
           :course-id="courseId"
         />
@@ -137,7 +132,6 @@
 import { defineComponent } from 'vue';
 import type { ContentNavigationStrategyData } from '@vue-skuilder/db/src/core/types/contentNavigationStrategy';
 import NavigationStrategyList from './NavigationStrategyList.vue';
-import HardcodedOrderConfigForm from './HardcodedOrderConfigForm.vue';
 import HierarchyConfigForm from './HierarchyConfigForm.vue';
 import InterferenceConfigForm from './InterferenceConfigForm.vue';
 import RelativePriorityConfigForm from './RelativePriorityConfigForm.vue';
@@ -148,7 +142,6 @@ export default defineComponent({
 
   components: {
     NavigationStrategyList,
-    HardcodedOrderConfigForm,
     HierarchyConfigForm,
     InterferenceConfigForm,
     RelativePriorityConfigForm,
@@ -168,13 +161,12 @@ export default defineComponent({
       showDeleteConfirm: false,
       strategyToDelete: null as ContentNavigationStrategyData | null,
       strategyTypes: [
-        { label: 'Hardcoded Order', value: 'hardcoded' },
         { label: 'Hierarchy Definition', value: 'hierarchy' },
         { label: 'Interference Mitigator', value: 'interference' },
         { label: 'Relative Priority', value: 'relativePriority' },
       ],
       newStrategy: {
-        type: 'hardcoded' as string,
+        type: 'hierarchy' as string,
         name: '',
         description: '',
         config: { cardIds: [] } as any,
@@ -198,8 +190,6 @@ export default defineComponent({
   methods: {
     getDefaultConfig(strategyType: string) {
       switch (strategyType) {
-        case 'hardcoded':
-          return { cardIds: [] };
         case 'hierarchy':
           return {
             prerequisites: {},
@@ -231,8 +221,6 @@ export default defineComponent({
     // Map implementing class to strategy type
     getStrategyTypeFromClass(implementingClass: string): string {
       switch (implementingClass) {
-        case Navigators.HARDCODED:
-          return 'hardcoded';
         case Navigators.HIERARCHY:
           return 'hierarchy';
         case Navigators.INTERFERENCE:
@@ -240,22 +228,14 @@ export default defineComponent({
         case Navigators.RELATIVE_PRIORITY:
           return 'relativePriority';
         default:
-          return 'hardcoded';
+          return 'hierarchy';
       }
     },
 
     // Parse serialized data back to config object
     parseSerializedData(strategyType: string, serializedData: string): any {
       try {
-        const parsed = JSON.parse(serializedData);
-
-        if (strategyType === 'hardcoded') {
-          // Hardcoded stores just the array, wrap it
-          return { cardIds: Array.isArray(parsed) ? parsed : [] };
-        } else {
-          // Other strategies store the full config object
-          return parsed;
-        }
+        return JSON.parse(serializedData);
       } catch (error) {
         console.error('Failed to parse strategy data:', error);
         return this.getDefaultConfig(strategyType);
@@ -316,7 +296,7 @@ export default defineComponent({
     },
 
     startNewStrategy() {
-      const defaultType = 'hardcoded';
+      const defaultType = 'hierarchy';
       this.newStrategy = {
         type: defaultType,
         name: '',
@@ -386,21 +366,13 @@ export default defineComponent({
 
         // Map strategy type to implementing class
         const implementingClassMap: Record<string, string> = {
-          hardcoded: Navigators.HARDCODED,
           hierarchy: Navigators.HIERARCHY,
           interference: Navigators.INTERFERENCE,
           relativePriority: Navigators.RELATIVE_PRIORITY,
         };
 
         // Serialize config based on strategy type
-        let serializedData: string;
-        if (this.newStrategy.type === 'hardcoded') {
-          // Hardcoded stores just the array of card IDs
-          serializedData = JSON.stringify(this.newStrategy.config.cardIds);
-        } else {
-          // Other strategies store their full config object
-          serializedData = JSON.stringify(this.newStrategy.config);
-        }
+        let serializedData: string = JSON.stringify(this.newStrategy.config);
 
         if (this.editingStrategy) {
           // Update existing strategy

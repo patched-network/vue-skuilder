@@ -25,10 +25,11 @@
 - [x] p3.5.6 Verify compilation and logic correctness
 
 ## Phase 4: Remove HardcodedOrderNavigator
-- [ ] p4.1 Delete file `packages/db/src/core/navigators/hardcodedOrder.ts`
-- [ ] p4.2 Search for and remove any imports/exports of HardcodedOrderNavigator in `packages/db/src/core/navigators/index.ts`
-- [ ] p4.3 Search codebase for any references to `hardcodedOrder` or `HardcodedOrder` and remove
-- [ ] p4.4 Verify TypeScript compilation succeeds
+- [x] p4.1 Delete file `packages/db/src/core/navigators/hardcodedOrder.ts`
+- [x] p4.2 Search for and remove any imports/exports of HardcodedOrderNavigator in `packages/db/src/core/navigators/index.ts`
+- [x] p4.3 Search codebase for any references to `hardcodedOrder` or `HardcodedOrder` and remove
+- [x] p4.3.1 Removed mock from `packages/db/tests/core/navigators/PipelineAssembler.test.ts`
+- [x] p4.4 Verify TypeScript compilation succeeds
 
 ## Phase 5: Remove Deprecated Interface Methods
 - [ ] p5.1 Remove `getPendingReviews()` method signature from `StudyContentSource` interface in `packages/db/src/core/interfaces/contentSource.ts`
@@ -86,9 +87,15 @@
 - [ ] p6.9.2 Delete `getNewCards()` delegation method if present
 - [ ] p6.9.3 Verify compilation succeeds
 
-### p6.10 Final Compilation Check
-- [ ] p6.10.1 Run `yarn workspace @vue-skuilder/db tsc` and verify zero errors
-- [ ] p6.10.2 Run `yarn workspace @vue-skuilder/db build` and verify successful build
+### p6.10 Clean Up Test Mocks
+- [ ] p6.10.1 Remove `getNewCards()` and `getPendingReviews()` from test mocks in `packages/db/tests/core/navigators/PipelineAssembler.test.ts`
+- [ ] p6.10.2 Remove deprecated methods from any other test files with navigator mocks
+- [ ] p6.10.3 Verify test compilation succeeds
+
+### p6.11 Final Compilation and Grep Check
+- [ ] p6.11.1 Run `yarn workspace @vue-skuilder/db tsc` and verify zero errors
+- [ ] p6.11.2 Run `yarn workspace @vue-skuilder/db build` and verify successful build
+- [ ] p6.11.3 Run `grep -r "getPendingReviews\|getNewCards" packages/db/src packages/db/tests` to verify all references removed
 
 ## Phase 7: Update Documentation
 - [ ] p7.1 Remove migration notice comment block (lines ~9-39) from `packages/db/src/core/interfaces/contentSource.ts`

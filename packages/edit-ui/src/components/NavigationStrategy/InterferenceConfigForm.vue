@@ -235,7 +235,7 @@ export default defineComponent({
     const jsonError = ref<string | null>(null);
     const loadingTags = ref(true);
 
-    const delegateStrategies = ['elo', 'srs', 'hardcoded'];
+    const delegateStrategies = ['elo', 'srs'];
 
     const config = computed(() => props.modelValue);
 
