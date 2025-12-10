@@ -141,7 +141,7 @@ describe('Static Data Layer Smoke Test', () => {
     console.log(`✅ Course config loaded: ${JSON.stringify(courseConfig) || 'unnamed course'}`);
 
     // Test getting new cards
-    const newCards = await staticCourseDB.getNewCards(5);
+    const newCards = await staticCourseDB.getWeightedCards(5);
     expect(Array.isArray(newCards)).toBe(true);
     expect(newCards.length).toBeGreaterThan(0);
     expect(newCards.length).toBeLessThanOrEqual(5);

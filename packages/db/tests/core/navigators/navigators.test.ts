@@ -1,27 +1,23 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { ContentNavigator, WeightedCard, getCardOrigin } from '../../../src/core/navigators/index';
-import { StudySessionNewItem, StudySessionReviewItem } from '../../../src/core';
-import { ScheduledCard } from '../../../src/core/types/user';
 
-// Mock implementation of ContentNavigator for testing the default getWeightedCards
+// Mock implementation of ContentNavigator for testing base class behavior
 class MockNavigator extends ContentNavigator {
-  private mockNewCards: StudySessionNewItem[] = [];
-  private mockReviews: (StudySessionReviewItem & ScheduledCard)[] = [];
+  name: string = 'MockNavigator';
+  // Base class no longer has legacy methods - subclasses must implement getWeightedCards
+}
 
-  setMockNewCards(cards: StudySessionNewItem[]) {
-    this.mockNewCards = cards;
+// Mock implementation that properly implements getWeightedCards
+class ProperMockNavigator extends ContentNavigator {
+  name: string = 'ProperMockNavigator';
+  private cards: WeightedCard[] = [];
+
+  setCards(cards: WeightedCard[]) {
+    this.cards = cards;
   }
 
-  setMockReviews(reviews: (StudySessionReviewItem & ScheduledCard)[]) {
-    this.mockReviews = reviews;
-  }
-
-  async getNewCards(n?: number): Promise<StudySessionNewItem[]> {
-    return this.mockNewCards.slice(0, n);
-  }
-
-  async getPendingReviews(): Promise<(StudySessionReviewItem & ScheduledCard)[]> {
-    return this.mockReviews;
+  async getWeightedCards(limit: number): Promise<WeightedCard[]> {
+    return this.cards.slice(0, limit);
   }
 }
 
@@ -77,111 +73,97 @@ describe('WeightedCard', () => {
   });
 });
 
-describe('ContentNavigator.getWeightedCards', () => {
-  let navigator: MockNavigator;
+describe('ContentNavigator base class', () => {
+  it('should throw error when getWeightedCards is not implemented', async () => {
+    const navigator = new MockNavigator();
 
-  beforeEach(() => {
-    navigator = new MockNavigator();
+    await expect(navigator.getWeightedCards(10)).rejects.toThrow(
+      'must implement getWeightedCards()'
+    );
   });
 
-  it('should return empty array when no cards available', async () => {
-    navigator.setMockNewCards([]);
-    navigator.setMockReviews([]);
+  it('should throw error mentioning legacy methods have been removed', async () => {
+    const navigator = new MockNavigator();
 
-    const result = await navigator.getWeightedCards(10);
-
-    expect(result).toEqual([]);
+    await expect(navigator.getWeightedCards(10)).rejects.toThrow();
   });
+});
 
-  it('should assign score=1.0 to all cards by default', async () => {
-    navigator.setMockNewCards([
+describe('ContentNavigator.getWeightedCards with proper implementation', () => {
+  it('should return cards from implementation', async () => {
+    const navigator = new ProperMockNavigator();
+    navigator.setCards([
       {
-        cardID: 'card-1',
-        courseID: 'course-1',
-        contentSourceType: 'course',
-        contentSourceID: 'course-1',
-        status: 'new',
-      },
-      {
-        cardID: 'card-2',
-        courseID: 'course-1',
-        contentSourceType: 'course',
-        contentSourceID: 'course-1',
-        status: 'new',
-      },
-    ]);
-
-    const result = await navigator.getWeightedCards(10);
-
-    expect(result).toHaveLength(2);
-    expect(result[0].score).toBe(1.0);
-    expect(result[1].score).toBe(1.0);
-  });
-
-  it('should mark new cards with source="new"', async () => {
-    navigator.setMockNewCards([
-      {
-        cardID: 'card-1',
-        courseID: 'course-1',
-        contentSourceType: 'course',
-        contentSourceID: 'course-1',
-        status: 'new',
-      },
-    ]);
-
-    const result = await navigator.getWeightedCards(10);
-
-    expect(getCardOrigin(result[0])).toBe('new');
-    expect(result[0].provenance[0].reason).toContain('new');
-  });
-
-  it('should mark reviews with origin="review"', async () => {
-    navigator.setMockReviews([
-      {
-        cardID: 'review-1',
-        courseID: 'course-1',
-        contentSourceType: 'course',
-        contentSourceID: 'course-1',
-        status: 'review',
-        reviewID: 'review-id-1',
-        _id: 'scheduled-1',
-        cardId: 'review-1',
+        cardId: 'card-1',
         courseId: 'course-1',
-        scheduledFor: 'course',
-        schedulingAgentId: 'agent-1',
-        reviewTime: new Date(),
-        scheduledAt: new Date(),
-      } as unknown as StudySessionReviewItem & ScheduledCard,
+        score: 0.8,
+        provenance: [
+          {
+            strategy: 'test',
+            strategyName: 'Test',
+            strategyId: 'TEST',
+            action: 'generated',
+            score: 0.8,
+            reason: 'Test new card',
+          },
+        ],
+      },
     ]);
 
     const result = await navigator.getWeightedCards(10);
 
-    expect(getCardOrigin(result[0])).toBe('review');
-    expect(result[0].provenance[0].reason).toContain('review');
+    expect(result).toHaveLength(1);
+    expect(result[0].cardId).toBe('card-1');
+    expect(result[0].score).toBe(0.8);
   });
 
   it('should respect limit parameter', async () => {
-    navigator.setMockNewCards([
+    const navigator = new ProperMockNavigator();
+    navigator.setCards([
       {
-        cardID: 'card-1',
-        courseID: 'course-1',
-        contentSourceType: 'course',
-        contentSourceID: 'course-1',
-        status: 'new',
+        cardId: 'card-1',
+        courseId: 'course-1',
+        score: 0.9,
+        provenance: [
+          {
+            strategy: 'test',
+            strategyName: 'Test',
+            strategyId: 'TEST',
+            action: 'generated',
+            score: 0.9,
+            reason: 'Test new card',
+          },
+        ],
       },
       {
-        cardID: 'card-2',
-        courseID: 'course-1',
-        contentSourceType: 'course',
-        contentSourceID: 'course-1',
-        status: 'new',
+        cardId: 'card-2',
+        courseId: 'course-1',
+        score: 0.8,
+        provenance: [
+          {
+            strategy: 'test',
+            strategyName: 'Test',
+            strategyId: 'TEST',
+            action: 'generated',
+            score: 0.8,
+            reason: 'Test new card',
+          },
+        ],
       },
       {
-        cardID: 'card-3',
-        courseID: 'course-1',
-        contentSourceType: 'course',
-        contentSourceID: 'course-1',
-        status: 'new',
+        cardId: 'card-3',
+        courseId: 'course-1',
+        score: 0.7,
+        provenance: [
+          {
+            strategy: 'test',
+            strategyName: 'Test',
+            strategyId: 'TEST',
+            action: 'generated',
+            score: 0.7,
+            reason: 'Test new card',
+          },
+        ],
       },
     ]);
 
@@ -190,57 +172,42 @@ describe('ContentNavigator.getWeightedCards', () => {
     expect(result).toHaveLength(2);
   });
 
-  it('should combine new cards and reviews', async () => {
-    navigator.setMockNewCards([
-      {
-        cardID: 'new-1',
-        courseID: 'course-1',
-        contentSourceType: 'course',
-        contentSourceID: 'course-1',
-        status: 'new',
-      },
-    ]);
-    navigator.setMockReviews([
-      {
-        cardID: 'review-1',
-        courseID: 'course-1',
-        contentSourceType: 'course',
-        contentSourceID: 'course-1',
-        status: 'review',
-        reviewID: 'review-id-1',
-        _id: 'scheduled-1',
-        cardId: 'review-1',
-        courseId: 'course-1',
-        scheduledFor: 'course',
-        schedulingAgentId: 'agent-1',
-        reviewTime: new Date(),
-        scheduledAt: new Date(),
-      } as unknown as StudySessionReviewItem & ScheduledCard,
-    ]);
+  it('should correctly identify card origins from provenance', () => {
+    const newCard: WeightedCard = {
+      cardId: 'new-1',
+      courseId: 'course-1',
+      score: 1.0,
+      provenance: [
+        {
+          strategy: 'test',
+          strategyName: 'Test',
+          strategyId: 'TEST',
+          action: 'generated',
+          score: 1.0,
+          reason: 'ELO distance 50, new card',
+        },
+      ],
+    };
 
-    const result = await navigator.getWeightedCards(10);
+    const reviewCard: WeightedCard = {
+      cardId: 'review-1',
+      courseId: 'course-1',
+      score: 0.8,
+      reviewID: 'SCHEDULED_CARD-123',
+      provenance: [
+        {
+          strategy: 'srs',
+          strategyName: 'SRS',
+          strategyId: 'SRS',
+          action: 'generated',
+          score: 0.8,
+          reason: '48h overdue (interval: 72h), review',
+        },
+      ],
+    };
 
-    expect(result).toHaveLength(2);
-    const origins = result.map((c) => getCardOrigin(c));
-    expect(origins).toContain('new');
-    expect(origins).toContain('review');
-  });
-
-  it('should correctly map cardID to cardId and courseID to courseId', async () => {
-    navigator.setMockNewCards([
-      {
-        cardID: 'CARD-123',
-        courseID: 'COURSE-456',
-        contentSourceType: 'course',
-        contentSourceID: 'COURSE-456',
-        status: 'new',
-      },
-    ]);
-
-    const result = await navigator.getWeightedCards(10);
-
-    expect(result[0].cardId).toBe('CARD-123');
-    expect(result[0].courseId).toBe('COURSE-456');
+    expect(getCardOrigin(newCard)).toBe('new');
+    expect(getCardOrigin(reviewCard)).toBe('review');
   });
 });
 

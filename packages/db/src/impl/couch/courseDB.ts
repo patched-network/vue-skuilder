@@ -1,5 +1,4 @@
 import { CourseDBInterface, CourseInfo, CoursesDBInterface, UserDBInterface } from '@db/core';
-import { ScheduledCard } from '@db/core/types/user';
 import {
   CourseConfig,
   CourseElo,
@@ -12,12 +11,7 @@ import {
 
 import { filterAllDocsByPrefix, getCourseDB, getCourseDoc, getCourseDocs } from '.';
 import UpdateQueue from './updateQueue';
-import {
-  StudyContentSource,
-  StudySessionItem,
-  StudySessionNewItem,
-  StudySessionReviewItem,
-} from '../../core/interfaces/contentSource';
+import { StudySessionItem } from '../../core/interfaces/contentSource';
 import {
   CardData,
   DocType,
@@ -99,7 +93,7 @@ function randIntWeightedTowardZero(n: number) {
   return Math.floor(Math.random() * Math.random() * Math.random() * n);
 }
 
-export class CourseDB implements StudyContentSource, CourseDBInterface {
+export class CourseDB implements CourseDBInterface {
   // private log(msg: string): void {
   //   log(`CourseLog: ${this.id}\n  ${msg}`);
   // }
@@ -645,30 +639,6 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
   ////////////////////////////////////
   // StudyContentSource implementation
   ////////////////////////////////////
-
-  public async getNewCards(limit: number = 99): Promise<StudySessionNewItem[]> {
-    const u = await this._getCurrentUser();
-
-    try {
-      const navigator = await this.createNavigator(u);
-      return navigator.getNewCards(limit);
-    } catch (e) {
-      logger.error(`[courseDB] Error in getNewCards: ${e}`);
-      throw e;
-    }
-  }
-
-  public async getPendingReviews(): Promise<(StudySessionReviewItem & ScheduledCard)[]> {
-    const u = await this._getCurrentUser();
-
-    try {
-      const navigator = await this.createNavigator(u);
-      return navigator.getPendingReviews();
-    } catch (e) {
-      logger.error(`[courseDB] Error in getPendingReviews: ${e}`);
-      throw e;
-    }
-  }
 
   /**
    * Get cards with suitability scores for presentation.

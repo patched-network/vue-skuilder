@@ -9,7 +9,7 @@ The navigation strategy system selects and scores cards for study sessions. It u
 
 ### WeightedCard
 
-A card with a suitability score, audit trail, and pre-fetched data:
+A card with a suitability score, audit trail, and pre-fetched metadata:
 
 ```typescript
 interface WeightedCard {
@@ -210,10 +210,6 @@ class MyGenerator extends ContentNavigator implements CardGenerator {
       }]
     }));
   }
-
-  // Legacy methods - stub or implement for backward compat
-  async getNewCards() { return []; }
-  async getPendingReviews() { return []; }
 }
 ```
 
@@ -246,10 +242,8 @@ class MyFilter extends ContentNavigator implements CardFilter {
     });
   }
 
-  // Legacy methods - filters don't generate cards
+  // Legacy method - filters don't generate cards
   async getWeightedCards() { throw new Error('Use transform() via Pipeline'); }
-  async getNewCards() { return []; }
-  async getPendingReviews() { return []; }
 }
 ```
 
@@ -364,7 +358,6 @@ return { ...card, score: card.score * multiplier };
 
 ## Related Documentation
 
-- `todo-pipeline-optimization.md` — Batch tag hydration implementation (✅ completed)
 - `todo-strategy-authoring.md` — UX and DX for authoring strategies
 - `todo-evolutionary-orchestration.md` — Long-term adaptive strategy vision
 - `devlog/1004` — Implementation details for tag hydration optimization

@@ -1,8 +1,11 @@
-import { describe, it, expect } from 'vitest';
-import CompositeGenerator, { AggregationMode } from '../../../src/core/navigators/CompositeGenerator';
+import { describe, it, expect, vi } from 'vitest';
+import CompositeGenerator, {
+  AggregationMode,
+} from '../../../src/core/navigators/CompositeGenerator';
 import { ContentNavigator, WeightedCard } from '../../../src/core/navigators/index';
-import { StudySessionNewItem, StudySessionReviewItem } from '../../../src/core';
-import { ScheduledCard } from '../../../src/core/types/user';
+import { GeneratorContext } from '../../../src/core/navigators/generators/types';
+import { UserDBInterface } from '../../../src/core/interfaces/userDB';
+import { CourseDBInterface } from '../../../src/core/interfaces/courseDB';
 
 // Test helper to create weighted cards with provenance
 function makeWeightedCard(
@@ -31,39 +34,45 @@ function makeWeightedCard(
 
 // Mock ContentNavigator for testing
 class MockGenerator extends ContentNavigator {
+  name: string = 'MockGenerator';
   private mockWeightedCards: WeightedCard[] = [];
-  private mockNewCards: StudySessionNewItem[] = [];
-  private mockReviews: (StudySessionReviewItem & ScheduledCard)[] = [];
 
   setWeightedCards(cards: WeightedCard[]) {
     this.mockWeightedCards = cards;
   }
 
-  setNewCards(cards: StudySessionNewItem[]) {
-    this.mockNewCards = cards;
-  }
-
-  setReviews(reviews: (StudySessionReviewItem & ScheduledCard)[]) {
-    this.mockReviews = reviews;
-  }
-
   async getWeightedCards(limit: number): Promise<WeightedCard[]> {
     return this.mockWeightedCards.slice(0, limit);
   }
+}
 
-  async getNewCards(n?: number): Promise<StudySessionNewItem[]> {
-    return n ? this.mockNewCards.slice(0, n) : this.mockNewCards;
-  }
+// Create a mock context for tests
+function createMockContext(): GeneratorContext {
+  const mockUser = {
+    getCourseRegDoc: vi.fn().mockResolvedValue({
+      elo: { global: { score: 1000, count: 10 }, tags: {} },
+    }),
+  } as unknown as UserDBInterface;
 
-  async getPendingReviews(): Promise<(StudySessionReviewItem & ScheduledCard)[]> {
-    return this.mockReviews;
-  }
+  const mockCourse = {
+    getCourseID: vi.fn().mockReturnValue('test-course'),
+  } as unknown as CourseDBInterface;
+
+  return {
+    user: mockUser,
+    course: mockCourse,
+    userElo: 1000,
+  };
 }
 
 describe('CompositeGenerator', () => {
+  const mockContext = createMockContext();
+
   describe('constructor', () => {
     it('throws error when no generators provided', () => {
-      expect(() => new CompositeGenerator([])).toThrow('CompositeGenerator requires at least one generator');
+      expect(() => new CompositeGenerator([])).toThrow(
+        'CompositeGenerator requires at least one generator'
+      );
     });
 
     it('accepts single generator', () => {
@@ -87,7 +96,7 @@ describe('CompositeGenerator', () => {
       ]);
 
       const composite = new CompositeGenerator([generator]);
-      const result = await composite.getWeightedCards(10);
+      const result = await composite.getWeightedCards(10, mockContext);
 
       expect(result).toHaveLength(2);
       expect(result[0].cardId).toBe('card-1');
@@ -105,7 +114,7 @@ describe('CompositeGenerator', () => {
       ]);
 
       const composite = new CompositeGenerator([generator]);
-      const result = await composite.getWeightedCards(2);
+      const result = await composite.getWeightedCards(2, mockContext);
 
       expect(result).toHaveLength(2);
       expect(result[0].cardId).toBe('card-1');
@@ -128,7 +137,7 @@ describe('CompositeGenerator', () => {
       ]);
 
       const composite = new CompositeGenerator([gen1, gen2], AggregationMode.AVERAGE);
-      const result = await composite.getWeightedCards(10);
+      const result = await composite.getWeightedCards(10, mockContext);
 
       // Should have 3 unique cards
       expect(result).toHaveLength(3);
@@ -148,7 +157,7 @@ describe('CompositeGenerator', () => {
       gen2.setWeightedCards([makeWeightedCard('card-1', 'course-1', 0.9, 'new')]);
 
       const composite = new CompositeGenerator([gen1, gen2], AggregationMode.MAX);
-      const result = await composite.getWeightedCards(10);
+      const result = await composite.getWeightedCards(10, mockContext);
 
       expect(result).toHaveLength(1);
       expect(result[0].score).toBe(0.9);
@@ -164,7 +173,7 @@ describe('CompositeGenerator', () => {
       gen2.setWeightedCards([makeWeightedCard('card-1', 'course-1', 0.6, 'new')]);
 
       const composite = new CompositeGenerator([gen1, gen2], AggregationMode.AVERAGE);
-      const result = await composite.getWeightedCards(10);
+      const result = await composite.getWeightedCards(10, mockContext);
 
       expect(result).toHaveLength(1);
       expect(result[0].score).toBeCloseTo(0.7); // (0.8 + 0.6) / 2
@@ -181,7 +190,7 @@ describe('CompositeGenerator', () => {
       gen3.setWeightedCards([makeWeightedCard('card-1', 'course-1', 0.6, 'new')]);
 
       const composite = new CompositeGenerator([gen1, gen2, gen3], AggregationMode.AVERAGE);
-      const result = await composite.getWeightedCards(10);
+      const result = await composite.getWeightedCards(10, mockContext);
 
       expect(result).toHaveLength(1);
       expect(result[0].score).toBeCloseTo(0.7); // (0.9 + 0.6 + 0.6) / 3
@@ -197,7 +206,7 @@ describe('CompositeGenerator', () => {
       gen2.setWeightedCards([makeWeightedCard('card-1', 'course-1', 0.6, 'new')]);
 
       const composite = new CompositeGenerator([gen1, gen2]); // default mode
-      const result = await composite.getWeightedCards(10);
+      const result = await composite.getWeightedCards(10, mockContext);
 
       expect(result).toHaveLength(1);
       // avg = (0.8 + 0.6) / 2 = 0.7
@@ -217,7 +226,7 @@ describe('CompositeGenerator', () => {
       gen3.setWeightedCards([makeWeightedCard('card-1', 'course-1', 0.6, 'new')]);
 
       const composite = new CompositeGenerator([gen1, gen2, gen3]);
-      const result = await composite.getWeightedCards(10);
+      const result = await composite.getWeightedCards(10, mockContext);
 
       expect(result).toHaveLength(1);
       // avg = 0.6
@@ -234,7 +243,7 @@ describe('CompositeGenerator', () => {
       gen2.setWeightedCards([makeWeightedCard('card-2', 'course-1', 0.6, 'new')]);
 
       const composite = new CompositeGenerator([gen1, gen2]);
-      const result = await composite.getWeightedCards(10);
+      const result = await composite.getWeightedCards(10, mockContext);
 
       expect(result).toHaveLength(2);
       // No boost for single-generator cards
@@ -254,7 +263,7 @@ describe('CompositeGenerator', () => {
       gen2.setWeightedCards([makeWeightedCard('card-1', 'course-1', 0.9, 'new')]);
 
       const composite = new CompositeGenerator([gen1, gen2]);
-      const result = await composite.getWeightedCards(10);
+      const result = await composite.getWeightedCards(10, mockContext);
 
       expect(result).toHaveLength(1);
       // avg = 0.9, boost = 1.1, result = 0.99 (would be 0.99, not clamped)
@@ -273,7 +282,7 @@ describe('CompositeGenerator', () => {
       gen3.setWeightedCards([makeWeightedCard('card-1', 'course-1', 1.0, 'new')]);
 
       const composite = new CompositeGenerator([gen1, gen2, gen3]);
-      const result = await composite.getWeightedCards(10);
+      const result = await composite.getWeightedCards(10, mockContext);
 
       expect(result).toHaveLength(1);
       // avg = 1.0, boost = 1.2, result would be 1.2 but clamped to 1.0
@@ -291,7 +300,7 @@ describe('CompositeGenerator', () => {
       ]);
 
       const composite = new CompositeGenerator([gen1]);
-      const result = await composite.getWeightedCards(10);
+      const result = await composite.getWeightedCards(10, mockContext);
 
       expect(result).toHaveLength(3);
       expect(result[0].cardId).toBe('card-high');
@@ -307,149 +316,16 @@ describe('CompositeGenerator', () => {
       ]);
 
       const gen2 = new MockGenerator();
-      gen2.setWeightedCards([
-        makeWeightedCard('card-boosted', 'course-1', 0.5, 'new'),
-      ]);
+      gen2.setWeightedCards([makeWeightedCard('card-boosted', 'course-1', 0.5, 'new')]);
 
       const composite = new CompositeGenerator([gen1, gen2]);
-      const result = await composite.getWeightedCards(10);
+      const result = await composite.getWeightedCards(10, mockContext);
 
       expect(result).toHaveLength(2);
       // card-boosted: avg=0.5, boost=1.1, final=0.55
       // card-single: 0.6 (no boost)
       expect(result[0].cardId).toBe('card-single'); // 0.6 > 0.55
       expect(result[1].cardId).toBe('card-boosted');
-    });
-  });
-
-  describe('getNewCards', () => {
-    it('deduplicates new cards by cardID', async () => {
-      const gen1 = new MockGenerator();
-      gen1.setNewCards([
-        {
-          cardID: 'card-1',
-          courseID: 'course-1',
-          contentSourceType: 'course',
-          contentSourceID: 'course-1',
-          status: 'new',
-        },
-        {
-          cardID: 'card-2',
-          courseID: 'course-1',
-          contentSourceType: 'course',
-          contentSourceID: 'course-1',
-          status: 'new',
-        },
-      ]);
-
-      const gen2 = new MockGenerator();
-      gen2.setNewCards([
-        {
-          cardID: 'card-1',
-          courseID: 'course-1',
-          contentSourceType: 'course',
-          contentSourceID: 'course-1',
-          status: 'new',
-        },
-        {
-          cardID: 'card-3',
-          courseID: 'course-1',
-          contentSourceType: 'course',
-          contentSourceID: 'course-1',
-          status: 'new',
-        },
-      ]);
-
-      const composite = new CompositeGenerator([gen1, gen2]);
-      const result = await composite.getNewCards();
-
-      expect(result).toHaveLength(3);
-      const cardIds = result.map((c) => c.cardID);
-      expect(cardIds).toContain('card-1');
-      expect(cardIds).toContain('card-2');
-      expect(cardIds).toContain('card-3');
-    });
-
-    it('respects limit parameter', async () => {
-      const gen1 = new MockGenerator();
-      gen1.setNewCards([
-        {
-          cardID: 'card-1',
-          courseID: 'course-1',
-          contentSourceType: 'course',
-          contentSourceID: 'course-1',
-          status: 'new',
-        },
-        {
-          cardID: 'card-2',
-          courseID: 'course-1',
-          contentSourceType: 'course',
-          contentSourceID: 'course-1',
-          status: 'new',
-        },
-        {
-          cardID: 'card-3',
-          courseID: 'course-1',
-          contentSourceType: 'course',
-          contentSourceID: 'course-1',
-          status: 'new',
-        },
-      ]);
-
-      const composite = new CompositeGenerator([gen1]);
-      const result = await composite.getNewCards(2);
-
-      expect(result).toHaveLength(2);
-    });
-  });
-
-  describe('getPendingReviews', () => {
-    it('deduplicates reviews by cardID', async () => {
-      const review1: StudySessionReviewItem & ScheduledCard = {
-        cardID: 'card-1',
-        courseID: 'course-1',
-        contentSourceType: 'course',
-        contentSourceID: 'course-1',
-        status: 'review',
-        reviewID: 'review-1',
-        _id: 'scheduled-1',
-        cardId: 'card-1',
-        courseId: 'course-1',
-        scheduledFor: 'course',
-        schedulingAgentId: 'agent-1',
-        reviewTime: new Date(),
-        scheduledAt: new Date(),
-      } as unknown as StudySessionReviewItem & ScheduledCard;
-
-      const review2: StudySessionReviewItem & ScheduledCard = {
-        cardID: 'card-2',
-        courseID: 'course-1',
-        contentSourceType: 'course',
-        contentSourceID: 'course-1',
-        status: 'review',
-        reviewID: 'review-2',
-        _id: 'scheduled-2',
-        cardId: 'card-2',
-        courseId: 'course-1',
-        scheduledFor: 'course',
-        schedulingAgentId: 'agent-1',
-        reviewTime: new Date(),
-        scheduledAt: new Date(),
-      } as unknown as StudySessionReviewItem & ScheduledCard;
-
-      const gen1 = new MockGenerator();
-      gen1.setReviews([review1, review2]);
-
-      const gen2 = new MockGenerator();
-      gen2.setReviews([review1]); // Duplicate review1
-
-      const composite = new CompositeGenerator([gen1, gen2]);
-      const result = await composite.getPendingReviews();
-
-      expect(result).toHaveLength(2);
-      const cardIds = result.map((c) => c.cardID);
-      expect(cardIds).toContain('card-1');
-      expect(cardIds).toContain('card-2');
     });
   });
 });

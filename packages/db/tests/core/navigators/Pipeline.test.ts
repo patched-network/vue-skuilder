@@ -2,8 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Pipeline } from '../../../src/core/navigators/Pipeline';
 import { WeightedCard, ContentNavigator } from '../../../src/core/navigators/index';
 import { CardFilter, FilterContext } from '../../../src/core/navigators/filters/types';
-import { StudySessionNewItem, StudySessionReviewItem } from '../../../src/core/interfaces/contentSource';
-import { ScheduledCard } from '../../../src/core/types/user';
+
 import { CourseDBInterface } from '../../../src/core/interfaces/courseDB';
 import { UserDBInterface } from '../../../src/core/interfaces/userDB';
 
@@ -15,6 +14,7 @@ import { UserDBInterface } from '../../../src/core/interfaces/userDB';
  * Mock generator that returns predefined weighted cards
  */
 class MockGenerator extends ContentNavigator {
+  name: string = 'MockGenerator';
   private cards: WeightedCard[];
 
   constructor(cards: WeightedCard[]) {
@@ -24,14 +24,6 @@ class MockGenerator extends ContentNavigator {
 
   async getWeightedCards(limit: number): Promise<WeightedCard[]> {
     return this.cards.slice(0, limit);
-  }
-
-  async getNewCards(_n?: number): Promise<StudySessionNewItem[]> {
-    return [];
-  }
-
-  async getPendingReviews(): Promise<(StudySessionReviewItem & ScheduledCard)[]> {
-    return [];
   }
 }
 
@@ -158,11 +150,7 @@ describe('Pipeline', () => {
     });
 
     it('should sort cards by score descending', async () => {
-      const cards = [
-        createCard('low', 0.3),
-        createCard('high', 0.9),
-        createCard('mid', 0.6),
-      ];
+      const cards = [createCard('low', 0.3), createCard('high', 0.9), createCard('mid', 0.6)];
       const generator = new MockGenerator(cards);
       const pipeline = new Pipeline(generator, [], mockUser, mockCourse);
 
@@ -227,10 +215,7 @@ describe('Pipeline', () => {
     });
 
     it('should remove zero-score cards after filtering', async () => {
-      const cards = [
-        createCard('keep', 0.8),
-        createCard('block', 0.9),
-      ];
+      const cards = [createCard('keep', 0.8), createCard('block', 0.9)];
       const generator = new MockGenerator(cards);
       const filter = createBlockingFilter('Blocker', ['block']);
       const pipeline = new Pipeline(generator, [filter], mockUser, mockCourse);
@@ -324,59 +309,6 @@ describe('Pipeline', () => {
       await pipeline.getWeightedCards(10);
 
       expect(capturedElo).toBe(1000); // Default ELO
-    });
-  });
-
-  describe('legacy API compatibility', () => {
-    it('should delegate getNewCards to generator', async () => {
-      const mockNewCards: StudySessionNewItem[] = [
-        {
-          cardID: 'new-1',
-          courseID: 'test-course',
-          contentSourceType: 'course',
-          contentSourceID: 'test-course',
-          status: 'new',
-        },
-      ];
-
-      const generator = new MockGenerator([]);
-      generator.getNewCards = vi.fn().mockResolvedValue(mockNewCards);
-
-      const pipeline = new Pipeline(generator, [], mockUser, mockCourse);
-      const result = await pipeline.getNewCards(10);
-
-      expect(generator.getNewCards).toHaveBeenCalledWith(10);
-      expect(result).toEqual(mockNewCards);
-    });
-
-    it('should delegate getPendingReviews to generator', async () => {
-      const mockReviews: (StudySessionReviewItem & ScheduledCard)[] = [
-        {
-          cardID: 'review-1',
-          courseID: 'test-course',
-          contentSourceType: 'course',
-          contentSourceID: 'test-course',
-          status: 'review',
-          qualifiedID: 'test-course-review-1',
-          reviewID: 'SCHEDULED_CARD-review-1',
-          _id: 'SCHEDULED_CARD-review-1',
-          cardId: 'review-1',
-          courseId: 'test-course',
-          reviewTime: '2024-01-15T12:00:00Z',
-          scheduledAt: '2024-01-14T12:00:00Z',
-          scheduledFor: 'course',
-          schedulingAgentId: 'test-course',
-        },
-      ];
-
-      const generator = new MockGenerator([]);
-      generator.getPendingReviews = vi.fn().mockResolvedValue(mockReviews);
-
-      const pipeline = new Pipeline(generator, [], mockUser, mockCourse);
-      const result = await pipeline.getPendingReviews();
-
-      expect(generator.getPendingReviews).toHaveBeenCalled();
-      expect(result).toEqual(mockReviews);
     });
   });
 

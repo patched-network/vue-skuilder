@@ -4,8 +4,7 @@ import {
   CourseDBInterface,
   UserDBInterface,
   CourseInfo,
-  StudySessionNewItem,
-  StudySessionReviewItem,
+  StudySessionItem,
 } from '../../core/interfaces';
 import { StaticDataUnpacker } from './StaticDataUnpacker';
 import { StaticCourseManifest } from '../../util/packer/types';
@@ -19,7 +18,7 @@ import {
 } from '../../core/types/types-legacy';
 import { DataLayerResult } from '../../core/types/db';
 import { ContentNavigationStrategyData } from '../../core/types/contentNavigationStrategy';
-import { ScheduledCard } from '../../core/types/user';
+
 import { Navigators, WeightedCard } from '../../core/navigators';
 import { logger } from '../../util/logger';
 
@@ -132,28 +131,10 @@ export class StaticCourseDB implements CourseDBInterface {
     return { ok: true, id: cardId, rev: '1-static' };
   }
 
-  async getNewCards(limit: number = 99): Promise<StudySessionNewItem[]> {
-    const activeCards = await this.userDB.getActiveCards();
-    return (
-      await this.getCardsCenteredAtELO({ limit: limit, elo: 'user' }, (c: QualifiedCardID) => {
-        if (activeCards.some((ac) => c.cardID === ac.cardID)) {
-          return false;
-        } else {
-          return true;
-        }
-      })
-    ).map((c) => {
-      return {
-        ...c,
-        status: 'new',
-      };
-    });
-  }
-
   async getCardsCenteredAtELO(
     options: { limit: number; elo: 'user' | 'random' | number },
     filter?: (id: QualifiedCardID) => boolean
-  ): Promise<StudySessionNewItem[]> {
+  ): Promise<StudySessionItem[]> {
     let targetElo = typeof options.elo === 'number' ? options.elo : 1000;
 
     if (options.elo === 'user') {
@@ -403,49 +384,53 @@ export class StaticCourseDB implements CourseDBInterface {
   }
 
   // Study Content Source implementation
-  async getPendingReviews(): Promise<(StudySessionReviewItem & ScheduledCard)[]> {
-    // In static mode, reviews would be stored locally
-    return [];
-  }
-
   async getWeightedCards(limit: number): Promise<WeightedCard[]> {
-    logger.warn(`[static/courseDB] using legacy getNewCards and getPendingReviews`);
-    // Static mode: delegate to legacy methods and assign score=1.0
-    const newCards = await this.getNewCards(limit);
-    const reviews = await this.getPendingReviews();
+    // TODO: replace these w/ ContentNavigator instantiation as in ../couch/courseDB.ts
 
-    const weighted: WeightedCard[] = [
-      ...newCards.map((c) => ({
-        cardId: c.cardID,
-        courseId: c.courseID,
-        score: 1.0,
-        provenance: [
-          {
-            strategy: 'static',
-            strategyName: 'Static Data Provider',
-            strategyId: 'static-elo',
-            action: 'generated' as const,
-            score: 1.0,
-            reason: 'Static mode: ELO-based new card selection',
-          },
-        ],
-      })),
-      ...reviews.map((r) => ({
-        cardId: r.cardID,
-        courseId: r.courseID,
-        score: 1.0,
-        provenance: [
-          {
-            strategy: 'static',
-            strategyName: 'Static Data Provider',
-            strategyId: 'static-srs',
-            action: 'generated' as const,
-            score: 1.0,
-            reason: 'Static mode: SRS review card',
-          },
-        ],
-      })),
-    ];
+    // Static mode: Get new cards based on ELO
+    const activeCards = await this.userDB.getActiveCards();
+    const newCards = await this.getCardsCenteredAtELO(
+      { limit, elo: 'user' },
+      (c: QualifiedCardID) => !activeCards.some((ac) => c.cardID === ac.cardID)
+    );
+
+    const weighted: WeightedCard[] = newCards.map((c) => ({
+      cardId: c.cardID,
+      courseId: c.courseID,
+      score: 1.0,
+      provenance: [
+        {
+          strategy: 'static',
+          strategyName: 'Static Data Provider',
+          strategyId: 'static-elo',
+          action: 'generated' as const,
+          score: 1.0,
+          reason: 'Static mode: ELO-based new card selection',
+        },
+      ],
+    }));
+
+    const reviews = await this.userDB.getPendingReviews(this.courseId);
+    weighted.push(
+      ...reviews.map((r) => {
+        const c: WeightedCard = {
+          cardId: r._id,
+          courseId: r.courseId,
+          score: 1.0,
+          provenance: [
+            {
+              strategy: 'static',
+              strategyName: 'Static Data Provider',
+              strategyId: 'static-elo',
+              action: 'generated' as const,
+              score: 1.0,
+              reason: 'Static mode: ELO-based new card selection',
+            },
+          ],
+        };
+        return c;
+      })
+    );
 
     return weighted.slice(0, limit);
   }

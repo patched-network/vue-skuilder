@@ -1,10 +1,8 @@
-import type { ScheduledCard } from '../types/user';
 import type { CourseDBInterface } from '../interfaces/courseDB';
 import type { UserDBInterface } from '../interfaces/userDB';
 import { ContentNavigator } from './index';
 import type { WeightedCard } from './index';
 import type { ContentNavigationStrategyData } from '../types/contentNavigationStrategy';
-import type { StudySessionReviewItem, StudySessionNewItem } from '..';
 import type { CardFilter, FilterContext } from './filters/types';
 
 /**
@@ -85,7 +83,6 @@ const DEFAULT_COMBINE_MODE: 'max' | 'average' | 'min' = 'max';
  */
 export default class RelativePriorityNavigator extends ContentNavigator implements CardFilter {
   private config: RelativePriorityConfig;
-  private _strategyData: ContentNavigationStrategyData;
 
   /** Human-readable name for CardFilter interface */
   name: string;
@@ -93,12 +90,11 @@ export default class RelativePriorityNavigator extends ContentNavigator implemen
   constructor(
     user: UserDBInterface,
     course: CourseDBInterface,
-    _strategyData: ContentNavigationStrategyData
+    strategyData: ContentNavigationStrategyData
   ) {
-    super(user, course, _strategyData);
-    this._strategyData = _strategyData;
-    this.config = this.parseConfig(_strategyData.serializedData);
-    this.name = _strategyData.name || 'Relative Priority';
+    super(user, course, strategyData);
+    this.config = this.parseConfig(strategyData.serializedData);
+    this.name = strategyData.name || 'Relative Priority';
   }
 
   private parseConfig(serializedData: string): RelativePriorityConfig {
@@ -241,15 +237,5 @@ export default class RelativePriorityNavigator extends ContentNavigator implemen
       'RelativePriorityNavigator is a filter and should not be used as a generator. ' +
         'Use Pipeline with a generator and this filter via transform().'
     );
-  }
-
-  // Legacy methods - stub implementations since filters don't generate cards
-
-  async getNewCards(_n?: number): Promise<StudySessionNewItem[]> {
-    return [];
-  }
-
-  async getPendingReviews(): Promise<(StudySessionReviewItem & ScheduledCard)[]> {
-    return [];
   }
 }

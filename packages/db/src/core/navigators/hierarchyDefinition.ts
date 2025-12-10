@@ -1,10 +1,8 @@
-import type { ScheduledCard } from '../types/user';
 import type { CourseDBInterface } from '../interfaces/courseDB';
 import type { UserDBInterface } from '../interfaces/userDB';
 import { ContentNavigator } from './index';
 import type { WeightedCard } from './index';
 import type { ContentNavigationStrategyData } from '../types/contentNavigationStrategy';
-import type { StudySessionReviewItem, StudySessionNewItem } from '..';
 import type { CardFilter, FilterContext } from './filters/types';
 import { toCourseElo } from '@vue-skuilder/common';
 
@@ -53,7 +51,6 @@ const DEFAULT_MIN_COUNT = 3;
  */
 export default class HierarchyDefinitionNavigator extends ContentNavigator implements CardFilter {
   private config: HierarchyConfig;
-  private _strategyData: ContentNavigationStrategyData;
 
   /** Human-readable name for CardFilter interface */
   name: string;
@@ -61,12 +58,11 @@ export default class HierarchyDefinitionNavigator extends ContentNavigator imple
   constructor(
     user: UserDBInterface,
     course: CourseDBInterface,
-    _strategyData: ContentNavigationStrategyData
+    strategyData: ContentNavigationStrategyData
   ) {
-    super(user, course, _strategyData);
-    this._strategyData = _strategyData;
-    this.config = this.parseConfig(_strategyData.serializedData);
-    this.name = _strategyData.name || 'Hierarchy Definition';
+    super(user, course, strategyData);
+    this.config = this.parseConfig(strategyData.serializedData);
+    this.name = strategyData.name || 'Hierarchy Definition';
   }
 
   private parseConfig(serializedData: string): HierarchyConfig {
@@ -159,7 +155,7 @@ export default class HierarchyDefinitionNavigator extends ContentNavigator imple
    */
   private async checkCardUnlock(
     card: WeightedCard,
-    course: CourseDBInterface,
+    _course: CourseDBInterface,
     unlockedTags: Set<string>,
     masteredTags: Set<string>
   ): Promise<{ isUnlocked: boolean; reason: string }> {
@@ -252,15 +248,5 @@ export default class HierarchyDefinitionNavigator extends ContentNavigator imple
       'HierarchyDefinitionNavigator is a filter and should not be used as a generator. ' +
         'Use Pipeline with a generator and this filter via transform().'
     );
-  }
-
-  // Legacy methods - stub implementations since filters don't generate cards
-
-  async getNewCards(_n?: number): Promise<StudySessionNewItem[]> {
-    return [];
-  }
-
-  async getPendingReviews(): Promise<(StudySessionReviewItem & ScheduledCard)[]> {
-    return [];
   }
 }

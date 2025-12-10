@@ -19,12 +19,6 @@ vi.mock('../../../src/core/navigators/elo', () => ({
     async getWeightedCards() {
       return [];
     }
-    async getNewCards() {
-      return [];
-    }
-    async getPendingReviews() {
-      return [];
-    }
   },
 }));
 
@@ -37,32 +31,6 @@ vi.mock('../../../src/core/navigators/srs', () => ({
       public strategyData: any
     ) {}
     async getWeightedCards() {
-      return [];
-    }
-    async getNewCards() {
-      return [];
-    }
-    async getPendingReviews() {
-      return [];
-    }
-  },
-}));
-
-vi.mock('../../../src/core/navigators/hardcodedOrder', () => ({
-  default: class MockHardcodedOrderNavigator {
-    name = 'Hardcoded Order';
-    constructor(
-      public user: any,
-      public course: any,
-      public strategyData: any
-    ) {}
-    async getWeightedCards() {
-      return [];
-    }
-    async getNewCards() {
-      return [];
-    }
-    async getPendingReviews() {
       return [];
     }
   },
@@ -84,12 +52,6 @@ vi.mock('../../../src/core/navigators/hierarchyDefinition', () => ({
     async getWeightedCards() {
       throw new Error('Filter should not be used as generator');
     }
-    async getNewCards() {
-      return [];
-    }
-    async getPendingReviews() {
-      return [];
-    }
   },
 }));
 
@@ -109,12 +71,6 @@ vi.mock('../../../src/core/navigators/interferenceMitigator', () => ({
     async getWeightedCards() {
       throw new Error('Filter should not be used as generator');
     }
-    async getNewCards() {
-      return [];
-    }
-    async getPendingReviews() {
-      return [];
-    }
   },
 }));
 
@@ -133,12 +89,6 @@ vi.mock('../../../src/core/navigators/relativePriority', () => ({
     }
     async getWeightedCards() {
       throw new Error('Filter should not be used as generator');
-    }
-    async getNewCards() {
-      return [];
-    }
-    async getPendingReviews() {
-      return [];
     }
   },
 }));
@@ -306,15 +256,14 @@ describe('PipelineAssembler', () => {
   describe('complex scenarios', () => {
     it('handles multiple generators and multiple filters', async () => {
       const elo = createStrategy('elo', 'elo');
-      const hardcoded = createStrategy('hardcoded', 'hardcodedOrder');
       const hierarchy = createStrategy('hierarchy', 'hierarchyDefinition');
       const relativePriority = createStrategy('priority', 'relativePriority');
 
-      const input = createInput([elo, hardcoded, hierarchy, relativePriority]);
+      const input = createInput([elo, hierarchy, relativePriority]);
       const result = await assembler.assemble(input);
 
       // Should have both generators
-      expect(result.generatorStrategies).toEqual([elo, hardcoded]);
+      expect(result.generatorStrategies).toEqual([elo]);
 
       // Should have both filters (sorted alphabetically)
       expect(result.filterStrategies.map((f) => f.name)).toEqual(['hierarchy', 'priority']);

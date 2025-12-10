@@ -5,8 +5,8 @@ import type { UserDBInterface } from '../interfaces/userDB';
 import { ContentNavigator } from './index';
 import type { WeightedCard } from './index';
 import type { ContentNavigationStrategyData } from '../types/contentNavigationStrategy';
-import type { StudySessionReviewItem, StudySessionNewItem } from '../interfaces/contentSource';
 import type { CardGenerator, GeneratorContext } from './generators/types';
+import { logger } from '@db/util/logger';
 
 // ============================================================================
 // SRS NAVIGATOR
@@ -95,6 +95,7 @@ export default class SRSNavigator extends ContentNavigator implements CardGenera
         cardId: review.cardId,
         courseId: review.courseId,
         score,
+        reviewID: review._id,
         provenance: [
           {
             strategy: 'srs',
@@ -107,6 +108,8 @@ export default class SRSNavigator extends ContentNavigator implements CardGenera
         ],
       };
     });
+
+    logger.debug(`[srsNav] got ${scored.length} weighted cards`);
 
     // Sort by score descending and limit
     return scored.sort((a, b) => b.score - a.score).slice(0, limit);
@@ -161,35 +164,4 @@ export default class SRSNavigator extends ContentNavigator implements CardGenera
     return { score, reason };
   }
 
-  /**
-   * Get pending reviews in legacy format.
-   *
-   * Returns all pending reviews for the course, enriched with session item fields.
-   */
-  async getPendingReviews(): Promise<(StudySessionReviewItem & ScheduledCard)[]> {
-    if (!this.user || !this.course) {
-      throw new Error('SRSNavigator requires user and course to be set');
-    }
-
-    const reviews = await this.user.getPendingReviews(this.course.getCourseID());
-
-    return reviews.map((r) => ({
-      ...r,
-      contentSourceType: 'course' as const,
-      contentSourceID: this.course!.getCourseID(),
-      cardID: r.cardId,
-      courseID: r.courseId,
-      qualifiedID: `${r.courseId}-${r.cardId}`,
-      reviewID: r._id,
-      status: 'review' as const,
-    }));
-  }
-
-  /**
-   * SRS does not generate new cards.
-   * Use ELONavigator or another generator for new cards.
-   */
-  async getNewCards(_n?: number): Promise<StudySessionNewItem[]> {
-    return [];
-  }
 }

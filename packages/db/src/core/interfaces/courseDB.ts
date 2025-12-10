@@ -1,5 +1,5 @@
 import { CourseConfig, CourseElo, DataShape, SkuilderCourseData } from '@vue-skuilder/common';
-import { StudySessionNewItem, StudySessionItem } from './contentSource';
+import { StudyContentSource, StudySessionItem } from './contentSource';
 import { TagStub, Tag, QualifiedCardID } from '../types/types-legacy';
 import { DataLayerResult } from '../types/db';
 import { NavigationStrategyManager } from './navigationStrategyManager';
@@ -26,7 +26,7 @@ export interface CourseInfo {
   registeredUsers: number;
 }
 
-export interface CourseDBInterface extends NavigationStrategyManager {
+export interface CourseDBInterface extends NavigationStrategyManager, StudyContentSource {
   /**
    * Get course config
    */
@@ -73,11 +73,6 @@ export interface CourseDBInterface extends NavigationStrategyManager {
    * Update card ELO rating
    */
   updateCardElo(cardId: string, elo: CourseElo): Promise<PouchDB.Core.Response>;
-
-  /**
-   * Get new cards for study
-   */
-  getNewCards(limit?: number): Promise<StudySessionNewItem[]>;
 
   /**
    * Get cards centered at a particular ELO rating
