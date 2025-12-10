@@ -16,6 +16,14 @@
 - [x] p3.4 Remove unused `ScheduledCard` import from SessionController
 - [x] p3.5 Verify SessionController compiles and review queue population logic is preserved
 
+## Phase 3.5: Simplify SessionController Queue Population - COMPLETED
+- [x] p3.5.1 Remove `reviews` field from `SourceBatch` interface - mixer doesn't use it
+- [x] p3.5.2 Remove `allReviews` accumulator from SessionController
+- [x] p3.5.3 Remove review extraction from batch building loop
+- [x] p3.5.4 Split `mixedWeighted` into reviews and new cards after mixing
+- [x] p3.5.5 Populate both queues directly from mixed results
+- [x] p3.5.6 Verify compilation and logic correctness
+
 ## Phase 4: Remove HardcodedOrderNavigator
 - [ ] p4.1 Delete file `packages/db/src/core/navigators/hardcodedOrder.ts`
 - [ ] p4.2 Search for and remove any imports/exports of HardcodedOrderNavigator in `packages/db/src/core/navigators/index.ts`

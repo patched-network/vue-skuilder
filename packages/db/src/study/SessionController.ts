@@ -280,7 +280,6 @@ export class SessionController<TView = unknown> extends Loggable {
 
     // Collect batches from each source
     const batches: SourceBatch[] = [];
-    const allReviews: StudySessionReviewItem[] = [];
 
     for (let i = 0; i < this.sources.length; i++) {
       const source = this.sources[i];
@@ -288,29 +287,10 @@ export class SessionController<TView = unknown> extends Loggable {
         // Fetch weighted cards for mixing
         const weighted = await source.getWeightedCards!(limit);
 
-        // Extract reviews from weighted cards
-        const reviews: StudySessionReviewItem[] = weighted
-          .filter((w) => getCardOrigin(w) === 'review')
-          .map((w) => ({
-            cardID: w.cardId,
-            courseID: w.courseId,
-            contentSourceType: 'course' as const,
-            contentSourceID: w.courseId,
-            reviewID: w.reviewID!,
-            status: 'review' as const,
-          }));
-
-        logger.debug(
-          `[reviews] fetched ${reviews.length} reviews -${reviews.map((r) => `\n\t${r.contentSourceID}::${r.cardID}`)}`
-        );
-
         batches.push({
           sourceIndex: i,
           weighted,
-          reviews,
         });
-
-        allReviews.push(...reviews);
       } catch (error) {
         this.error(`Failed to get content from source ${i}:`, error);
         // Re-throw if this is the only source - we can't proceed without any content
@@ -331,41 +311,38 @@ export class SessionController<TView = unknown> extends Loggable {
     // Mix weighted cards across sources using configured strategy
     const mixedWeighted = this.mixer.mix(batches, limit * this.sources.length);
 
-    // Build score lookup map from mixed results
-    const scoreMap = new Map<string, number>();
-    for (const w of mixedWeighted) {
-      const key = `${w.courseId}::${w.cardId}`;
-      scoreMap.set(key, w.score);
-    }
+    // Split mixed results by card origin
+    const reviewWeighted = mixedWeighted.filter((w) => getCardOrigin(w) === 'review');
+    const newWeighted = mixedWeighted.filter((w) => getCardOrigin(w) === 'new');
 
-    // Sort reviews by their mixed scores
-    const scoredReviews = allReviews.map((r) => ({
-      review: r,
-      score: scoreMap.get(`${r.courseID}::${r.cardID}`) ?? 1.0,
-    }));
-    scoredReviews.sort((a, b) => b.score - a.score);
+    logger.debug(`[reviews] got ${reviewWeighted.length} reviews from mixer`);
 
-    // Add reviews to queue in score order
+    // Populate review queue from mixed results (already sorted by mixer)
     let report = 'Mixed content session created with:\n';
-    for (const { review, score } of scoredReviews) {
-      this.reviewQ.add(review, review.cardID);
-      report += `Review: ${review.courseID}::${review.cardID} (score: ${score.toFixed(2)})\n`;
+    for (const w of reviewWeighted) {
+      const reviewItem: StudySessionReviewItem = {
+        cardID: w.cardId,
+        courseID: w.courseId,
+        contentSourceType: 'course',
+        contentSourceID: w.courseId,
+        reviewID: w.reviewID!,
+        status: 'review',
+      };
+      this.reviewQ.add(reviewItem, reviewItem.cardID);
+      report += `Review: ${w.courseId}::${w.cardId} (score: ${w.score.toFixed(2)})\n`;
     }
 
-    // Get new cards from mixed results (filter out reviews)
-    const newCardWeighted = mixedWeighted.filter((w) => getCardOrigin(w) === 'new');
-
-    // Add new cards to queue in mixed order
-    for (const card of newCardWeighted) {
+    // Populate new card queue from mixed results (already sorted by mixer)
+    for (const w of newWeighted) {
       const newItem: StudySessionNewItem = {
-        cardID: card.cardId,
-        courseID: card.courseId,
+        cardID: w.cardId,
+        courseID: w.courseId,
         contentSourceType: 'course',
-        contentSourceID: card.courseId,
+        contentSourceID: w.courseId,
         status: 'new',
       };
-      this.newQ.add(newItem, card.cardId);
-      report += `New: ${card.courseId}::${card.cardId} (score: ${card.score.toFixed(2)})\n`;
+      this.newQ.add(newItem, newItem.cardID);
+      report += `New: ${w.courseId}::${w.cardId} (score: ${w.score.toFixed(2)})\n`;
     }
 
     this.log(report);
