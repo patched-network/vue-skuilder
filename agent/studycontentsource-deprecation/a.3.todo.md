@@ -31,11 +31,26 @@
 - [x] p4.3.1 Removed mock from `packages/db/tests/core/navigators/PipelineAssembler.test.ts`
 - [x] p4.4 Verify TypeScript compilation succeeds
 
-## Phase 5: Remove Deprecated Interface Methods
-- [ ] p5.1 Remove `getPendingReviews()` method signature from `StudyContentSource` interface in `packages/db/src/core/interfaces/contentSource.ts`
-- [ ] p5.2 Remove `getNewCards()` method signature from `StudyContentSource` interface
-- [ ] p5.3 Run `yarn workspace @vue-skuilder/db tsc` to identify all files with compile errors (expect ~8-10 files)
-- [ ] p5.4 Document the list of files with errors for Phase 6
+## Phase 5: Remove Deprecated Interface Methods - COMPLETED
+- [x] p5.1 Remove `getPendingReviews()` method signature from `StudyContentSource` interface in `packages/db/src/core/interfaces/contentSource.ts`
+- [x] p5.2 Remove `getNewCards()` method signature from `StudyContentSource` interface
+- [x] p5.3 Remove unused `ScheduledCard` import from contentSource.ts
+- [x] p5.4 Update interface JSDoc to reflect migration completion
+- [x] p5.5 Made `getWeightedCards` required (removed `?` optional marker)
+- [x] p5.6 Run TypeScript compilation - no new errors from interface change (ContentNavigator still has abstract methods)
+- [x] p5.7 Document files requiring cleanup:
+  - ContentNavigator base class (abstract methods)
+  - ELO Navigator
+  - SRS Navigator
+  - StudentClassroomDB
+  - TagFilteredContentSource
+  - Static CourseDB
+  - CourseDB (couch)
+  - CompositeGenerator
+  - Pipeline
+  - Filter navigators (hierarchyDefinition, interferenceMitigator, relativePriority, userTagPreference)
+  - BaseUserDB
+  - user-course-relDB (note: NOT part of StudyContentSource - leave as-is)
 
 ## Phase 6: Clean Up Implementations
 
