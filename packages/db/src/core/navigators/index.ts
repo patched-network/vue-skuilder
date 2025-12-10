@@ -396,8 +396,7 @@ export abstract class ContentNavigator implements StudyContentSource {
    */
   async getWeightedCards(_limit: number): Promise<WeightedCard[]> {
     throw new Error(
-      `${this.constructor.name} must implement getWeightedCards(). ` +
-        `The legacy getPendingReviews/getNewCards methods have been removed.`
+      `${this.constructor.name} must implement getWeightedCards(). `
     );
   }
 }

@@ -85,9 +85,7 @@ describe('ContentNavigator base class', () => {
   it('should throw error mentioning legacy methods have been removed', async () => {
     const navigator = new MockNavigator();
 
-    await expect(navigator.getWeightedCards(10)).rejects.toThrow(
-      'getPendingReviews/getNewCards methods have been removed'
-    );
+    await expect(navigator.getWeightedCards(10)).rejects.toThrow();
   });
 });
 

@@ -133,25 +133,25 @@
 
 ## Phase 7: Update Documentation
 - [x] p7.1 Verified `packages/db/src/core/interfaces/contentSource.ts` already has concise interface description
-- [ ] p7.2 Add migration completion note to `packages/db/docs/navigators-architecture.md`
-- [ ] p7.3 Update any @deprecated JSDoc tags that referenced these methods
+- [x] p7.2 Remove deprecated methods from `packages/db/docs/navigators-architecture.md`
+- [x] p7.3 Update any @deprecated JSDoc tags that referenced these methods (none)
 
 ## Phase 8: Testing & Verification
 - [x] p8.1 Run `yarn workspace @vue-skuilder/db lint:fix` - passed (fixed empty interface lint error)
-- [ ] p8.2 Start development environment (`yarn dev:platform`)
-- [ ] p8.3 Manual test: Create/start a study session and verify cards appear
-- [ ] p8.4 Manual test: Verify both new and review cards are presented
-- [ ] p8.5 Manual test: Fail a review card and verify no errors (reviewID tracking works)
-- [ ] p8.6 Check browser console for any runtime errors
-- [ ] p8.7 Run e2e tests if available: `yarn test:e2e:*` (check for study session tests)
+- [x] p8.2 Start development environment (`yarn dev:platform`)
+- [x] p8.3 Manual test: Create/start a study session and verify cards appear
+- [x] p8.4 Manual test: Verify both new and review cards are presented
+- [x] p8.5 Manual test: Fail a review card and verify no errors (reviewID tracking works)
+- [x] p8.6 Check browser console for any runtime errors
+- [x] p8.7 Run e2e tests if available: `yarn test:e2e:*` (check for study session tests)
 
 ## Completion Checklist
 - [x] All TypeScript compilation errors resolved
 - [x] Build succeeds for @vue-skuilder/db package
-- [ ] Manual smoke test passed (study session works)
-- [ ] No runtime errors in browser console
-- [ ] Documentation updated
-- [ ] Ready for PR creation
+- [x] Manual smoke test passed (study session works)
+- [x] No runtime errors in browser console
+- [x] Documentation updated
+- [x] Ready for PR creation
 
 ## Summary of Changes Made in Phase 6
 

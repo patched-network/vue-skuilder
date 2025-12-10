@@ -186,8 +186,7 @@ export class SessionController<TView = unknown> extends Loggable {
     // All content sources must implement getWeightedCards()
     if (this.sources.some((s) => typeof s.getWeightedCards !== 'function')) {
       throw new Error(
-        '[SessionController] All content sources must implement getWeightedCards(). ' +
-          'Legacy getNewCards()/getPendingReviews() API is no longer supported.'
+        '[SessionController] All content sources must implement getWeightedCards().'
       );
     }
 
@@ -242,7 +241,7 @@ export class SessionController<TView = unknown> extends Loggable {
         mode: supportsWeightedCards ? 'weighted' : 'legacy',
         description: supportsWeightedCards
           ? 'Using getWeightedCards() API with scored candidates'
-          : 'Using legacy getNewCards()/getPendingReviews() API',
+          : 'ERROR: getWeightedCards() not a function.',
       },
       reviewQueue: {
         length: this.reviewQ.length,

@@ -75,7 +75,6 @@ export default class ELONavigator extends ContentNavigator implements CardGenera
       userGlobalElo = userElo.global.score;
     }
 
-    // Get new cards - inline from getNewCards()
     const activeCards = await this.user.getActiveCards();
     const newCards = (
       await this.course.getCardsCenteredAtELO(
