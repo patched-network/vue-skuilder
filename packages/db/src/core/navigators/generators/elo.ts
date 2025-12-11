@@ -1,10 +1,10 @@
-import type { CourseDBInterface } from '../interfaces/courseDB';
-import type { UserDBInterface } from '../interfaces/userDB';
-import { ContentNavigator } from './index';
-import type { WeightedCard } from './index';
+import type { CourseDBInterface } from '../../interfaces/courseDB';
+import type { UserDBInterface } from '../../interfaces/userDB';
+import { ContentNavigator } from '../index';
+import type { WeightedCard } from '../index';
 import { toCourseElo } from '@vue-skuilder/common';
-import type { QualifiedCardID } from '..';
-import type { CardGenerator, GeneratorContext } from './generators/types';
+import type { QualifiedCardID } from '../..';
+import type { CardGenerator, GeneratorContext } from './types';
 
 // ============================================================================
 // ELO NAVIGATOR

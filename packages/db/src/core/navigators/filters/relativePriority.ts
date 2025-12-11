@@ -1,9 +1,9 @@
-import type { CourseDBInterface } from '../interfaces/courseDB';
-import type { UserDBInterface } from '../interfaces/userDB';
-import { ContentNavigator } from './index';
-import type { WeightedCard } from './index';
-import type { ContentNavigationStrategyData } from '../types/contentNavigationStrategy';
-import type { CardFilter, FilterContext } from './filters/types';
+import type { CourseDBInterface } from '../../interfaces/courseDB';
+import type { UserDBInterface } from '../../interfaces/userDB';
+import { ContentNavigator } from '../index';
+import type { WeightedCard } from '../index';
+import type { ContentNavigationStrategyData } from '../../types/contentNavigationStrategy';
+import type { CardFilter, FilterContext } from './types';
 
 /**
  * Configuration for the RelativePriority strategy.

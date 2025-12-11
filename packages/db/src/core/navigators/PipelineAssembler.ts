@@ -7,7 +7,7 @@ import { DocType } from '../types/types-legacy';
 import { logger } from '../../util/logger';
 import type { CourseDBInterface } from '../interfaces/courseDB';
 import type { UserDBInterface } from '../interfaces/userDB';
-import CompositeGenerator from './CompositeGenerator';
+import CompositeGenerator from './generators/CompositeGenerator';
 
 // ============================================================================
 // PIPELINE ASSEMBLER
