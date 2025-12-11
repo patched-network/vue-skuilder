@@ -20,8 +20,10 @@ import {
 import { DataLayerResult } from '../../core/types/db';
 import { ContentNavigationStrategyData } from '../../core/types/contentNavigationStrategy';
 
-import { Navigators, WeightedCard } from '../../core/navigators';
+import { ContentNavigator, Navigators, WeightedCard } from '../../core/navigators';
 import { logger } from '../../util/logger';
+import { createDefaultPipeline } from '@db/core/navigators/defaults';
+import { PipelineAssembler } from '@db/core/navigators/PipelineAssembler';
 
 export class StaticCourseDB implements CourseDBInterface {
   constructor(
@@ -388,56 +390,61 @@ export class StaticCourseDB implements CourseDBInterface {
     throw new Error('Cannot update navigation strategies in static mode');
   }
 
+  /**
+   * Create a ContentNavigator for this course.
+   *
+   * Loads navigation strategy documents from static data and uses PipelineAssembler
+   * to build a Pipeline. Falls back to default pipeline if no strategies found.
+   */
+  async createNavigator(user: UserDBInterface): Promise<ContentNavigator> {
+    try {
+      const allStrategies = await this.getAllNavigationStrategies();
+
+      if (allStrategies.length === 0) {
+        logger.debug(
+          '[static/courseDB] No strategy documents found, using default Pipeline(Composite(ELO, SRS), [eloDistanceFilter])'
+        );
+        return createDefaultPipeline(user, this);
+      }
+
+      // Use PipelineAssembler to build Pipeline from strategy documents
+      const assembler = new PipelineAssembler();
+      const { pipeline, generatorStrategies, filterStrategies, warnings } =
+        await assembler.assemble({
+          strategies: allStrategies,
+          user,
+          course: this,
+        });
+
+      // Log warnings
+      for (const warning of warnings) {
+        logger.warn(`[PipelineAssembler] ${warning}`);
+      }
+
+      if (!pipeline) {
+        logger.debug('[static/courseDB] Pipeline assembly failed, using default pipeline');
+        return createDefaultPipeline(user, this);
+      }
+
+      logger.debug(
+        `[static/courseDB] Using assembled pipeline with ${generatorStrategies.length} generator(s) and ${filterStrategies.length} filter(s)`
+      );
+      return pipeline;
+    } catch (e) {
+      logger.error(`[static/courseDB] Error creating navigator: ${e}`);
+      throw e;
+    }
+  }
+
   // Study Content Source implementation
   async getWeightedCards(limit: number): Promise<WeightedCard[]> {
-    // TODO: replace these w/ ContentNavigator instantiation as in ../couch/courseDB.ts
-
-    // Static mode: Get new cards based on ELO
-    const activeCards = await this.userDB.getActiveCards();
-    const newCards = await this.getCardsCenteredAtELO(
-      { limit, elo: 'user' },
-      (c: QualifiedCardID) => !activeCards.some((ac) => c.cardID === ac.cardID)
-    );
-
-    const weighted: WeightedCard[] = newCards.map((c) => ({
-      cardId: c.cardID,
-      courseId: c.courseID,
-      score: 1.0,
-      provenance: [
-        {
-          strategy: 'static',
-          strategyName: 'Static Data Provider',
-          strategyId: 'static-elo',
-          action: 'generated' as const,
-          score: 1.0,
-          reason: 'Static mode: ELO-based new card selection',
-        },
-      ],
-    }));
-
-    const reviews = await this.userDB.getPendingReviews(this.courseId);
-    weighted.push(
-      ...reviews.map((r) => {
-        const c: WeightedCard = {
-          cardId: r._id,
-          courseId: r.courseId,
-          score: 1.0,
-          provenance: [
-            {
-              strategy: 'static',
-              strategyName: 'Static Data Provider',
-              strategyId: 'static-elo',
-              action: 'generated' as const,
-              score: 1.0,
-              reason: 'Static mode: ELO-based new card selection',
-            },
-          ],
-        };
-        return c;
-      })
-    );
-
-    return weighted.slice(0, limit);
+    try {
+      const navigator = await this.createNavigator(this.userDB);
+      return navigator.getWeightedCards(limit);
+    } catch (e) {
+      logger.error(`[static/courseDB] Error getting weighted cards: ${e}`);
+      throw e;
+    }
   }
 
   // Attachment helper methods (internal use, not part of interface)

@@ -88,7 +88,7 @@ async getNavigationStrategy(id: string): Promise<ContentNavigationStrategyData> 
 }
 ```
 
-### Phase 3: Add Navigator Creation Method
+### - [x] Phase 3: Add Navigator Creation Method
 
 **File:** `packages/db/src/impl/static/courseDB.ts`
 
@@ -151,7 +151,7 @@ async createNavigator(user: UserDBInterface): Promise<ContentNavigator> {
 
 **Note:** Uses shared `createDefaultPipeline()` from `defaults.ts` - no duplication of default strategy/pipeline factory methods.
 
-### Phase 4: Replace getWeightedCards Implementation
+### - [x] Phase 4: Replace getWeightedCards Implementation
 
 **File:** `packages/db/src/impl/static/courseDB.ts`
 
