@@ -15,6 +15,7 @@ import {
   DocType,
   SkuilderCourseData,
   QualifiedCardID,
+  DocTypePrefixes,
 } from '../../core/types/types-legacy';
 import { DataLayerResult } from '../../core/types/db';
 import { ContentNavigationStrategyData } from '../../core/types/contentNavigationStrategy';
@@ -359,20 +360,24 @@ export class StaticCourseDB implements CourseDBInterface {
   }
 
   // Navigation Strategy Manager implementation
-  async getNavigationStrategy(_id: string): Promise<ContentNavigationStrategyData> {
-    return {
-      _id: 'NAVIGATION_STRATEGY-ELO',
-      docType: DocType.NAVIGATION_STRATEGY,
-      name: 'ELO',
-      description: 'ELO-based navigation strategy',
-      implementingClass: Navigators.ELO,
-      course: this.courseId,
-      serializedData: '',
-    };
+  async getNavigationStrategy(id: string): Promise<ContentNavigationStrategyData> {
+    try {
+      return await this.unpacker.getDocument(id);
+    } catch (error) {
+      logger.error(`[static/courseDB] Strategy ${id} not found: ${error}`);
+      throw error;
+    }
   }
 
   async getAllNavigationStrategies(): Promise<ContentNavigationStrategyData[]> {
-    return [await this.getNavigationStrategy('ELO')];
+    const prefix = DocTypePrefixes[DocType.NAVIGATION_STRATEGY];
+    try {
+      const docs = await this.unpacker.getAllDocumentsByPrefix(prefix);
+      return docs as ContentNavigationStrategyData[];
+    } catch (error) {
+      logger.warn(`[static/courseDB] Error loading navigation strategies: ${error}`);
+      return []; // Fall back to default pipeline
+    }
   }
 
   async addNavigationStrategy(_data: ContentNavigationStrategyData): Promise<void> {
