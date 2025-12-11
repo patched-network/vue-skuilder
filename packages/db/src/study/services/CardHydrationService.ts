@@ -9,6 +9,47 @@ import { StudySessionItem } from '@db/impl/couch';
 import { logger } from '@db/util/logger';
 import { CourseDBInterface } from '@db/core';
 
+/**
+ * Extract audio URLs from arbitrary field data using heuristic pattern matching.
+ * This is a "worse is better" approach - catches obvious URLs, silently ignores edge cases.
+ */
+function parseAudioURIs(data: unknown): string[] {
+  if (typeof data !== 'string') return [];
+
+  // Match URLs ending in common audio extensions
+  const audioPattern = /https?:\/\/[^\s"'<>]+\.(wav|mp3|ogg|m4a|aac|webm)/gi;
+  return data.match(audioPattern) ?? [];
+}
+
+/**
+ * Prefetch an audio file by loading it into browser cache.
+ * Resolves when the audio is ready to play (or on error, to avoid blocking).
+ */
+function prefetchAudio(url: string): Promise<void> {
+  return new Promise((resolve) => {
+    const audio = new Audio();
+    audio.preload = 'auto';
+
+    const cleanup = () => {
+      audio.oncanplaythrough = null;
+      audio.onerror = null;
+    };
+
+    audio.oncanplaythrough = () => {
+      cleanup();
+      resolve();
+    };
+
+    audio.onerror = () => {
+      cleanup();
+      logger.warn(`[CardHydrationService] Failed to prefetch audio: ${url}`);
+      resolve(); // Don't block hydration on failed prefetch
+    };
+
+    audio.src = url;
+  });
+}
+
 export interface HydratedCard<TView = unknown> {
   item: StudySessionItem;
   view: TView;
@@ -169,6 +210,23 @@ export class CardHydrationService<TView = unknown> {
           })
         )
       );
+
+      // Extract audio URLs from all data fields and prefetch them
+      const audioToPrefetch: string[] = [];
+      dataDocs.forEach((dd) => {
+        dd.data.forEach((f) => {
+          audioToPrefetch.push(...parseAudioURIs(f.data));
+        });
+      });
+
+      // Dedupe and prefetch, waiting for browser cache to be ready
+      const uniqueAudioUrls = [...new Set(audioToPrefetch)];
+      if (uniqueAudioUrls.length > 0) {
+        logger.debug(
+          `[CardHydrationService] Prefetching ${uniqueAudioUrls.length} audio files for card ${item.cardID}`
+        );
+        await Promise.allSettled(uniqueAudioUrls.map(prefetchAudio));
+      }
 
       const data = dataDocs.map(displayableDataToViewData).reverse();
 
