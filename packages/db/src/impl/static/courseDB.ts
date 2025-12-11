@@ -20,7 +20,7 @@ import {
 import { DataLayerResult } from '../../core/types/db';
 import { ContentNavigationStrategyData } from '../../core/types/contentNavigationStrategy';
 
-import { ContentNavigator, Navigators, WeightedCard } from '../../core/navigators';
+import { ContentNavigator, WeightedCard } from '../../core/navigators';
 import { logger } from '../../util/logger';
 import { createDefaultPipeline } from '@db/core/navigators/defaults';
 import { PipelineAssembler } from '@db/core/navigators/PipelineAssembler';
