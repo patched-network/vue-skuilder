@@ -38,42 +38,25 @@ This eliminates ~40 lines of duplicated code between implementations and provide
 - Removed 4 navigator imports from couch courseDB (now only in defaults.ts)
 - Net: +84 lines (new file), -40 lines (removed duplication)
 
-### Phase 1: Add Document Query Method to StaticDataUnpacker
+### Phase 1: Add Document Query Method to StaticDataUnpacker - ✅ COMPLETED
 
 **File:** `packages/db/src/impl/static/StaticDataUnpacker.ts`
 
-**Add method:**
-```typescript
-/**
- * Get all documents with a specific doc type prefix.
- * Loads the relevant chunk(s) and returns all matching documents.
- */
-async getAllDocumentsByPrefix(prefix: string): Promise<any[]> {
-  // Find all chunks that contain documents with this prefix
-  const relevantChunks = this.manifest.chunks.filter(
-    (chunk) => chunk.startKey <= prefix && chunk.endKey >= prefix
-  );
+**Added method:** `getAllDocumentsByPrefix(prefix: string)` (lines 98-137)
 
-  // Load all relevant chunks
-  await Promise.all(relevantChunks.map((chunk) => this.loadChunk(chunk.id)));
+**Implementation details:**
+- Uses lexicographic range matching: `chunk.startKey <= prefixEnd && chunk.endKey >= prefix`
+- Uses `prefix + '\ufff0'` as range end to match all documents starting with prefix
+- Loads all relevant chunks in parallel via `Promise.all()`
+- Filters `documentCache` for IDs starting with prefix
+- Hydrates attachments for each matching document
+- Returns empty array with debug log if no chunks found (graceful handling)
+- Added debug logging for found chunks and document count
 
-  // Filter documents from cache that match the prefix
-  const matchingDocs: any[] = [];
-  for (const [docId, doc] of this.documentCache.entries()) {
-    if (docId.startsWith(prefix)) {
-      matchingDocs.push(await this.hydrateAttachments(doc));
-    }
-  }
-
-  return matchingDocs;
-}
-```
-
-**Rationale:**
-- Chunks are organized by DocType (startKey/endKey)
-- NAVIGATION_STRATEGY documents will be in their own chunk(s)
-- Loading chunks populates documentCache
-- We filter cache for matching prefix
+**Changes:**
+- Added ~40 lines
+- TypeScript compilation clean
+- Build successful
 
 ### Phase 2: Update StaticCourseDB Navigation Strategy Methods
 

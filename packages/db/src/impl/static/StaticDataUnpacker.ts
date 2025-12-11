@@ -96,6 +96,47 @@ export class StaticDataUnpacker {
   }
 
   /**
+   * Get all documents with IDs starting with a specific prefix.
+   *
+   * This method loads the relevant chunk(s) and returns all matching documents.
+   * Useful for querying documents by type (e.g., all NAVIGATION_STRATEGY documents).
+   *
+   * @param prefix - Document ID prefix to match (e.g., "NAVIGATION_STRATEGY")
+   * @returns Array of all documents with IDs starting with the prefix
+   */
+  async getAllDocumentsByPrefix(prefix: string): Promise<any[]> {
+    // Find all chunks that could contain documents with this prefix
+    // A chunk contains documents if the prefix falls within its startKey/endKey range
+    const relevantChunks = this.manifest.chunks.filter((chunk) => {
+      // Check if prefix could be in this chunk's range
+      // Prefix matches if it's >= startKey and <= endKey (for lexicographic ordering)
+      const prefixEnd = prefix + '\ufff0'; // High unicode character for range end
+      return chunk.startKey <= prefixEnd && chunk.endKey >= prefix;
+    });
+
+    if (relevantChunks.length === 0) {
+      logger.debug(`[StaticDataUnpacker] No chunks found for prefix: ${prefix}`);
+      return [];
+    }
+
+    // Load all relevant chunks
+    await Promise.all(relevantChunks.map((chunk) => this.loadChunk(chunk.id)));
+
+    // Filter documents from cache that match the prefix
+    const matchingDocs: any[] = [];
+    for (const [docId, doc] of this.documentCache.entries()) {
+      if (docId.startsWith(prefix)) {
+        matchingDocs.push(await this.hydrateAttachments(doc));
+      }
+    }
+
+    logger.debug(
+      `[StaticDataUnpacker] Found ${matchingDocs.length} documents with prefix: ${prefix}`
+    );
+    return matchingDocs;
+  }
+
+  /**
    * Query cards by ELO score, returning card IDs sorted by ELO
    */
   async queryByElo(targetElo: number, limit: number = 25): Promise<string[]> {
