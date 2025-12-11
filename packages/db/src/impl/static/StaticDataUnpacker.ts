@@ -189,7 +189,15 @@ export class StaticDataUnpacker {
    * Get all tag names mapped to their card arrays
    */
   async getTagsIndex(): Promise<TagsIndex> {
-    return (await this.loadIndex('tags')) as TagsIndex;
+    try {
+      return (await this.loadIndex('tags')) as TagsIndex;
+    } catch {
+      // If no tags index exists, presume "no tagged cards"
+      return {
+        byCard: {},
+        byTag: {},
+      }
+    }
   }
 
   private getDocTypeFromId(id: string): DocType | undefined {
