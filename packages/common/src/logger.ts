@@ -173,9 +173,6 @@ export function initializeTuiLogging(): void {
     // eslint-disable-next-line no-console
     console.error = (...args) => writeToLog('ERROR', args);
 
-    // Store original methods for potential restoration
-    (console as any)._originalMethods = originalConsole;
-
     // eslint-disable-next-line no-console
     console.log('TUI logging initialized - logs redirected to', tuiLogFile);
 
