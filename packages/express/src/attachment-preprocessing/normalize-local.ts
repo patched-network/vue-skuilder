@@ -118,7 +118,7 @@ async function normalizeFile(
     fs.copyFileSync(NORMALIZED, outputPath);
     log(`[${baseName}] ✓ Saved to: ${outputPath}`);
   } catch (e) {
-    error(`[${baseName}] Error:`, e);
+    error(`[${baseName}] Error: ${e}`);
     throw e;
   } finally {
     // Cleanup temp directory
@@ -148,8 +148,8 @@ async function main() {
       throw new Error('loudnorm filter not available');
     }
     log('loudnorm filter: available\n');
-  } catch (error) {
-    error('FFMPEG check failed:', error);
+  } catch (e) {
+    error(`FFMPEG check failed: ${e}`);
     process.exit(1);
   }
 
