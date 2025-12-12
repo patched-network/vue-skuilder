@@ -1,10 +1,10 @@
-import { ContentNavigator } from './index';
-import type { WeightedCard } from './index';
-import type { ContentNavigationStrategyData } from '../types/contentNavigationStrategy';
-import type { CourseDBInterface } from '../interfaces/courseDB';
-import type { UserDBInterface } from '../interfaces/userDB';
-import type { CardGenerator, GeneratorContext } from './generators/types';
-import { logger } from '../../util/logger';
+import { ContentNavigator } from '../index';
+import type { WeightedCard } from '../index';
+import type { ContentNavigationStrategyData } from '../../types/contentNavigationStrategy';
+import type { CourseDBInterface } from '../../interfaces/courseDB';
+import type { UserDBInterface } from '../../interfaces/userDB';
+import type { CardGenerator, GeneratorContext } from './types';
+import { logger } from '../../../util/logger';
 
 // ============================================================================
 // COMPOSITE GENERATOR

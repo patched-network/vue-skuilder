@@ -8,7 +8,7 @@ import { DocType } from '../../../src/core';
 import { Pipeline } from '../../../src/core/navigators/Pipeline';
 
 // Mock the dynamic import in ContentNavigator.create
-vi.mock('../../../src/core/navigators/elo', () => ({
+vi.mock('../../../src/core/navigators/generators/elo', () => ({
   default: class MockELONavigator {
     name = 'ELO';
     constructor(
@@ -22,7 +22,7 @@ vi.mock('../../../src/core/navigators/elo', () => ({
   },
 }));
 
-vi.mock('../../../src/core/navigators/srs', () => ({
+vi.mock('../../../src/core/navigators/generators/srs', () => ({
   default: class MockSRSNavigator {
     name = 'SRS';
     constructor(
@@ -36,7 +36,7 @@ vi.mock('../../../src/core/navigators/srs', () => ({
   },
 }));
 
-vi.mock('../../../src/core/navigators/hierarchyDefinition', () => ({
+vi.mock('../../../src/core/navigators/filters/hierarchyDefinition', () => ({
   default: class MockHierarchyDefinitionNavigator {
     name = 'Hierarchy Definition';
     constructor(
@@ -55,7 +55,7 @@ vi.mock('../../../src/core/navigators/hierarchyDefinition', () => ({
   },
 }));
 
-vi.mock('../../../src/core/navigators/interferenceMitigator', () => ({
+vi.mock('../../../src/core/navigators/filters/interferenceMitigator', () => ({
   default: class MockInterferenceMitigatorNavigator {
     name = 'Interference Mitigator';
     constructor(
@@ -74,7 +74,7 @@ vi.mock('../../../src/core/navigators/interferenceMitigator', () => ({
   },
 }));
 
-vi.mock('../../../src/core/navigators/relativePriority', () => ({
+vi.mock('../../../src/core/navigators/filters/relativePriority', () => ({
   default: class MockRelativePriorityNavigator {
     name = 'Relative Priority';
     constructor(

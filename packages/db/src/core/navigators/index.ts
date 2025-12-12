@@ -350,15 +350,19 @@ export abstract class ContentNavigator implements StudyContentSource {
 
     // Try different extension variations
     const variations = ['.ts', '.js', ''];
+    const dirs = ['filters', 'generators'];
 
     for (const ext of variations) {
-      try {
-        const module = await import(`./${implementingClass}${ext}`);
-        NavigatorImpl = module.default;
-        break; // Break the loop if loading succeeds
-      } catch (e) {
-        // Continue to next variation if this one fails
-        logger.debug(`Failed to load with extension ${ext}:`, e);
+      for (const dir of dirs) {
+        const loadFrom = `./${dir}/${implementingClass}${ext}`;
+        try {
+          const module = await import(loadFrom);
+          NavigatorImpl = module.default;
+          break; // Break the loop if loading succeeds
+        } catch (e) {
+          // Continue to next variation if this one fails
+          logger.debug(`Failed to load extension from ${loadFrom}:`, e);
+        }
       }
     }
 
@@ -395,8 +399,6 @@ export abstract class ContentNavigator implements StudyContentSource {
    * @returns Cards sorted by score descending, with provenance trails
    */
   async getWeightedCards(_limit: number): Promise<WeightedCard[]> {
-    throw new Error(
-      `${this.constructor.name} must implement getWeightedCards(). `
-    );
+    throw new Error(`${this.constructor.name} must implement getWeightedCards(). `);
   }
 }

@@ -1,8 +1,8 @@
 import { Navigators } from './index';
 import { Pipeline } from './Pipeline';
-import CompositeGenerator from './CompositeGenerator';
-import ELONavigator from './elo';
-import SRSNavigator from './srs';
+import CompositeGenerator from './generators/CompositeGenerator';
+import ELONavigator from './generators/elo';
+import SRSNavigator from './generators/srs';
 import { createEloDistanceFilter } from './filters/eloDistance';
 import type { ContentNavigationStrategyData } from '../types/contentNavigationStrategy';
 import { DocType } from '../types/types-legacy';

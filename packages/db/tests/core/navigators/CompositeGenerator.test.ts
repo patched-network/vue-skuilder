@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import CompositeGenerator, {
   AggregationMode,
-} from '../../../src/core/navigators/CompositeGenerator';
+} from '../../../src/core/navigators/generators/CompositeGenerator';
 import { ContentNavigator, WeightedCard } from '../../../src/core/navigators/index';
 import { GeneratorContext } from '../../../src/core/navigators/generators/types';
 import { UserDBInterface } from '../../../src/core/interfaces/userDB';

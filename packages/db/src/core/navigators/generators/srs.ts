@@ -1,11 +1,11 @@
 import moment from 'moment';
-import type { ScheduledCard } from '../types/user';
-import type { CourseDBInterface } from '../interfaces/courseDB';
-import type { UserDBInterface } from '../interfaces/userDB';
-import { ContentNavigator } from './index';
-import type { WeightedCard } from './index';
-import type { ContentNavigationStrategyData } from '../types/contentNavigationStrategy';
-import type { CardGenerator, GeneratorContext } from './generators/types';
+import type { ScheduledCard } from '../../types/user';
+import type { CourseDBInterface } from '../../interfaces/courseDB';
+import type { UserDBInterface } from '../../interfaces/userDB';
+import { ContentNavigator } from '../index';
+import type { WeightedCard } from '../index';
+import type { ContentNavigationStrategyData } from '../../types/contentNavigationStrategy';
+import type { CardGenerator, GeneratorContext } from './types';
 import { logger } from '@db/util/logger';
 
 // ============================================================================
@@ -163,5 +163,4 @@ export default class SRSNavigator extends ContentNavigator implements CardGenera
 
     return { score, reason };
   }
-
 }
