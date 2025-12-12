@@ -4,7 +4,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { logger } from './tuiLogger';
+import { logger } from './logger';
 import { ENV } from '@db/factory';
 
 /**
