@@ -2,7 +2,8 @@
 
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
-import { initializeDataDirectory, initializeTuiLogging } from '@vue-skuilder/db';
+import { initializeDataDirectory } from '@vue-skuilder/db';
+import { initializeTuiLogging } from '@vue-skuilder/common';
 
 // Initialize TUI logging first (redirects console to log file)
 initializeTuiLogging();

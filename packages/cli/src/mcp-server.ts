@@ -1,9 +1,9 @@
 // MCP Server for Vue-Skuilder courses
 // This file is bundled into a self-contained executable
 
-import { initializeDataLayer, getDataLayer, initializeTuiLogging } from '@vue-skuilder/db';
+import { initializeDataLayer, getDataLayer } from '@vue-skuilder/db';
+import { initializeTuiLogging, createFileLogger } from '@vue-skuilder/common';
 import { MCPServer } from '@vue-skuilder/mcp';
-import { createFileLogger } from '@vue-skuilder/common';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import * as path from 'path';
 import * as os from 'os';

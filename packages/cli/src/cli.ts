@@ -1,5 +1,10 @@
 #!/usr/bin/env node
 
+// Initialize TUI logging FIRST to redirect all console output
+// Prevents PouchDB/FFmpeg logs from interfering with inquirer prompts
+import { initializeTuiLogging } from '@vue-skuilder/common';
+initializeTuiLogging();
+
 import { Command } from 'commander';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
