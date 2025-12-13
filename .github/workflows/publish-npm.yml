@@ -193,6 +193,7 @@ jobs:
           cd ../..
           echo "All packages published successfully!"
         env:
+          YARN_NPM_REGISTRY_SERVER: "https://registry.npmjs.org"
           YARN_NPM_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
