@@ -132,6 +132,12 @@ jobs:
             echo "✓ @vue-skuilder/$package build output verified"
           done
 
+      - name: Configure Yarn for OIDC publishing
+        run: |
+          yarn config set npmAlwaysAuth true
+          yarn config set npmAuthToken $NODE_AUTH_TOKEN
+          yarn config set npmRegistryServer https://registry.npmjs.org
+
       - name: Publish packages in dependency order
         if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'false')
         run: |
