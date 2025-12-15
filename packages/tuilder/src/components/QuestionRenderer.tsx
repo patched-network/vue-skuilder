@@ -1,70 +1,25 @@
-import React, { useState } from 'react';
-import { Box, Text } from 'ink';
+import React from 'react';
 import { TUIQuestion, TUIAnswer } from '../types/study.js';
-import MarkdownRenderer from './MarkdownRenderer.js';
-import MultipleChoiceInput from './MultipleChoiceInput.js';
-import FillInBlankInput from './FillInBlankInput.js';
+import FillInView from './FillInView.js';
 
 interface QuestionRendererProps {
   question: TUIQuestion;
   onAnswer: (answer: TUIAnswer) => void;
 }
 
+/**
+ * QuestionRenderer - Routes questions to appropriate view components
+ *
+ * Currently supports:
+ * - fill-in-blank: FillInView (text input with retry/hints)
+ * - multiple-choice: FillInView (uses radio selection)
+ *
+ * Future: Add routing for other question types (chess puzzles, etc.)
+ */
 const QuestionRenderer: React.FC<QuestionRendererProps> = ({ question, onAnswer }) => {
-  const [startTime] = useState(Date.now());
-
-  const handleTextAnswer = (text: string) => {
-    const answer: TUIAnswer = {
-      questionId: question.id,
-      response: text,
-      type: 'text',
-      timeSpent: Date.now() - startTime,
-    };
-    onAnswer(answer);
-  };
-
-  const handleChoiceAnswer = (choiceIndex: number) => {
-    const answer: TUIAnswer = {
-      questionId: question.id,
-      response: choiceIndex,
-      type: 'choice',
-      timeSpent: Date.now() - startTime,
-    };
-    onAnswer(answer);
-  };
-
-  return (
-    <Box flexDirection="column">
-      {/* Question Type Indicator */}
-      <Box marginBottom={1}>
-        <Text color="blue">
-          {question.isNew ? '📚 New' : '🔄 Review'} |
-          {question.type === 'multiple-choice' ? ' Multiple Choice' : ' Fill in the Blank'}
-        </Text>
-      </Box>
-
-      {/* Question Content */}
-      <Box marginBottom={1}>
-        <MarkdownRenderer content={question.content} />
-      </Box>
-
-      {/* Input Component based on question type */}
-      {question.type === 'multiple-choice' && question.options ? (
-        <MultipleChoiceInput options={question.options} onSelect={handleChoiceAnswer} />
-      ) : (
-        <FillInBlankInput onSubmit={handleTextAnswer} />
-      )}
-
-      {/* Help text */}
-      <Box marginTop={1}>
-        <Text color="gray" dimColor>
-          {question.type === 'multiple-choice'
-            ? 'Use arrow keys to navigate, Enter to select'
-            : 'Type your answer and press Enter'}
-        </Text>
-      </Box>
-    </Box>
-  );
+  // For now, all supported question types use FillInView
+  // FillInView handles both text input and multiple choice modes
+  return <FillInView question={question} onAnswer={onAnswer} />;
 };
 
 export default QuestionRenderer;
