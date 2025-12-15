@@ -1,8 +1,8 @@
 import { getDataLayer } from '@vue-skuilder/db';
 import { SessionController } from '@vue-skuilder/db';
 import { StudyContentSource, StudySessionItem, getStudySource } from '@vue-skuilder/db';
-import { BlanksCard, gradeSpellingAttempt } from '@vue-skuilder/courseware/logic';
-// import { Answer } from '@vue-skuilder/common';
+import { BlanksCard } from '@vue-skuilder/courseware/logic';
+import { gradeSpellingAttempt } from '../utils/gradeSpellingAttempt.js';
 
 import {
   TUIQuestion,
@@ -13,8 +13,18 @@ import {
   ViewData,
 } from '../types/study.js';
 
+/**
+ * Hydrated card structure returned by SessionController.nextCard()
+ * Contains the session item, view component (null for TUI), and ViewData
+ */
+interface HydratedCard {
+  item: StudySessionItem;
+  view: null;
+  data: ViewData[];
+}
+
 export class StudyService {
-  private sessionController: SessionController | null = null;
+  private sessionController: SessionController<null> | null = null;
   private currentSession: StudySession | null = null;
   private studySources: StudyContentSource[] = [];
 
@@ -31,7 +41,15 @@ export class StudyService {
     );
 
     // Initialize session controller
-    this.sessionController = new SessionController(this.studySources, config.durationSeconds);
+    // TUI doesn't use view components - pass noop function
+    const noopGetViewComponent = (_viewId: string): null => null;
+
+    this.sessionController = new SessionController<null>(
+      this.studySources,
+      config.durationSeconds,
+      dataLayer,
+      noopGetViewComponent
+    );
     await this.sessionController.prepareSession();
 
     // Initialize session state
@@ -64,9 +82,11 @@ export class StudyService {
       throw new Error('Study session not initialized');
     }
 
-    const sessionItem = this.sessionController.nextCard();
+    // Get next hydrated card from session controller
+    // First call with no action, subsequent calls happen in submitAnswer
+    const hydratedCard = await this.sessionController.nextCard();
 
-    if (!sessionItem) {
+    if (!hydratedCard) {
       // Session is complete
       this.currentSession.isComplete = true;
       this.currentSession.isActive = false;
@@ -79,12 +99,12 @@ export class StudyService {
     this.currentSession.progress.timeRemaining = this.sessionController.secondsRemaining;
 
     try {
-      // Fetch the actual card data
-      const question = await this.fetchQuestionData(sessionItem);
+      // Parse the hydrated card data into a TUIQuestion
+      const question = this.parseQuestionData(hydratedCard);
       this.currentSession.currentQuestion = question;
       return question;
     } catch (error) {
-      console.error('Failed to fetch question data:', error);
+      console.error('[StudyService] Failed to parse question data:', error);
       // Skip this question and try the next one
       return this.nextQuestion();
     }
@@ -106,18 +126,9 @@ export class StudyService {
       // Create BlanksCard instance to use its grading logic
       const blanksCard = new BlanksCard(question.viewData);
 
-      // Convert TUI answer to format expected by BlanksCard
-      let formattedAnswer;
-      if (answer.type === 'choice' && typeof answer.response === 'number') {
-        // Multiple choice answer
-        formattedAnswer = {
-          choiceList: question.options || [],
-          selection: answer.response,
-        };
-      } else {
-        // Text answer
-        formattedAnswer = answer.response as string;
-      }
+      // Both text and choice answers are now strings
+      // (FillInView passes the selected text, not an index)
+      const formattedAnswer = answer.response as string;
 
       isCorrect = blanksCard.isCorrect(formattedAnswer);
 
@@ -127,14 +138,9 @@ export class StudyService {
         spellingFeedback = gradeSpellingAttempt(answer.response as string, correctAnswer);
       }
     } catch (error) {
-      console.error('Error grading answer:', error);
-      // Fallback to simple string comparison
-      if (answer.type === 'text') {
-        isCorrect = question.answers.includes(answer.response as string);
-      } else if (answer.type === 'choice' && question.options) {
-        const selectedOption = question.options[answer.response as number];
-        isCorrect = question.answers.includes(selectedOption);
-      }
+      console.error('[StudyService] Error grading answer:', error);
+      // Fallback to simple string comparison (works for both text and choice)
+      isCorrect = question.answers.includes(answer.response as string);
     }
 
     // Update session progress
@@ -153,10 +159,11 @@ export class StudyService {
       correctAnswers: question.answers,
     };
 
-    // Tell session controller about the result
+    // Tell session controller about the result - this dismisses current card
+    // The next call to nextQuestion() will get the next card
     if (this.sessionController) {
       const action = isCorrect ? 'dismiss-success' : 'marked-failed';
-      this.sessionController.nextCard(action);
+      await this.sessionController.nextCard(action);
     }
 
     return feedback;
@@ -180,33 +187,14 @@ export class StudyService {
   }
 
   /**
-   * Fetch and parse question data from a session item
+   * Parse hydrated card data into a TUIQuestion
+   * The HydratedCard.data already contains ViewData[] from CardHydrationService
    */
-  private async fetchQuestionData(sessionItem: StudySessionItem): Promise<TUIQuestion> {
-    const dataLayer = getDataLayer();
+  private parseQuestionData(hydratedCard: HydratedCard): TUIQuestion {
+    const { item, data } = hydratedCard;
 
-    // Get course database
-    const courseDB = dataLayer.getCourseDB(sessionItem.courseID);
-
-    // Fetch card data - need to access the underlying PouchDB instance
-    const cardDoc = await (courseDB as any).db.get(sessionItem.cardID);
-
-    // Fetch displayable data for the card
-    const displayableDataIds = cardDoc.id_displayable_data;
-    if (!displayableDataIds || displayableDataIds.length === 0) {
-      throw new Error(`No displayable data found for card ${sessionItem.cardID}`);
-    }
-
-    // Get the first displayable data document
-    const displayableDoc = await (courseDB as any).db.get(displayableDataIds[0]);
-
-    // Convert to ViewData format
-    const viewData: ViewData[] = [
-      displayableDoc.data.reduce((acc: ViewData, field: any) => {
-        acc[field.name] = field.data;
-        return acc;
-      }, {}),
-    ];
+    // data is ViewData[] - use it directly to create BlanksCard
+    const viewData: ViewData[] = data;
 
     // Create BlanksCard to parse the question
     const blanksCard = new BlanksCard(viewData);
@@ -215,14 +203,14 @@ export class StudyService {
     const questionType = blanksCard.options ? 'multiple-choice' : 'fill-in-blank';
 
     return {
-      id: sessionItem.cardID,
-      courseId: sessionItem.courseID,
+      id: item.cardID,
+      courseId: item.courseID,
       type: questionType,
       content: blanksCard.mdText,
       options: blanksCard.options,
       answers: blanksCard.answers || [],
-      isNew: sessionItem.status === 'new',
-      sessionItem,
+      isNew: item.status === 'new',
+      sessionItem: item,
       viewData,
     };
   }
