@@ -92,7 +92,7 @@ export default defineComponent({
     });
 
     // Computed properties
-    const truncatedOptions = computed(() => shuffledOptions.value);
+    const truncatedOptions = computed(() => shuffledOptions.value ?? []);
 
     const hasImage = computed(() => !!props.data[0]['image-1']);
 
