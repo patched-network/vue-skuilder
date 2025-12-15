@@ -142,12 +142,14 @@ export function parsedComponent(token: MarkedToken): {
  * Decode HTML entities that marked might produce
  */
 export function decodeBasicEntities(text: string): string {
+  // IMPORTANT: &amp; must be decoded LAST to prevent double-unescaping
+  // (e.g., &amp;lt; should become &lt;, not <)
   return text
     .replace(/&#39;/g, "'")
     .replace(/&quot;/g, '"')
-    .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>');
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&');
 }
 
 /**
