@@ -294,13 +294,12 @@ const MdTokenRenderer: React.FC<MdTokenRendererProps> = ({
     );
   }
 
-  // HTML (strip tags for TUI)
+  // HTML (skip for TUI - cannot render safely in terminal)
   if (token.type === 'html') {
-    const htmlToken = token as Tokens.HTML;
-    const stripped = htmlToken.raw.replace(/<[^>]*>/g, '');
-    if (stripped.trim()) {
-      return <Text dimColor>{stripped}</Text>;
-    }
+    // Note: Stripping HTML tags with regex is insufficient for security
+    // (vulnerable to tag nesting, unclosed tags, etc.). Since this is a TUI
+    // rendering to terminal (not browser DOM), we simply skip HTML tokens.
+    // Any text content should already be in markdown text tokens.
     return null;
   }
 
