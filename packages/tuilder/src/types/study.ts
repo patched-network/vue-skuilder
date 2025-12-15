@@ -36,8 +36,8 @@ export interface TUIQuestion {
 export interface TUIAnswer {
   /** The question ID this answer is for */
   questionId: string;
-  /** User's response - string for fill-in, number for multiple choice index */
-  response: string | number;
+  /** User's response - always the text of their answer (selected option text for multiple choice) */
+  response: string;
   /** Type of response */
   type: 'text' | 'choice';
   /** Time spent on question in milliseconds */
