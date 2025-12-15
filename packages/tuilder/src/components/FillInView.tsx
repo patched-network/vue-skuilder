@@ -37,16 +37,6 @@ const FillInView: React.FC<FillInViewProps> = ({ question, onAnswer, modifyDiffi
   const [priorAttempts, setPriorAttempts] = useState<PriorAttempt[]>([]);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
-  // Debug logging
-  console.log('[FillInView] Rendering with question:', {
-    id: question.id,
-    content: question.content,
-    contentLength: question.content?.length,
-    type: question.type,
-    hasOptions: !!question.options,
-    answers: question.answers,
-  });
-
   // Determine if this is a question (has answers) or just content display
   const isQuestion = useMemo(() => {
     return question.answers && question.answers.length > 0;
