@@ -13,6 +13,10 @@
  * @example
  * gradeSpellingAttempt("helo", "hello") // "h e l _ o"
  * gradeSpellingAttempt("wrold", "world") // "w _ _ l d" (transposed letters partially matched)
+ *
+ * @claude [1023] DUPLICATED from: @packages/courseware/src/default/questions/fillIn/blanksCorrection.ts
+ * TODO: Import this function from @vue-skuilder/courseware or @vue-skuilder/courseware/logic instead of duplicating.
+ * Consider: `import { gradeSpellingAttempt } from '@vue-skuilder/courseware/logic'`
  */
 export function gradeSpellingAttempt(attempt: string, answer: string): string {
   const result: string[] = new Array(answer.length).fill('_');

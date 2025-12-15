@@ -1,6 +1,10 @@
 /**
  * Markdown renderer helpers for TUI - ported from common-ui
  * Handles the custom {{ }} component syntax used in vue-skuilder
+ *
+ * @claude [1023] TODO: These functions are naive copies from @packages/common-ui/src/components/cardRendering/MarkdownRendererHelpers.ts
+ * Consider extracting to a shared utility package or re-exporting from common-ui instead of duplicating.
+ * Current functions: splitByDelimiters, splitTextToken, containsComponent, isComponent, parseComponentSyntax, parsedComponent, etc.
  */
 
 import { Token, Tokens } from 'marked';
@@ -13,6 +17,8 @@ export type TokenOrComponent = MarkedToken | { type: 'component'; raw: string };
  *
  * eg: ("abcde", "b", "d")   => ["a", "bcd", "e"]
  *     ("a[b][c]", "[", "]") => ["a", "[b]", "[c]"]
+ *
+ * @claude [1023] DUPLICATED from: @packages/common-ui/src/components/cardRendering/MarkdownRendererHelpers.ts
  */
 export function splitByDelimiters(text: string, l: string, r: string): string[] {
   if (text.length === 0) return [];

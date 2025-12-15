@@ -3,6 +3,10 @@
  * Mirrors the Vue MarkdownRenderer.vue component architecture
  *
  * Uses marked.js for tokenization, then renders tokens via MdTokenRenderer
+ *
+ * @claude [1023] NOTE: This is a React port of @packages/common-ui/src/components/cardRendering/MarkdownRenderer.vue
+ * Architecture pattern mirrors Vue: marked.lexer() → token array → MdTokenRenderer for each token
+ * Consider: Abstract the marked.js integration and token pipeline to be framework-agnostic.
  */
 
 import React from 'react';

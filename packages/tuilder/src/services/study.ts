@@ -112,6 +112,9 @@ export class StudyService {
 
   /**
    * Submit an answer and get feedback
+   *
+   * @claude [1023] TODO: Answer grading logic here duplicates @packages/courseware/src/default/questions/fillIn/fillIn.vue
+   * Consider: Extract to shared `BlanksCard.grade()` utility or use a QuestionController pattern
    */
   async submitAnswer(answer: TUIAnswer): Promise<AnswerFeedback> {
     if (!this.currentSession?.currentQuestion) {
@@ -124,6 +127,7 @@ export class StudyService {
 
     try {
       // Create BlanksCard instance to use its grading logic
+      // @claude [1023] DUPLICATED pattern from: @packages/courseware/src/default/questions/fillIn/fillIn.vue line 222
       const blanksCard = new BlanksCard(question.viewData);
 
       // Both text and choice answers are now strings
@@ -189,6 +193,9 @@ export class StudyService {
   /**
    * Parse hydrated card data into a TUIQuestion
    * The HydratedCard.data already contains ViewData[] from CardHydrationService
+   *
+   * @claude [1023] NOTE: This mimics the logic from @packages/courseware/src/default/questions/fillIn/fillIn.vue
+   * where it uses BlanksCard to parse question content. Consider if this can be unified.
    */
   private parseQuestionData(hydratedCard: HydratedCard): TUIQuestion {
     const { item, data } = hydratedCard;
@@ -197,6 +204,7 @@ export class StudyService {
     const viewData: ViewData[] = data;
 
     // Create BlanksCard to parse the question
+    // @claude [1023] DUPLICATED pattern from: @packages/courseware/src/default/questions/fillIn/fillIn.vue lines 85-95
     const blanksCard = new BlanksCard(viewData);
 
     // Determine question type

@@ -1,6 +1,11 @@
 /**
  * MdTokenRenderer - Recursive token renderer for TUI markdown
  * Mirrors the Vue MdTokenRenderer.vue component architecture
+ *
+ * @claude [1023] NOTE: This is a React port of @packages/common-ui/src/components/cardRendering/MdTokenRenderer.vue
+ * Significant architectural similarities but framework-specific implementation (React vs Vue).
+ * Core token rendering logic and patterns follow the Vue implementation.
+ * Consider: If supporting multiple frameworks long-term, abstract rendering logic to framework-agnostic layer.
  */
 
 import React from 'react';
@@ -51,7 +56,11 @@ const TUIFillIn: React.FC<{ text: string }> = ({ text }) => {
   );
 };
 
-const MdTokenRenderer: React.FC<MdTokenRendererProps> = ({ token, last = false, components = {} }) => {
+const MdTokenRenderer: React.FC<MdTokenRendererProps> = ({
+  token,
+  last = false,
+  components = {},
+}) => {
   const getComponent = (name: string): React.FC<any> | null => {
     if (name === 'fillIn') {
       return TUIFillIn;
@@ -88,11 +97,7 @@ const MdTokenRenderer: React.FC<MdTokenRendererProps> = ({ token, last = false, 
           if (Component) {
             return <Component text={parsed.text} props={parsed.props} />;
           }
-          return (
-            <Text color="red">
-              [Unknown component: {parsed.is}]
-            </Text>
-          );
+          return <Text color="red">[Unknown component: {parsed.is}]</Text>;
         }
         return null;
       }
@@ -232,9 +237,7 @@ const MdTokenRenderer: React.FC<MdTokenRendererProps> = ({ token, last = false, 
     return (
       <Box marginLeft={2}>
         <Text>{'• '}</Text>
-        <Box flexDirection="column">
-          {renderChildren(itemToken.tokens)}
-        </Box>
+        <Box flexDirection="column">{renderChildren(itemToken.tokens)}</Box>
       </Box>
     );
   }
@@ -242,11 +245,7 @@ const MdTokenRenderer: React.FC<MdTokenRendererProps> = ({ token, last = false, 
   // Image
   if (token.type === 'image') {
     const imgToken = token as Tokens.Image;
-    return (
-      <Text color="gray">
-        [Image: {imgToken.title || imgToken.text || imgToken.href}]
-      </Text>
-    );
+    return <Text color="gray">[Image: {imgToken.title || imgToken.text || imgToken.href}]</Text>;
   }
 
   // Horizontal rule
@@ -309,16 +308,8 @@ const MdTokenRenderer: React.FC<MdTokenRendererProps> = ({ token, last = false, 
   if (token.type === 'code') {
     const codeToken = token as Tokens.Code;
     return (
-      <Box
-        flexDirection="column"
-        marginY={1}
-        borderStyle="single"
-        borderColor="gray"
-        paddingX={1}
-      >
-        {codeToken.lang && (
-          <Text dimColor>{'// ' + codeToken.lang}</Text>
-        )}
+      <Box flexDirection="column" marginY={1} borderStyle="single" borderColor="gray" paddingX={1}>
+        {codeToken.lang && <Text dimColor>{'// ' + codeToken.lang}</Text>}
         <Text color="green">{codeToken.text}</Text>
       </Box>
     );

@@ -8,6 +8,13 @@
  * - Text input mode (free-form typing)
  * - Spelling feedback on incorrect attempts
  * - Progressive hints after multiple attempts
+ *
+ * @claude [1023] TODO: This component duplicates significant logic from @packages/courseware/src/default/questions/fillIn/fillIn.vue
+ * Including:
+ * - Difficulty modifier & option truncation logic (lines 56-107 of this file vs fillIn.vue lines 62-120)
+ * - Shuffling algorithm (lines 156-164 in this file vs fillIn.vue line 49)
+ * - Try/hint/answer progression (lines 121-136 vs fillIn.vue)
+ * Consider: Extract core logic to shared utility or refactor to use a view-agnostic question controller
  */
 
 import React, { useState, useCallback, useMemo } from 'react';
@@ -204,9 +211,7 @@ const FillInView: React.FC<FillInViewProps> = ({ question, onAnswer, modifyDiffi
         ) : (
           <FillInBlankInput
             onSubmit={handleTextAnswer}
-            placeholder={
-              priorAttempts.length > 0 ? 'Try again...' : 'Type your answer...'
-            }
+            placeholder={priorAttempts.length > 0 ? 'Try again...' : 'Type your answer...'}
             resetKey={priorAttempts.length}
             showSubmittedState={false}
           />
