@@ -136,4 +136,5 @@ const App = () => {
   );
 };
 
-render(<App />);
+// Disable Ink's console patching - we handle it ourselves in cli.ts
+render(<App />, { patchConsole: false });

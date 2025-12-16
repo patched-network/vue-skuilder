@@ -55,7 +55,7 @@ const SessionConfigView = ({ onConfigComplete, onBack }: SessionConfigViewProps)
             activeCourses.map(async (reg: any) => {
               try {
                 // Try to get the course name from the lookup DB
-                const allCourses = await CourseLookup.allCourses();
+                const allCourses = await CourseLookup.allCourseWare();
                 const courseDoc = allCourses.find(doc => doc._id === reg.courseID);
                 
                 return {

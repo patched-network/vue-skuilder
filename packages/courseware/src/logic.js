@@ -114,7 +114,7 @@ export class BlanksCard {
       throw new Error('BlanksCard requires ViewData');
     }
 
-    const content = String(data[0]?.content || '');
+    const content = String(data[0]?.Input || data[0]?.content || '');
 
     // Find all {{...}} patterns
     const splitText = splitByDelimiters(content, '{{', '}}');
