@@ -17,8 +17,12 @@
  * Consider: Extract core logic to shared utility or refactor to use a view-agnostic question controller
  */
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { Box, Text } from 'ink';
+import Image from 'ink-picture';
+import { writeFile, unlink, stat } from 'fs/promises';
+import { tmpdir } from 'os';
+import { join } from 'path';
 import MarkdownRenderer from './MarkdownRenderer.js';
 import MultipleChoiceInput from './MultipleChoiceInput.js';
 import FillInBlankInput from './FillInBlankInput.js';
@@ -43,6 +47,7 @@ const FillInView: React.FC<FillInViewProps> = ({ question, onAnswer, modifyDiffi
   const [startTime] = useState(Date.now());
   const [priorAttempts, setPriorAttempts] = useState<PriorAttempt[]>([]);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [imagePaths, setImagePaths] = useState<string[]>([]);
 
   // Determine if this is a question (has answers) or just content display
   const isQuestion = useMemo(() => {
@@ -105,6 +110,80 @@ const FillInView: React.FC<FillInViewProps> = ({ question, onAnswer, modifyDiffi
     return obscureAnswer(someAnswer);
   }, [someAnswer, priorAttempts]);
 
+  // Extract images from viewData and write to temp files
+  useEffect(() => {
+    const setupImages = async () => {
+      console.log('[FillInView] Setting up images for question:', question.id);
+
+      const paths: string[] = [];
+      const viewData = question.viewData?.[0];
+
+      if (!viewData) {
+        console.log('[FillInView] No viewData[0] found');
+        return;
+      }
+
+      console.log('[FillInView] viewData[0] keys:', Object.keys(viewData));
+
+      // Extract all images (image-1, image-2, etc.)
+      let i = 1;
+      while (viewData[`image-${i}`]) {
+        const imageData = viewData[`image-${i}`];
+        console.log(`[FillInView] Found image-${i}, type:`, imageData?.constructor?.name);
+
+        // In Node.js/TUI, PouchDB returns Buffers, not Blobs
+        let buffer: Uint8Array;
+        if (Buffer.isBuffer(imageData)) {
+          // Already a Buffer - convert to Uint8Array
+          buffer = new Uint8Array(imageData);
+          console.log(`[FillInView] Converted Buffer to Uint8Array, size: ${buffer.length}`);
+        } else if (imageData instanceof Blob) {
+          // Browser Blob - convert via arrayBuffer
+          const arrayBuffer = await imageData.arrayBuffer();
+          buffer = new Uint8Array(arrayBuffer);
+          console.log(`[FillInView] Converted Blob to Uint8Array, size: ${buffer.length}`);
+        } else {
+          console.error(`[FillInView] Unknown image data type for image-${i}:`, typeof imageData);
+          i++;
+          continue;
+        }
+
+        // Write to temp file
+        const tempPath = join(tmpdir(), `tui-image-${question.id}-${i}.png`);
+        console.log(`[FillInView] Writing image to:`, tempPath);
+        await writeFile(tempPath, buffer);
+
+        // Verify file was written
+        const fileStats = await stat(tempPath);
+        console.log(`[FillInView] Verified temp file exists, size: ${fileStats.size} bytes`);
+
+        paths.push(tempPath);
+
+        i++;
+      }
+
+      console.log(`[FillInView] Found ${paths.length} images, setting paths:`, paths);
+      setImagePaths(paths);
+    };
+
+    setupImages().catch((err) => {
+      console.error('[FillInView] Failed to setup images:', err, err?.stack);
+    });
+
+    // Cleanup on unmount or question change
+    return () => {
+      // Clean up paths from the current state, not the captured closure
+      setImagePaths((currentPaths) => {
+        currentPaths.forEach((path) => {
+          unlink(path).catch(() => {
+            /* ignore cleanup errors */
+          });
+        });
+        return [];
+      });
+    };
+  }, [question.id, question.viewData]); // Removed imagePaths from dependencies to avoid infinite loop
+
   // Handle text input submission
   const handleTextAnswer = useCallback(
     (text: string) => {
@@ -165,6 +244,8 @@ const FillInView: React.FC<FillInViewProps> = ({ question, onAnswer, modifyDiffi
     onAnswer(answer);
   }, [question.id, startTime, onAnswer]);
 
+  console.log('[FillInView] Rendering with imagePaths:', imagePaths);
+
   return (
     <Box flexDirection="column">
       {/* Question type indicator */}
@@ -175,6 +256,36 @@ const FillInView: React.FC<FillInViewProps> = ({ question, onAnswer, modifyDiffi
           {question.options ? 'Multiple Choice' : 'Fill in the Blank'}
         </Text>
       </Box>
+
+      {/* Images */}
+      {imagePaths.length > 0 && (
+        <Box marginBottom={1}>
+          <Text color="magenta">Rendering {imagePaths.length} image(s)</Text>
+        </Box>
+      )}
+      {imagePaths.map((path, index) => {
+        console.log(`[FillInView] Rendering Image component for path: ${path}`);
+
+        // Detect Ghostty even when running inside tmux/screen
+        // const isGhostty = !!process.env.GHOSTTY_RESOURCES_DIR;
+        // const protocol = isGhostty ? 'kitty' : undefined;
+
+        // if (isGhostty) {
+        //   console.log('[FillInView] Detected Ghostty, using Kitty protocol');
+        // }
+
+        return (
+          <Box key={index} width={40} height={30} marginBottom={1} flexDirection="column">
+            <Image
+              src={path}
+              // width={60}
+              // height={40}
+              // protocol={protocol}
+              // alt={`Question image ${index + 1}`}
+            />
+          </Box>
+        );
+      })}
 
       {/* Markdown content */}
       <Box marginBottom={1}>

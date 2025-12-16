@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { render, Box, Text } from 'ink';
+import { TerminalInfoProvider } from 'ink-picture';
 import LoginView from './components/LoginView.js';
 import SignupView from './components/SignupView.js';
 import LoadingSpinner from './components/Spinner.js';
@@ -137,4 +138,9 @@ const App = () => {
 };
 
 // Disable Ink's console patching - we handle it ourselves in cli.ts
-render(<App />, { patchConsole: false });
+render(
+  <TerminalInfoProvider>
+    <App />
+  </TerminalInfoProvider>,
+  { patchConsole: false }
+);
