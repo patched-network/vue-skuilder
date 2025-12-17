@@ -158,4 +158,4 @@ common → db → common-ui → courses → platform-ui
 ### Legacy/Inactive Packages
 - `client`: Legacy HTTP client library, minimal maintenance
 - `e2e-db`: e2e testing that never got off the ground.
-- `tuilder`: experimental
+- `tuilder`: experimental - light functionality
