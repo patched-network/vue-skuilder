@@ -34,6 +34,7 @@
           :session-order="cardCount"
           :user_elo="user_elo(courseID)"
           :card_elo="card_elo"
+          :frameless="frameless"
           @emit-response="processResponse($event)"
         />
       </transition>
@@ -52,7 +53,7 @@
       <sk-tags-input :course-i-d="courseID" :card-i-d="cardID" />
     </div> -->
 
-    <v-row align="center" class="footer-controls pa-5">
+    <v-row v-if="!hideFooter" align="center" class="footer-controls pa-5">
       <v-col cols="auto" class="d-flex flex-grow-0 mr-auto">
         <StudySessionTimer
           :time-remaining="timeRemaining"
@@ -150,6 +151,14 @@ export default defineComponent({
     getViewComponent: {
       type: Function as PropType<(viewId: string) => ViewComponent>,
       required: true,
+    },
+    frameless: {
+      type: Boolean,
+      default: false,
+    },
+    hideFooter: {
+      type: Boolean,
+      default: false,
     },
   },
 

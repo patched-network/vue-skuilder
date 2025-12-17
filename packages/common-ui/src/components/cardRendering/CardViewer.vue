@@ -1,5 +1,18 @@
 <template>
-  <v-card elevation="12">
+  <!-- Frameless mode: direct render -->
+  <component
+    v-if="frameless"
+    :is="view"
+    ref="activeView"
+    :key="course_id + '-' + card_id + '-' + sessionOrder"
+    :data="data"
+    :modify-difficulty="user_elo.global.score - card_elo"
+    class="cardView"
+    @emit-response="processResponse($event)"
+  />
+
+  <!-- Traditional mode: v-card wrapper -->
+  <v-card v-else elevation="12">
     <component
       :is="view"
       ref="activeView"
@@ -65,6 +78,10 @@ export default defineComponent({
     card_elo: {
       type: Number,
       default: 1000,
+    },
+    frameless: {
+      type: Boolean,
+      default: false,
     },
   },
 
