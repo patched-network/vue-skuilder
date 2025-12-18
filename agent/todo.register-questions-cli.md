@@ -1,4 +1,8 @@
-# TODO: Add `register-questions` CLI Command to vue-skuilder
+# DONE: Add `register-questions` CLI Command to vue-skuilder
+
+**Status:** Implementation complete. Manual testing deferred to user.
+
+---
 
 ## Context
 
@@ -162,3 +166,47 @@ Save for last. builds are expensive on this machine, and can intterupt flow.
 1. Run `yarn build` in `packages/db` - should compile without errors
 2. Run `yarn build` in `packages/studio-ui` - should work with new import
 3. Run `yarn build` in `packages/cli` - should include new command
+
+---
+
+## Implementation Summary
+
+**Completed 2024-12-18**
+
+### Changes Made
+
+1. **`packages/db/src/courseConfigRegistration.ts`** - NEW
+   - Moved from studio-ui with refactoring
+   - `registerSeedData()` now takes `username: string` parameter
+   - Uses `@vue-skuilder/db` logger instead of console.log
+   - Removed dependency on `@vue-skuilder/common-ui`
+
+2. **`packages/db/src/index.ts`** - MODIFIED
+   - Added `export * from './courseConfigRegistration'`
+
+3. **`packages/studio-ui/src/main.ts`** - MODIFIED
+   - Updated imports to use `@vue-skuilder/db` instead of local utils
+
+4. **`packages/studio-ui/src/utils/courseConfigRegistration.ts`** - DELETED
+
+5. **`packages/cli/src/commands/register-questions.ts`** - NEW
+   - Reads `course` and `couchdbUrl` from `skuilder.config.json`
+   - Requires `--user` and `--password` CLI flags
+   - Supports `--dry-run` for previewing changes
+   - Supports custom `--config` and `--questions` paths
+
+6. **`packages/cli/src/cli.ts`** - MODIFIED
+   - Added import and registration for new command
+
+7. **`docs/cli.md`** - MODIFIED
+   - Added documentation for `register-questions` command
+
+### Usage
+
+```bash
+# In standalone app directory after yarn build:lib
+npx @vue-skuilder/cli register-questions --user admin --password secret
+
+# Preview changes
+npx @vue-skuilder/cli register-questions --dry-run --user admin --password secret
+```
