@@ -281,18 +281,19 @@ export async function registerSeedData(
     logger.info(`Registering seed data for question: ${question.name}`);
 
     try {
-      question.questionClass.seedData.forEach((seedDataItem: unknown) => {
-        if (question.dataShapes.length > 0) {
+      const seedDataPromises = question.questionClass.seedData
+        .filter(() => question.dataShapes.length > 0)
+        .map((seedDataItem: unknown) =>
           courseDB.addNote(
             question.course,
             question.dataShapes[0],
             seedDataItem,
             username,
             []
-          );
-        }
-      });
+          )
+        );
 
+      await Promise.all(seedDataPromises);
       logger.info(`Seed data registered for question: ${question.name}`);
     } catch (error) {
       logger.warn(
