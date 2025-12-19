@@ -143,7 +143,7 @@ import {
   type ProcessedQuestionData,
 } from '@vue-skuilder/db';
 import { useAuthStore } from '@vue-skuilder/common-ui';
-import { allCustomQuestions } from '@sui/questions';
+import { allCustomQuestions } from '../questions';
 import config from '../../skuilder.config.json';
 
 // State
