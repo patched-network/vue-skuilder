@@ -38,14 +38,14 @@
     "@rollup/plugin-node-resolve": "^15.2.3",
     "@rollup/plugin-typescript": "^11.1.6",
     "@types/node": "^22",
-    "@typescript-eslint/eslint-plugin": "^8.48.1",
-    "@typescript-eslint/parser": "^8.48.1",
+    "@typescript-eslint/eslint-plugin": "^8.50.0",
+    "@typescript-eslint/parser": "^8.50.0",
     "eslint": "^8.57.0",
     "rimraf": "^5.0.5",
-    "rollup": "^4.12.1",
+    "rollup": "^4.53.5",
     "tslib": "^2.6.2",
     "typescript": "~5.9.3",
-    "vitest": "^4.0.15"
+    "vitest": "^4.0.16"
   },
   "stableVersion": "0.1.23"
 }

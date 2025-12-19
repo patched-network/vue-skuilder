@@ -24,15 +24,15 @@
     "lint:check": "npx eslint . --max-warnings 0"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.24.3",
+    "@modelcontextprotocol/sdk": "^1.25.1",
     "@vue-skuilder/common": "workspace:*",
     "@vue-skuilder/courseware": "workspace:*",
     "@vue-skuilder/db": "workspace:*",
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@modelcontextprotocol/inspector": "^0.17.2",
-    "tsup": "^8.0.0",
+    "@modelcontextprotocol/inspector": "^0.18.0",
+    "tsup": "^8.5.1",
     "typescript": "~5.9.3"
   },
   "stableVersion": "0.1.23"
