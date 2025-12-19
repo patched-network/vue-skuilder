@@ -1,16 +1,20 @@
 import { CourseConfig, DataShape, NameSpacer, toZodJSON } from '@vue-skuilder/common';
-import { CourseDBInterface } from '@vue-skuilder/db';
-import { Displayable, getCurrentUser, ViewComponent } from '@vue-skuilder/common-ui';
-import { CourseWare } from '@vue-skuilder/courseware';
+import { CourseDBInterface } from './core/interfaces/courseDB.js';
+import { logger } from './util/logger.js';
 
 /**
  * Interface for custom questions data structure returned by allCustomQuestions()
  */
 export interface CustomQuestionsData {
-  courses: CourseWare[]; // Course instances with question instances
-  questionClasses: Displayable[]; // Question class constructors
+  courses: { name: string }[]; // Course instances with question instances
+  questionClasses: {
+    name: string;
+    dataShapes?: DataShape[];
+    views?: { name?: string }[];
+    seedData?: unknown[];
+  }[]; // Question class constructors
   dataShapes: DataShape[]; // DataShape definitions for studio-ui
-  views: ViewComponent[]; // Vue components for rendering
+  views: { name?: string }[]; // Vue components for rendering
   meta: {
     questionCount: number;
     dataShapeCount: number;
@@ -27,9 +31,14 @@ export interface CustomQuestionsData {
 export interface ProcessedQuestionData {
   name: string;
   course: string;
-  questionClass: any;
-  dataShapes: any[];
-  views: any[];
+  questionClass: {
+    name: string;
+    dataShapes?: DataShape[];
+    views?: { name?: string }[];
+    seedData?: unknown[];
+  };
+  dataShapes: DataShape[];
+  views: { name?: string }[];
 }
 
 /**
@@ -38,7 +47,7 @@ export interface ProcessedQuestionData {
 export interface ProcessedDataShape {
   name: string;
   course: string;
-  dataShape: any;
+  dataShape: DataShape;
 }
 
 /**
@@ -147,7 +156,7 @@ export function registerDataShape(
   try {
     serializedZodSchema = toZodJSON(dataShape.dataShape);
   } catch (error) {
-    console.warn(`   ⚠️  Failed to generate schema for ${namespacedName}:`, error);
+    logger.warn(`Failed to generate schema for ${namespacedName}:`, error);
     serializedZodSchema = undefined;
   }
 
@@ -159,21 +168,20 @@ export function registerDataShape(
 
     // If existing schema matches new schema, no update needed
     if (existingDataShape.serializedZodSchema === serializedZodSchema) {
-      console.log(
-        `   ℹ️  DataShape '${dataShape.name}' from '${dataShape.course}' already registered with identical schema`
+      logger.info(
+        `DataShape '${dataShape.name}' from '${dataShape.course}' already registered with identical schema`
       );
       return false;
     }
 
     // Schema has changed or was missing - update it
     if (existingDataShape.serializedZodSchema) {
-      console.log(
-        `   🔄 DataShape '${dataShape.name}' from '${dataShape.course}' schema has changed, updating...`
+      logger.info(
+        `DataShape '${dataShape.name}' from '${dataShape.course}' schema has changed, updating...`
       );
     } else {
-      console.log(
-        `   ℹ️  DataShape '${dataShape.name}' from '${dataShape.course}' already registered, but with no schema` +
-          `\n   ℹ️  Adding schema to existing entry`
+      logger.info(
+        `DataShape '${dataShape.name}' from '${dataShape.course}' already registered, but with no schema. Adding schema to existing entry`
       );
     }
 
@@ -184,7 +192,7 @@ export function registerDataShape(
       serializedZodSchema,
     };
 
-    console.log(`   ✅ Updated DataShape: ${namespacedName}`);
+    logger.info(`Updated DataShape: ${namespacedName}`);
     return true;
   }
 
@@ -194,7 +202,7 @@ export function registerDataShape(
     serializedZodSchema,
   });
 
-  console.log(`   ✅ Registered DataShape: ${namespacedName}`);
+  logger.info(`Registered DataShape: ${namespacedName}`);
   return true;
 }
 
@@ -206,9 +214,7 @@ export function registerQuestionType(
   courseConfig: CourseConfig
 ): boolean {
   if (isQuestionTypeRegistered(question, courseConfig)) {
-    console.log(
-      `   ℹ️  QuestionType '${question.name}' from '${question.course}' already registered`
-    );
+    logger.info(`QuestionType '${question.name}' from '${question.course}' already registered`);
     return false;
   }
 
@@ -255,40 +261,43 @@ export function registerQuestionType(
     }
   });
 
-  console.log(`   ✅ Registered QuestionType: ${namespacedQuestionName}`);
+  logger.info(`Registered QuestionType: ${namespacedQuestionName}`);
   return true;
 }
 
 /**
- * Register seed data for a question type (similar to ComponentRegistration)
+ * Register seed data for a question type
+ *
+ * @param question - The processed question data
+ * @param courseDB - The course database interface
+ * @param username - The username to attribute seed data to
  */
 export async function registerSeedData(
   question: ProcessedQuestionData,
-  courseDB: CourseDBInterface
-  // courseName: string
+  courseDB: CourseDBInterface,
+  username: string
 ): Promise<void> {
   if (question.questionClass.seedData && Array.isArray(question.questionClass.seedData)) {
-    console.log(`   📦 Registering seed data for question: ${question.name}`);
+    logger.info(`Registering seed data for question: ${question.name}`);
 
     try {
-      const currentUser = await getCurrentUser();
-
-      question.questionClass.seedData.forEach((seedDataItem: unknown) => {
-        if (question.dataShapes.length > 0) {
+      const seedDataPromises = question.questionClass.seedData
+        .filter(() => question.dataShapes.length > 0)
+        .map((seedDataItem: unknown) =>
           courseDB.addNote(
             question.course,
             question.dataShapes[0],
             seedDataItem,
-            currentUser.getUsername(),
+            username,
             []
-          );
-        }
-      });
+          )
+        );
 
-      console.log(`   ✅ Seed data registered for question: ${question.name}`);
+      await Promise.all(seedDataPromises);
+      logger.info(`Seed data registered for question: ${question.name}`);
     } catch (error) {
-      console.warn(
-        `   ⚠️  Failed to register seed data for question '${question.name}': ${error instanceof Error ? error.message : String(error)}`
+      logger.warn(
+        `Failed to register seed data for question '${question.name}': ${error instanceof Error ? error.message : String(error)}`
       );
     }
   }
@@ -298,13 +307,14 @@ export async function registerSeedData(
  * Register BlanksCard (markdown fillIn) question type specifically
  */
 export async function registerBlanksCard(
-  BlanksCard: any,
-  BlanksCardDataShapes: any[],
+  BlanksCard: { name: string; views?: { name?: string }[] },
+  BlanksCardDataShapes: DataShape[],
   courseConfig: CourseConfig,
-  courseDB: CourseDBInterface
+  courseDB: CourseDBInterface,
+  username?: string
 ): Promise<{ success: boolean; errorMessage?: string }> {
   try {
-    console.log('   📋 Registering BlanksCard data shapes and question type...');
+    logger.info('Registering BlanksCard data shapes and question type...');
 
     let registeredCount = 0;
     const courseName = 'default'; // BlanksCard comes from the default course
@@ -326,7 +336,11 @@ export async function registerBlanksCard(
     const processedQuestion: ProcessedQuestionData = {
       name: BlanksCard.name,
       course: courseName,
-      questionClass: BlanksCard,
+      questionClass: {
+        name: BlanksCard.name,
+        dataShapes: BlanksCardDataShapes,
+        views: BlanksCard.views || [],
+      },
       dataShapes: BlanksCardDataShapes,
       views: BlanksCard.views || [],
     };
@@ -336,47 +350,54 @@ export async function registerBlanksCard(
     }
 
     // Update the course config in the database
-    console.log('   💾 Updating course configuration with BlanksCard...');
+    logger.info('Updating course configuration with BlanksCard...');
     const updateResult = await courseDB.updateCourseConfig(courseConfig);
 
     if (!updateResult.ok) {
       throw new Error(`Failed to update course config: ${JSON.stringify(updateResult)}`);
     }
 
-    // Register seed data if BlanksCard has any
-    await registerSeedData(processedQuestion, courseDB);
+    // Register seed data if BlanksCard has any and username provided
+    if (username) {
+      await registerSeedData(processedQuestion, courseDB, username);
+    }
 
-    console.log(`   ✅ BlanksCard registration complete: ${registeredCount} items registered`);
+    logger.info(`BlanksCard registration complete: ${registeredCount} items registered`);
 
     return { success: true };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error(`   ❌ BlanksCard registration failed: ${errorMessage}`);
+    logger.error(`BlanksCard registration failed: ${errorMessage}`);
     return { success: false, errorMessage };
   }
 }
 
 /**
  * Main function to register all custom question types and data shapes
+ *
+ * @param customQuestions - The custom questions data from allCustomQuestions()
+ * @param courseConfig - The course configuration object
+ * @param courseDB - The course database interface
+ * @param username - The username to attribute seed data to
  */
 export async function registerCustomQuestionTypes(
   customQuestions: CustomQuestionsData,
   courseConfig: CourseConfig,
-  courseDB: CourseDBInterface
-  // courseName: string
+  courseDB: CourseDBInterface,
+  username?: string
 ): Promise<{ success: boolean; registeredCount: number; errorMessage?: string }> {
   try {
-    console.log('🎨 Studio Mode: Beginning custom question registration');
-    console.log(`   📊 Processing ${customQuestions.questionClasses.length} question classes`);
+    logger.info('Beginning custom question registration');
+    logger.info(`Processing ${customQuestions.questionClasses.length} question classes`);
 
     const { dataShapes, questions } = processCustomQuestionsData(customQuestions);
 
-    console.log(`   📊 Found ${dataShapes.length} data shapes and ${questions.length} questions`);
+    logger.info(`Found ${dataShapes.length} data shapes and ${questions.length} questions`);
 
     let registeredCount = 0;
 
     // First, register all data shapes
-    console.log('   📋 Registering data shapes...');
+    logger.info('Registering data shapes...');
     for (const dataShape of dataShapes) {
       if (registerDataShape(dataShape, courseConfig)) {
         registeredCount++;
@@ -384,7 +405,7 @@ export async function registerCustomQuestionTypes(
     }
 
     // Then, register all question types
-    console.log('   🔧 Registering question types...');
+    logger.info('Registering question types...');
     for (const question of questions) {
       if (registerQuestionType(question, courseConfig)) {
         registeredCount++;
@@ -392,25 +413,27 @@ export async function registerCustomQuestionTypes(
     }
 
     // Update the course config in the database
-    console.log('   💾 Updating course configuration...');
+    logger.info('Updating course configuration...');
     const updateResult = await courseDB.updateCourseConfig(courseConfig);
 
     if (!updateResult.ok) {
       throw new Error(`Failed to update course config: ${JSON.stringify(updateResult)}`);
     }
 
-    // Register seed data for questions that have it
-    console.log('   🌱 Registering seed data...');
-    for (const question of questions) {
-      await registerSeedData(question, courseDB /*, courseName */);
+    // Register seed data for questions that have it (if username provided)
+    if (username) {
+      logger.info('Registering seed data...');
+      for (const question of questions) {
+        await registerSeedData(question, courseDB, username);
+      }
     }
 
-    console.log(`   ✅ Custom question registration complete: ${registeredCount} items registered`);
+    logger.info(`Custom question registration complete: ${registeredCount} items registered`);
 
     return { success: true, registeredCount };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error(`   ❌ Custom question registration failed: ${errorMessage}`);
+    logger.error(`Custom question registration failed: ${errorMessage}`);
     return { success: false, registeredCount: 0, errorMessage };
   }
 }

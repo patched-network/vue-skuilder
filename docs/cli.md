@@ -127,7 +127,7 @@ skuilder unpack <coursePath> [options]
 
 ## Requirements
 
-- **Node.js:** >= 18.0.0
+- **Node.js:** >= 22.0.0
 - **Docker:** Required for studio mode (CouchDB)
 - **Git:** Recommended for version control
 

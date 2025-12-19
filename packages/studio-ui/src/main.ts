@@ -125,7 +125,7 @@ const vuetify = createVuetify({
       const courseDB = getDataLayer().getCourseDB(studioConfig.database.name);
       const courseConfig = await courseDB.getCourseConfig();
 
-      const { registerCustomQuestionTypes } = await import('./utils/courseConfigRegistration');
+      const { registerCustomQuestionTypes } = await import('@vue-skuilder/db');
       const registrationResult = await registerCustomQuestionTypes(
         customQuestions,
         courseConfig,
@@ -156,7 +156,7 @@ const vuetify = createVuetify({
     const courseConfig = await courseDB.getCourseConfig();
 
     const { BlanksCard, BlanksCardDataShapes } = await import('@vue-skuilder/courseware');
-    const { registerBlanksCard } = await import('./utils/courseConfigRegistration');
+    const { registerBlanksCard } = await import('@vue-skuilder/db');
     
     const blanksRegistrationResult = await registerBlanksCard(
       BlanksCard,
