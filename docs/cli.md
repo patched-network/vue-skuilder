@@ -120,32 +120,6 @@ skuilder unpack <coursePath> [options]
 - Sets up indices and views for querying
 - Enables dynamic editing in studio mode
 
-### `register-questions`
-
-Register custom question types (DataShapes) from a built library to CouchDB CourseConfig.
-
-```bash
-skuilder register-questions [options]
-```
-
-**Options:**
-- `-u, --user <username>` - CouchDB username (required)
-- `-p, --password <password>` - CouchDB password (required)
-- `--config <path>` - Path to skuilder.config.json (default: `skuilder.config.json`)
-- `--questions <path>` - Path to questions module (default: `dist-lib/questions.mjs`)
-- `--dry-run` - Show what would be registered without making changes
-
-**Prerequisites:**
-- Built questions library (`yarn build:lib`)
-- Valid `skuilder.config.json` with `course` and `couchdbUrl` fields
-- CouchDB credentials with write access
-
-**Operation:**
-- Loads custom question types from built library
-- Connects to remote CouchDB using config URL and CLI credentials
-- Registers DataShapes and QuestionTypes in CourseConfig document
-- Idempotent: safe to run multiple times (updates rather than duplicates)
-
 ## Global Options
 
 - `-h, --help` - Display help information
@@ -177,12 +151,6 @@ skuilder unpack ./static-courses/biology-101 --validate
 
 # Studio with custom port, no browser
 skuilder studio . --port 6000 --no-browser
-
-# Register custom question types to remote CouchDB
-skuilder register-questions --user admin --password secret
-
-# Preview what would be registered (dry run)
-skuilder register-questions --dry-run --user admin --password secret
 ```
 
 ## Workflows

@@ -42,7 +42,7 @@ Instead of a CLI command running in Node.js, add a protected admin route to the 
 
 ### Implementation Sketch
 
-**Route:** `/admin/register-questions` (or `/admin/configure-datashapes`)
+**Route:** `/admin/register-questions`
 
 **Protection:**
 - Check user is authenticated and has admin privileges
@@ -62,11 +62,9 @@ Instead of a CLI command running in Node.js, add a protected admin route to the 
 │   • 5 DataShapes found                              │
 │   • 4 QuestionTypes found                           │
 │                                                     │
-│ Changes to apply:                                   │
-│   + Add DataShape: letterspractice.JugglingPattern  │
-│   + Add DataShape: letterspractice.LetterTrace      │
-│   + Add QuestionType: JugglingQuestion              │
-│   + Add QuestionType: LetterTraceQuestion           │
+│ Changes to apply: (eg)                              │
+│   + Add DataShape: letterspractice.Spelling         │
+│   + Add QuestionType: SpelingView                   │
 │                                                     │
 │           [ Register Question Types ]               │
 │                                                     │
@@ -112,7 +110,7 @@ const result = await registerCustomQuestionTypes(
 ## Could Studio Mode Work Against Production CouchDB?
 
 ### The Question
-Could a developer run `skuilder studio` locally and point it at the production CouchDB at `letterspractice.com/couch`?
+Could a developer run the existing `skuilder studio` locally and point it at the production CouchDB at `letterspractice.com/couch`?
 
 ### Likely Issues
 
@@ -164,20 +162,30 @@ CLI-specific (may want to remove or mark as WIP):
 ## Next Steps
 
 1. **Decide on CLI command fate:**
-   - Remove entirely?
+   - [x] Remove entirely? ✅ **DONE (2025-12-19)**
    - Keep as WIP with prominent warning about limitations?
    - Leave dormant for potential future Node.js-compatible build?
+
+>>> yes - remove entirely. this node-compilation of vue component modules will never be worth maintanence headache.
+
+**Completed:** Removed `register-questions` command, imports, and documentation from CLI package.
 
 2. **Implement admin route in standalone-ui template:**
    - Add protected route
    - Create registration UI component
    - Wire up to existing `@vue-skuilder/db` utilities
+   
+>>> add also some logic either in guard or in component so that a scaffolded app in *static* mode doesn't display anything, but instead redirects people to use the studio-ui mechanisms (`yarn studio` in a scaffolded app.)
 
 3. **Update standalone app scaffolding:**
    - Include admin route in `skuilder init` template
    - Document the workflow for registering question types
+   
+>>> this point seems confused - the standalone-ui package *is* the app that gets scaffolded out via skuilder init. If we add it there, there will be no further changes needed for the scaffolding.
 
 4. **For letterspractice specifically:**
    - Add the admin route manually
    - Run once to register DataShapes
    - Remove the page-load registration code
+
+>>> set this aside to do together w/ user after initial steps are complete.
