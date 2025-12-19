@@ -5,6 +5,7 @@ import ProgressView from '../views/ProgressView.vue';
 import BrowseView from '../views/BrowseView.vue';
 import UserStatsView from '../views/UserStatsView.vue';
 import UserSettingsView from '../views/UserSettingsView.vue';
+import AdminRegisterQuestionsView from '../views/AdminRegisterQuestionsView.vue';
 import { UserLogin, UserRegistration } from '@vue-skuilder/common-ui';
 
 const routes: Array<RouteRecordRaw> = [
@@ -55,11 +56,40 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('../views/TagViewer.vue'),
     props: true,
   },
+  {
+    path: '/admin/register-questions',
+    name: 'AdminRegisterQuestions',
+    component: AdminRegisterQuestionsView,
+    meta: {
+      requiresAuth: true,
+    },
+  },
 ];
 
 const router = createRouter({
   history: createWebHistory(),
   routes,
+});
+
+// Navigation guard for protected routes
+router.beforeEach(async (to, _from, next) => {
+  // Check if route requires authentication
+  if (to.meta.requiresAuth) {
+    // Dynamically import auth store to avoid circular dependencies
+    const { useAuthStore } = await import('@vue-skuilder/common-ui');
+    const authStore = useAuthStore();
+
+    if (!authStore.currentUser) {
+      // Redirect to login with return path
+      next({
+        name: 'login',
+        query: { redirect: to.fullPath },
+      });
+      return;
+    }
+  }
+
+  next();
 });
 
 export default router;

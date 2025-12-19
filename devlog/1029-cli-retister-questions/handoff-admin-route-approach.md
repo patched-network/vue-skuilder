@@ -170,18 +170,31 @@ CLI-specific (may want to remove or mark as WIP):
 
 **Completed:** Removed `register-questions` command, imports, and documentation from CLI package.
 
-2. **Implement admin route in standalone-ui template:**
+2. **Implement admin route in standalone-ui template:** ✅ **DONE (2025-12-19)**
    - Add protected route
    - Create registration UI component
    - Wire up to existing `@vue-skuilder/db` utilities
-   
+
 >>> add also some logic either in guard or in component so that a scaffolded app in *static* mode doesn't display anything, but instead redirects people to use the studio-ui mechanisms (`yarn studio` in a scaffolded app.)
 
-3. **Update standalone app scaffolding:**
+**Completed:**
+- Created `/admin/register-questions` route in `packages/standalone-ui/src/router/index.ts`
+- Added navigation guard checking `meta.requiresAuth` and redirecting to login if not authenticated
+- Created `packages/standalone-ui/src/views/AdminRegisterQuestionsView.vue` with:
+  - Static mode detection and warning message directing users to `yarn studio`
+  - Display of current CourseConfig state (DataShapes/QuestionTypes counts)
+  - Display of custom questions from `allCustomQuestions()`
+  - Preview of changes to apply (add/update DataShapes and QuestionTypes)
+  - Registration button that calls `registerCustomQuestionTypes()` from `@vue-skuilder/db`
+  - Success/error messaging and automatic state refresh after registration
+
+3. **Update standalone app scaffolding:** ✅ **DONE (2025-12-19)**
    - Include admin route in `skuilder init` template
    - Document the workflow for registering question types
-   
+
 >>> this point seems confused - the standalone-ui package *is* the app that gets scaffolded out via skuilder init. If we add it there, there will be no further changes needed for the scaffolding.
+
+**Completed:** No additional work needed - changes to `packages/standalone-ui` are automatically included in scaffolded apps via `skuilder init`.
 
 4. **For letterspractice specifically:**
    - Add the admin route manually
