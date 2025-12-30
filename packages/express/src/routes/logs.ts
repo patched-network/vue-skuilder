@@ -5,6 +5,7 @@ import rateLimit from 'express-rate-limit';
 
 import logger from '../logger.js';
 import process from 'process';
+import { requestIsAdminAuthenticated } from '../couchdb/authentication.js';
 
 const router = express.Router();
 
@@ -23,16 +24,13 @@ const logsRateLimit = rateLimit({
 router.use(logsRateLimit);
 
 // Get list of available log files
-router.get('/', (_req: Request, res: Response) => {
+router.get('/', (req: Request, res: Response) => {
   void (async () => {
-  // [ ] add an auth mechanism. Below fcn is based on
-  //     the CouchDB auth mechanism, forwarded from the web-app (not direct-access of server).
-  //
-  // const auth = await requestIsAdminAuthenticated(req);
-  // if (!auth) {
-  //   res.status(401).json({ error: 'Unauthorized' });
-  //   return;
-  // }
+  const auth = await requestIsAdminAuthenticated(req);
+  if (!auth) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
 
   try {
     const logsDir = path.join(process.cwd(), 'logs');
@@ -96,6 +94,12 @@ router.get('/', (_req: Request, res: Response) => {
 
 router.get('/:filename', (req: Request, res: Response) => {
   void (async () => {
+  const auth = await requestIsAdminAuthenticated(req);
+  if (!auth) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+
   try {
     const filename = req.params.filename;
     // Sanitize filename to prevent directory traversal
@@ -245,11 +249,11 @@ router.get('/:filename', (req: Request, res: Response) => {
 // Get contents of specific log file
 router.get('/:filename/raw', (req: Request, res: Response) => {
   void (async () => {
-  // const auth = await requestIsAdminAuthenticated(req);
-  // if (!auth) {
-  //   res.status(401).json({ error: 'Unauthorized' });
-  //   return;
-  // }
+  const auth = await requestIsAdminAuthenticated(req);
+  if (!auth) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
 
   try {
     const filename = req.params.filename;
