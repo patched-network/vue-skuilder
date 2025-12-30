@@ -8,6 +8,7 @@ import {
   getUserEmail,
   updateUserDoc,
 } from '../couchdb/userLookup.js';
+import { getAuthenticatedUsername } from '../couchdb/authentication.js';
 import { generateSecureToken, getTokenExpiry, isTokenExpired } from '../utils/tokens.js';
 import { sendVerificationEmail, sendPasswordResetEmail } from '../services/email.js';
 import logger from '../logger.js';
@@ -30,6 +31,7 @@ const router = express.Router();
 /**
  * POST /auth/send-verification
  * Trigger verification email for a newly created account.
+ * Requires authentication - caller's session must match the requested username.
  *
  * Body params:
  *   - username: string (required)
@@ -43,6 +45,16 @@ router.post('/send-verification', (req: Request, res: Response) => {
 
     if (!username) {
       return res.status(400).json({ ok: false, error: 'Username required' });
+    }
+
+    // Verify caller is authenticated as the requested user
+    const authenticatedUser = await getAuthenticatedUsername(req);
+    if (!authenticatedUser) {
+      return res.status(401).json({ ok: false, error: 'Authentication required' });
+    }
+    if (authenticatedUser !== username) {
+      logger.warn(`[send-verification] User ${authenticatedUser} attempted to send verification for ${username}`);
+      return res.status(403).json({ ok: false, error: 'Cannot send verification for another user' });
     }
 
     // Get user doc
@@ -292,8 +304,8 @@ router.post('/reset-password', (req: Request, res: Response) => {
 
 /**
  * POST /auth/initialize-trial
- * Initialize trial entitlement for newly created user
- * Called by frontend immediately after CouchDB account creation
+ * Initialize trial entitlement for newly created user.
+ * Requires authentication - caller's session must match the requested username.
  *
  * Body params:
  *   - username: string (required) - CouchDB username
@@ -307,6 +319,16 @@ router.post('/initialize-trial', (req: Request, res: Response) => {
 
       if (!username) {
         return res.status(400).json({ ok: false, error: 'Username required' });
+      }
+
+      // Verify caller is authenticated as the requested user
+      const authenticatedUser = await getAuthenticatedUsername(req);
+      if (!authenticatedUser) {
+        return res.status(401).json({ ok: false, error: 'Authentication required' });
+      }
+      if (authenticatedUser !== username) {
+        logger.warn(`[initialize-trial] User ${authenticatedUser} attempted to initialize trial for ${username}`);
+        return res.status(403).json({ ok: false, error: 'Cannot initialize trial for another user' });
       }
 
       // Infer courseId from origin if not explicitly provided
