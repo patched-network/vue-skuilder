@@ -46,6 +46,34 @@ function logRequest(req: VueClientRequest) {
   logger.info(`${req.body.type} request from ${req.body.user}...`);
 }
 
+/**
+ * Get the authenticated username from the request.
+ * Returns the username if authenticated, null otherwise.
+ * Use this when you need to verify the caller's identity.
+ */
+export async function getAuthenticatedUsername(req: VueClientRequest): Promise<string | null> {
+  const authCookie: string = req.cookies?.AuthSession;
+
+  if (!authCookie) {
+    return null;
+  }
+
+  try {
+    const session: CouchSession = await Nano({
+      cookie: 'AuthSession=' + authCookie,
+      url: getCouchURLWithProtocol(),
+    }).session();
+
+    if (session.userCtx.name) {
+      logger.info(`[getAuthenticatedUsername] authenticated as: ${session.userCtx.name}`);
+      return session.userCtx.name;
+    }
+    return null;
+  } catch (_err) {
+    return null;
+  }
+}
+
 export async function requestIsAuthenticated(req: VueClientRequest) {
   logRequest(req);
 
