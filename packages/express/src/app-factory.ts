@@ -1,8 +1,8 @@
 import { initializeDataLayer } from '@vue-skuilder/db';
-import { 
-  ServerRequestType as RequestEnum, 
-  ServerRequest, 
-  prepareNote55, 
+import {
+  ServerRequestType as RequestEnum,
+  ServerRequest,
+  prepareNote55,
 } from '@vue-skuilder/common';
 import { CourseLookup } from '@vue-skuilder/db';
 import cookieParser from 'cookie-parser';
@@ -23,7 +23,7 @@ import {
   initCourseDBDesignDocInsert,
 } from './client-requests/course-requests.js';
 import { packCourse } from './client-requests/pack-requests.js';
-import { requestIsAuthenticated } from './couchdb/authentication.js';
+import { requestIsAuthenticated, getAuthenticatedUsername } from './couchdb/authentication.js';
 import { getCouchDB, initializeCouchDB, useOrCreateCourseDB, useOrCreateDB } from './couchdb/index.js';
 import { classroomDbDesignDoc } from './design-docs.js';
 import logger from './logger.js';
@@ -71,10 +71,10 @@ function convertToEnvConfig(config: ExpressServerConfig): EnvironmentConfig {
  */
 export function createExpressApp(config: AppConfig): express.Application {
   const app = express();
-  
+
   // Normalize config to environment format for internal usage
-  const envConfig = isExpressServerConfig(config) 
-    ? convertToEnvConfig(config) 
+  const envConfig = isExpressServerConfig(config)
+    ? convertToEnvConfig(config)
     : config;
 
   // Initialize CouchDB connection
@@ -143,23 +143,52 @@ export function createExpressApp(config: AppConfig): express.Application {
   app.delete('/course/:courseID', (req: Request, res: Response) => {
     void (async () => {
       try {
-        logger.info(`Delete request made on course ${req.params.courseID}...`);
-        const auth = await requestIsAuthenticated(req);
-        if (auth) {
-          logger.info(`	Authenticated delete request made...`);          const dbResp = await getCouchDB().db.destroy(            `coursedb-${req.params.courseID}`          );
-          if (!dbResp.ok) {
-            res.json({ success: false, error: dbResp });
-            return;
-          }
-          const delResp = await CourseLookup.delete(req.params.courseID);
+        const courseID = req.params.courseID;
+        logger.info(`[DELETE /course] Delete request for course ${courseID}`);
 
-          if (delResp.ok) {
-            res.json({ success: true });
-          } else {
-            res.json({ success: false, error: delResp });
-          }
+        // Get authenticated username
+        const username = await getAuthenticatedUsername(req);
+        if (!username) {
+          res.status(401).json({ success: false, error: 'Not authenticated' });
+          return;
+        }
+
+        // Fetch course config to check authorization
+        const courseDB = await useOrCreateCourseDB(courseID);
+        let courseConfig: { creator?: string; admins?: string[] };
+        try {
+          courseConfig = await courseDB.get('CourseConfig') as { creator?: string; admins?: string[] };
+        } catch (err) {
+          logger.warn(`[DELETE /course] CourseConfig not found for ${courseID}: ${err}`);
+          res.status(404).json({ success: false, error: 'Course not found' });
+          return;
+        }
+
+        // Check if user is creator or admin
+        const isCreator = courseConfig.creator === username;
+        const isAdmin = Array.isArray(courseConfig.admins) && courseConfig.admins.includes(username);
+
+        if (!isCreator && !isAdmin) {
+          logger.warn(`[DELETE /course] User ${username} not authorized to delete course ${courseID}`);
+          res.status(403).json({ success: false, error: 'Not authorized to delete this course' });
+          return;
+        }
+
+        logger.info(`[DELETE /course] User ${username} authorized (creator: ${isCreator}, admin: ${isAdmin})`);
+
+        // Proceed with deletion
+        const dbResp = await getCouchDB().db.destroy(`coursedb-${courseID}`);
+        if (!dbResp.ok) {
+          res.json({ success: false, error: dbResp });
+          return;
+        }
+
+        const delResp = await CourseLookup.delete(courseID);
+        if (delResp.ok) {
+          logger.info(`[DELETE /course] Course ${courseID} deleted by ${username}`);
+          res.json({ success: true });
         } else {
-          res.json({ success: false, error: 'Not authenticated' });
+          res.json({ success: false, error: delResp });
         }
       } catch (error) {
         logger.error('Error deleting course:', error);
@@ -232,7 +261,7 @@ export function createExpressApp(config: AppConfig): express.Application {
           res.send();
           return;
         }
-        
+
         body.response = await packCourse({
           courseId: body.courseId,
           outputPath: body.outputPath,
