@@ -7,6 +7,7 @@ import {
 import { CourseLookup } from '@vue-skuilder/db';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
+import type { CorsOptionsDelegate } from 'cors';
 import type { Request, Response } from 'express';
 import express from 'express';
 import morgan from 'morgan';
@@ -30,6 +31,7 @@ import logsRouter from './routes/logs.js';
 import authRouter from './routes/auth.js';
 import type { ExpressServerConfig, EnvironmentConfig } from './types.js';
 import { applyUsersDesignDocs } from './couchdb/userDesignDocs.js';
+import { getAllowedOrigins } from './utils/origins.js';
 
 export interface VueClientRequest extends express.Request {
   body: ServerRequest;
@@ -78,10 +80,26 @@ export function createExpressApp(config: AppConfig): express.Application {
   // Initialize CouchDB connection
   initializeCouchDB(envConfig);
 
-  // Configure CORS - use config if available, otherwise defaults
-  const corsOptions = isExpressServerConfig(config) && config.cors 
-    ? config.cors 
-    : { credentials: true, origin: true };
+  // Configure CORS - use config if available, otherwise use origin whitelist
+  const corsOptions: CorsOptionsDelegate = isExpressServerConfig(config) && config.cors
+    ? () => config.cors!
+    : (req, callback) => {
+        const origin = req.headers.origin;
+        const allowed = getAllowedOrigins();
+
+        // Allow requests with no origin (same-origin, server-to-server, curl, etc.)
+        if (!origin) {
+          callback(null, { credentials: true, origin: true });
+          return;
+        }
+
+        if (allowed.includes(origin)) {
+          callback(null, { credentials: true, origin: true });
+        } else {
+          logger.warn(`[CORS] Rejected origin: ${origin}`);
+          callback(new Error('Origin not allowed by CORS policy'), { origin: false });
+        }
+      };
 
   // Middleware setup
   app.use(cookieParser());

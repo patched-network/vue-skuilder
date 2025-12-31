@@ -92,6 +92,7 @@ handle_path /express {
 - `DO_USERNAME`: SSH username (likely 'skuilder')
 - `KNOWN_HOSTS`: SSH known_hosts entry for eduquilt.com
 - `EXPRESS_ENV`: Production environment variables file content
+- `EXPRESS_ENV_ORIGINS`: Comma-separated list of allowed frontend origins (for CORS and email link validation)
 
 The `EXPRESS_ENV` secret should contain all required environment variables:
 ```bash
@@ -106,6 +107,16 @@ APP_URL=https://eduquilt.com
 SUPPORT_EMAIL=support@eduquilt.com
 ```
 
+The `EXPRESS_ENV_ORIGINS` secret should contain allowed origins (no `ALLOWED_ORIGINS=` prefix):
+```
+https://letterspractice.com,https://www.letterspractice.com,https://eduquilt.com,https://www.eduquilt.com
+```
+
+This is combined with `EXPRESS_ENV` at deploy time to create the full `.env.production` file.
+The origins whitelist is used for:
+- CORS validation (reject cross-origin requests from unknown origins)
+- Email link validation (prevent phishing via malicious origin parameters)
+
 ## Deployment Process
 
 1. **Trigger workflow** via GitHub Actions UI
@@ -116,7 +127,7 @@ SUPPORT_EMAIL=support@eduquilt.com
 2. **Workflow builds**:
    - Installs dependencies
    - Builds workspace packages (common, db)
-   - Creates `.env.production` from `EXPRESS_ENV` secret
+   - Creates `.env.production` from `EXPRESS_ENV` + `EXPRESS_ENV_ORIGINS` secrets
    - Builds Express backend
    - Creates build info
 

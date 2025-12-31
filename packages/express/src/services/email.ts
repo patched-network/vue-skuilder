@@ -1,4 +1,5 @@
 import logger from '../logger.js';
+import { validateOrigin } from '../utils/origins.js';
 
 /**
  * Email service for sending verification and password reset emails.
@@ -14,15 +15,27 @@ const MAILER_SERVICE_URL =
  * @param to - Recipient email address
  * @param token - Verification token to include in link
  * @param origin - Optional frontend origin URL (e.g., 'https://course.example.com')
- *                 If not provided, falls back to APP_URL env var or localhost
+ *                 Must be in ALLOWED_ORIGINS whitelist.
+ *                 If not provided or invalid, falls back to APP_URL env var.
  */
 export async function sendVerificationEmail(
   to: string,
   token: string,
   origin?: string
 ): Promise<void> {
-  // Priority: origin param > APP_URL env var > localhost fallback
-  const baseUrl = origin || process.env.APP_URL || 'http://localhost:5173';
+  // Validate origin against whitelist (returns null if invalid/missing)
+  const validatedOrigin = validateOrigin(origin);
+
+  // Priority: validated origin > APP_URL env var
+  const baseUrl = validatedOrigin || process.env.APP_URL;
+
+  if (!baseUrl) {
+    const error =
+      'No valid origin for email link. Set APP_URL or provide a whitelisted origin.';
+    logger.error(`[email] ${error}`);
+    throw new Error(error);
+  }
+
   const verificationLink = `${baseUrl}/verify?token=${token}`;
 
   try {
@@ -48,9 +61,9 @@ export async function sendVerificationEmail(
       );
     }
 
-    logger.info(`Verification email sent to ${to} via mailer service`);
+    logger.info(`[email] Verification email sent to ${to} via mailer service`);
   } catch (error) {
-    logger.error(`Failed to send verification email to ${to}:`, error);
+    logger.error(`[email] Failed to send verification email to ${to}:`, error);
     throw error;
   }
 }
@@ -60,15 +73,27 @@ export async function sendVerificationEmail(
  * @param to - Recipient email address
  * @param token - Reset token to include in link
  * @param origin - Optional frontend origin URL (e.g., 'https://course.example.com')
- *                 If not provided, falls back to APP_URL env var or localhost
+ *                 Must be in ALLOWED_ORIGINS whitelist.
+ *                 If not provided or invalid, falls back to APP_URL env var.
  */
 export async function sendPasswordResetEmail(
   to: string,
   token: string,
   origin?: string
 ): Promise<void> {
-  // Priority: origin param > APP_URL env var > localhost fallback
-  const baseUrl = origin || process.env.APP_URL || 'http://localhost:5173';
+  // Validate origin against whitelist (returns null if invalid/missing)
+  const validatedOrigin = validateOrigin(origin);
+
+  // Priority: validated origin > APP_URL env var
+  const baseUrl = validatedOrigin || process.env.APP_URL;
+
+  if (!baseUrl) {
+    const error =
+      'No valid origin for email link. Set APP_URL or provide a whitelisted origin.';
+    logger.error(`[email] ${error}`);
+    throw new Error(error);
+  }
+
   const resetLink = `${baseUrl}/reset-password?token=${token}`;
 
   try {
@@ -91,9 +116,14 @@ export async function sendPasswordResetEmail(
       );
     }
 
-    logger.info(`Password reset email sent to ${to} via mailer service`);
+    logger.info(
+      `[email] Password reset email sent to ${to} via mailer service`
+    );
   } catch (error) {
-    logger.error(`Failed to send password reset email to ${to}:`, error);
+    logger.error(
+      `[email] Failed to send password reset email to ${to}:`,
+      error
+    );
 
     throw error;
   }

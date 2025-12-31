@@ -41,7 +41,8 @@ jobs:
 
       - name: Set production environment
         working-directory: ./packages/express
-        run: printf "${{ secrets.EXPRESS_ENV }}" > .env.production
+        run: |
+          printf "${{ secrets.EXPRESS_ENV }}\nALLOWED_ORIGINS=${{ secrets.EXPRESS_ENV_ORIGINS }}" > .env.production
 
       - name: Build Express backend
         run: yarn workspace @vue-skuilder/express build
