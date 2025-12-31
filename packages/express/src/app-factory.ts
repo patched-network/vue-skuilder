@@ -32,6 +32,7 @@ import authRouter from './routes/auth.js';
 import type { ExpressServerConfig, EnvironmentConfig } from './types.js';
 import { applyUsersDesignDocs } from './couchdb/userDesignDocs.js';
 import { getAllowedOrigins } from './utils/origins.js';
+import { globalLimiter, moderateLimiter } from './utils/rateLimiters.js';
 
 export interface VueClientRequest extends express.Request {
   body: ServerRequest;
@@ -105,6 +106,7 @@ export function createExpressApp(config: AppConfig): express.Application {
   app.use(cookieParser());
   app.use(express.json());
   app.use(cors(corsOptions));
+  app.use(globalLimiter);
   app.use(
     morgan('combined', {
       stream: { write: (message: string) => logger.info(message.trim()) },
@@ -114,7 +116,7 @@ export function createExpressApp(config: AppConfig): express.Application {
   app.use('/auth', authRouter);
 
   // Routes
-  app.get('/courses', (_req: Request, res: Response) => {
+  app.get('/courses', moderateLimiter, (_req: Request, res: Response) => {
     void (async () => {
       try {
         const courses = await CourseLookup.allCourseWare();
@@ -126,7 +128,7 @@ export function createExpressApp(config: AppConfig): express.Application {
     })();
   });
 
-  app.get('/course/:courseID/config', (req: Request, res: Response) => {
+  app.get('/course/:courseID/config', moderateLimiter, (req: Request, res: Response) => {
     void (async () => {
       try {
         const courseDB = await useOrCreateCourseDB(req.params.courseID);
@@ -140,7 +142,7 @@ export function createExpressApp(config: AppConfig): express.Application {
     })();
   });
 
-  app.delete('/course/:courseID', (req: Request, res: Response) => {
+  app.delete('/course/:courseID', moderateLimiter, (req: Request, res: Response) => {
     void (async () => {
       try {
         const courseID = req.params.courseID;
@@ -277,7 +279,7 @@ export function createExpressApp(config: AppConfig): express.Application {
     }
   }
 
-  app.post('/', (req: Request, res: Response) => {
+  app.post('/', moderateLimiter, (req: Request, res: Response) => {
     void postHandler(req, res);
   });
 
