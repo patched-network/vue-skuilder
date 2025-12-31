@@ -31,7 +31,7 @@ export async function requestIsAdminAuthenticated(req: VueClientRequest) {
     })
       .session()
       .then((s: CouchSession) => {
-        logger.info(`AuthUser: ${JSON.stringify(s)}`);
+        logger.info(`[requestIsAdminAuthenticated] user: ${s.userCtx.name}, roles: ${s.userCtx.roles.join(',')}`);
         const isAdmin = s.userCtx.roles.indexOf('_admin') !== -1;
         const isLoggedInUser = s.userCtx.name === username;
         return isAdmin && isLoggedInUser;
@@ -109,7 +109,7 @@ export async function requestIsAuthenticated(req: VueClientRequest) {
     })
       .session()
       .then((s: CouchSession) => {
-        logger.info(`AuthUser: ${JSON.stringify(s)}`);
+        logger.info(`[requestIsAuthenticated] user: ${s.userCtx.name}, roles: ${s.userCtx.roles.join(',')}`);
         return s.userCtx.name === username;
       })
       .catch((_err) => {
