@@ -4,11 +4,25 @@ import { validateOrigin } from '../utils/origins.js';
 /**
  * Email service for sending verification and password reset emails.
  *
- * Integrated with business-backend mailer service running on port 3001
+ * Integrated with business-backend mailer service running on port 3001.
+ * Requires MAILER_AUTH_TOKEN env var for authentication with mailer service.
  */
 
 const MAILER_SERVICE_URL =
   process.env.MAILER_SERVICE_URL || 'http://localhost:3001/mailer';
+const MAILER_AUTH_TOKEN = process.env.MAILER_AUTH_TOKEN;
+
+function getAuthHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  if (MAILER_AUTH_TOKEN) {
+    headers['Authorization'] = `Bearer ${MAILER_AUTH_TOKEN}`;
+  } else {
+    logger.warn('[email] MAILER_AUTH_TOKEN not set - requests may be rejected');
+  }
+  return headers;
+}
 
 /**
  * Send verification email with magic link token.
@@ -48,9 +62,7 @@ export async function sendVerificationEmail(
 
     const response = await fetch(`${MAILER_SERVICE_URL}/send-verification`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify(payload),
     });
 
@@ -99,9 +111,7 @@ export async function sendPasswordResetEmail(
   try {
     const response = await fetch(`${MAILER_SERVICE_URL}/send-password-reset`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify({
         recipientEmail: to,
         recipientName: to.split('@')[0], // Extract name from email (simple approach)
