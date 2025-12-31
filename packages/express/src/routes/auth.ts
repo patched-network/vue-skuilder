@@ -1,4 +1,5 @@
 import express, { Request, Response } from 'express';
+import rateLimit from 'express-rate-limit';
 import Nano from 'nano';
 import { getCouchURLWithProtocol } from '../couchdb/index.js';
 import {
@@ -12,6 +13,39 @@ import { getAuthenticatedUsername } from '../couchdb/authentication.js';
 import { generateSecureToken, getTokenExpiry, isTokenExpired } from '../utils/tokens.js';
 import { sendVerificationEmail, sendPasswordResetEmail } from '../services/email.js';
 import logger from '../logger.js';
+
+/**
+ * Rate limiters for auth endpoints.
+ *
+ * Strict limiter: For email-sending and token-consuming endpoints
+ * - Prevents email bombing (send-verification, request-reset)
+ * - Prevents brute force on tokens (verify, reset-password)
+ *
+ * Moderate limiter: For status checks and less sensitive endpoints
+ */
+const strictLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // 5 requests per window
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { ok: false, error: 'Too many requests. Please try again later.' },
+  handler: (req, res, _next, options) => {
+    logger.warn(`[rate-limit] Strict limit exceeded for ${req.ip} on ${req.path}`);
+    res.status(429).json(options.message);
+  },
+});
+
+const moderateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 30, // 30 requests per window
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { ok: false, error: 'Too many requests. Please try again later.' },
+  handler: (req, res, _next, options) => {
+    logger.warn(`[rate-limit] Moderate limit exceeded for ${req.ip} on ${req.path}`);
+    res.status(429).json(options.message);
+  },
+});
 
 interface CouchSession {
   info: {
@@ -38,7 +72,7 @@ const router = express.Router();
  *   - email: string (optional) - If provided, uses this email directly (avoids DB sync race condition)
  *   - origin: string (optional) - Frontend origin URL for constructing verification link
  */
-router.post('/send-verification', (req: Request, res: Response) => {
+router.post('/send-verification', strictLimiter, (req: Request, res: Response) => {
   void (async () => {
     try {
     const { username, email: providedEmail, origin } = req.body;
@@ -110,7 +144,7 @@ router.post('/send-verification', (req: Request, res: Response) => {
  * POST /auth/verify
  * Complete email verification using token.
  */
-router.post('/verify', (req: Request, res: Response) => {
+router.post('/verify', strictLimiter, (req: Request, res: Response) => {
   void (async () => {
     try {
     const { token } = req.body;
@@ -157,7 +191,7 @@ router.post('/verify', (req: Request, res: Response) => {
  * Get current user's account status (verification status, email).
  * Requires AuthSession cookie.
  */
-router.get('/status', (req: Request, res: Response) => {
+router.get('/status', moderateLimiter, (req: Request, res: Response) => {
   void (async () => {
     try {
       const authCookie: string = req.cookies?.AuthSession;
@@ -204,7 +238,7 @@ router.get('/status', (req: Request, res: Response) => {
  *   - email: string (required)
  *   - origin: string (optional) - Frontend origin URL for constructing reset link
  */
-router.post('/request-reset', (req: Request, res: Response) => {
+router.post('/request-reset', strictLimiter, (req: Request, res: Response) => {
   void (async () => {
     try {
     const { email, origin } = req.body;
@@ -250,7 +284,7 @@ router.post('/request-reset', (req: Request, res: Response) => {
  * POST /auth/reset-password
  * Reset password using token.
  */
-router.post('/reset-password', (req: Request, res: Response) => {
+router.post('/reset-password', strictLimiter, (req: Request, res: Response) => {
   void (async () => {
     try {
     const { token, newPassword } = req.body;
@@ -277,8 +311,8 @@ router.post('/reset-password', (req: Request, res: Response) => {
     // CouchDB has an internal hook that automatically hashes the password
     // when a 'password' field is present in the user document.
     // see https://docs.couchdb.org/en/stable/intro/security.html#password-changing
-    
-    
+
+
     // @ts-expect-error writing to metadata field here.
     userDoc.password = newPassword as string; // Add plain text password field
 
@@ -312,7 +346,7 @@ router.post('/reset-password', (req: Request, res: Response) => {
  *   - origin: string (optional) - Frontend origin URL (e.g., 'letterspractice.com') for courseId inference
  *   - courseId: string (optional) - Explicit courseId, if not provided inferred from origin
  */
-router.post('/initialize-trial', (req: Request, res: Response) => {
+router.post('/initialize-trial', moderateLimiter, (req: Request, res: Response) => {
   void (async () => {
     try {
       const { username, origin, courseId: explicitCourseId } = req.body;
@@ -411,7 +445,7 @@ router.post('/initialize-trial', (req: Request, res: Response) => {
  *   - provider: string (optional) - 'stripe', 'manual', etc.
  *   - metadata: object (optional) - Additional payment metadata
  */
-router.post('/permissions', (req: Request, res: Response) => {
+router.post('/permissions', moderateLimiter, (req: Request, res: Response) => {
   void (async () => {
     try {
       // Verify authorization
