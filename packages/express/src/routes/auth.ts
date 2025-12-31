@@ -1,5 +1,4 @@
 import express, { Request, Response } from 'express';
-import rateLimit from 'express-rate-limit';
 import Nano from 'nano';
 import { getCouchURLWithProtocol } from '../couchdb/index.js';
 import {
@@ -13,39 +12,7 @@ import { getAuthenticatedUsername } from '../couchdb/authentication.js';
 import { generateSecureToken, getTokenExpiry, isTokenExpired } from '../utils/tokens.js';
 import { sendVerificationEmail, sendPasswordResetEmail } from '../services/email.js';
 import logger from '../logger.js';
-
-/**
- * Rate limiters for auth endpoints.
- *
- * Strict limiter: For email-sending and token-consuming endpoints
- * - Prevents email bombing (send-verification, request-reset)
- * - Prevents brute force on tokens (verify, reset-password)
- *
- * Moderate limiter: For status checks and less sensitive endpoints
- */
-const strictLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // 5 requests per window
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { ok: false, error: 'Too many requests. Please try again later.' },
-  handler: (req, res, _next, options) => {
-    logger.warn(`[rate-limit] Strict limit exceeded for ${req.ip} on ${req.path}`);
-    res.status(429).json(options.message);
-  },
-});
-
-const moderateLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 30, // 30 requests per window
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { ok: false, error: 'Too many requests. Please try again later.' },
-  handler: (req, res, _next, options) => {
-    logger.warn(`[rate-limit] Moderate limit exceeded for ${req.ip} on ${req.path}`);
-    res.status(429).json(options.message);
-  },
-});
+import { strictLimiter, moderateLimiter } from '../utils/rateLimiters.js';
 
 interface CouchSession {
   info: {
