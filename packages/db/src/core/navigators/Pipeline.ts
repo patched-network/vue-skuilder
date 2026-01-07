@@ -6,7 +6,7 @@ import type { WeightedCard } from './index';
 import type { CardFilter, FilterContext } from './filters/types';
 import type { CardGenerator, GeneratorContext } from './generators/types';
 import { logger } from '../../util/logger';
-import { createOrchestrationContext } from '../orchestration';
+import { createOrchestrationContext, OrchestrationContext } from '../orchestration';
 
 // ============================================================================
 // PIPELINE LOGGING HELPERS
@@ -290,5 +290,46 @@ export class Pipeline extends ContentNavigator {
    */
   getCourseID(): string {
     return this.course!.getCourseID();
+  }
+
+  /**
+   * Get orchestration context for outcome recording.
+   */
+  async getOrchestrationContext(): Promise<OrchestrationContext> {
+    return createOrchestrationContext(this.user!, this.course!);
+  }
+
+  /**
+   * Get IDs of all strategies in this pipeline.
+   * Used to record which strategies contributed to an outcome.
+   */
+  getStrategyIds(): string[] {
+    const ids: string[] = [];
+
+    const extractId = (obj: any): string | null => {
+      // Check for strategyId property (ContentNavigator, WeightedFilter)
+      if (obj.strategyId) return obj.strategyId;
+      return null;
+    };
+
+    // Generator(s)
+    const genId = extractId(this.generator);
+    if (genId) ids.push(genId);
+
+    // Inspect CompositeGenerator children (accessing private field via cast)
+    if ((this.generator as any).generators && Array.isArray((this.generator as any).generators)) {
+      (this.generator as any).generators.forEach((g: any) => {
+        const subId = extractId(g);
+        if (subId) ids.push(subId);
+      });
+    }
+
+    // Filters
+    for (const filter of this.filters) {
+      const fId = extractId(filter);
+      if (fId) ids.push(fId);
+    }
+
+    return [...new Set(ids)];
   }
 }

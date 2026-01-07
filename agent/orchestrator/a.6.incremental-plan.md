@@ -95,13 +95,13 @@ Automatic exploration of weight space without manual A/B setup.
 
 ### Tasks
 
-- [ ] Define `UserOutcomeRecord` doc type
-- [ ] Add `DocType.USER_OUTCOME` enum value
-- [ ] Implement `computeOutcomeSignal()` - placeholder: accuracy in zone
-- [ ] Implement `scoreAccuracyInZone(accuracy, zone)` helper
-- [ ] Implement `recordUserOutcome()` - stores in userDB
-- [ ] Wire outcome recording to session end (or periodic trigger)
-- [ ] Add `signalType` to course config
+- [x] Define `UserOutcomeRecord` doc type
+- [x] Add `DocType.USER_OUTCOME` enum value
+- [x] Implement `computeOutcomeSignal()` - placeholder: accuracy in zone
+- [x] Implement `scoreAccuracyInZone(accuracy, zone)` helper
+- [x] Implement `recordUserOutcome()` - stores in userDB
+- [x] Wire outcome recording to session end (or periodic trigger)
+- [x] Add `signalType` to course config
 
 ### Key Files
 

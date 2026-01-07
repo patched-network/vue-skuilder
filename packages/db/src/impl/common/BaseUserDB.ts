@@ -20,6 +20,7 @@ import {
 } from '@db/core/types/user';
 import { DocumentUpdater } from '@db/study';
 import { CardHistory, CardRecord } from '../../core/types/types-legacy';
+import { UserOutcomeRecord } from '../../core/types/userOutcome';
 import type { SyncStrategy } from './SyncStrategy';
 import {
   filterAllDocsByPrefix,
@@ -1086,6 +1087,21 @@ Currently logged-in as ${this._username}.`
     };
 
     await this.localDB.put(doc);
+  }
+
+  public async putUserOutcome(record: UserOutcomeRecord): Promise<void> {
+    try {
+      await this.localDB.put(record);
+    } catch (err: any) {
+      if (err.status === 409) {
+        // Overwrite if exists
+        const existing = await this.localDB.get(record._id);
+        (record as any)._rev = existing._rev;
+        await this.localDB.put(record);
+      } else {
+        throw err;
+      }
+    }
   }
 
   public async deleteStrategyState(courseId: string, strategyKey: string): Promise<void> {

@@ -20,6 +20,7 @@ export enum DocType {
   TAG = 'TAG',
   NAVIGATION_STRATEGY = 'NAVIGATION_STRATEGY',
   STRATEGY_STATE = 'STRATEGY_STATE',
+  USER_OUTCOME = 'USER_OUTCOME',
 }
 
 export interface QualifiedCardID {
@@ -105,6 +106,7 @@ export const DocTypePrefixes = {
   [DocType.PEDAGOGY]: 'PEDAGOGY',
   [DocType.NAVIGATION_STRATEGY]: 'NAVIGATION_STRATEGY',
   [DocType.STRATEGY_STATE]: 'STRATEGY_STATE',
+  [DocType.USER_OUTCOME]: 'USER_OUTCOME',
 } as const;
 
 export interface CardHistory<T extends CardRecord> {
