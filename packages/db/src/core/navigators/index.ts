@@ -6,7 +6,7 @@ export type { CardFilter, FilterContext, CardFilterFactory } from './filters/typ
 // Re-export generator types
 export type { CardGenerator, GeneratorContext, CardGeneratorFactory } from './generators/types';
 
-import { ContentNavigationStrategyData } from '../types/contentNavigationStrategy';
+import { ContentNavigationStrategyData, LearnableWeight } from '../types/contentNavigationStrategy';
 import { logger } from '../../util/logger';
 
 // ============================================================================
@@ -91,6 +91,13 @@ export interface StrategyContribution {
 
   /** Score after this strategy's processing */
   score: number;
+
+  /**
+   * The effective weight applied for this strategy instance.
+   * If using evolutionary orchestration, this includes deviation.
+   * If omitted, implies weight 1.0 (legacy behavior).
+   */
+  effectiveWeight?: number;
 
   /**
    * Human-readable explanation of the strategy's decision.
@@ -260,6 +267,12 @@ export abstract class ContentNavigator implements StudyContentSource {
   /** Unique document ID for this strategy instance (from ContentNavigationStrategyData._id) */
   protected strategyId?: string;
 
+  /** Evolutionary weighting configuration */
+  public learnable?: LearnableWeight;
+
+  /** Whether to bypass deviation (manual/static weighting) */
+  public staticWeight?: boolean;
+
   /**
    * Constructor for standard navigators.
    * Call this from subclass constructors to initialize common fields.
@@ -277,6 +290,8 @@ export abstract class ContentNavigator implements StudyContentSource {
     if (strategyData) {
       this.strategyName = strategyData.name;
       this.strategyId = strategyData._id;
+      this.learnable = strategyData.learnable;
+      this.staticWeight = strategyData.staticWeight;
     }
   }
 

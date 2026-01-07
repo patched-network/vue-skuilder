@@ -1,6 +1,7 @@
 import type { ContentNavigationStrategyData } from '../types/contentNavigationStrategy';
 import { ContentNavigator, isGenerator, isFilter, Navigators } from './index';
 import type { CardFilter } from './filters/types';
+import { WeightedFilter } from './filters/WeightedFilter';
 import type { CardGenerator } from './generators/types';
 import { Pipeline } from './Pipeline';
 import { DocType } from '../types/types-legacy';
@@ -149,7 +150,18 @@ export class PipelineAssembler {
         const nav = await ContentNavigator.create(user, course, filterStrategy);
         // The navigator implements CardFilter
         if ('transform' in nav && typeof nav.transform === 'function') {
-          filters.push(nav as unknown as CardFilter);
+          let filter = nav as unknown as CardFilter;
+
+          // Apply evolutionary weighting wrapper if configured
+          if (filterStrategy.learnable) {
+            filter = new WeightedFilter(
+              filter,
+              filterStrategy.learnable,
+              filterStrategy.staticWeight
+            );
+          }
+
+          filters.push(filter);
           logger.debug(`[PipelineAssembler] Added filter: ${filterStrategy.name}`);
         } else {
           warnings.push(

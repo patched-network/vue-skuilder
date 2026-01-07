@@ -19,13 +19,13 @@
 
 ### Tasks
 
-- [ ] Add `LearnableWeight` interface to `packages/db/src/core/types/`
-- [ ] Add `learnable?: LearnableWeight` field to `ContentNavigationStrategyData`
-- [ ] Add `staticWeight?: boolean` field to `ContentNavigationStrategyData`
-- [ ] Implement weight application in filter transforms (scale filter effect by weight)
-- [ ] Implement weight application in CompositeGenerator (scale contribution by weight)
-- [ ] Add `effectiveWeight` to provenance records
-- [ ] Default behavior: `learnable` omitted → weight = 1.0 (no change from current)
+- [x] Add `LearnableWeight` interface to `packages/db/src/core/types/`
+- [x] Add `learnable?: LearnableWeight` field to `ContentNavigationStrategyData`
+- [x] Add `staticWeight?: boolean` field to `ContentNavigationStrategyData`
+- [x] Implement weight application in filter transforms (scale filter effect by weight)
+- [x] Implement weight application in CompositeGenerator (scale contribution by weight)
+- [x] Add `effectiveWeight` to provenance records
+- [x] Default behavior: `learnable` omitted → weight = 1.0 (no change from current)
 
 ### Key Files
 
