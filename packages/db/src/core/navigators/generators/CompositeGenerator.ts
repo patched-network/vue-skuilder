@@ -120,13 +120,25 @@ export default class CompositeGenerator extends ContentNavigator implements Card
     results.forEach((cards, index) => {
       // Access learnable weight if available
       const gen = this.generators[index] as unknown as ContentNavigator;
-      // Phase 1: Static weight only. Phase 2: Compute deviation.
-      const weight = gen.learnable?.weight ?? 1.0;
+
+      // Determine effective weight
+      let weight = gen.learnable?.weight ?? 1.0;
+      let deviation: number | undefined;
+
+      if (gen.learnable && !gen.staticWeight && context.orchestration) {
+        // Access strategyId (protected field) via type assertion
+        const strategyId = (gen as any).strategyId;
+        if (strategyId) {
+          weight = context.orchestration.getEffectiveWeight(strategyId, gen.learnable);
+          deviation = context.orchestration.getDeviation(strategyId);
+        }
+      }
 
       for (const card of cards) {
         // Record effective weight in provenance for transparency
         if (card.provenance.length > 0) {
           card.provenance[0].effectiveWeight = weight;
+          card.provenance[0].deviation = deviation;
         }
 
         const existing = byCardId.get(card.cardId) || [];

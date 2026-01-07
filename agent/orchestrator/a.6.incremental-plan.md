@@ -55,15 +55,15 @@ Authors can manually tune strategy influence without code changes.
 
 ### Tasks
 
-- [ ] Add `salt` field to course config (or `CourseOrchestrationConfig`)
-- [ ] Implement `fnv1a` hash function (or use existing hash utility)
-- [ ] Implement `computeDeviation(userId, strategyId, salt) → [-1, 1]`
-- [ ] Implement `computeSpread(confidence) → [MIN_SPREAD, MAX_SPREAD]`
-- [ ] Implement `computeEffectiveWeight(learnable, userId, strategyId, salt)`
-- [ ] Create `OrchestrationContext` interface
-- [ ] Implement `createOrchestrationContext()` factory
-- [ ] Wire context into Pipeline and generator calls
-- [ ] Add `deviation` to provenance records
+- [x] Add `salt` field to course config (or `CourseOrchestrationConfig`)
+- [x] Implement `fnv1a` hash function (or use existing hash utility)
+- [x] Implement `computeDeviation(userId, strategyId, salt) → [-1, 1]`
+- [x] Implement `computeSpread(confidence) → [MIN_SPREAD, MAX_SPREAD]`
+- [x] Implement `computeEffectiveWeight(learnable, userId, strategyId, salt)`
+- [x] Create `OrchestrationContext` interface
+- [x] Implement `createOrchestrationContext()` factory
+- [x] Wire context into Pipeline and generator calls
+- [x] Add `deviation` to provenance records
 
 ### Key Files
 

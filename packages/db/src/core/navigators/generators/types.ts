@@ -1,6 +1,7 @@
 import type { WeightedCard } from '../index';
 import type { CourseDBInterface } from '../../interfaces/courseDB';
 import type { UserDBInterface } from '../../interfaces/userDB';
+import type { OrchestrationContext } from '../../orchestration';
 
 // ============================================================================
 // CARD GENERATOR INTERFACE
@@ -33,6 +34,9 @@ export interface GeneratorContext {
 
   /** User's global ELO score for this course */
   userElo: number;
+
+  /** Orchestration context for evolutionary weighting */
+  orchestration?: OrchestrationContext;
 
   // Future extensions:
   // - user's tag-level ELO data

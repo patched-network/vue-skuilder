@@ -21,16 +21,19 @@ export class WeightedFilter implements CardFilter {
   private inner: CardFilter;
   private learnable: LearnableWeight;
   private staticWeight: boolean;
+  private strategyId?: string;
 
   constructor(
     inner: CardFilter,
     learnable: LearnableWeight = DEFAULT_LEARNABLE_WEIGHT,
-    staticWeight: boolean = false
+    staticWeight: boolean = false,
+    strategyId?: string
   ) {
     this.inner = inner;
     this.name = inner.name;
     this.learnable = learnable;
     this.staticWeight = staticWeight;
+    this.strategyId = strategyId;
   }
 
   /**
@@ -41,13 +44,18 @@ export class WeightedFilter implements CardFilter {
     // 1. DETERMINE EFFECTIVE WEIGHT
     // ========================================================================
     
-    // Phase 1: Effective weight is just the learnable weight (or 1.0 default)
-    // Phase 2 TODO: Compute deviation based on user ID and cohort salt
-    // const deviation = this.staticWeight ? 0 : computeDeviation(...);
-    // const effectiveWeight = computeEffectiveWeight(this.learnable, deviation);
+    // Determine effective weight using orchestration context if available
+    let effectiveWeight = this.learnable.weight;
+    let deviation: number | undefined;
 
-    // Reference staticWeight to silence linter until Phase 2 deviation logic is added
-    const effectiveWeight = this.staticWeight ? this.learnable.weight : this.learnable.weight;
+    if (!this.staticWeight && context.orchestration) {
+      // ContentNavigator instances have a strategyId property (protected/private)
+      // We assume inner filter is a ContentNavigator or has a strategyId property.
+      // Fallback to name if not present.
+      const strategyId = this.strategyId || (this.inner as any).strategyId || this.name;
+      effectiveWeight = context.orchestration.getEffectiveWeight(strategyId, this.learnable);
+      deviation = context.orchestration.getDeviation(strategyId);
+    }
 
     // Optimization: If weight is 1.0, the scaling is an identity operation.
     // Just run the inner filter directly.
@@ -112,6 +120,7 @@ export class WeightedFilter implements CardFilter {
           ...lastProv,
           score: newScore,
           effectiveWeight: effectiveWeight,
+          deviation: deviation,
           // We can optionally append to the reason, but the structured field is key
         };
 

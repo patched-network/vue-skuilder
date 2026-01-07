@@ -157,7 +157,8 @@ export class PipelineAssembler {
             filter = new WeightedFilter(
               filter,
               filterStrategy.learnable,
-              filterStrategy.staticWeight
+              filterStrategy.staticWeight,
+              filterStrategy._id
             );
           }
 

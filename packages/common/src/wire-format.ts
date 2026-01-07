@@ -86,6 +86,14 @@ export interface ClassroomConfig {
   joinCode: string;
 }
 
+export interface CourseOrchestrationConfig {
+  /**
+   * Random seed used to determine user cohort assignments.
+   * Changing this value re-shuffles all users into new cohorts.
+   */
+  salt: string;
+}
+
 /**
  * metadata about a defined course
  *
@@ -105,6 +113,7 @@ export interface CourseConfig {
   dataShapes: DataShape55[];
   questionTypes: QuestionType55[];
   disambiguator?: string;
+  orchestration?: CourseOrchestrationConfig;
 }
 
 export interface CreateCourse extends IServerRequest {

@@ -6,6 +6,7 @@ import type { WeightedCard } from './index';
 import type { CardFilter, FilterContext } from './filters/types';
 import type { CardGenerator, GeneratorContext } from './generators/types';
 import { logger } from '../../util/logger';
+import { createOrchestrationContext } from '../orchestration';
 
 // ============================================================================
 // PIPELINE LOGGING HELPERS
@@ -273,10 +274,14 @@ export class Pipeline extends ContentNavigator {
       logger.debug(`[Pipeline] Could not get user ELO, using default: ${e}`);
     }
 
+    // Initialize orchestration context (used for evolutionary weighting)
+    const orchestration = await createOrchestrationContext(this.user!, this.course!);
+
     return {
       user: this.user!,
       course: this.course!,
       userElo,
+      orchestration,
     };
   }
 

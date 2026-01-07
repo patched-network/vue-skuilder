@@ -100,6 +100,12 @@ export interface StrategyContribution {
   effectiveWeight?: number;
 
   /**
+   * The deviation factor applied to this user's cohort for this strategy.
+   * Range [-1.0, 1.0].
+   */
+  deviation?: number;
+
+  /**
    * Human-readable explanation of the strategy's decision.
    *
    * Examples:
