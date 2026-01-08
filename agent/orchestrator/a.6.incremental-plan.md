@@ -312,6 +312,30 @@ packages/express/src/routes/
 - Fixed mock user objects in Pipeline tests to include `getUsername()`
 - Ready for integration testing
 
+### Admin UI Dashboard
+
+Created `OrchestrationDashboard.vue` component for platform-ui:
+- **Location**: `packages/platform-ui/src/components/Courses/OrchestrationDashboard.vue`
+- **Integration**: Injected into `CourseInformationWrapper.vue` via `additional-content` slot
+- **Visibility**: Admin users only (`username === 'admin'`)
+
+**Features:**
+- View all strategy weights in a table (weight, confidence, sample size, static flag)
+- Trigger period updates with one click
+- Drill down into individual strategy details:
+  - Current state (peak weight, confidence, samples, gradient, R²)
+  - Weight trajectory (last 10 history entries)
+  - Scatter plot data preview (deviation vs outcome observations)
+- Color-coded indicators for weight ranges, confidence levels, and gradient direction
+- Real-time loading states and error handling
+
+**UI Components:**
+- Expansion panel in course information page
+- Data table with sortable columns
+- Modal dialog for detailed strategy view
+- Progress indicators for confidence visualization
+- Chip-based displays for numerical values
+
 ---
 
 *Implementation complete - 2026-01-07*

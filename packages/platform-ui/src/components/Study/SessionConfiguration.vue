@@ -60,7 +60,7 @@
           <!-- Tag Filter Widget (expandable) -->
           <v-expand-transition>
             <div v-if="course.selected && expandedFilters[course.courseID]" class="tag-filter-container">
-              <CourseTagFilterWidget :course-id="course.courseID" v-model="course.tagFilter" />
+              <CourseTagFilterWidget v-model="course.tagFilter" :course-id="course.courseID" />
             </div>
           </v-expand-transition>
         </div>
