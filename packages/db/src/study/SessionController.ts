@@ -615,7 +615,7 @@ export class SessionController<TView = unknown> extends Loggable {
 
     // Try to find a source that supports orchestration
     let orchestrationContext = null;
-    let strategies: string[] = [];
+    const strategies: string[] = [];
 
     for (const source of this.sources) {
       if (source.getOrchestrationContext) {

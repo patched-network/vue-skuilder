@@ -6,7 +6,9 @@ export type { CardFilter, FilterContext, CardFilterFactory } from './filters/typ
 // Re-export generator types
 export type { CardGenerator, GeneratorContext, CardGeneratorFactory } from './generators/types';
 
-import { ContentNavigationStrategyData, LearnableWeight } from '../types/contentNavigationStrategy';
+import { LearnableWeight } from '../types/contentNavigationStrategy';
+export type { ContentNavigationStrategyData, LearnableWeight } from '../types/contentNavigationStrategy';
+import type { ContentNavigationStrategyData } from '../types/contentNavigationStrategy';
 import { logger } from '../../util/logger';
 
 // ============================================================================

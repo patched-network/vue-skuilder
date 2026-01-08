@@ -1,8 +1,29 @@
 import type { UserDBInterface } from '../interfaces/userDB';
 import type { CourseDBInterface } from '../interfaces/courseDB';
 import type { LearnableWeight } from '../types/contentNavigationStrategy';
-import type { CourseOrchestrationConfig } from '@vue-skuilder/common';
+import type { CourseConfig } from '@vue-skuilder/common';
 import { logger } from '../../util/logger';
+
+// Re-export gradient and learning functions
+export { aggregateOutcomesForGradient, computeStrategyGradient } from './gradient';
+export {
+  updateStrategyWeight,
+  updateLearningState,
+  runPeriodUpdate,
+  getDefaultLearnableWeight,
+} from './learning';
+export type { PeriodUpdateInput, PeriodUpdateResult } from './learning';
+
+// Re-export signal functions
+export { computeOutcomeSignal, scoreAccuracyInZone } from './signal';
+export type { SignalConfig } from './signal';
+
+// Re-export recording functions
+export { recordUserOutcome } from './recording';
+
+// Re-export types
+export type { GradientObservation, GradientResult, StrategyLearningState } from '../types/learningState';
+export type { UserOutcomeRecord } from '../types/userOutcome';
 
 // ============================================================================
 // TYPES
@@ -18,7 +39,7 @@ export interface OrchestrationContext {
   user: UserDBInterface;
   course: CourseDBInterface;
   userId: string;
-  courseConfig: { orchestration?: CourseOrchestrationConfig };
+  courseConfig: CourseConfig;
   
   /**
    * Calculate the effective weight for a strategy for this user.
@@ -149,13 +170,24 @@ export async function createOrchestrationContext(
   user: UserDBInterface,
   course: CourseDBInterface
 ): Promise<OrchestrationContext> {
-  let courseConfig;
+  let courseConfig: CourseConfig;
   try {
     courseConfig = await course.getCourseConfig();
   } catch (e) {
     logger.error(`[Orchestration] Failed to load course config: ${e}`);
     // Fallback stub if config load fails
-    courseConfig = { name: 'Unknown', orchestration: { salt: 'default' } };
+    courseConfig = {
+      name: 'Unknown',
+      description: '',
+      public: false,
+      deleted: false,
+      creator: '',
+      admins: [],
+      moderators: [],
+      dataShapes: [],
+      questionTypes: [],
+      orchestration: { salt: 'default' },
+    };
   }
 
   const userId = user.getUsername(); // Or user ID if available on interface

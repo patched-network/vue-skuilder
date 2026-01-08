@@ -28,6 +28,7 @@ import { classroomDbDesignDoc } from './design-docs.js';
 import logger from './logger.js';
 import logsRouter from './routes/logs.js';
 import authRouter from './routes/auth.js';
+import orchestrationRouter from './routes/orchestration.js';
 import type { ExpressServerConfig, EnvironmentConfig } from './types.js';
 import { applyUsersDesignDocs } from './couchdb/userDesignDocs.js';
 
@@ -94,6 +95,7 @@ export function createExpressApp(config: AppConfig): express.Application {
   );
   app.use('/logs', logsRouter);
   app.use('/auth', authRouter);
+  app.use('/orchestration', orchestrationRouter);
 
   // Routes
   app.get('/courses', (_req: Request, res: Response) => {

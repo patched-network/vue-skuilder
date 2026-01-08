@@ -131,13 +131,13 @@ Data collection foundation for learning. Visibility into user outcomes.
 
 ### Tasks
 
-- [ ] Implement `aggregateOutcomesForGradient()` - server-side, cross-user
-- [ ] Implement `computeStrategyGradient()` - linear regression
-- [ ] Implement `updateStrategyWeight()` - adjust peak and confidence
-- [ ] Define `StrategyLearningState` doc type (for observability)
-- [ ] Implement `updateLearningState()` - store regression stats
-- [ ] Implement `runPeriodUpdate()` - orchestrates the update cycle
-- [ ] Wire period update to express backend (cron or manual trigger)
+- [x] Implement `aggregateOutcomesForGradient()` - server-side, cross-user
+- [x] Implement `computeStrategyGradient()` - linear regression
+- [x] Implement `updateStrategyWeight()` - adjust peak and confidence
+- [x] Define `StrategyLearningState` doc type (for observability)
+- [x] Implement `updateLearningState()` - store regression stats
+- [x] Implement `runPeriodUpdate()` - orchestrates the update cycle
+- [x] Wire period update to express backend (cron or manual trigger)
 
 ### Key Files
 
@@ -145,7 +145,7 @@ Data collection foundation for learning. Visibility into user outcomes.
 packages/db/src/core/orchestration/gradient.ts    - NEW: gradient computation
 packages/db/src/core/orchestration/learning.ts    - NEW: weight updates
 packages/db/src/core/types/learningState.ts       - NEW: StrategyLearningState
-packages/express/src/routes/admin.ts              - Add trigger endpoint (or cron)
+packages/express/src/routes/orchestration.ts      - NEW: trigger endpoints
 ```
 
 ### Validation
@@ -212,24 +212,24 @@ Each phase builds on the previous. Can stop after any phase.
 
 ---
 
-## Suggested File Structure
+## Actual File Structure
 
 ```
 packages/db/src/core/
 ├── orchestration/
-│   ├── index.ts           - Exports
-│   ├── types.ts           - LearnableWeight, OrchestrationContext
-│   ├── deviation.ts       - computeDeviation, computeSpread, computeEffectiveWeight
-│   ├── context.ts         - createOrchestrationContext
+│   ├── index.ts           - Exports, OrchestrationContext, deviation logic
 │   ├── signal.ts          - computeOutcomeSignal, scoreAccuracyInZone
 │   ├── recording.ts       - recordUserOutcome
 │   ├── gradient.ts        - aggregateOutcomesForGradient, computeStrategyGradient
-│   └── learning.ts        - updateStrategyWeight, updateLearningState
+│   └── learning.ts        - updateStrategyWeight, updateLearningState, runPeriodUpdate
 ├── types/
-│   ├── navigationStrategy.ts  - Extended with learnable field
-│   ├── userOutcome.ts         - NEW: UserOutcomeRecord
-│   ├── learningState.ts       - NEW: StrategyLearningState
-│   └── courseConfig.ts        - Extended with orchestration config
+│   ├── contentNavigationStrategy.ts  - LearnableWeight, ContentNavigationStrategyData
+│   ├── userOutcome.ts                - UserOutcomeRecord
+│   ├── learningState.ts              - StrategyLearningState, GradientObservation, GradientResult
+│   └── types-legacy.ts               - DocType enum updates
+
+packages/express/src/routes/
+└── orchestration.ts       - POST /:courseId/update, GET /:courseId/state, GET /strategy/:strategyId/history
 ```
 
 ---

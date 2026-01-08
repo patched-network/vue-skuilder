@@ -31,7 +31,7 @@ export function computeOutcomeSignal(
   let correct = 0;
   for (const r of records) {
     // Cast to any to avoid type error if Evaluation interface is not correctly propagated
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     if ((r as any).isCorrect) correct++;
   }
 
