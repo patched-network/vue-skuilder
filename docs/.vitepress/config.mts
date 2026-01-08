@@ -145,6 +145,7 @@ export default defineConfig({
             items: [
               { text: 'Inline Components', link: '/extend/inline-components' },
               { text: 'Creating Custom Cards', link: '/extend/custom-cards' },
+              // { text: 'Navigation Strategies', link: '/extend/navigation-strategies' },
             ],
           },
         ],

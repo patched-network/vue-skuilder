@@ -399,3 +399,9 @@ The NavigationStrategy editor is accessible in:
 - `packages/db/src/core/navigators/interferenceMitigator.ts` — Config interface reference
 - `packages/db/src/core/navigators/relativePriority.ts` — Config interface reference
 - `packages/edit-ui/src/components/NavigationStrategy/` — UI components (all forms)
+
+## Related Documentation
+
+- `navigators-architecture.md` — Pipeline architecture and strategy framework
+- `future-orchestration-vision.md` — Long-term adaptive strategy vision
+- `devlog/1032-orchestrator` — Evolutionary orchestration implementation details
