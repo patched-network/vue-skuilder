@@ -221,6 +221,165 @@ router.get('/:courseId/strategy/:strategyId/history', (req: Request, res: Respon
   })();
 });
 
+/**
+ * GET /orchestration/:courseId/strategy/:strategyId/scatter
+ *
+ * Get scatter plot data (deviation vs outcome) for a specific strategy.
+ * Useful for visualizing the gradient and understanding the learning dynamics.
+ *
+ * Query params:
+ * - periodStart: ISO timestamp (optional, defaults to 7 days ago)
+ * - periodEnd: ISO timestamp (optional, defaults to now)
+ * - limit: max observations to return (optional, defaults to 1000)
+ */
+router.get('/:courseId/strategy/:strategyId/scatter', (req: Request, res: Response) => {
+  void (async () => {
+    try {
+      const { courseId, strategyId } = req.params;
+      const periodEnd = (req.query.periodEnd as string) || new Date().toISOString();
+      const periodStart =
+        (req.query.periodStart as string) ||
+        new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      const limit = parseInt((req.query.limit as string) || '1000', 10);
+
+      // Aggregate outcomes
+      const outcomes = await aggregateUserOutcomes(courseId, periodStart, periodEnd);
+
+      // Extract scatter data for this strategy
+      const scatterData = outcomes
+        .filter((outcome) => outcome.deviations[strategyId] !== undefined)
+        .map((outcome) => ({
+          deviation: outcome.deviations[strategyId],
+          outcome: outcome.outcomeValue,
+          userId: outcome.userId,
+          periodEnd: outcome.periodEnd,
+        }))
+        .slice(0, limit);
+
+      // Compute regression for visualization
+      const observations = aggregateOutcomesForGradient(outcomes, strategyId);
+      const gradient = observations.length >= 3 ? computeStrategyGradient(observations) : null;
+
+      res.json({
+        courseId,
+        strategyId,
+        periodStart,
+        periodEnd,
+        observations: scatterData.length,
+        data: scatterData,
+        regression: gradient,
+      });
+    } catch (error) {
+      logger.error(`[Orchestration] Scatter plot error: ${error}`);
+      res.status(500).json({ error: 'Failed to get scatter data', details: String(error) });
+    }
+  })();
+});
+
+/**
+ * GET /orchestration/:courseId/weights
+ *
+ * Get current learned weights for all strategies in a course.
+ * Simpler alternative to /state endpoint - just returns weight/confidence without history.
+ */
+router.get('/:courseId/weights', (req: Request, res: Response) => {
+  void (async () => {
+    try {
+      const { courseId } = req.params;
+      const courseDB = await useOrCreateCourseDB(courseId);
+
+      // Get all strategies
+      const strategiesResp = await courseDB.find({
+        selector: { docType: 'NAVIGATION_STRATEGY' },
+      });
+      const strategies = strategiesResp.docs as unknown as ContentNavigationStrategyData[];
+
+      const weights = strategies.map((strategy) => ({
+        strategyId: strategy._id,
+        strategyName: strategy.name,
+        implementingClass: strategy.implementingClass,
+        learnable: strategy.learnable || null,
+        staticWeight: strategy.staticWeight || false,
+      }));
+
+      res.json({
+        courseId,
+        weights,
+      });
+    } catch (error) {
+      logger.error(`[Orchestration] Get weights error: ${error}`);
+      res.status(500).json({ error: 'Failed to get weights', details: String(error) });
+    }
+  })();
+});
+
+/**
+ * GET /orchestration/:courseId/strategy/:strategyId/distribution
+ *
+ * Get the current bell curve distribution for a strategy.
+ * Shows how users are distributed across weight space based on current confidence.
+ *
+ * Query params:
+ * - samples: number of sample points (default: 100)
+ */
+router.get('/:courseId/strategy/:strategyId/distribution', (req: Request, res: Response) => {
+  void (async () => {
+    try {
+      const { courseId, strategyId } = req.params;
+      const samples = parseInt((req.query.samples as string) || '100', 10);
+      const courseDB = await useOrCreateCourseDB(courseId);
+
+      // Get strategy
+      const strategy = (await courseDB.get(strategyId)) as unknown as ContentNavigationStrategyData;
+
+      if (!strategy.learnable) {
+        res.json({
+          courseId,
+          strategyId,
+          message: 'Strategy does not have learnable weights',
+          distribution: null,
+        });
+        return;
+      }
+
+      const { weight, confidence } = strategy.learnable;
+
+      // Compute spread
+      const MIN_SPREAD = 0.1;
+      const MAX_SPREAD = 0.5;
+      const spread = MAX_SPREAD - confidence * (MAX_SPREAD - MIN_SPREAD);
+
+      // Generate distribution points
+      const distribution = [];
+      for (let i = 0; i < samples; i++) {
+        const deviation = -1 + (2 * i) / (samples - 1); // Range [-1, 1]
+        const effectiveWeight = Math.max(0.1, Math.min(3.0, weight + deviation * spread * weight));
+
+        // Gaussian density (unnormalized, for visualization)
+        const density = Math.exp(-0.5 * (deviation / 0.5) ** 2);
+
+        distribution.push({
+          deviation,
+          effectiveWeight,
+          density,
+        });
+      }
+
+      res.json({
+        courseId,
+        strategyId,
+        peakWeight: weight,
+        confidence,
+        spread,
+        distribution,
+      });
+    } catch (error) {
+      logger.error(`[Orchestration] Distribution error: ${error}`);
+      res.status(500).json({ error: 'Failed to get distribution', details: String(error) });
+    }
+  })();
+});
+
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================

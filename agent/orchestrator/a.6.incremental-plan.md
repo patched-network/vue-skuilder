@@ -2,6 +2,16 @@
 
 *Actionable implementation steps based on a.5.spec.md v3*
 
+## Status: ✅ PHASES 1-5 COMPLETE
+
+All core implementation complete. System ready for integration testing and validation.
+
+- **Phase 1**: Static weights - ✅ Complete
+- **Phase 2**: Deviation distribution - ✅ Complete
+- **Phase 3**: Outcome recording - ✅ Complete
+- **Phase 4**: Gradient learning - ✅ Complete
+- **Phase 5**: Observability - ✅ Complete
+
 ---
 
 ## Principles
@@ -169,28 +179,38 @@ Strategies automatically tune toward optimal weights.
 
 ### Tasks
 
-- [ ] API endpoint: get strategy learning state
-- [ ] API endpoint: get weight history for strategy
-- [ ] (Optional) Scatter plot data endpoint: deviation vs outcome
-- [ ] (Optional) Admin UI component for visualization
-- [ ] (Optional) Spread visualization (current bell curve)
+- [x] API endpoint: get strategy learning state
+- [x] API endpoint: get weight history for strategy
+- [x] Scatter plot data endpoint: deviation vs outcome
+- [x] Bell curve distribution visualization endpoint
+- [x] Current weights summary endpoint
+- [ ] (Optional) Admin UI component for visualization - DEFERRED
 
 ### Key Files
 
 ```
-packages/express/src/routes/orchestration.ts      - NEW: observability endpoints
-packages/platform-ui/src/views/admin/...          - Optional: UI components
+packages/express/src/routes/orchestration.ts      - Observability endpoints
 ```
+
+### Endpoints Implemented
+
+- `GET /orchestration/:courseId/state` - All learning states
+- `GET /orchestration/:courseId/weights` - Current weights summary
+- `GET /orchestration/:courseId/strategy/:strategyId/history` - Weight trajectory
+- `GET /orchestration/:courseId/strategy/:strategyId/scatter` - Scatter plot data (deviation vs outcome)
+- `GET /orchestration/:courseId/strategy/:strategyId/distribution` - Bell curve distribution
 
 ### Validation
 
-- [ ] Can retrieve current weight/confidence for any strategy
-- [ ] Can retrieve weight trajectory over time
-- [ ] Can retrieve recent gradient and r-squared
+- [x] Can retrieve current weight/confidence for any strategy
+- [x] Can retrieve weight trajectory over time
+- [x] Can retrieve recent gradient and r-squared
+- [x] Can get scatter plot data for gradient visualization
+- [x] Can get bell curve distribution for cohort visualization
 
 ### Value
 
-Transparency into learning process. Debugging capability.
+Transparency into learning process. Debugging capability. Full API surface for future UI dashboards.
 
 ---
 
@@ -254,4 +274,44 @@ packages/express/src/routes/
 
 ---
 
-*Ready for implementation*
+## Implementation Summary
+
+### Files Created
+
+**Core Orchestration** (`packages/db/src/core/orchestration/`)
+- `index.ts` - OrchestrationContext, deviation computation, exports
+- `gradient.ts` - Gradient computation and linear regression
+- `learning.ts` - Weight updates and period orchestration
+- `signal.ts` - Outcome signal computation
+- `recording.ts` - User outcome recording
+
+**Type Definitions** (`packages/db/src/core/types/`)
+- `learningState.ts` - StrategyLearningState, GradientObservation, GradientResult
+- `userOutcome.ts` - UserOutcomeRecord
+- `contentNavigationStrategy.ts` - Extended with LearnableWeight
+- `types-legacy.ts` - Added STRATEGY_LEARNING_STATE DocType
+
+**API Routes** (`packages/express/src/routes/`)
+- `orchestration.ts` - 6 endpoints for triggering updates and observability
+
+### API Endpoints
+
+**Management**
+- `POST /orchestration/:courseId/update` - Trigger period update for all strategies
+
+**Observability**
+- `GET /orchestration/:courseId/state` - All learning states
+- `GET /orchestration/:courseId/weights` - Current weights summary
+- `GET /orchestration/:courseId/strategy/:strategyId/history` - Weight trajectory
+- `GET /orchestration/:courseId/strategy/:strategyId/scatter` - Scatter plot data
+- `GET /orchestration/:courseId/strategy/:strategyId/distribution` - Bell curve distribution
+
+### Test Status
+
+- All existing tests pass (116/116)
+- Fixed mock user objects in Pipeline tests to include `getUsername()`
+- Ready for integration testing
+
+---
+
+*Implementation complete - 2026-01-07*
