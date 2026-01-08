@@ -5,6 +5,9 @@
 The navigation strategy system selects and scores cards for study sessions. It uses a
 **Pipeline architecture** where generators produce candidates and filters transform scores.
 
+An **Evolutionary Orchestration** layer enables strategies to carry learnable weights that
+automatically tune toward optimal values based on observed learning outcomes.
+
 ## Core Concepts
 
 ### WeightedCard
@@ -27,6 +30,7 @@ interface StrategyContribution {
   action: 'generated' | 'passed' | 'boosted' | 'penalized';
   score: number;              // Score after this strategy
   reason: string;             // Human-readable explanation
+  deviation?: number;         // User's deviation from peak weight (evolutionary)
 }
 ```
 
@@ -82,7 +86,7 @@ class Pipeline {
   )
 
   async getWeightedCards(limit: number): Promise<WeightedCard[]> {
-    // Build shared context (user ELO, etc.)
+    // Build shared context (user ELO, orchestration context, etc.)
     const context = await this.buildContext();
 
     // Generate candidates
@@ -104,7 +108,7 @@ class Pipeline {
 ```
 
 **Responsibilities:**
-- **Context building** — Fetches shared data (user ELO) once for all strategies
+- **Context building** — Fetches shared data (user ELO, orchestration context) once for all strategies
 - **Data hydration** — Pre-fetches commonly needed data (tags) in batch queries
 - **Filter orchestration** — Applies filters in sequence, accumulating provenance
 - **Result selection** — Removes zero-scores, sorts, and returns top N
@@ -170,7 +174,8 @@ provenance: [
     strategyId: 'NAVIGATION_STRATEGY-hierarchy-phonics',
     action: 'passed',
     score: 0.85,
-    reason: 'Prerequisites met, tags: letter-sounds'
+    reason: 'Prerequisites met, tags: letter-sounds',
+    deviation: 0.23  // User's position on bell curve for this strategy
   },
   {
     strategy: 'eloDistance',
@@ -184,6 +189,171 @@ provenance: [
 ```
 
 Use `getCardOrigin(card)` to extract 'new', 'review', or 'failed' from provenance.
+
+---
+
+## Evolutionary Orchestration
+
+The orchestration layer enables strategies to **learn optimal weights** from observed
+learning outcomes. Instead of fixed configuration, strategies carry **learnable weights**
+that automatically tune toward effectiveness.
+
+### LearnableWeight
+
+Every strategy can carry a learnable weight:
+
+```typescript
+interface LearnableWeight {
+  weight: number;       // Peak value, 1.0 = neutral, range [0.1, 3.0]
+  confidence: number;   // 0-1, controls exploration width
+  sampleSize: number;   // Total observations for this strategy
+
+  history?: Array<{     // Optional: for visualization
+    timestamp: string;
+    weight: number;
+    confidence: number;
+    gradient: number;
+  }>;
+}
+```
+
+Strategies extend with:
+
+```typescript
+interface ContentNavigationStrategyData {
+  // ... existing fields ...
+  learnable?: LearnableWeight;   // Omitted = default weight 1.0
+  staticWeight?: boolean;        // If true, not subject to learning
+}
+```
+
+### Deviation-Based Weight Distribution
+
+Each user experiences a **stable deviation** from the peak weight:
+
+```
+effectiveWeight(user, strategy) = peakWeight + deviation * spread
+
+where:
+  deviation = hash(userId, strategyId, salt) → [-1, 1]  // stable per user
+  spread = max(MIN_SPREAD, (1 - confidence) * MAX_SPREAD)
+```
+
+**Key insight:** Deviation is constant for a user. As confidence grows and spread
+shrinks, all users are pulled toward the optimal peak.
+
+```typescript
+// Example: Low confidence = wide exploration
+{ weight: 1.0, confidence: 0.2 }
+→ spread = 0.8 * MAX_SPREAD
+→ users range from weight 0.6 to 1.4
+
+// Example: High confidence = narrow convergence
+{ weight: 1.2, confidence: 0.9 }
+→ spread = 0.1 * MAX_SPREAD
+→ users cluster around weight 1.15 to 1.25
+```
+
+### Outcome Recording
+
+At the end of each learning period, user outcomes are recorded:
+
+```typescript
+interface UserOutcomeRecord {
+  _id: `USER_OUTCOME::${courseId}::${periodId}`;
+  docType: DocType.USER_OUTCOME;
+  userId: string;
+  courseId: string;
+  periodStart: string;
+  periodEnd: string;
+  strategyExposures: Array<{
+    strategyId: string;
+    deviation: number;      // User's stable deviation for this strategy
+  }>;
+  outcomeValue: number;     // 0-1 learning outcome signal
+}
+```
+
+The outcome signal combines multiple factors:
+- Accuracy within target zone (not too easy, not too hard)
+- ELO progression
+- Session completion
+
+### Gradient Learning
+
+The system discovers optimal weights by correlating **deviation with outcomes**
+across users:
+
+```
++deviation → +outcome = positive gradient → increase peak weight
++deviation → -outcome = negative gradient → decrease peak weight
+flat gradient = at optimum, increase confidence
+```
+
+Linear regression on (deviation, outcome) pairs produces:
+- **Gradient**: Direction to adjust peak
+- **R²**: Signal quality (high = consistent effect)
+- **Sample size**: Update confidence
+
+### Weight Update Cycle
+
+Periodically (or on-demand), the system updates strategy weights:
+
+```typescript
+async function runPeriodUpdate(courseId: string): Promise<void> {
+  for (const strategy of await getLearnableStrategies(courseId)) {
+    const observations = await aggregateOutcomesForGradient(strategy);
+    const { gradient, rSquared } = computeStrategyGradient(observations);
+    await updateStrategyWeight(strategy, gradient, rSquared);
+  }
+}
+```
+
+**Update rules:**
+- Positive gradient → increase peak weight
+- Negative gradient → decrease peak weight
+- Consistent observations → increase confidence
+- Noisy observations → decrease confidence
+
+### Observability
+
+The orchestration layer exposes API endpoints for monitoring:
+
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /orchestration/:courseId/state` | All learning states |
+| `GET /orchestration/:courseId/weights` | Current weights summary |
+| `GET /orchestration/:courseId/strategy/:id/history` | Weight trajectory over time |
+| `GET /orchestration/:courseId/strategy/:id/scatter` | Deviation vs outcome data |
+| `GET /orchestration/:courseId/strategy/:id/distribution` | Bell curve visualization |
+| `POST /orchestration/:courseId/update` | Trigger period update |
+
+An admin dashboard in platform-ui visualizes strategy weights, confidence,
+gradient direction, and historical trajectories.
+
+### Lifecycle
+
+```
+New strategy:    Low confidence → wide spread → noisy gradient → big adjustments
+Learning:        Gradient visible → peak drifts → confidence grows → spread shrinks
+Converged:       High confidence → minimum spread → flat gradient → stable
+Disturbed:       Gradient reappears → peak drifts → adapts to new optimal
+```
+
+### Static vs Learnable
+
+Set `staticWeight: true` for foundational strategies that should not be tuned:
+
+```typescript
+{
+  strategyType: 'hierarchyDefinition',
+  name: 'Core Prerequisites',
+  staticWeight: true,  // Never tuned by orchestration
+  // learnable field ignored
+}
+```
+
+---
 
 ## Creating New Strategies
 
@@ -249,6 +419,8 @@ class MyFilter extends ContentNavigator implements CardFilter {
 
 Register in `NavigatorRoles` as `NavigatorRole.FILTER`.
 
+---
+
 ## Strategy State Storage
 
 Strategies can persist user-scoped state (preferences, learned patterns, temporal tracking)
@@ -294,7 +466,7 @@ interface StrategyStateDoc<T> {
   courseId: string;
   strategyKey: string;
   data: T;               // Strategy-specific payload
-  updatedAt: string;     // ISO timestamp
+  updatedAt: string;
 }
 ```
 
@@ -332,6 +504,8 @@ return { ...card, score: card.score * multiplier };
 - All sliders share global max for consistent visual comparison
 - Writes to strategy state via `userDB.putStrategyState()`
 
+---
+
 ## File Reference
 
 | File | Purpose |
@@ -355,9 +529,18 @@ return { ...card, score: card.score * multiplier };
 | `core/navigators/inferredPreference.ts` | Inferred preference navigator (stub) |
 | `core/types/strategyState.ts` | `StrategyStateDoc`, `StrategyStateId` |
 | `impl/couch/courseDB.ts` | `createNavigator()` entry point |
+| `core/orchestration/index.ts` | OrchestrationContext, deviation logic |
+| `core/orchestration/gradient.ts` | Gradient computation |
+| `core/orchestration/learning.ts` | Weight updates, period orchestration |
+| `core/orchestration/signal.ts` | Outcome signal computation |
+| `core/orchestration/recording.ts` | User outcome recording |
+| `core/types/learningState.ts` | `StrategyLearningState` |
+| `core/types/userOutcome.ts` | `UserOutcomeRecord` |
+| `express/routes/orchestration.ts` | Observability API endpoints |
 
 ## Related Documentation
 
 - `todo-strategy-authoring.md` — UX and DX for authoring strategies
-- `todo-evolutionary-orchestration.md` — Long-term adaptive strategy vision
+- `future-orchestration-vision.md` — Long-term adaptive strategy vision (beyond current implementation)
 - `devlog/1004` — Implementation details for tag hydration optimization
+- `devlog/1032-orchestrator` — Evolutionary orchestration implementation details

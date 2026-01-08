@@ -28,11 +28,13 @@ Second, we'd like to apply the paradigm to a __broader set of skills__ than has 
 
 We'd like to intelligently blend SRS with hierarchical knowledge graphs, dynamic difficulty matching, and other tutoring interventions. This blending should be responsive to revealed deficiencies in learner progress, and learning bottlenecks should surface automatically.
 
-**Status**: 🟡 In progress.
+**Status**: ✅ Core implementation complete.
 - ✅ Dual-dynamic ELO system (user + card ratings co-evolve)
 - ✅ Configurable navigation strategies (prerequisites, interference avoidance, priority ordering)
 - ✅ Visual authoring UI for strategy configuration
-- 🔜 Per-tag skill targeting, strategy composition, evolutionary orchestration
+- ✅ Pipeline architecture for strategy composition
+- ✅ Evolutionary orchestration (strategies automatically tune toward effectiveness)
+- 🔜 Per-tag skill targeting, self-healing content, barrier detection
 
 See the [Pedagogy System](./learn/pedagogy) doc for details.
 

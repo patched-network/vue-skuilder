@@ -21,8 +21,8 @@ hero:
 features:
   - title: Fully <a href="extend/custom-cards">Extensible</a> Flash Cards
     details: Build <strong><em>whatever</em></strong> types of content that you'd like. Midi interfaces, chess boards, you name it.
-  - title:  <a href="learn/pedagogy">Pluggable</a> Pedagogy
-    details: "Mix and match naive SRS, ELO-based skill matching, and defined heirarchical paths. Or: bring fully custom implementations."
+  - title:  Adaptive and Pluggable <a href="learn/pedagogy">Pedagogy</a>
+    details: "Mix naive SRS, dual-dynamic ELO sorting, configurable navigation strategies, and evolutionary orchestration that learns what works."
   - title: Local First, Platform <a href="learn/data-layer">Capable</a>
     details: User and course data comfortable on the server, but also browser-local and via static-site deployments.
   - title: Agents <a href="extend/mcp">Welcome</a> <small>(but not required!)</small>

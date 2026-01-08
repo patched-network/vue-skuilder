@@ -1,6 +1,10 @@
 # Brainstorm: Navigation Paradigm Exploration
 
 > **Status:** Informal brainstorming. Not a design doc or TODO.
+>
+> **Note:** Many concepts explored here have since been implemented.
+> See `navigators-architecture.md` for current architecture and
+> `devlog/1032-orchestrator` for evolutionary orchestration implementation.
 
 This document explores the navigation strategy paradigm: what other strategy types
 might exist, where the current design shines or struggles, and what alternative
@@ -79,7 +83,8 @@ Trigger-response generators need:
 4. **Exit criteria** — When does intervention end?
 
 This argues for strategies having **lifecycle state**, not just stateless scoring.
-See `todo-strategy-state-storage.md` for related concerns.
+**Update:** Strategy state storage is now implemented via `StrategyStateDoc` — see
+`navigators-architecture.md` for details.
 
 ---
 
@@ -138,7 +143,7 @@ Strategies are instantiated per-request. No persistence of:
 - "Last time I surfaced tag X was..."
 - "This user responds well to strategy Y"
 
-**Mitigation:** `todo-strategy-state-storage.md` (not implemented)
+**Mitigation:** ✅ Implemented via `StrategyStateDoc` — see `navigators-architecture.md`
 
 ### 2. Pull-Only Model
 
@@ -255,25 +260,30 @@ rules:
 **Pros:** Declarative, inspectable, author-configurable
 **Cons:** Limited expressiveness, new DSL to maintain
 
-### 4. Bandit Selection (Planned)
+### 4. Bandit-Style Selection (IMPLEMENTED ✅)
 
-Instead of a fixed pipeline, select among N candidate pipelines:
+Strategies carry **learnable weights** that automatically tune based on outcomes:
 
 ```
-PipelineA: ELO
-PipelineB: Hierarchy(ELO)
-PipelineC: Interference(Hierarchy(ELO))
+Strategy weights = { weight: 1.2, confidence: 0.8, sampleSize: 500 }
 
-Orchestrator selects pipeline per-session based on:
-- User cohort
-- Historical effectiveness
-- Exploration/exploitation balance
+Users are distributed across weight space via deviation:
+  effectiveWeight = peakWeight + deviation * spread
+  
+Gradient learning correlates deviation with outcomes:
+  +deviation → +outcome → increase peak
+  +deviation → -outcome → decrease peak
 ```
 
-**Pros:** Learns what works, self-improving
-**Cons:** Requires outcome measurement, cold-start problem
+**Implemented features:**
+- LearnableWeight on strategies
+- Deviation-based cohort distribution
+- Outcome recording per user/period
+- Gradient computation via linear regression
+- Automatic weight updates
+- Observability API endpoints
 
-See `todo-evolutionary-orchestration.md`.
+See `navigators-architecture.md` for details.
 
 ### 5. LLM-Guided Selection
 
@@ -316,23 +326,20 @@ Solver finds valid card sequence.
 
 Rather than wholesale paradigm shift, extend current model:
 
-### Near-term (compatible with naive orchestration)
+### Completed ✅
 
-1. **Richer context** — Pass session state to strategies
-2. **Trigger-response generator** — New generator type with activation state
-3. **Session-scoped state** — Allow strategies to persist within-session
+1. **Pipeline architecture** — Generators + Filters with provenance tracking
+2. **Strategy state storage** — User-scoped persistence via `StrategyStateDoc`
+3. **Evolutionary orchestration** — Learnable weights with gradient learning
+4. **Outcome measurement** — `UserOutcomeRecord` for tracking effectiveness
+5. **Observability** — API endpoints and admin dashboard
 
-### Medium-term (with strategy state storage)
+### Still Applicable
 
-4. **Cross-session state** — Strategies remember past sessions
-5. **Event hooks** — Strategies can subscribe to card results
-6. **Intervention protocol** — Active intervention preempts normal generation
-
-### Long-term (with evolutionary orchestration)
-
-7. **Bandit selection** among pipelines
-8. **Outcome measurement** for strategy effectiveness
-9. **Hybrid architectures** where blackboard/reactive patterns augment pipeline
+1. **Trigger-response generators** — Event-driven strategies with activation state
+2. **Richer context** — Session state, temporal context
+3. **Event hooks** — Strategies subscribing to card results
+4. **Intervention protocol** — Active intervention preempts normal generation
 
 ---
 
@@ -362,8 +369,7 @@ Rather than wholesale paradigm shift, extend current model:
 
 ## Related Documents
 
-- `navigators-architecture.md` — Current architecture
-- `todo-naive-orchestration.md` — Pipeline assembly (prerequisite)
-- `todo-strategy-state-storage.md` — State persistence
-- `todo-evolutionary-orchestration.md` — Bandit selection vision
-- `todo-provenance.md` — Audit trail (transparency)
+- `navigators-architecture.md` — Current architecture (includes evolutionary orchestration)
+- `future-orchestration-vision.md` — Remaining vision items (programmable strategies, self-healing)
+- `todo-strategy-authoring.md` — Strategy creation tools (UI complete)
+- `devlog/1032-orchestrator` — Evolutionary orchestration implementation

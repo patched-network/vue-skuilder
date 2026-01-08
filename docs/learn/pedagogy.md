@@ -1,6 +1,6 @@
 # Pedagogy System
 
-Vue-Skuilder combines **Spaced Repetition System (SRS)** scheduling with **multi-dimensional ELO rating** to create an adaptive learning system that is both user-dynamic and system-dynamic.
+Vue-Skuilder combines **Spaced Repetition System (SRS)** scheduling with **multi-dimensional ELO rating** and **evolutionary orchestration** to create an adaptive learning system that continuously improves.
 
 ## The Vision: Beyond Naive SRS
 
@@ -9,6 +9,7 @@ Traditional SRS systems randomly present new content and schedule reviews based 
 - **User-Dynamic**: Learner skill ratings adjust over time, ensuring content difficulty matches current ability
 - **System-Dynamic**: Card difficulty ratings refine with use across all learners, improving course calibration
 - **Skill-Aware**: Multi-dimensional tracking enables fine-grained difficulty targeting per topic
+- **Self-Improving**: Navigation strategies carry learnable weights that automatically tune toward optimal effectiveness
 
 This means users encounter appropriately challenging content while the course itself becomes better calibrated through collective interaction.
 
@@ -99,15 +100,41 @@ Strategies control:
 - **How** candidates are ordered (by difficulty, priority, recency)
 - **When** cards become available (prerequisite gates, interference windows)
 
+### Pipeline Architecture
+
+Strategies are organized into a **Pipeline** with two types of components:
+
+- **Generators** produce candidate cards with initial scores (ELO matching, SRS scheduling, fixed sequences)
+- **Filters** transform scores from upstream (prerequisite gating, interference penalties, priority boosts)
+
+```
+Pipeline = Generator + Filters
+         = Composite(ELO, SRS) → Hierarchy → Interference → Priority
+```
+
+Each card carries a **provenance trail** showing how it was scored:
+
+```typescript
+provenance: [
+  { strategy: 'elo', action: 'generated', score: 0.85, reason: 'ELO distance 75' },
+  { strategy: 'hierarchy', action: 'passed', score: 0.85, reason: 'Prerequisites met' },
+  { strategy: 'interference', action: 'penalized', score: 0.72, reason: 'Tag cooldown' }
+]
+```
+
 ### Built-In Strategies
 
 Vue-Skuilder ships with several configurable strategies:
 
-#### Adaptive Difficulty (Default)
+#### Adaptive Difficulty (ELO Generator)
 
 Matches card difficulty to user skill level. New cards are selected from a window centered on the user's current ELO rating, ensuring appropriate challenge without overwhelming or boring the learner.
 
-#### Prerequisite Gating (Hierarchy)
+#### Spaced Repetition (SRS Generator)
+
+Surfaces review cards based on scheduling algorithms. Cards are scored by overdueness and interval recency.
+
+#### Prerequisite Gating (Hierarchy Filter)
 
 Locks advanced content until foundational concepts are mastered:
 
@@ -127,7 +154,7 @@ interface HierarchyConfig {
 
 **Example**: Cards tagged `"long-division"` only surface after the user demonstrates mastery of `"multiplication-facts"` (e.g., ELO ≥ 1050, count ≥ 20).
 
-#### Interference Avoidance
+#### Interference Avoidance (Filter)
 
 Prevents confusable concepts from appearing too close together:
 
@@ -146,7 +173,7 @@ interface InterferenceConfig {
 
 **Example**: For early readers, `"letter-b"` and `"letter-d"` cards are spaced apart until the learner has sufficient practice with each individually.
 
-#### Priority Ordering
+#### Priority Ordering (Filter)
 
 Boosts utility of high-value content:
 
@@ -168,6 +195,54 @@ All built-in strategies can be configured through a **visual editor** in the cou
 - Real-time validation
 
 For advanced use cases, strategies can also be defined via JSON configuration.
+
+## Evolutionary Orchestration
+
+Beyond static configuration, strategies can carry **learnable weights** that automatically tune toward optimal effectiveness based on observed learning outcomes.
+
+### How It Works
+
+1. **Learnable Weights**: Each strategy carries a weight (peak value), confidence (exploration width), and sample count:
+
+```typescript
+interface LearnableWeight {
+  weight: number;       // Peak value, 1.0 = neutral
+  confidence: number;   // 0-1, controls exploration
+  sampleSize: number;   // Total observations
+}
+```
+
+2. **Deviation Distribution**: Each user experiences a stable deviation from the peak weight, determined by hash. Low confidence means wide exploration; high confidence means convergence toward the optimal peak.
+
+3. **Outcome Recording**: Learning outcomes (accuracy in target zone, ELO progression) are recorded per user per period.
+
+4. **Gradient Learning**: The system correlates deviation with outcomes across users:
+   - Users with +deviation getting better outcomes → increase peak weight
+   - Users with +deviation getting worse outcomes → decrease peak weight
+   - Consistent observations → increase confidence
+
+5. **Automatic Updates**: Periodically, strategy weights adjust based on gradient, and confidence updates based on observation consistency.
+
+### Lifecycle
+
+```
+New strategy:    Low confidence → wide spread → noisy gradient → big adjustments
+Learning:        Gradient visible → peak drifts → confidence grows → spread shrinks
+Converged:       High confidence → minimum spread → flat gradient → stable
+Disturbed:       Gradient reappears → peak drifts → adapts to new optimal
+```
+
+### Static Strategies
+
+Foundational strategies (like core prerequisites) can be marked `staticWeight: true` to exclude them from learning.
+
+### Observability
+
+An admin dashboard provides visibility into:
+- Current weights and confidence levels for all strategies
+- Weight trajectory over time
+- Gradient direction and strength
+- Deviation vs outcome scatter plots
 
 ## Extension Points
 
@@ -228,6 +303,7 @@ The infrastructure for multi-dimensional tracking exists; navigators that levera
 | **SRS** | Determine when to schedule reviews |
 | **Navigators** | Select which cards to surface |
 | **SessionController** | Orchestrate queues, timing, user flow |
+| **Orchestration** | Tune strategy effectiveness over time |
 
 Each layer can be customized independently.
 
@@ -235,8 +311,9 @@ Each layer can be customized independently.
 
 - **User ELO** personalizes difficulty over time
 - **Card ELO** calibrates content based on population performance
-- **Per-tag tracking** enables future skill-tree visualizations
-- **Strategy configurations** can be A/B tested across user cohorts
+- **Per-tag tracking** enables skill-tree visualizations
+- **Strategy weights** learn optimal configurations automatically
+- **Provenance trails** enable debugging and transparency
 
 ### Good Defaults, Clear Paths Forward
 
@@ -245,22 +322,24 @@ Simple courses work out-of-the-box with adaptive difficulty. Advanced courses ca
 ## Roadmap
 
 ### Available Now
-- Dual-dynamic ELO (user + card ratings adjust together)
-- SRS scheduling with performance-modulated intervals
-- Configurable strategies: Hierarchy, Interference, Priority
-- Visual strategy authoring UI
-- Per-tag ELO tracking (data collection)
 
-### In Development
-- **Active per-tag targeting**: Surface cards addressing specific weak skills
-- **Pipeline composition**: Chain multiple strategies (e.g., Priority → Interference → Hierarchy → ELO)
-- **Strategy state persistence**: Allow strategies to remember context across sessions
+- ✅ Dual-dynamic ELO (user + card ratings adjust together)
+- ✅ SRS scheduling with performance-modulated intervals
+- ✅ Pipeline architecture (generators + filters)
+- ✅ Configurable strategies: Hierarchy, Interference, Priority
+- ✅ Visual strategy authoring UI
+- ✅ Per-tag ELO tracking
+- ✅ Evolutionary orchestration (learnable weights, deviation distribution, gradient learning)
+- ✅ Observability API and admin dashboard
+- ✅ Provenance tracking for transparency
 
 ### Future Vision
-- **Evolutionary orchestration**: Multiple strategy configurations compete; effective approaches propagate
-- **Barrier detection**: Automatically identify where learners get stuck
-- **Self-healing content**: Surface insights to authors, incentivize remediation
-- **Cohort-aware calibration**: Population-informed initial intervals and difficulty estimates
+
+- **Parameterizable strategies**: Template-based rules that generalize across courses
+- **Self-healing content**: Automatic barrier detection, author alerting, intervention measurement
+- **Trigger-response generators**: Event-driven strategies (frustration intervention, plateau breakers)
+- **Cross-course strategy sharing**: Effective strategies propagate to other courses
+- **Cohort-aware calibration**: Population data improves cold-start behavior
 
 ---
 
@@ -268,10 +347,10 @@ Simple courses work out-of-the-box with adaptive difficulty. Advanced courses ca
 
 Vue-Skuilder's pedagogy system provides:
 
-**Out-of-the-box**: An adaptive learning system where both users and content evolve together. Learners encounter appropriately challenging material; courses become better calibrated through use.
+**Out-of-the-box**: An adaptive learning system where both users and content evolve together. Learners encounter appropriately challenging material; courses become better calibrated through use. Strategies automatically tune toward effectiveness.
 
-**For course authors**: Configurable strategies (prerequisites, interference avoidance, priorities) accessible through visual UI — no code required.
+**For course authors**: Configurable strategies (prerequisites, interference avoidance, priorities) accessible through visual UI — no code required. Strategy weights learn optimal values automatically.
 
-**For researchers and developers**: Clean extension points via the `ContentNavigator` interface. Multi-dimensional performance infrastructure ready to power sophisticated adaptive tutoring.
+**For researchers and developers**: Clean extension points via the `ContentNavigator` interface. Multi-dimensional performance infrastructure ready to power sophisticated adaptive tutoring. Full provenance tracking for transparency.
 
 The philosophy: *Good defaults with clear paths to sophisticated customization.*
