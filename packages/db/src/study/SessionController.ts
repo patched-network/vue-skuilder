@@ -12,7 +12,8 @@ import {
   StudySessionReviewItem,
 } from '@db/impl/couch';
 
-import { CardRecord, CardHistory, CourseRegistrationDoc } from '@db/core';
+import { CardRecord, CardHistory, CourseRegistrationDoc, QuestionRecord } from '@db/core';
+import { recordUserOutcome } from '@db/core/orchestration/recording';
 import { Loggable } from '@db/util';
 import { getCardOrigin } from '@db/core/navigators';
 import { SourceMixer, QuotaRoundRobinMixer, SourceBatch } from './SourceMixer';
@@ -586,5 +587,67 @@ export class SessionController<TView = unknown> extends Loggable {
     } else if (this.failedQ.peek(0)?.cardID === item.cardID) {
       this.failedQ.dequeue((queueItem) => queueItem.cardID);
     }
+  }
+
+  /**
+   * End the session and record learning outcomes.
+   *
+   * This method aggregates all responses from the session and records a
+   * UserOutcomeRecord if evolutionary orchestration is enabled.
+   */
+  public async endSession(): Promise<void> {
+    if (!this._sessionRecord || this._sessionRecord.length === 0) {
+      return;
+    }
+
+    const questionRecords = this._sessionRecord
+      .flatMap((r) => r.records)
+      .filter((r): r is QuestionRecord => (r as any).userAnswer !== undefined);
+
+    if (questionRecords.length === 0) {
+      return;
+    }
+
+    // We need to access the orchestration context.
+    // Ideally this would be passed in or available via services.
+    // For now, we'll try to get it from one of the content sources if possible,
+    // or skip if we can't access it.
+
+    // Try to find a source that supports orchestration
+    let orchestrationContext = null;
+    const strategies: string[] = [];
+
+    for (const source of this.sources) {
+      if (source.getOrchestrationContext) {
+        try {
+          orchestrationContext = await source.getOrchestrationContext();
+          // Also try to get strategy IDs if available on the source (e.g. Pipeline)
+          if ((source as any).getStrategyIds) {
+            strategies.push(...(source as any).getStrategyIds());
+          }
+        } catch (e) {
+          logger.warn(`[SessionController] Failed to get orchestration context: ${e}`);
+        }
+        if (orchestrationContext) break;
+      }
+    }
+
+    if (!orchestrationContext) {
+      logger.debug('[SessionController] No orchestration context available, skipping outcome recording');
+      return;
+    }
+
+    // Use current time as period end
+    const periodEnd = new Date().toISOString();
+    // Use session start time as period start
+    const periodStart = new Date(this.startTime).toISOString();
+
+    await recordUserOutcome(
+      orchestrationContext,
+      periodStart,
+      periodEnd,
+      questionRecords,
+      strategies
+    );
   }
 }

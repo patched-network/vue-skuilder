@@ -113,20 +113,45 @@ export default class CompositeGenerator extends ContentNavigator implements Card
       this.generators.map((g) => g.getWeightedCards(limit, context))
     );
 
-    // Group by cardId
-    const byCardId = new Map<string, WeightedCard[]>();
-    for (const cards of results) {
+    // Group by cardId, tracking the weight of the generator that produced each instance
+    type WeightedResult = { card: WeightedCard; weight: number };
+    const byCardId = new Map<string, WeightedResult[]>();
+
+    results.forEach((cards, index) => {
+      // Access learnable weight if available
+      const gen = this.generators[index] as unknown as ContentNavigator;
+
+      // Determine effective weight
+      let weight = gen.learnable?.weight ?? 1.0;
+      let deviation: number | undefined;
+
+      if (gen.learnable && !gen.staticWeight && context.orchestration) {
+        // Access strategyId (protected field) via type assertion
+        const strategyId = (gen as any).strategyId;
+        if (strategyId) {
+          weight = context.orchestration.getEffectiveWeight(strategyId, gen.learnable);
+          deviation = context.orchestration.getDeviation(strategyId);
+        }
+      }
+
       for (const card of cards) {
+        // Record effective weight in provenance for transparency
+        if (card.provenance.length > 0) {
+          card.provenance[0].effectiveWeight = weight;
+          card.provenance[0].deviation = deviation;
+        }
+
         const existing = byCardId.get(card.cardId) || [];
-        existing.push(card);
+        existing.push({ card, weight });
         byCardId.set(card.cardId, existing);
       }
-    }
+    });
 
     // Aggregate scores
     const merged: WeightedCard[] = [];
-    for (const [, cards] of byCardId) {
-      const aggregatedScore = this.aggregateScores(cards);
+    for (const [, items] of byCardId) {
+      const cards = items.map((i) => i.card);
+      const aggregatedScore = this.aggregateScores(items);
       const finalScore = Math.min(1.0, aggregatedScore); // Clamp to [0, 1]
 
       // Merge provenance from all generators that produced this card
@@ -138,7 +163,7 @@ export default class CompositeGenerator extends ContentNavigator implements Card
         finalScore > initialScore ? 'boosted' : finalScore < initialScore ? 'penalized' : 'passed';
 
       // Build reason explaining the aggregation
-      const reason = this.buildAggregationReason(cards, finalScore);
+      const reason = this.buildAggregationReason(items, finalScore);
 
       // Append composite provenance entry
       merged.push({
@@ -165,12 +190,18 @@ export default class CompositeGenerator extends ContentNavigator implements Card
   /**
    * Build human-readable reason for score aggregation.
    */
-  private buildAggregationReason(cards: WeightedCard[], finalScore: number): string {
+  private buildAggregationReason(
+    items: { card: WeightedCard; weight: number }[],
+    finalScore: number
+  ): string {
+    const cards = items.map((i) => i.card);
     const count = cards.length;
     const scores = cards.map((c) => c.score.toFixed(2)).join(', ');
 
     if (count === 1) {
-      return `Single generator, score ${finalScore.toFixed(2)}`;
+      const weightMsg =
+        Math.abs(items[0].weight - 1.0) > 0.001 ? ` (w=${items[0].weight.toFixed(2)})` : '';
+      return `Single generator, score ${finalScore.toFixed(2)}${weightMsg}`;
     }
 
     const strategies = cards.map((c) => c.provenance[0]?.strategy || 'unknown').join(', ');
@@ -180,12 +211,16 @@ export default class CompositeGenerator extends ContentNavigator implements Card
         return `Max of ${count} generators (${strategies}): scores [${scores}] → ${finalScore.toFixed(2)}`;
 
       case AggregationMode.AVERAGE:
-        return `Average of ${count} generators (${strategies}): scores [${scores}] → ${finalScore.toFixed(2)}`;
+        return `Weighted Avg of ${count} generators (${strategies}): scores [${scores}] → ${finalScore.toFixed(2)}`;
 
       case AggregationMode.FREQUENCY_BOOST: {
-        const avg = cards.reduce((sum, c) => sum + c.score, 0) / count;
+        // Recalculate basic weighted avg for display
+        const totalWeight = items.reduce((sum, i) => sum + i.weight, 0);
+        const weightedSum = items.reduce((sum, i) => sum + i.card.score * i.weight, 0);
+        const avg = totalWeight > 0 ? weightedSum / totalWeight : 0;
+
         const boost = 1 + FREQUENCY_BOOST_FACTOR * (count - 1);
-        return `Frequency boost from ${count} generators (${strategies}): avg ${avg.toFixed(2)} × ${boost.toFixed(2)} → ${finalScore.toFixed(2)}`;
+        return `Frequency boost from ${count} generators (${strategies}): w-avg ${avg.toFixed(2)} × ${boost.toFixed(2)} → ${finalScore.toFixed(2)}`;
       }
 
       default:
@@ -196,19 +231,26 @@ export default class CompositeGenerator extends ContentNavigator implements Card
   /**
    * Aggregate scores from multiple generators for the same card.
    */
-  private aggregateScores(cards: WeightedCard[]): number {
-    const scores = cards.map((c) => c.score);
+  private aggregateScores(items: { card: WeightedCard; weight: number }[]): number {
+    const scores = items.map((i) => i.card.score);
 
     switch (this.aggregationMode) {
       case AggregationMode.MAX:
         return Math.max(...scores);
 
-      case AggregationMode.AVERAGE:
-        return scores.reduce((sum, s) => sum + s, 0) / scores.length;
+      case AggregationMode.AVERAGE: {
+        const totalWeight = items.reduce((sum, i) => sum + i.weight, 0);
+        if (totalWeight === 0) return 0;
+        const weightedSum = items.reduce((sum, i) => sum + i.card.score * i.weight, 0);
+        return weightedSum / totalWeight;
+      }
 
       case AggregationMode.FREQUENCY_BOOST: {
-        const avg = scores.reduce((sum, s) => sum + s, 0) / scores.length;
-        const frequencyBoost = 1 + FREQUENCY_BOOST_FACTOR * (cards.length - 1);
+        const totalWeight = items.reduce((sum, i) => sum + i.weight, 0);
+        const weightedSum = items.reduce((sum, i) => sum + i.card.score * i.weight, 0);
+        const avg = totalWeight > 0 ? weightedSum / totalWeight : 0;
+
+        const frequencyBoost = 1 + FREQUENCY_BOOST_FACTOR * (items.length - 1);
         return avg * frequencyBoost;
       }
 

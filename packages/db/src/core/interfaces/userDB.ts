@@ -7,6 +7,7 @@ import {
 import { CourseElo, Status } from '@vue-skuilder/common';
 import { Moment } from 'moment';
 import { CardHistory, CardRecord, QualifiedCardID } from '../types/types-legacy';
+import { UserOutcomeRecord } from '../types/userOutcome';
 import { UserConfig } from '../types/user';
 import { DocumentUpdater } from '@db/study';
 
@@ -164,6 +165,11 @@ export interface UserDBWriter extends DocumentUpdater {
    * @param strategyKey - Unique key identifying the strategy (typically class name)
    */
   deleteStrategyState(courseId: string, strategyKey: string): Promise<void>;
+
+  /**
+   * Record a user learning outcome for evolutionary orchestration.
+   */
+  putUserOutcome(record: UserOutcomeRecord): Promise<void>;
 }
 
 /**

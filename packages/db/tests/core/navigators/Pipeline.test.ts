@@ -90,6 +90,7 @@ function createMockContext(): { user: UserDBInterface; course: CourseDBInterface
     getCourseRegDoc: vi.fn().mockResolvedValue({
       elo: { global: { score: 1000, count: 10 }, tags: {} },
     }),
+    getUsername: vi.fn().mockReturnValue('test-user'),
   } as unknown as UserDBInterface;
 
   const mockCourse = {
@@ -294,6 +295,7 @@ describe('Pipeline', () => {
 
       const failingUser = {
         getCourseRegDoc: vi.fn().mockRejectedValue(new Error('Not registered')),
+        getUsername: vi.fn().mockReturnValue('failing-user'),
       } as unknown as UserDBInterface;
 
       let capturedElo = 0;

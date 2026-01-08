@@ -4,6 +4,7 @@ import { StudentClassroomDB } from '../../impl/couch/classroomDB';
 import { WeightedCard } from '../navigators';
 import { TagFilter, hasActiveFilter } from '@vue-skuilder/common';
 import { TagFilteredContentSource } from '../../study/TagFilteredContentSource';
+import { OrchestrationContext } from '../orchestration';
 
 export type StudySessionFailedItem = StudySessionFailedNewItem | StudySessionFailedReviewItem;
 
@@ -72,6 +73,12 @@ export interface StudyContentSource {
    * @returns Cards sorted by score descending
    */
   getWeightedCards(limit: number): Promise<WeightedCard[]>;
+
+  /**
+   * Get the orchestration context for this source.
+   * Used for recording learning outcomes.
+   */
+  getOrchestrationContext?(): Promise<OrchestrationContext>;
 }
 // #endregion docs_StudyContentSource
 

@@ -52,6 +52,9 @@
       <template #additional-content>
         <midi-config v-if="isPianoCourse" :_id="courseId" :user="user" class="my-3" />
 
+        <!-- Orchestration Dashboard for admin users -->
+        <orchestration-dashboard :course-id="courseId" :is-admin="isAdmin" />
+
         <!-- Learning Preferences for registered users -->
         <v-expansion-panels v-if="userIsRegistered" class="my-3">
           <v-expansion-panel>
@@ -75,6 +78,7 @@ import { CourseInformation, getCurrentUser, UserTagPreferences } from '@vue-skui
 import { MidiConfig, allCourseWare } from '@vue-skuilder/courseware';
 import { UserDBInterface, getDataLayer } from '@vue-skuilder/db';
 import { CourseConfig } from '@vue-skuilder/common';
+import OrchestrationDashboard from './OrchestrationDashboard.vue';
 
 export default defineComponent({
   name: 'CourseInformationWrapper',
@@ -83,6 +87,7 @@ export default defineComponent({
     CourseInformation,
     MidiConfig,
     UserTagPreferences,
+    OrchestrationDashboard,
   },
 
   props: {
@@ -104,6 +109,10 @@ export default defineComponent({
   computed: {
     isPianoCourse(): boolean {
       return this.courseConfig.name?.toLowerCase().includes('piano') ?? false;
+    },
+
+    isAdmin(): boolean {
+      return this.user?.getUsername() === 'admin';
     },
   },
 
