@@ -720,46 +720,80 @@ describe('MCP create_strategy integration', () => {
 ## File Checklist
 
 ### New Package Files
-- [ ] `packages/e2e-pipeline/package.json`
-- [ ] `packages/e2e-pipeline/tsconfig.json`
-- [ ] `packages/e2e-pipeline/jest.config.js`
-- [ ] `packages/e2e-pipeline/CLAUDE.md`
+- [x] `packages/e2e-pipeline/package.json`
+- [x] `packages/e2e-pipeline/tsconfig.json`
+- [x] `packages/e2e-pipeline/jest.config.js`
+- [x] `packages/e2e-pipeline/CLAUDE.md`
+- [x] `packages/e2e-pipeline/src/index.ts`
 
 ### Harness Files
-- [ ] `src/harness/index.ts`
-- [ ] `src/harness/test-db.ts`
-- [ ] `src/harness/mcp-client.ts`
-- [ ] `src/harness/data-layer-factory.ts`
-- [ ] `src/harness/determinism.ts`
+- [x] `src/harness/index.ts`
+- [x] `src/harness/test-db.ts`
+- [x] `src/harness/mcp-client.ts`
+- [x] `src/harness/data-layer-factory.ts`
+- [x] `src/harness/determinism.ts`
 
 ### Fixture Files
-- [ ] `src/fixtures/index.ts`
-- [ ] `src/fixtures/course-builder.ts`
-- [ ] `src/fixtures/strategy-templates.ts`
-- [ ] `src/fixtures/card-templates.ts`
+- [x] `src/fixtures/index.ts`
+- [x] `src/fixtures/course-builder.ts`
+- [x] `src/fixtures/strategy-templates.ts`
+- [x] `src/fixtures/card-templates.ts`
 
 ### Mock Files
-- [ ] `src/mocks/index.ts`
-- [ ] `src/mocks/mock-source.ts`
-- [ ] `src/mocks/mock-user-db.ts`
+- [x] `src/mocks/index.ts`
+- [x] `src/mocks/mock-source.ts`
+- [x] `src/mocks/mock-user-db.ts`
 
 ### Test Files
-- [ ] `tests/setup.ts`
-- [ ] `tests/teardown.ts`
-- [ ] `tests/pipeline/assembly.test.ts`
-- [ ] `tests/pipeline/hierarchy-filter.test.ts`
-- [ ] `tests/pipeline/elo-selection.test.ts`
-- [ ] `tests/session/queue-probability.test.ts`
-- [ ] `tests/session/failed-card-resurfacing.test.ts`
-- [ ] `tests/mcp-integration/create-strategy.test.ts`
+- [x] `tests/setup.ts`
+- [x] `tests/teardown.ts`
+- [x] `tests/pipeline/assembly.test.ts`
+- [x] `tests/pipeline/hierarchy-filter.test.ts`
+- [x] `tests/pipeline/elo-selection.test.ts`
+- [x] `tests/session/queue-probability.test.ts`
+- [x] `tests/session/failed-card-resurfacing.test.ts`
+- [x] `tests/mcp-integration/create-strategy.test.ts`
 
 ### Modified Files
-- [ ] Root `package.json` - add workspace
+- [ ] Root `package.json` - add workspace (auto-detected by yarn)
 - [ ] Root `tsconfig.json` - add reference (if using project references)
 - [ ] `packages/db/docs/navigators-architecture.md` - add Testing section
 
 ### CI/CD Files
 - [ ] `.github/workflows/ci-e2e-pipeline.yml` - GitHub Actions workflow
+
+## Implementation Progress
+
+### Phase 1: Package Scaffolding ✅ COMPLETE
+- Created package directory structure
+- Added package.json with jest, ts-jest, pouchdb dependencies
+- Added tsconfig.json with path aliases
+- Added jest.config.js with ESM support
+- Added CLAUDE.md with package documentation
+
+### Phase 2: Test Harness Implementation ✅ COMPLETE
+- `test-db.ts`: Memory and CouchDB database lifecycle management
+- `mcp-client.ts`: MCP client wrapper for tool/resource access
+- `data-layer-factory.ts`: TestCourseDB, TestUserDB, TestDataLayerProvider
+- `determinism.ts`: seedRandom, mockRandomSequence, tracking utilities
+
+### Phase 3: Pipeline Strategy Tests ✅ COMPLETE
+- `assembly.test.ts`: Strategy classification, storage, CourseBuilder integration
+- `hierarchy-filter.test.ts`: Hierarchy configuration, card-level association
+- `elo-selection.test.ts`: ELO strategy configuration, gradient cards
+
+### Phase 4: SessionController Behavior Tests ✅ COMPLETE
+- `queue-probability.test.ts`: Documents probability thresholds and bug scenarios
+- `failed-card-resurfacing.test.ts`: Documents failed card queue behavior
+
+### Phase 5: MCP Integration Tests ✅ COMPLETE
+- `create-strategy.test.ts`: Strategy creation, retrieval, Pipeline preparation
+
+### Remaining Work
+- [ ] Run `yarn install` to update workspaces
+- [ ] Run tests to verify compilation
+- [ ] Fix any TypeScript/Jest configuration issues
+- [x] Add CI/CD workflow
 
 ---
 
