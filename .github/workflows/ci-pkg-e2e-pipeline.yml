@@ -1,4 +1,8 @@
 name: ci-pkg-e2e-pipeline
+
+permissions:
+  contents: read
+
 on:
   pull_request:
     paths:
@@ -6,6 +10,7 @@ on:
       - 'packages/common/**'
       - 'packages/db/**'
       - 'packages/mcp/**'
+      - 'packages/courseware/**'
       - '.github/workflows/ci-pkg-e2e-pipeline.yml'
       - 'package.json'
       - 'yarn.lock'
@@ -39,6 +44,9 @@ jobs:
 
       - name: Build db package
         run: yarn workspace @vue-skuilder/db build
+
+      - name: Build courseware package
+        run: yarn workspace @vue-skuilder/courseware build
 
       - name: Build mcp package
         run: yarn workspace @vue-skuilder/mcp build
