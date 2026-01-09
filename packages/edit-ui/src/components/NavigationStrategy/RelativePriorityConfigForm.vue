@@ -9,17 +9,6 @@
     <v-window v-model="inputMode">
       <!-- Visual Editor Mode -->
       <v-window-item value="ui">
-        <!-- Delegate Strategy Selector -->
-        <v-select
-          :model-value="config.delegateStrategy || 'elo'"
-          @update:model-value="updateDelegateStrategy"
-          label="Delegate Strategy"
-          :items="delegateStrategies"
-          hint="Strategy used to generate candidate cards"
-          persistent-hint
-          class="mb-4"
-        ></v-select>
-
         <!-- Configuration Options -->
         <div class="config-options mb-4">
           <h4 class="text-subtitle-1 mb-2">Priority Configuration</h4>
@@ -144,7 +133,7 @@
           @update:model-value="updateFromJson"
           label="Configuration JSON"
           rows="15"
-          placeholder='{"tagPriorities": {"letter-s": 0.95, "letter-t": 0.90}, "defaultPriority": 0.5, "combineMode": "max", "priorityInfluence": 0.5, "delegateStrategy": "elo"}'
+          placeholder='{"tagPriorities": {"letter-s": 0.95, "letter-t": 0.90}, "defaultPriority": 0.5, "combineMode": "max", "priorityInfluence": 0.5}'
           hint="Paste or edit JSON configuration directly"
           persistent-hint
           auto-grow
@@ -176,7 +165,6 @@ export interface RelativePriorityConfig {
   defaultPriority?: number;
   combineMode?: 'max' | 'average' | 'min';
   priorityInfluence?: number;
-  delegateStrategy?: string;
 }
 
 export default defineComponent({
@@ -202,7 +190,6 @@ export default defineComponent({
     const jsonError = ref<string | null>(null);
     const loadingTags = ref(true);
 
-    const delegateStrategies = ['elo', 'srs'];
     const combineModes = [
       { title: 'Max (highest priority wins)', value: 'max' },
       { title: 'Average (average all priorities)', value: 'average' },
@@ -233,13 +220,6 @@ export default defineComponent({
       } finally {
         loadingTags.value = false;
       }
-    }
-
-    function updateDelegateStrategy(value: string) {
-      emit('update:modelValue', {
-        ...config.value,
-        delegateStrategy: value,
-      });
     }
 
     function updateDefaultPriority(value: string | number) {
@@ -340,12 +320,10 @@ export default defineComponent({
       config,
       availableTags,
       loadingTags,
-      delegateStrategies,
       combineModes,
       jsonText,
       jsonError,
       validationError,
-      updateDelegateStrategy,
       updateDefaultPriority,
       updateCombineMode,
       updatePriorityInfluence,

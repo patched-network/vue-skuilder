@@ -9,17 +9,6 @@
     <v-window v-model="inputMode">
       <!-- Visual Editor Mode -->
       <v-window-item value="ui">
-        <!-- Delegate Strategy Selector -->
-        <v-select
-          :model-value="config.delegateStrategy || 'elo'"
-          @update:model-value="updateDelegateStrategy"
-          label="Delegate Strategy"
-          :items="delegateStrategies"
-          hint="Strategy used to generate candidate cards"
-          persistent-hint
-          class="mb-4"
-        ></v-select>
-
         <!-- Prerequisites Builder -->
         <div class="prerequisites-section">
           <div class="d-flex align-center mb-2">
@@ -124,7 +113,7 @@
           @update:model-value="updateFromJson"
           label="Configuration JSON"
           rows="15"
-          placeholder='{"prerequisites": {"cvc-words": [{"tag": "letter-sounds", "masteryThreshold": {"minCount": 10}}]}, "delegateStrategy": "elo"}'
+          placeholder='{"prerequisites": {"cvc-words": [{"tag": "letter-sounds", "masteryThreshold": {"minCount": 10}}]}}'
           hint="Paste or edit JSON configuration directly"
           persistent-hint
           auto-grow
@@ -163,7 +152,6 @@ export interface HierarchyConfig {
   prerequisites: {
     [tagId: string]: TagPrerequisite[];
   };
-  delegateStrategy?: string;
 }
 
 export default defineComponent({
@@ -188,8 +176,6 @@ export default defineComponent({
     const validationError = ref<string | null>(null);
     const jsonError = ref<string | null>(null);
     const loadingTags = ref(true);
-
-    const delegateStrategies = ['elo', 'srs'];
 
     // Reactive copy of config for editing
     const config = computed(() => props.modelValue);
@@ -218,14 +204,6 @@ export default defineComponent({
       } finally {
         loadingTags.value = false;
       }
-    }
-
-    // Update delegate strategy
-    function updateDelegateStrategy(value: string) {
-      emit('update:modelValue', {
-        ...config.value,
-        delegateStrategy: value,
-      });
     }
 
     // Add a new prerequisite rule (new gated tag)
@@ -419,11 +397,9 @@ export default defineComponent({
       config,
       availableTags,
       loadingTags,
-      delegateStrategies,
       jsonText,
       jsonError,
       validationError,
-      updateDelegateStrategy,
       addPrerequisiteRule,
       removePrerequisiteRule,
       renamePrerequisiteTag,
