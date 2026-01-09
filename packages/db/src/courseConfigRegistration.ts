@@ -266,6 +266,113 @@ export function registerQuestionType(
 }
 
 /**
+ * Remove a data shape from the course config
+ * @returns true if the data shape was removed, false if it wasn't found
+ */
+export function removeDataShape(
+  dataShapeName: string,
+  courseConfig: CourseConfig
+): boolean {
+  const index = courseConfig.dataShapes.findIndex((ds) => ds.name === dataShapeName);
+
+  if (index === -1) {
+    logger.info(`DataShape '${dataShapeName}' not found in course config`);
+    return false;
+  }
+
+  // Remove the data shape
+  courseConfig.dataShapes.splice(index, 1);
+
+  // Also remove references from any question types
+  courseConfig.questionTypes.forEach((qt) => {
+    const dsIndex = qt.dataShapeList.indexOf(dataShapeName);
+    if (dsIndex !== -1) {
+      qt.dataShapeList.splice(dsIndex, 1);
+    }
+  });
+
+  logger.info(`Removed DataShape: ${dataShapeName}`);
+  return true;
+}
+
+/**
+ * Remove a question type from the course config
+ * @returns true if the question type was removed, false if it wasn't found
+ */
+export function removeQuestionType(
+  questionTypeName: string,
+  courseConfig: CourseConfig
+): boolean {
+  const index = courseConfig.questionTypes.findIndex((qt) => qt.name === questionTypeName);
+
+  if (index === -1) {
+    logger.info(`QuestionType '${questionTypeName}' not found in course config`);
+    return false;
+  }
+
+  // Remove the question type
+  courseConfig.questionTypes.splice(index, 1);
+
+  // Also remove references from data shapes
+  courseConfig.dataShapes.forEach((ds) => {
+    const qtIndex = ds.questionTypes.indexOf(questionTypeName);
+    if (qtIndex !== -1) {
+      ds.questionTypes.splice(qtIndex, 1);
+    }
+  });
+
+  logger.info(`Removed QuestionType: ${questionTypeName}`);
+  return true;
+}
+
+/**
+ * Remove data shapes and question types from course config and persist to database
+ */
+export async function removeCustomQuestionTypes(
+  dataShapeNames: string[],
+  questionTypeNames: string[],
+  courseConfig: CourseConfig,
+  courseDB: CourseDBInterface
+): Promise<{ success: boolean; removedCount: number; errorMessage?: string }> {
+  try {
+    logger.info('Beginning custom question removal');
+    logger.info(`Removing ${dataShapeNames.length} data shapes and ${questionTypeNames.length} question types`);
+
+    let removedCount = 0;
+
+    // Remove question types first (they reference data shapes)
+    for (const qtName of questionTypeNames) {
+      if (removeQuestionType(qtName, courseConfig)) {
+        removedCount++;
+      }
+    }
+
+    // Then remove data shapes
+    for (const dsName of dataShapeNames) {
+      if (removeDataShape(dsName, courseConfig)) {
+        removedCount++;
+      }
+    }
+
+    // Update the course config in the database
+    logger.info('Updating course configuration...');
+    const updateResult = await courseDB.updateCourseConfig(courseConfig);
+
+    if (!updateResult.ok) {
+      throw new Error(`Failed to update course config: ${JSON.stringify(updateResult)}`);
+    }
+
+    logger.info(`Custom question removal complete: ${removedCount} items removed`);
+
+    return { success: true, removedCount };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    logger.error(`Custom question removal failed: ${errorMessage}`);
+    return { success: false, removedCount: 0, errorMessage };
+  }
+}
+
+/**
  * Register seed data for a question type
  *
  * @param question - The processed question data
