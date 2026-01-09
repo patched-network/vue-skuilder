@@ -11,7 +11,7 @@
  * 4. Verify Pipeline can assemble and use the strategy
  */
 
-import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import {
   createTestEnvironment,
   TestEnvironment,

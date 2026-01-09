@@ -5,7 +5,7 @@
  * Verifies that cards are prioritized based on proximity to user's skill level.
  */
 
-import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import {
   createTestEnvironment,
   TestEnvironment,

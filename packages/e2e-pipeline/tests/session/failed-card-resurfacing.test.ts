@@ -11,7 +11,7 @@
  * 3. Removing cards from failedQ after successful response
  */
 
-import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { withRandomSequence } from '../../src/harness/determinism';
 import {
   createMockSource,

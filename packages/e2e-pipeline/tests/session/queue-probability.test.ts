@@ -9,7 +9,7 @@
  * decisions made by SessionController._selectNextItemToHydrate().
  */
 
-import { describe, it, expect, afterEach } from '@jest/globals';
+import { describe, it, expect, afterEach } from 'vitest';
 import { mockRandomSequence, withRandomSequence } from '../../src/harness/determinism';
 import {
   createMockSource,

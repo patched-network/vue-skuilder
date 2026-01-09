@@ -6,7 +6,7 @@
  * that levels unlock based on mastery thresholds.
  */
 
-import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import {
   createTestEnvironment,
   TestEnvironment,
