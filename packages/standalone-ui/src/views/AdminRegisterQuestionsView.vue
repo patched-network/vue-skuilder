@@ -5,8 +5,22 @@
         Register Question Types
       </v-card-title>
 
+      <!-- Access Denied -->
+      <v-alert v-if="!isAuthorized" type="error" variant="tonal" class="ma-4">
+        <v-alert-title>Access Denied</v-alert-title>
+        <p class="mb-2">
+          This admin page requires authentication with an authorized account.
+        </p>
+        <p v-if="!authStore.isLoggedIn" class="mb-2">
+          Please <a href="#" @click.prevent="authStore.setLoginDialog(true)">log in</a> to continue.
+        </p>
+        <p v-else class="mb-2">
+          Your account ({{ currentUsername }}) does not have admin privileges.
+        </p>
+      </v-alert>
+
       <!-- Static Mode Warning -->
-      <v-alert v-if="isStaticMode" type="warning" variant="tonal" class="ma-4">
+      <v-alert v-else-if="isStaticMode" type="warning" variant="tonal" class="ma-4">
         <v-alert-title>Static Mode Detected</v-alert-title>
         <p class="mb-2">
           Question type registration is not available in static mode.
@@ -21,7 +35,7 @@
       </v-alert>
 
       <!-- Loading State -->
-      <v-card-text v-else-if="loading">
+      <v-card-text v-else-if="isAuthorized && loading">
         <v-progress-circular indeterminate color="primary" />
         <span class="ml-4">Loading question type data...</span>
       </v-card-text>
@@ -37,47 +51,138 @@
         <!-- Current State -->
         <div class="mb-6">
           <h3 class="text-h6 mb-2">Current CourseConfig</h3>
-          <v-list density="compact">
-            <v-list-item>
-              <template #prepend>
-                <v-icon>mdi-shape</v-icon>
-              </template>
-              <v-list-item-title>
+          <v-expansion-panels variant="accordion">
+            <v-expansion-panel>
+              <v-expansion-panel-title>
+                <v-icon class="mr-2">mdi-shape</v-icon>
                 {{ currentDataShapeCount }} DataShapes registered
-              </v-list-item-title>
-            </v-list-item>
-            <v-list-item>
-              <template #prepend>
-                <v-icon>mdi-help-circle</v-icon>
-              </template>
-              <v-list-item-title>
+              </v-expansion-panel-title>
+              <v-expansion-panel-text>
+                <v-list v-if="courseConfig?.dataShapes?.length" density="compact">
+                  <v-list-item
+                    v-for="ds in courseConfig.dataShapes"
+                    :key="ds.name"
+                  >
+                    <template #default>
+                      <v-list-item-title class="font-weight-medium">
+                        {{ ds.name }}
+                      </v-list-item-title>
+                      <v-list-item-subtitle>
+                        {{ ds.questionTypes?.length || 0 }} question types |
+                        Schema: {{ ds.serializedZodSchema ? 'Yes' : 'No' }}
+                      </v-list-item-subtitle>
+                    </template>
+                    <template #append>
+                      <v-btn
+                        icon="mdi-delete"
+                        size="small"
+                        variant="text"
+                        color="error"
+                        :loading="removing"
+                        @click="confirmRemoveDataShape(ds.name)"
+                      />
+                    </template>
+                  </v-list-item>
+                </v-list>
+                <div v-else class="text-medium-emphasis pa-2">
+                  No DataShapes registered
+                </div>
+              </v-expansion-panel-text>
+            </v-expansion-panel>
+            <v-expansion-panel>
+              <v-expansion-panel-title>
+                <v-icon class="mr-2">mdi-help-circle</v-icon>
                 {{ currentQuestionTypeCount }} QuestionTypes registered
-              </v-list-item-title>
-            </v-list-item>
-          </v-list>
+              </v-expansion-panel-title>
+              <v-expansion-panel-text>
+                <v-list v-if="courseConfig?.questionTypes?.length" density="compact">
+                  <v-list-item
+                    v-for="qt in courseConfig.questionTypes"
+                    :key="qt.name"
+                  >
+                    <template #default>
+                      <v-list-item-title class="font-weight-medium">
+                        {{ qt.name }}
+                      </v-list-item-title>
+                      <v-list-item-subtitle>
+                        Views: {{ qt.viewList?.join(', ') || 'none' }} |
+                        DataShapes: {{ qt.dataShapeList?.join(', ') || 'none' }}
+                      </v-list-item-subtitle>
+                    </template>
+                    <template #append>
+                      <v-btn
+                        icon="mdi-delete"
+                        size="small"
+                        variant="text"
+                        color="error"
+                        :loading="removing"
+                        @click="confirmRemoveQuestionType(qt.name)"
+                      />
+                    </template>
+                  </v-list-item>
+                </v-list>
+                <div v-else class="text-medium-emphasis pa-2">
+                  No QuestionTypes registered
+                </div>
+              </v-expansion-panel-text>
+            </v-expansion-panel>
+          </v-expansion-panels>
         </div>
 
         <!-- Custom Questions -->
         <div class="mb-6">
           <h3 class="text-h6 mb-2">From allCustomQuestions()</h3>
-          <v-list density="compact">
-            <v-list-item>
-              <template #prepend>
-                <v-icon>mdi-shape</v-icon>
-              </template>
-              <v-list-item-title>
+          <v-expansion-panels variant="accordion">
+            <v-expansion-panel>
+              <v-expansion-panel-title>
+                <v-icon class="mr-2">mdi-shape</v-icon>
                 {{ processedDataShapes.length }} DataShapes found
-              </v-list-item-title>
-            </v-list-item>
-            <v-list-item>
-              <template #prepend>
-                <v-icon>mdi-help-circle</v-icon>
-              </template>
-              <v-list-item-title>
+              </v-expansion-panel-title>
+              <v-expansion-panel-text>
+                <v-list v-if="processedDataShapes.length" density="compact">
+                  <v-list-item
+                    v-for="ds in processedDataShapes"
+                    :key="`${ds.course}.${ds.name}`"
+                  >
+                    <v-list-item-title class="font-weight-medium">
+                      {{ ds.course }}.{{ ds.name }}
+                    </v-list-item-title>
+                    <v-list-item-subtitle>
+                      Fields: {{ ds.dataShape?.fields?.map(f => f.name).join(', ') || 'none' }}
+                    </v-list-item-subtitle>
+                  </v-list-item>
+                </v-list>
+                <div v-else class="text-medium-emphasis pa-2">
+                  No DataShapes found in allCustomQuestions()
+                </div>
+              </v-expansion-panel-text>
+            </v-expansion-panel>
+            <v-expansion-panel>
+              <v-expansion-panel-title>
+                <v-icon class="mr-2">mdi-help-circle</v-icon>
                 {{ processedQuestions.length }} QuestionTypes found
-              </v-list-item-title>
-            </v-list-item>
-          </v-list>
+              </v-expansion-panel-title>
+              <v-expansion-panel-text>
+                <v-list v-if="processedQuestions.length" density="compact">
+                  <v-list-item
+                    v-for="q in processedQuestions"
+                    :key="`${q.course}.${q.name}`"
+                  >
+                    <v-list-item-title class="font-weight-medium">
+                      {{ q.course }}.{{ q.name }}
+                    </v-list-item-title>
+                    <v-list-item-subtitle>
+                      DataShapes: {{ q.dataShapes?.map(ds => ds.name).join(', ') || 'none' }} |
+                      Views: {{ q.views?.length || 0 }}
+                    </v-list-item-subtitle>
+                  </v-list-item>
+                </v-list>
+                <div v-else class="text-medium-emphasis pa-2">
+                  No QuestionTypes found in allCustomQuestions()
+                </div>
+              </v-expansion-panel-text>
+            </v-expansion-panel>
+          </v-expansion-panels>
         </div>
 
         <!-- Changes Preview -->
@@ -114,7 +219,7 @@
       </v-card-text>
 
       <!-- Actions -->
-      <v-card-actions v-if="!isStaticMode && !loading && !error">
+      <v-card-actions v-if="isAuthorized && !isStaticMode && !loading && !error">
         <v-spacer />
         <v-btn
           color="primary"
@@ -134,6 +239,7 @@ import { ref, computed, onMounted } from 'vue';
 import { getDataLayer } from '@vue-skuilder/db';
 import {
   registerCustomQuestionTypes,
+  removeCustomQuestionTypes,
   processCustomQuestionsData,
   isDataShapeRegistered,
   isQuestionTypeRegistered,
@@ -142,14 +248,29 @@ import {
   type ProcessedDataShape,
   type ProcessedQuestionData,
 } from '@vue-skuilder/db';
-import { useAuthStore } from '@vue-skuilder/common-ui';
+import { useAuthStore, getCurrentUser } from '@vue-skuilder/common-ui';
 import { allCustomQuestions } from '../questions';
 import config from '../../skuilder.config.json';
+
+// Admin usernames that can access this page
+const ADMIN_USERNAMES = ['admin'];
+
+// Auth state
+const authStore = useAuthStore();
+const currentUsername = ref<string | null>(null);
+
+// Check if user is authorized (logged in + admin username)
+const isAuthorized = computed(() => {
+  if (!authStore.isLoggedIn) return false;
+  if (!currentUsername.value) return false;
+  return ADMIN_USERNAMES.includes(currentUsername.value);
+});
 
 // State
 const loading = ref(true);
 const error = ref<string | null>(null);
 const registering = ref(false);
+const removing = ref(false);
 const successMessage = ref<string | null>(null);
 
 const courseConfig = ref<any>(null);
@@ -284,10 +405,77 @@ async function registerQuestions() {
   }
 }
 
+async function confirmRemoveDataShape(name: string) {
+  if (!confirm(`Remove DataShape "${name}"? This cannot be undone.`)) {
+    return;
+  }
+  await removeItems([name], []);
+}
+
+async function confirmRemoveQuestionType(name: string) {
+  if (!confirm(`Remove QuestionType "${name}"? This cannot be undone.`)) {
+    return;
+  }
+  await removeItems([], [name]);
+}
+
+async function removeItems(dataShapeNames: string[], questionTypeNames: string[]) {
+  if (!courseConfig.value) {
+    error.value = 'Missing course config for removal';
+    return;
+  }
+
+  try {
+    removing.value = true;
+    error.value = null;
+    successMessage.value = null;
+
+    const courseId = config.course;
+    if (!courseId) {
+      throw new Error('No course ID configured');
+    }
+
+    const courseDB = getDataLayer().getCourseDB(courseId);
+
+    const result = await removeCustomQuestionTypes(
+      dataShapeNames,
+      questionTypeNames,
+      courseConfig.value,
+      courseDB
+    );
+
+    if (result.success) {
+      successMessage.value = `Successfully removed ${result.removedCount} items`;
+      // Reload data to show updated state
+      await loadData();
+    } else {
+      error.value = result.errorMessage || 'Removal failed';
+    }
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : String(err);
+    console.error('[AdminRegisterQuestions] Removal failed:', err);
+  } finally {
+    removing.value = false;
+  }
+}
+
 // Lifecycle
-onMounted(() => {
-  if (!isStaticMode.value) {
+onMounted(async () => {
+  // Check authorization first
+  try {
+    const user = await getCurrentUser();
+    if (user) {
+      currentUsername.value = user.getUsername();
+    }
+  } catch (err) {
+    console.error('[AdminRegisterQuestions] Failed to get current user:', err);
+  }
+
+  // Only load data if authorized and not in static mode
+  if (isAuthorized.value && !isStaticMode.value) {
     loadData();
+  } else {
+    loading.value = false;
   }
 });
 </script>
