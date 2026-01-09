@@ -18,6 +18,11 @@ import {
   handleTagsExclusiveResource,
   handleTagsDistributionResource,
   handleSchemaResource,
+  handleStrategiesAllResource,
+  handleStrategySpecificResource,
+  handleStrategiesByRoleResource,
+  handleAvailableRolesResource,
+  handleStrategySchemaResource,
   RESOURCE_PATTERNS,
 } from './resources/index.js';
 import {
@@ -25,6 +30,7 @@ import {
   handleUpdateCard,
   handleTagCard,
   handleDeleteCard,
+  handleCreateStrategy,
   TOOL_PATTERNS,
 } from './tools/index.js';
 import {
@@ -37,6 +43,10 @@ import {
   TagCardInputMCPSchema,
   DeleteCardInputMCPSchema,
 } from './types/tools.js';
+import {
+  type CreateStrategyInput,
+  CreateStrategyInputMCPSchema,
+} from './types/strategies.js';
 import {
   createFillInCardAuthoringPrompt,
   createEloScoringGuidancePrompt,
@@ -575,6 +585,167 @@ export class MCPServer {
         this.logger.warn(`MCP Server: Deleting card ${deleteInput.cardId}${deleteInput.reason ? ` (reason: ${deleteInput.reason})` : ''}`);
         const result = await handleDeleteCard(this.courseDB, deleteInput);
         this.logger.info(`MCP Server: Card ${deleteInput.cardId} deletion completed`);
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      }
+    );
+
+    // ============================================================================
+    // STRATEGY RESOURCES
+    // ============================================================================
+
+    // Register strategies://all resource
+    this.mcpServer.registerResource(
+      RESOURCE_PATTERNS.STRATEGIES_ALL,
+      RESOURCE_PATTERNS.STRATEGIES_ALL,
+      {
+        title: 'All Navigation Strategies',
+        description: 'List all navigation strategies in the course',
+        mimeType: 'application/json',
+      },
+      async (uri) => {
+        this.logger.debug('MCP Server: Fetching all strategies');
+        const result = await handleStrategiesAllResource(this.courseDB);
+        this.logger.info(`MCP Server: Retrieved ${result.total} strategies`);
+        return {
+          contents: [
+            {
+              uri: uri.href,
+              text: JSON.stringify(result, null, 2),
+              mimeType: 'application/json',
+            },
+          ],
+        };
+      }
+    );
+
+    // Register strategies://{strategyId} resource
+    this.mcpServer.registerResource(
+      RESOURCE_PATTERNS.STRATEGIES_SPECIFIC,
+      new ResourceTemplate('strategies://{strategyId}', { list: undefined }),
+      {
+        title: 'Specific Strategy',
+        description: 'Get detailed information about a specific navigation strategy',
+        mimeType: 'application/json',
+      },
+      async (uri, { strategyId }) => {
+        this.logger.debug(`MCP Server: Fetching strategy '${strategyId}'`);
+        const result = await handleStrategySpecificResource(this.courseDB, strategyId as string);
+        this.logger.info(`MCP Server: Retrieved strategy '${strategyId}'`);
+        return {
+          contents: [
+            {
+              uri: uri.href,
+              text: JSON.stringify(result, null, 2),
+              mimeType: 'application/json',
+            },
+          ],
+        };
+      }
+    );
+
+    // Register strategies://role/{roleType} resource
+    this.mcpServer.registerResource(
+      RESOURCE_PATTERNS.STRATEGIES_ROLE,
+      new ResourceTemplate('strategies://role/{roleType}', { list: undefined }),
+      {
+        title: 'Strategies by Role',
+        description: 'Filter strategies by role (generator or filter)',
+        mimeType: 'application/json',
+      },
+      async (uri, { roleType }) => {
+        this.logger.debug(`MCP Server: Fetching strategies by role '${roleType}'`);
+        const result = await handleStrategiesByRoleResource(
+          this.courseDB,
+          roleType as 'generator' | 'filter'
+        );
+        this.logger.info(`MCP Server: Retrieved ${result.total} ${roleType} strategies`);
+        return {
+          contents: [
+            {
+              uri: uri.href,
+              text: JSON.stringify(result, null, 2),
+              mimeType: 'application/json',
+            },
+          ],
+        };
+      }
+    );
+
+    // Register strategies://roles resource
+    this.mcpServer.registerResource(
+      RESOURCE_PATTERNS.STRATEGIES_ROLES,
+      RESOURCE_PATTERNS.STRATEGIES_ROLES,
+      {
+        title: 'Available Strategy Types',
+        description: 'List valid implementingClass values for creating strategies',
+        mimeType: 'application/json',
+      },
+      async (uri) => {
+        this.logger.debug('MCP Server: Fetching available strategy roles');
+        const result = await handleAvailableRolesResource();
+        this.logger.info(`MCP Server: Retrieved ${result.total} available strategy types`);
+        return {
+          contents: [
+            {
+              uri: uri.href,
+              text: JSON.stringify(result, null, 2),
+              mimeType: 'application/json',
+            },
+          ],
+        };
+      }
+    );
+
+    // Register strategies://schema/{implementingClass} resource
+    this.mcpServer.registerResource(
+      RESOURCE_PATTERNS.STRATEGIES_SCHEMA,
+      new ResourceTemplate('strategies://schema/{implementingClass}', { list: undefined }),
+      {
+        title: 'Strategy Config Schema',
+        description: 'Get configuration schema for a specific strategy type',
+        mimeType: 'application/json',
+      },
+      async (uri, { implementingClass }) => {
+        this.logger.debug(`MCP Server: Fetching schema for strategy type '${implementingClass}'`);
+        const result = await handleStrategySchemaResource(implementingClass as string);
+        if (result.available) {
+          this.logger.info(`MCP Server: Retrieved schema for '${implementingClass}'`);
+        } else {
+          this.logger.warn(`MCP Server: Schema not available for '${implementingClass}'`);
+        }
+        return {
+          contents: [
+            {
+              uri: uri.href,
+              text: JSON.stringify(result, null, 2),
+              mimeType: 'application/json',
+            },
+          ],
+        };
+      }
+    );
+
+    // Register create_strategy tool
+    this.mcpServer.registerTool(
+      TOOL_PATTERNS.CREATE_STRATEGY,
+      {
+        title: 'Create Strategy',
+        description: 'Create a new navigation strategy with configuration',
+        inputSchema: CreateStrategyInputMCPSchema as any,
+      },
+      // @ts-ignore - MCP SDK type incompatibility with Zod v4
+      async (input) => {
+        const strategyInput = input as CreateStrategyInput;
+        this.logger.info(`MCP Server: Creating strategy '${strategyInput.name}' with class '${strategyInput.implementingClass}'`);
+        const result = await handleCreateStrategy(this.courseDB, strategyInput);
+        this.logger.info(`MCP Server: Created strategy ${result.strategyId}`);
         return {
           content: [
             {

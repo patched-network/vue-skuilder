@@ -4,6 +4,9 @@ export * from './resources.js';
 // Tool types  
 export * from './tools.js';
 
+// Strategy types
+export * from './strategies.js';
+
 // Common types
 export interface SourceReference {
   type: 'git' | 'file' | 'url';

@@ -37,7 +37,7 @@ Course-scoped MCP servers that accept CourseDBInterface injection:
 - **Tools**: Content generation and management operations
 - **Prompts**: Templates for guided content creation
 
-### Available Resources (14 total)
+### Available Resources (19 total)
 - `course://config` - Course configuration with metadata and ELO statistics
 - `cards://all` - All cards with pagination support
 - `cards://tag/{tagName}` - Filter cards by tag name
@@ -52,12 +52,18 @@ Course-scoped MCP servers that accept CourseDBInterface injection:
 - `tags://intersect/{tags}` - Cards with ALL of specified tags (format: tag1+tag2)
 - `tags://exclusive/{tags}` - Cards with first tag but NOT second (format: tag1-tag2)
 - `tags://distribution` - Frequency distribution of all tags
+- `strategies://all` - List all navigation strategies in the course
+- `strategies://{strategyId}` - Specific strategy detail with parsed config
+- `strategies://role/{roleType}` - Filter strategies by role (generator/filter)
+- `strategies://roles` - List valid strategy types (implementingClass values)
+- `strategies://schema/{implementingClass}` - Config schema for strategy type
 
-### Available Tools (4 total)
+### Available Tools (5 total)
 - `create_card` - Create new course cards with specified datashape and content
 - `update_card` - Update existing course cards (data, tags, ELO, sourceRef)
 - `tag_card` - Add or remove tags from course cards with optional ELO update
 - `delete_card` - Safely delete course cards with confirmation requirement
+- `create_strategy` - Create new navigation strategy with configuration
 
 ### Available Prompts (2 total)
 - `fill-in-card-authoring` - Generate fill-in-the-blank or multiple-choice cards using Vue-Skuilder syntax

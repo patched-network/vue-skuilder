@@ -1,5 +1,7 @@
 # Plan: Add Navigation Strategy Support to MCP Server
 
+**Status: IMPLEMENTED** - All phases complete. Build successful.
+
 ## Context
 
 The MCP server currently exposes comprehensive access to course content (cards, tags, shapes, schemas) but provides **zero** access to navigation strategies. Since strategies are a core part of the adaptive learning system, this is a significant gap for agents building or configuring courses.
@@ -356,16 +358,16 @@ Add to `packages/mcp/CLAUDE.md`:
 ## File Checklist
 
 ### New Files
-- [ ] `packages/mcp/src/resources/strategies.ts` - All 5 resource handlers
-- [ ] `packages/mcp/src/tools/create-strategy.ts` - Create tool
-- [ ] `packages/mcp/src/types/strategies.ts` - Zod schemas and types
+- [x] `packages/mcp/src/resources/strategies.ts` - All 5 resource handlers
+- [x] `packages/mcp/src/tools/create-strategy.ts` - Create tool
+- [x] `packages/mcp/src/types/strategies.ts` - Zod schemas and types
 
 ### Modified Files
-- [ ] `packages/mcp/src/resources/index.ts` - Export new resources and patterns
-- [ ] `packages/mcp/src/tools/index.ts` - Export new tool and pattern
-- [ ] `packages/mcp/src/types/index.ts` - Export new types
-- [ ] `packages/mcp/src/server.ts` - Register resources and tool
-- [ ] `packages/mcp/CLAUDE.md` - Document new capabilities
+- [x] `packages/mcp/src/resources/index.ts` - Export new resources and patterns
+- [x] `packages/mcp/src/tools/index.ts` - Export new tool and pattern
+- [x] `packages/mcp/src/types/index.ts` - Export new types
+- [x] `packages/mcp/src/server.ts` - Register resources and tool
+- [x] `packages/mcp/CLAUDE.md` - Document new capabilities
 
 ---
 
