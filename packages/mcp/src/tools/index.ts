@@ -3,6 +3,7 @@ export * from './create-card.js';
 export * from './update-card.js';
 export * from './tag-card.js';
 export * from './delete-card.js';
+export * from './create-strategy.js';
 
 // Tool patterns
 export const TOOL_PATTERNS = {
@@ -10,4 +11,5 @@ export const TOOL_PATTERNS = {
   UPDATE_CARD: 'update_card',
   TAG_CARD: 'tag_card',
   DELETE_CARD: 'delete_card',
+  CREATE_STRATEGY: 'create_strategy',
 } as const;

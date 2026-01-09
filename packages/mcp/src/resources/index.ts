@@ -4,6 +4,7 @@ export * from './cards.js';
 export * from './shapes.js';
 export * from './tags.js';
 export * from './schema.js';
+export * from './strategies.js';
 
 // Resource URI patterns
 export const RESOURCE_PATTERNS = {
@@ -22,4 +23,10 @@ export const RESOURCE_PATTERNS = {
   TAGS_EXCLUSIVE: 'tags://exclusive/{tags}',
   TAGS_DISTRIBUTION: 'tags://distribution',
   SCHEMA_SPECIFIC: 'schema://{dataShapeName}',
+  // Strategy resources
+  STRATEGIES_ALL: 'strategies://all',
+  STRATEGIES_SPECIFIC: 'strategies://{strategyId}',
+  STRATEGIES_ROLE: 'strategies://role/{roleType}',
+  STRATEGIES_ROLES: 'strategies://roles',
+  STRATEGIES_SCHEMA: 'strategies://schema/{implementingClass}',
 } as const;
