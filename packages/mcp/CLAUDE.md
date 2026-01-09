@@ -98,8 +98,8 @@ yarn dev  # Opens Inspector UI automatically
 
 ### Strongly Typed Constants
 All registrations use TypeScript constants for type safety:
-- `RESOURCE_PATTERNS` - URI patterns for all 14 resources
-- `TOOL_PATTERNS` - Names for all 4 tools
+- `RESOURCE_PATTERNS` - URI patterns for all 19 resources
+- `TOOL_PATTERNS` - Names for all 5 tools
 - `PROMPT_PATTERNS` - Names for all 2 prompts
 
 ### Barrel Export Pattern

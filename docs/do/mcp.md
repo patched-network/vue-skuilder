@@ -20,17 +20,19 @@ const server = new MCPServer(courseDB, {
 
 ### Capabilities Overview
 
-**14 Resources** (read-only data access):
+**19 Resources** (read-only data access):
 - Course configuration and statistics
 - Card querying with rich filtering (tags, DataShapes, ELO ranges)
 - DataShape introspection and JSON schema generation
 - Tag analytics and set operations (union/intersect/exclusive)
+- Navigation strategy discovery, role filtering, and configuration schemas
 
-**4 Tools** (content management):
+**5 Tools** (content management):
 - `create_card` - Generate new cards with DataShape validation
 - `update_card` - Modify existing cards (tags, ELO, data, sourceRef)
 - `tag_card` - Bulk tag operations with ELO recalibration
 - `delete_card` - Safe deletion with confirmation
+- `create_strategy` - Configure new navigation strategies (generators/filters)
 
 **2 Prompts** (guided authoring):
 - `fill-in-card-authoring` - Comprehensive guide for fill-in-the-blank cards
@@ -235,8 +237,9 @@ Agent builds prerequisite graph for custom `ContentNavigator`:
 const dependencies = await agent.inferPrerequisites(concepts);
 
 // Create navigation strategy document
-await courseDB.createNavigationStrategy({
+await mcp.callTool('create_strategy', {
   name: 'LinearAlgebraDependencies',
+  description: 'Prerequisite graph for Linear Algebra concepts',
   implementingClass: 'conceptDependency',
   serializedData: JSON.stringify({
     graph: dependencies,
