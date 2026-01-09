@@ -53,7 +53,6 @@ interface HierarchyConfig {
   prerequisites: {
     [tagId: string]: TagPrerequisite[];
   };
-  delegateStrategy?: string;  // default: "elo"
 }
 
 interface TagPrerequisite {
@@ -75,8 +74,7 @@ interface TagPrerequisite {
     "blends": [
       { "tag": "cvc-words", "masteryThreshold": { "minCount": 20 } }
     ]
-  },
-  "delegateStrategy": "elo"
+  }
 }
 ```
 
@@ -99,7 +97,6 @@ interface InterferenceConfig {
     minElapsedDays?: number;
   };
   defaultDecay?: number;
-  delegateStrategy?: string;
 }
 
 interface InterferenceGroup {
@@ -137,7 +134,6 @@ interface RelativePriorityConfig {
   defaultPriority?: number;
   combineMode?: 'max' | 'average' | 'min';
   priorityInfluence?: number;
-  delegateStrategy?: string;
 }
 ```
 

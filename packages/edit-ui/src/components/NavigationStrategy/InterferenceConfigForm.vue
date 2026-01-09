@@ -9,17 +9,6 @@
     <v-window v-model="inputMode">
       <!-- Visual Editor Mode -->
       <v-window-item value="ui">
-        <!-- Delegate Strategy Selector -->
-        <v-select
-          :model-value="config.delegateStrategy || 'elo'"
-          @update:model-value="updateDelegateStrategy"
-          label="Delegate Strategy"
-          :items="delegateStrategies"
-          hint="Strategy used to generate candidate cards"
-          persistent-hint
-          class="mb-4"
-        ></v-select>
-
         <!-- Maturity Threshold -->
         <div class="maturity-section mb-4">
           <h4 class="text-subtitle-1 mb-2">Maturity Threshold</h4>
@@ -169,7 +158,7 @@
           @update:model-value="updateFromJson"
           label="Configuration JSON"
           rows="20"
-          placeholder='{"interferenceSets": [{"tags": ["letter-b", "letter-d"], "decay": 0.9}], "maturityThreshold": {"minCount": 10}, "defaultDecay": 0.8, "delegateStrategy": "elo"}'
+          placeholder='{"interferenceSets": [{"tags": ["letter-b", "letter-d"], "decay": 0.9}], "maturityThreshold": {"minCount": 10}, "defaultDecay": 0.8}'
           hint="Paste or edit JSON configuration directly"
           persistent-hint
           auto-grow
@@ -209,7 +198,6 @@ export interface InterferenceConfig {
     minElapsedDays?: number;
   };
   defaultDecay?: number;
-  delegateStrategy?: string;
 }
 
 export default defineComponent({
@@ -235,8 +223,6 @@ export default defineComponent({
     const jsonError = ref<string | null>(null);
     const loadingTags = ref(true);
 
-    const delegateStrategies = ['elo', 'srs'];
-
     const config = computed(() => props.modelValue);
 
     const jsonText = computed(() => {
@@ -261,13 +247,6 @@ export default defineComponent({
       } finally {
         loadingTags.value = false;
       }
-    }
-
-    function updateDelegateStrategy(value: string) {
-      emit('update:modelValue', {
-        ...config.value,
-        delegateStrategy: value,
-      });
     }
 
     function updateMinCount(value: string | number) {
@@ -429,11 +408,9 @@ export default defineComponent({
       config,
       availableTags,
       loadingTags,
-      delegateStrategies,
       jsonText,
       jsonError,
       validationError,
-      updateDelegateStrategy,
       updateMinCount,
       updateMinElo,
       updateMinElapsedDays,

@@ -193,7 +193,6 @@ export default defineComponent({
         case 'hierarchy':
           return {
             prerequisites: {},
-            delegateStrategy: 'elo',
           };
         case 'interference':
           return {
@@ -203,7 +202,6 @@ export default defineComponent({
               minElapsedDays: 3,
             },
             defaultDecay: 0.8,
-            delegateStrategy: 'elo',
           };
         case 'relativePriority':
           return {
@@ -211,7 +209,6 @@ export default defineComponent({
             defaultPriority: 0.5,
             combineMode: 'max',
             priorityInfluence: 0.5,
-            delegateStrategy: 'elo',
           };
         default:
           return {};
