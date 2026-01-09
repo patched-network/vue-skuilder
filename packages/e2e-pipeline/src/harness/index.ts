@@ -16,7 +16,7 @@ export {
 
 // MCP client wrapper
 export {
-  TestMCPClient,
+  TestMCPClient, // unused
   CreateCardParams,
   CreateCardResult,
   CreateStrategyParams,
@@ -33,7 +33,7 @@ export {
   withRandomSequence,
 } from './determinism';
 
-// Data layer factory for tests
+// Data layer factory for tests (mock implementations)
 export {
   TestCourseDB,
   TestUserDB,
@@ -43,3 +43,21 @@ export {
   createTestDataLayer,
   createTestEnvironment,
 } from './data-layer-factory';
+
+// Real CouchDB-backed database utilities for E2E tests
+export {
+  CouchDBTestConfig,
+  RealTestEnvironment,
+  DEFAULT_COUCH_CONFIG,
+  configureCouchDBEnv,
+  initializeRealDataLayer,
+  createTestCourseId,
+  waitForCouchDB,
+  createRawCourseDB,
+  createRawUserDB,
+  deleteTestCourseDB,
+  deleteTestUserDB,
+  insertTestCard,
+  insertTestStrategy,
+  insertTestCourseConfig,
+} from './real-db';
