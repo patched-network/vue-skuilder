@@ -1,0 +1,52 @@
+name: ci-pkg-e2e-pipeline
+on:
+  pull_request:
+    paths:
+      - 'packages/e2e-pipeline/**'
+      - 'packages/common/**'
+      - 'packages/db/**'
+      - 'packages/mcp/**'
+      - '.github/workflows/ci-pkg-e2e-pipeline.yml'
+      - 'package.json'
+      - 'yarn.lock'
+
+jobs:
+  test-e2e-pipeline:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Start CouchDB
+        uses: iamssen/couchdb-github-action@master
+        with:
+          couchdb-version: 2.3.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'yarn'
+
+      - name: Install Yarn
+        run: corepack enable
+
+      - name: Install dependencies
+        run: yarn
+
+      - name: Build common package
+        run: yarn workspace @vue-skuilder/common build
+
+      - name: Build db package
+        run: yarn workspace @vue-skuilder/db build
+
+      - name: Build mcp package
+        run: yarn workspace @vue-skuilder/mcp build
+
+      - name: Run e2e-pipeline tests
+        run: yarn workspace @vue-skuilder/e2e-pipeline test
+        env:
+          COUCHDB_SERVER: localhost:5984
+          COUCHDB_PROTOCOL: http
+          COUCHDB_ADMIN: admin
+          COUCHDB_PASSWORD: password
