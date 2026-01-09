@@ -732,6 +732,7 @@ describe('MCP create_strategy integration', () => {
 - [x] `src/harness/mcp-client.ts`
 - [x] `src/harness/data-layer-factory.ts`
 - [x] `src/harness/determinism.ts`
+- [x] `src/harness/real-db.ts` **NEW - Real CouchDB utilities**
 
 ### Fixture Files
 - [x] `src/fixtures/index.ts`
@@ -750,12 +751,13 @@ describe('MCP create_strategy integration', () => {
 - [x] `tests/pipeline/assembly.test.ts`
 - [x] `tests/pipeline/hierarchy-filter.test.ts`
 - [x] `tests/pipeline/elo-selection.test.ts`
+- [x] `tests/pipeline/hierarchy-filter-e2e.test.ts` **NEW - Real E2E**
 - [x] `tests/session/queue-probability.test.ts`
 - [x] `tests/session/failed-card-resurfacing.test.ts`
 - [x] `tests/mcp-integration/create-strategy.test.ts`
 
 ### Modified Files
-- [ ] Root `package.json` - add workspace (auto-detected by yarn)
+- [x] Root `package.json` - workspace auto-detected by yarn ✅
 - [ ] Root `tsconfig.json` - add reference (if using project references)
 - [ ] `packages/db/docs/navigators-architecture.md` - add Testing section
 
@@ -774,13 +776,15 @@ describe('MCP create_strategy integration', () => {
 ### Phase 2: Test Harness Implementation ✅ COMPLETE
 - `test-db.ts`: Memory and CouchDB database lifecycle management
 - `mcp-client.ts`: MCP client wrapper for tool/resource access
-- `data-layer-factory.ts`: TestCourseDB, TestUserDB, TestDataLayerProvider
+- `data-layer-factory.ts`: TestCourseDB, TestUserDB, TestDataLayerProvider (mock)
 - `determinism.ts`: seedRandom, mockRandomSequence, tracking utilities
+- `real-db.ts`: **NEW** Real CouchDB utilities for E2E tests
 
 ### Phase 3: Pipeline Strategy Tests ✅ COMPLETE
 - `assembly.test.ts`: Strategy classification, storage, CourseBuilder integration
 - `hierarchy-filter.test.ts`: Hierarchy configuration, card-level association
 - `elo-selection.test.ts`: ELO strategy configuration, gradient cards
+- `hierarchy-filter-e2e.test.ts`: **NEW** Real E2E tests with CouchDB
 
 ### Phase 4: SessionController Behavior Tests ✅ COMPLETE
 - `queue-probability.test.ts`: Documents probability thresholds and bug scenarios
@@ -789,11 +793,27 @@ describe('MCP create_strategy integration', () => {
 ### Phase 5: MCP Integration Tests ✅ COMPLETE
 - `create-strategy.test.ts`: Strategy creation, retrieval, Pipeline preparation
 
+### Test Results (Final)
+- **7 test suites, 106 tests total (105 passing, 1 skipped)**
+- Real CouchDB E2E tests: 13 tests in `hierarchy-filter-e2e.test.ts`
+  - 12 passing: Database storage, retrieval, compatibility verification
+  - 1 skipped: Full pipeline execution (blocked by dynamic import issue in Jest)
+- Tests create/destroy real databases in CouchDB
+- Tests verify document structure compatibility with PipelineAssembler
+- Tests initialize real DataLayerProvider and CourseDB
+
 ### Remaining Work
-- [ ] Run `yarn install` to update workspaces
-- [ ] Run tests to verify compilation
-- [ ] Fix any TypeScript/Jest configuration issues
-- [x] Add CI/CD workflow
+- [x] Run `yarn install` to update workspaces ✅
+- [x] Run tests to verify compilation ✅
+- [x] Fix any TypeScript/Jest configuration issues ✅
+- [ ] Add CI/CD workflow
+- [ ] Resolve dynamic import issue to enable full pipeline execution test
+- [ ] Add SessionController E2E tests with real queues
+
+### Known Limitation
+Full pipeline execution test is skipped due to Jest/ts-jest not handling dynamic imports
+in `ContentNavigator.create()`. The test reaches the real code path but fails when
+trying to `import('./generators/elo')`. See `a.2.course-change.md` for details.
 
 ---
 
