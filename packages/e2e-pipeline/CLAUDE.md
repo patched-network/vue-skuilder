@@ -2,6 +2,30 @@
 
 End-to-end testing package for navigation pipeline and session controller behavior.
 
+## Philosophy: Real Components, Not Mocks
+
+**IMPORTANT:** This package exists to exercise **real framework components** together without browser frontends or Cypress-based testing. The goal is sanity and regression testing through **headless drivers** of the platform.
+
+### What NOT to do in this package:
+- **DO NOT create mocks, fakes, or stubs** - These defeat the purpose of E2E testing
+- **DO NOT isolate components** - We want to test components working together
+- **DO NOT create new mock implementations** - Use real `@vue-skuilder/db` components
+
+### What TO do:
+- Use **real CouchDB** via `src/harness/real-db.ts` helpers
+- Use **real DataLayerProvider** and **real CourseDB** interfaces
+- Use **real Pipeline** and **real navigators** (ELO, hierarchy, etc.)
+- Use the **navigator registry** pattern to avoid dynamic import issues
+- Use **determinism utilities** (seeded randomness) for reproducibility - this is fine
+
+### Why this matters:
+1. **Regression testing** - Catch real integration bugs, not mock mismatches
+2. **Future-proofing** - Headless drivers may graduate to PaaS backends or AI tutoring services
+3. **Confidence** - Tests that exercise real code give real confidence
+
+### Existing mocks to be removed:
+See `MOCKS_TO_REMOVE.md` for catalog of legacy mock code that should be replaced with real implementations.
+
 ## Commands
 - Test all: `yarn workspace @vue-skuilder/e2e-pipeline test`
 - Test watch: `yarn workspace @vue-skuilder/e2e-pipeline test:watch`
@@ -42,10 +66,11 @@ End-to-end testing package for navigation pipeline and session controller behavi
 - **strategy-templates.ts** - Common strategy configurations
 - **card-templates.ts** - Common card patterns
 
-### Mocks
+### Mocks (DEPRECATED - to be removed)
 
-- **mock-source.ts** - Mock StudyContentSource
-- **mock-user-db.ts** - Mock UserDBInterface
+These mock implementations are legacy and should be replaced with real component testing:
+- **mock-source.ts** - Mock StudyContentSource → use real Pipeline
+- **mock-user-db.ts** - Mock UserDBInterface → use real UserDB with CouchDB
 
 ## Testing Strategy
 
@@ -66,7 +91,7 @@ Tests use seeded randomness via `seedRandom()` or `mockRandomSequence()` to ensu
 - `@vue-skuilder/common` - Shared types
 - `@vue-skuilder/mcp` - MCP server for integration tests
 - `pouchdb-adapter-memory` - In-memory database for fast tests
-- `jest` - Test framework with ESM support
+- `vitest` - Test framework (migrated from Jest for better ESM support)
 
 ## Path Aliases
 - `@harness/*` → `src/harness/*`
