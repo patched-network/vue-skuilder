@@ -2,7 +2,7 @@
 
 ## Date: Session complete
 
-## Status: CORRECTED ✅ (105 tests passing, 1 skipped)
+## Status: FULLY RESOLVED ✅ (106 tests passing, 0 skipped)
 
 ## Summary
 
@@ -175,25 +175,29 @@ A test is "real E2E" if:
 
 3. **MCP Integration Tests** - Connect to real MCP server
 
-### Known Limitations
+### Resolved: Dynamic Import Issue ✅
 
-**Dynamic Import Issue**: The `ContentNavigator.create()` method uses dynamic imports
-to load navigator implementations (e.g., `import('./generators/elo')`). This works in
-production but fails in Jest/ts-jest because:
-- Jest's module resolution doesn't handle dynamic imports well
-- The relative paths resolve differently in test context
+**Problem**: The `ContentNavigator.create()` method used dynamic imports
+to load navigator implementations (e.g., `import('./generators/elo')`). This worked in
+production but failed in Jest/ts-jest because Jest's module resolution doesn't handle 
+dynamic imports well.
 
-Potential solutions for future work:
-- Configure Jest's `moduleNameMapper` to handle these paths
-- Create explicit exports instead of dynamic imports
-- Use a different test runner (Vitest may handle this better)
+**Solution Applied**:
+1. **Migrated from Jest to Vitest** - Updated package.json, created vitest.config.ts
+2. **Added Navigator Registry** - Created `initializeNavigatorRegistry()` in `@vue-skuilder/db`:
+   - Pre-registers all built-in navigator implementations at startup
+   - `ContentNavigator.create()` checks registry first, falls back to dynamic import
+   - Called during `initializeDataLayer()` to ensure availability
+3. **Added test database helpers**:
+   - `insertTestDesignDocs()` - Creates required CouchDB design documents (elo, getTags)
+   - Fixed `insertTestCourseConfig()` to use correct document ID (`CourseConfig`)
 
 ## Final Test Results
 
 ```
 Test Suites: 7 passed, 7 total
-Tests:       1 skipped, 105 passed, 106 total
-Time:        ~20s
+Tests:       106 passed, 106 total
+Time:        ~2.5s (much faster with Vitest!)
 ```
 
 ## Continuation Notes
@@ -202,7 +206,21 @@ When resuming this work:
 1. Read this document first
 2. Check if CouchDB is running: `yarn couchdb:start`
 3. Run existing E2E tests: `yarn workspace @vue-skuilder/e2e-pipeline test`
-4. `src/harness/real-db.ts` provides working CouchDB utilities
+4. `src/harness/real-db.ts` provides working CouchDB utilities including:
+   - `insertTestCourseConfig()` - Creates course config document
+   - `insertTestDesignDocs()` - Creates required design documents
+   - `insertTestCard()` / `insertTestStrategy()` - Creates test data
 5. `tests/pipeline/hierarchy-filter-e2e.test.ts` is the model for new E2E tests
-6. The skipped test documents the dynamic import limitation - solve that to enable full pipeline E2E
-7. Consider switching to Vitest (used by other packages) which may handle dynamic imports better
+6. The full pipeline E2E test now works - see "calls getWeightedCards via real CourseDB and Pipeline"
+7. Package now uses Vitest (consistent with other packages in monorepo)
+
+## Changes Made to @vue-skuilder/db
+
+1. **Added Navigator Registry** (`src/core/navigators/index.ts`):
+   - `registerNavigator(implementingClass, constructor)` - Register a navigator
+   - `getRegisteredNavigator(implementingClass)` - Look up a navigator
+   - `initializeNavigatorRegistry()` - Pre-load all built-in navigators
+   - `ContentNavigator.create()` now checks registry before dynamic import
+
+2. **Modified Factory** (`src/factory.ts`):
+   - `initializeDataLayer()` now calls `initializeNavigatorRegistry()` before creating providers

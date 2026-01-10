@@ -19,6 +19,7 @@ import {
   insertTestCard,
   insertTestStrategy,
   insertTestCourseConfig,
+  insertTestDesignDocs,
   deleteTestCourseDB,
   DEFAULT_COUCH_CONFIG,
   configureCouchDBEnv,
@@ -640,24 +641,31 @@ describe('Hierarchy Filter E2E', () => {
     });
 
     /**
-     * This test attempts full pipeline execution but currently fails
-     * because dynamic imports of navigator implementations don't work
-     * in the Jest/ts-jest environment.
+     * Full end-to-end pipeline execution test.
      *
-     * The test IS reaching the real code path - it fails at:
-     *   ContentNavigator.create() → dynamic import(`./generators/elo`)
+     * This test exercises the complete pipeline flow:
+     * 1. Real CouchDB with CourseConfig and design documents
+     * 2. Real cards and navigation strategy stored in database
+     * 3. Real DataLayerProvider initialization (with navigator registry)
+     * 4. Real PipelineAssembler creating a Pipeline from strategies
+     * 5. Real ELONavigator producing weighted cards
+     * 6. Real Pipeline execution with scoring and provenance
      *
-     * This is a KNOWN LIMITATION of the test environment, not a bug
-     * in the production code. The same code works in the real app.
-     *
-     * TODO: Investigate Jest moduleNameMapper or manual mocking to
-     * make dynamic imports work in tests.
+     * Previously this was skipped due to dynamic import issues in Jest.
+     * Resolved by:
+     * - Migrating from Jest to Vitest
+     * - Adding navigator registry (initializeNavigatorRegistry) to @vue-skuilder/db
+     * - Registry pre-loads navigator implementations, avoiding dynamic imports
      */
-    it.skip('calls getWeightedCards via real CourseDB and Pipeline (dynamic import issue)', async () => {
+    it('calls getWeightedCards via real CourseDB and Pipeline', async () => {
       if (!couchDBAvailable) {
         console.log('Skipping - CouchDB not available');
         return;
       }
+
+      // Insert course config and design docs (required for pipeline operations)
+      await insertTestCourseConfig(courseId);
+      await insertTestDesignDocs(courseId);
 
       // Insert cards and strategy
       await insertTestCard(courseId, {

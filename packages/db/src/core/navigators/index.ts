@@ -12,6 +12,129 @@ import type { ContentNavigationStrategyData } from '../types/contentNavigationSt
 import { logger } from '../../util/logger';
 
 // ============================================================================
+// NAVIGATOR REGISTRY
+// ============================================================================
+//
+// Static registry of navigator implementations. This allows ContentNavigator.create()
+// to instantiate navigators without relying on dynamic imports, which don't work
+// reliably in all environments (e.g., test runners, bundled code).
+//
+// Usage:
+// 1. Import your navigator class
+// 2. Call registerNavigator('implementingClass', YourNavigatorClass)
+// 3. ContentNavigator.create() will use the registry before falling back to
+//    dynamic import
+//
+// ============================================================================
+
+/**
+ * Type for navigator constructor functions.
+ */
+export type NavigatorConstructor = new (
+  user: UserDBInterface,
+  course: CourseDBInterface,
+  strategyData: ContentNavigationStrategyData
+) => ContentNavigator;
+
+/**
+ * Registry mapping implementingClass names to navigator constructors.
+ * Populated by registerNavigator() and used by ContentNavigator.create().
+ */
+const navigatorRegistry = new Map<string, NavigatorConstructor>();
+
+/**
+ * Register a navigator implementation.
+ *
+ * Call this to make a navigator available for instantiation by
+ * ContentNavigator.create() without relying on dynamic imports.
+ *
+ * @param implementingClass - The class name (e.g., 'elo', 'hierarchyDefinition')
+ * @param constructor - The navigator class constructor
+ */
+export function registerNavigator(
+  implementingClass: string,
+  constructor: NavigatorConstructor
+): void {
+  navigatorRegistry.set(implementingClass, constructor);
+  logger.debug(`[NavigatorRegistry] Registered: ${implementingClass}`);
+}
+
+/**
+ * Get a navigator constructor from the registry.
+ *
+ * @param implementingClass - The class name to look up
+ * @returns The constructor, or undefined if not registered
+ */
+export function getRegisteredNavigator(implementingClass: string): NavigatorConstructor | undefined {
+  return navigatorRegistry.get(implementingClass);
+}
+
+/**
+ * Check if a navigator is registered.
+ *
+ * @param implementingClass - The class name to check
+ * @returns true if registered, false otherwise
+ */
+export function hasRegisteredNavigator(implementingClass: string): boolean {
+  return navigatorRegistry.has(implementingClass);
+}
+
+/**
+ * Get all registered navigator names.
+ * Useful for debugging and testing.
+ */
+export function getRegisteredNavigatorNames(): string[] {
+  return Array.from(navigatorRegistry.keys());
+}
+
+/**
+ * Initialize the navigator registry with all built-in navigators.
+ *
+ * This function dynamically imports all standard navigator implementations
+ * and registers them. Call this once at application startup to ensure
+ * all navigators are available.
+ *
+ * In test environments, this may need to be called explicitly before
+ * using ContentNavigator.create().
+ */
+export async function initializeNavigatorRegistry(): Promise<void> {
+  logger.debug('[NavigatorRegistry] Initializing built-in navigators...');
+
+  // Import and register generators
+  const [eloModule, srsModule] = await Promise.all([
+    import('./generators/elo'),
+    import('./generators/srs'),
+  ]);
+  registerNavigator('elo', eloModule.default);
+  registerNavigator('srs', srsModule.default);
+
+  // Import and register filters
+  const [
+    hierarchyModule,
+    interferenceModule,
+    relativePriorityModule,
+    userTagPreferenceModule,
+  ] = await Promise.all([
+    import('./filters/hierarchyDefinition'),
+    import('./filters/interferenceMitigator'),
+    import('./filters/relativePriority'),
+    import('./filters/userTagPreference'),
+  ]);
+  registerNavigator('hierarchyDefinition', hierarchyModule.default);
+  registerNavigator('interferenceMitigator', interferenceModule.default);
+  registerNavigator('relativePriority', relativePriorityModule.default);
+  registerNavigator('userTagPreference', userTagPreferenceModule.default);
+
+  // Note: eloDistance uses a factory pattern (createEloDistanceFilter) rather than
+  // a ContentNavigator class, so it's not registered here. It's used differently
+  // via Pipeline composition.
+
+  logger.debug(
+    `[NavigatorRegistry] Initialized ${navigatorRegistry.size} navigators: ${getRegisteredNavigatorNames().join(', ')}`
+  );
+}
+
+// ============================================================================
 // NAVIGATION STRATEGY API
 // ============================================================================
 //
@@ -356,7 +479,13 @@ export abstract class ContentNavigator implements StudyContentSource {
   }
 
   /**
-   * Factory method to create navigator instances dynamically.
+   * Factory method to create navigator instances.
+   *
+   * First checks the navigator registry for a pre-registered constructor.
+   * If not found, falls back to dynamic import (for custom navigators).
+   *
+   * For reliable operation in test environments, call initializeNavigatorRegistry()
+   * before using this method.
    *
    * @param user - User interface
    * @param course - Course interface
@@ -369,6 +498,19 @@ export abstract class ContentNavigator implements StudyContentSource {
     strategyData: ContentNavigationStrategyData
   ): Promise<ContentNavigator> {
     const implementingClass = strategyData.implementingClass;
+
+    // First, check the registry for a pre-registered constructor
+    const RegisteredImpl = getRegisteredNavigator(implementingClass);
+    if (RegisteredImpl) {
+      logger.debug(`[ContentNavigator.create] Using registered navigator: ${implementingClass}`);
+      return new RegisteredImpl(user, course, strategyData);
+    }
+
+    // Fall back to dynamic import for custom/unknown navigators
+    logger.debug(
+      `[ContentNavigator.create] Navigator not in registry, attempting dynamic import: ${implementingClass}`
+    );
+
     let NavigatorImpl;
 
     // Try different extension variations

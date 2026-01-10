@@ -300,7 +300,7 @@ export async function insertTestCourseConfig(
 
   try {
     await db.put({
-      _id: 'COURSE_CONFIG',
+      _id: 'CourseConfig',
       docType: 'COURSE_CONFIG',
       name: `Test Course ${courseId}`,
       description: 'E2E test course',
@@ -313,6 +313,86 @@ export async function insertTestCourseConfig(
       dataShapes: [],
       questionTypes: [],
     });
+  } catch (error: unknown) {
+    const err = error as { status?: number };
+    if (err.status !== 409) {
+      // 409 = conflict, doc already exists - that's okay
+      throw error;
+    }
+  }
+}
+
+/**
+ * Insert required design documents for a course database.
+ * These are necessary for queries like getCardsByELO to work.
+ */
+export async function insertTestDesignDocs(
+  courseId: string,
+  config: CouchDBTestConfig = DEFAULT_COUCH_CONFIG
+): Promise<void> {
+  const db = createRawCourseDB(courseId, config);
+
+  // ELO design doc - required for ELO-based card queries
+  const eloDesignDoc = {
+    _id: '_design/elo',
+    views: {
+      elo: {
+        map: `function (doc) {
+          if (doc.docType && doc.docType === 'CARD') {
+            if (doc.elo && typeof(doc.elo) === 'number') {
+              emit(doc.elo, doc._id);
+            } else if (doc.elo && doc.elo.global) {
+              emit(doc.elo.global.score, doc._id);
+            } else if (doc.elo) {
+              emit(doc.elo.score, doc._id);
+            } else {
+              var randElo = 995 + Math.round(10 * Math.random());
+              emit(randElo, doc._id);
+            }
+          }
+        }`,
+      },
+    },
+    language: 'javascript',
+  };
+
+  // getTags design doc - required for tag queries
+  const getTagsDesignDoc = {
+    _id: '_design/getTags',
+    views: {
+      getTags: {
+        map: `function (doc) {
+          if (doc.docType && doc.docType === "TAG") {
+            for (var cardIndex in doc.taggedCards) {
+              emit(doc.taggedCards[cardIndex], {
+                docType: doc.docType,
+                name: doc.name,
+                snippit: doc.snippit,
+                wiki: '',
+                taggedCards: []
+              });
+            }
+          }
+        }`,
+      },
+    },
+    language: 'javascript',
+  };
+
+  try {
+    await db.put(eloDesignDoc);
+    console.log(`[real-db] Created _design/elo for coursedb-${courseId}`);
+  } catch (error: unknown) {
+    const err = error as { status?: number };
+    if (err.status !== 409) {
+      // 409 = conflict, doc already exists - that's okay
+      throw error;
+    }
+  }
+
+  try {
+    await db.put(getTagsDesignDoc);
+    console.log(`[real-db] Created _design/getTags for coursedb-${courseId}`);
   } catch (error: unknown) {
     const err = error as { status?: number };
     if (err.status !== 409) {

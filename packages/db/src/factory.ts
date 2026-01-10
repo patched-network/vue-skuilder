@@ -4,6 +4,7 @@ import { DataLayerProvider } from './core/interfaces';
 import { BaseUser } from './impl/common';
 import { logger } from './util/logger';
 import { StaticCourseManifest } from './util/packer/types';
+import { initializeNavigatorRegistry } from './core/navigators';
 
 const NOT_SET = 'NOT_SET' as const;
 
@@ -50,6 +51,11 @@ export async function initializeDataLayer(config: DataLayerConfig): Promise<Data
     logger.warn('Data layer already initialized. Returning existing instance.');
     return dataLayerInstance;
   }
+
+  // Initialize the navigator registry before creating the data layer.
+  // This ensures all built-in navigators are available for pipeline assembly.
+  await initializeNavigatorRegistry();
+
   if (config.options.localStoragePrefix) {
     ENV.LOCAL_STORAGE_PREFIX = config.options.localStoragePrefix;
   }
