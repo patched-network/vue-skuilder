@@ -1,3 +1,5 @@
+NB: - unpublished, wip, possibly dated.
+
 # Curriculum Authoring & Composition Workflows
 
 A reference guide for agentic workflows designing educational content, curriculum flow, and course composition in Vue-Skuilder.
