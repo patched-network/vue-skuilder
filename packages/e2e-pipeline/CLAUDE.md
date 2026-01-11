@@ -2,6 +2,10 @@
 
 End-to-end testing package for navigation pipeline and session controller behavior.
 
+## Roadmap
+
+See **[TODO.md](./TODO.md)** for the test roadmap - what interactions we want to script and assert against.
+
 ## Philosophy: Real Components, Not Mocks
 
 **IMPORTANT:** This package exists to exercise **real framework components** together without browser frontends or Cypress-based testing. The goal is sanity and regression testing through **headless drivers** of the platform.
