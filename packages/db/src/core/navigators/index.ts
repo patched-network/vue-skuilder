@@ -373,20 +373,36 @@ export abstract class ContentNavigator implements StudyContentSource {
 
     // Try different extension variations
     const variations = ['.ts', '.js', ''];
-    const dirs = ['filters', 'generators'];
 
     for (const ext of variations) {
-      for (const dir of dirs) {
-        const loadFrom = `./${dir}/${implementingClass}${ext}`;
-        try {
-          const module = await import(loadFrom);
-          NavigatorImpl = module.default;
-          break; // Break the loop if loading succeeds
-        } catch (e) {
-          // Continue to next variation if this one fails
-          logger.debug(`Failed to load extension from ${loadFrom}:`, e);
-        }
+      // Try generators directory
+      try {
+        const module = await import(`./generators/${implementingClass}${ext}`);
+        NavigatorImpl = module.default;
+        if (NavigatorImpl) break;
+      } catch (e) {
+        logger.debug(`Failed to load generator ${implementingClass}${ext}:`, e);
       }
+
+      // Try filters directory
+      try {
+        const module = await import(`./filters/${implementingClass}${ext}`);
+        NavigatorImpl = module.default;
+        if (NavigatorImpl) break;
+      } catch (e) {
+        logger.debug(`Failed to load filter ${implementingClass}${ext}:`, e);
+      }
+
+      // Try current directory (legacy)
+      try {
+        const module = await import(`./${implementingClass}${ext}`);
+        NavigatorImpl = module.default;
+        if (NavigatorImpl) break;
+      } catch (e) {
+        logger.debug(`Failed to load legacy ${implementingClass}${ext}:`, e);
+      }
+      
+      if (NavigatorImpl) break;
     }
 
     if (!NavigatorImpl) {
