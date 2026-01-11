@@ -1,0 +1,19 @@
+Reiterating here the initial intent when creating this package was to exercise mny *real framework components* together without having to integrate with browser frontend or script high-effort cypress based e2e testing.
+
+Some of the development work here went off course insofar as it began to favor mocking out certain data sources or components in order to create more isolated tests.
+
+In general terms this is a very reasonable thing to do and a good strategy for fast turnaround tests - But here we are focused on development velocity and we want something a little  more catch-all that is run on occasion during our work to find regressions.
+
+
+---
+
+When we return to work on these tests, we will want to update the Claude file in the E2E pipeline package to strongly discourage the creation of mocks, fakes, stubs, etc in these tests.
+
+What we mean here in this package by E2E tests is really that we want to spin up  **headless drivers** of the platform, and assert that their behaviours in concert make ongoing sense to us.
+
+The immediate goal is sanity and regression testing, but we should also bear in mind that some of the headless  driving that we implement toward this end may graduate toward being headless platform  driving software in a platform as a service back end, or an edtech focused App-as-a-Service (eg, an education / interactive tutoring specialized bolt.new or lovable.dev).
+
+---
+
+To that end, our next task here after updating the clot file is to catalog inside of  this package, the instances of mocking or faking that we would like to cut out.
+- Note, we are happy to remove code that is not aligned with our goals .  .  .  . This branch is entirely greenfield and none of this e2e pipeline package has touched  main yet, so we would like it to start with an accurate expression of its goals.

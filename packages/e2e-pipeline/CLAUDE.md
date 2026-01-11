@@ -23,77 +23,65 @@ End-to-end testing package for navigation pipeline and session controller behavi
 2. **Future-proofing** - Headless drivers may graduate to PaaS backends or AI tutoring services
 3. **Confidence** - Tests that exercise real code give real confidence
 
-### Existing mocks to be removed:
-See `MOCKS_TO_REMOVE.md` for catalog of legacy mock code that should be replaced with real implementations.
-
 ## Commands
 - Test all: `yarn workspace @vue-skuilder/e2e-pipeline test`
 - Test watch: `yarn workspace @vue-skuilder/e2e-pipeline test:watch`
 - Test pipeline: `yarn workspace @vue-skuilder/e2e-pipeline test:pipeline`
-- Test session: `yarn workspace @vue-skuilder/e2e-pipeline test:session`
-- Test MCP integration: `yarn workspace @vue-skuilder/e2e-pipeline test:mcp`
 
 ## Architecture
 
 ### Test Categories
 
 1. **Pipeline Tests** (`tests/pipeline/`)
-   - Strategy assembly and composition
-   - Hierarchy filter progression
-   - ELO selection weighting
-   - Generator/filter interactions
-
-2. **Session Tests** (`tests/session/`)
-   - Queue probability behavior
-   - Failed card resurfacing
-   - Time pressure handling
-
-3. **MCP Integration Tests** (`tests/mcp-integration/`)
-   - Strategy creation via MCP tools
-   - Resource access verification
-   - End-to-end authoring workflows
+   - Real CouchDB with cards and strategies
+   - Real DataLayerProvider and Pipeline execution
+   - Real navigator behavior (ELO, hierarchy, etc.)
 
 ### Harness Components
 
-- **test-db.ts** - Database lifecycle (memory and CouchDB adapters)
-- **mcp-client.ts** - MCP client wrapper for tool/resource access
+- **real-db.ts** - CouchDB setup, teardown, and test data insertion
+- **test-db.ts** - PouchDB lifecycle utilities
+- **mcp-client.ts** - Real MCP client wrapper for tool/resource access
 - **determinism.ts** - Seeded randomness for reproducible tests
-- **data-layer-factory.ts** - DataLayerProvider setup for tests
 
-### Fixtures
+## Testing Pattern
 
-- **course-builder.ts** - Fluent API for constructing test courses
-- **strategy-templates.ts** - Common strategy configurations
-- **card-templates.ts** - Common card patterns
+See `tests/pipeline/hierarchy-filter-e2e.test.ts` for the canonical E2E test pattern:
 
-### Mocks (DEPRECATED - to be removed)
+```typescript
+// Setup real database
+await insertTestCourseConfig(courseId);
+await insertTestDesignDocs(courseId);
+await insertTestCard(courseId, { ... });
+await insertTestStrategy(courseId, { ... });
 
-These mock implementations are legacy and should be replaced with real component testing:
-- **mock-source.ts** - Mock StudyContentSource → use real Pipeline
-- **mock-user-db.ts** - Mock UserDBInterface → use real UserDB with CouchDB
+// Initialize real data layer
+const dataLayer = await initializeDataLayer({
+  type: 'couch',
+  options: { ... },
+});
 
-## Testing Strategy
+// Use real components
+const courseDB = dataLayer.getCourseDB(courseId);
+const cards = await courseDB.getWeightedCards(10);
 
-### Database Modes
-- **Memory adapter**: Fast unit tests, no Docker required
-- **CouchDB adapter**: Integration tests, requires Docker container
+// Assert real behavior
+expect(cards).toHaveLength(expectedCount);
+```
 
-### Determinism
-Tests use seeded randomness via `seedRandom()` or `mockRandomSequence()` to ensure reproducibility.
+## Prerequisites
 
-### Assertions
-- Pipeline output ordering matches strategy configuration
-- Card scoring follows documented algorithms
-- Queue management follows expected probability distributions
+CouchDB must be running for E2E tests:
+```bash
+yarn couchdb:start
+```
 
 ## Dependencies
 - `@vue-skuilder/db` - Database layer (Pipeline, strategies)
 - `@vue-skuilder/common` - Shared types
 - `@vue-skuilder/mcp` - MCP server for integration tests
-- `pouchdb-adapter-memory` - In-memory database for fast tests
-- `vitest` - Test framework (migrated from Jest for better ESM support)
+- `pouchdb-adapter-memory` - In-memory database
+- `vitest` - Test framework
 
 ## Path Aliases
 - `@harness/*` → `src/harness/*`
-- `@fixtures/*` → `src/fixtures/*`
-- `@mocks/*` → `src/mocks/*`

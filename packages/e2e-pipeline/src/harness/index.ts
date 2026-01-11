@@ -2,7 +2,7 @@
  * Test harness utilities for e2e-pipeline tests.
  *
  * Provides database lifecycle management, MCP client wrappers,
- * determinism utilities, and data layer factories.
+ * and determinism utilities.
  */
 
 // Database lifecycle management
@@ -16,7 +16,7 @@ export {
 
 // MCP client wrapper
 export {
-  TestMCPClient, // unused
+  TestMCPClient,
   CreateCardParams,
   CreateCardResult,
   CreateStrategyParams,
@@ -32,17 +32,6 @@ export {
   withSeededRandom,
   withRandomSequence,
 } from './determinism';
-
-// Data layer factory for tests (mock implementations)
-export {
-  TestCourseDB,
-  TestUserDB,
-  TestDataLayerProvider,
-  TestEnvironment,
-  TestEnvironmentOptions,
-  createTestDataLayer,
-  createTestEnvironment,
-} from './data-layer-factory';
 
 // Real CouchDB-backed database utilities for E2E tests
 export {
@@ -60,4 +49,5 @@ export {
   insertTestCard,
   insertTestStrategy,
   insertTestCourseConfig,
+  insertTestDesignDocs,
 } from './real-db';
