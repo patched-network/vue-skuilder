@@ -1,0 +1,27 @@
+{
+  "name": "@vue-skuilder/e2e-testing",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:pipeline": "vitest run tests/pipeline",
+    "test:session": "vitest run tests/session",
+    "test:mcp": "vitest run tests/mcp-integration"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.24.3",
+    "@vue-skuilder/common": "workspace:*",
+    "@vue-skuilder/db": "workspace:*",
+    "@vue-skuilder/mcp": "workspace:*",
+    "pouchdb": "^9.0.0",
+    "pouchdb-adapter-memory": "^9.0.0"
+  },
+  "devDependencies": {
+    "@types/pouchdb": "^6.4.2",
+    "typescript": "~5.9.3",
+    "vite": "^7.0.0",
+    "vitest": "^4.0.15"
+  }
+}

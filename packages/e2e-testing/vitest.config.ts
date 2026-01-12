@@ -7,10 +7,11 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
-    setupFiles: ['./src/setup/vitest-setup.ts'],
-    testTimeout: 30000,
-    include: ['src/tests/**/*.test.ts'],
+    include: ['tests/**/*.{test,spec}.{js,ts}'],
     exclude: ['**/node_modules/**', '**/dist/**'],
+    testTimeout: 30000,
+    hookTimeout: 30000,
+    setupFiles: ['./tests/vitest-setup.ts'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
@@ -19,13 +20,15 @@ export default defineConfig({
         '**/dist/**',
         '**/*.d.ts',
         '**/vitest.config.ts',
-        '**/setup/**',
+        '**/tests/**',
       ],
     },
   },
   resolve: {
     alias: {
-      '@': resolve(__dirname, 'src'),
+      '@harness': resolve(__dirname, 'src/harness'),
+      '@fixtures': resolve(__dirname, 'src/fixtures'),
+      '@mocks': resolve(__dirname, 'src/mocks'),
     },
   },
 });

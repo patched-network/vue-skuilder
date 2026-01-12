@@ -52,7 +52,6 @@ Current repo has access to submodule with a test database with live courses, man
 - Lint express: `yarn workspace @vue-skuilder/express lint:fix`
 - Lint common: `yarn workspace @vue-skuilder/common lint:fix`
 - Lint db: `yarn workspace @vue-skuilder/db lint:fix`
-- Lint e2e-db: `yarn workspace @vue-skuilder/e2e-db lint:fix`
 - Lint cli: `yarn workspace @vue-skuilder/cli lint:fix`
 - Type check express: `yarn workspace @vue-skuilder/express type-check`
 - Type check courses: `yarn workspace @vue-skuilder/courseware type-check`
@@ -83,7 +82,7 @@ Current repo has access to submodule with a test database with live courses, man
 - Follow Vue 3 Composition API patterns
 
 ## TypeScript Configuration (Backend Packages)
-Backend packages (`common`, `db`, `express`, `e2e-db`) follow standardized TypeScript configuration:
+Backend packages (`common`, `db`, `express`) follow standardized TypeScript configuration:
 
 ### Shared Base Configuration
 - **Target**: ES2022 with strict settings enabled
@@ -93,7 +92,7 @@ Backend packages (`common`, `db`, `express`, `e2e-db`) follow standardized TypeS
 ### Package-Specific Patterns
 - **Shared Libraries** (`common`, `db`): Dual CommonJS/ESM exports for maximum compatibility
 - **Node.js Services** (`express`): ES modules with NodeNext resolution
-- **Testing Packages** (`e2e-db`): CommonJS with Jest compatibility
+- **Testing Packages** (`e2e-testing`): ES modules with Vitest
 
 ### TypeScript Best Practices
 - All backend packages use consistent ES2022 target
@@ -121,7 +120,7 @@ Always resolve to source directories for internal package references:
 - `@express` → `./packages/express/src`
 - `@pui` → `./packages/platform-ui/src`
 - `@sui` → `./packages/standalone-ui/src`
-- `@e2e-db` → `./packages/e2e-db/src`
+- `@e2e-testing` → `./packages/e2e-testing/src`
 - `@cli` → `./packages/cli/src`
 - `@client` → `./packages/client/src`
 - `@mcp` → `./packages/mcp/src`
@@ -154,8 +153,8 @@ common → db → common-ui → courses → platform-ui
 - **Backend**: `common`, `db`, `express`, `mcp`
 - **Frontend**: `platform-ui`, `common-ui`, `courses`, `standalone-ui`
 - **CLI**: `cli`
+- **Testing**: `e2e-testing`
 
 ### Legacy/Inactive Packages
 - `client`: Legacy HTTP client library, minimal maintenance
-- `e2e-db`: e2e testing that never got off the ground.
 - `tuilder`: experimental - light functionality

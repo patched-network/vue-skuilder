@@ -1,0 +1,14 @@
+{
+    "extends": "../../tsconfig.base.json",
+    "compilerOptions": {
+        "module": "ESNext",
+        "moduleResolution": "bundler",
+        "noEmit": true,
+        "paths": {
+            "@harness/*": ["./src/harness/*"],
+            "@fixtures/*": ["./src/fixtures/*"],
+            "@mocks/*": ["./src/mocks/*"]
+        }
+    },
+    "include": ["src", "tests"]
+}

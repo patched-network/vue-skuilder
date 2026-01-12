@@ -60,11 +60,6 @@ jobs:
           if [ $? -ne 0 ]; then EXIT_CODE=1; echo "❌ @vue-skuilder/cli FAILED"; else echo "✅ @vue-skuilder/cli passed"; fi
           echo ""
 
-          echo "📦 Linting @vue-skuilder/e2e-db..."
-          yarn workspace @vue-skuilder/e2e-db lint:check
-          if [ $? -ne 0 ]; then EXIT_CODE=1; echo "❌ @vue-skuilder/e2e-db FAILED"; else echo "✅ @vue-skuilder/e2e-db passed"; fi
-          echo ""
-
           # Frontend packages
           echo "📦 Linting @vue-skuilder/common-ui..."
           yarn workspace @vue-skuilder/common-ui lint:check
