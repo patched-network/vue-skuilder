@@ -51,9 +51,6 @@ jobs:
       - name: Build mcp package
         run: yarn workspace @vue-skuilder/mcp build
 
-      - name: Build e2e-testing package
-        run: yarn workspace @vue-skuilder/e2e-testing build
-
       - name: Run e2e-testing tests
         run: yarn workspace @vue-skuilder/e2e-testing test
         env:
