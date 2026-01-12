@@ -5959,9 +5959,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@vue-skuilder/e2e-pipeline@workspace:packages/e2e-pipeline":
+"@vue-skuilder/e2e-pipeline@workspace:packages/e2e-testing":
   version: 0.0.0-use.local
-  resolution: "@vue-skuilder/e2e-pipeline@workspace:packages/e2e-pipeline"
+  resolution: "@vue-skuilder/e2e-pipeline@workspace:packages/e2e-testing"
   dependencies:
     "@modelcontextprotocol/sdk": "npm:^1.24.3"
     "@types/pouchdb": "npm:^6.4.2"
