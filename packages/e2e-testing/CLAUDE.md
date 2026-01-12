@@ -1,4 +1,4 @@
-# @vue-skuilder/e2e-pipeline Package
+# @vue-skuilder/e2e-testing Package
 
 End-to-end testing package for navigation pipeline and session controller behavior.
 
@@ -28,9 +28,9 @@ See **[TODO.md](./TODO.md)** for the test roadmap - what interactions we want to
 3. **Confidence** - Tests that exercise real code give real confidence
 
 ## Commands
-- Test all: `yarn workspace @vue-skuilder/e2e-pipeline test`
-- Test watch: `yarn workspace @vue-skuilder/e2e-pipeline test:watch`
-- Test pipeline: `yarn workspace @vue-skuilder/e2e-pipeline test:pipeline`
+- Test all: `yarn workspace @vue-skuilder/e2e-testing test`
+- Test watch: `yarn workspace @vue-skuilder/e2e-testing test:watch`
+- Test pipeline: `yarn workspace @vue-skuilder/e2e-testing test:pipeline`
 
 ## Architecture
 
