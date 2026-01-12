@@ -1,4 +1,4 @@
-name: ci-pkg-e2e-pipeline
+name: ci-pkg-e2e-testing
 
 permissions:
   contents: read
@@ -6,17 +6,17 @@ permissions:
 on:
   pull_request:
     paths:
-      - 'packages/e2e-pipeline/**'
+      - 'packages/e2e-testing/**'
       - 'packages/common/**'
       - 'packages/db/**'
       - 'packages/mcp/**'
       - 'packages/courseware/**'
-      - '.github/workflows/ci-pkg-e2e-pipeline.yml'
+      - '.github/workflows/ci-pkg-e2e-testing.yml'
       - 'package.json'
       - 'yarn.lock'
 
 jobs:
-  test-e2e-pipeline:
+  test-e2e-testing:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -51,8 +51,11 @@ jobs:
       - name: Build mcp package
         run: yarn workspace @vue-skuilder/mcp build
 
-      - name: Run e2e-pipeline tests
-        run: yarn workspace @vue-skuilder/e2e-pipeline test
+      - name: Build e2e-testing package
+        run: yarn workspace @vue-skuilder/e2e-testing build
+
+      - name: Run e2e-testing tests
+        run: yarn workspace @vue-skuilder/e2e-testing test
         env:
           COUCHDB_SERVER: localhost:5984
           COUCHDB_PROTOCOL: http

@@ -21,7 +21,7 @@
             "@express/*": ["./packages/express/src/*"],
             "@pui/*": ["./packages/platform-ui/src/*"],
             "@sui/*": ["./packages/standalone-ui/src/*"],
-            "@e2e-db/*": ["./packages/e2e-db/src/*"],
+            "@e2e-testing/*": ["./packages/e2e-testing/src/*"],
             "@cli/*": ["./packages/cli/src/*"],
             "@client/*": ["./packages/client/src/*"]
         }
