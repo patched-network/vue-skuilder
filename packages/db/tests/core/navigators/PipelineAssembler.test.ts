@@ -175,15 +175,15 @@ describe('PipelineAssembler', () => {
       expect(result.warnings).toEqual([]);
     });
 
-    it('uses default ELO when filters exist but no generator', async () => {
+    it('uses default ELO and SRS when filters exist but no generator', async () => {
       const hierarchy = createStrategy('hierarchy', 'hierarchyDefinition');
       const input = createInput([hierarchy]);
       const result = await assembler.assemble(input);
 
       expect(result.pipeline).toBeInstanceOf(Pipeline);
-      expect(result.generatorStrategies).toHaveLength(1);
-      expect(result.generatorStrategies[0].implementingClass).toBe('elo');
-      expect(result.generatorStrategies[0].name).toBe('ELO (default)');
+      expect(result.generatorStrategies).toHaveLength(2);
+      const strategyNames = result.generatorStrategies.map((s) => s.name).sort();
+      expect(strategyNames).toEqual(['ELO (default)', 'SRS (default)']);
       expect(result.filterStrategies).toEqual([hierarchy]);
       expect(result.warnings).toEqual([]);
     });

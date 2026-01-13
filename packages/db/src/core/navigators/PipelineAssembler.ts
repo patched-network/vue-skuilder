@@ -1,14 +1,14 @@
 import type { ContentNavigationStrategyData } from '../types/contentNavigationStrategy';
-import { ContentNavigator, isGenerator, isFilter, Navigators } from './index';
+import { ContentNavigator, isGenerator, isFilter } from './index';
 import type { CardFilter } from './filters/types';
 import { WeightedFilter } from './filters/WeightedFilter';
 import type { CardGenerator } from './generators/types';
 import { Pipeline } from './Pipeline';
-import { DocType } from '../types/types-legacy';
 import { logger } from '../../util/logger';
 import type { CourseDBInterface } from '../interfaces/courseDB';
 import type { UserDBInterface } from '../interfaces/userDB';
 import CompositeGenerator from './generators/CompositeGenerator';
+import { createDefaultEloStrategy, createDefaultSrsStrategy } from './defaults';
 
 // ============================================================================
 // PIPELINE ASSEMBLER
@@ -103,13 +103,15 @@ export class PipelineAssembler {
       }
     }
 
-    // If no generator but filters exist, use default ELO generator
+    // If no generator but filters exist, use default ELO and SRS generators
     if (generatorStrategies.length === 0) {
       if (filterStrategies.length > 0) {
         logger.debug(
-          '[PipelineAssembler] No generator found, using default ELO with configured filters'
+          '[PipelineAssembler] No generator found, using default ELO and SRS with configured filters'
         );
-        generatorStrategies.push(this.makeDefaultEloStrategy(course.getCourseID()));
+        const courseId = course.getCourseID();
+        generatorStrategies.push(createDefaultEloStrategy(courseId));
+        generatorStrategies.push(createDefaultSrsStrategy(courseId));
       } else {
         warnings.push('No generator strategy found');
         return {
@@ -186,22 +188,6 @@ export class PipelineAssembler {
       generatorStrategies,
       filterStrategies: sortedFilterStrategies,
       warnings,
-    };
-  }
-
-  /**
-   * Creates a default ELO generator strategy.
-   * Used when filters are configured but no generator is specified.
-   */
-  private makeDefaultEloStrategy(courseId: string): ContentNavigationStrategyData {
-    return {
-      _id: 'NAVIGATION_STRATEGY-ELO-default',
-      course: courseId,
-      docType: DocType.NAVIGATION_STRATEGY,
-      name: 'ELO (default)',
-      description: 'Default ELO-based generator',
-      implementingClass: Navigators.ELO,
-      serializedData: '',
     };
   }
 }
