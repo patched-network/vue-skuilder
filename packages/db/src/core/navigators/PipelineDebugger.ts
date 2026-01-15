@@ -1,4 +1,5 @@
 import type { WeightedCard, StrategyContribution } from './index';
+import { logger } from '../../util/logger';
 
 // ============================================================================
 // PIPELINE DEBUGGER
@@ -185,34 +186,40 @@ export const pipelineDebugAPI = {
    */
   showLastRun(): void {
     if (runHistory.length === 0) {
-      console.log('[Pipeline Debug] No runs captured yet.');
+      logger.info('[Pipeline Debug] No runs captured yet.');
       return;
     }
 
     const run = runHistory[0];
+    // eslint-disable-next-line no-console
     console.group(`🔍 Pipeline Run: ${run.courseId} (${run.courseName || 'unnamed'})`);
-    console.log(`Time: ${run.timestamp.toISOString()}`);
-    console.log(`Generator: ${run.generatorName} → ${run.generatedCount} candidates`);
+    logger.info(`Time: ${run.timestamp.toISOString()}`);
+    logger.info(`Generator: ${run.generatorName} → ${run.generatedCount} candidates`);
 
     if (run.generators && run.generators.length > 0) {
+      // eslint-disable-next-line no-console
       console.group('Generator breakdown:');
       for (const g of run.generators) {
-        console.log(
+        logger.info(
           `  ${g.name}: ${g.cardCount} cards (${g.newCount} new, ${g.reviewCount} reviews, top: ${g.topScore.toFixed(2)})`
         );
       }
+      // eslint-disable-next-line no-console
       console.groupEnd();
     }
 
     if (run.filters.length > 0) {
+      // eslint-disable-next-line no-console
       console.group('Filter impact:');
       for (const f of run.filters) {
-        console.log(`  ${f.name}: ↑${f.boosted} ↓${f.penalized} =${f.passed} ✕${f.removed}`);
+        logger.info(`  ${f.name}: ↑${f.boosted} ↓${f.penalized} =${f.passed} ✕${f.removed}`);
       }
+      // eslint-disable-next-line no-console
       console.groupEnd();
     }
 
-    console.log(`Result: ${run.finalCount} cards selected (${run.newSelected} new, ${run.reviewsSelected} reviews)`);
+    logger.info(`Result: ${run.finalCount} cards selected (${run.newSelected} new, ${run.reviewsSelected} reviews)`);
+    // eslint-disable-next-line no-console
     console.groupEnd();
   },
 
@@ -223,18 +230,20 @@ export const pipelineDebugAPI = {
     for (const run of runHistory) {
       const card = run.cards.find((c) => c.cardId === cardId);
       if (card) {
+        // eslint-disable-next-line no-console
         console.group(`🎴 Card: ${cardId}`);
-        console.log(`Course: ${card.courseId}`);
-        console.log(`Origin: ${card.origin}`);
-        console.log(`Final score: ${card.finalScore.toFixed(3)}`);
-        console.log(`Selected: ${card.selected ? 'Yes ✅' : 'No ❌'}`);
-        console.log('Provenance:');
-        console.log(formatProvenance(card.provenance));
+        logger.info(`Course: ${card.courseId}`);
+        logger.info(`Origin: ${card.origin}`);
+        logger.info(`Final score: ${card.finalScore.toFixed(3)}`);
+        logger.info(`Selected: ${card.selected ? 'Yes ✅' : 'No ❌'}`);
+        logger.info('Provenance:');
+        logger.info(formatProvenance(card.provenance));
+        // eslint-disable-next-line no-console
         console.groupEnd();
         return;
       }
     }
-    console.log(`[Pipeline Debug] Card '${cardId}' not found in recent runs.`);
+    logger.info(`[Pipeline Debug] Card '${cardId}' not found in recent runs.`);
   },
 
   /**
@@ -242,23 +251,25 @@ export const pipelineDebugAPI = {
    */
   explainReviews(): void {
     if (runHistory.length === 0) {
-      console.log('[Pipeline Debug] No runs captured yet.');
+      logger.info('[Pipeline Debug] No runs captured yet.');
       return;
     }
 
+    // eslint-disable-next-line no-console
     console.group('📋 Review Selection Analysis');
 
     for (const run of runHistory) {
+      // eslint-disable-next-line no-console
       console.group(`Run: ${run.courseId} @ ${run.timestamp.toLocaleTimeString()}`);
 
       const allReviews = run.cards.filter((c) => c.origin === 'review');
       const selectedReviews = allReviews.filter((c) => c.selected);
 
       if (allReviews.length === 0) {
-        console.log('❌ No reviews were generated. Check SRS logs for why.');
+        logger.info('❌ No reviews were generated. Check SRS logs for why.');
       } else if (selectedReviews.length === 0) {
-        console.log(`⚠️ ${allReviews.length} reviews generated but none selected.`);
-        console.log('Possible reasons:');
+        logger.info(`⚠️ ${allReviews.length} reviews generated but none selected.`);
+        logger.info('Possible reasons:');
 
         // Check if new cards scored higher
         const topNewScore = Math.max(
@@ -268,7 +279,7 @@ export const pipelineDebugAPI = {
         const topReviewScore = Math.max(...allReviews.map((c) => c.finalScore), 0);
 
         if (topReviewScore < topNewScore) {
-          console.log(
+          logger.info(
             `  - New cards scored higher (top new: ${topNewScore.toFixed(2)}, top review: ${topReviewScore.toFixed(2)})`
           );
         }
@@ -276,20 +287,22 @@ export const pipelineDebugAPI = {
         // Show top review that didn't make it
         const topReview = allReviews.sort((a, b) => b.finalScore - a.finalScore)[0];
         if (topReview) {
-          console.log(`  - Top review score: ${topReview.finalScore.toFixed(3)}`);
-          console.log('  - Its provenance:');
-          console.log(formatProvenance(topReview.provenance));
+          logger.info(`  - Top review score: ${topReview.finalScore.toFixed(3)}`);
+          logger.info('  - Its provenance:');
+          logger.info(formatProvenance(topReview.provenance));
         }
       } else {
-        console.log(`✅ ${selectedReviews.length}/${allReviews.length} reviews selected.`);
-        console.log('Top selected review:');
+        logger.info(`✅ ${selectedReviews.length}/${allReviews.length} reviews selected.`);
+        logger.info('Top selected review:');
         const topSelected = selectedReviews.sort((a, b) => b.finalScore - a.finalScore)[0];
-        console.log(formatProvenance(topSelected.provenance));
+        logger.info(formatProvenance(topSelected.provenance));
       }
 
+      // eslint-disable-next-line no-console
       console.groupEnd();
     }
 
+    // eslint-disable-next-line no-console
     console.groupEnd();
   },
 
@@ -298,10 +311,11 @@ export const pipelineDebugAPI = {
    */
   listRuns(): void {
     if (runHistory.length === 0) {
-      console.log('[Pipeline Debug] No runs captured yet.');
+      logger.info('[Pipeline Debug] No runs captured yet.');
       return;
     }
 
+    // eslint-disable-next-line no-console
     console.table(
       runHistory.map((r) => ({
         id: r.runId.slice(-8),
@@ -320,8 +334,8 @@ export const pipelineDebugAPI = {
    */
   export(): string {
     const json = JSON.stringify(runHistory, null, 2);
-    console.log('[Pipeline Debug] Run history exported. Copy the returned string or use:');
-    console.log('  copy(window.skuilder.pipeline.export())');
+    logger.info('[Pipeline Debug] Run history exported. Copy the returned string or use:');
+    logger.info('  copy(window.skuilder.pipeline.export())');
     return json;
   },
 
@@ -330,14 +344,14 @@ export const pipelineDebugAPI = {
    */
   clear(): void {
     runHistory.length = 0;
-    console.log('[Pipeline Debug] Run history cleared.');
+    logger.info('[Pipeline Debug] Run history cleared.');
   },
 
   /**
    * Show help.
    */
   help(): void {
-    console.log(`
+    logger.info(`
 🔧 Pipeline Debug API
 
 Commands:
