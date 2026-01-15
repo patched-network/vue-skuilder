@@ -7,6 +7,7 @@ import type { CardFilter, FilterContext } from './filters/types';
 import type { CardGenerator, GeneratorContext } from './generators/types';
 import { logger } from '../../util/logger';
 import { createOrchestrationContext, OrchestrationContext } from '../orchestration';
+import { captureRun, buildRunReport, type GeneratorSummary, type FilterImpact } from './PipelineDebugger';
 
 // ============================================================================
 // PIPELINE LOGGING HELPERS
@@ -52,14 +53,29 @@ function logExecutionSummary(
   generatedCount: number,
   filterCount: number,
   finalCount: number,
-  topScores: number[]
+  topScores: number[],
+  filterImpacts: Array<{ name: string; boosted: number; penalized: number; passed: number }>
 ): void {
   const scoreDisplay =
     topScores.length > 0 ? topScores.map((s) => s.toFixed(2)).join(', ') : 'none';
 
+  let filterSummary = '';
+  if (filterImpacts.length > 0) {
+    const impacts = filterImpacts.map((f) => {
+      const parts: string[] = [];
+      if (f.boosted > 0) parts.push(`+${f.boosted}`);
+      if (f.penalized > 0) parts.push(`-${f.penalized}`);
+      if (f.passed > 0) parts.push(`=${f.passed}`);
+      return `${f.name}: ${parts.join('/')}`;
+    });
+    filterSummary = `\n  Filter impact: ${impacts.join(', ')}`;
+  }
+
   logger.info(
     `[Pipeline] Execution: ${generatorName} produced ${generatedCount} → ` +
-      `${filterCount} filters → ${finalCount} results (top scores: ${scoreDisplay})`
+      `${filterCount} filters → ${finalCount} results (top scores: ${scoreDisplay})` +
+      filterSummary +
+      `\n  💡 Inspect: window.skuilder.pipeline`
   );
 }
 
@@ -190,17 +206,63 @@ export class Pipeline extends ContentNavigator {
     // Get candidates from generator, passing context
     let cards = await this.generator.getWeightedCards(fetchLimit, context);
     const generatedCount = cards.length;
+    
+    // Capture generator breakdown for debugging (if CompositeGenerator)
+    let generatorSummaries: GeneratorSummary[] | undefined;
+    if ((this.generator as any).generators) {
+      // This is a CompositeGenerator - extract per-generator info from provenance
+      const genMap = new Map<string, { cards: WeightedCard[] }>();
+      for (const card of cards) {
+        const firstProv = card.provenance[0];
+        if (firstProv) {
+          const genName = firstProv.strategyName;
+          if (!genMap.has(genName)) {
+            genMap.set(genName, { cards: [] });
+          }
+          genMap.get(genName)!.cards.push(card);
+        }
+      }
+      generatorSummaries = Array.from(genMap.entries()).map(([name, data]) => {
+        const newCards = data.cards.filter((c) => c.provenance[0]?.reason?.includes('new card'));
+        const reviewCards = data.cards.filter((c) => c.provenance[0]?.reason?.includes('review'));
+        return {
+          name,
+          cardCount: data.cards.length,
+          newCount: newCards.length,
+          reviewCount: reviewCards.length,
+          topScore: Math.max(...data.cards.map((c) => c.score), 0),
+        };
+      });
+    }
 
     logger.debug(`[Pipeline] Generator returned ${generatedCount} candidates`);
 
     // Batch hydrate tags before filters run
     cards = await this.hydrateTags(cards);
+    
+    // Keep a copy of all cards for debug capture (before filtering removes any)
+    const allCardsBeforeFiltering = [...cards];
 
-    // Apply filters sequentially
+    // Apply filters sequentially, tracking impact
+    const filterImpacts: FilterImpact[] = [];
     for (const filter of this.filters) {
       const beforeCount = cards.length;
+      const beforeScores = new Map(cards.map((c) => [c.cardId, c.score]));
       cards = await filter.transform(cards, context);
-      logger.debug(`[Pipeline] Filter '${filter.name}': ${beforeCount} → ${cards.length} cards`);
+      
+      // Count boost/penalize/pass/removed for this filter
+      let boosted = 0, penalized = 0, passed = 0;
+      const removed = beforeCount - cards.length;
+      
+      for (const card of cards) {
+        const before = beforeScores.get(card.cardId) ?? 0;
+        if (card.score > before) boosted++;
+        else if (card.score < before) penalized++;
+        else passed++;
+      }
+      filterImpacts.push({ name: filter.name, boosted, penalized, passed, removed });
+      
+      logger.debug(`[Pipeline] Filter '${filter.name}': ${beforeScores.size} → ${cards.length} cards (↑${boosted} ↓${penalized} =${passed})`);
     }
 
     // Remove zero-score cards (hard filtered)
@@ -219,11 +281,30 @@ export class Pipeline extends ContentNavigator {
       generatedCount,
       this.filters.length,
       result.length,
-      topScores
+      topScores,
+      filterImpacts
     );
 
     // Toggle provenance logging (shows scoring history for top cards):
     logCardProvenance(result, 3);
+
+    // Capture run for debug API
+    try {
+      const courseName = await this.course?.getCourseConfig().then((c) => c.name).catch(() => undefined);
+      const report = buildRunReport(
+        this.course?.getCourseID() || 'unknown',
+        courseName,
+        this.generator.name,
+        generatorSummaries,
+        generatedCount,
+        filterImpacts,
+        allCardsBeforeFiltering,
+        result
+      );
+      captureRun(report);
+    } catch (e) {
+      logger.debug(`[Pipeline] Failed to capture debug run: ${e}`);
+    }
 
     return result;
   }

@@ -113,6 +113,27 @@ export default class CompositeGenerator extends ContentNavigator implements Card
       this.generators.map((g) => g.getWeightedCards(limit, context))
     );
 
+    // Log per-generator breakdown for transparency
+    const generatorSummaries: string[] = [];
+    results.forEach((cards, index) => {
+      const gen = this.generators[index];
+      const genName = gen.name || `Generator ${index}`;
+      const newCards = cards.filter((c) => c.provenance[0]?.reason?.includes('new card'));
+      const reviewCards = cards.filter((c) => c.provenance[0]?.reason?.includes('review'));
+      
+      if (cards.length > 0) {
+        const topScore = Math.max(...cards.map((c) => c.score)).toFixed(2);
+        const parts: string[] = [];
+        if (newCards.length > 0) parts.push(`${newCards.length} new`);
+        if (reviewCards.length > 0) parts.push(`${reviewCards.length} reviews`);
+        const breakdown = parts.length > 0 ? parts.join(', ') : `${cards.length} cards`;
+        generatorSummaries.push(`${genName}: ${breakdown} (top: ${topScore})`);
+      } else {
+        generatorSummaries.push(`${genName}: 0 cards`);
+      }
+    });
+    logger.info(`[Composite] Generator breakdown: ${generatorSummaries.join(' | ')}`);
+
     // Group by cardId, tracking the weight of the generator that produced each instance
     type WeightedResult = { card: WeightedCard; weight: number };
     const byCardId = new Map<string, WeightedResult[]>();

@@ -5,6 +5,7 @@ import type { WeightedCard } from '../index';
 import { toCourseElo } from '@vue-skuilder/common';
 import type { QualifiedCardID } from '../..';
 import type { CardGenerator, GeneratorContext } from './types';
+import { logger } from '@db/util/logger';
 
 // ============================================================================
 // ELO NAVIGATOR
@@ -113,6 +114,18 @@ export default class ELONavigator extends ContentNavigator implements CardGenera
     // Sort by score descending
     scored.sort((a, b) => b.score - a.score);
 
-    return scored.slice(0, limit);
+    const result = scored.slice(0, limit);
+
+    // Log summary for transparency
+    if (result.length > 0) {
+      const topScores = result.slice(0, 3).map((c) => c.score.toFixed(2)).join(', ');
+      logger.info(
+        `[ELO] Course ${this.course.getCourseID()}: ${result.length} new cards (top scores: ${topScores})`
+      );
+    } else {
+      logger.info(`[ELO] Course ${this.course.getCourseID()}: No new cards available`);
+    }
+
+    return result;
   }
 }
