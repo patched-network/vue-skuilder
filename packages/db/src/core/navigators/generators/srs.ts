@@ -82,11 +82,38 @@ export default class SRSNavigator extends ContentNavigator implements CardGenera
       throw new Error('SRSNavigator requires user and course to be set');
     }
 
-    const reviews = await this.user.getPendingReviews(this.course.getCourseID());
+    const courseId = this.course.getCourseID();
+    const reviews = await this.user.getPendingReviews(courseId);
     const now = moment.utc();
 
     // Filter to only cards that are actually due
     const dueReviews = reviews.filter((r) => now.isAfter(moment.utc(r.reviewTime)));
+
+    // Log review status for transparency
+    if (dueReviews.length > 0) {
+      logger.info(
+        `[SRS] Course ${courseId}: ${dueReviews.length} reviews due now (of ${reviews.length} scheduled)`
+      );
+    } else if (reviews.length > 0) {
+      // Reviews exist but none are due yet - show when next one is due
+      const sortedByDue = [...reviews].sort((a, b) =>
+        moment.utc(a.reviewTime).diff(moment.utc(b.reviewTime))
+      );
+      const nextDue = sortedByDue[0];
+      const nextDueTime = moment.utc(nextDue.reviewTime);
+      const untilDue = moment.duration(nextDueTime.diff(now));
+      const untilDueStr =
+        untilDue.asHours() < 1
+          ? `${Math.round(untilDue.asMinutes())}m`
+          : untilDue.asHours() < 24
+            ? `${Math.round(untilDue.asHours())}h`
+            : `${Math.round(untilDue.asDays())}d`;
+      logger.info(
+        `[SRS] Course ${courseId}: 0 reviews due now (${reviews.length} scheduled, next in ${untilDueStr})`
+      );
+    } else {
+      logger.info(`[SRS] Course ${courseId}: No reviews scheduled`);
+    }
 
     const scored = dueReviews.map((review) => {
       const { score, reason } = this.computeUrgencyScore(review, now);
@@ -109,7 +136,7 @@ export default class SRSNavigator extends ContentNavigator implements CardGenera
       };
     });
 
-    logger.debug(`[srsNav] got ${scored.length} weighted cards`);
+
 
     // Sort by score descending and limit
     return scored.sort((a, b) => b.score - a.score).slice(0, limit);

@@ -6,6 +6,15 @@ export type { CardFilter, FilterContext, CardFilterFactory } from './filters/typ
 // Re-export generator types
 export type { CardGenerator, GeneratorContext, CardGeneratorFactory } from './generators/types';
 
+// Re-export pipeline debugger API
+export {
+  pipelineDebugAPI,
+  mountPipelineDebugger,
+  type PipelineRunReport,
+  type GeneratorSummary,
+  type FilterImpact,
+} from './PipelineDebugger';
+
 import { LearnableWeight } from '../types/contentNavigationStrategy';
 export type { ContentNavigationStrategyData, LearnableWeight } from '../types/contentNavigationStrategy';
 import type { ContentNavigationStrategyData } from '../types/contentNavigationStrategy';
