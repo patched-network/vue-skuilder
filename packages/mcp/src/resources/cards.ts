@@ -21,6 +21,75 @@ export interface CardsCollection {
   filter?: string;
 }
 
+/**
+ * Helper to transform Card entities to CardResourceData
+ * Handles the indirection: Card entity (c-...) -> Data document (dd-...)
+ */
+async function transformCardsToResourceData(
+  courseDB: CourseDBInterface,
+  cardIds: string[],
+  eloMap: Map<any, number>
+): Promise<CardResourceData[]> {
+  if (cardIds.length === 0) return [];
+
+  // Fetch Card entities (c-... IDs)
+  const cardDocs = await courseDB.getCourseDocs(cardIds);
+
+  // Extract data document IDs from Card entities
+  const dataDocIds: string[] = [];
+  const cardToDataMap = new Map<string, string>(); // cardId -> dataDocId
+
+  for (const row of cardDocs.rows) {
+    if (isSuccessRow(row)) {
+      const cardDoc = row.doc as any;
+      const cardId = cardDoc._id;
+      const dataIds = cardDoc.id_displayable_data;
+
+      if (dataIds && dataIds.length > 0) {
+        const dataDocId = dataIds[0]; // Take first data document
+        dataDocIds.push(dataDocId);
+        cardToDataMap.set(cardId, dataDocId);
+      }
+    }
+  }
+
+  // Fetch all data documents
+  const dataDocs = dataDocIds.length > 0
+    ? await courseDB.getCourseDocs(dataDocIds)
+    : { rows: [] };
+
+  // Create map of dataDocId -> data document
+  const dataDocMap = new Map<string, any>();
+  for (const row of dataDocs.rows) {
+    if (isSuccessRow(row)) {
+      dataDocMap.set(row.doc._id, row.doc);
+    }
+  }
+
+  // Transform to CardResourceData format
+  const cards: CardResourceData[] = [];
+  for (const row of cardDocs.rows) {
+    if (isSuccessRow(row)) {
+      const cardDoc = row.doc as any;
+      const cardId = cardDoc._id;
+      const dataDocId = cardToDataMap.get(cardId);
+      const dataDoc = dataDocId ? dataDocMap.get(dataDocId) : null;
+
+      cards.push({
+        cardId: cardId,
+        datashape: dataDoc?.id_datashape || 'unknown',
+        data: dataDoc?.data || {},
+        tags: [], // Tags are stored separately in TAG documents
+        elo: eloMap.get(cardId) || cardDoc.elo?.global?.score || 1500,
+        created: cardDoc.created,
+        modified: cardDoc.modified
+      });
+    }
+  }
+
+  return cards;
+}
+
 // Schema for ELO range parsing
 const EloRangeSchema = z.object({
   min: z.number().min(0).max(5000),
@@ -38,52 +107,85 @@ export async function handleCardsAllResource(
   offset: number = 0
 ): Promise<CardsCollection> {
   try {
-    // Get course info for total count
-    const courseInfo = await courseDB.getCourseInfo();
-    
-    // Get cards using ELO-based query (this gives us all cards sorted by ELO)
-    const eloCenteredCards = await courseDB.getCardsByELO(1500, limit + offset);
-    
-    // Skip offset cards and take limit
-    const targetCards = eloCenteredCards.slice(offset, offset + limit);
-    
-    if (targetCards.length === 0) {
+    // First, get total count of card entities
+    const countResult = await (courseDB as any).db.allDocs({
+      startkey: 'c-',
+      endkey: 'c-\ufff0',
+      include_docs: false
+      // No limit - get all IDs to count them
+    });
+    const totalCards = countResult.rows.length;
+
+    // Now get the paginated card IDs
+    const allCardsResult = await (courseDB as any).db.allDocs({
+      startkey: 'c-',
+      endkey: 'c-\ufff0',
+      include_docs: true,  // Include docs so we can debug
+      skip: offset,
+      limit: limit
+    });
+
+    const cardIds = allCardsResult.rows.map((row: any) => row.id);
+
+    if (cardIds.length === 0) {
       return {
         cards: [],
-        total: courseInfo.cardCount,
+        total: totalCards,
         page: Math.floor(offset / limit) + 1,
         limit,
         filter: 'all'
       };
     }
 
-    // Get card documents
-    const cardDocs = await courseDB.getCourseDocs(targetCards.map(card => card.cardID));
-    
-    // Get ELO data for these cards  
-    const eloData = await courseDB.getCardEloData(targetCards.map(card => card.cardID));
-    const eloMap = new Map(eloData.map((elo, index) => [targetCards[index], elo.global?.score || 1500]));
+    // Extract data document IDs from the Card entities we already fetched
+    const dataDocIds: string[] = [];
+    const cardToDataMap = new Map<string, string>();
+
+    for (const row of allCardsResult.rows) {
+      const cardDoc = row.doc as any;
+      const dataIds = cardDoc.id_displayable_data;
+      if (dataIds && dataIds.length > 0) {
+        const dataDocId = dataIds[0];
+        dataDocIds.push(dataDocId);
+        cardToDataMap.set(cardDoc._id, dataDocId);
+      }
+    }
+
+    // Fetch data documents
+    const dataDocs = dataDocIds.length > 0
+      ? await courseDB.getCourseDocs(dataDocIds, { include_docs: true })
+      : { rows: [] };
+
+    // Create map of dataDocId -> data document
+    const dataDocMap = new Map<string, any>();
+    for (const row of dataDocs.rows) {
+      if (isSuccessRow(row)) {
+        dataDocMap.set(row.doc._id, row.doc);
+      }
+    }
 
     // Transform to CardResourceData format
     const cards: CardResourceData[] = [];
-    for (const row of cardDocs.rows) {
-      if (isSuccessRow(row)) {
-        const doc = row.doc;
-        cards.push({
-          cardId: doc._id,
-          datashape: (doc as any).shape?.name || 'unknown',
-          data: (doc as any).data || {},
-          tags: [], // Will be populated separately if needed
-          elo: eloMap.get(doc._id),
-          created: (doc as any).created,
-          modified: (doc as any).modified
-        });
-      }
+    for (const row of allCardsResult.rows) {
+      const cardDoc = row.doc as any;
+      const cardId = cardDoc._id;
+      const dataDocId = cardToDataMap.get(cardId);
+      const dataDoc = dataDocId ? dataDocMap.get(dataDocId) : null;
+
+      cards.push({
+        cardId: cardId,
+        datashape: dataDoc?.id_datashape || 'unknown',
+        data: dataDoc?.data || {},
+        tags: [],
+        elo: cardDoc.elo?.global?.score || 1500,
+        created: cardDoc.created,
+        modified: cardDoc.modified
+      });
     }
 
     return {
       cards,
-      total: courseInfo.cardCount,
+      total: totalCards,
       page: Math.floor(offset / limit) + 1,
       limit,
       filter: 'all'
@@ -161,44 +263,60 @@ export async function handleCardsShapeResource(
       };
     }
 
-    // Get card documents to check their shapes
-    const cardDocs = await courseDB.getCourseDocs(allCardIds.map(c => c.cardID));
-    
-    // Filter by shape and collect card IDs
-    const filteredCardIds: string[] = [];
-    const allFilteredRows: any[] = [];
-    
+    // Get all card IDs
+    const cardIds = allCardIds.map(c => c.cardID);
+
+    // Fetch Card entities to get their data doc references
+    const cardDocs = await courseDB.getCourseDocs(cardIds);
+
+    // Extract data document IDs from Card entities
+    const dataDocIds: string[] = [];
+    const cardToDataMap = new Map<string, string>();
+
     for (const row of cardDocs.rows) {
-      if (isSuccessRow(row) && (row.doc as any).shape?.name === shapeName) {
-        allFilteredRows.push(row);
-        filteredCardIds.push(row.doc._id);
+      if (isSuccessRow(row)) {
+        const cardDoc = row.doc as any;
+        const dataIds = cardDoc.id_displayable_data;
+        if (dataIds && dataIds.length > 0) {
+          const dataDocId = dataIds[0];
+          dataDocIds.push(dataDocId);
+          cardToDataMap.set(cardDoc._id, dataDocId);
+        }
       }
     }
-    
-    // Apply pagination to filtered results
-    const paginatedRows = allFilteredRows.slice(offset, offset + limit);
-    const paginatedCardIds = paginatedRows.map(row => row.doc._id);
+
+    // Fetch all data documents to check their shapes
+    const dataDocs = dataDocIds.length > 0
+      ? await courseDB.getCourseDocs(dataDocIds)
+      : { rows: [] };
+
+    // Create map: dataDocId -> datashape
+    const dataDocShapeMap = new Map<string, string>();
+    for (const row of dataDocs.rows) {
+      if (isSuccessRow(row)) {
+        const dataDoc = row.doc as any;
+        dataDocShapeMap.set(dataDoc._id, dataDoc.id_datashape);
+      }
+    }
+
+    // Filter cards by shape
+    const filteredCardIds: string[] = [];
+    for (const [cardId, dataDocId] of cardToDataMap.entries()) {
+      const dataShape = dataDocShapeMap.get(dataDocId);
+      if (dataShape === shapeName) {
+        filteredCardIds.push(cardId);
+      }
+    }
+
+    // Apply pagination to filtered card IDs
+    const paginatedCardIds = filteredCardIds.slice(offset, offset + limit);
 
     // Get ELO data for paginated cards
     const eloData = await courseDB.getCardEloData(paginatedCardIds);
     const eloMap = new Map(eloData.map((elo, index) => [paginatedCardIds[index], elo.global?.score || 1500]));
 
     // Transform to CardResourceData format
-    const cards: CardResourceData[] = [];
-    for (const row of paginatedRows) {
-      if (isSuccessRow(row)) {
-        const doc = row.doc;
-        cards.push({
-          cardId: doc._id,
-          datashape: (doc as any).shape?.name || 'unknown',
-          data: (doc as any).data || {},
-          tags: [],
-          elo: eloMap.get(doc._id),
-          created: (doc as any).created,
-          modified: (doc as any).modified
-        });
-      }
-    }
+    const cards = await transformCardsToResourceData(courseDB, paginatedCardIds, eloMap);
 
     // Count total filtered cards
     const totalFiltered = filteredCardIds.length;
@@ -277,26 +395,12 @@ export async function handleCardsEloResource(
       };
     }
 
-    // Get card documents
-    const cardDocs = await courseDB.getCourseDocs(paginatedCards.map(c => c.cardID));
-    const eloMap = new Map(paginatedEloData.map(({ elo, cardId }) => [cardId, elo.global?.score || 1500]));
+    // Get card IDs
+    const paginatedCardIds = paginatedCards.map(c => c.cardID);
+    const eloMap = new Map(paginatedEloData.map(({ elo, cardId }) => [cardId.cardID, elo.global?.score || 1500]));
 
     // Transform to CardResourceData format
-    const cardsData: CardResourceData[] = [];
-    for (const row of cardDocs.rows) {
-      if (isSuccessRow(row)) {
-        const doc = row.doc;
-        cardsData.push({
-          cardId: doc._id,
-          datashape: (doc as any).shape?.name || 'unknown',
-          data: (doc as any).data || {},
-          tags: [],
-          elo: eloMap.get(doc._id),
-          created: (doc as any).created,
-          modified: (doc as any).modified
-        });
-      }
-    }
+    const cardsData = await transformCardsToResourceData(courseDB, paginatedCardIds, eloMap);
 
     return {
       cards: cardsData,
