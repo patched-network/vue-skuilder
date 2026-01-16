@@ -171,6 +171,45 @@ function formatProvenance(provenance: StrategyContribution[]): string {
 }
 
 /**
+ * Print summary of a single pipeline run.
+ */
+function printRunSummary(run: PipelineRunReport): void {
+  // eslint-disable-next-line no-console
+  console.group(`🔍 Pipeline Run: ${run.courseId} (${run.courseName || 'unnamed'})`);
+  logger.info(`Run ID: ${run.runId}`);
+  logger.info(`Time: ${run.timestamp.toISOString()}`);
+  logger.info(`Generator: ${run.generatorName} → ${run.generatedCount} candidates`);
+
+  if (run.generators && run.generators.length > 0) {
+    // eslint-disable-next-line no-console
+    console.group('Generator breakdown:');
+    for (const g of run.generators) {
+      logger.info(
+        `  ${g.name}: ${g.cardCount} cards (${g.newCount} new, ${g.reviewCount} reviews, top: ${g.topScore.toFixed(2)})`
+      );
+    }
+    // eslint-disable-next-line no-console
+    console.groupEnd();
+  }
+
+  if (run.filters.length > 0) {
+    // eslint-disable-next-line no-console
+    console.group('Filter impact:');
+    for (const f of run.filters) {
+      logger.info(`  ${f.name}: ↑${f.boosted} ↓${f.penalized} =${f.passed} ✕${f.removed}`);
+    }
+    // eslint-disable-next-line no-console
+    console.groupEnd();
+  }
+
+  logger.info(
+    `Result: ${run.finalCount} cards selected (${run.newSelected} new, ${run.reviewsSelected} reviews)`
+  );
+  // eslint-disable-next-line no-console
+  console.groupEnd();
+}
+
+/**
  * Console API object exposed on window.skuilder.pipeline
  */
 export const pipelineDebugAPI = {
@@ -182,45 +221,40 @@ export const pipelineDebugAPI = {
   },
 
   /**
-   * Show summary of the last pipeline run.
+   * Show summary of a specific pipeline run.
    */
-  showLastRun(): void {
+  showRun(idOrIndex: string | number = 0): void {
     if (runHistory.length === 0) {
       logger.info('[Pipeline Debug] No runs captured yet.');
       return;
     }
 
-    const run = runHistory[0];
-    // eslint-disable-next-line no-console
-    console.group(`🔍 Pipeline Run: ${run.courseId} (${run.courseName || 'unnamed'})`);
-    logger.info(`Time: ${run.timestamp.toISOString()}`);
-    logger.info(`Generator: ${run.generatorName} → ${run.generatedCount} candidates`);
+    let run: PipelineRunReport | undefined;
 
-    if (run.generators && run.generators.length > 0) {
-      // eslint-disable-next-line no-console
-      console.group('Generator breakdown:');
-      for (const g of run.generators) {
+    if (typeof idOrIndex === 'number') {
+      run = runHistory[idOrIndex];
+      if (!run) {
         logger.info(
-          `  ${g.name}: ${g.cardCount} cards (${g.newCount} new, ${g.reviewCount} reviews, top: ${g.topScore.toFixed(2)})`
+          `[Pipeline Debug] No run found at index ${idOrIndex}. History length: ${runHistory.length}`
         );
+        return;
       }
-      // eslint-disable-next-line no-console
-      console.groupEnd();
+    } else {
+      run = runHistory.find((r) => r.runId.endsWith(idOrIndex));
+      if (!run) {
+        logger.info(`[Pipeline Debug] No run found matching ID '${idOrIndex}'.`);
+        return;
+      }
     }
 
-    if (run.filters.length > 0) {
-      // eslint-disable-next-line no-console
-      console.group('Filter impact:');
-      for (const f of run.filters) {
-        logger.info(`  ${f.name}: ↑${f.boosted} ↓${f.penalized} =${f.passed} ✕${f.removed}`);
-      }
-      // eslint-disable-next-line no-console
-      console.groupEnd();
-    }
+    printRunSummary(run);
+  },
 
-    logger.info(`Result: ${run.finalCount} cards selected (${run.newSelected} new, ${run.reviewsSelected} reviews)`);
-    // eslint-disable-next-line no-console
-    console.groupEnd();
+  /**
+   * Show summary of the last pipeline run.
+   */
+  showLastRun(): void {
+    this.showRun(0);
   },
 
   /**
@@ -356,6 +390,7 @@ export const pipelineDebugAPI = {
 
 Commands:
   .showLastRun()         Show summary of most recent pipeline run
+  .showRun(id|index)     Show summary of a specific run (by index or ID suffix)
   .showCard(cardId)      Show provenance trail for a specific card
   .explainReviews()      Analyze why reviews were/weren't selected
   .listRuns()            List all captured runs in table format
@@ -366,6 +401,7 @@ Commands:
 
 Example:
   window.skuilder.pipeline.showLastRun()
+  window.skuilder.pipeline.showRun(1)
   window.skuilder.pipeline.showCard('abc123')
 `);
   },
