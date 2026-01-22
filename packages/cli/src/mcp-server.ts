@@ -31,8 +31,8 @@ async function main() {
       options: {
         COUCHDB_SERVER_URL: process.env.COUCHDB_SERVER_URL || `localhost:${port}`,
         COUCHDB_SERVER_PROTOCOL: process.env.COUCHDB_SERVER_PROTOCOL || 'http',
-        COUCHDB_USERNAME: 'admin',
-        COUCHDB_PASSWORD: 'password',
+        COUCHDB_USERNAME: process.env.COUCHDB_USERNAME || 'admin',
+        COUCHDB_PASSWORD: process.env.COUCHDB_PASSWORD || 'password',
         COURSE_IDS: [courseId], // Limit to specific course
         localStoragePrefix: 'mcp-server',
       },
