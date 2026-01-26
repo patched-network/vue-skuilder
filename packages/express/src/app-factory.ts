@@ -1,8 +1,8 @@
 import { initializeDataLayer } from '@vue-skuilder/db';
-import { 
-  ServerRequestType as RequestEnum, 
-  ServerRequest, 
-  prepareNote55, 
+import {
+  ServerRequestType as RequestEnum,
+  ServerRequest,
+  prepareNote55,
 } from '@vue-skuilder/common';
 import { CourseLookup } from '@vue-skuilder/db';
 import cookieParser from 'cookie-parser';
@@ -22,8 +22,16 @@ import {
   initCourseDBDesignDocInsert,
 } from './client-requests/course-requests.js';
 import { packCourse } from './client-requests/pack-requests.js';
-import { requestIsAuthenticated } from './couchdb/authentication.js';
-import { getCouchDB, initializeCouchDB, useOrCreateCourseDB, useOrCreateDB } from './couchdb/index.js';
+import {
+  getAuthenticatedUser,
+  requestIsAuthenticated,
+} from './couchdb/authentication.js';
+import {
+  getCouchDB,
+  initializeCouchDB,
+  useOrCreateCourseDB,
+  useOrCreateDB,
+} from './couchdb/index.js';
 import { classroomDbDesignDoc } from './design-docs.js';
 import logger from './logger.js';
 import logsRouter from './routes/logs.js';
@@ -45,7 +53,9 @@ export type AppConfig = ExpressServerConfig | EnvironmentConfig;
 /**
  * Type guard to determine if config is ExpressServerConfig (programmatic usage)
  */
-function isExpressServerConfig(config: AppConfig): config is ExpressServerConfig {
+function isExpressServerConfig(
+  config: AppConfig
+): config is ExpressServerConfig {
   return 'couchdb' in config && typeof config.couchdb === 'object';
 }
 
@@ -70,19 +80,20 @@ function convertToEnvConfig(config: ExpressServerConfig): EnvironmentConfig {
  */
 export function createExpressApp(config: AppConfig): express.Application {
   const app = express();
-  
+
   // Normalize config to environment format for internal usage
-  const envConfig = isExpressServerConfig(config) 
-    ? convertToEnvConfig(config) 
+  const envConfig = isExpressServerConfig(config)
+    ? convertToEnvConfig(config)
     : config;
 
   // Initialize CouchDB connection
   initializeCouchDB(envConfig);
 
   // Configure CORS - use config if available, otherwise defaults
-  const corsOptions = isExpressServerConfig(config) && config.cors 
-    ? config.cors 
-    : { credentials: true, origin: true };
+  const corsOptions =
+    isExpressServerConfig(config) && config.cors
+      ? config.cors
+      : { credentials: true, origin: true };
 
   // Middleware setup
   app.use(cookieParser());
@@ -130,7 +141,10 @@ export function createExpressApp(config: AppConfig): express.Application {
         logger.info(`Delete request made on course ${req.params.courseID}...`);
         const auth = await requestIsAuthenticated(req);
         if (auth) {
-          logger.info(`	Authenticated delete request made...`);          const dbResp = await getCouchDB().db.destroy(            `coursedb-${req.params.courseID}`          );
+          logger.info(`	Authenticated delete request made...`);
+          const dbResp = await getCouchDB().db.destroy(
+            `coursedb-${req.params.courseID}`
+          );
           if (!dbResp.ok) {
             res.json({ success: false, error: dbResp });
             return;
@@ -147,7 +161,9 @@ export function createExpressApp(config: AppConfig): express.Application {
         }
       } catch (error) {
         logger.error('Error deleting course:', error);
-        res.status(500).json({ success: false, error: 'Failed to delete course' });
+        res
+          .status(500)
+          .json({ success: false, error: 'Failed to delete course' });
       }
     })();
   });
@@ -156,13 +172,15 @@ export function createExpressApp(config: AppConfig): express.Application {
     req: VueClientRequest,
     res: express.Response
   ): Promise<void> {
-    const auth = await requestIsAuthenticated(req);
-    if (auth) {
+    // Use secure authentication that returns the actual session username
+    const authResult = await getAuthenticatedUser(req);
+    if (authResult.authenticated) {
+      const authenticatedUsername = authResult.username;
       const body = req.body;
       logger.info(
         `Authorized ${
           body.type ? body.type : '[unspecified request type]'
-        } request made...`
+        } request from ${authenticatedUsername}...`
       );
 
       if (body.type === RequestEnum.CREATE_CLASSROOM) {
@@ -176,8 +194,9 @@ export function createExpressApp(config: AppConfig): express.Application {
         body.response = await ClassroomJoinQueue.getResult(id);
         res.json(body.response);
       } else if (body.type === RequestEnum.LEAVE_CLASSROOM) {
+        // SECURITY FIX: Use authenticated username from session, not user-supplied req.body.user
         const id: number = ClassroomLeaveQueue.addRequest({
-          username: req.body.user,
+          username: authenticatedUsername,
           ...body.data,
         });
         body.response = await ClassroomLeaveQueue.getResult(id);
@@ -196,7 +215,8 @@ export function createExpressApp(config: AppConfig): express.Application {
           body.data.tags,
           body.data.uploads
         );
-        getCouchDB().use(`coursedb-${body.data.courseID}`)
+        getCouchDB()
+          .use(`coursedb-${body.data.courseID}`)
           .insert(payload as Nano.MaybeDocument)
           .then((r) => {
             logger.info(`\t\t\tCouchDB insert result: ${JSON.stringify(r)}`);
@@ -212,15 +232,16 @@ export function createExpressApp(config: AppConfig): express.Application {
             `\tPACK_COURSE request received in production mode, but this is not supported!`
           );
           res.status(400);
-          res.statusMessage = 'Packing courses is not supported in production mode.';
+          res.statusMessage =
+            'Packing courses is not supported in production mode.';
           res.send();
           return;
         }
-        
+
         body.response = await packCourse({
           courseId: body.courseId,
           outputPath: body.outputPath,
-          couchdbUrl: body.couchdbUrl
+          couchdbUrl: body.couchdbUrl,
         });
         res.json(body.response);
       }
@@ -243,7 +264,8 @@ export function createExpressApp(config: AppConfig): express.Application {
   app.get('/', (_req: Request, res: Response) => {
     let status = `Express service is running.\nVersion: ${envConfig.VERSION}\n`;
 
-    getCouchDB().session()
+    getCouchDB()
+      .session()
       .then((s) => {
         if (s.ok) {
           status += 'Couchdb is running.\n';
@@ -271,8 +293,6 @@ export async function initializeServices(config: AppConfig): Promise<void> {
   const envConfig = isExpressServerConfig(config)
     ? convertToEnvConfig(config)
     : config;
-
-
 
   await initializeDataLayer({
     type: 'couch',
@@ -302,9 +322,13 @@ export async function initializeServices(config: AppConfig): Promise<void> {
     void PostProcess();
 
     initCourseDBDesignDocInsert().catch((error) => {
-      logger.error(`Error in initCourseDBDesignDocInsert background task: ${error}`);
+      logger.error(
+        `Error in initCourseDBDesignDocInsert background task: ${error}`
+      );
       if (error && typeof error === 'object') {
-        logger.error(`Full error details in initCourseDBDesignDocInsert: ${JSON.stringify(error)}`);
+        logger.error(
+          `Full error details in initCourseDBDesignDocInsert: ${JSON.stringify(error)}`
+        );
       }
     });
 
