@@ -324,7 +324,10 @@ export async function initializeServices(config: AppConfig): Promise<void> {
 
     // start the per-user database provisioning listener
     // (replaces CouchDB's couch_peruser, which has a process leak)
-    startPerUserProvisioning();
+    // skip in studio mode — studio is a local single-user environment
+    if (envConfig.NODE_ENV !== 'studio') {
+      startPerUserProvisioning();
+    }
 
     initCourseDBDesignDocInsert().catch((error) => {
       logger.error(
