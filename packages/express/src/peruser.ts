@@ -17,7 +17,7 @@ import logger from './logger.js';
 function hexEncode(str: string): string {
   let returnStr = '';
   for (let i = 0; i < str.length; i++) {
-    returnStr += ('000' + str.charCodeAt(i).toString(16)).slice(-4);
+    returnStr += ('000' + str.charCodeAt(i).toString(16)).slice(3);
   }
   return returnStr;
 }
