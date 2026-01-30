@@ -12,6 +12,7 @@ import express from 'express';
 import morgan from 'morgan';
 import Nano from 'nano';
 import PostProcess from './attachment-preprocessing/index.js';
+import { startPerUserProvisioning } from './peruser.js';
 import {
   ClassroomCreationQueue,
   ClassroomJoinQueue,
@@ -320,6 +321,10 @@ export async function initializeServices(config: AppConfig): Promise<void> {
     // start the change-listener that does post-processing on user
     // media uploads
     void PostProcess();
+
+    // start the per-user database provisioning listener
+    // (replaces CouchDB's couch_peruser, which has a process leak)
+    startPerUserProvisioning();
 
     initCourseDBDesignDocInsert().catch((error) => {
       logger.error(
