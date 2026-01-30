@@ -11,7 +11,7 @@
  * cheap and removes the need to persist checkpoint state.
  */
 
-import { getCouchDB } from './couchdb/index.js';
+import { getCouchDB, type SecurityObject } from './couchdb/index.js';
 import logger from './logger.js';
 
 function hexEncode(str: string): string {
@@ -45,14 +45,11 @@ async function ensureUserDB(username: string): Promise<void> {
 
   const db = server.use(dbName);
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await db.insert(
-      {
-        admins: { names: [username], roles: [] },
-        members: { names: [username], roles: [] },
-      } as any,
-      '_security'
-    );
+    const security: SecurityObject = {
+      admins: { names: [username], roles: [] },
+      members: { names: [username], roles: [] },
+    };
+    await db.insert(security, '_security');
   } catch (e) {
     logger.error(`peruser: error setting security on ${dbName}:`, e);
   }
