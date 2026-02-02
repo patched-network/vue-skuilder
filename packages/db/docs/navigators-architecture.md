@@ -46,10 +46,27 @@ interface CardGenerator {
 ```
 
 **Implementations:**
-- `ELONavigator` — New cards scored by ELO proximity to user skill
-- `SRSNavigator` — Review cards scored by overdueness and interval recency
+- `ELONavigator` — New cards scored by ELO proximity to user skill (scores 0.0-1.0)
+- `SRSNavigator` — Review cards scored by overdueness, interval recency, and **backlog pressure** (scores 0.5-1.0)
 - `HardcodedOrderNavigator` — Fixed sequence defined by course author
 - `CompositeGenerator` — Merges multiple generators with frequency boost
+
+#### SRS Backlog Pressure
+
+The SRS generator implements a self-regulating **backlog pressure** mechanism that prevents review pile-up while maintaining healthy new/review balance:
+
+- **Healthy backlog** (≤20 due reviews): No pressure boost, scores 0.5-0.95. New content (ELO) naturally dominates.
+- **Elevated backlog** (40 due): +0.25 boost, scores 0.75-1.0. Reviews compete with new cards.
+- **High backlog** (60+ due): +0.50 boost (max), scores 0.95-1.0. Reviews take priority.
+
+This treats SRS scheduling times as **eligibility dates** rather than hard due dates—reviewing slightly later may be optimal. The system maintains a healthy backlog rather than always clearing to zero (avoiding "Anki death spiral").
+
+Configuration via strategy `serializedData`:
+```json
+{ "healthyBacklog": 20 }
+```
+
+See `todo-review-adaptation.md` for planned per-user adaptation extensions.
 
 ### CardFilter
 
@@ -516,8 +533,8 @@ return { ...card, score: card.score * multiplier };
 | `core/navigators/Pipeline.ts` | Pipeline orchestration |
 | `core/navigators/PipelineAssembler.ts` | Builds Pipeline from strategy docs |
 | `core/navigators/CompositeGenerator.ts` | Merges multiple generators |
-| `core/navigators/elo.ts` | ELO generator |
-| `core/navigators/srs.ts` | SRS generator |
+| `core/navigators/generators/elo.ts` | ELO generator |
+| `core/navigators/generators/srs.ts` | SRS generator (with backlog pressure) |
 | `core/navigators/hardcodedOrder.ts` | Fixed-order generator |
 | `core/navigators/hierarchyDefinition.ts` | Prerequisite filter |
 | `core/navigators/interferenceMitigator.ts` | Interference filter |
@@ -541,6 +558,7 @@ return { ...card, score: card.score * multiplier };
 ## Related Documentation
 
 - `todo-strategy-authoring.md` — UX and DX for authoring strategies
+- `todo-review-adaptation.md` — Planned per-user review urgency adaptation
 - `future-orchestration-vision.md` — Long-term adaptive strategy vision (beyond current implementation)
 - `devlog/1004` — Implementation details for tag hydration optimization
 - `devlog/1032-orchestrator` — Evolutionary orchestration implementation details
