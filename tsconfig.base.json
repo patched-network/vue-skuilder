@@ -25,5 +25,13 @@
             "@cli/*": ["./packages/cli/src/*"],
             "@client/*": ["./packages/client/src/*"]
         }
-    }
+    },
+    "exclude": [
+        "node_modules",
+        "**/node_modules",
+        "dist",
+        "**/dist",
+        "test-couch",
+        "**/*.tsbuildinfo"
+    ]
 }
