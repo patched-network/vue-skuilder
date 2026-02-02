@@ -304,8 +304,29 @@ Assembly logic:
 | Strategy | Purpose | Config |
 |----------|---------|--------|
 | `ELONavigator` | New cards by skill proximity | Window size, target offset |
-| `SRSNavigator` | Review cards by schedule | Overdue weighting |
+| `SRSNavigator` | Review cards by schedule + backlog pressure | `healthyBacklog` (default: 20) |
 | `HardcodedOrderNavigator` | Fixed sequence | Card ID list |
+
+#### SRS Backlog Pressure
+
+The SRS generator implements **backlog pressure** to prevent review pile-up. When the number of due reviews exceeds a "healthy" threshold (default: 20), all review scores receive a global boost:
+
+- At healthy backlog (≤20): no boost, scores 0.5-0.95
+- At 2× healthy (40): +0.25 boost, scores 0.75-1.0
+- At 3×+ healthy (60+): +0.50 boost (max), scores 0.95-1.0
+
+This allows high-urgency reviews to compete with new cards (which score up to 1.0 from ELO). The system is self-regulating: as users work through reviews, backlog drops, pressure decreases, and new content reappears.
+
+Configure via `serializedData`:
+
+```typescript
+// In strategy document
+{
+  strategyType: 'srs',
+  name: 'SRS',
+  serializedData: JSON.stringify({ healthyBacklog: 30 })  // Override default
+}
+```
 
 ### Filters
 
