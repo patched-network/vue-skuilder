@@ -83,6 +83,21 @@ type Performance =
     };
 ```
 
+>>> Prefer this - be explicit on the requirement of a global, and simplify the object to be more inline w/ ELO scorings
+
+```
+type Performance =
+ | number
+ | {
+   /**
+    (doccomment)
+   */
+   _global: number;
+   
+   /// other doccomment if they apply on types like this
+   [tag: string]: number; // flatten here to just a number. If the question has recursive elements that grade a lot of things, the question is responsible for aggregating / flattening those results.
+ }
+
 ---
 
 ### Phase 2: EloService Integration
@@ -276,7 +291,7 @@ public evaluate(answer: Answer, timeSpent: number): Evaluation {
 - [ ] p3.3 Modify `processIncorrectResponse()` to use helper
 - [ ] p3.4 Ensure backward compatibility (numeric performance unchanged)
 
-### Phase 4: LP Questions (commercial)
+### Phase 4: LP Questions (commercial) >>> DEFER implementation, DO create new assessment doc. see /letterspractice/src/services/phonetics/CLAUDE.md
 
 - [ ] p4.1 Create GPC scoring utility using phonetic analytics
 - [ ] p4.2 Override `evaluate()` in `SpellingQuestion`
@@ -309,10 +324,10 @@ public evaluate(answer: Answer, timeSpent: number): Evaluation {
 
 | Risk | Mitigation |
 |------|------------|
-| Deeply nested Performance | Only support single-level tag object; ignore nested |
+| Deeply nested Performance | Only support single-level tag object; ignore nested (yes - enshrined in type def now) |
 | Tag ID format mismatch | Use GPC catalogue IDs consistently |
-| Performance without `_global` | Default to 0.5 (neutral) |
-| Many tags = slow DB writes | Already per-tag; no regression |
+| Performance without `_global` | change: enforce _global as part of the type |
+| Many tags = slow DB writes | Already per-tag; no regression - Please take advantage of current contextual knowledge and write an aside brief doc on this issue. expected runtime characteristics, scaling 'walls' (eg, where it starts to break down), and possible ameliorations |
 
 ---
 
@@ -341,6 +356,8 @@ public evaluate(answer: Answer, timeSpent: number): Evaluation {
    - Structured with `_global` and tags
    - Structured missing `_global` → default 0.5
 
+>>> please ensure that any new tests are launched using *existing* test infra, or if it doesn't exist in the target package, create new according to existing rpecedent (eg, vitest. inspect other packages / gh workflows)
+
 ### Integration Tests (manual)
 
 1. Existing question type → unchanged behavior
@@ -352,5 +369,8 @@ public evaluate(answer: Answer, timeSpent: number): Evaluation {
 ## Next Steps
 
 1. User approves this plan
-2. Create `a.5.todo.md` with checkboxes
-3. Begin Phase 1 implementation
+>>> approved w/ minor modifications
+
+2. Implement phases 1-3
+
+3. *assess* Phase 4 w/ additional phonetics service contextual info.
