@@ -17,3 +17,16 @@
 
 **Files Modified:**
 - `vue-skuilder/packages/db/src/study/services/EloService.ts`
+
+---
+
+## Phase 3: ResponseProcessor (db) — COMPLETED ✅
+
+- [x] p3.1 Add `parsePerformance()` helper method
+- [x] p3.2 Modify `processCorrectResponse()` to use helper
+- [x] p3.3 Modify `processIncorrectResponse()` to use helper
+- [x] p3.4 Ensure backward compatibility (numeric performance unchanged)
+
+**Files Modified:**
+- `vue-skuilder/packages/db/src/study/services/ResponseProcessor.ts`
+
