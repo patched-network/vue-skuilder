@@ -1,4 +1,9 @@
-import { adjustCourseScores, toCourseElo } from '@vue-skuilder/common';
+import {
+  adjustCourseScores,
+  adjustCourseScoresPerTag,
+  toCourseElo,
+  TaggedPerformance,
+} from '@vue-skuilder/common';
 import { DataLayerProvider, UserDBInterface, CourseRegistrationDoc } from '@db/core';
 import { StudySessionRecord } from '../SessionController';
 import { logger } from '@db/util/logger';
@@ -19,7 +24,7 @@ export class EloService {
    * Updates both user and card ELO ratings based on user performance.
    * @param userScore Score between 0-1 representing user performance
    * @param course_id Course identifier
-   * @param card_id Card identifier  
+   * @param card_id Card identifier
    * @param userCourseRegDoc User's course registration document (will be mutated)
    * @param currentCard Current card session record
    * @param k Optional K-factor for ELO calculation
@@ -36,7 +41,9 @@ export class EloService {
       logger.warn(`k value interpretation not currently implemented`);
     }
     const courseDB = this.dataLayer.getCourseDB(currentCard.card.course_id);
-    const userElo = toCourseElo(userCourseRegDoc.courses.find((c) => c.courseID === course_id)!.elo);
+    const userElo = toCourseElo(
+      userCourseRegDoc.courses.find((c) => c.courseID === course_id)!.elo
+    );
     const cardElo = (await courseDB.getCardEloData([currentCard.card.card_id]))[0];
 
     if (cardElo && userElo) {
@@ -68,6 +75,74 @@ export class EloService {
         // Log which operations succeeded and which failed
         logger.warn(
           `[EloService] Partial ELO update:
+          \tUser ELO update: ${userEloStatus ? 'SUCCESS' : 'FAILED'}
+          \tCard ELO update: ${cardEloStatus ? 'SUCCESS' : 'FAILED'}`
+        );
+
+        if (!userEloStatus && results[0].status === 'rejected') {
+          logger.error('[EloService] User ELO update error:', results[0].reason);
+        }
+
+        if (!cardEloStatus && results[1].status === 'rejected') {
+          logger.error('[EloService] Card ELO update error:', results[1].reason);
+        }
+      }
+    }
+  }
+
+  /**
+   * Updates both user and card ELO ratings with per-tag granularity.
+   * Tags in taggedPerformance but not on card will be created dynamically.
+   *
+   * @param taggedPerformance Performance object with _global and per-tag scores
+   * @param course_id Course identifier
+   * @param card_id Card identifier
+   * @param userCourseRegDoc User's course registration document (will be mutated)
+   * @param currentCard Current card session record
+   */
+  public async updateUserAndCardEloPerTag(
+    taggedPerformance: TaggedPerformance,
+    course_id: string,
+    card_id: string,
+    userCourseRegDoc: CourseRegistrationDoc,
+    currentCard: StudySessionRecord
+  ): Promise<void> {
+    const courseDB = this.dataLayer.getCourseDB(currentCard.card.course_id);
+    const userElo = toCourseElo(
+      userCourseRegDoc.courses.find((c) => c.courseID === course_id)!.elo
+    );
+    const cardElo = (await courseDB.getCardEloData([currentCard.card.card_id]))[0];
+
+    if (cardElo && userElo) {
+      const eloUpdate = adjustCourseScoresPerTag(userElo, cardElo, taggedPerformance);
+      userCourseRegDoc.courses.find((c) => c.courseID === course_id)!.elo = eloUpdate.userElo;
+
+      const results = await Promise.allSettled([
+        this.user.updateUserElo(course_id, eloUpdate.userElo),
+        courseDB.updateCardElo(card_id, eloUpdate.cardElo),
+      ]);
+
+      // Check the results of each operation
+      const userEloStatus = results[0].status === 'fulfilled';
+      const cardEloStatus = results[1].status === 'fulfilled';
+
+      if (userEloStatus && cardEloStatus) {
+        const user = (results[0] as PromiseFulfilledResult<any>).value;
+        const card = (results[1] as PromiseFulfilledResult<any>).value;
+
+        if (user.ok && card && card.ok) {
+          const tagCount = Object.keys(taggedPerformance).length - 1; // exclude _global
+          logger.info(
+            `[EloService] Updated ELOS (per-tag, ${tagCount} tags):
+            \tUser: ${JSON.stringify(eloUpdate.userElo)})
+            \tCard: ${JSON.stringify(eloUpdate.cardElo)})
+            `
+          );
+        }
+      } else {
+        // Log which operations succeeded and which failed
+        logger.warn(
+          `[EloService] Partial ELO update (per-tag):
           \tUser ELO update: ${userEloStatus ? 'SUCCESS' : 'FAILED'}
           \tCard ELO update: ${cardEloStatus ? 'SUCCESS' : 'FAILED'}`
         );
