@@ -112,8 +112,46 @@ export interface Evaluation {
   performance: Performance;
 }
 
-type Performance =
-  | number
-  | {
-      [dimension: string]: Performance;
-    };
+/**
+ * Performance can be a simple number (0-1) for overall score,
+ * or a structured object with per-tag granularity.
+ */
+export type Performance = number | TaggedPerformance;
+
+/**
+ * Structured performance with per-tag scoring.
+ *
+ * Questions that exercise multiple skills (e.g., spelling with multiple GPCs)
+ * can provide individual scores per tag for granular ELO updates.
+ *
+ * @example
+ * // Spelling "cat" as "kat" - got 'a' and 't' right, but 'c' wrong
+ * {
+ *   _global: 0.67,      // 2/3 correct, used for SRS and global ELO
+ *   'GPC-c-K': 0,       // incorrect
+ *   'GPC-a-AE': 1,      // correct
+ *   'GPC-t-T': 1,       // correct
+ * }
+ */
+export interface TaggedPerformance {
+  /**
+   * Overall score for SRS scheduling and global ELO updates.
+   * Required when using structured performance.
+   * Range: [0, 1]
+   */
+  _global: number;
+
+  /**
+   * Per-tag scores. Keys are tag IDs (e.g., 'GPC-c-K').
+   * Tags not present on the card will be created dynamically.
+   * Range: [0, 1] for each value.
+   */
+  [tag: string]: number;
+}
+
+/**
+ * Type guard to check if performance is structured (TaggedPerformance).
+ */
+export function isTaggedPerformance(p: Performance): p is TaggedPerformance {
+  return typeof p === 'object' && p !== null && '_global' in p;
+}

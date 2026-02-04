@@ -1,3 +1,5 @@
+import { TaggedPerformance } from './course-data.js';
+
 export class EloRanker {
   constructor(public k: number = 32) {}
 
@@ -189,5 +191,79 @@ function adjustScores(
       score: updatedCardElo,
       count: cardElo.count + 1,
     },
+  };
+}
+
+/**
+ * Adjusts ELO scores with per-tag granularity.
+ *
+ * Unlike adjustCourseScores which applies the same score to all tags,
+ * this function allows different scores per tag for granular skill tracking.
+ *
+ * @param aElo - User's current ELO (will be converted to CourseElo)
+ * @param bElo - Card's current ELO (will be converted to CourseElo)
+ * @param taggedPerformance - Object with _global score and per-tag scores
+ * @returns Updated user and card ELOs
+ *
+ * @example
+ * // Spelling "cat" as "kat" - got 'a' and 't' right, but 'c' wrong
+ * adjustCourseScoresPerTag(userElo, cardElo, {
+ *   _global: 0.67,
+ *   'GPC-c-K': 0,
+ *   'GPC-a-AE': 1,
+ *   'GPC-t-T': 1,
+ * });
+ */
+export function adjustCourseScoresPerTag(
+  aElo: Eloish,
+  bElo: Eloish,
+  taggedPerformance: TaggedPerformance
+): {
+  userElo: CourseElo;
+  cardElo: CourseElo;
+} {
+  const globalScore = taggedPerformance._global;
+
+  if (globalScore < 0 || globalScore > 1) {
+    throw new Error(`ELO _global score must be between 0 and 1 - received ${globalScore}`);
+  }
+
+  const userElo: CourseElo = toCourseElo(aElo);
+  const cardElo: CourseElo = toCourseElo(bElo);
+
+  // Process each tag in the performance object
+  for (const [key, tagScore] of Object.entries(taggedPerformance)) {
+    if (key === '_global') continue;
+
+    if (typeof tagScore !== 'number' || tagScore < 0 || tagScore > 1) {
+      throw new Error(`ELO tag score for '${key}' must be between 0 and 1 - received ${tagScore}`);
+    }
+
+    // Initialize tag ELO on user if missing (use global score as baseline)
+    const userTagElo: EloRank = userElo.tags[key] ?? {
+      count: 0,
+      score: userElo.global.score,
+    };
+
+    // Initialize tag ELO on card if missing (use global score as baseline)
+    const cardTagElo: EloRank = cardElo.tags[key] ?? {
+      count: 0,
+      score: cardElo.global.score,
+    };
+
+    // Apply per-tag score
+    const adjusted = adjustScores(userTagElo, cardTagElo, tagScore);
+    userElo.tags[key] = adjusted.userElo;
+    cardElo.tags[key] = adjusted.cardElo;
+  }
+
+  // Apply global score to global ELO
+  const adjustedGlobal = adjustScores(userElo.global, cardElo.global, globalScore);
+  userElo.global = adjustedGlobal.userElo;
+  cardElo.global = adjustedGlobal.cardElo;
+
+  return {
+    userElo,
+    cardElo,
   };
 }

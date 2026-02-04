@@ -10,6 +10,17 @@ import { logger } from '@db/util/logger';
 import { ResponseResult, StudySessionRecord } from '../SessionController';
 import { EloService } from './EloService';
 import { SrsService } from './SrsService';
+import { Performance, isTaggedPerformance, TaggedPerformance } from '@vue-skuilder/common';
+
+/**
+ * Parsed performance data for ELO updates.
+ */
+interface ParsedPerformance {
+  /** Global score for SRS and global ELO [0, 1] */
+  globalScore: number;
+  /** Per-tag scores, or null if using simple numeric performance */
+  taggedPerformance: TaggedPerformance | null;
+}
 
 /**
  * Service responsible for orchestrating the complete response processing workflow.
@@ -22,6 +33,39 @@ export class ResponseProcessor {
   constructor(srsService: SrsService, eloService: EloService) {
     this.srsService = srsService;
     this.eloService = eloService;
+  }
+
+  /**
+   * Parses performance data into global score and optional per-tag scores.
+   *
+   * @param performance - Numeric or structured performance from QuestionRecord
+   * @returns Parsed performance with global score and optional tag scores
+   */
+  private parsePerformance(performance: Performance): ParsedPerformance {
+    if (typeof performance === 'number') {
+      // Simple numeric performance - backward compatible
+      return {
+        globalScore: performance,
+        taggedPerformance: null,
+      };
+    }
+
+    // Structured TaggedPerformance with _global and per-tag scores
+    if (isTaggedPerformance(performance)) {
+      return {
+        globalScore: performance._global,
+        taggedPerformance: performance,
+      };
+    }
+
+    // Fallback for unexpected structure - treat as neutral
+    logger.warn('[ResponseProcessor] Unexpected performance structure, using neutral score', {
+      performance,
+    });
+    return {
+      globalScore: 0.5,
+      taggedPerformance: null,
+    };
   }
 
   /**
@@ -60,42 +104,8 @@ export class ResponseProcessor {
       };
     }
 
-    // Debug logging for response processing
-    // logger.debug('[ResponseProcessor] Processing response', {
-    //   cardId,
-    //   courseId,
-    //   isCorrect: cardRecord.isCorrect,
-    //   performance: cardRecord.performance,
-    //   priorAttempts: cardRecord.priorAttemps,
-    //   currentSessionViews: sessionViews,
-    //   maxSessionViews,
-    //   maxAttemptsPerView,
-    //   currentCardRecordsLength: currentCard.records.length,
-    //   studySessionSourceType: studySessionItem.contentSourceType,
-    //   studySessionSourceID: studySessionItem.contentSourceID,
-    //   studySessionItemId: studySessionItem.cardID,
-    //   studySessionItemType: studySessionItem.contentSourceType,
-
-    //   cardRecordTimestamp: cardRecord.timeStamp,
-    //   cardRecordResponseTime: cardRecord.timeSpent,
-    // });
-
     try {
       const history = await cardHistory;
-
-      // Debug logging for card history
-      // logger.debug('[ResponseProcessor] History loaded:', {
-      //   cardId,
-      //   historyRecordsCount: history.records.length,
-      //   historyRecords: history.records.map((record) => ({
-      //     timeStamp: record.timeStamp,
-      //     isCorrect: 'isCorrect' in record ? record.isCorrect : 'N/A',
-      //     performance: 'performance' in record ? record.performance : 'N/A',
-      //     priorAttempts: 'priorAttemps' in record ? record.priorAttemps : 'N/A',
-      //   })),
-      //   firstInteraction: history.records.length === 1,
-      //   lastRecord: history.records[history.records.length - 1],
-      // });
 
       // Handle correct responses
       if (cardRecord.isCorrect) {
@@ -145,40 +155,57 @@ export class ResponseProcessor {
       // Schedule the card for future review based on performance (async, non-blocking)
       void this.srsService.scheduleReview(history, studySessionItem);
 
+      // Parse performance (may be numeric or structured)
+      const { globalScore, taggedPerformance } = this.parsePerformance(cardRecord.performance);
+
       // Update ELO ratings
-      if (history.records.length === 1) {
-        // First interaction with this card - standard ELO update (async, non-blocking)
-        const userScore = 0.5 + (cardRecord.performance as number) / 2;
-        void this.eloService.updateUserAndCardElo(
-          userScore,
+      if (taggedPerformance) {
+        // Per-tag ELO update
+        void this.eloService.updateUserAndCardEloPerTag(
+          taggedPerformance,
           courseId,
           cardId,
           courseRegistrationDoc,
           currentCard
         );
+        logger.info(
+          `[ResponseProcessor] Processed correct response with per-tag ELO update (${Object.keys(taggedPerformance).length - 1} tags)`
+        );
       } else {
-        // Multiple interactions - reduce K-factor to limit ELO volatility (async, non-blocking)
-        const k = Math.ceil(32 / history.records.length);
-        const userScore = 0.5 + (cardRecord.performance as number) / 2;
-        void this.eloService.updateUserAndCardElo(
-          userScore,
-          courseId,
-          cardId,
-          courseRegistrationDoc,
-          currentCard,
-          k
+        // Standard single-score ELO update (backward compatible)
+        const userScore = 0.5 + globalScore / 2;
+
+        if (history.records.length === 1) {
+          // First interaction with this card - standard ELO update
+          void this.eloService.updateUserAndCardElo(
+            userScore,
+            courseId,
+            cardId,
+            courseRegistrationDoc,
+            currentCard
+          );
+        } else {
+          // Multiple interactions - reduce K-factor to limit ELO volatility
+          const k = Math.ceil(32 / history.records.length);
+          void this.eloService.updateUserAndCardElo(
+            userScore,
+            courseId,
+            cardId,
+            courseRegistrationDoc,
+            currentCard,
+            k
+          );
+        }
+        logger.info(
+          '[ResponseProcessor] Processed correct response with SRS scheduling and ELO update'
         );
       }
-
-      logger.info(
-        '[ResponseProcessor] Processed correct response with SRS scheduling and ELO update'
-      );
 
       return {
         nextCardAction: 'dismiss-success',
         shouldLoadNextCard: true,
         isCorrect: true,
-        performanceScore: cardRecord.performance as number,
+        performanceScore: globalScore,
         shouldClearFeedbackShadow: true,
       };
     } else {
@@ -186,11 +213,13 @@ export class ResponseProcessor {
         '[ResponseProcessor] Processed correct response (retry attempt - no scheduling/ELO)'
       );
 
+      const { globalScore } = this.parsePerformance(cardRecord.performance);
+
       return {
         nextCardAction: 'marked-failed',
         shouldLoadNextCard: true,
         isCorrect: true,
-        performanceScore: cardRecord.performance as number,
+        performanceScore: globalScore,
         shouldClearFeedbackShadow: true,
       };
     }
@@ -210,16 +239,34 @@ export class ResponseProcessor {
     maxSessionViews: number,
     sessionViews: number
   ): ResponseResult {
-    // Update ELO for first-time failures (not subsequent attempts on same card) (async, non-blocking)
+    // Parse performance (may be numeric or structured)
+    const { taggedPerformance } = this.parsePerformance(cardRecord.performance);
+
+    // Update ELO for first-time failures (not subsequent attempts on same card)
     if (history.records.length !== 1 && cardRecord.priorAttemps === 0) {
-      void this.eloService.updateUserAndCardElo(
-        0, // Failed response = 0 score
-        courseId,
-        cardId,
-        courseRegistrationDoc,
-        currentCard
-      );
-      logger.info('[ResponseProcessor] Processed incorrect response with ELO update');
+      if (taggedPerformance) {
+        // Per-tag ELO update for incorrect response
+        void this.eloService.updateUserAndCardEloPerTag(
+          taggedPerformance,
+          courseId,
+          cardId,
+          courseRegistrationDoc,
+          currentCard
+        );
+        logger.info(
+          `[ResponseProcessor] Processed incorrect response with per-tag ELO update (${Object.keys(taggedPerformance).length - 1} tags)`
+        );
+      } else {
+        // Standard single-score ELO update
+        void this.eloService.updateUserAndCardElo(
+          0, // Failed response = 0 score
+          courseId,
+          cardId,
+          courseRegistrationDoc,
+          currentCard
+        );
+        logger.info('[ResponseProcessor] Processed incorrect response with ELO update');
+      }
     } else {
       logger.info('[ResponseProcessor] Processed incorrect response (no ELO update needed)');
     }
@@ -227,14 +274,25 @@ export class ResponseProcessor {
     // Determine navigation based on attempt limits
     if (currentCard.records.length >= maxAttemptsPerView) {
       if (sessionViews >= maxSessionViews) {
-        // Too many session views - dismiss completely with ELO penalty (async, non-blocking)
-        void this.eloService.updateUserAndCardElo(
-          0,
-          courseId,
-          cardId,
-          courseRegistrationDoc,
-          currentCard
-        );
+        // Too many session views - dismiss completely with ELO penalty
+        if (taggedPerformance) {
+          // Use tagged performance for final failure
+          void this.eloService.updateUserAndCardEloPerTag(
+            taggedPerformance,
+            courseId,
+            cardId,
+            courseRegistrationDoc,
+            currentCard
+          );
+        } else {
+          void this.eloService.updateUserAndCardElo(
+            0,
+            courseId,
+            cardId,
+            courseRegistrationDoc,
+            currentCard
+          );
+        }
         return {
           nextCardAction: 'dismiss-failed',
           shouldLoadNextCard: true,
