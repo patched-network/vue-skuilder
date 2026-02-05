@@ -58,8 +58,28 @@ interface LoudnessData {
   target_offset: string;
 }
 
+// Fade durations in seconds — short enough to preserve consonant onsets,
+// long enough to smooth out the noise-floor cut-in/cut-out
+const FADE_IN_DURATION = 0.05; // 50ms
+const FADE_OUT_DURATION = 0.1; // 100ms
+
+function parseDuration(output: string): number {
+  const match = output.match(/Duration:\s*(\d+):(\d+):(\d+)\.(\d+)/);
+  if (!match) throw new Error('Could not parse duration from ffmpeg output');
+  const hours = parseInt(match[1]);
+  const minutes = parseInt(match[2]);
+  const seconds = parseInt(match[3]);
+  const frac = parseInt(match[4]) / Math.pow(10, match[4].length);
+  return hours * 3600 + minutes * 60 + seconds + frac;
+}
+
+async function getAudioDuration(filePath: string): Promise<number> {
+  const result = await exec(`"${FFMPEG}" -i "${filePath}" -f null -`);
+  return parseDuration(result.stderr);
+}
+
 /**
- * Normalizes a single wav file to mp3 with loudnorm
+ * Normalizes a single wav file to mp3 with loudnorm and fade in/out
  * Same spec as the attachment preprocessing: I=-16:TP=-1.5:LRA=11
  */
 async function normalizeFile(
@@ -73,6 +93,7 @@ async function normalizeFile(
 
   const PADDED = path.join(tmpDir, 'padded.wav');
   const PADDED_NORMALIZED = path.join(tmpDir, 'paddedNormalized.wav');
+  const TRIMMED = path.join(tmpDir, 'trimmed.wav');
   const NORMALIZED = path.join(tmpDir, 'normalized.mp3');
 
   try {
@@ -108,10 +129,23 @@ async function normalizeFile(
         `print_format=summary -ar 48k "${PADDED_NORMALIZED}"`
     );
 
-    // Cut off the padded part and convert to mp3
-    log(`[${baseName}] Cutting padding and encoding to mp3...`);
+    // Cut off the padded silence (keep as wav to avoid double lossy encoding)
+    log(`[${baseName}] Cutting padding...`);
     await exec(
-      `"${FFMPEG}" -i "${PADDED_NORMALIZED}" -ss 00:00:10.000 -acodec libmp3lame -b:a 192k "${NORMALIZED}"`
+      `"${FFMPEG}" -i "${PADDED_NORMALIZED}" -ss 00:00:10.000 "${TRIMMED}"`
+    );
+
+    // Apply fade in/out and encode to mp3
+    const duration = await getAudioDuration(TRIMMED);
+    const fadeOutStart = Math.max(0, duration - FADE_OUT_DURATION);
+    log(
+      `[${baseName}] Applying fades (in=${FADE_IN_DURATION}s, out=${FADE_OUT_DURATION}s @ ${fadeOutStart.toFixed(3)}s) and encoding to mp3...`
+    );
+    await exec(
+      `"${FFMPEG}" -i "${TRIMMED}" -af ` +
+        `"afade=t=in:st=0:d=${FADE_IN_DURATION}:curve=qsin,` +
+        `afade=t=out:st=${fadeOutStart}:d=${FADE_OUT_DURATION}:curve=qsin" ` +
+        `-acodec libmp3lame -b:a 192k "${NORMALIZED}"`
     );
 
     // Copy to output location
