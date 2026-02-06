@@ -15,6 +15,15 @@ export class SrsService {
   }
 
   /**
+   * Remove a scheduled review from the user's database.
+   * Used to clean up orphaned reviews (e.g., card deleted from course DB).
+   */
+  removeReview(reviewID: string): void {
+    logger.info(`[SrsService] Removing orphaned scheduled review: ${reviewID}`);
+    void this.user.removeScheduledCardReview(reviewID);
+  }
+
+  /**
    * Calculates the next review time for a card based on its history and
    * schedules it in the user's database.
    * @param history The full history of the card.

@@ -90,11 +90,9 @@ import {
   ContentSourceID,
   CourseRegistrationDoc,
   DataLayerProvider,
-  docIsDeleted,
   getStudySource,
   HydratedCard,
   isQuestionRecord,
-  isReview,
   ResponseResult,
   SessionController,
   StudyContentSource,
@@ -516,43 +514,30 @@ export default defineComponent({
 
       this.loading = true;
 
-      try {
-        this.cardCount++;
-        this.data = card.data;
-        this.view = markRaw(card.view);
-        this.cardID = card.item.cardID;
-        this.courseID = card.item.courseID;
-        this.card_elo = card.item.elo || 1000;
+      this.cardCount++;
+      this.data = card.data;
+      this.view = markRaw(card.view);
+      this.cardID = card.item.cardID;
+      this.courseID = card.item.courseID;
+      this.card_elo = card.item.elo || 1000;
 
-        this.sessionRecord.push({
-          card: {
-            course_id: card.item.courseID,
-            card_id: card.item.cardID,
-            card_elo: this.card_elo,
-          },
-          item: card.item,
-          records: [],
-        });
+      this.sessionRecord.push({
+        card: {
+          course_id: card.item.courseID,
+          card_id: card.item.cardID,
+          card_elo: this.card_elo,
+        },
+        item: card.item,
+        records: [],
+      });
 
-        this.$emit('card-loaded', {
-          courseID: card.item.courseID,
-          cardID: card.item.cardID,
-          cardCount: this.cardCount,
-        });
-      } catch (e) {
-        console.warn(`[StudySession] Error loading card ${JSON.stringify(card)}:\n\t${JSON.stringify(e)}, ${e}`);
-        this.loading = false;
+      this.$emit('card-loaded', {
+        courseID: card.item.courseID,
+        cardID: card.item.cardID,
+        cardCount: this.cardCount,
+      });
 
-        const err = e as Error;
-        if (docIsDeleted(err) && isReview(card.item)) {
-          console.warn(`Card was deleted: ${card.item.courseID}::${card.item.cardID}`);
-          this.user!.removeScheduledCardReview((card.item as any).reviewID);
-        }
-
-        this.loadCard(await this.sessionController!.nextCard('dismiss-error'));
-      } finally {
-        this.loading = false;
-      }
+      this.loading = false;
     },
   },
 });

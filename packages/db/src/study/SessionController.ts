@@ -457,29 +457,43 @@ export class SessionController<TView = unknown> extends Loggable {
       return null;
     }
 
-    // Get what SessionController thinks should be next
-    const nextItem = this._selectNextItemToHydrate();
-    if (!nextItem) {
-      this._currentCard = null;
-      return null;
+    // Try multiple cards in case some fail hydration (e.g., deleted from DB)
+    const MAX_SKIP = 20;
+    for (let attempt = 0; attempt < MAX_SKIP; attempt++) {
+      const nextItem = this._selectNextItemToHydrate();
+      if (!nextItem) {
+        this._currentCard = null;
+        return null;
+      }
+
+      // Look up in hydration cache
+      let card = this.hydrationService.getHydratedCard(nextItem.cardID);
+
+      // If not ready, wait for it
+      if (!card) {
+        card = await this.hydrationService.waitForCard(nextItem.cardID);
+      }
+
+      // Remove from source queue now that we're consuming it
+      this.removeItemFromQueue(nextItem);
+
+      if (card) {
+        // Trigger background hydration to maintain cache (async, non-blocking)
+        await this.hydrationService.ensureHydratedCards();
+        this._currentCard = card;
+        return card;
+      }
+
+      // Card failed hydration (deleted from DB?) — skip and clean up
+      this.log(`Skipping card ${nextItem.cardID}: hydration failed, trying next`);
+      if (isReview(nextItem)) {
+        this.srsService.removeReview(nextItem.reviewID);
+      }
     }
 
-    // Look up in hydration cache
-    let card = this.hydrationService.getHydratedCard(nextItem.cardID);
-
-    // If not ready, wait for it
-    if (!card) {
-      card = await this.hydrationService.waitForCard(nextItem.cardID);
-    }
-
-    // Remove from source queue now that we're consuming it
-    this.removeItemFromQueue(nextItem);
-
-    // Trigger background hydration to maintain cache (async, non-blocking)
-    await this.hydrationService.ensureHydratedCards();
-
-    this._currentCard = card;
-    return card;
+    this.log(`Exhausted ${MAX_SKIP} skip attempts finding a hydratable card`);
+    this._currentCard = null;
+    return null;
   }
 
   /**
