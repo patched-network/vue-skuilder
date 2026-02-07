@@ -17,6 +17,7 @@ import { recordUserOutcome } from '@db/core/orchestration/recording';
 import { Loggable } from '@db/util';
 import { getCardOrigin } from '@db/core/navigators';
 import { SourceMixer, QuotaRoundRobinMixer, SourceBatch } from './SourceMixer';
+import { captureMixerRun } from './MixerDebugger';
 
 export interface StudySessionRecord {
   card: {
@@ -85,7 +86,11 @@ export class SessionController<TView = unknown> extends Loggable {
     return this._secondsRemaining;
   }
   public get report(): string {
-    return `${this.reviewQ.dequeueCount} reviews, ${this.newQ.dequeueCount} new cards`;
+    const reviewCount = this.reviewQ.dequeueCount;
+    const newCount = this.newQ.dequeueCount;
+    const reviewWord = reviewCount === 1 ? 'review' : 'reviews';
+    const newCardWord = newCount === 1 ? 'new card' : 'new cards';
+    return `${reviewCount} ${reviewWord}, ${newCount} ${newCardWord}`;
   }
   public get detailedReport(): string {
     return this.newQ.toString + '\n' + this.reviewQ.toString + '\n' + this.failedQ.toString;
@@ -310,6 +315,24 @@ export class SessionController<TView = unknown> extends Loggable {
 
     // Mix weighted cards across sources using configured strategy
     const mixedWeighted = this.mixer.mix(batches, limit * this.sources.length);
+
+    // Capture mixer run for debugging
+    const sourceIds = batches.map((b) => {
+      const firstCard = b.weighted[0];
+      return firstCard?.courseId || `source-${b.sourceIndex}`;
+    });
+    const sourceNames = sourceIds.map(() => undefined); // Could enhance to fetch course names
+    const quotaPerSource =
+      this.mixer instanceof QuotaRoundRobinMixer ? Math.ceil((limit * this.sources.length) / batches.length) : undefined;
+    captureMixerRun(
+      this.mixer.constructor.name,
+      batches,
+      sourceIds,
+      sourceNames,
+      limit * this.sources.length,
+      quotaPerSource,
+      mixedWeighted
+    );
 
     // Split mixed results by card origin
     const reviewWeighted = mixedWeighted.filter((w) => getCardOrigin(w) === 'review');
