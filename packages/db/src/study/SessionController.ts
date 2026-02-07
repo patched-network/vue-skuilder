@@ -85,7 +85,11 @@ export class SessionController<TView = unknown> extends Loggable {
     return this._secondsRemaining;
   }
   public get report(): string {
-    return `${this.reviewQ.dequeueCount} reviews, ${this.newQ.dequeueCount} new cards`;
+    const reviewCount = this.reviewQ.dequeueCount;
+    const newCount = this.newQ.dequeueCount;
+    const reviewWord = reviewCount === 1 ? 'review' : 'reviews';
+    const newCardWord = newCount === 1 ? 'new card' : 'new cards';
+    return `${reviewCount} ${reviewWord}, ${newCount} ${newCardWord}`;
   }
   public get detailedReport(): string {
     return this.newQ.toString + '\n' + this.reviewQ.toString + '\n' + this.failedQ.toString;
