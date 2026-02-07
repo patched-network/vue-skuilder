@@ -56,7 +56,7 @@ export interface SourceSelectionBreakdown {
 export interface MixerCardInfo {
   cardId: string;
   courseId: string;
-  origin: 'review' | 'new' | 'unknown';
+  origin: 'review' | 'new' | 'failed' | 'unknown';
   score: number;
   sourceIndex: number;
   selected: boolean;
