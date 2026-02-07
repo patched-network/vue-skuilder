@@ -3,3 +3,4 @@ export * from './SourceMixer';
 export * from './SpacedRepetition';
 export * from './TagFilteredContentSource';
 export * from './MixerDebugger';
+export * from './SessionDebugger';
