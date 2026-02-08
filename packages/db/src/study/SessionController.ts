@@ -12,7 +12,7 @@ import {
   StudySessionReviewItem,
 } from '@db/impl/couch';
 
-import { CardRecord, CardHistory, CourseRegistrationDoc, QuestionRecord, DataLayerProvider } from '@db/core';
+import { CardRecord, CardHistory, CourseRegistrationDoc, QuestionRecord } from '@db/core';
 import { recordUserOutcome } from '@db/core/orchestration/recording';
 import { Loggable } from '@db/util';
 import { getCardOrigin } from '@db/core/navigators';
