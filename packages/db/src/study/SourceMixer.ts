@@ -30,16 +30,16 @@ export interface SourceMixer {
 }
 
 /**
- * Simple quota-based mixer: allocates equal representation to each source,
- * taking the top-N cards by score from each.
+ * Quota-based mixer with interleaved output.
  *
- * Guarantees balanced representation across sources regardless of absolute
- * score differences. A low-scoring source gets the same quota as a high-scoring
- * source.
+ * Allocates equal representation to each source (top-N by score), then
+ * interleaves the results by dealing from a randomly-shuffled source order.
+ * Within each source, cards are dealt in score-descending order.
  *
- * This is the KISS approach - simple, predictable, and fair in terms of
- * source representation (though not necessarily optimal in terms of absolute
- * card quality).
+ * This ensures that cards from different courses are spread throughout the
+ * queue rather than clustered by score bands, which matters because
+ * SessionController consumes queues front-to-back and sessions often end
+ * before reaching the tail.
  */
 export class QuotaRoundRobinMixer implements SourceMixer {
   mix(batches: SourceBatch[], limit: number): WeightedCard[] {
@@ -48,18 +48,37 @@ export class QuotaRoundRobinMixer implements SourceMixer {
     }
 
     const quotaPerSource = Math.ceil(limit / batches.length);
-    const mixed: WeightedCard[] = [];
 
-    for (const batch of batches) {
-      // Sort this source's cards by score descending
-      const sortedBatch = [...batch.weighted].sort((a, b) => b.score - a.score);
+    // Build per-source stacks sorted by score descending, capped at quota
+    const sourceStacks: WeightedCard[][] = batches.map((batch) => {
+      return [...batch.weighted].sort((a, b) => b.score - a.score).slice(0, quotaPerSource);
+    });
 
-      // Take top quotaPerSource from this source
-      const topFromSource = sortedBatch.slice(0, quotaPerSource);
-      mixed.push(...topFromSource);
+    // Shuffle the source ordering so no course is systematically first
+    for (let i = sourceStacks.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [sourceStacks[i], sourceStacks[j]] = [sourceStacks[j], sourceStacks[i]];
     }
 
-    // Sort the mixed result by score descending and return up to limit
-    return mixed.sort((a, b) => b.score - a.score).slice(0, limit);
+    // Interleave: deal one card from each source in rotation
+    const result: WeightedCard[] = [];
+    let exhausted = 0;
+    const cursors = new Array(sourceStacks.length).fill(0);
+
+    while (result.length < limit && exhausted < sourceStacks.length) {
+      exhausted = 0;
+      for (let s = 0; s < sourceStacks.length; s++) {
+        if (result.length >= limit) break;
+
+        if (cursors[s] < sourceStacks[s].length) {
+          result.push(sourceStacks[s][cursors[s]]);
+          cursors[s]++;
+        } else {
+          exhausted++;
+        }
+      }
+    }
+
+    return result;
   }
 }

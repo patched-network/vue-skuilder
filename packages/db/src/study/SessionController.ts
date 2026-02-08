@@ -18,6 +18,7 @@ import { Loggable } from '@db/util';
 import { getCardOrigin } from '@db/core/navigators';
 import { SourceMixer, QuotaRoundRobinMixer, SourceBatch } from './SourceMixer';
 import { captureMixerRun } from './MixerDebugger';
+import { startSessionTracking, recordCardPresentation, snapshotQueues, endSessionTracking } from './SessionDebugger';
 
 export interface StudySessionRecord {
   card: {
@@ -63,6 +64,8 @@ export class SessionController<TView = unknown> extends Loggable {
   private eloService: EloService;
   private hydrationService: CardHydrationService<TView>;
   private mixer: SourceMixer;
+  private dataLayer: DataLayerProvider;
+  private courseNameCache: Map<string, string> = new Map();
 
   private sources: StudyContentSource[];
   // dataLayer and getViewComponent now injected into CardHydrationService
@@ -114,6 +117,7 @@ export class SessionController<TView = unknown> extends Loggable {
   ) {
     super();
 
+    this.dataLayer = dataLayer;
     this.mixer = mixer || new QuotaRoundRobinMixer();
     this.srsService = new SrsService(dataLayer.getUserDB());
     this.eloService = new EloService(dataLayer, dataLayer.getUserDB());
@@ -198,6 +202,9 @@ export class SessionController<TView = unknown> extends Loggable {
 
     await this.getWeightedContent();
     await this.hydrationService.ensureHydratedCards();
+
+    // Start session tracking for debugging
+    startSessionTracking(this.reviewQ.length, this.newQ.length, this.failedQ.length);
 
     this._intervalHandle = setInterval(() => {
       this.tick();
@@ -316,12 +323,23 @@ export class SessionController<TView = unknown> extends Loggable {
     // Mix weighted cards across sources using configured strategy
     const mixedWeighted = this.mixer.mix(batches, limit * this.sources.length);
 
-    // Capture mixer run for debugging
+    // Capture mixer run for debugging - fetch course names
     const sourceIds = batches.map((b) => {
       const firstCard = b.weighted[0];
       return firstCard?.courseId || `source-${b.sourceIndex}`;
     });
-    const sourceNames = sourceIds.map(() => undefined); // Could enhance to fetch course names
+    // Populate course name cache (one-time fetch, reused by SessionDebugger)
+    await Promise.all(
+      sourceIds.map(async (id) => {
+        try {
+          const config = await this.dataLayer.getCoursesDB().getCourseConfig(id);
+          this.courseNameCache.set(id, config.name);
+        } catch {
+          // leave unmapped
+        }
+      })
+    );
+    const sourceNames = sourceIds.map((id) => this.courseNameCache.get(id));
     const quotaPerSource =
       this.mixer instanceof QuotaRoundRobinMixer ? Math.ceil((limit * this.sources.length) / batches.length) : undefined;
     captureMixerRun(
@@ -477,6 +495,7 @@ export class SessionController<TView = unknown> extends Loggable {
 
     if (this._secondsRemaining <= 0 && this.failedQ.length === 0) {
       this._currentCard = null;
+      endSessionTracking();
       return null;
     }
 
@@ -486,6 +505,7 @@ export class SessionController<TView = unknown> extends Loggable {
       const nextItem = this._selectNextItemToHydrate();
       if (!nextItem) {
         this._currentCard = null;
+        endSessionTracking();
         return null;
       }
 
@@ -504,6 +524,24 @@ export class SessionController<TView = unknown> extends Loggable {
         // Trigger background hydration to maintain cache (async, non-blocking)
         await this.hydrationService.ensureHydratedCards();
         this._currentCard = card;
+
+        // Record presentation for debugging
+        const origin = nextItem.status === 'review' || nextItem.status === 'failed-review' ? 'review' :
+                       nextItem.status === 'new' || nextItem.status === 'failed-new' ? 'new' : 'failed';
+        const queueSource = nextItem.status.startsWith('failed') ? 'failedQ' :
+                           (nextItem.status === 'review' ? 'reviewQ' : 'newQ');
+
+        recordCardPresentation(
+          nextItem.cardID,
+          nextItem.courseID,
+          this.courseNameCache.get(nextItem.courseID),
+          origin,
+          queueSource as 'reviewQ' | 'newQ' | 'failedQ'
+        );
+
+        // Snapshot queue state
+        snapshotQueues(this.reviewQ.length, this.newQ.length, this.failedQ.length);
+
         return card;
       }
 
@@ -516,6 +554,7 @@ export class SessionController<TView = unknown> extends Loggable {
 
     this.log(`Exhausted ${MAX_SKIP} skip attempts finding a hydratable card`);
     this._currentCard = null;
+    endSessionTracking();
     return null;
   }
 
