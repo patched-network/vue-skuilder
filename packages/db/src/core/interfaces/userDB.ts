@@ -63,6 +63,11 @@ export interface UserDBReader {
    * Strategies use this to persist preferences, learned patterns, or temporal
    * tracking data across sessions. Each strategy owns its own namespace.
    *
+   * @deprecated Use `getCourseInterface(courseId).getStrategyState(strategyKey)` instead.
+   * Direct use bypasses course-scoping safety — the courseId parameter is unguarded,
+   * allowing accidental cross-course data access. The course-scoped interface binds
+   * courseId once at construction.
+   *
    * @param courseId - The course this state applies to
    * @param strategyKey - Unique key identifying the strategy (typically class name)
    * @returns The strategy's data payload, or null if no state exists
@@ -152,6 +157,11 @@ export interface UserDBWriter extends DocumentUpdater {
    * Strategies use this to persist preferences, learned patterns, or temporal
    * tracking data across sessions. Each strategy owns its own namespace.
    *
+   * @deprecated Use `getCourseInterface(courseId).putStrategyState(strategyKey, data)` instead.
+   * Direct use bypasses course-scoping safety — the courseId parameter is unguarded,
+   * allowing accidental cross-course data writes. The course-scoped interface binds
+   * courseId once at construction.
+   *
    * @param courseId - The course this state applies to
    * @param strategyKey - Unique key identifying the strategy (typically class name)
    * @param data - The strategy's data payload to store
@@ -160,6 +170,9 @@ export interface UserDBWriter extends DocumentUpdater {
 
   /**
    * Delete strategy-specific state for a course.
+   *
+   * @deprecated Use `getCourseInterface(courseId).deleteStrategyState(strategyKey)` instead.
+   * Direct use bypasses course-scoping safety.
    *
    * @param courseId - The course this state applies to
    * @param strategyKey - Unique key identifying the strategy (typically class name)
@@ -228,6 +241,37 @@ export interface UsrCrsDataInterface {
   getCourseSettings(): Promise<UserCourseSettings>;
   updateCourseSettings(updates: UserCourseSetting[]): void; // [ ] return a result of some sort?
   // getRegistrationDoc(): Promise<CourseRegistration>;
+
+  /**
+   * Get strategy-specific state for this course.
+   *
+   * Course-scoped alternative to `UserDBInterface.getStrategyState()`.
+   * The courseId is bound at construction via `getCourseInterface(courseId)`,
+   * so callers cannot accidentally access another course's state.
+   *
+   * @param strategyKey - Unique key identifying the state document
+   * @returns The state payload, or null if no state exists
+   */
+  getStrategyState<T>(strategyKey: string): Promise<T | null>;
+
+  /**
+   * Store strategy-specific state for this course.
+   *
+   * Course-scoped alternative to `UserDBInterface.putStrategyState()`.
+   *
+   * @param strategyKey - Unique key identifying the state document
+   * @param data - The state payload to store
+   */
+  putStrategyState<T>(strategyKey: string, data: T): Promise<void>;
+
+  /**
+   * Delete strategy-specific state for this course.
+   *
+   * Course-scoped alternative to `UserDBInterface.deleteStrategyState()`.
+   *
+   * @param strategyKey - Unique key identifying the state document
+   */
+  deleteStrategyState(strategyKey: string): Promise<void>;
 }
 
 export type ClassroomRegistrationDesignation = 'student' | 'teacher' | 'aide' | 'admin';
