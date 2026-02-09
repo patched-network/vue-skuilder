@@ -52,6 +52,18 @@ export class UsrCrsData implements UsrCrsDataInterface {
     }
   }
 
+  public async getStrategyState<T>(strategyKey: string): Promise<T | null> {
+    return this.user.getStrategyState<T>(this._courseId, strategyKey);
+  }
+
+  public async putStrategyState<T>(strategyKey: string, data: T): Promise<void> {
+    return this.user.putStrategyState<T>(this._courseId, strategyKey, data);
+  }
+
+  public async deleteStrategyState(strategyKey: string): Promise<void> {
+    return this.user.deleteStrategyState(this._courseId, strategyKey);
+  }
+
   private async getReviewstoDate(targetDate: Moment) {
     // Use the interface method instead of direct database access
     const allReviews = await this.user.getPendingReviews(this._courseId);
