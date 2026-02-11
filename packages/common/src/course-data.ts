@@ -124,13 +124,26 @@ export type Performance = number | TaggedPerformance;
  * Questions that exercise multiple skills (e.g., spelling with multiple GPCs)
  * can provide individual scores per tag for granular ELO updates.
  *
+ * Tags can have scores (for exercise tags) or `null` (for count-only exposure tags).
+ * Count-only tags increment their count but maintain a sentinel score of -1,
+ * making them easily identifiable and preventing them from polluting real ELO data.
+ *
  * @example
  * // Spelling "cat" as "kat" - got 'a' and 't' right, but 'c' wrong
  * {
- *   _global: 0.67,      // 2/3 correct, used for SRS and global ELO
- *   'GPC-c-K': 0,       // incorrect
- *   'GPC-a-AE': 1,      // correct
- *   'GPC-t-T': 1,       // correct
+ *   _global: 0.67,           // 2/3 correct, used for SRS and global ELO
+ *   'gpc:exercise:c-K': 0,   // incorrect
+ *   'gpc:exercise:a-AE': 1,  // correct
+ *   'gpc:exercise:t-T': 1,   // correct
+ * }
+ *
+ * @example
+ * // WhoSaidThat card exercising 'sh' while exposing distractors
+ * {
+ *   _global: 1.0,
+ *   'gpc:exercise:sh-SH': 1.0,  // exercised and correct
+ *   'gpc:expose:s-S': null,     // count-only exposure (no score)
+ *   'gpc:expose:ch-CH': null,   // count-only exposure (no score)
  * }
  */
 export interface TaggedPerformance {
@@ -142,11 +155,15 @@ export interface TaggedPerformance {
   _global: number;
 
   /**
-   * Per-tag scores. Keys are tag IDs (e.g., 'GPC-c-K').
+   * Per-tag scores or count-only markers.
+   *
+   * - **Number (0-1)**: Tag is exercised; score updates via ELO formula
+   * - **null**: Count-only tag (e.g., exposure); increments count, score stays -1 (sentinel)
+   *
    * Tags not present on the card will be created dynamically.
-   * Range: [0, 1] for each value.
+   * Count-only tags (null) do not update card ELO.
    */
-  [tag: string]: number;
+  [tag: string]: number | null;
 }
 
 /**

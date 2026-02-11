@@ -200,18 +200,31 @@ function adjustScores(
  * Unlike adjustCourseScores which applies the same score to all tags,
  * this function allows different scores per tag for granular skill tracking.
  *
+ * Tags can be scored (number 0-1) or count-only (null). Count-only tags are
+ * useful for exposure tracking (e.g., gpc:expose:*) where we only care about
+ * "how many times has the user seen this?" without measuring performance.
+ *
  * @param aElo - User's current ELO (will be converted to CourseElo)
  * @param bElo - Card's current ELO (will be converted to CourseElo)
- * @param taggedPerformance - Object with _global score and per-tag scores
+ * @param taggedPerformance - Object with _global score and per-tag scores/null
  * @returns Updated user and card ELOs
  *
  * @example
  * // Spelling "cat" as "kat" - got 'a' and 't' right, but 'c' wrong
  * adjustCourseScoresPerTag(userElo, cardElo, {
  *   _global: 0.67,
- *   'GPC-c-K': 0,
- *   'GPC-a-AE': 1,
- *   'GPC-t-T': 1,
+ *   'gpc:exercise:c-K': 0,
+ *   'gpc:exercise:a-AE': 1,
+ *   'gpc:exercise:t-T': 1,
+ * });
+ *
+ * @example
+ * // WhoSaidThat - exercise target, expose distractors (count-only)
+ * adjustCourseScoresPerTag(userElo, cardElo, {
+ *   _global: 1.0,
+ *   'gpc:exercise:sh-SH': 1.0,
+ *   'gpc:expose:s-S': null,      // count-only
+ *   'gpc:expose:ch-CH': null,    // count-only
  * });
  */
 export function adjustCourseScoresPerTag(
@@ -234,6 +247,18 @@ export function adjustCourseScoresPerTag(
   // Process each tag in the performance object
   for (const [key, tagScore] of Object.entries(taggedPerformance)) {
     if (key === '_global') continue;
+
+    // Count-only tag (exposure tracking): increment count, use -1 sentinel score
+    if (tagScore === null) {
+      userElo.tags[key] = userElo.tags[key] ?? { count: 0, score: -1 };
+      userElo.tags[key] = {
+        ...userElo.tags[key],
+        count: userElo.tags[key].count + 1,
+        score: -1, // Sentinel: clearly not a real ELO score
+      };
+      // Skip card ELO update for count-only tags
+      continue;
+    }
 
     if (typeof tagScore !== 'number' || tagScore < 0 || tagScore > 1) {
       throw new Error(`ELO tag score for '${key}' must be between 0 and 1 - received ${tagScore}`);
