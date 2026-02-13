@@ -31,7 +31,7 @@ function getUserDB(): UserDBInterface | null {
   try {
     const provider = getDataLayer();
     return provider.getUserDB();
-  } catch (e) {
+  } catch {
     logger.info('[UserDB Debug] Data layer not initialized yet.');
     return null;
   }
