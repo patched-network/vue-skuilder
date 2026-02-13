@@ -38,7 +38,7 @@ const DEFAULT_MIN_COUNT = 3;
  * A filter strategy that gates cards based on prerequisite mastery.
  *
  * Cards are locked until the user masters all prerequisite tags.
- * Locked cards receive score: 0 (hard filter).
+ * Locked cards receive score * 0.01 (strong penalty, not hard filter).
  *
  * Mastery is determined by:
  * - User's ELO for the tag exceeds threshold (or avgElo if not specified)
@@ -198,7 +198,7 @@ export default class HierarchyDefinitionNavigator extends ContentNavigator imple
   /**
    * CardFilter.transform implementation.
    *
-   * Apply prerequisite gating to cards. Cards with locked tags receive score: 0.
+   * Apply prerequisite gating to cards. Cards with locked tags receive score * 0.01.
    */
   async transform(cards: WeightedCard[], context: FilterContext): Promise<WeightedCard[]> {
     // Get mastery state
@@ -215,7 +215,8 @@ export default class HierarchyDefinitionNavigator extends ContentNavigator imple
         unlockedTags,
         masteredTags
       );
-      const finalScore = isUnlocked ? card.score : 0;
+      const LOCKED_PENALTY = 0.01;
+      const finalScore = isUnlocked ? card.score : card.score * LOCKED_PENALTY;
       const action = isUnlocked ? 'passed' : 'penalized';
 
       gated.push({
