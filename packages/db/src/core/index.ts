@@ -10,3 +10,6 @@ export * from './util';
 export * from './navigators';
 export * from './bulkImport';
 export * from './orchestration';
+
+// Export debug APIs
+export { userDBDebugAPI, mountUserDBDebugger } from './UserDBDebugger';
