@@ -446,13 +446,15 @@ export default defineComponent({
     handleUIFeedback(result: ResponseResult) {
       if (result.isCorrect) {
         // Handle correct response UI
-        try {
-          if (this.$refs.shadowWrapper && result.performanceScore !== undefined) {
-            this.$refs.shadowWrapper.setAttribute('style', `--r: ${255 * (1 - result.performanceScore)}; --g:${255}`);
-            this.$refs.shadowWrapper.classList.add('correct');
+        if (!this.frameless) {
+          try {
+            if (this.$refs.shadowWrapper && result.performanceScore !== undefined) {
+              this.$refs.shadowWrapper.setAttribute('style', `--r: ${255 * (1 - result.performanceScore)}; --g:${255}`);
+              this.$refs.shadowWrapper.classList.add('correct');
+            }
+          } catch (e) {
+            console.warn(`[StudySession] Error setting shadowWrapper style: ${e}`);
           }
-        } catch (e) {
-          console.warn(`[StudySession] Error setting shadowWrapper style: ${e}`);
         }
 
         // Show confetti for correct responses
@@ -468,17 +470,21 @@ export default defineComponent({
         }
       } else {
         // Handle incorrect response UI
-        try {
-          if (this.$refs.shadowWrapper) {
-            this.$refs.shadowWrapper.classList.add('incorrect');
+        if (!this.frameless) {
+          try {
+            if (this.$refs.shadowWrapper) {
+              this.$refs.shadowWrapper.classList.add('incorrect');
+            }
+          } catch (e) {
+            console.warn(`[StudySession] Error setting shadowWrapper style: ${e}`);
           }
-        } catch (e) {
-          console.warn(`[StudySession] Error setting shadowWrapper style: ${e}`);
         }
       }
     },
 
     clearFeedbackShadow() {
+      if (this.frameless) return;
+
       setTimeout(() => {
         try {
           if (this.$refs.shadowWrapper) {
