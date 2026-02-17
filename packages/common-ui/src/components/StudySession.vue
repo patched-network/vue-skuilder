@@ -1,6 +1,6 @@
 <template>
   <div v-if="sessionPrepared" class="StudySession">
-    <v-row align="center">
+    <v-row v-if="!frameless" align="center">
       <!-- <h1 class="text-h3" v-if="courseNames[courseID]">{{ courseNames[courseID] }}:</h1> -->
       <v-spacer></v-spacer>
       <v-progress-circular v-if="loading" color="primary" indeterminate size="32" width="4" />
@@ -9,7 +9,7 @@
     <!-- Debug Panel (only visible if window.debugMode is true) -->
     <session-controller-debug v-if="debugMode" :session-controller="sessionController" />
 
-    <br />
+    <br v-if="!frameless" />
 
     <div v-if="sessionFinished" class="text-h4">
       <p>Study session finished! Great job!</p>
@@ -40,10 +40,12 @@
       </transition>
     </div>
 
-    <br />
-    <div v-if="sessionController">
-      <span v-for="i in sessionController.failedCount" :key="i" class="text-h5">•</span>
-    </div>
+    <template v-if="!frameless">
+      <br />
+      <div v-if="sessionController">
+        <span v-for="i in sessionController.failedCount" :key="i" class="text-h5">•</span>
+      </div>
+    </template>
 
     <!--
       todo: reinstate tag editing at session-time ?
@@ -585,9 +587,21 @@ a {
   text-decoration: underline;
 }
 
+.StudySession {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
 .card-transition-container {
   position: relative;
   overflow: hidden;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 /* Preset: component-fade (default) — simple opacity crossfade, use with mode="out-in" */
@@ -600,24 +614,49 @@ a {
   opacity: 0;
 }
 
-/* Preset: card-slide — simultaneous slide left-out / right-in, use with mode="default" */
+/* Preset: card-slide — backOutLeft exit / slide-in-right enter, use with mode="default" */
 .card-slide-leave-active {
-  transition: transform 200ms ease-in, opacity 200ms ease-in;
+  animation: cardBackOutLeft 400ms cubic-bezier(0.4, 0, 0.7, 0.2) both;
   position: absolute;
-  width: 100%;
-  top: 0;
+  top: 50%;
   left: 0;
+  right: 0;
+  will-change: transform, opacity;
+  pointer-events: none;
+}
+.card-slide-leave-active * {
+  animation-play-state: paused !important;
+  transition: none !important;
 }
 .card-slide-enter-active {
-  transition: transform 200ms ease-out, opacity 150ms ease-out;
+  animation: cardSlideInRight 250ms ease-out 100ms both;
+  will-change: transform, opacity;
 }
-.card-slide-leave-to {
-  transform: translateX(-100%);
-  opacity: 0.2;
+
+@keyframes cardBackOutLeft {
+  0% {
+    transform: translateX(0) translateY(-50%) scale(1);
+    opacity: 1;
+  }
+  40% {
+    transform: translateX(0) translateY(-50%) scale(0.88);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateX(-100%) translateY(-50%) scale(0.88);
+    opacity: 0;
+  }
 }
-.card-slide-enter-from {
-  transform: translateX(100%);
-  opacity: 0.6;
+
+@keyframes cardSlideInRight {
+  0% {
+    transform: translateX(60%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 /* Preset: card-scale — scale-down exit / gentle overshoot enter, use with mode="out-in" */
