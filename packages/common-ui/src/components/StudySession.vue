@@ -21,8 +21,8 @@
       <heat-map :activity-records-getter="() => user.getActivityRecords()" />
     </div>
 
-    <div v-else ref="shadowWrapper">
-      <transition name="component-fade" mode="out-in">
+    <div v-else ref="shadowWrapper" class="card-transition-container">
+      <transition :name="transitionName" :mode="transitionMode">
         <card-viewer
           ref="cardViewer"
           :key="cardID"
@@ -101,7 +101,7 @@ import {
 } from '@vue-skuilder/db';
 import confetti from 'canvas-confetti';
 
-import { StudySessionConfig } from './StudySession.types';
+import { StudySessionConfig, CardTransitionPreset, CardTransitionMode } from './StudySession.types';
 
 interface StudyRefs {
   shadowWrapper: HTMLDivElement;
@@ -157,6 +157,14 @@ export default defineComponent({
     hideFooter: {
       type: Boolean,
       default: false,
+    },
+    transitionName: {
+      type: String as PropType<CardTransitionPreset | string>,
+      default: 'component-fade',
+    },
+    transitionMode: {
+      type: String as PropType<CardTransitionMode>,
+      default: 'out-in',
     },
   },
 
@@ -577,12 +585,54 @@ a {
   text-decoration: underline;
 }
 
+.card-transition-container {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Preset: component-fade (default) — simple opacity crossfade, use with mode="out-in" */
 .component-fade-enter-active,
 .component-fade-leave-active {
   transition: opacity 0.2s ease;
 }
 .component-fade-enter-from,
 .component-fade-leave-to {
+  opacity: 0;
+}
+
+/* Preset: card-slide — simultaneous slide left-out / right-in, use with mode="default" */
+.card-slide-leave-active {
+  transition: transform 200ms ease-in, opacity 200ms ease-in;
+  position: absolute;
+  width: 100%;
+  top: 0;
+  left: 0;
+}
+.card-slide-enter-active {
+  transition: transform 200ms ease-out, opacity 150ms ease-out;
+}
+.card-slide-leave-to {
+  transform: translateX(-100%);
+  opacity: 0.2;
+}
+.card-slide-enter-from {
+  transform: translateX(100%);
+  opacity: 0.6;
+}
+
+/* Preset: card-scale — scale-down exit / gentle overshoot enter, use with mode="out-in" */
+.card-scale-leave-active {
+  transition: transform 150ms ease-in, opacity 150ms ease-in;
+}
+.card-scale-enter-active {
+  transition: transform 200ms cubic-bezier(0.34, 1.4, 0.64, 1), opacity 150ms ease-out;
+}
+.card-scale-leave-to {
+  transform: scale(0.92);
+  opacity: 0;
+}
+.card-scale-enter-from {
+  transform: scale(1.03);
   opacity: 0;
 }
 
