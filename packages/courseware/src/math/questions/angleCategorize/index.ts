@@ -1,7 +1,7 @@
-import _ from 'lodash';
 import { Question } from '@vue-skuilder/common-ui';
 import { RadioMultipleChoiceAnswer, FieldDefinition } from '@vue-skuilder/common';
 import { ViewData, DataShapeName, FieldType, Status } from '@vue-skuilder/common';
+import { shuffle } from '../../utility';
 import AngleCategorizeV from './angleCategorize.vue';
 
 const validator = {
@@ -59,7 +59,7 @@ export class AngleCategorize extends Question {
   constructor(data: ViewData[]) {
     super(data);
     this.angleCategory = data[0].Category as AngleCategories;
-    this.answers = _.shuffle([
+    this.answers = shuffle([
       AngleCategories.ACUTE,
       AngleCategories.OBTUSE,
       AngleCategories.REFLEX,

@@ -1,4 +1,3 @@
-import { isInteger } from 'lodash';
 import { Validator, Status } from '@vue-skuilder/common';
 
 /**
@@ -8,6 +7,18 @@ import { Validator, Status } from '@vue-skuilder/common';
  */
 export function randomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+/**
+ * Fisher-Yates shuffle. Returns a new array with elements in random order.
+ */
+export function shuffle<T>(arr: T[]): T[] {
+  const result = [...arr];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
 }
 
 /**
@@ -34,7 +45,7 @@ export function intValidator(min: number, max: number): Validator {
   return {
     instructions: `This input must be an integer between ${min} and ${max}, inclusive.`,
     test: (value: string) => {
-      if (isInteger(value)) {
+      if (Number.isInteger(Number(value))) {
         return {
           status: Status.ok,
           msg: '',

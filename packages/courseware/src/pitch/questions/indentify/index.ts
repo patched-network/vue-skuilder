@@ -2,7 +2,7 @@ import { Question } from '@vue-skuilder/common-ui';
 import { DataShape, FieldDefinition } from '@vue-skuilder/common';
 import { ViewData, DataShapeName, FieldType, Status, Answer } from '@vue-skuilder/common';
 import TextBox from './textBox.vue';
-import _ from 'lodash';
+import { shuffle } from '@courseware/math/utility';
 
 enum Chroma {
   A = 'A',
@@ -67,7 +67,7 @@ export class ChromaQuestion extends Question {
   }
 
   public get choiceList(): string[] {
-    return _.shuffle([this.chroma.toString(), 'test', 'options', 'are', 'fun']);
+    return shuffle([this.chroma.toString(), 'test', 'options', 'are', 'fun']);
   }
 
   public isCorrect(answer: Answer): boolean {
