@@ -400,12 +400,10 @@ export default defineComponent({
       // DEBUG: Added logging to track hanging issue - can be removed if issue resolved
       // console.log(`[StudySession] About to call logCardRecord...`);
       
-      let cardHistory;
-      try { 
-        cardHistory = this.logCardRecord(r);
-      } catch (e: unknown) {
-        console.log(`Caught ${e} during putCardHistory...`)
-      }
+      const cardHistory = this.logCardRecord(r).catch((e: unknown) => {
+        console.error(`[StudySession] putCardRecord failed:`, e);
+        throw e;
+      });
       // console.log(`[StudySession] logCardRecord called, cardHistory promise created...`);
 
       // Get view constraints for response processing
