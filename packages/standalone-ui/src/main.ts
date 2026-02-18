@@ -28,7 +28,7 @@ import { allCourseWare } from '@vue-skuilder/courseware';
 import { exampleCourse } from './questions/exampleCourse';
 
 // Add the example course to the allCourseWare singleton
-allCourseWare.courses.push(exampleCourse);
+allCourseWare.addCourse(exampleCourse);
 
 // theme configuration
 import config from '../skuilder.config.json';
