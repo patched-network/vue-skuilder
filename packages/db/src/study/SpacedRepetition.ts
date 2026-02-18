@@ -34,8 +34,10 @@ function newQuestionInterval(user: DocumentUpdater, cardHistory: CardHistory<Que
   if (lastInterval > cardHistory.bestInterval) {
     cardHistory.bestInterval = lastInterval;
     // update bestInterval on cardHistory in db
-    void user.update<CardHistory<QuestionRecord>>(cardHistory._id, {
+    user.update<CardHistory<QuestionRecord>>(cardHistory._id, {
       bestInterval: lastInterval,
+    }).catch((e) => {
+      logger.warn(`[SpacedRepetition] Failed to update bestInterval for ${cardHistory._id}: ${e?.message ?? e}`);
     });
   }
 
