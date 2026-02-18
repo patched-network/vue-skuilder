@@ -88,30 +88,41 @@ export default class ELONavigator extends ContentNavigator implements CardGenera
     const cardIds = newCards.map((c) => c.cardID);
     const cardEloData = await this.course.getCardEloData(cardIds);
 
-    // Score new cards by ELO distance
+    // Score new cards by ELO distance, then apply weighted sampling without
+    // replacement using the Efraimidis-Spirakis (A-Res) algorithm:
+    //
+    //   key = U ^ (1 / rawScore)   where U ~ Uniform(0, 1)
+    //
+    // Sorting by key descending produces a weighted random sample: high-score
+    // cards are still preferred, but cards with equal scores are shuffled
+    // uniformly rather than deterministically. This prevents the same failed
+    // cards from looping back every session when many cards share similar ELO.
+    //
+    // Edge case: rawScore=0 → key=0, never selected (correct exclusion).
     const scored: WeightedCard[] = newCards.map((c, i) => {
       const cardElo = cardEloData[i]?.global?.score ?? 1000;
       const distance = Math.abs(cardElo - userGlobalElo);
-      const score = Math.max(0, 1 - distance / 500);
+      const rawScore = Math.max(0, 1 - distance / 500);
+      const samplingKey = rawScore > 0 ? Math.random() ** (1 / rawScore) : 0;
 
       return {
         cardId: c.cardID,
         courseId: c.courseID,
-        score,
+        score: samplingKey,
         provenance: [
           {
             strategy: 'elo',
             strategyName: this.strategyName || this.name,
             strategyId: this.strategyId || 'NAVIGATION_STRATEGY-ELO-default',
             action: 'generated',
-            score,
-            reason: `ELO distance ${Math.round(distance)} (card: ${Math.round(cardElo)}, user: ${Math.round(userGlobalElo)}), new card`,
+            score: samplingKey,
+            reason: `ELO distance ${Math.round(distance)} (card: ${Math.round(cardElo)}, user: ${Math.round(userGlobalElo)}), raw ${rawScore.toFixed(3)}, key ${samplingKey.toFixed(3)}`,
           },
         ],
       };
     });
 
-    // Sort by score descending
+    // Sort by sampling key descending (weighted sample without replacement)
     scored.sort((a, b) => b.score - a.score);
 
     const result = scored.slice(0, limit);
