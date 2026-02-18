@@ -28,6 +28,7 @@ export default defineConfig({
         '@vue-skuilder/db',
         '@vue-skuilder/common',
         '@vue-skuilder/common-ui',
+        '@vue-skuilder/courseware',
       ],
       output: {
         // Global variables to use in UMD build for externalized deps
@@ -39,6 +40,7 @@ export default defineConfig({
           '@vue-skuilder/db': 'VueSkuilderDb',
           '@vue-skuilder/common': 'VueSkuilderCommon',
           '@vue-skuilder/common-ui': 'VueSkuilderCommonUI',
+          '@vue-skuilder/courseware': 'VueSkuilderCourseWare',
           sourcemap: true,
         },
         // Preserve CSS in the output bundles

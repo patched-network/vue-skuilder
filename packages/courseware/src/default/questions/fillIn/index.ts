@@ -1,9 +1,8 @@
 import { Question, splitByDelimiters, containsComponent, isInlineComponent } from '@vue-skuilder/common-ui';
 import { Answer, RadioMultipleChoiceAnswer } from '@vue-skuilder/common';
 import { Validator, ViewData } from '@vue-skuilder/common';
-import { randomInt } from '@courseware/math/utility';
+import { randomInt, shuffle } from '@courseware/math/utility';
 import { Status } from '@vue-skuilder/common';
-import _ from 'lodash';
 import { Tokens } from 'marked';
 import FillInView from './fillIn.vue';
 import { BlanksCardDataShapes } from './shapes.js';
@@ -133,7 +132,7 @@ export class BlanksCard extends Question {
 
       return {
         answers,
-        options: _.shuffle(options),
+        options: shuffle(options),
       };
     } else {
       return {
