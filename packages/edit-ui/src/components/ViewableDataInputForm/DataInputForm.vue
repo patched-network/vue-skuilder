@@ -90,7 +90,7 @@ import { alertUser } from '@vue-skuilder/common-ui';
 import { allCourseWare, AllCourseWare } from '@vue-skuilder/courseware';
 import { getDataLayer, CourseDBInterface } from '@vue-skuilder/db';
 import { FieldType, Status, CourseConfig, NameSpacer, ShapeDescriptor } from '@vue-skuilder/common';
-import _ from 'lodash';
+
 import IntegerInput from './FieldInputs/IntegerInput.vue';
 import MarkdownInput from './FieldInputs/MarkdownInput.vue';
 import MediaDragDropUploader from './FieldInputs/MediaDragDropUploader.vue';
@@ -374,7 +374,7 @@ export default defineComponent({
 
             (o[fKey]() as Array<unknown>).forEach((fcnOutput) => {
               let copy: StringIndexable = {};
-              copy = _.cloneDeep(o);
+              copy = structuredClone(o);
               copy[fKey] = fcnOutput;
 
               console.log(`[DataInputForm] Replaced Copy: ${JSON.stringify(copy)}`);

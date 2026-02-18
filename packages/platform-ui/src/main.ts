@@ -27,8 +27,9 @@ import { initializeDataLayer } from '@vue-skuilder/db';
   const pinia = createPinia();
   const app = createApp(App);
 
-  // Dynamically import { allCourseWare }
+  // Dynamically import { allCourseWare } and load all course modules
   const { allCourseWare: Courses } = await import('@vue-skuilder/courseware');
+  await Courses.init();
 
   // Register all view components globally
   const viewComponents = Courses.allViewsRaw();

@@ -23,7 +23,7 @@
 <script lang="ts">
 import { defineAsyncComponent, defineComponent, ref, computed, PropType, onMounted, onUnmounted, watch } from 'vue';
 import { useViewable, useQuestionView, AudioAutoPlayer, RadioMultipleChoice } from '@vue-skuilder/common-ui';
-import _ from 'lodash';
+import { shuffle } from '@courseware/math/utility';
 import { BlanksCard } from './index';
 import gradeSpellingAttempt from './blanksCorrection';
 import { ViewData } from '@vue-skuilder/common';
@@ -80,7 +80,7 @@ export default defineComponent({
 
         if (questionUtils.question.value.options) {
           const truncatedList = getTruncatedList();
-          shuffledOptions.value = _.shuffle(truncatedList);
+          shuffledOptions.value = shuffle(truncatedList);
         }
       } catch (error) {
         viewableUtils.logger.error('Failed to initialize question:', error);
@@ -177,7 +177,7 @@ export default defineComponent({
       truncatedList.push(question.value.answers![Math.floor(Math.random() * question.value.answers!.length)]);
 
       // construct a list of all non-answers
-      let distractors: string[] = _.shuffle(
+      let distractors: string[] = shuffle(
         question.value.options.filter((o: string) => question.value.answers?.indexOf(o) === -1)
       );
 
@@ -217,7 +217,7 @@ export default defineComponent({
           // Update shuffled options whenever question changes
           if (questionUtils.question.value?.options) {
             const truncatedList = getTruncatedList();
-            shuffledOptions.value = _.shuffle(truncatedList);
+            shuffledOptions.value = shuffle(truncatedList);
           }
         } catch (error) {
           viewableUtils.logger.error('Failed to initialize/update question:', error);
