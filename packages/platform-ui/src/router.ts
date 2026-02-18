@@ -1,28 +1,33 @@
-import { MarkdownRenderer, getCurrentUser } from '@vue-skuilder/common-ui';
+import { getCurrentUser } from '@vue-skuilder/common-ui';
 import { useAuthRedirectStore } from './stores/useAuthRedirectStore';
 import { isRegistrationEnabled } from './utils/registrationGuard';
 import { createRouter, createWebHistory } from 'vue-router';
-import ClassroomCtrlPanel from './components/Classrooms/ClassroomCtrlPanel.vue';
-import JoinCode from './components/Classrooms/JoinCode.vue';
-import CourseRouter from './components/Courses/CourseRouter.vue';
-import ELOModerator from './components/Courses/EloModeration.vue';
-import TagInformation from './components/Courses/TagInformation.vue';
-import { CourseEditor } from '@vue-skuilder/edit-ui';
-import Stats from './components/User/UserStats.vue';
-import About from './views/About.vue';
-import AdminDashboard from './views/AdminDashboard.vue';
-import Classrooms from './views/Classrooms.vue';
-import Courses from './views/Courses.vue';
+
+// Eager: landing and auth-flow views (needed for first paint / common entry)
 import Home from './views/Home.vue';
 import Login from './views/Login.vue';
-import ReleaseNotes from './views/ReleaseNotes.vue';
-import VerifyEmailView from './views/VerifyEmail.vue';
-import RequestPasswordResetView from './views/RequestPasswordReset.vue';
-import ResetPasswordView from './views/ResetPassword.vue';
 import SignUp from './views/SignUp.vue';
-import Study from './views/Study.vue';
-import User from './views/User.vue';
-import DataInputFormTester from './dev/DataInputFormTester.vue';
+
+// Lazy: everything else — each becomes its own chunk
+const About = () => import('./views/About.vue');
+const AdminDashboard = () => import('./views/AdminDashboard.vue');
+const Classrooms = () => import('./views/Classrooms.vue');
+const ClassroomCtrlPanel = () => import('./components/Classrooms/ClassroomCtrlPanel.vue');
+const JoinCode = () => import('./components/Classrooms/JoinCode.vue');
+const Courses = () => import('./views/Courses.vue');
+const CourseRouter = () => import('./components/Courses/CourseRouter.vue');
+const CourseEditor = () => import('@vue-skuilder/edit-ui').then((m) => m.CourseEditor);
+const ELOModerator = () => import('./components/Courses/EloModeration.vue');
+const TagInformation = () => import('./components/Courses/TagInformation.vue');
+const Stats = () => import('./components/User/UserStats.vue');
+const Study = () => import('./views/Study.vue');
+const User = () => import('./views/User.vue');
+const ReleaseNotes = () => import('./views/ReleaseNotes.vue');
+const VerifyEmailView = () => import('./views/VerifyEmail.vue');
+const RequestPasswordResetView = () => import('./views/RequestPasswordReset.vue');
+const ResetPasswordView = () => import('./views/ResetPassword.vue');
+const MarkdownRenderer = () => import('@vue-skuilder/common-ui').then((m) => m.MarkdownRenderer);
+const DataInputFormTester = () => import('./dev/DataInputFormTester.vue');
 
 const router = createRouter({
   history: createWebHistory(),
