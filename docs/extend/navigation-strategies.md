@@ -89,15 +89,34 @@ export class RecentFailuresGenerator extends ContentNavigator implements CardGen
 
 ### Registering a Generator
 
-Register your generator in `NavigatorRoles`:
+Consumer-defined generators are registered at app startup via the public API:
 
 ```typescript
-// In packages/db/src/core/navigators/index.ts
-export const NavigatorRoles: Record<string, NavigatorRole> = {
-  // ... existing entries
-  recentFailures: NavigatorRole.GENERATOR,
-};
+import { registerNavigator, NavigatorRole } from '@vue-skuilder/db';
+
+// At app init, before any study session:
+registerNavigator('recentFailures', RecentFailuresGenerator, NavigatorRole.GENERATOR);
 ```
+
+The `role` parameter is **required** for consumer-defined strategies — without
+it, `PipelineAssembler` cannot classify the strategy into the pipeline and will
+skip it with a warning.
+
+A corresponding `NAVIGATION_STRATEGY` document must exist in CouchDB:
+
+```json
+{
+  "_id": "NAVIGATION_STRATEGY-recent-failures",
+  "implementingClass": "recentFailures",
+  "name": "Recent Failures Generator",
+  "serializedData": "{}"
+}
+```
+
+> **Framework-internal strategies** are instead added directly to the
+> `NavigatorRoles` record in `packages/db/src/core/navigators/index.ts`. Their
+> roles are resolved from the hardcoded enum, so the `role` parameter is
+> optional when calling `registerNavigator`.
 
 ## Creating a Filter
 
@@ -180,12 +199,15 @@ export class TimeSinceTagFilter extends ContentNavigator implements CardFilter {
 ### Registering a Filter
 
 ```typescript
-// In packages/db/src/core/navigators/index.ts
-export const NavigatorRoles: Record<string, NavigatorRole> = {
-  // ... existing entries
-  timeSinceTag: NavigatorRole.FILTER,
-};
+import { registerNavigator, NavigatorRole } from '@vue-skuilder/db';
+
+// At app init, before any study session:
+registerNavigator('timeSinceTag', TimeSinceTagFilter, NavigatorRole.FILTER);
 ```
+
+As with generators, a `NAVIGATION_STRATEGY` document with matching
+`implementingClass` must exist in CouchDB for the filter to be included in
+pipeline assembly.
 
 ## Strategy Configuration
 
@@ -250,10 +272,44 @@ const state = await this.getStrategyState<MyStateType>();
 await this.putStrategyState({ ...state, lastRun: new Date().toISOString() });
 ```
 
-State is stored per-user, per-course, per-strategy. Useful for:
+State is stored per-user, per-course, per-strategy at:
+```
+STRATEGY_STATE::{courseId}::{strategyKey}
+```
+
+The `strategyKey` defaults to the class constructor name but can be overridden.
+Useful for:
 - User preferences
 - Temporal tracking ("last time tag X was introduced")
 - Learned patterns
+
+### Sharing State with Consumer Application Code
+
+Consumer-defined strategies can share state with other parts of the consumer
+app by overriding `strategyKey` to match a key used elsewhere:
+
+```typescript
+class LetterGatingFilter extends ContentNavigator implements CardFilter {
+  // Read the same document that the app's userState service writes
+  protected get strategyKey(): string {
+    return 'LetterProgression';
+  }
+
+  async transform(cards: WeightedCard[], context: FilterContext): Promise<WeightedCard[]> {
+    const progression = await this.getStrategyState<LetterProgressionState>();
+    const unlocked = new Set(progression?.unlockedLetters ?? []);
+
+    return cards.map(card => {
+      // Gate cards based on shared state...
+    });
+  }
+}
+```
+
+This enables a **single source of truth** pattern: the consumer app writes
+state via `UsrCrsDataInterface.putStrategyState(key, data)`, and the consumer
+filter reads it through the same key. Both resolve to the same PouchDB
+document, so there is no drift between UI state and navigation decisions.
 
 ## Evolutionary Orchestration
 
