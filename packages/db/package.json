@@ -5,6 +5,7 @@
     "access": "public"
   },
   "version": "0.1.29",
+  "sideEffects": false,
   "description": "Database layer for vue-skuilder",
   "main": "dist/index.js",
   "module": "dist/index.mjs",

@@ -4,6 +4,7 @@
     "access": "public"
   },
   "version": "0.1.29",
+  "sideEffects": false,
   "type": "module",
   "main": "dist/index.js",
   "module": "dist/index.mjs",

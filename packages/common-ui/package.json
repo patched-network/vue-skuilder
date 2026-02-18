@@ -4,6 +4,7 @@
     "access": "public"
   },
   "version": "0.1.29",
+  "sideEffects": ["*.css", "*.vue"],
   "main": "./dist/common-ui.umd.js",
   "module": "./dist/common-ui.es.js",
   "types": "./dist/index.d.ts",
