@@ -4865,13 +4865,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/lodash@npm:^4.14.136, @types/lodash@npm:^4.14.195":
-  version: 4.17.16
-  resolution: "@types/lodash@npm:4.17.16"
-  checksum: 10c0/cf017901b8ab1d7aabc86d5189d9288f4f99f19a75caf020c0e2c77b8d4cead4db0d0b842d009b029339f92399f49f34377dd7c2721053388f251778b4c23534
-  languageName: node
-  linkType: hard
-
 "@types/markdown-it@npm:^14.1.2":
   version: 14.1.2
   resolution: "@types/markdown-it@npm:14.1.2"
@@ -5956,7 +5949,6 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@vue-skuilder/courseware@workspace:packages/courseware"
   dependencies:
-    "@types/lodash": "npm:^4.14.195"
     "@typescript-eslint/eslint-plugin": "npm:^8.48.1"
     "@typescript-eslint/parser": "npm:^8.48.1"
     "@vitejs/plugin-vue": "npm:^6.0.0"
@@ -5968,7 +5960,6 @@ __metadata:
     eslint-config-prettier: "npm:^10.0.2"
     eslint-plugin-vue: "npm:^9.32.0"
     jsdom: "npm:^26.0.0"
-    lodash: "npm:^4.17.21"
     moment: "npm:^2.29.4"
     paper: "npm:^0.12.3"
     typescript: "npm:^5.9.3"
@@ -6126,7 +6117,6 @@ __metadata:
     "@types/canvas-confetti": "npm:^1.9.0"
     "@types/cypress": "npm:1.1.6"
     "@types/dom-mediacapture-record": "npm:^1.0.9"
-    "@types/lodash": "npm:^4.14.136"
     "@types/mousetrap": "npm:^1.6.8"
     "@types/wavesurfer.js": "npm:^5.1.0"
     "@types/webmidi": "npm:^2.0.4"
@@ -6160,7 +6150,6 @@ __metadata:
     globals: "npm:^15.14.0"
     identity-obj-proxy: "npm:^3.0.0"
     jsdom: "npm:^26.0.0"
-    lodash: "npm:^4.17.21"
     moment: "npm:^2.29.4"
     mousetrap: "npm:^1.6.5"
     msr: "npm:^1.3.4"

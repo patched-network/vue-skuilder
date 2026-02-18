@@ -4,7 +4,10 @@
     "access": "public"
   },
   "version": "0.1.29",
-  "sideEffects": ["*.css", "*.vue"],
+  "sideEffects": [
+    "*.css",
+    "*.vue"
+  ],
   "type": "module",
   "main": "./dist/index.cjs.js",
   "module": "./dist/index.mjs",
