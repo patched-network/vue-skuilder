@@ -1,5 +1,4 @@
 import { Displayable, ViewComponent } from '@vue-skuilder/common-ui';
-import { BlanksCard } from './default/questions/fillIn/';
 
 export class CourseWare {
   public get questions(): Array<typeof Displayable> {
@@ -38,11 +37,9 @@ export class CourseWare {
   public readonly name: string;
   private readonly questionList: Array<typeof Displayable>;
 
-  constructor(name: string, questionList: Array<typeof Displayable>) {
+  constructor(name: string, questionList: Array<typeof Displayable>, baseTypes?: Array<typeof Displayable>) {
     this.name = name;
-    this.questionList = questionList;
-
-    this.questionList = this.questionList.concat(this.getBaseQTypes());
+    this.questionList = baseTypes ? questionList.concat(baseTypes) : questionList;
   }
 
   public getQuestion(name: string): typeof Displayable | undefined {
@@ -63,10 +60,15 @@ export class CourseWare {
     });
   }
 
-  public getBaseQTypes(): Array<typeof Displayable> {
-    // #145 todo: return [BasicCard];
-    // should: get 'default' course displayable types
-    // return defaultCourse.getBaseQTypes();
-    return [BlanksCard];
+  /**
+   * Inject shared question types (e.g. BlanksCard) into this course.
+   * Called by AllCourseWare after construction to avoid circular imports.
+   */
+  public injectBaseTypes(types: Array<typeof Displayable>): void {
+    for (const t of types) {
+      if (!this.questionList.includes(t)) {
+        this.questionList.push(t);
+      }
+    }
   }
 }

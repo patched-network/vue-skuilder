@@ -1,6 +1,7 @@
 import { markRaw } from 'vue';
 import { CourseWare } from './CourseWare';
 import { Displayable, Question, ViewComponent } from '@vue-skuilder/common-ui';
+import { BlanksCard as _BlanksCard } from './default/questions/fillIn';
 import {
   DataShape,
   NameSpacer,
@@ -108,6 +109,11 @@ export class AllCourseWare {
 
   constructor(courses: CourseWare[]) {
     this.courseWareList = courses;
+
+    // Inject BlanksCard as a base question type into every course
+    for (const cw of this.courseWareList) {
+      cw.injectBaseTypes([_BlanksCard]);
+    }
   }
 
   public getCourseWare(name: string): CourseWare | undefined {
