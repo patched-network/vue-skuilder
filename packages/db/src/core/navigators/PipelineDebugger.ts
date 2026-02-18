@@ -1,4 +1,12 @@
 import type { WeightedCard, StrategyContribution } from './index';
+import {
+  getRegisteredNavigatorNames,
+  getRegisteredNavigatorRole,
+  NavigatorRoles,
+  type Navigators,
+  isGenerator,
+  isFilter,
+} from './index';
 import { logger } from '../../util/logger';
 
 // ============================================================================
@@ -382,6 +390,76 @@ export const pipelineDebugAPI = {
   },
 
   /**
+   * Show the navigator registry: all registered classes and their roles.
+   *
+   * Useful for verifying that consumer-defined navigators were registered
+   * before pipeline assembly.
+   */
+  showRegistry(): void {
+    const names = getRegisteredNavigatorNames();
+    if (names.length === 0) {
+      logger.info('[Pipeline Debug] Navigator registry is empty.');
+      return;
+    }
+
+    // eslint-disable-next-line no-console
+    console.group('📦 Navigator Registry');
+    // eslint-disable-next-line no-console
+    console.table(
+      names.map((name) => {
+        const registryRole = getRegisteredNavigatorRole(name);
+        const builtinRole = NavigatorRoles[name as Navigators];
+        const effectiveRole = builtinRole || registryRole || '⚠️ NONE';
+        const source = builtinRole ? 'built-in' : registryRole ? 'consumer' : 'unclassified';
+        return {
+          name,
+          role: effectiveRole,
+          source,
+          isGenerator: isGenerator(name),
+          isFilter: isFilter(name),
+        };
+      })
+    );
+    // eslint-disable-next-line no-console
+    console.groupEnd();
+  },
+
+  /**
+   * Show strategy documents from the last pipeline run and how they mapped
+   * to the registry.
+   *
+   * If no runs are captured yet, falls back to showing just the registry.
+   */
+  showStrategies(): void {
+    this.showRegistry();
+
+    if (runHistory.length === 0) {
+      logger.info('[Pipeline Debug] No pipeline runs captured yet — cannot show strategy doc mapping.');
+      return;
+    }
+
+    const run = runHistory[0];
+    // eslint-disable-next-line no-console
+    console.group('🔌 Pipeline Strategy Mapping (last run)');
+    logger.info(`Generator: ${run.generatorName}`);
+    if (run.generators && run.generators.length > 0) {
+      for (const g of run.generators) {
+        logger.info(`  📥 ${g.name}: ${g.cardCount} cards (${g.newCount} new, ${g.reviewCount} reviews)`);
+      }
+    }
+    if (run.filters.length > 0) {
+      logger.info('Filters:');
+      for (const f of run.filters) {
+        logger.info(`  🔸 ${f.name}: ↑${f.boosted} ↓${f.penalized} =${f.passed} ✕${f.removed}`);
+      }
+    } else {
+      logger.info('Filters: (none)');
+    }
+    // eslint-disable-next-line no-console
+    console.groupEnd();
+  },
+
+  /**
    * Show help.
    */
   help(): void {
@@ -393,6 +471,8 @@ Commands:
   .showRun(id|index)     Show summary of a specific run (by index or ID suffix)
   .showCard(cardId)      Show provenance trail for a specific card
   .explainReviews()      Analyze why reviews were/weren't selected
+  .showRegistry()        Show navigator registry (classes + roles)
+  .showStrategies()      Show registry + strategy mapping from last run
   .listRuns()            List all captured runs in table format
   .export()              Export run history as JSON for bug reports
   .clear()               Clear run history
