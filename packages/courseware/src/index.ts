@@ -1,6 +1,7 @@
 import { markRaw } from 'vue';
 import { CourseWare } from './CourseWare';
 import { Displayable, Question, ViewComponent } from '@vue-skuilder/common-ui';
+import { BlanksCard as _BlanksCard } from './default/questions/fillIn';
 import {
   DataShape,
   NameSpacer,
@@ -18,6 +19,7 @@ export { useViewable } from '@vue-skuilder/common-ui';
 import { useQuestionView as _useQuestionView } from '@vue-skuilder/common-ui';
 export const useQuestionView = _useQuestionView as typeof _useQuestionView;
 
+// Eager: only the lightweight default course (provides BlanksCard base type)
 import defaultCourse from './default';
 
 /**
@@ -68,27 +70,24 @@ export type { ViewDescriptor };
  */
 export type { ShapeDescriptor };
 
-import chess from './chess';
-import french from './french';
-import math from './math';
-import piano from './piano';
-import pitch from './pitch';
-import sightSing from './sightsing';
-import typing from './typing';
-import wordWork from './word-work';
+// Lazy course loaders — each becomes its own chunk at build time
+const courseLoaders: Record<string, () => Promise<{ default: CourseWare }>> = {
+  chess: () => import('./chess'),
+  french: () => import('./french'),
+  math: () => import('./math'),
+  piano: () => import('./piano'),
+  pitch: () => import('./pitch'),
+  sightSing: () => import('./sightsing'),
+  typing: () => import('./typing'),
+  wordWork: () => import('./word-work'),
+};
 
-export { default as chess } from './chess';
-export { default as french } from './french';
-export { default as math } from './math';
-export { default as piano } from './piano';
-export { default as pitch } from './pitch';
-export { default as sightSing } from './sightsing';
-export { default as typing } from './typing';
-export { default as wordWork } from './word-work';
-
+// Named exports from default course (lightweight, eagerly available)
 export { BlanksCard, BlanksCardDataShapes } from './default/questions/fillIn';
 export { default as gradeSpellingAttempt } from './default/questions/fillIn/blanksCorrection';
 
+// Piano utility re-exports (used by edit-ui MidiInput, platform-ui CourseInformationWrapper)
+// These are direct file imports — they do NOT pull in the piano course index
 export {
   default as SkMidi,
   eventsToSyllableSequence,
@@ -101,6 +100,7 @@ export { default as SyllableSeqVis } from './piano/utility/SyllableSeqVis.vue';
 
 export class AllCourseWare {
   private readonly courseWareList: CourseWare[];
+  private _initialized = false;
 
   public get courses(): CourseWare[] {
     return this.courseWareList;
@@ -108,6 +108,48 @@ export class AllCourseWare {
 
   constructor(courses: CourseWare[]) {
     this.courseWareList = courses;
+
+    // Inject BlanksCard as a base question type into eagerly-loaded courses
+    for (const cw of this.courseWareList) {
+      cw.injectBaseTypes([_BlanksCard]);
+    }
+  }
+
+  /**
+   * Load all course modules. Must be called (and awaited) before
+   * using getView(), allViews(), getCourseWare(), etc.
+   *
+   * Safe to call multiple times — subsequent calls are no-ops.
+   */
+  public async init(): Promise<void> {
+    if (this._initialized) return;
+
+    const modules = await Promise.all(
+      Object.values(courseLoaders).map((loader) => loader())
+    );
+
+    for (const mod of modules) {
+      const cw = mod.default;
+      cw.injectBaseTypes([_BlanksCard]);
+      this.courseWareList.push(cw);
+    }
+
+    this._initialized = true;
+  }
+
+  public get initialized(): boolean {
+    return this._initialized;
+  }
+
+  /**
+   * Add a course to the registry (e.g. a custom course from standalone-ui).
+   * Automatically injects BlanksCard base types.
+   */
+  public addCourse(course: CourseWare): void {
+    course.injectBaseTypes([_BlanksCard]);
+    this.courseWareList.push(course);
+    // Invalidate cached views so the new course's views are included
+    this.cachedRawViews = null;
   }
 
   public getCourseWare(name: string): CourseWare | undefined {
@@ -271,14 +313,8 @@ export class AllCourseWare {
   }
 }
 
+// Singleton: starts with only the lightweight default course.
+// Consumers MUST call `await allCourseWare.init()` to load all courses.
 export const allCourseWare: AllCourseWare = new AllCourseWare([
-  math,
-  wordWork,
-  french,
   defaultCourse,
-  piano,
-  pitch,
-  sightSing,
-  chess,
-  typing,
 ]);

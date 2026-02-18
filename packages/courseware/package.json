@@ -4,6 +4,10 @@
     "access": "public"
   },
   "version": "0.1.29",
+  "sideEffects": [
+    "*.css",
+    "*.vue"
+  ],
   "type": "module",
   "main": "./dist/index.cjs.js",
   "module": "./dist/index.mjs",
@@ -46,13 +50,11 @@
     "@vue-skuilder/common": "workspace:*",
     "@vue-skuilder/common-ui": "workspace:*",
     "@vue-skuilder/db": "workspace:*",
-    "lodash": "^4.17.21",
     "moment": "^2.29.4",
     "paper": "^0.12.3",
     "vue": "^3.5.13"
   },
   "devDependencies": {
-    "@types/lodash": "^4.14.195",
     "@typescript-eslint/eslint-plugin": "^8.48.1",
     "@typescript-eslint/parser": "^8.48.1",
     "@vitejs/plugin-vue": "^6.0.0",
