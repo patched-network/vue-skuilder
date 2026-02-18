@@ -2,6 +2,7 @@ import { CardHistory, CardRecord, QuestionRecord } from '@db/core/types/types-le
 import { areQuestionRecords } from '@db/core/util';
 import { Update } from '@db/impl/couch/updateQueue';
 import moment from 'moment';
+import { isTaggedPerformance } from '@vue-skuilder/common';
 import { logger } from '../util/logger';
 
 type Moment = moment.Moment;
@@ -39,7 +40,9 @@ function newQuestionInterval(user: DocumentUpdater, cardHistory: CardHistory<Que
   }
 
   if (currentAttempt.isCorrect) {
-    const skill = Math.min(1.0, Math.max(0.0, currentAttempt.performance as number));
+    const rawPerf = currentAttempt.performance;
+    const numericPerf = isTaggedPerformance(rawPerf) ? rawPerf._global : rawPerf;
+    const skill = Math.min(1.0, Math.max(0.0, numericPerf));
     logger.debug(`Demontrated skill: \t${skill}`);
     const interval: number = lastInterval * (0.75 + skill);
     cardHistory.lapses = getLapses(cardHistory.records);
