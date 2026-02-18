@@ -83,7 +83,7 @@
 import { defineComponent } from 'vue';
 import NewCourseDialog from '@pui/components/Courses/NewCourseDialog.vue';
 import CourseStubCard from '@pui/components/Courses/CourseStubCard.vue';
-import _ from 'lodash';
+
 import serverRequest from '../server';
 import { ServerRequestType, CourseConfig, Status } from '@vue-skuilder/common';
 import { alertUser, getCurrentUser } from '@vue-skuilder/common-ui';
@@ -117,7 +117,7 @@ export default defineComponent({
 
   computed: {
     availableCourses(): DBCourseConfig[] {
-      const availableCourses = _.without(this.existingCourses, ...this.registeredCourses);
+      const availableCourses = this.existingCourses.filter((c) => !this.registeredCourses.includes(c));
       const user = this.user?.getUsername();
 
       const viewableCourses = availableCourses.filter((course) => {
