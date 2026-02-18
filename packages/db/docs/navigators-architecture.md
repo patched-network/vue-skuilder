@@ -374,6 +374,45 @@ Set `staticWeight: true` for foundational strategies that should not be tuned:
 
 ## Creating New Strategies
 
+Strategies can be defined in two places:
+
+- **Framework-internal:** Added directly to `NavigatorRoles` in `index.ts`. Used
+  for general-purpose strategies shipped with the framework.
+- **Consumer-defined:** Registered at app startup via `registerNavigator()`.
+  Used for course-specific strategies that live in the consumer codebase.
+
+Both types participate identically in the pipeline once registered.
+
+### Registration
+
+Framework-internal strategies are listed in the hardcoded `NavigatorRoles` record.
+Consumer-defined strategies use the public `registerNavigator()` API:
+
+```typescript
+import { registerNavigator, NavigatorRole } from '@vue-skuilder/db';
+import { MyFilter } from './MyFilter';
+
+// At app init, before any study session:
+registerNavigator('myFilter', MyFilter, NavigatorRole.FILTER);
+```
+
+The third argument (`role`) is **required** for consumer-defined strategies —
+without it, `PipelineAssembler` cannot classify the strategy and will skip it
+with a warning. For framework-internal strategies the role is already in
+`NavigatorRoles`, so the argument is optional.
+
+A corresponding `NAVIGATION_STRATEGY` document must exist in CouchDB with
+`implementingClass` matching the registered name:
+
+```json
+{
+  "_id": "NAVIGATION_STRATEGY-my-filter",
+  "implementingClass": "myFilter",
+  "name": "My Filter",
+  "serializedData": "{}"
+}
+```
+
 ### Generator
 
 ```typescript
@@ -382,7 +421,7 @@ class MyGenerator extends ContentNavigator implements CardGenerator {
 
   async getWeightedCards(limit: number, context?: GeneratorContext): Promise<WeightedCard[]> {
     const candidates = await this.findCandidates(limit);
-    
+
     return candidates.map(c => ({
       cardId: c.id,
       courseId: this.course.getCourseID(),
@@ -400,8 +439,6 @@ class MyGenerator extends ContentNavigator implements CardGenerator {
 }
 ```
 
-Register in `NavigatorRoles` as `NavigatorRole.GENERATOR`.
-
 ### Filter
 
 ```typescript
@@ -413,7 +450,7 @@ class MyFilter extends ContentNavigator implements CardFilter {
       const multiplier = this.computeMultiplier(card, context);
       const newScore = card.score * multiplier;
       const action = multiplier < 1 ? 'penalized' : multiplier > 1 ? 'boosted' : 'passed';
-      
+
       return {
         ...card,
         score: newScore,
@@ -434,7 +471,29 @@ class MyFilter extends ContentNavigator implements CardFilter {
 }
 ```
 
-Register in `NavigatorRoles` as `NavigatorRole.FILTER`.
+### Accessing Strategy State from Consumer Filters
+
+Consumer strategies can share state with other parts of the consumer app via
+`getStrategyState()` / `putStrategyState()`. Override `strategyKey` to read
+an existing state document:
+
+```typescript
+class MyFilter extends ContentNavigator implements CardFilter {
+  // Read the same doc that another part of the app writes
+  protected get strategyKey(): string {
+    return 'MySharedStateKey';
+  }
+
+  async transform(cards: WeightedCard[], context: FilterContext): Promise<WeightedCard[]> {
+    const state = await this.getStrategyState<MyStateType>();
+    // ... use state for filtering decisions
+  }
+}
+```
+
+This enables **single source of truth** patterns: the consumer app writes state
+via `UsrCrsDataInterface.putStrategyState()`, and the consumer filter reads it
+via the same key. No framework changes needed.
 
 ---
 

@@ -46,10 +46,20 @@ export type NavigatorConstructor = new (
 ) => ContentNavigator;
 
 /**
- * Registry mapping implementingClass names to navigator constructors.
+ * Entry in the navigator registry, storing the constructor and an optional
+ * pipeline role. The role is used by PipelineAssembler to classify
+ * consumer-registered navigators that aren't in the built-in Navigators enum.
+ */
+interface NavigatorRegistryEntry {
+  constructor: NavigatorConstructor;
+  role?: NavigatorRole;
+}
+
+/**
+ * Registry mapping implementingClass names to navigator entries.
  * Populated by registerNavigator() and used by ContentNavigator.create().
  */
-const navigatorRegistry = new Map<string, NavigatorConstructor>();
+const navigatorRegistry = new Map<string, NavigatorRegistryEntry>();
 
 /**
  * Register a navigator implementation.
@@ -57,15 +67,21 @@ const navigatorRegistry = new Map<string, NavigatorConstructor>();
  * Call this to make a navigator available for instantiation by
  * ContentNavigator.create() without relying on dynamic imports.
  *
- * @param implementingClass - The class name (e.g., 'elo', 'hierarchyDefinition')
+ * Passing a `role` is optional for built-in navigators (whose roles are in
+ * the hardcoded `NavigatorRoles` record), but **required** for consumer-
+ * defined navigators that need to participate in pipeline assembly.
+ *
+ * @param implementingClass - The class name (e.g., 'elo', 'letterGatingFilter')
  * @param constructor - The navigator class constructor
+ * @param role - Optional pipeline role (GENERATOR or FILTER)
  */
 export function registerNavigator(
   implementingClass: string,
-  constructor: NavigatorConstructor
+  constructor: NavigatorConstructor,
+  role?: NavigatorRole
 ): void {
-  navigatorRegistry.set(implementingClass, constructor);
-  logger.debug(`[NavigatorRegistry] Registered: ${implementingClass}`);
+  navigatorRegistry.set(implementingClass, { constructor, role });
+  logger.debug(`[NavigatorRegistry] Registered: ${implementingClass}${role ? ` (${role})` : ''}`);
 }
 
 /**
@@ -75,7 +91,7 @@ export function registerNavigator(
  * @returns The constructor, or undefined if not registered
  */
 export function getRegisteredNavigator(implementingClass: string): NavigatorConstructor | undefined {
-  return navigatorRegistry.get(implementingClass);
+  return navigatorRegistry.get(implementingClass)?.constructor;
 }
 
 /**
@@ -86,6 +102,16 @@ export function getRegisteredNavigator(implementingClass: string): NavigatorCons
  */
 export function hasRegisteredNavigator(implementingClass: string): boolean {
   return navigatorRegistry.has(implementingClass);
+}
+
+/**
+ * Get the registered role for a navigator, if one was provided at registration.
+ *
+ * @param implementingClass - The class name to look up
+ * @returns The role, or undefined if not registered or no role was specified
+ */
+export function getRegisteredNavigatorRole(implementingClass: string): NavigatorRole | undefined {
+  return navigatorRegistry.get(implementingClass)?.role;
 }
 
 /**
@@ -371,17 +397,24 @@ export const NavigatorRoles: Record<Navigators, NavigatorRole> = {
  * @returns true if the navigator is a generator, false otherwise
  */
 export function isGenerator(impl: string): boolean {
-  return NavigatorRoles[impl as Navigators] === NavigatorRole.GENERATOR;
+  if (NavigatorRoles[impl as Navigators] === NavigatorRole.GENERATOR) return true;
+  // Fallback: check the registry for consumer-registered navigators
+  return getRegisteredNavigatorRole(impl) === NavigatorRole.GENERATOR;
 }
 
 /**
  * Check if a navigator implementation is a filter.
  *
- * @param impl - Navigator implementation name (e.g., 'elo', 'hierarchyDefinition')
+ * Checks the built-in NavigatorRoles enum first, then falls back to the
+ * navigator registry for consumer-registered navigators.
+ *
+ * @param impl - Navigator implementation name (e.g., 'elo', 'letterGatingFilter')
  * @returns true if the navigator is a filter, false otherwise
  */
 export function isFilter(impl: string): boolean {
-  return NavigatorRoles[impl as Navigators] === NavigatorRole.FILTER;
+  if (NavigatorRoles[impl as Navigators] === NavigatorRole.FILTER) return true;
+  // Fallback: check the registry for consumer-registered navigators
+  return getRegisteredNavigatorRole(impl) === NavigatorRole.FILTER;
 }
 
 /**
