@@ -174,10 +174,13 @@ Currently logged-in as ${this._username}.`
       const docsToDelete = allDocs.rows
         .filter((row) => {
           const id = row.id;
-          // Delete user progress data but preserve core user documents
+          // Delete user progress data but preserve authentication and user identity
           return (
             id.startsWith(DocTypePrefixes[DocType.CARDRECORD]) || // Card interaction history
             id.startsWith(DocTypePrefixes[DocType.SCHEDULED_CARD]) || // Scheduled reviews
+            id.startsWith(DocTypePrefixes[DocType.STRATEGY_STATE]) || // Strategy state (user prefs, progression)
+            id.startsWith(DocTypePrefixes[DocType.USER_OUTCOME]) || // Evolutionary orchestration outcomes
+            id.startsWith(DocTypePrefixes[DocType.STRATEGY_LEARNING_STATE]) || // Strategy learning state
             id === BaseUser.DOC_IDS.COURSE_REGISTRATIONS || // Course registrations
             id === BaseUser.DOC_IDS.CLASSROOM_REGISTRATIONS || // Classroom registrations
             id === BaseUser.DOC_IDS.CONFIG // User config
