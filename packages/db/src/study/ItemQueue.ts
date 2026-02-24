@@ -47,6 +47,28 @@ export class ItemQueue<T> {
     }
   }
 
+  /**
+   * Atomically replace all queue contents with new items.
+   *
+   * Used by mid-session replanning to swap the queue without a window where
+   * it's empty (avoiding dead-air if nextCard() is called concurrently).
+   *
+   * Preserves dequeueCount (cumulative across the session).
+   * Resets seenCardIds to match the new contents — cards from the old queue
+   * that don't appear in the new set can be re-added in future replans.
+   */
+  public replaceAll(items: T[], cardIdExtractor: (item: T) => string): void {
+    this.q = [];
+    this.seenCardIds = [];
+    for (const item of items) {
+      const cardId = cardIdExtractor(item);
+      if (!this.seenCardIds.includes(cardId)) {
+        this.seenCardIds.push(cardId);
+        this.q.push(item);
+      }
+    }
+  }
+
   public get toString(): string {
     return (
       `${typeof this.q[0]}:\n` +

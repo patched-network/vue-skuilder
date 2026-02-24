@@ -9,6 +9,7 @@
     :modify-difficulty="user_elo.global.score - card_elo"
     class="cardView"
     @emit-response="processResponse($event)"
+    @request-replan="$emit('requestReplan')"
   />
 
   <!-- Traditional mode: v-card wrapper -->
@@ -21,6 +22,7 @@
       :modify-difficulty="user_elo.global.score - card_elo"
       class="cardView ma-2 pa-2"
       @emit-response="processResponse($event)"
+      @request-replan="$emit('requestReplan')"
     />
   </v-card>
 </template>
@@ -85,7 +87,7 @@ export default defineComponent({
     },
   },
 
-  emits: ['emitResponse'],
+  emits: ['emitResponse', 'requestReplan'],
 
   methods: {
     processResponse(r: CardRecord): void {

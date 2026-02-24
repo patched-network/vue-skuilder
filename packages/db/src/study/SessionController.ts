@@ -82,6 +82,12 @@ export class SessionController<TView = unknown> extends Loggable {
   private failedQ: ItemQueue<StudySessionFailedItem> = new ItemQueue<StudySessionFailedItem>();
   // END   Session card stores
 
+  /**
+   * Promise tracking a currently in-progress replan, or null if idle.
+   * Used by nextCard() to await completion before drawing from queues.
+   */
+  private _replanPromise: Promise<void> | null = null;
+
   private startTime: Date;
   private endTime: Date;
   private _secondsRemaining: number;
@@ -211,6 +217,50 @@ export class SessionController<TView = unknown> extends Loggable {
     }, 1000);
   }
 
+  /**
+   * Request a mid-session replan. Re-runs the pipeline with current user state
+   * and atomically replaces the newQ contents. Safe to call at any time during
+   * a session — if called while a replan is already in progress, returns the
+   * existing replan promise (no duplicate work).
+   *
+   * Does NOT affect reviewQ or failedQ.
+   *
+   * If nextCard() is called while a replan is in flight, it will automatically
+   * await the replan before drawing from queues, ensuring the user always sees
+   * cards scored against their latest state.
+   *
+   * Typical trigger: application-level code (e.g. after a GPC intro completion)
+   * calls this to ensure newly-unlocked content appears in the session.
+   */
+  public async requestReplan(): Promise<void> {
+    if (this._replanPromise) {
+      this.log('Replan already in progress, awaiting existing replan');
+      return this._replanPromise;
+    }
+
+    this.log('Mid-session replan requested');
+    this._replanPromise = this._executeReplan();
+
+    try {
+      await this._replanPromise;
+    } finally {
+      this._replanPromise = null;
+    }
+  }
+
+  /**
+   * Internal replan execution. Runs the pipeline, builds a new newQ,
+   * atomically swaps it in, and triggers hydration for the new contents.
+   */
+  private async _executeReplan(): Promise<void> {
+    await this.getWeightedContent({ replan: true });
+    await this.hydrationService.ensureHydratedCards();
+    this.log(`Replan complete: newQ now has ${this.newQ.length} cards`);
+
+    // Snapshot queue state for debugging
+    snapshotQueues(this.reviewQ.length, this.newQ.length, this.failedQ.length);
+  }
+
   public addTime(seconds: number) {
     this.endTime = new Date(this.endTime.valueOf() + 1000 * seconds);
   }
@@ -275,6 +325,9 @@ export class SessionController<TView = unknown> extends Loggable {
         count: this.hydrationService.hydratedCount,
         cardIds: this.hydrationService.getHydratedCardIds(),
       },
+      replan: {
+        inProgress: this._replanPromise !== null,
+      },
     };
   }
 
@@ -287,7 +340,15 @@ export class SessionController<TView = unknown> extends Loggable {
    * 3. Uses SourceMixer to balance content across sources
    * 4. Populates review and new card queues with mixed results
    */
-  private async getWeightedContent() {
+  /**
+   * Fetch weighted content from all sources and populate session queues.
+   *
+   * @param options.replan - If true, this is a mid-session replan rather than
+   *   initial session setup. Skips review queue population (avoiding duplicates),
+   *   atomically replaces newQ contents, and treats empty results as non-fatal.
+   */
+  private async getWeightedContent(options?: { replan?: boolean }) {
+    const replan = options?.replan ?? false;
     const limit = 20; // Initial batch size per source
 
     // Collect batches from each source
@@ -314,6 +375,11 @@ export class SessionController<TView = unknown> extends Loggable {
 
     // Verify we got content from at least one source
     if (batches.length === 0) {
+      if (replan) {
+        // Replan finding no content is non-fatal — old queue remains
+        this.log('Replan: no content from any source, keeping existing newQ');
+        return;
+      }
       throw new Error(
         `Cannot start session: failed to load content from all ${this.sources.length} source(s). ` +
           `Check logs for details.`
@@ -331,11 +397,13 @@ export class SessionController<TView = unknown> extends Loggable {
     // Populate course name cache (one-time fetch, reused by SessionDebugger)
     await Promise.all(
       sourceIds.map(async (id) => {
-        try {
-          const config = await this.dataLayer.getCoursesDB().getCourseConfig(id);
-          this.courseNameCache.set(id, config.name);
-        } catch {
-          // leave unmapped
+        if (!this.courseNameCache.has(id)) {
+          try {
+            const config = await this.dataLayer.getCoursesDB().getCourseConfig(id);
+            this.courseNameCache.set(id, config.name);
+          } catch {
+            // leave unmapped
+          }
         }
       })
     );
@@ -358,22 +426,25 @@ export class SessionController<TView = unknown> extends Loggable {
 
     logger.debug(`[reviews] got ${reviewWeighted.length} reviews from mixer`);
 
-    // Populate review queue from mixed results (already sorted by mixer)
-    let report = 'Mixed content session created with:\n';
-    for (const w of reviewWeighted) {
-      const reviewItem: StudySessionReviewItem = {
-        cardID: w.cardId,
-        courseID: w.courseId,
-        contentSourceType: 'course',
-        contentSourceID: w.courseId,
-        reviewID: w.reviewID!,
-        status: 'review',
-      };
-      this.reviewQ.add(reviewItem, reviewItem.cardID);
-      report += `Review: ${w.courseId}::${w.cardId} (score: ${w.score.toFixed(2)})\n`;
+    // Populate review queue from mixed results (skip during replan to avoid duplicates)
+    let report = replan ? 'Replan content:\n' : 'Mixed content session created with:\n';
+    if (!replan) {
+      for (const w of reviewWeighted) {
+        const reviewItem: StudySessionReviewItem = {
+          cardID: w.cardId,
+          courseID: w.courseId,
+          contentSourceType: 'course',
+          contentSourceID: w.courseId,
+          reviewID: w.reviewID!,
+          status: 'review',
+        };
+        this.reviewQ.add(reviewItem, reviewItem.cardID);
+        report += `Review: ${w.courseId}::${w.cardId} (score: ${w.score.toFixed(2)})\n`;
+      }
     }
 
-    // Populate new card queue from mixed results (already sorted by mixer)
+    // Build new card items
+    const newItems: StudySessionNewItem[] = [];
     for (const w of newWeighted) {
       const newItem: StudySessionNewItem = {
         cardID: w.cardId,
@@ -382,8 +453,18 @@ export class SessionController<TView = unknown> extends Loggable {
         contentSourceID: w.courseId,
         status: 'new',
       };
-      this.newQ.add(newItem, newItem.cardID);
+      newItems.push(newItem);
       report += `New: ${w.courseId}::${w.cardId} (score: ${w.score.toFixed(2)})\n`;
+    }
+
+    if (replan) {
+      // Atomic swap: replace entire newQ contents at once (no empty-queue window)
+      this.newQ.replaceAll(newItems, (item) => item.cardID);
+    } else {
+      // Initial session setup: add items normally
+      for (const item of newItems) {
+        this.newQ.add(item, item.cardID);
+      }
     }
 
     this.log(report);
@@ -492,6 +573,14 @@ export class SessionController<TView = unknown> extends Loggable {
   ): Promise<HydratedCard<TView> | null> {
     // dismiss (or sort to failedQ) the current card
     this.dismissCurrentCard(action);
+
+    // If a replan is in flight, wait for it to complete before drawing.
+    // This ensures the user sees cards scored against their latest state
+    // (e.g. after a GPC intro unlocked new content).
+    if (this._replanPromise) {
+      this.log('nextCard: awaiting in-flight replan before drawing');
+      await this._replanPromise;
+    }
 
     if (this._secondsRemaining <= 0 && this.failedQ.length === 0) {
       this._currentCard = null;

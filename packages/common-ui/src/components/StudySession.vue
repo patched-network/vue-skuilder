@@ -36,6 +36,7 @@
           :card_elo="card_elo"
           :frameless="frameless"
           @emit-response="processResponse($event)"
+          @request-replan="handleReplanRequest"
         />
       </transition>
     </div>
@@ -178,6 +179,7 @@ export default defineComponent({
     'time-changed',
     'session-prepared',
     'session-error',
+    'replan-requested',
   ],
 
   data() {
@@ -251,6 +253,25 @@ export default defineComponent({
   },
 
   methods: {
+    /**
+     * Handle a replan request from a card view component.
+     *
+     * Card views emit 'request-replan' when they've made state changes that
+     * should be reflected in the session's content queue (e.g. a GPC intro
+     * unlocking new exercise cards). The replan fires immediately in the
+     * background — by the time the card's response triggers nextCard(),
+     * the queue will contain freshly-scored content.
+     */
+    handleReplanRequest() {
+      if (this.sessionController) {
+        console.log('[StudySession] Replan requested by card view, triggering background replan');
+        // Fire-and-forget: requestReplan runs in the background.
+        // nextCard() will await it if it's still in progress when called.
+        void this.sessionController.requestReplan();
+        this.$emit('replan-requested');
+      }
+    },
+
     user_elo(courseID: string): CourseElo {
       const courseDoc = this.userCourseRegDoc!.courses.find((c) => c.courseID === courseID);
       if (courseDoc) {

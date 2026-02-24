@@ -146,6 +146,24 @@ export class Pipeline extends ContentNavigator {
   private filters: CardFilter[];
 
   /**
+   * Cached orchestration context. Course config and salt don't change within
+   * a page load, so we build the orchestration context once and reuse it on
+   * subsequent getWeightedCards() calls (e.g. mid-session replans).
+   *
+   * This eliminates a remote getCourseConfig() round trip per pipeline run.
+   */
+  private _cachedOrchestration: OrchestrationContext | null = null;
+
+  /**
+   * Persistent tag cache. Maps cardId → tag names.
+   *
+   * Tags are static within a session (they're set at card generation time),
+   * so we cache them across pipeline runs. On replans, many of the same cards
+   * reappear — cache hits avoid redundant remote getAppliedTagsBatch() queries.
+   */
+  private _tagCache: Map<string, string[]> = new Map();
+
+  /**
    * Create a new pipeline.
    *
    * @param generator - The generator (or CompositeGenerator) that produces candidates
@@ -316,6 +334,10 @@ export class Pipeline extends ContentNavigator {
    * to the WeightedCard objects. Filters can then use card.tags instead of
    * making individual getAppliedTags() calls.
    *
+   * Uses a persistent tag cache across pipeline runs — tags are static within
+   * a session, so cards seen in a prior run (e.g. before a replan) don't
+   * require a second DB query.
+   *
    * @param cards - Cards to hydrate
    * @returns Cards with tags populated
    */
@@ -324,15 +346,34 @@ export class Pipeline extends ContentNavigator {
       return cards;
     }
 
-    const cardIds = cards.map((c) => c.cardId);
-    const tagsByCard = await this.course!.getAppliedTagsBatch(cardIds);
+    // Separate cards with cached tags from those needing a DB query
+    const uncachedIds: string[] = [];
+    for (const card of cards) {
+      if (!this._tagCache.has(card.cardId)) {
+        uncachedIds.push(card.cardId);
+      }
+    }
+
+    // Only query the DB for cards not already in cache
+    if (uncachedIds.length > 0) {
+      const freshTags = await this.course!.getAppliedTagsBatch(uncachedIds);
+      for (const [cardId, tags] of freshTags) {
+        this._tagCache.set(cardId, tags);
+      }
+    }
+
+    // Build the tagsByCard map from cache (for logging compatibility)
+    const tagsByCard = new Map<string, string[]>();
+    for (const card of cards) {
+      tagsByCard.set(card.cardId, this._tagCache.get(card.cardId) ?? []);
+    }
 
     // Toggle tag hydration logging:
     logTagHydration(cards, tagsByCard);
 
     return cards.map((card) => ({
       ...card,
-      tags: tagsByCard.get(card.cardId) ?? [],
+      tags: this._tagCache.get(card.cardId) ?? [],
     }));
   }
 
@@ -355,8 +396,13 @@ export class Pipeline extends ContentNavigator {
       logger.debug(`[Pipeline] Could not get user ELO, using default: ${e}`);
     }
 
-    // Initialize orchestration context (used for evolutionary weighting)
-    const orchestration = await createOrchestrationContext(this.user!, this.course!);
+    // Reuse cached orchestration context if available (course config is stable
+    // within a page load). This avoids a remote getCourseConfig() call on
+    // subsequent pipeline runs (e.g. mid-session replans).
+    if (!this._cachedOrchestration) {
+      this._cachedOrchestration = await createOrchestrationContext(this.user!, this.course!);
+    }
+    const orchestration = this._cachedOrchestration;
 
     return {
       user: this.user!,
