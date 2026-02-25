@@ -302,9 +302,9 @@ export class CourseSyncService {
   private replicate(
     source: PouchDB.Database,
     target: PouchDB.Database
-  ): Promise<PouchDB.Replication.ReplicationResultComplete<{}>> {
+  ): Promise<PouchDB.Replication.ReplicationResultComplete<object>> {
     return new Promise((resolve, reject) => {
-      pouch.replicate(source, target, {
+      void pouch.replicate(source, target, {
         // One-shot, not live. Local is a read-only snapshot.
       })
         .on('complete', (info) => {
