@@ -288,4 +288,5 @@ export * from './adminDB';
 export * from './classroomDB';
 export * from './courseAPI';
 export * from './courseDB';
+export * from './CourseSyncService';
 export * from './CouchDBSyncStrategy';
