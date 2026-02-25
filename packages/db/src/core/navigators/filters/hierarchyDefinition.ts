@@ -38,7 +38,7 @@ const DEFAULT_MIN_COUNT = 3;
  * A filter strategy that gates cards based on prerequisite mastery.
  *
  * Cards are locked until the user masters all prerequisite tags.
- * Locked cards receive score * 0.01 (strong penalty, not hard filter).
+ * Locked cards receive score * 0.05 (strong penalty, not hard filter).
  *
  * Mastery is determined by:
  * - User's ELO for the tag exceeds threshold (or avgElo if not specified)
@@ -94,8 +94,13 @@ export default class HierarchyDefinitionNavigator extends ContentNavigator imple
 
     if (prereq.masteryThreshold?.minElo !== undefined) {
       return userTagElo.score >= prereq.masteryThreshold.minElo;
+    } else if (prereq.masteryThreshold?.minCount !== undefined) {
+      // Explicit minCount without minElo: count alone is sufficient.
+      // The config author specified a concrete interaction threshold —
+      // don't additionally require above-average ELO.
+      return true;
     } else {
-      // Default: user ELO for tag > global user ELO (proxy for "above average")
+      // No thresholds specified at all: fall back to above-average ELO
       return userTagElo.score >= userGlobalElo;
     }
   }
@@ -198,7 +203,7 @@ export default class HierarchyDefinitionNavigator extends ContentNavigator imple
   /**
    * CardFilter.transform implementation.
    *
-   * Apply prerequisite gating to cards. Cards with locked tags receive score * 0.01.
+   * Apply prerequisite gating to cards. Cards with locked tags receive score * 0.05.
    */
   async transform(cards: WeightedCard[], context: FilterContext): Promise<WeightedCard[]> {
     // Get mastery state
@@ -215,7 +220,7 @@ export default class HierarchyDefinitionNavigator extends ContentNavigator imple
         unlockedTags,
         masteredTags
       );
-      const LOCKED_PENALTY = 0.01;
+      const LOCKED_PENALTY = 0.05;
       const finalScore = isUnlocked ? card.score : card.score * LOCKED_PENALTY;
       const action = isUnlocked ? 'passed' : 'penalized';
 
