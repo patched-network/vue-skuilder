@@ -56,4 +56,24 @@ export interface DataLayerProvider {
    * Check if this data layer is read-only
    */
   isReadOnly(): boolean;
+
+  /**
+   * Trigger local replication of a course database.
+   *
+   * When a course opts in via `CourseConfig.localSync.enabled`, this method
+   * replicates the remote course DB to a local PouchDB instance. Subsequent
+   * `getCourseDB()` calls for that course will return a CourseDB that reads
+   * from the local replica (fast, no network) and writes to the remote
+   * (ELO updates, admin ops).
+   *
+   * Safe to call multiple times — concurrent calls coalesce. Returns when
+   * sync is complete (or immediately if already synced / disabled).
+   *
+   * Implementations that don't support local sync may no-op.
+   *
+   * @param courseId - The course to sync locally
+   * @param forceEnabled - Skip CourseConfig check and sync regardless.
+   *   Use when the caller already knows local sync is desired.
+   */
+  ensureCourseSynced?(courseId: string, forceEnabled?: boolean): Promise<void>;
 }
