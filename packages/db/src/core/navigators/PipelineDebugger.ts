@@ -76,6 +76,7 @@ export interface PipelineRunReport {
     origin: 'new' | 'review' | 'unknown';
     finalScore: number;
     provenance: StrategyContribution[];
+    tags?: string[];
     selected: boolean;
   }>;
 }
@@ -135,6 +136,7 @@ export function buildRunReport(
     origin: getOrigin(card),
     finalScore: card.score,
     provenance: card.provenance,
+    tags: card.tags,
     selected: selectedIds.has(card.cardId),
   }));
 
