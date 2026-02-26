@@ -88,6 +88,14 @@ export class SessionController<TView = unknown> extends Loggable {
    */
   private _replanPromise: Promise<void> | null = null;
 
+  /**
+   * Number of well-indicated new cards remaining before the queue
+   * degrades to poorly-indicated content. Decremented on each newQ
+   * draw; when it hits 0, a replan is triggered automatically
+   * (user state has changed from completing good cards).
+   */
+  private _wellIndicatedRemaining: number = 0;
+
   private startTime: Date;
   private endTime: Date;
   private _secondsRemaining: number;
@@ -207,6 +215,7 @@ export class SessionController<TView = unknown> extends Loggable {
     }
 
     const wellIndicated = await this.getWeightedContent();
+    this._wellIndicatedRemaining = wellIndicated;
     if (wellIndicated >= 0 && wellIndicated < SessionController.MIN_WELL_INDICATED) {
       this.log(
         `[Init] Only ${wellIndicated}/${SessionController.MIN_WELL_INDICATED} well-indicated cards in initial load`
@@ -257,6 +266,15 @@ export class SessionController<TView = unknown> extends Loggable {
   private static readonly MIN_WELL_INDICATED = 5;
 
   /**
+   * Score threshold for considering a card "well-indicated."
+   * Cards below this score are treated as fallback filler — present only
+   * because no strategy hard-removed them, but likely penalized by one
+   * or more filters. Strategy-agnostic: the SessionController doesn't
+   * know or care which strategy assigned the score.
+   */
+  private static readonly WELL_INDICATED_SCORE = 0.10;
+
+  /**
    * Internal replan execution. Runs the pipeline, builds a new newQ,
    * atomically swaps it in, and triggers hydration for the new contents.
    *
@@ -266,6 +284,7 @@ export class SessionController<TView = unknown> extends Loggable {
    */
   private async _executeReplan(): Promise<void> {
     const wellIndicated = await this.getWeightedContent({ replan: true });
+    this._wellIndicatedRemaining = wellIndicated;
 
     if (wellIndicated >= 0 && wellIndicated < SessionController.MIN_WELL_INDICATED) {
       this.log(
@@ -467,12 +486,11 @@ export class SessionController<TView = unknown> extends Loggable {
       }
     }
 
-    // Count well-indicated cards: those where no hierarchy filter penalized them.
-    // A card is "well-indicated" if all hierarchy provenance entries have action 'passed'.
-    const wellIndicated = newWeighted.filter((w) =>
-      w.provenance.every(
-        (p) => p.strategy !== 'hierarchyDefinition' || p.action === 'passed'
-      )
+    // Count well-indicated cards by final score. Cards above the threshold
+    // are genuinely appropriate content; cards below are fallback filler
+    // that survived only because no strategy hard-removed them.
+    const wellIndicated = newWeighted.filter(
+      (w) => w.score >= SessionController.WELL_INDICATED_SCORE
     ).length;
 
     // Build new card items
@@ -617,6 +635,24 @@ export class SessionController<TView = unknown> extends Loggable {
     if (this._replanPromise) {
       this.log('nextCard: awaiting in-flight replan before drawing');
       await this._replanPromise;
+    }
+
+    // Quality-based auto-replan: when few well-indicated cards remain,
+    // trigger a background replan. The buffer of remaining good cards
+    // covers the replan latency — by the time they're consumed, the
+    // refreshed queue is ready. Strategy-agnostic: relies only on the
+    // score-based well-indicated count, not any specific filter's output.
+    const REPLAN_BUFFER = 3;
+    if (
+      this._wellIndicatedRemaining <= REPLAN_BUFFER &&
+      this.newQ.length > 0 &&
+      !this._replanPromise
+    ) {
+      this.log(
+        `[AutoReplan] ${this._wellIndicatedRemaining} well-indicated cards remaining ` +
+        `(newQ: ${this.newQ.length}). Triggering background replan.`
+      );
+      void this.requestReplan();
     }
 
     if (this._secondsRemaining <= 0 && this.failedQ.length === 0) {
@@ -786,6 +822,9 @@ export class SessionController<TView = unknown> extends Loggable {
       this.reviewQ.dequeue((queueItem) => queueItem.cardID);
     } else if (this.newQ.peek(0)?.cardID === item.cardID) {
       this.newQ.dequeue((queueItem) => queueItem.cardID);
+      if (this._wellIndicatedRemaining > 0) {
+        this._wellIndicatedRemaining--;
+      }
     } else if (this.failedQ.peek(0)?.cardID === item.cardID) {
       this.failedQ.dequeue((queueItem) => queueItem.cardID);
     }
