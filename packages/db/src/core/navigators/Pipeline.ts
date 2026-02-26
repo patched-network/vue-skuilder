@@ -80,6 +80,32 @@ function logExecutionSummary(
 }
 
 /**
+ * Log all result cards with score, cardId, and key provenance.
+ * Toggle: set VERBOSE_RESULTS = true to enable.
+ */
+const VERBOSE_RESULTS = true;
+
+function logResultCards(cards: WeightedCard[]): void {
+  if (!VERBOSE_RESULTS || cards.length === 0) return;
+
+  logger.info(`[Pipeline] Results (${cards.length} cards):`);
+  for (let i = 0; i < cards.length; i++) {
+    const c = cards[i];
+    const tags = c.tags?.slice(0, 3).join(', ') || '';
+    const filters = c.provenance
+      .filter((p) => p.strategy === 'hierarchyDefinition' || p.strategy === 'priorityDefinition' || p.strategy === 'interferenceFilter' || p.strategy === 'letterGating')
+      .map((p) => {
+        const arrow = p.action === 'boosted' ? '↑' : p.action === 'penalized' ? '↓' : '=';
+        return `${p.strategyName}${arrow}${p.score.toFixed(2)}`;
+      })
+      .join(' | ');
+    logger.info(
+      `[Pipeline]   ${String(i + 1).padStart(2)}. ${c.score.toFixed(4)}  ${c.cardId}  [${tags}]${filters ? `  {${filters}}` : ''}`
+    );
+  }
+}
+
+/**
  * Log provenance trails for cards.
  * Shows the complete scoring history for each card through the pipeline.
  * Useful for debugging why cards scored the way they did.
@@ -210,8 +236,11 @@ export class Pipeline extends ContentNavigator {
    * @returns Cards sorted by score descending
    */
   async getWeightedCards(limit: number): Promise<WeightedCard[]> {
+    const t0 = performance.now();
+
     // Build shared context once
     const context = await this.buildContext();
+    const tContext = performance.now();
 
     // Over-fetch from generator to account for filtering
     const overFetchMultiplier = 2 + this.filters.length * 0.5;
@@ -223,6 +252,7 @@ export class Pipeline extends ContentNavigator {
 
     // Get candidates from generator, passing context
     let cards = await this.generator.getWeightedCards(fetchLimit, context);
+    const tGenerate = performance.now();
     const generatedCount = cards.length;
     
     // Capture generator breakdown for debugging (if CompositeGenerator)
@@ -257,6 +287,7 @@ export class Pipeline extends ContentNavigator {
 
     // Batch hydrate tags before filters run
     cards = await this.hydrateTags(cards);
+    const tHydrate = performance.now();
     
     // Keep a copy of all cards for debug capture (before filtering removes any)
     const allCardsBeforeFiltering = [...cards];
@@ -290,7 +321,14 @@ export class Pipeline extends ContentNavigator {
     cards.sort((a, b) => b.score - a.score);
 
     // Return top N
+    const tFilter = performance.now();
     const result = cards.slice(0, limit);
+
+    logger.info(
+      `[Pipeline:timing] total=${(tFilter - t0).toFixed(0)}ms ` +
+      `(context=${(tContext - t0).toFixed(0)} generate=${(tGenerate - tContext).toFixed(0)} ` +
+      `hydrate=${(tHydrate - tGenerate).toFixed(0)} filter=${(tFilter - tHydrate).toFixed(0)})`
+    );
 
     // Toggle execution summary logging:
     const topScores = result.slice(0, 3).map((c) => c.score);
@@ -302,6 +340,9 @@ export class Pipeline extends ContentNavigator {
       topScores,
       filterImpacts
     );
+
+    // Toggle verbose result listing:
+    logResultCards(result);
 
     // Toggle provenance logging (shows scoring history for top cards):
     logCardProvenance(result, 3);
