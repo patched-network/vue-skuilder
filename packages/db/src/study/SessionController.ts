@@ -206,7 +206,12 @@ export class SessionController<TView = unknown> extends Loggable {
       );
     }
 
-    await this.getWeightedContent();
+    const wellIndicated = await this.getWeightedContent();
+    if (wellIndicated >= 0 && wellIndicated < SessionController.MIN_WELL_INDICATED) {
+      this.log(
+        `[Init] Only ${wellIndicated}/${SessionController.MIN_WELL_INDICATED} well-indicated cards in initial load`
+      );
+    }
     await this.hydrationService.ensureHydratedCards();
 
     // Start session tracking for debugging
@@ -248,12 +253,26 @@ export class SessionController<TView = unknown> extends Loggable {
     }
   }
 
+  /** Minimum well-indicated cards before an additive retry is attempted */
+  private static readonly MIN_WELL_INDICATED = 5;
+
   /**
    * Internal replan execution. Runs the pipeline, builds a new newQ,
    * atomically swaps it in, and triggers hydration for the new contents.
+   *
+   * If the initial replan produces fewer than MIN_WELL_INDICATED cards that
+   * pass all hierarchy filters, one additive retry is attempted — merging
+   * any new high-quality candidates into the front of the queue.
    */
   private async _executeReplan(): Promise<void> {
-    await this.getWeightedContent({ replan: true });
+    const wellIndicated = await this.getWeightedContent({ replan: true });
+
+    if (wellIndicated >= 0 && wellIndicated < SessionController.MIN_WELL_INDICATED) {
+      this.log(
+        `[Replan] Only ${wellIndicated}/${SessionController.MIN_WELL_INDICATED} well-indicated cards after replan`
+      );
+    }
+
     await this.hydrationService.ensureHydratedCards();
     this.log(`Replan complete: newQ now has ${this.newQ.length} cards`);
 
@@ -346,9 +365,14 @@ export class SessionController<TView = unknown> extends Loggable {
    * @param options.replan - If true, this is a mid-session replan rather than
    *   initial session setup. Skips review queue population (avoiding duplicates),
    *   atomically replaces newQ contents, and treats empty results as non-fatal.
+   * @param options.additive - If true (replan only), merge new high-quality
+   *   candidates into the front of the existing newQ instead of replacing it.
+   * @returns Number of "well-indicated" cards (passed all hierarchy filters)
+   *   in the new content. Returns -1 if no content was loaded.
    */
-  private async getWeightedContent(options?: { replan?: boolean }) {
+  private async getWeightedContent(options?: { replan?: boolean; additive?: boolean }): Promise<number> {
     const replan = options?.replan ?? false;
+    const additive = options?.additive ?? false;
     const limit = 20; // Initial batch size per source
 
     // Collect batches from each source
@@ -378,7 +402,7 @@ export class SessionController<TView = unknown> extends Loggable {
       if (replan) {
         // Replan finding no content is non-fatal — old queue remains
         this.log('Replan: no content from any source, keeping existing newQ');
-        return;
+        return -1;
       }
       throw new Error(
         `Cannot start session: failed to load content from all ${this.sources.length} source(s). ` +
@@ -443,6 +467,14 @@ export class SessionController<TView = unknown> extends Loggable {
       }
     }
 
+    // Count well-indicated cards: those where no hierarchy filter penalized them.
+    // A card is "well-indicated" if all hierarchy provenance entries have action 'passed'.
+    const wellIndicated = newWeighted.filter((w) =>
+      w.provenance.every(
+        (p) => p.strategy !== 'hierarchyDefinition' || p.action === 'passed'
+      )
+    ).length;
+
     // Build new card items
     const newItems: StudySessionNewItem[] = [];
     for (const w of newWeighted) {
@@ -457,7 +489,11 @@ export class SessionController<TView = unknown> extends Loggable {
       report += `New: ${w.courseId}::${w.cardId} (score: ${w.score.toFixed(2)})\n`;
     }
 
-    if (replan) {
+    if (additive) {
+      // Additive replan: merge new candidates into front of existing queue
+      const added = this.newQ.mergeToFront(newItems, (item) => item.cardID);
+      report += `Additive merge: ${added} new cards added to front of newQ\n`;
+    } else if (replan) {
       // Atomic swap: replace entire newQ contents at once (no empty-queue window)
       this.newQ.replaceAll(newItems, (item) => item.cardID);
     } else {
@@ -468,6 +504,7 @@ export class SessionController<TView = unknown> extends Loggable {
     }
 
     this.log(report);
+    return wellIndicated;
   }
 
   /**

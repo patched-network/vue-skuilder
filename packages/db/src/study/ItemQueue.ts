@@ -69,6 +69,26 @@ export class ItemQueue<T> {
     }
   }
 
+  /**
+   * Merge new items into the front of the queue, skipping duplicates.
+   * Used by additive replans to inject high-quality candidates without
+   * discarding the existing queue contents.
+   */
+  public mergeToFront(items: T[], cardIdExtractor: (item: T) => string): number {
+    let added = 0;
+    const toInsert: T[] = [];
+    for (const item of items) {
+      const cardId = cardIdExtractor(item);
+      if (!this.seenCardIds.includes(cardId)) {
+        this.seenCardIds.push(cardId);
+        toInsert.push(item);
+        added++;
+      }
+    }
+    this.q.unshift(...toInsert);
+    return added;
+  }
+
   public get toString(): string {
     return (
       `${typeof this.q[0]}:\n` +
