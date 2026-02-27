@@ -37,6 +37,7 @@
           :frameless="frameless"
           @emit-response="processResponse($event)"
           @request-replan="handleReplanRequest"
+          @ready-to-advance="handleReadyToAdvance"
         />
       </transition>
     </div>
@@ -204,6 +205,7 @@ export default defineComponent({
       timeRemaining: 300, // 5 minutes * 60 seconds
       replanPending: false,
       replanHints: null as Record<string, unknown> | null,
+      deferredNextCardAction: null as string | null,
       intervalHandler: null as NodeJS.Timeout | null,
       cardType: '',
       debugMode: (window as any).debugMode === true,
@@ -255,6 +257,21 @@ export default defineComponent({
   },
 
   methods: {
+    /**
+     * Handle a `ready-to-advance` event from a card view that previously
+     * submitted with `deferAdvance: true`. Triggers the stashed navigation.
+     */
+    async handleReadyToAdvance() {
+      const action = this.deferredNextCardAction;
+      if (!action) {
+        console.warn('[StudySession] ready-to-advance received but no deferred action stashed — ignoring');
+        return;
+      }
+      console.log(`[StudySession] ready-to-advance received — advancing with stashed action: ${action}`);
+      this.deferredNextCardAction = null;
+      this.loadCard(await this.sessionController!.nextCard(action));
+    },
+
     /**
      * Handle a replan request from a card view component.
      *
@@ -474,7 +491,12 @@ export default defineComponent({
       }
 
       // Handle navigation based on result
-      if (result.shouldLoadNextCard) {
+      if (result.deferred) {
+        // Card requested deferred advancement — stash the action and wait
+        // for a `ready-to-advance` event from the view before navigating.
+        console.log(`[StudySession] Deferred advance — stashing action: ${result.nextCardAction}`);
+        this.deferredNextCardAction = result.nextCardAction;
+      } else if (result.shouldLoadNextCard) {
         this.loadCard(await this.sessionController!.nextCard(result.nextCardAction));
       }
 

@@ -10,6 +10,7 @@
     class="cardView"
     @emit-response="processResponse($event)"
     @request-replan="$emit('requestReplan', $event)"
+    @ready-to-advance="$emit('readyToAdvance')"
   />
 
   <!-- Traditional mode: v-card wrapper -->
@@ -23,6 +24,7 @@
       class="cardView ma-2 pa-2"
       @emit-response="processResponse($event)"
       @request-replan="$emit('requestReplan', $event)"
+      @ready-to-advance="$emit('readyToAdvance')"
     />
   </v-card>
 </template>
@@ -87,7 +89,7 @@ export default defineComponent({
     },
   },
 
-  emits: ['emitResponse', 'requestReplan'],
+  emits: ['emitResponse', 'requestReplan', 'readyToAdvance'],
 
   methods: {
     processResponse(r: CardRecord): void {
