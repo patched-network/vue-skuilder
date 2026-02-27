@@ -101,6 +101,12 @@ export interface CourseDBInterface extends NavigationStrategyManager, StudyConte
   getAppliedTagsBatch(cardIds: string[]): Promise<Map<string, string[]>>;
 
   /**
+   * Get all card IDs in the course.
+   * Used by diagnostics to scan the full card space.
+   */
+  getAllCardIds(): Promise<string[]>;
+
+  /**
    * Add a tag to a card
    */
   addTagToCard(cardId: string, tagId: string, updateELO?: boolean): Promise<PouchDB.Core.Response>;

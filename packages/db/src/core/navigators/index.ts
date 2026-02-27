@@ -140,8 +140,10 @@ export async function initializeNavigatorRegistry(): Promise<void> {
     import('./generators/elo'),
     import('./generators/srs'),
   ]);
+  const prescribedModule = await import('./generators/prescribed');
   registerNavigator('elo', eloModule.default);
   registerNavigator('srs', srsModule.default);
+  registerNavigator('prescribed', prescribedModule.default);
 
   // Import and register filters
   const [
@@ -346,6 +348,7 @@ export function getCardOrigin(card: WeightedCard): 'new' | 'review' | 'failed' {
 export enum Navigators {
   ELO = 'elo',
   SRS = 'srs',
+  PRESCRIBED = 'prescribed',
   HIERARCHY = 'hierarchyDefinition',
   INTERFERENCE = 'interferenceMitigator',
   RELATIVE_PRIORITY = 'relativePriority',
@@ -384,6 +387,7 @@ export enum NavigatorRole {
 export const NavigatorRoles: Record<Navigators, NavigatorRole> = {
   [Navigators.ELO]: NavigatorRole.GENERATOR,
   [Navigators.SRS]: NavigatorRole.GENERATOR,
+  [Navigators.PRESCRIBED]: NavigatorRole.GENERATOR,
   [Navigators.HIERARCHY]: NavigatorRole.FILTER,
   [Navigators.INTERFERENCE]: NavigatorRole.FILTER,
   [Navigators.RELATIVE_PRIORITY]: NavigatorRole.FILTER,
@@ -623,5 +627,13 @@ export abstract class ContentNavigator implements StudyContentSource {
    */
   async getWeightedCards(_limit: number): Promise<WeightedCard[]> {
     throw new Error(`${this.constructor.name} must implement getWeightedCards(). `);
+  }
+
+  /**
+   * Set ephemeral hints for the next pipeline run.
+   * No-op for non-Pipeline navigators. Pipeline overrides this.
+   */
+  setEphemeralHints(_hints: Record<string, unknown>): void {
+    // no-op — only Pipeline implements this
   }
 }

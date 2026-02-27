@@ -8,6 +8,21 @@ import {
   isFilter,
 } from './index';
 import { logger } from '../../util/logger';
+import type { Pipeline, CardSpaceDiagnosis } from './Pipeline';
+
+/**
+ * Captured reference to the most recently created Pipeline instance.
+ * Used by the debug API to run diagnostics against the live pipeline.
+ */
+let _activePipeline: Pipeline | null = null;
+
+/**
+ * Register a pipeline instance for diagnostic access.
+ * Called by Pipeline constructor.
+ */
+export function registerPipelineForDebug(pipeline: Pipeline): void {
+  _activePipeline = pipeline;
+}
 
 // ============================================================================
 // PIPELINE DEBUGGER
@@ -76,6 +91,7 @@ export interface PipelineRunReport {
     origin: 'new' | 'review' | 'unknown';
     finalScore: number;
     provenance: StrategyContribution[];
+    tags?: string[];
     selected: boolean;
   }>;
 }
@@ -135,6 +151,7 @@ export function buildRunReport(
     origin: getOrigin(card),
     finalScore: card.score,
     provenance: card.provenance,
+    tags: card.tags,
     selected: selectedIds.has(card.cardId),
   }));
 
@@ -460,6 +477,22 @@ export const pipelineDebugAPI = {
   },
 
   /**
+   * Scan the full card space through the filter chain for the current user.
+   *
+   * Reports how many cards are well-indicated and how many are new.
+   * Use this to understand how the search space grows during onboarding.
+   *
+   * @param threshold - Score threshold for "well indicated" (default 0.10)
+   */
+  async diagnoseCardSpace(threshold?: number): Promise<CardSpaceDiagnosis | null> {
+    if (!_activePipeline) {
+      logger.info('[Pipeline Debug] No active pipeline. Run a session first.');
+      return null;
+    }
+    return _activePipeline.diagnoseCardSpace({ threshold });
+  },
+
+  /**
    * Show help.
    */
   help(): void {
@@ -471,6 +504,7 @@ Commands:
   .showRun(id|index)     Show summary of a specific run (by index or ID suffix)
   .showCard(cardId)      Show provenance trail for a specific card
   .explainReviews()      Analyze why reviews were/weren't selected
+  .diagnoseCardSpace()   Scan full card space through filters (async)
   .showRegistry()        Show navigator registry (classes + roles)
   .showStrategies()      Show registry + strategy mapping from last run
   .listRuns()            List all captured runs in table format
@@ -482,7 +516,7 @@ Commands:
 Example:
   window.skuilder.pipeline.showLastRun()
   window.skuilder.pipeline.showRun(1)
-  window.skuilder.pipeline.showCard('abc123')
+  await window.skuilder.pipeline.diagnoseCardSpace()
 `);
   },
 };

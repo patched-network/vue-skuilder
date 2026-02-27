@@ -9,7 +9,7 @@ import {
   toCourseElo,
 } from '@vue-skuilder/common';
 
-import { filterAllDocsByPrefix, getCourseDB, getCourseDoc, getCourseDocs } from '.';
+import { filterAllDocsByPrefix, getCourseDB } from '.';
 import UpdateQueue from './updateQueue';
 import { StudySessionItem } from '../../core/interfaces/contentSource';
 import {
@@ -94,16 +94,48 @@ export class CourseDB implements CourseDBInterface {
   //   log(`CourseLog: ${this.id}\n  ${msg}`);
   // }
 
+  /**
+   * Primary database handle used for all **read** operations (queries, gets).
+   *
+   * When local sync is active, this points to the local PouchDB replica for
+   * fast, network-free reads. Otherwise it points to the remote CouchDB.
+   */
   private db: PouchDB.Database;
+
+  /**
+   * Remote database handle used for all **write** operations.
+   *
+   * Always points to the remote CouchDB so that writes (ELO updates, tag
+   * mutations, admin operations) aggregate on the server. The local replica
+   * is a read-only snapshot that refreshes on the next page load.
+   *
+   * When local sync is NOT active, this is the same instance as `this.db`.
+   */
+  private remoteDB: PouchDB.Database;
+
   private id: string;
   private _getCurrentUser: () => Promise<UserDBInterface>;
   private updateQueue: UpdateQueue;
 
-  constructor(id: string, userLookup: () => Promise<UserDBInterface>) {
+  /**
+   * @param id - Course ID
+   * @param userLookup - Async function returning the current user DB
+   * @param localDB - Optional local PouchDB replica for reads. When provided,
+   *   `this.db` uses the local replica and `this.remoteDB` stays remote.
+   *   The UpdateQueue reads from remote and writes to remote (local `_rev`
+   *   values may be stale, so read-modify-write cycles must go through
+   *   the remote DB to avoid conflicts).
+   */
+  constructor(id: string, userLookup: () => Promise<UserDBInterface>, localDB?: PouchDB.Database) {
     this.id = id;
-    this.db = getCourseDB(this.id);
+    const remote = getCourseDB(this.id);
+    this.remoteDB = remote;
+    this.db = localDB ?? remote;
     this._getCurrentUser = userLookup;
-    this.updateQueue = new UpdateQueue(this.db);
+    // UpdateQueue always operates against the remote DB for its
+    // read-modify-write cycle. Local _rev values may be stale (the local
+    // replica is a snapshot), so conflict retries must read from remote.
+    this.updateQueue = new UpdateQueue(this.remoteDB, this.remoteDB);
   }
 
   public getCourseID(): string {
@@ -217,7 +249,9 @@ export class CourseDB implements CourseDBInterface {
   }
 
   public async removeCard(id: string) {
-    const doc = await this.db.get<CardData>(id);
+    // Admin operation — read and write both go through remote DB to ensure
+    // we have the current _rev for the delete.
+    const doc = await this.remoteDB.get<CardData>(id);
     if (!doc.docType || !(doc.docType === DocType.CARD)) {
       throw new Error(`failed to remove ${id} from course ${this.id}. id does not point to a card`);
     }
@@ -244,7 +278,7 @@ export class CourseDB implements CourseDBInterface {
       // Continue with card deletion even if tag cleanup fails
     }
 
-    return this.db.remove(doc);
+    return this.remoteDB.remove(doc);
   }
 
   public async getCardDisplayableDataIDs(id: string[]) {
@@ -364,8 +398,7 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
       return new Map();
     }
 
-    const db = getCourseDB(this.id);
-    const result = await db.query<TagStub>('getTags', {
+    const result = await this.db.query<TagStub>('getTags', {
       keys: cardIds,
       include_docs: false,
     });
@@ -387,6 +420,15 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
     }
 
     return tagsByCard;
+  }
+
+  async getAllCardIds(): Promise<string[]> {
+    const result = await this.db.allDocs({
+      startkey: 'CARD-',
+      endkey: 'CARD-\ufff0',
+      include_docs: false,
+    });
+    return result.rows.map((row) => row.id);
   }
 
   async addTagToCard(
@@ -479,14 +521,20 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
     id: string,
     options?: PouchDB.Core.GetOptions
   ): Promise<PouchDB.Core.GetMeta & PouchDB.Core.Document<T>> {
-    return await getCourseDoc(this.id, id, options);
+    // Use this.db (local when available) for read operations.
+    // Falls back to the standalone helper (always remote) only if needed.
+    return await this.db.get<T>(id, options) as PouchDB.Core.GetMeta & PouchDB.Core.Document<T>;
   }
 
   async getCourseDocs<T extends SkuilderCourseData>(
     ids: string[],
     options: PouchDB.Core.AllDocsOptions = {}
   ): Promise<PouchDB.Core.AllDocsWithKeysResponse<{} & T>> {
-    return await getCourseDocs(this.id, ids, options);
+    // Use this.db (local when available) for read operations.
+    return await this.db.allDocs<T>({
+      ...options,
+      keys: ids,
+    }) as PouchDB.Core.AllDocsWithKeysResponse<{} & T>;
   }
 
   ////////////////////////////////////
@@ -524,9 +572,8 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
 
   async addNavigationStrategy(data: ContentNavigationStrategyData): Promise<void> {
     logger.debug(`[courseDB] Adding navigation strategy: ${data._id}`);
-    // // For now, just log the data and return success
-    // logger.debug(JSON.stringify(data));
-    return this.db.put(data).then(() => {});
+    // Admin write operation — use remote DB.
+    return this.remoteDB.put(data).then(() => {});
   }
   updateNavigationStrategy(id: string, data: ContentNavigationStrategyData): Promise<void> {
     logger.debug(`[courseDB] Updating navigation strategy: ${id}`);

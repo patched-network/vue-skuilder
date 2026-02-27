@@ -1,5 +1,5 @@
 import type { ContentNavigationStrategyData } from '../types/contentNavigationStrategy';
-import { ContentNavigator, isGenerator, isFilter } from './index';
+import { ContentNavigator, isGenerator, isFilter, Navigators } from './index';
 import type { CardFilter } from './filters/types';
 import { WeightedFilter } from './filters/WeightedFilter';
 import type { CardGenerator } from './generators/types';
@@ -103,24 +103,29 @@ export class PipelineAssembler {
       }
     }
 
-    // If no generator but filters exist, use default ELO and SRS generators
+    // Always ensure ELO and SRS generators are present.
+    // Custom generators (e.g., prescribed) supplement but don't replace them.
+    const courseId = course.getCourseID();
+    const hasElo = generatorStrategies.some((s) => s.implementingClass === Navigators.ELO);
+    const hasSrs = generatorStrategies.some((s) => s.implementingClass === Navigators.SRS);
+
+    if (!hasElo) {
+      logger.debug('[PipelineAssembler] No ELO generator configured, adding default');
+      generatorStrategies.push(createDefaultEloStrategy(courseId));
+    }
+    if (!hasSrs) {
+      logger.debug('[PipelineAssembler] No SRS generator configured, adding default');
+      generatorStrategies.push(createDefaultSrsStrategy(courseId));
+    }
+
     if (generatorStrategies.length === 0) {
-      if (filterStrategies.length > 0) {
-        logger.debug(
-          '[PipelineAssembler] No generator found, using default ELO and SRS with configured filters'
-        );
-        const courseId = course.getCourseID();
-        generatorStrategies.push(createDefaultEloStrategy(courseId));
-        generatorStrategies.push(createDefaultSrsStrategy(courseId));
-      } else {
-        warnings.push('No generator strategy found');
-        return {
-          pipeline: null,
-          generatorStrategies: [],
-          filterStrategies: [],
-          warnings,
-        };
-      }
+      warnings.push('No generator strategy found');
+      return {
+        pipeline: null,
+        generatorStrategies: [],
+        filterStrategies: [],
+        warnings,
+      };
     }
 
     // Instantiate generators

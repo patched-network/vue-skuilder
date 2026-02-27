@@ -114,6 +114,28 @@ export interface CourseConfig {
   questionTypes: QuestionType55[];
   disambiguator?: string;
   orchestration?: CourseOrchestrationConfig;
+
+  /**
+   * Opt-in client-side replication of the course database.
+   *
+   * When enabled, the client replicates the course DB to a local PouchDB
+   * instance on first visit (full one-shot sync) and performs incremental
+   * sync on subsequent visits. Pipeline scoring, tag hydration, and card
+   * lookup then run against the local replica — eliminating network round
+   * trips from the study-session hot path.
+   *
+   * **Read/write split:** The local DB is a read-only snapshot. All writes
+   * (card ELO updates, tag mutations, etc.) continue to target the remote
+   * CouchDB. This avoids propagating per-interaction ELO noise to every
+   * syncing client — the remote DB aggregates writes from all users, and
+   * each client's local snapshot is refreshed on the next page load.
+   *
+   * Defaults to `undefined` (disabled). Courses with small, relatively
+   * static content databases (e.g. < 50 MB) are good candidates.
+   */
+  localSync?: {
+    enabled: boolean;
+  };
 }
 
 export interface CreateCourse extends IServerRequest {

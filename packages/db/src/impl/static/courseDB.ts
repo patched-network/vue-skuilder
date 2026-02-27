@@ -244,6 +244,11 @@ export class StaticCourseDB implements CourseDBInterface {
     return tagsByCard;
   }
 
+  async getAllCardIds(): Promise<string[]> {
+    const tagsIndex = await this.unpacker.getTagsIndex();
+    return Object.keys(tagsIndex.byCard);
+  }
+
   async addTagToCard(_cardId: string, _tagId: string): Promise<PouchDB.Core.Response> {
     throw new Error('Cannot modify tags in static mode');
   }

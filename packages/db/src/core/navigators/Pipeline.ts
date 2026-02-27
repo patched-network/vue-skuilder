@@ -7,7 +7,60 @@ import type { CardFilter, FilterContext } from './filters/types';
 import type { CardGenerator, GeneratorContext } from './generators/types';
 import { logger } from '../../util/logger';
 import { createOrchestrationContext, OrchestrationContext } from '../orchestration';
-import { captureRun, buildRunReport, type GeneratorSummary, type FilterImpact } from './PipelineDebugger';
+import { captureRun, buildRunReport, registerPipelineForDebug, type GeneratorSummary, type FilterImpact } from './PipelineDebugger';
+
+// ============================================================================
+// REPLAN HINTS
+// ============================================================================
+//
+// Ephemeral, one-shot scoring hints passed at replan time.
+// Applied after the filter chain, consumed after one pipeline run.
+//
+// Tag patterns support glob-style matching:
+//   'gpc:exercise:t-T'   — exact match
+//   'gpc:intro:*'        — all intro tags
+//   'gpc:exercise:t-*'   — all t-variant exercises
+//
+
+/**
+ * Ephemeral pipeline hints for a single run.
+ * All fields are optional. Tag/card patterns support `*` wildcards.
+ */
+export interface ReplanHints {
+  /** Multiply scores for cards matching these tag patterns. */
+  boostTags?: Record<string, number>;
+  /** Multiply scores for these specific card IDs (glob patterns). */
+  boostCards?: Record<string, number>;
+  /** Cards matching these tag patterns MUST appear in results. */
+  requireTags?: string[];
+  /** These specific card IDs MUST appear in results. */
+  requireCards?: string[];
+  /** Remove cards matching these tag patterns from results. */
+  excludeTags?: string[];
+  /** Remove these specific card IDs from results. */
+  excludeCards?: string[];
+}
+
+/**
+ * Convert a glob pattern (with `*` wildcards) to a RegExp.
+ * Only `*` is supported as a wildcard (matches any characters).
+ */
+function globToRegex(pattern: string): RegExp {
+  const escaped = pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&');
+  const withWildcards = escaped.replace(/\*/g, '.*');
+  return new RegExp(`^${withWildcards}$`);
+}
+
+/** Test whether a string matches a glob pattern. */
+function globMatch(value: string, pattern: string): boolean {
+  if (!pattern.includes('*')) return value === pattern;
+  return globToRegex(pattern).test(value);
+}
+
+/** Test whether any of a card's tags match a glob pattern. */
+function cardMatchesTagPattern(card: WeightedCard, pattern: string): boolean {
+  return (card.tags ?? []).some((tag) => globMatch(tag, pattern));
+}
 
 // ============================================================================
 // PIPELINE LOGGING HELPERS
@@ -77,6 +130,32 @@ function logExecutionSummary(
       filterSummary +
       `\n  💡 Inspect: window.skuilder.pipeline`
   );
+}
+
+/**
+ * Log all result cards with score, cardId, and key provenance.
+ * Toggle: set VERBOSE_RESULTS = true to enable.
+ */
+const VERBOSE_RESULTS = true;
+
+function logResultCards(cards: WeightedCard[]): void {
+  if (!VERBOSE_RESULTS || cards.length === 0) return;
+
+  logger.info(`[Pipeline] Results (${cards.length} cards):`);
+  for (let i = 0; i < cards.length; i++) {
+    const c = cards[i];
+    const tags = c.tags?.slice(0, 3).join(', ') || '';
+    const filters = c.provenance
+      .filter((p) => p.strategy === 'hierarchyDefinition' || p.strategy === 'priorityDefinition' || p.strategy === 'interferenceFilter' || p.strategy === 'letterGating' || p.strategy === 'ephemeralHint')
+      .map((p) => {
+        const arrow = p.action === 'boosted' ? '↑' : p.action === 'penalized' ? '↓' : '=';
+        return `${p.strategyName}${arrow}${p.score.toFixed(2)}`;
+      })
+      .join(' | ');
+    logger.info(
+      `[Pipeline]   ${String(i + 1).padStart(2)}. ${c.score.toFixed(4)}  ${c.cardId}  [${tags}]${filters ? `  {${filters}}` : ''}`
+    );
+  }
 }
 
 /**
@@ -164,6 +243,12 @@ export class Pipeline extends ContentNavigator {
   private _tagCache: Map<string, string[]> = new Map();
 
   /**
+   * One-shot replan hints. Applied after the filter chain on the next
+   * getWeightedCards() call, then cleared.
+   */
+  private _ephemeralHints: ReplanHints | null = null;
+
+  /**
    * Create a new pipeline.
    *
    * @param generator - The generator (or CompositeGenerator) that produces candidates
@@ -193,6 +278,20 @@ export class Pipeline extends ContentNavigator {
       });
     // Toggle pipeline configuration logging:
     logPipelineConfig(generator, filters);
+
+    // Register for debug API access
+    registerPipelineForDebug(this);
+  }
+
+  /**
+   * Set one-shot hints for the next pipeline run.
+   * Consumed after one getWeightedCards() call, then cleared.
+   *
+   * Overrides ContentNavigator.setEphemeralHints() no-op.
+   */
+  override setEphemeralHints(hints: Record<string, unknown>): void {
+    this._ephemeralHints = hints as ReplanHints;
+    logger.info(`[Pipeline] Ephemeral hints set: ${JSON.stringify(hints)}`);
   }
 
   /**
@@ -210,12 +309,17 @@ export class Pipeline extends ContentNavigator {
    * @returns Cards sorted by score descending
    */
   async getWeightedCards(limit: number): Promise<WeightedCard[]> {
+    const t0 = performance.now();
+
     // Build shared context once
     const context = await this.buildContext();
+    const tContext = performance.now();
 
-    // Over-fetch from generator to account for filtering
-    const overFetchMultiplier = 2 + this.filters.length * 0.5;
-    const fetchLimit = Math.ceil(limit * overFetchMultiplier);
+    // Over-fetch from generator to give filters a wide candidate pool.
+    // With local course DB the cost is negligible (~20ms for 500 cards).
+    // Filters (hierarchy, letter gating, etc.) can be aggressive — a wide
+    // pool ensures enough well-indicated candidates survive.
+    const fetchLimit = 500;
 
     logger.debug(
       `[Pipeline] Fetching ${fetchLimit} candidates from generator '${this.generator.name}'`
@@ -223,6 +327,7 @@ export class Pipeline extends ContentNavigator {
 
     // Get candidates from generator, passing context
     let cards = await this.generator.getWeightedCards(fetchLimit, context);
+    const tGenerate = performance.now();
     const generatedCount = cards.length;
     
     // Capture generator breakdown for debugging (if CompositeGenerator)
@@ -257,6 +362,7 @@ export class Pipeline extends ContentNavigator {
 
     // Batch hydrate tags before filters run
     cards = await this.hydrateTags(cards);
+    const tHydrate = performance.now();
     
     // Keep a copy of all cards for debug capture (before filtering removes any)
     const allCardsBeforeFiltering = [...cards];
@@ -286,11 +392,25 @@ export class Pipeline extends ContentNavigator {
     // Remove zero-score cards (hard filtered)
     cards = cards.filter((c) => c.score > 0);
 
+    // Apply ephemeral hints (one-shot, post-filter)
+    const hints = this._ephemeralHints;
+    if (hints) {
+      this._ephemeralHints = null; // consume
+      cards = this.applyHints(cards, hints, allCardsBeforeFiltering);
+    }
+
     // Sort by score descending
     cards.sort((a, b) => b.score - a.score);
 
     // Return top N
+    const tFilter = performance.now();
     const result = cards.slice(0, limit);
+
+    logger.info(
+      `[Pipeline:timing] total=${(tFilter - t0).toFixed(0)}ms ` +
+      `(context=${(tContext - t0).toFixed(0)} generate=${(tGenerate - tContext).toFixed(0)} ` +
+      `hydrate=${(tHydrate - tGenerate).toFixed(0)} filter=${(tFilter - tHydrate).toFixed(0)})`
+    );
 
     // Toggle execution summary logging:
     const topScores = result.slice(0, 3).map((c) => c.score);
@@ -302,6 +422,9 @@ export class Pipeline extends ContentNavigator {
       topScores,
       filterImpacts
     );
+
+    // Toggle verbose result listing:
+    logResultCards(result);
 
     // Toggle provenance logging (shows scoring history for top cards):
     logCardProvenance(result, 3);
@@ -375,6 +498,122 @@ export class Pipeline extends ContentNavigator {
       ...card,
       tags: this._tagCache.get(card.cardId) ?? [],
     }));
+  }
+
+  // ---------------------------------------------------------------------------
+  // Ephemeral hints application
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Apply one-shot replan hints to the post-filter card set.
+   *
+   * Order of operations:
+   *   1. Exclude (remove unwanted cards)
+   *   2. Boost (multiply scores)
+   *   3. Require (inject must-have cards from the full pre-filter pool)
+   *
+   * @param cards - Post-filter cards (score > 0)
+   * @param hints - The ephemeral hints to apply
+   * @param allCards - Full pre-filter card pool (for require injection)
+   */
+  private applyHints(
+    cards: WeightedCard[],
+    hints: ReplanHints,
+    allCards: WeightedCard[]
+  ): WeightedCard[] {
+    const beforeCount = cards.length;
+
+    // 1. Exclude
+    if (hints.excludeCards?.length) {
+      cards = cards.filter(
+        (c) => !hints.excludeCards!.some((pat) => globMatch(c.cardId, pat))
+      );
+    }
+    if (hints.excludeTags?.length) {
+      cards = cards.filter(
+        (c) => !hints.excludeTags!.some((pat) => cardMatchesTagPattern(c, pat))
+      );
+    }
+
+    // 2. Boost
+    if (hints.boostTags) {
+      for (const [pattern, factor] of Object.entries(hints.boostTags)) {
+        for (const card of cards) {
+          if (cardMatchesTagPattern(card, pattern)) {
+            card.score *= factor;
+            card.provenance.push({
+              strategy: 'ephemeralHint',
+              strategyId: 'ephemeral-hint',
+              strategyName: 'Replan Hint',
+              action: 'boosted',
+              score: card.score,
+              reason: `boostTag ${pattern} ×${factor}`,
+            });
+          }
+        }
+      }
+    }
+    if (hints.boostCards) {
+      for (const [pattern, factor] of Object.entries(hints.boostCards)) {
+        for (const card of cards) {
+          if (globMatch(card.cardId, pattern)) {
+            card.score *= factor;
+            card.provenance.push({
+              strategy: 'ephemeralHint',
+              strategyId: 'ephemeral-hint',
+              strategyName: 'Replan Hint',
+              action: 'boosted',
+              score: card.score,
+              reason: `boostCard ${pattern} ×${factor}`,
+            });
+          }
+        }
+      }
+    }
+
+    // 3. Require — inject from the full pool if not already present
+    const cardIds = new Set(cards.map((c) => c.cardId));
+    const inject = (card: WeightedCard, reason: string) => {
+      if (!cardIds.has(card.cardId)) {
+        // Give required cards a floor score so they sort above zero-score filler
+        const floorScore = Math.max(card.score, 1.0);
+        cards.push({
+          ...card,
+          score: floorScore,
+          provenance: [
+            ...card.provenance,
+            {
+              strategy: 'ephemeralHint',
+              strategyId: 'ephemeral-hint',
+              strategyName: 'Replan Hint',
+              action: 'boosted',
+              score: floorScore,
+              reason,
+            },
+          ],
+        });
+        cardIds.add(card.cardId);
+      }
+    };
+
+    if (hints.requireCards?.length) {
+      for (const pattern of hints.requireCards) {
+        for (const card of allCards) {
+          if (globMatch(card.cardId, pattern)) inject(card, `requireCard ${pattern}`);
+        }
+      }
+    }
+    if (hints.requireTags?.length) {
+      for (const pattern of hints.requireTags) {
+        for (const card of allCards) {
+          if (cardMatchesTagPattern(card, pattern)) inject(card, `requireTag ${pattern}`);
+        }
+      }
+    }
+
+    logger.info(`[Pipeline] Hints applied: ${beforeCount} → ${cards.length} cards`);
+
+    return cards;
   }
 
   /**
@@ -459,4 +698,124 @@ export class Pipeline extends ContentNavigator {
 
     return [...new Set(ids)];
   }
+
+  // ---------------------------------------------------------------------------
+  // Card-space diagnostic
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Scan every card in the course through the filter chain and report
+   * how many are "well indicated" (score >= threshold) for the current user.
+   *
+   * Also reports how many well-indicated cards the user has NOT yet encountered.
+   *
+   * Exposed via `window.skuilder.pipeline.diagnoseCardSpace()`.
+   */
+  async diagnoseCardSpace(opts?: { threshold?: number }): Promise<CardSpaceDiagnosis> {
+    const THRESHOLD = opts?.threshold ?? 0.10;
+    const t0 = performance.now();
+
+    // 1. Get all card IDs
+    const allCardIds = await this.course!.getAllCardIds();
+
+    // 2. Build dummy WeightedCards (score=1.0, no provenance)
+    let cards: WeightedCard[] = allCardIds.map((cardId) => ({
+      cardId,
+      courseId: this.course!.getCourseID(),
+      score: 1.0,
+      provenance: [],
+    }));
+
+    // 3. Hydrate tags
+    cards = await this.hydrateTags(cards);
+
+    // 4. Run through filters
+    const context = await this.buildContext();
+    const filterBreakdown: Array<{ name: string; wellIndicated: number }> = [];
+
+    // Track cumulative filter effects
+    for (const filter of this.filters) {
+      cards = await filter.transform(cards, context);
+      const wi = cards.filter((c) => c.score >= THRESHOLD).length;
+      filterBreakdown.push({ name: filter.name, wellIndicated: wi });
+    }
+
+    // 5. Count well-indicated
+    const wellIndicated = cards.filter((c) => c.score >= THRESHOLD);
+    const wellIndicatedIds = new Set(wellIndicated.map((c) => c.cardId));
+
+    // 6. Get encountered cards
+    let encounteredIds: Set<string>;
+    try {
+      const courseId = this.course!.getCourseID();
+      const seenCards = await this.user!.getSeenCards(courseId);
+      encounteredIds = new Set(seenCards);
+    } catch {
+      encounteredIds = new Set();
+    }
+
+    const wellIndicatedNew = wellIndicated.filter((c) => !encounteredIds.has(c.cardId));
+
+    // 7. Group by card type
+    const byType = new Map<string, { total: number; wellIndicated: number; new: number }>();
+    for (const card of cards) {
+      const type = card.cardId.split('-')[1] || 'unknown'; // c-ws-... → ws, c-intro-... → intro, etc.
+      if (!byType.has(type)) {
+        byType.set(type, { total: 0, wellIndicated: 0, new: 0 });
+      }
+      const entry = byType.get(type)!;
+      entry.total++;
+      if (card.score >= THRESHOLD) {
+        entry.wellIndicated++;
+        if (!encounteredIds.has(card.cardId)) entry.new++;
+      }
+    }
+
+    const elapsed = performance.now() - t0;
+
+    const result: CardSpaceDiagnosis = {
+      totalCards: allCardIds.length,
+      threshold: THRESHOLD,
+      wellIndicated: wellIndicatedIds.size,
+      encountered: encounteredIds.size,
+      wellIndicatedNew: wellIndicatedNew.length,
+      byType: Object.fromEntries(byType),
+      filterBreakdown,
+      elapsedMs: Math.round(elapsed),
+    };
+
+    // Log to console
+    logger.info(`[Pipeline:diagnose] Card space scan (${result.elapsedMs}ms):`);
+    logger.info(`[Pipeline:diagnose]   Total cards: ${result.totalCards}`);
+    logger.info(`[Pipeline:diagnose]   Well-indicated (score >= ${THRESHOLD}): ${result.wellIndicated}`);
+    logger.info(`[Pipeline:diagnose]   Encountered: ${result.encountered}`);
+    logger.info(`[Pipeline:diagnose]   Well-indicated & new: ${result.wellIndicatedNew}`);
+    logger.info(`[Pipeline:diagnose]   By type:`);
+    for (const [type, counts] of byType) {
+      logger.info(
+        `[Pipeline:diagnose]     ${type}: ${counts.wellIndicated}/${counts.total} well-indicated, ${counts.new} new`
+      );
+    }
+    logger.info(`[Pipeline:diagnose]   After each filter:`);
+    for (const fb of filterBreakdown) {
+      logger.info(`[Pipeline:diagnose]     ${fb.name}: ${fb.wellIndicated} well-indicated`);
+    }
+
+    return result;
+  }
+
+}
+
+/**
+ * Diagnosis of the full card space for the current user.
+ */
+export interface CardSpaceDiagnosis {
+  totalCards: number;
+  threshold: number;
+  wellIndicated: number;
+  encountered: number;
+  wellIndicatedNew: number;
+  byType: Record<string, { total: number; wellIndicated: number; new: number }>;
+  filterBreakdown: Array<{ name: string; wellIndicated: number }>;
+  elapsedMs: number;
 }

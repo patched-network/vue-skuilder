@@ -202,6 +202,8 @@ export default defineComponent({
       userCourseRegDoc: null as CourseRegistrationDoc | null,
       sessionContentSources: [] as StudyContentSource[],
       timeRemaining: 300, // 5 minutes * 60 seconds
+      replanPending: false,
+      replanHints: null as Record<string, unknown> | null,
       intervalHandler: null as NodeJS.Timeout | null,
       cardType: '',
       debugMode: (window as any).debugMode === true,
@@ -258,17 +260,17 @@ export default defineComponent({
      *
      * Card views emit 'request-replan' when they've made state changes that
      * should be reflected in the session's content queue (e.g. a GPC intro
-     * unlocking new exercise cards). The replan fires immediately in the
-     * background — by the time the card's response triggers nextCard(),
-     * the queue will contain freshly-scored content.
+     * unlocking new exercise cards).
+     *
+     * The replan is deferred — not fired immediately. processResponse()
+     * checks this flag after submitResponse() has recorded ELO/tag
+     * interactions, ensuring the pipeline sees fully up-to-date state.
      */
-    handleReplanRequest() {
+    handleReplanRequest(hints?: Record<string, unknown>) {
       if (this.sessionController) {
-        console.log('[StudySession] Replan requested by card view, triggering background replan');
-        // Fire-and-forget: requestReplan runs in the background.
-        // nextCard() will await it if it's still in progress when called.
-        void this.sessionController.requestReplan();
-        this.$emit('replan-requested');
+        console.log(`[StudySession] Replan requested by card view${hints ? ' (with hints)' : ''}, deferring until after response processing`);
+        this.replanPending = true;
+        this.replanHints = hints ?? null;
       }
     },
 
@@ -459,6 +461,16 @@ export default defineComponent({
         this.handleUIFeedback(result);
       } catch (error) {
         console.error(`[StudySession] Error handling UI feedback: ${error}.\n\nResult: ${JSON.stringify(result)}`);
+      }
+
+      // Fire deferred replan if requested — state is now fully recorded
+      if (this.replanPending) {
+        const hints = this.replanHints;
+        console.log(`[StudySession] Firing deferred replan (post-submitResponse)${hints ? ' with hints' : ''}`);
+        this.replanPending = false;
+        this.replanHints = null;
+        void this.sessionController!.requestReplan(hints ?? undefined);
+        this.$emit('replan-requested');
       }
 
       // Handle navigation based on result

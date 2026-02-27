@@ -17,6 +17,7 @@ import { getLoggedInUsername } from './auth';
 import { AdminDB } from './adminDB';
 import { StudentClassroomDB, TeacherClassroomDB } from './classroomDB';
 import { CourseDB, CoursesDB } from './courseDB';
+import { CourseSyncService } from './CourseSyncService';
 
 import { BaseUser } from '../common';
 import { CouchDBSyncStrategy } from './CouchDBSyncStrategy';
@@ -73,7 +74,26 @@ export class CouchDataLayerProvider implements DataLayerProvider {
   }
 
   getCourseDB(courseId: string): CourseDBInterface {
-    return new CourseDB(courseId, async () => this.getUserDB());
+    // If the CourseSyncService has a ready local replica for this course,
+    // pass it to CourseDB so reads (pipeline, card hydration) run locally.
+    // Writes always go to the remote DB (handled inside CourseDB).
+    const localDB = CourseSyncService.getInstance().getLocalDB(courseId);
+    return new CourseDB(courseId, async () => this.getUserDB(), localDB ?? undefined);
+  }
+
+  /**
+   * Trigger local sync for a course. Call during app initialization or
+   * pre-session loading for courses that opt in via CourseConfig.localSync.
+   *
+   * Safe to call multiple times — concurrent calls coalesce. Returns when
+   * sync is complete (or immediately if already synced / disabled).
+   *
+   * @param courseId - The course to sync locally
+   * @param forceEnabled - Skip CourseConfig check and sync regardless.
+   *   Use when the caller already knows local sync is desired.
+   */
+  async ensureCourseSynced(courseId: string, forceEnabled?: boolean): Promise<void> {
+    return CourseSyncService.getInstance().ensureSynced(courseId, forceEnabled);
   }
 
   getCoursesDB(): CoursesDBInterface {

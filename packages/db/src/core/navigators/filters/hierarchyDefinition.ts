@@ -20,6 +20,15 @@ interface TagPrerequisite {
     /** Minimum interaction count (default: 3) */
     minCount?: number;
   };
+  /**
+   * Score multiplier applied to cards that carry this prereq tag while
+   * the gate is still closed. Steers the pipeline toward cards that help
+   * unlock the gated content. Falls away once the prereq is met.
+   *
+   * Example: `preReqBoost: 1.3` gives a 30% score increase to cards
+   * tagged `gpc:expose:t-T` while `gpc:intro:t-T` is still locked.
+   */
+  preReqBoost?: number;
 }
 
 /**
@@ -38,7 +47,7 @@ const DEFAULT_MIN_COUNT = 3;
  * A filter strategy that gates cards based on prerequisite mastery.
  *
  * Cards are locked until the user masters all prerequisite tags.
- * Locked cards receive score * 0.01 (strong penalty, not hard filter).
+ * Locked cards receive score * 0.05 (strong penalty, not hard filter).
  *
  * Mastery is determined by:
  * - User's ELO for the tag exceeds threshold (or avgElo if not specified)
@@ -94,8 +103,13 @@ export default class HierarchyDefinitionNavigator extends ContentNavigator imple
 
     if (prereq.masteryThreshold?.minElo !== undefined) {
       return userTagElo.score >= prereq.masteryThreshold.minElo;
+    } else if (prereq.masteryThreshold?.minCount !== undefined) {
+      // Explicit minCount without minElo: count alone is sufficient.
+      // The config author specified a concrete interaction threshold —
+      // don't additionally require above-average ELO.
+      return true;
     } else {
-      // Default: user ELO for tag > global user ELO (proxy for "above average")
+      // No thresholds specified at all: fall back to above-average ELO
       return userTagElo.score >= userGlobalElo;
     }
   }
@@ -196,16 +210,50 @@ export default class HierarchyDefinitionNavigator extends ContentNavigator imple
   }
 
   /**
+   * Build a map of prereq tag → max configured boost for all *closed* gates.
+   *
+   * When a gate is closed (prereqs unmet), cards carrying that gate's prereq
+   * tags get boosted — steering the pipeline toward content that helps unlock
+   * the gated material. Once the gate opens, the boost disappears.
+   */
+  private getPreReqBoosts(
+    unlockedTags: Set<string>,
+    masteredTags: Set<string>
+  ): Map<string, number> {
+    const boosts = new Map<string, number>();
+
+    for (const [tagId, prereqs] of Object.entries(this.config.prerequisites)) {
+      // Only boost prereqs of closed gates
+      if (unlockedTags.has(tagId)) continue;
+
+      for (const prereq of prereqs) {
+        if (!prereq.preReqBoost || prereq.preReqBoost <= 1.0) continue;
+        // Only boost prereqs that aren't already met
+        if (masteredTags.has(prereq.tag)) continue;
+
+        const existing = boosts.get(prereq.tag) ?? 1.0;
+        boosts.set(prereq.tag, Math.max(existing, prereq.preReqBoost));
+      }
+    }
+
+    return boosts;
+  }
+
+  /**
    * CardFilter.transform implementation.
    *
-   * Apply prerequisite gating to cards. Cards with locked tags receive score * 0.01.
+   * Two effects:
+   * 1. Cards with locked tags receive score * 0.05 (gating penalty)
+   * 2. Cards carrying prereq tags of closed gates receive a configured
+   *    boost (preReqBoost), steering toward content that unlocks gates
    */
   async transform(cards: WeightedCard[], context: FilterContext): Promise<WeightedCard[]> {
     // Get mastery state
     const masteredTags = await this.getMasteredTags(context);
     const unlockedTags = this.getUnlockedTags(masteredTags);
+    const preReqBoosts = this.getPreReqBoosts(unlockedTags, masteredTags);
 
-    // Apply prerequisite gating as score multiplier
+    // Apply prerequisite gating + prereq boosting
     const gated: WeightedCard[] = [];
 
     for (const card of cards) {
@@ -215,9 +263,31 @@ export default class HierarchyDefinitionNavigator extends ContentNavigator imple
         unlockedTags,
         masteredTags
       );
-      const LOCKED_PENALTY = 0.01;
-      const finalScore = isUnlocked ? card.score : card.score * LOCKED_PENALTY;
-      const action = isUnlocked ? 'passed' : 'penalized';
+      const LOCKED_PENALTY = 0.02;
+      let finalScore = isUnlocked ? card.score : card.score * LOCKED_PENALTY;
+      let action: 'passed' | 'penalized' | 'boosted' = isUnlocked ? 'passed' : 'penalized';
+      let finalReason = reason;
+
+      // Apply prereq boost to cards that passed gating (don't boost locked cards)
+      if (isUnlocked && preReqBoosts.size > 0) {
+        const cardTags = card.tags ?? [];
+        let maxBoost = 1.0;
+        const boostedPrereqs: string[] = [];
+
+        for (const tag of cardTags) {
+          const boost = preReqBoosts.get(tag);
+          if (boost && boost > maxBoost) {
+            maxBoost = boost;
+            boostedPrereqs.push(tag);
+          }
+        }
+
+        if (maxBoost > 1.0) {
+          finalScore *= maxBoost;
+          action = 'boosted';
+          finalReason = `${reason} | preReqBoost ×${maxBoost.toFixed(2)} for ${boostedPrereqs.join(', ')}`;
+        }
+      }
 
       gated.push({
         ...card,
@@ -230,7 +300,7 @@ export default class HierarchyDefinitionNavigator extends ContentNavigator imple
             strategyId: this.strategyId || 'NAVIGATION_STRATEGY-hierarchy',
             action,
             score: finalScore,
-            reason,
+            reason: finalReason,
           },
         ],
       });
