@@ -23,6 +23,18 @@ export interface ViewableLogger {
   warn: (message?: unknown, ...params: unknown[]) => void;
 }
 
+/**
+ * Options that can be passed to `submitAnswer` to control framework behaviour.
+ */
+export interface SubmitAnswerOpts {
+  /**
+   * When true, the framework logs the card record and updates ELO/SRS but
+   * does **not** advance to the next card. The view is expected to emit
+   * `ready-to-advance` later to trigger navigation.
+   */
+  deferAdvance?: boolean;
+}
+
 export interface QuestionViewUtils<Q extends Question> {
   priorSessionViews: Ref<number>;
   priorAttempts: Ref<number>;
@@ -30,7 +42,7 @@ export interface QuestionViewUtils<Q extends Question> {
   maxAttemptsPerView: Ref<number>;
   maxSessionViews: Ref<number>;
   question: Ref<Q | undefined>;
-  submitAnswer: (answer: Answer, submittingClass?: string) => QuestionRecord;
+  submitAnswer: (answer: Answer, submittingClass?: string, opts?: SubmitAnswerOpts) => QuestionRecord;
 }
 
 // Base composable for viewable functionality
@@ -90,7 +102,7 @@ export function useQuestionView<Q extends Question>(
   const maxSessionViews = ref(2);
   const question = ref<Q>();
 
-  const submitAnswer = (answer: Answer, submittingClass?: string): QuestionRecord => {
+  const submitAnswer = (answer: Answer, submittingClass?: string, opts?: SubmitAnswerOpts): QuestionRecord => {
     viewableUtils.logger.log('submitAnswer called...');
 
     if (!question.value) {
@@ -112,6 +124,11 @@ export function useQuestionView<Q extends Question>(
       timeStamp: viewableUtils.startTime.value,
       userAnswer: answer,
     };
+
+    // Merge deferAdvance from opts if provided (takes precedence over evaluate())
+    if (opts?.deferAdvance !== undefined) {
+      record.deferAdvance = opts.deferAdvance;
+    }
 
     if (!evaluation.isCorrect) {
       priorAttempts.value++;

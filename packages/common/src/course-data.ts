@@ -110,6 +110,17 @@ export function prepareNote55(
 export interface Evaluation {
   isCorrect: boolean; // expand / contract the SRS
   performance: Performance;
+
+  /**
+   * When true, the framework logs the card record and updates ELO/SRS as
+   * normal, but does **not** advance to the next card. The view component
+   * is expected to emit a `ready-to-advance` event later to trigger
+   * navigation (e.g. after an animation sequence completes).
+   *
+   * This allows a view to "bank" its submission early (so that replans
+   * can see the updated state) while retaining control of the UI timeline.
+   */
+  deferAdvance?: boolean;
 }
 
 /**

@@ -44,6 +44,14 @@ export interface ResponseResult {
   nextCardAction: Exclude<SessionAction, 'dismiss-error'> | 'none';
   shouldLoadNextCard: boolean;
 
+  /**
+   * When true, the card requested deferred advancement via `deferAdvance`.
+   * The record was logged and ELO updated, but navigation was suppressed.
+   * StudySession should stash `nextCardAction` and wait for a
+   * `ready-to-advance` event from the card before calling `nextCard()`.
+   */
+  deferred?: boolean;
+
   // UI Data (let view decide how to render)
   isCorrect: boolean;
   performanceScore?: number; // for shadow color calculation

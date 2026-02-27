@@ -107,9 +107,11 @@ export class ResponseProcessor {
     try {
       const history = await cardHistory;
 
+      let result: ResponseResult;
+
       // Handle correct responses
       if (cardRecord.isCorrect) {
-        return this.processCorrectResponse(
+        result = this.processCorrectResponse(
           cardRecord,
           history,
           studySessionItem,
@@ -120,7 +122,7 @@ export class ResponseProcessor {
         );
       } else {
         // Handle incorrect responses
-        return this.processIncorrectResponse(
+        result = this.processIncorrectResponse(
           cardRecord,
           history,
           courseRegistrationDoc,
@@ -132,6 +134,24 @@ export class ResponseProcessor {
           sessionViews
         );
       }
+
+      // Apply deferred advancement: record is logged and ELO updated above,
+      // but we suppress navigation so the view retains control of the UI
+      // timeline. StudySession will stash the nextCardAction and wait for
+      // a `ready-to-advance` event from the view.
+      if (cardRecord.deferAdvance && result.shouldLoadNextCard) {
+        logger.info(
+          '[ResponseProcessor] deferAdvance requested — suppressing navigation, action stashed:',
+          { nextCardAction: result.nextCardAction }
+        );
+        result = {
+          ...result,
+          shouldLoadNextCard: false,
+          deferred: true,
+        };
+      }
+
+      return result;
     } catch (e: unknown) {
       logger.error('[ResponseProcessor] Failed to load card history', { e, cardId });
       throw e;
