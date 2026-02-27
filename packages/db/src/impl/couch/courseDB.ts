@@ -422,6 +422,15 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
     return tagsByCard;
   }
 
+  async getAllCardIds(): Promise<string[]> {
+    const result = await this.db.allDocs({
+      startkey: 'CARD-',
+      endkey: 'CARD-\ufff0',
+      include_docs: false,
+    });
+    return result.rows.map((row) => row.id);
+  }
+
   async addTagToCard(
     cardId: string,
     tagId: string,
