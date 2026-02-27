@@ -51,7 +51,7 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
     );
   }
 
-  async getWeightedCards(limit: number, context?: GeneratorContext): Promise<WeightedCard[]> {
+  async getWeightedCards(limit: number, _context?: GeneratorContext): Promise<WeightedCard[]> {
     if (this.config.cardIds.length === 0) {
       return [];
     }
