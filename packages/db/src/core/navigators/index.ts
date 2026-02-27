@@ -628,4 +628,13 @@ export abstract class ContentNavigator implements StudyContentSource {
   async getWeightedCards(_limit: number): Promise<WeightedCard[]> {
     throw new Error(`${this.constructor.name} must implement getWeightedCards(). `);
   }
+
+  /**
+   * Set ephemeral hints for the next pipeline run.
+   * No-op for non-Pipeline navigators. Pipeline overrides this.
+   */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  setEphemeralHints(_hints: Record<string, unknown>): void {
+    // no-op — only Pipeline implements this
+  }
 }

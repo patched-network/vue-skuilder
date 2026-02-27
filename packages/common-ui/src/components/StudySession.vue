@@ -203,6 +203,7 @@ export default defineComponent({
       sessionContentSources: [] as StudyContentSource[],
       timeRemaining: 300, // 5 minutes * 60 seconds
       replanPending: false,
+      replanHints: null as Record<string, unknown> | null,
       intervalHandler: null as NodeJS.Timeout | null,
       cardType: '',
       debugMode: (window as any).debugMode === true,
@@ -265,10 +266,11 @@ export default defineComponent({
      * checks this flag after submitResponse() has recorded ELO/tag
      * interactions, ensuring the pipeline sees fully up-to-date state.
      */
-    handleReplanRequest() {
+    handleReplanRequest(hints?: Record<string, unknown>) {
       if (this.sessionController) {
-        console.log('[StudySession] Replan requested by card view, deferring until after response processing');
+        console.log(`[StudySession] Replan requested by card view${hints ? ' (with hints)' : ''}, deferring until after response processing`);
         this.replanPending = true;
+        this.replanHints = hints ?? null;
       }
     },
 
@@ -463,9 +465,11 @@ export default defineComponent({
 
       // Fire deferred replan if requested — state is now fully recorded
       if (this.replanPending) {
-        console.log('[StudySession] Firing deferred replan (post-submitResponse)');
+        const hints = this.replanHints;
+        console.log(`[StudySession] Firing deferred replan (post-submitResponse)${hints ? ' with hints' : ''}`);
         this.replanPending = false;
-        void this.sessionController!.requestReplan();
+        this.replanHints = null;
+        void this.sessionController!.requestReplan(hints ?? undefined);
         this.$emit('replan-requested');
       }
 

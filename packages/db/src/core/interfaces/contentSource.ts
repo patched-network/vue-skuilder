@@ -79,6 +79,12 @@ export interface StudyContentSource {
    * Used for recording learning outcomes.
    */
   getOrchestrationContext?(): Promise<OrchestrationContext>;
+
+  /**
+   * Set ephemeral hints for the next pipeline run.
+   * No-op for sources that don't support hints.
+   */
+  setEphemeralHints?(hints: Record<string, unknown>): void;
 }
 // #endregion docs_StudyContentSource
 

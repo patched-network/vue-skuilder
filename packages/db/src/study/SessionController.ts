@@ -246,13 +246,21 @@ export class SessionController<TView = unknown> extends Loggable {
    * Typical trigger: application-level code (e.g. after a GPC intro completion)
    * calls this to ensure newly-unlocked content appears in the session.
    */
-  public async requestReplan(): Promise<void> {
+  public async requestReplan(hints?: Record<string, unknown>): Promise<void> {
     if (this._replanPromise) {
       this.log('Replan already in progress, awaiting existing replan');
       return this._replanPromise;
     }
 
-    this.log('Mid-session replan requested');
+    // Forward hints to all sources that support them (Pipeline)
+    if (hints) {
+      for (const source of this.sources) {
+        this.log(`[Hints] source type=${source.constructor.name}, hasMethod=${typeof source.setEphemeralHints}`);
+        source.setEphemeralHints?.(hints);
+      }
+    }
+
+    this.log(`Mid-session replan requested${hints ? ` (hints: ${JSON.stringify(hints)})` : ''}`);
     this._replanPromise = this._executeReplan();
 
     try {
