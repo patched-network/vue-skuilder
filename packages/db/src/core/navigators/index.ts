@@ -633,7 +633,6 @@ export abstract class ContentNavigator implements StudyContentSource {
    * Set ephemeral hints for the next pipeline run.
    * No-op for non-Pipeline navigators. Pipeline overrides this.
    */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   setEphemeralHints(_hints: Record<string, unknown>): void {
     // no-op — only Pipeline implements this
   }
