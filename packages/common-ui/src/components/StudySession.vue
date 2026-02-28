@@ -372,12 +372,18 @@ export default defineComponent({
           // db.setChangeFcn(this.handleClassroomMessage());
         });
 
+        const scOptions = this.sessionConfig?.defaultBatchLimit !== undefined
+          ? { defaultBatchLimit: this.sessionConfig.defaultBatchLimit }
+          : undefined;
+
         this.sessionController = markRaw(
           new SessionController<ViewComponent>(
             this.sessionContentSources,
             60 * this.sessionTimeLimit,
             this.dataLayer,
-            this.getViewComponent
+            this.getViewComponent,
+            undefined, // mixer — use default
+            scOptions
           )
         );
         this.sessionController.sessionRecord = this.sessionRecord;

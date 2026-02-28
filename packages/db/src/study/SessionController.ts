@@ -104,6 +104,13 @@ export class SessionController<TView = unknown> extends Loggable {
   private dataLayer: DataLayerProvider;
   private courseNameCache: Map<string, string> = new Map();
 
+  /**
+   * Default pipeline batch size for new-card planning.
+   * Set via constructor options; falls back to 20 when not specified.
+   * Individual replans can override via `ReplanOptions.limit`.
+   */
+  private _defaultBatchLimit: number = 20;
+
   private sources: StudyContentSource[];
   // dataLayer and getViewComponent now injected into CardHydrationService
   private _sessionRecord: StudySessionRecord[] = [];
@@ -174,13 +181,18 @@ export class SessionController<TView = unknown> extends Loggable {
    * @param dataLayer - Data layer provider
    * @param getViewComponent - Function to resolve view components
    * @param mixer - Optional source mixer strategy (defaults to QuotaRoundRobinMixer)
+   * @param options - Optional session-level configuration
+   * @param options.defaultBatchLimit - Default pipeline batch size (default: 20).
+   *   Smaller values for newer users cause more frequent replans, keeping plans
+   *   aligned with rapidly-changing user state.
    */
   constructor(
     sources: StudyContentSource[],
     time: number,
     dataLayer: DataLayerProvider,
     getViewComponent: (viewId: string) => TView,
-    mixer?: SourceMixer
+    mixer?: SourceMixer,
+    options?: { defaultBatchLimit?: number }
   ) {
     super();
 
@@ -204,9 +216,14 @@ export class SessionController<TView = unknown> extends Loggable {
     this._secondsRemaining = time;
     this.endTime = new Date(this.startTime.valueOf() + 1000 * this._secondsRemaining);
 
+    if (options?.defaultBatchLimit !== undefined) {
+      this._defaultBatchLimit = options.defaultBatchLimit;
+    }
+
     this.log(`Session constructed:
     startTime: ${this.startTime}
-    endTime: ${this.endTime}`);
+    endTime: ${this.endTime}
+    defaultBatchLimit: ${this._defaultBatchLimit}`);
   }
 
   private tick() {
@@ -396,8 +413,7 @@ export class SessionController<TView = unknown> extends Loggable {
     // Burst replan: suppress quality-based auto-replan so the background
     // replan doesn't clobber the small hinted queue before it's consumed.
     // The depletion trigger (newQ empty) takes over instead.
-    const DEFAULT_LIMIT = 20;
-    if (limit !== undefined && limit < DEFAULT_LIMIT) {
+    if (limit !== undefined && limit < this._defaultBatchLimit) {
       this._suppressQualityReplan = true;
       this.log(`[Replan] Burst mode (limit=${limit}): suppressing quality-based auto-replan`);
     } else {
@@ -492,6 +508,7 @@ export class SessionController<TView = unknown> extends Loggable {
       replan: {
         inProgress: this._replanPromise !== null,
         suppressQualityReplan: this._suppressQualityReplan,
+        defaultBatchLimit: this._defaultBatchLimit,
       },
     };
   }
@@ -523,7 +540,7 @@ export class SessionController<TView = unknown> extends Loggable {
   }): Promise<number> {
     const replan = options?.replan ?? false;
     const additive = options?.additive ?? false;
-    const limit = options?.limit ?? 20; // Batch size per source (caller may override)
+    const limit = options?.limit ?? this._defaultBatchLimit;
 
     // Collect batches from each source
     const batches: SourceBatch[] = [];
@@ -771,38 +788,48 @@ export class SessionController<TView = unknown> extends Loggable {
     // --- Auto-replan triggers ---
     // Two automatic replan triggers maintain queue freshness:
     //
-    // 1. Depletion: newQ is empty → refill immediately (or in background
-    //    if reviewQ/failedQ can cover). Essential after burst replans.
+    // 1. Depletion: newQ is running dry → fire a replan so fresh content
+    //    is ready by the time the last card is consumed.
+    //    - newQ === 1: background replan — overlaps pipeline latency with
+    //      the user's interaction on the last card. On the *next*
+    //      nextCard(), the _replanPromise await at the top ensures the
+    //      replan has landed before we try to draw.
+    //    - newQ === 0 && all queues empty: blocking await — nothing else
+    //      to serve, so we must wait for the pipeline before proceeding.
+    //    - newQ === 0 && other queues have content: background — the user
+    //      draws from reviewQ/failedQ while the pipeline runs.
     //
     // 2. Quality: few well-indicated cards remain → background replan so
     //    the refreshed queue is ready by the time the buffer is consumed.
     //    Suppressed after a burst replan to avoid clobbering burst cards.
 
-    // 1. Depletion trigger: newQ is empty but session has time remaining.
-    //    This covers the case where a small burst replan drained completely.
+    // 1. Depletion trigger
     //    Guarded by _depletionReplanAttempted to avoid infinite loops when
     //    the pipeline consistently returns no new content.
     if (
-      this.newQ.length === 0 &&
+      this.newQ.length <= 1 &&
       this._secondsRemaining > 0 &&
       !this._replanPromise &&
       !this._depletionReplanAttempted
     ) {
-      this._suppressQualityReplan = false; // burst is consumed, clear suppression
+      this._suppressQualityReplan = false; // burst is (nearly) consumed, clear suppression
       this._depletionReplanAttempted = true;
 
       const otherContent = this.reviewQ.length + this.failedQ.length;
-      if (otherContent === 0) {
-        // No content in any queue — await so the user isn't stalled
+
+      if (this.newQ.length === 0 && otherContent === 0) {
+        // Truly empty — nothing to serve. Must block until the pipeline delivers.
         this.log(
           `[AutoReplan:depletion] All queues empty with ${this._secondsRemaining}s remaining. ` +
           `Awaiting replan.`
         );
         await this.requestReplan();
       } else {
-        // Other queues can serve content while the replan runs in background
+        // Either 1 card remains (look-ahead) or other queues can cover.
+        // Fire in background — pipeline runs while the user works.
         this.log(
-          `[AutoReplan:depletion] newQ empty (${otherContent} cards in other queues). ` +
+          `[AutoReplan:depletion] newQ has ${this.newQ.length} card(s) ` +
+          `(${otherContent} in other queues) with ${this._secondsRemaining}s remaining. ` +
           `Triggering background replan.`
         );
         void this.requestReplan();
