@@ -198,7 +198,13 @@ export default class RelativePriorityNavigator extends ContentNavigator implemen
         const cardTags = card.tags ?? [];
         const priority = this.computeCardPriority(cardTags);
         const boostFactor = this.computeBoostFactor(priority);
-        const finalScore = Math.max(0, Math.min(1, card.score * boostFactor));
+        // No upper clamp — scores may exceed 1.0 intentionally.
+        // Scores are only used for relative ordering within a pipeline run,
+        // so absolute magnitude doesn't matter. Clamping to 1.0 here collapsed
+        // differentiation when GPC preReqBoosts and priority boosts compounded
+        // (e.g. 0.96 × 2.5 × 1.24 → 2.98, previously crushed back to 1.0).
+        // Floor of 0 is kept: negative scores have no meaning.
+        const finalScore = Math.max(0, card.score * boostFactor);
 
         // Determine action based on boost factor
         const action = boostFactor > 1.0 ? 'boosted' : boostFactor < 1.0 ? 'penalized' : 'passed';
