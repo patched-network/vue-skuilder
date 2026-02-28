@@ -260,10 +260,9 @@ export class SessionController<TView = unknown> extends Loggable {
       return this._replanPromise;
     }
 
-    // Forward hints to all sources that support them (Pipeline)
+    // Forward hints to all sources (CourseDB stashes them, Pipeline consumes them)
     if (hints) {
       for (const source of this.sources) {
-        this.log(`[Hints] source type=${source.constructor.name}, hasMethod=${typeof source.setEphemeralHints}`);
         source.setEphemeralHints?.(hints);
       }
     }
