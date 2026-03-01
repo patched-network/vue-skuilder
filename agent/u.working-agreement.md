@@ -79,7 +79,7 @@ turn 3 (assistant):
   - separate implementation tasks, testing tasks, and administrative tasks (eg, documentation updates)
 - the plan file should not
   - contain large amounts of implementation (tokens don't grow on trees.)
-  - contain large amounts of redunany information from the
+  - contain large amounts of redundant information from prior documents
 
 turn 4 (user):
 - assesses the plan
@@ -96,34 +96,12 @@ turn 5 (assistant):
 - the todo doc should not
   - contain large amounts of repeated information from prior docs
 
-As a very rough guide, assistant should attempt to size 'phases' as chunks of work that it expects it can complete independently in a single 'turn'
-
 ## Do
 
-At this point we are into the main loop of the session.
-
-{{
-Main Loop:
-
-- User will assign chunks of tasks from the todo list to the assistant
-- Agent will attempt to complete the tasks.
-- after the attempt, agent updates the todo doc in-place.
-  - completed items should be checked off
-  - where relevant, blockers or new information surfaced during the attempt can
-  - larger headings (eg, for phases) can be annotated with status markers (eg, COMPLETED, NEXT, IN-PROGRESS, BLOCKED)
-
-- User will review the assistant changes, and:
- - if satisfied, indicate so and either:
-   - ask the assistant to carry on with their `a.next.md` suggestion
-   - redirect to a different set of tasks
- - if unsatisfied, main loop breaks and we debug / rethink together
-
-
-Where a user approves the changes, before moving on, the assistant will update the `a.todo.md` file to reflect completed and potentiall *in flight* tasks.
-
-At the end of each agentic turn, assistant can rewrite `a.next.md` from scratch.
-
-}}
+Once a plan and todo are approved, execution begins. The agent works through the todo document, updating it in-place as work progresses:
+- Completed items should be checked off
+- Phase headings can be annotated with status markers (COMPLETED, IN-PROGRESS, BLOCKED)
+- New blockers or information surfaced during execution should be noted in the todo doc or as aside documents (see Task Focus below)
 
 # General Notes
 
@@ -153,6 +131,19 @@ But when writing source code, documentation, or other 'durable' content, please 
        85 -      // Create course database connection
        86 -      const courseDbUrl = `${dbUrl}/${dbName}`;
 ```
+
+## Agent Billing Context and Handoffs
+
+The user works with agents through two interfaces, each with a different billing model that should inform agent behavior:
+
+**Zed Editor (per-request billing):** Each user request is billed as a flat unit regardless of token volume. Agents should lean hard toward exhaustively treating each request, making full use of available resources. Well-suited use cases: architecture research questions for implementation planning of well-defined features, executing against existing planning or todo documents, large but systematic refactors. Zed agents should, under normal circumstances, update a working document (assessment, plan, todo, or next) at the end of each agentic-run turn — this keeps the document trail current and enables smooth handoffs.
+
+**Claude Code (per-token billing):** Usage is billed by token. Agents should lean toward incremental back-and-forth with a higher ratio of user-feedback signal. Well-suited use cases: iterative or speculative debugging, design work, exploratory research, and unknown-unknown surfacing for vaguely defined features.
+
+Agents in both contexts should be aware of the other "lane" and be prepared to suggest handoffs when appropriate. The document-centric workflow described above is what makes these handoffs practical — working documents carry context between interfaces. For example:
+- A Claude Code agent might say: *"This is now a well-formulated research question against the codebase, which could be well suited for a Zed-agentic deep dive."*
+- A Claude Code agent might say: *"This feature is now well specified. The change set will be large and possibly suited for a Zed-agentic run."*
+- A Zed agent might say: *"This is getting speculative / exploratory — might be more efficient as an incremental Claude Code session."*
 
 # Coda
 
