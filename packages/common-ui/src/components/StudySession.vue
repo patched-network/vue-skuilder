@@ -11,14 +11,18 @@
 
     <br v-if="!frameless" />
 
-    <div v-if="sessionFinished" class="text-h4">
-      <p>Study session finished! Great job!</p>
-      <p v-if="sessionController">{{ sessionController.report }}</p>
-      <!-- <p>
-        Start <a @click="$emit('session-finished')">another study session</a>, or try
-        <router-link :to="`/edit/${courseID}`">adding some new content</router-link> to challenge yourself and others!
-      </p> -->
-      <heat-map :activity-records-getter="() => user.getActivityRecords()" />
+    <div v-if="sessionFinished">
+      <slot name="session-finished" :session-record="sessionRecord" :report="sessionController?.report">
+        <div class="text-h4">
+          <p>Study session finished! Great job!</p>
+          <p v-if="sessionController">{{ sessionController.report }}</p>
+          <!-- <p>
+            Start <a @click="$emit('session-finished')">another study session</a>, or try
+            <router-link :to="`/edit/${courseID}`">adding some new content</router-link> to challenge yourself and others!
+          </p> -->
+          <heat-map :activity-records-getter="() => user.getActivityRecords()" />
+        </div>
+      </slot>
     </div>
 
     <div v-else ref="shadowWrapper" class="card-transition-container">
