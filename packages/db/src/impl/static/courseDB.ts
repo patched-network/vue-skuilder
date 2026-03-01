@@ -442,9 +442,21 @@ export class StaticCourseDB implements CourseDBInterface {
   }
 
   // Study Content Source implementation
+
+  private _pendingHints: Record<string, unknown> | null = null;
+
+  setEphemeralHints(hints: Record<string, unknown>): void {
+    this._pendingHints = hints;
+  }
+
   async getWeightedCards(limit: number): Promise<WeightedCard[]> {
     try {
       const navigator = await this.createNavigator(this.userDB);
+      // Forward any pending hints to the Pipeline
+      if (this._pendingHints) {
+        navigator.setEphemeralHints(this._pendingHints);
+        this._pendingHints = null;
+      }
       return navigator.getWeightedCards(limit);
     } catch (e) {
       logger.error(`[static/courseDB] Error getting weighted cards: ${e}`);

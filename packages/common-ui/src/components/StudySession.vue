@@ -11,14 +11,18 @@
 
     <br v-if="!frameless" />
 
-    <div v-if="sessionFinished" class="text-h4">
-      <p>Study session finished! Great job!</p>
-      <p v-if="sessionController">{{ sessionController.report }}</p>
-      <!-- <p>
-        Start <a @click="$emit('session-finished')">another study session</a>, or try
-        <router-link :to="`/edit/${courseID}`">adding some new content</router-link> to challenge yourself and others!
-      </p> -->
-      <heat-map :activity-records-getter="() => user.getActivityRecords()" />
+    <div v-if="sessionFinished">
+      <slot name="session-finished" :session-record="sessionRecord" :report="sessionController?.report">
+        <div class="text-h4">
+          <p>Study session finished! Great job!</p>
+          <p v-if="sessionController">{{ sessionController.report }}</p>
+          <!-- <p>
+            Start <a @click="$emit('session-finished')">another study session</a>, or try
+            <router-link :to="`/edit/${courseID}`">adding some new content</router-link> to challenge yourself and others!
+          </p> -->
+          <heat-map :activity-records-getter="() => user.getActivityRecords()" />
+        </div>
+      </slot>
     </div>
 
     <div v-else ref="shadowWrapper" class="card-transition-container">
@@ -97,6 +101,7 @@ import {
   getStudySource,
   HydratedCard,
   isQuestionRecord,
+  ReplanOptions,
   ResponseResult,
   SessionController,
   StudyContentSource,
@@ -204,7 +209,7 @@ export default defineComponent({
       sessionContentSources: [] as StudyContentSource[],
       timeRemaining: 300, // 5 minutes * 60 seconds
       replanPending: false,
-      replanHints: null as Record<string, unknown> | null,
+      replanOptions: null as ReplanOptions | null,
       deferredNextCardAction: null as string | null,
       intervalHandler: null as NodeJS.Timeout | null,
       cardType: '',
@@ -282,12 +287,17 @@ export default defineComponent({
      * The replan is deferred — not fired immediately. processResponse()
      * checks this flag after submitResponse() has recorded ELO/tag
      * interactions, ensuring the pipeline sees fully up-to-date state.
+     *
+     * Accepts either a ReplanOptions object (new API) or a bare hints
+     * Record (legacy). SessionController.requestReplan() normalises both.
      */
-    handleReplanRequest(hints?: Record<string, unknown>) {
+    handleReplanRequest(options?: ReplanOptions | Record<string, unknown>) {
       if (this.sessionController) {
-        console.log(`[StudySession] Replan requested by card view${hints ? ' (with hints)' : ''}, deferring until after response processing`);
+        const label = (options as ReplanOptions)?.label;
+        const tag = label ? ` [${label}]` : '';
+        console.log(`[StudySession] Replan requested by card view${tag}, deferring until after response processing`);
         this.replanPending = true;
-        this.replanHints = hints ?? null;
+        this.replanOptions = (options as ReplanOptions) ?? null;
       }
     },
 
@@ -366,12 +376,18 @@ export default defineComponent({
           // db.setChangeFcn(this.handleClassroomMessage());
         });
 
+        const scOptions = this.sessionConfig?.defaultBatchLimit !== undefined
+          ? { defaultBatchLimit: this.sessionConfig.defaultBatchLimit }
+          : undefined;
+
         this.sessionController = markRaw(
           new SessionController<ViewComponent>(
             this.sessionContentSources,
             60 * this.sessionTimeLimit,
             this.dataLayer,
-            this.getViewComponent
+            this.getViewComponent,
+            undefined, // mixer — use default
+            scOptions
           )
         );
         this.sessionController.sessionRecord = this.sessionRecord;
@@ -482,11 +498,13 @@ export default defineComponent({
 
       // Fire deferred replan if requested — state is now fully recorded
       if (this.replanPending) {
-        const hints = this.replanHints;
-        console.log(`[StudySession] Firing deferred replan (post-submitResponse)${hints ? ' with hints' : ''}`);
+        const opts = this.replanOptions;
+        const label = opts?.label;
+        const tag = label ? ` [${label}]` : '';
+        console.log(`[StudySession] Firing deferred replan (post-submitResponse)${tag}`);
         this.replanPending = false;
-        this.replanHints = null;
-        void this.sessionController!.requestReplan(hints ?? undefined);
+        this.replanOptions = null;
+        void this.sessionController!.requestReplan(opts ?? undefined);
         this.$emit('replan-requested');
       }
 

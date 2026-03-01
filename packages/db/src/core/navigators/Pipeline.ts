@@ -39,6 +39,13 @@ export interface ReplanHints {
   excludeTags?: string[];
   /** Remove these specific card IDs from results. */
   excludeCards?: string[];
+  /**
+   * Debugging label threaded from the replan requester.
+   * Attached to provenance entries so card scoring history
+   * can be traced back to the originating event.
+   * Prefixed with `_` to signal it's metadata, not a scoring hint.
+   */
+  _label?: string;
 }
 
 /**
@@ -544,7 +551,7 @@ export class Pipeline extends ContentNavigator {
             card.provenance.push({
               strategy: 'ephemeralHint',
               strategyId: 'ephemeral-hint',
-              strategyName: 'Replan Hint',
+              strategyName: hints._label ? `Replan Hint (${hints._label})` : 'Replan Hint',
               action: 'boosted',
               score: card.score,
               reason: `boostTag ${pattern} ×${factor}`,
@@ -561,7 +568,7 @@ export class Pipeline extends ContentNavigator {
             card.provenance.push({
               strategy: 'ephemeralHint',
               strategyId: 'ephemeral-hint',
-              strategyName: 'Replan Hint',
+              strategyName: hints._label ? `Replan Hint (${hints._label})` : 'Replan Hint',
               action: 'boosted',
               score: card.score,
               reason: `boostCard ${pattern} ×${factor}`,
@@ -573,6 +580,7 @@ export class Pipeline extends ContentNavigator {
 
     // 3. Require — inject from the full pool if not already present
     const cardIds = new Set(cards.map((c) => c.cardId));
+    const hintLabel = hints._label ? `Replan Hint (${hints._label})` : 'Replan Hint';
     const inject = (card: WeightedCard, reason: string) => {
       if (!cardIds.has(card.cardId)) {
         // Give required cards a floor score so they sort above zero-score filler
@@ -585,7 +593,7 @@ export class Pipeline extends ContentNavigator {
             {
               strategy: 'ephemeralHint',
               strategyId: 'ephemeral-hint',
-              strategyName: 'Replan Hint',
+              strategyName: hintLabel,
               action: 'boosted',
               score: floorScore,
               reason,

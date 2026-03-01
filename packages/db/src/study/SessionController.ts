@@ -20,6 +20,35 @@ import { SourceMixer, QuotaRoundRobinMixer, SourceBatch } from './SourceMixer';
 import { captureMixerRun } from './MixerDebugger';
 import { startSessionTracking, recordCardPresentation, snapshotQueues, endSessionTracking } from './SessionDebugger';
 
+/**
+ * Options for requesting a mid-session replan.
+ *
+ * All fields are optional — callers can pass just the fields they need.
+ * When omitted, defaults match the existing behaviour (full 20-card
+ * replace with no hints).
+ */
+export interface ReplanOptions {
+  /** Scoring hints forwarded to the pipeline (boost/exclude/require). */
+  hints?: Record<string, unknown>;
+  /**
+   * Maximum number of new cards to return from the pipeline.
+   * Default: 20 (the standard session batch size).
+   */
+  limit?: number;
+  /**
+   * How to integrate the new cards into the existing newQ.
+   * - `'replace'` (default): atomically swap the entire newQ.
+   * - `'merge'`: insert new cards at the front, keeping existing cards.
+   */
+  mode?: 'replace' | 'merge';
+  /**
+   * Human-readable label for debugging / provenance.
+   * Appears in console logs and in card provenance entries created
+   * by ephemeral hint application.
+   */
+  label?: string;
+}
+
 export interface StudySessionRecord {
   card: {
     course_id: string;
@@ -75,6 +104,13 @@ export class SessionController<TView = unknown> extends Loggable {
   private dataLayer: DataLayerProvider;
   private courseNameCache: Map<string, string> = new Map();
 
+  /**
+   * Default pipeline batch size for new-card planning.
+   * Set via constructor options; falls back to 20 when not specified.
+   * Individual replans can override via `ReplanOptions.limit`.
+   */
+  private _defaultBatchLimit: number = 20;
+
   private sources: StudyContentSource[];
   // dataLayer and getViewComponent now injected into CardHydrationService
   private _sessionRecord: StudySessionRecord[] = [];
@@ -104,6 +140,22 @@ export class SessionController<TView = unknown> extends Loggable {
    */
   private _wellIndicatedRemaining: number = 0;
 
+  /**
+   * When true, suppresses the quality-based auto-replan trigger in
+   * nextCard(). Set after a burst replan (small limit) to prevent the
+   * auto-replan from clobbering the burst cards before they're consumed.
+   * Cleared when the depletion-triggered replan fires (newQ exhausted).
+   */
+  private _suppressQualityReplan: boolean = false;
+
+  /**
+   * Guards against infinite depletion-triggered replans. Set to true
+   * when a depletion replan fires; cleared when a replan produces
+   * content (newQ.length > 0 after replan) or when an explicit
+   * (non-auto) replan is requested.
+   */
+  private _depletionReplanAttempted: boolean = false;
+
   private startTime: Date;
   private endTime: Date;
   private _secondsRemaining: number;
@@ -129,13 +181,18 @@ export class SessionController<TView = unknown> extends Loggable {
    * @param dataLayer - Data layer provider
    * @param getViewComponent - Function to resolve view components
    * @param mixer - Optional source mixer strategy (defaults to QuotaRoundRobinMixer)
+   * @param options - Optional session-level configuration
+   * @param options.defaultBatchLimit - Default pipeline batch size (default: 20).
+   *   Smaller values for newer users cause more frequent replans, keeping plans
+   *   aligned with rapidly-changing user state.
    */
   constructor(
     sources: StudyContentSource[],
     time: number,
     dataLayer: DataLayerProvider,
     getViewComponent: (viewId: string) => TView,
-    mixer?: SourceMixer
+    mixer?: SourceMixer,
+    options?: { defaultBatchLimit?: number }
   ) {
     super();
 
@@ -159,9 +216,14 @@ export class SessionController<TView = unknown> extends Loggable {
     this._secondsRemaining = time;
     this.endTime = new Date(this.startTime.valueOf() + 1000 * this._secondsRemaining);
 
+    if (options?.defaultBatchLimit !== undefined) {
+      this._defaultBatchLimit = options.defaultBatchLimit;
+    }
+
     this.log(`Session constructed:
     startTime: ${this.startTime}
-    endTime: ${this.endTime}`);
+    endTime: ${this.endTime}
+    defaultBatchLimit: ${this._defaultBatchLimit}`);
   }
 
   private tick() {
@@ -254,28 +316,67 @@ export class SessionController<TView = unknown> extends Loggable {
    * Typical trigger: application-level code (e.g. after a GPC intro completion)
    * calls this to ensure newly-unlocked content appears in the session.
    */
-  public async requestReplan(hints?: Record<string, unknown>): Promise<void> {
+  public async requestReplan(options?: ReplanOptions | Record<string, unknown>): Promise<void> {
+    // Normalise: bare hints object (legacy callers) → ReplanOptions wrapper
+    const opts = this.normalizeReplanOptions(options);
+
+    // Explicit (non-auto) replans clear the depletion guard — the caller
+    // is providing fresh intent that may change pipeline results.
+    if (opts.hints || opts.label || opts.limit) {
+      this._depletionReplanAttempted = false;
+    }
+
     if (this._replanPromise) {
       this.log('Replan already in progress, awaiting existing replan');
       return this._replanPromise;
     }
 
-    // Forward hints to all sources that support them (Pipeline)
-    if (hints) {
+    // Forward hints to all sources (CourseDB stashes them, Pipeline consumes them)
+    if (opts.hints) {
+      // Thread label into hints so Pipeline can attach it to provenance
+      const hintsWithLabel = opts.label
+        ? { ...opts.hints, _label: opts.label }
+        : opts.hints;
       for (const source of this.sources) {
-        this.log(`[Hints] source type=${source.constructor.name}, hasMethod=${typeof source.setEphemeralHints}`);
-        source.setEphemeralHints?.(hints);
+        source.setEphemeralHints?.(hintsWithLabel);
       }
     }
 
-    this.log(`Mid-session replan requested${hints ? ` (hints: ${JSON.stringify(hints)})` : ''}`);
-    this._replanPromise = this._executeReplan();
+    const labelTag = opts.label ? ` [${opts.label}]` : '';
+    this.log(
+      `Mid-session replan requested${labelTag}` +
+      ` (limit: ${opts.limit ?? 'default'}, mode: ${opts.mode ?? 'replace'}` +
+      `${opts.hints ? ', with hints' : ''})`
+    );
+    this._replanPromise = this._executeReplan(opts);
 
     try {
       await this._replanPromise;
     } finally {
       this._replanPromise = null;
     }
+  }
+
+  /**
+   * Normalise the requestReplan argument. Accepts either a ReplanOptions
+   * object (new API) or a plain Record<string, unknown> (legacy callers
+   * that passed hints directly). Distinguishes the two by checking for
+   * the presence of ReplanOptions-specific keys.
+   */
+  private normalizeReplanOptions(
+    input?: ReplanOptions | Record<string, unknown>
+  ): ReplanOptions {
+    if (!input) return {};
+
+    // If the input has any ReplanOptions-specific key, treat it as ReplanOptions
+    const replanKeys = ['hints', 'limit', 'mode', 'label'];
+    const inputKeys = Object.keys(input);
+    if (inputKeys.some((k) => replanKeys.includes(k))) {
+      return input as ReplanOptions;
+    }
+
+    // Otherwise treat as legacy bare-hints object
+    return { hints: input as Record<string, unknown> };
   }
 
   /** Minimum well-indicated cards before an additive retry is attempted */
@@ -298,9 +399,27 @@ export class SessionController<TView = unknown> extends Loggable {
    * pass all hierarchy filters, one additive retry is attempted — merging
    * any new high-quality candidates into the front of the queue.
    */
-  private async _executeReplan(): Promise<void> {
-    const wellIndicated = await this.getWeightedContent({ replan: true });
+  private async _executeReplan(opts: ReplanOptions = {}): Promise<void> {
+    const limit = opts.limit;
+    const mode = opts.mode ?? 'replace';
+
+    const wellIndicated = await this.getWeightedContent({
+      replan: true,
+      additive: mode === 'merge',
+      limit,
+    });
     this._wellIndicatedRemaining = wellIndicated;
+
+    // Burst replan: suppress quality-based auto-replan so the background
+    // replan doesn't clobber the small hinted queue before it's consumed.
+    // The depletion trigger (newQ empty) takes over instead.
+    if (limit !== undefined && limit < this._defaultBatchLimit) {
+      this._suppressQualityReplan = true;
+      this.log(`[Replan] Burst mode (limit=${limit}): suppressing quality-based auto-replan`);
+    } else {
+      // Normal or auto-replan — clear the burst suppression flag
+      this._suppressQualityReplan = false;
+    }
 
     if (wellIndicated >= 0 && wellIndicated < SessionController.MIN_WELL_INDICATED) {
       this.log(
@@ -308,8 +427,15 @@ export class SessionController<TView = unknown> extends Loggable {
       );
     }
 
+    // If the replan produced content, clear the depletion guard so future
+    // depletions can trigger fresh replans.
+    if (this.newQ.length > 0) {
+      this._depletionReplanAttempted = false;
+    }
+
     await this.hydrationService.ensureHydratedCards();
-    this.log(`Replan complete: newQ now has ${this.newQ.length} cards`);
+    const labelTag = opts.label ? ` [${opts.label}]` : '';
+    this.log(`Replan complete${labelTag}: newQ now has ${this.newQ.length} cards (mode=${mode})`);
 
     // Snapshot queue state for debugging
     snapshotQueues(this.reviewQ.length, this.newQ.length, this.failedQ.length);
@@ -381,6 +507,8 @@ export class SessionController<TView = unknown> extends Loggable {
       },
       replan: {
         inProgress: this._replanPromise !== null,
+        suppressQualityReplan: this._suppressQualityReplan,
+        defaultBatchLimit: this._defaultBatchLimit,
       },
     };
   }
@@ -405,10 +533,14 @@ export class SessionController<TView = unknown> extends Loggable {
    * @returns Number of "well-indicated" cards (passed all hierarchy filters)
    *   in the new content. Returns -1 if no content was loaded.
    */
-  private async getWeightedContent(options?: { replan?: boolean; additive?: boolean }): Promise<number> {
+  private async getWeightedContent(options?: {
+    replan?: boolean;
+    additive?: boolean;
+    limit?: number;
+  }): Promise<number> {
     const replan = options?.replan ?? false;
     const additive = options?.additive ?? false;
-    const limit = 20; // Initial batch size per source
+    const limit = options?.limit ?? this._defaultBatchLimit;
 
     // Collect batches from each source
     const batches: SourceBatch[] = [];
@@ -653,19 +785,69 @@ export class SessionController<TView = unknown> extends Loggable {
       await this._replanPromise;
     }
 
-    // Quality-based auto-replan: when few well-indicated cards remain,
-    // trigger a background replan. The buffer of remaining good cards
-    // covers the replan latency — by the time they're consumed, the
-    // refreshed queue is ready. Strategy-agnostic: relies only on the
-    // score-based well-indicated count, not any specific filter's output.
+    // --- Auto-replan triggers ---
+    // Two automatic replan triggers maintain queue freshness:
+    //
+    // 1. Depletion: newQ is running dry → fire a replan so fresh content
+    //    is ready by the time the last card is consumed.
+    //    - newQ === 1: background replan — overlaps pipeline latency with
+    //      the user's interaction on the last card. On the *next*
+    //      nextCard(), the _replanPromise await at the top ensures the
+    //      replan has landed before we try to draw.
+    //    - newQ === 0 && all queues empty: blocking await — nothing else
+    //      to serve, so we must wait for the pipeline before proceeding.
+    //    - newQ === 0 && other queues have content: background — the user
+    //      draws from reviewQ/failedQ while the pipeline runs.
+    //
+    // 2. Quality: few well-indicated cards remain → background replan so
+    //    the refreshed queue is ready by the time the buffer is consumed.
+    //    Suppressed after a burst replan to avoid clobbering burst cards.
+
+    // 1. Depletion trigger
+    //    Guarded by _depletionReplanAttempted to avoid infinite loops when
+    //    the pipeline consistently returns no new content.
+    if (
+      this.newQ.length <= 1 &&
+      this._secondsRemaining > 0 &&
+      !this._replanPromise &&
+      !this._depletionReplanAttempted
+    ) {
+      this._suppressQualityReplan = false; // burst is (nearly) consumed, clear suppression
+      this._depletionReplanAttempted = true;
+
+      const otherContent = this.reviewQ.length + this.failedQ.length;
+
+      if (this.newQ.length === 0 && otherContent === 0) {
+        // Truly empty — nothing to serve. Must block until the pipeline delivers.
+        this.log(
+          `[AutoReplan:depletion] All queues empty with ${this._secondsRemaining}s remaining. ` +
+          `Awaiting replan.`
+        );
+        await this.requestReplan();
+      } else {
+        // Either 1 card remains (look-ahead) or other queues can cover.
+        // Fire in background — pipeline runs while the user works.
+        this.log(
+          `[AutoReplan:depletion] newQ has ${this.newQ.length} card(s) ` +
+          `(${otherContent} in other queues) with ${this._secondsRemaining}s remaining. ` +
+          `Triggering background replan.`
+        );
+        void this.requestReplan();
+      }
+    }
+
+    // 2. Quality trigger: few well-indicated cards remain. The buffer of
+    //    remaining good cards covers replan latency.
+    //    Suppressed after a burst replan to avoid clobbering burst cards.
     const REPLAN_BUFFER = 3;
     if (
+      !this._suppressQualityReplan &&
       this._wellIndicatedRemaining <= REPLAN_BUFFER &&
       this.newQ.length > 0 &&
       !this._replanPromise
     ) {
       this.log(
-        `[AutoReplan] ${this._wellIndicatedRemaining} well-indicated cards remaining ` +
+        `[AutoReplan:quality] ${this._wellIndicatedRemaining} well-indicated cards remaining ` +
         `(newQ: ${this.newQ.length}). Triggering background replan.`
       );
       void this.requestReplan();

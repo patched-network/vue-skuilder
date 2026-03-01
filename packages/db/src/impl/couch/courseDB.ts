@@ -650,11 +650,21 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
    * @param limit - Maximum number of cards to return
    * @returns Cards sorted by score descending
    */
+  private _pendingHints: Record<string, unknown> | null = null;
+
+  public setEphemeralHints(hints: Record<string, unknown>): void {
+    this._pendingHints = hints;
+  }
+
   public async getWeightedCards(limit: number): Promise<WeightedCard[]> {
     const u = await this._getCurrentUser();
 
     try {
       const navigator = await this.createNavigator(u);
+      if (this._pendingHints) {
+        navigator.setEphemeralHints(this._pendingHints);
+        this._pendingHints = null;
+      }
       return navigator.getWeightedCards(limit);
     } catch (e) {
       logger.error(`[courseDB] Error getting weighted cards: ${e}`);
