@@ -88,7 +88,7 @@
     "vite-plugin-eslint": "^1.8.1",
     "vite-plugin-pwa": "^0.21.1",
     "vitest": "^4.0.15",
-    "wait-on": "8.0.2"
+    "wait-on": "9.0.3"
   },
   "engines": {
     "node": ">=18"
