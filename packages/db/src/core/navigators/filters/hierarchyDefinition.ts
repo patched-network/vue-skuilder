@@ -5,6 +5,7 @@ import type { WeightedCard } from '../index';
 import type { ContentNavigationStrategyData } from '../../types/contentNavigationStrategy';
 import type { CardFilter, FilterContext } from './types';
 import { toCourseElo } from '@vue-skuilder/common';
+import { logger } from '../../../util/logger';
 
 /**
  * A single prerequisite requirement for a tag.
@@ -286,6 +287,9 @@ export default class HierarchyDefinitionNavigator extends ContentNavigator imple
           finalScore *= maxBoost;
           action = 'boosted';
           finalReason = `${reason} | preReqBoost ×${maxBoost.toFixed(2)} for ${boostedPrereqs.join(', ')}`;
+          logger.info(
+            `[HierarchyDefinition] preReqBoost ×${maxBoost.toFixed(2)} applied to card ${card.cardId} via tags [${boostedPrereqs.join(', ')}] (score: ${card.score.toFixed(3)} → ${finalScore.toFixed(3)})`
+          );
         }
       }
 

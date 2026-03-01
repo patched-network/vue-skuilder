@@ -17,6 +17,10 @@ files prefixed with `a.` are assistant-authored.
 
 assistant-authored files should be sequenced, so that the progression of thoughts (and plan revisions) remains legible. - eg, create `a.1.assessment.md` `a.2.plan.md` `a.3.todo.md`, or whatever working documents are required.
 
+## Linking
+
+Where possible / convenient, markdown references to other documents in-repo should be [links](../relative/path/to/file.ts). Not necessarily every mention of the file, but exercise care in making a document that is navigation-friendly - main consumption case is inside an IDE.
+
 ## Precedence
 
 When performing actions, planning or instructions from *later* documents take precidence over earlier ones.
@@ -132,6 +136,12 @@ But when writing source code, documentation, or other 'durable' content, please 
        86 -      const courseDbUrl = `${dbUrl}/${dbName}`;
 ```
 
+## Direct Asks
+
+For easier tasks, the user may present a direct command. EG, "make the buttons on somePage.vue orange". Go ahead and do those without a documenting phase.
+
+If something is ambiguous between being a direct "do-now" command and a prompt toward launching an assess/plan/do process, please ask.
+
 ## Agent Billing Context and Handoffs
 
 The user works with agents through two interfaces, each with a different billing model that should inform agent behavior:
@@ -144,6 +154,14 @@ Agents in both contexts should be aware of the other "lane" and be prepared to s
 - A Claude Code agent might say: *"This is now a well-formulated research question against the codebase, which could be well suited for a Zed-agentic deep dive."*
 - A Claude Code agent might say: *"This feature is now well specified. The change set will be large and possibly suited for a Zed-agentic run."*
 - A Zed agent might say: *"This is getting speculative / exploratory — might be more efficient as an incremental Claude Code session."*
+
+## Writing Style for Analysis Documents
+
+The user consumes longer markdown documents with a custom rich RSVP reader (see `~/dev/mdr/AGENT_WRITING_GUIDE.md` for details). Analysis documents — assessments, plans, asides — should not be shy about longform prose where that form illuminates. Well-structured narrative with clear headings is preferable to bullet-point-only summaries when the subject benefits from developed reasoning, contextual explanation, or tracing a chain of thought.
+
+## Dictation
+
+The user often uses dictation software which may mangle technical jargon. For example, `vue` may arrive as `view`, `pinia` as `penya`, etc. Account for this contextually, and if something is truly unclear, ask for clarification.
 
 # Coda
 
