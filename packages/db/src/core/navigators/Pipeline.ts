@@ -447,7 +447,8 @@ export class Pipeline extends ContentNavigator {
         generatedCount,
         filterImpacts,
         allCardsBeforeFiltering,
-        result
+        result,
+        context.userElo
       );
       captureRun(report);
     } catch (e) {
