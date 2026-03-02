@@ -148,12 +148,14 @@ The user works with agents through two interfaces, each with a different billing
 
 **Zed Editor (per-request billing):** Each user request is billed as a flat unit regardless of token volume. Agents should lean hard toward exhaustively treating each request, making full use of available resources. Well-suited use cases: architecture research questions for implementation planning of well-defined features, executing against existing planning or todo documents, large but systematic refactors. Zed agents should, under normal circumstances, update a working document (assessment, plan, todo, or next) at the end of each agentic-run turn — this keeps the document trail current and enables smooth handoffs. Once per session, on the first response, a Zed agent should include a brief acknowledgment: *"Note: Working in per-prompt billing mode."*
 
-**Claude Code (per-token billing):** Usage is billed by token. Agents should lean toward incremental back-and-forth with a higher ratio of user-feedback signal. Well-suited use cases: iterative or speculative debugging, design work, exploratory research, and unknown-unknown surfacing for vaguely defined features.
+**CRITICAL — Zed agents must NOT run build/test/lint commands under any circumstances.** Do not run `yarn build`, `yarn dev`, `npm run build`, test runners, or any similar tooling in a Zed session. The system is prone to OOM reboots and runaway build tooling silently destroys undocumented session progress. Workflow: local code changes + document updates in Zed, remote validation via GitHub Actions CI. After plan/todo approval and code implementation, the user will push to a branch and CI validates builds/tests/linting.
+
+**Per-Token Billing Interfaces (Claude Code, Gemini CLI, OpenCode, etc.):** Usage is billed by token. Agents should lean toward incremental back-and-forth with a higher ratio of user-feedback signal. Well-suited use cases: iterative or speculative debugging, design work, exploratory research, and unknown-unknown surfacing for vaguely defined features.
 
 Agents in both contexts should be aware of the other "lane" and be prepared to suggest handoffs when appropriate. The document-centric workflow described above is what makes these handoffs practical — working documents carry context between interfaces. For example:
-- A Claude Code agent might say: *"This is now a well-formulated research question against the codebase, which could be well suited for a Zed-agentic deep dive."*
-- A Claude Code agent might say: *"This feature is now well specified. The change set will be large and possibly suited for a Zed-agentic run."*
-- A Zed agent might say: *"This is getting speculative / exploratory — might be more efficient as an incremental Claude Code session."*
+- A per-token agent might say: *"This is now a well-formulated research question against the codebase, which could be well suited for a Zed-agentic deep dive."*
+- A per-token agent might say: *"This feature is now well specified. The change set will be large and possibly suited for a Zed-agentic run."*
+- A Zed agent might say: *"This is getting speculative / exploratory — might be more efficient as an incremental per-token session."*
 
 ## Writing Style for Analysis Documents
 
