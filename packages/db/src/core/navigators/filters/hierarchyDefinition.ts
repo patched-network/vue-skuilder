@@ -30,6 +30,18 @@ interface TagPrerequisite {
    * tagged `gpc:expose:t-T` while `gpc:intro:t-T` is still locked.
    */
   preReqBoost?: number;
+  /**
+   * Score multiplier applied to cards carrying the *gated* tag once the
+   * gate opens (all prereqs met). Ensures newly-unlocked content surfaces
+   * promptly before natural ELO/SRS scoring takes over.
+   *
+   * Falls away naturally as generators stop surfacing the card after
+   * the user interacts with it.
+   *
+   * Example: `targetBoost: 4` on intro-t-T's prerequisite gives a 4×
+   * score increase to intro-t-T cards once their expose gate is met.
+   */
+  targetBoost?: number;
 }
 
 /**
@@ -241,20 +253,67 @@ export default class HierarchyDefinitionNavigator extends ContentNavigator imple
   }
 
   /**
+   * Build a map of gated tag → max configured targetBoost for all *open* gates.
+   *
+   * When a gate opens (prereqs met), cards carrying the gated tag get boosted —
+   * ensuring newly-unlocked content surfaces promptly. The boost is a static
+   * multiplier; natural ELO/SRS deprioritization after interaction handles decay.
+   */
+  private getTargetBoosts(unlockedTags: Set<string>): Map<string, number> {
+    const boosts = new Map<string, number>();
+
+    const configKeys = Object.keys(this.config.prerequisites);
+    const unlockedArr = [...unlockedTags];
+    logger.info(
+      `[HierarchyDefinition:targetBoost:trace] ${this.name} | configKeys=${configKeys.length}, unlocked=${unlockedArr.length} (${unlockedArr.slice(0, 5).join(', ')}${unlockedArr.length > 5 ? '...' : ''})`
+    );
+
+    for (const [tagId, prereqs] of Object.entries(this.config.prerequisites)) {
+      // Only boost targets of open gates
+      if (!unlockedTags.has(tagId)) continue;
+
+      // TRACE: dump prereq details for unlocked tags
+      logger.info(
+        `[HierarchyDefinition:targetBoost:trace] UNLOCKED ${tagId}: ${prereqs.length} prereqs, raw=${JSON.stringify(prereqs.map(p => ({ tag: p.tag, tb: p.targetBoost })))}`
+      );
+
+      for (const prereq of prereqs) {
+        if (!prereq.targetBoost || prereq.targetBoost <= 1.0) continue;
+
+        const existing = boosts.get(tagId) ?? 1.0;
+        boosts.set(tagId, Math.max(existing, prereq.targetBoost));
+      }
+    }
+
+    if (boosts.size > 0) {
+      logger.info(
+        `[HierarchyDefinition] targetBoosts active: ${[...boosts.entries()].map(([t, b]) => `${t}=×${b}`).join(', ')}`
+      );
+    } else {
+      logger.info(
+        `[HierarchyDefinition:targetBoost:trace] no targetBoosts found despite ${unlockedArr.length} unlocked tags`
+      );
+    }
+
+    return boosts;
+  }
+
+  /**
    * CardFilter.transform implementation.
    *
-   * Two effects:
-   * 1. Cards with locked tags receive score * 0.05 (gating penalty)
-   * 2. Cards carrying prereq tags of closed gates receive a configured
-   *    boost (preReqBoost), steering toward content that unlocks gates
+   * Three effects:
+   * 1. Cards with locked tags receive score * 0.02 (gating penalty)
+   * 2. Cards carrying prereq tags of closed gates receive preReqBoost
+   * 3. Cards carrying gated tags of open gates receive targetBoost
    */
   async transform(cards: WeightedCard[], context: FilterContext): Promise<WeightedCard[]> {
     // Get mastery state
     const masteredTags = await this.getMasteredTags(context);
     const unlockedTags = this.getUnlockedTags(masteredTags);
     const preReqBoosts = this.getPreReqBoosts(unlockedTags, masteredTags);
+    const targetBoosts = this.getTargetBoosts(unlockedTags);
 
-    // Apply prerequisite gating + prereq boosting
+    // Apply prerequisite gating + prereq/target boosting
     const gated: WeightedCard[] = [];
 
     for (const card of cards) {
@@ -289,6 +348,30 @@ export default class HierarchyDefinitionNavigator extends ContentNavigator imple
           finalReason = `${reason} | preReqBoost ×${maxBoost.toFixed(2)} for ${boostedPrereqs.join(', ')}`;
           logger.info(
             `[HierarchyDefinition] preReqBoost ×${maxBoost.toFixed(2)} applied to card ${card.cardId} via tags [${boostedPrereqs.join(', ')}] (score: ${card.score.toFixed(3)} → ${finalScore.toFixed(3)})`
+          );
+        }
+      }
+
+      // Apply target boost to unlocked cards whose gated tag just opened
+      if (isUnlocked && targetBoosts.size > 0) {
+        const cardTags = card.tags ?? [];
+        let maxTargetBoost = 1.0;
+        const boostedTargets: string[] = [];
+
+        for (const tag of cardTags) {
+          const boost = targetBoosts.get(tag);
+          if (boost && boost > maxTargetBoost) {
+            maxTargetBoost = boost;
+            boostedTargets.push(tag);
+          }
+        }
+
+        if (maxTargetBoost > 1.0) {
+          finalScore *= maxTargetBoost;
+          action = 'boosted';
+          finalReason = `${finalReason} | targetBoost ×${maxTargetBoost.toFixed(2)} for ${boostedTargets.join(', ')}`;
+          logger.info(
+            `[HierarchyDefinition] targetBoost ×${maxTargetBoost.toFixed(2)} applied to card ${card.cardId} via tags [${boostedTargets.join(', ')}] (score: ${card.score.toFixed(3)} → ${finalScore.toFixed(3)})`
           );
         }
       }
