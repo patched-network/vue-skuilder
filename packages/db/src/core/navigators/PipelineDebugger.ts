@@ -316,6 +316,9 @@ export const pipelineDebugAPI = {
         logger.info(`Card ELO: ${card.cardElo ?? 'unknown'} | User ELO: ${run.userElo ?? 'unknown'}`);
         logger.info(`Final score: ${card.finalScore.toFixed(3)}`);
         logger.info(`Selected: ${card.selected ? 'Yes ✅' : 'No ❌'}`);
+        if (card.tags && card.tags.length > 0) {
+          logger.info(`Tags (${card.tags.length}): ${card.tags.join(', ')}`);
+        }
         logger.info('Provenance:');
         logger.info(formatProvenance(card.provenance));
         // eslint-disable-next-line no-console
@@ -514,6 +517,29 @@ export const pipelineDebugAPI = {
   },
 
   /**
+   * Show user's per-tag ELO data. Useful for diagnosing hierarchy gate status.
+   *
+   * @param tagFilter - Optional glob pattern(s) to filter tags.
+   *   Examples: 'gpc:expose:*', 'gpc:intro:t-T', ['gpc:expose:t-*', 'gpc:intro:t-*']
+   */
+  async showTagElo(tagFilter?: string | string[]): Promise<void> {
+    if (!_activePipeline) {
+      logger.info('[Pipeline Debug] No active pipeline. Run a session first.');
+      return;
+    }
+    const status = await _activePipeline.getTagEloStatus(tagFilter);
+    const entries = Object.entries(status).sort(([a], [b]) => a.localeCompare(b));
+    if (entries.length === 0) {
+      logger.info(`[Pipeline Debug] No tag ELO data found${tagFilter ? ` for pattern: ${tagFilter}` : ''}.`);
+      return;
+    }
+    // eslint-disable-next-line no-console
+    console.table(
+      Object.fromEntries(entries.map(([tag, data]) => [tag, { score: Math.round(data.score), count: data.count }]))
+    );
+  },
+
+  /**
    * Show help.
    */
   help(): void {
@@ -524,6 +550,7 @@ Commands:
   .showLastRun()         Show summary of most recent pipeline run
   .showRun(id|index)     Show summary of a specific run (by index or ID suffix)
   .showCard(cardId)      Show provenance trail for a specific card
+  .showTagElo(pattern)   Show user's tag ELO data (async). E.g. 'gpc:expose:*'
   .explainReviews()      Analyze why reviews were/weren't selected
   .diagnoseCardSpace()   Scan full card space through filters (async)
   .showRegistry()        Show navigator registry (classes + roles)
