@@ -439,6 +439,9 @@ export class Pipeline extends ContentNavigator {
     // Capture run for debug API
     try {
       const courseName = await this.course?.getCourseConfig().then((c) => c.name).catch(() => undefined);
+      // Use the full post-filter sorted array (not just top N) so that
+      // showCard() can inspect provenance for cards that didn't make the cut.
+      // `cards` is the post-filter, post-hints, sorted array.
       const report = buildRunReport(
         this.course?.getCourseID() || 'unknown',
         courseName,
@@ -446,8 +449,9 @@ export class Pipeline extends ContentNavigator {
         generatorSummaries,
         generatedCount,
         filterImpacts,
-        allCardsBeforeFiltering,
-        result
+        cards,
+        result,
+        context.userElo
       );
       captureRun(report);
     } catch (e) {
@@ -705,6 +709,42 @@ export class Pipeline extends ContentNavigator {
     }
 
     return [...new Set(ids)];
+  }
+
+  // ---------------------------------------------------------------------------
+  // Tag ELO diagnostic
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Get the user's per-tag ELO data for specified tags (or all tags).
+   * Useful for diagnosing why hierarchy gates are open/closed.
+   */
+  async getTagEloStatus(
+    tagFilter?: string | string[]
+  ): Promise<Record<string, { score: number; count: number }>> {
+    const courseReg = await this.user!.getCourseRegDoc(this.course!.getCourseID());
+    const courseElo = toCourseElo(courseReg.elo);
+
+    const result: Record<string, { score: number; count: number }> = {};
+
+    if (!tagFilter) {
+      // Return all tags
+      for (const [tag, data] of Object.entries(courseElo.tags)) {
+        result[tag] = { score: data.score, count: data.count };
+      }
+    } else {
+      const patterns = Array.isArray(tagFilter) ? tagFilter : [tagFilter];
+      for (const pattern of patterns) {
+        const regex = globToRegex(pattern);
+        for (const [tag, data] of Object.entries(courseElo.tags)) {
+          if (regex.test(tag)) {
+            result[tag] = { score: data.score, count: data.count };
+          }
+        }
+      }
+    }
+
+    return result;
   }
 
   // ---------------------------------------------------------------------------

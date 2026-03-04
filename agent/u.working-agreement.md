@@ -17,6 +17,10 @@ files prefixed with `a.` are assistant-authored.
 
 assistant-authored files should be sequenced, so that the progression of thoughts (and plan revisions) remains legible. - eg, create `a.1.assessment.md` `a.2.plan.md` `a.3.todo.md`, or whatever working documents are required.
 
+## Linking
+
+Where possible / convenient, markdown references to other documents in-repo should be [links](../relative/path/to/file.ts). Not necessarily every mention of the file, but exercise care in making a document that is navigation-friendly - main consumption case is inside an IDE.
+
 ## Precedence
 
 When performing actions, planning or instructions from *later* documents take precidence over earlier ones.
@@ -132,18 +136,34 @@ But when writing source code, documentation, or other 'durable' content, please 
        86 -      const courseDbUrl = `${dbUrl}/${dbName}`;
 ```
 
+## Direct Asks
+
+For easier tasks, the user may present a direct command. EG, "make the buttons on somePage.vue orange". Go ahead and do those without a documenting phase.
+
+If something is ambiguous between being a direct "do-now" command and a prompt toward launching an assess/plan/do process, please ask.
+
 ## Agent Billing Context and Handoffs
 
 The user works with agents through two interfaces, each with a different billing model that should inform agent behavior:
 
-**Zed Editor (per-request billing):** Each user request is billed as a flat unit regardless of token volume. Agents should lean hard toward exhaustively treating each request, making full use of available resources. Well-suited use cases: architecture research questions for implementation planning of well-defined features, executing against existing planning or todo documents, large but systematic refactors. Zed agents should, under normal circumstances, update a working document (assessment, plan, todo, or next) at the end of each agentic-run turn — this keeps the document trail current and enables smooth handoffs.
+**Zed Editor (per-request billing):** Each user request is billed as a flat unit regardless of token volume. Agents should lean hard toward exhaustively treating each request, making full use of available resources. Well-suited use cases: architecture research questions for implementation planning of well-defined features, executing against existing planning or todo documents, large but systematic refactors. Zed agents should, under normal circumstances, update a working document (assessment, plan, todo, or next) at the end of each agentic-run turn — this keeps the document trail current and enables smooth handoffs. Once per session, on the first response, a Zed agent should include a brief acknowledgment: *"Note: Working in per-prompt billing mode."*
 
-**Claude Code (per-token billing):** Usage is billed by token. Agents should lean toward incremental back-and-forth with a higher ratio of user-feedback signal. Well-suited use cases: iterative or speculative debugging, design work, exploratory research, and unknown-unknown surfacing for vaguely defined features.
+**CRITICAL — Zed agents must NOT run build/test/lint commands under any circumstances.** Do not run `yarn build`, `yarn dev`, `npm run build`, test runners, or any similar tooling in a Zed session. The system is prone to OOM reboots and runaway build tooling silently destroys undocumented session progress. Workflow: local code changes + document updates in Zed, remote validation via GitHub Actions CI. After plan/todo approval and code implementation, the user will push to a branch and CI validates builds/tests/linting.
+
+**Per-Token Billing Interfaces (Claude Code, Gemini CLI, OpenCode, etc.):** Usage is billed by token. Agents should lean toward incremental back-and-forth with a higher ratio of user-feedback signal. Well-suited use cases: iterative or speculative debugging, design work, exploratory research, and unknown-unknown surfacing for vaguely defined features.
 
 Agents in both contexts should be aware of the other "lane" and be prepared to suggest handoffs when appropriate. The document-centric workflow described above is what makes these handoffs practical — working documents carry context between interfaces. For example:
-- A Claude Code agent might say: *"This is now a well-formulated research question against the codebase, which could be well suited for a Zed-agentic deep dive."*
-- A Claude Code agent might say: *"This feature is now well specified. The change set will be large and possibly suited for a Zed-agentic run."*
-- A Zed agent might say: *"This is getting speculative / exploratory — might be more efficient as an incremental Claude Code session."*
+- A per-token agent might say: *"This is now a well-formulated research question against the codebase, which could be well suited for a Zed-agentic deep dive."*
+- A per-token agent might say: *"This feature is now well specified. The change set will be large and possibly suited for a Zed-agentic run."*
+- A Zed agent might say: *"This is getting speculative / exploratory — might be more efficient as an incremental per-token session."*
+
+## Writing Style for Analysis Documents
+
+The user consumes longer markdown documents with a custom rich RSVP reader (see `~/dev/mdr/AGENT_WRITING_GUIDE.md` for details). Analysis documents — assessments, plans, asides — should not be shy about longform prose where that form illuminates. Well-structured narrative with clear headings is preferable to bullet-point-only summaries when the subject benefits from developed reasoning, contextual explanation, or tracing a chain of thought.
+
+## Dictation
+
+The user often uses dictation software which may mangle technical jargon. For example, `vue` may arrive as `view`, `pinia` as `penya`, etc. Account for this contextually, and if something is truly unclear, ask for clarification.
 
 # Coda
 

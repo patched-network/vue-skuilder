@@ -181,15 +181,19 @@ export class ResponseProcessor {
       // Update ELO ratings
       if (taggedPerformance) {
         // Per-tag ELO update
+        const tagKeys = Object.keys(taggedPerformance).filter((k) => k !== '_global');
+        const nullTags = tagKeys.filter((k) => taggedPerformance[k] === null);
+        const scoredTags = tagKeys.filter((k) => taggedPerformance[k] !== null);
+        logger.info(
+          `[ResponseProcessor] per-tag ELO update for ${cardId}: scored=[${scoredTags.join(', ')}] count-only=[${nullTags.join(', ')}]`
+        );
+
         void this.eloService.updateUserAndCardEloPerTag(
           taggedPerformance,
           courseId,
           cardId,
           courseRegistrationDoc,
           currentCard
-        );
-        logger.info(
-          `[ResponseProcessor] Processed correct response with per-tag ELO update (${Object.keys(taggedPerformance).length - 1} tags)`
         );
       } else {
         // Standard single-score ELO update (backward compatible)

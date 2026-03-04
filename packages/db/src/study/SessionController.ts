@@ -331,6 +331,19 @@ export class SessionController<TView = unknown> extends Loggable {
       return this._replanPromise;
     }
 
+    // Auto-exclude the currently-displayed card so the replan doesn't
+    // surface it again (avoids showing the same card twice in a row).
+    if (this._currentCard?.item.cardID) {
+      const currentId = this._currentCard.item.cardID;
+      if (!opts.hints) opts.hints = {};
+      const hints = opts.hints as Record<string, unknown>;
+      const excludeCards = (hints.excludeCards as string[]) ?? [];
+      if (!excludeCards.includes(currentId)) {
+        excludeCards.push(currentId);
+      }
+      hints.excludeCards = excludeCards;
+    }
+
     // Forward hints to all sources (CourseDB stashes them, Pipeline consumes them)
     if (opts.hints) {
       // Thread label into hints so Pipeline can attach it to provenance

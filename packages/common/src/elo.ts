@@ -250,12 +250,15 @@ export function adjustCourseScoresPerTag(
 
     // Count-only tag (exposure tracking): increment count, use -1 sentinel score
     if (tagScore === null) {
+      const prev = userElo.tags[key]?.count ?? 0;
       userElo.tags[key] = userElo.tags[key] ?? { count: 0, score: -1 };
       userElo.tags[key] = {
         ...userElo.tags[key],
         count: userElo.tags[key].count + 1,
         score: -1, // Sentinel: clearly not a real ELO score
       };
+      // TRACE: remove after debugging expose-tag accumulation issue
+      console.log(`[ELO:trace] count-only tag ${key}: ${prev} → ${userElo.tags[key].count}`);
       // Skip card ELO update for count-only tags
       continue;
     }

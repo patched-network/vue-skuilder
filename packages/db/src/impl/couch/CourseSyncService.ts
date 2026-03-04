@@ -137,9 +137,26 @@ export class CourseSyncService {
   async ensureSynced(courseId: string, forceEnabled?: boolean): Promise<void> {
     const existing = this.entries.get(courseId);
 
-    // Already synced
-    if (existing?.status.state === 'ready') {
-      return;
+    // Already synced — but check if the remote DB has been recreated
+    // (e.g., after a dev reseed). The seed script writes a `db-epoch`
+    // doc; if the remote epoch differs from our local copy, the local
+    // replica is stale and must be destroyed before re-syncing.
+    if (existing?.status.state === 'ready' && existing.localDB) {
+      const stale = await this.isLocalEpochStale(courseId, existing.localDB);
+      if (!stale) {
+        return;
+      }
+      logger.info(
+        `[CourseSyncService] Remote DB epoch changed for course ${courseId} — destroying stale local replica`
+      );
+      try {
+        await existing.localDB.destroy();
+      } catch {
+        // Ignore cleanup errors
+      }
+      existing.localDB = null;
+      existing.readyPromise = null;
+      // Fall through to start a fresh sync
     }
 
     // Already disabled
@@ -337,6 +354,41 @@ export class CourseSyncService {
           `[CourseSyncService] Could not warm view ${viewName}: ${e}`
         );
       }
+    }
+  }
+
+  /**
+   * Check whether the local replica's `db-epoch` doc matches the remote.
+   *
+   * The seed script (and optionally upload-cards) writes a `db-epoch`
+   * document with a numeric timestamp. If the remote epoch differs from
+   * the local copy, the remote DB was recreated (e.g., `yarn db:seed`)
+   * and the local PouchDB is stale.
+   *
+   * Returns `true` if stale (epoch mismatch or remote has epoch but local
+   * doesn't). Returns `false` (not stale) if epochs match, or if the
+   * remote doesn't have an epoch doc at all (backwards compat).
+   */
+  private async isLocalEpochStale(
+    courseId: string,
+    localDB: PouchDB.Database
+  ): Promise<boolean> {
+    try {
+      const remoteDB = this.getRemoteDB(courseId);
+      const remoteEpoch = await remoteDB.get<{ epoch: number }>('db-epoch');
+
+      let localEpoch: { epoch: number } | null = null;
+      try {
+        localEpoch = await localDB.get<{ epoch: number }>('db-epoch');
+      } catch {
+        // Local doesn't have the epoch doc — stale
+        return true;
+      }
+
+      return remoteEpoch.epoch !== localEpoch.epoch;
+    } catch {
+      // Remote doesn't have db-epoch — no epoch tracking, not stale
+      return false;
     }
   }
 

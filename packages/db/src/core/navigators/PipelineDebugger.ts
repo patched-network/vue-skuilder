@@ -71,6 +71,9 @@ export interface PipelineRunReport {
   courseId: string;
   courseName?: string;
 
+  /** User's global ELO at the time of this pipeline run */
+  userElo?: number;
+
   // Generator phase
   generatorName: string;
   generators?: GeneratorSummary[];
@@ -90,6 +93,8 @@ export interface PipelineRunReport {
     courseId: string;
     origin: 'new' | 'review' | 'unknown';
     finalScore: number;
+    /** Card's ELO (parsed from ELO generator provenance, if available) */
+    cardElo?: number;
     provenance: StrategyContribution[];
     tags?: string[];
     selected: boolean;
@@ -133,6 +138,17 @@ export function captureRun(report: Omit<PipelineRunReport, 'runId' | 'timestamp'
 /**
  * Build a capture-ready report from pipeline execution data.
  */
+/**
+ * Parse card ELO from the ELO generator's provenance reason string.
+ * Format: "ELO distance XX (card: YYYY, user: ZZZZ), ..."
+ */
+function parseCardElo(provenance: StrategyContribution[]): number | undefined {
+  const eloEntry = provenance.find((p) => p.strategy === 'elo');
+  if (!eloEntry?.reason) return undefined;
+  const match = eloEntry.reason.match(/card:\s*(\d+)/);
+  return match ? parseInt(match[1], 10) : undefined;
+}
+
 export function buildRunReport(
   courseId: string,
   courseName: string | undefined,
@@ -141,7 +157,8 @@ export function buildRunReport(
   generatedCount: number,
   filters: FilterImpact[],
   allCards: WeightedCard[],
-  selectedCards: WeightedCard[]
+  selectedCards: WeightedCard[],
+  userElo?: number
 ): Omit<PipelineRunReport, 'runId' | 'timestamp'> {
   const selectedIds = new Set(selectedCards.map((c) => c.cardId));
 
@@ -150,6 +167,7 @@ export function buildRunReport(
     courseId: card.courseId,
     origin: getOrigin(card),
     finalScore: card.score,
+    cardElo: parseCardElo(card.provenance),
     provenance: card.provenance,
     tags: card.tags,
     selected: selectedIds.has(card.cardId),
@@ -161,6 +179,7 @@ export function buildRunReport(
   return {
     courseId,
     courseName,
+    userElo,
     generatorName,
     generators,
     generatedCount,
@@ -203,6 +222,7 @@ function printRunSummary(run: PipelineRunReport): void {
   console.group(`🔍 Pipeline Run: ${run.courseId} (${run.courseName || 'unnamed'})`);
   logger.info(`Run ID: ${run.runId}`);
   logger.info(`Time: ${run.timestamp.toISOString()}`);
+  logger.info(`User ELO: ${run.userElo ?? 'unknown'}`);
   logger.info(`Generator: ${run.generatorName} → ${run.generatedCount} candidates`);
 
   if (run.generators && run.generators.length > 0) {
@@ -293,8 +313,12 @@ export const pipelineDebugAPI = {
         console.group(`🎴 Card: ${cardId}`);
         logger.info(`Course: ${card.courseId}`);
         logger.info(`Origin: ${card.origin}`);
+        logger.info(`Card ELO: ${card.cardElo ?? 'unknown'} | User ELO: ${run.userElo ?? 'unknown'}`);
         logger.info(`Final score: ${card.finalScore.toFixed(3)}`);
         logger.info(`Selected: ${card.selected ? 'Yes ✅' : 'No ❌'}`);
+        if (card.tags && card.tags.length > 0) {
+          logger.info(`Tags (${card.tags.length}): ${card.tags.join(', ')}`);
+        }
         logger.info('Provenance:');
         logger.info(formatProvenance(card.provenance));
         // eslint-disable-next-line no-console
@@ -493,6 +517,29 @@ export const pipelineDebugAPI = {
   },
 
   /**
+   * Show user's per-tag ELO data. Useful for diagnosing hierarchy gate status.
+   *
+   * @param tagFilter - Optional glob pattern(s) to filter tags.
+   *   Examples: 'gpc:expose:*', 'gpc:intro:t-T', ['gpc:expose:t-*', 'gpc:intro:t-*']
+   */
+  async showTagElo(tagFilter?: string | string[]): Promise<void> {
+    if (!_activePipeline) {
+      logger.info('[Pipeline Debug] No active pipeline. Run a session first.');
+      return;
+    }
+    const status = await _activePipeline.getTagEloStatus(tagFilter);
+    const entries = Object.entries(status).sort(([a], [b]) => a.localeCompare(b));
+    if (entries.length === 0) {
+      logger.info(`[Pipeline Debug] No tag ELO data found${tagFilter ? ` for pattern: ${tagFilter}` : ''}.`);
+      return;
+    }
+    // eslint-disable-next-line no-console
+    console.table(
+      Object.fromEntries(entries.map(([tag, data]) => [tag, { score: Math.round(data.score), count: data.count }]))
+    );
+  },
+
+  /**
    * Show help.
    */
   help(): void {
@@ -503,6 +550,7 @@ Commands:
   .showLastRun()         Show summary of most recent pipeline run
   .showRun(id|index)     Show summary of a specific run (by index or ID suffix)
   .showCard(cardId)      Show provenance trail for a specific card
+  .showTagElo(pattern)   Show user's tag ELO data (async). E.g. 'gpc:expose:*'
   .explainReviews()      Analyze why reviews were/weren't selected
   .diagnoseCardSpace()   Scan full card space through filters (async)
   .showRegistry()        Show navigator registry (classes + roles)
