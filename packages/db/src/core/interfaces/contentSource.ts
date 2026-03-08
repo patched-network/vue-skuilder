@@ -5,6 +5,7 @@ import { WeightedCard } from '../navigators';
 import { TagFilter, hasActiveFilter } from '@vue-skuilder/common';
 import { TagFilteredContentSource } from '../../study/TagFilteredContentSource';
 import { OrchestrationContext } from '../orchestration';
+import type { ReplanHints } from '@db/study/SessionController';
 
 export type StudySessionFailedItem = StudySessionFailedNewItem | StudySessionFailedReviewItem;
 
@@ -84,7 +85,7 @@ export interface StudyContentSource {
    * Set ephemeral hints for the next pipeline run.
    * No-op for sources that don't support hints.
    */
-  setEphemeralHints?(hints: Record<string, unknown>): void;
+  setEphemeralHints?(hints: ReplanHints): void;
 }
 // #endregion docs_StudyContentSource
 

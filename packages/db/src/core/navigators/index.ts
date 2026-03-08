@@ -1,4 +1,5 @@
 import { StudyContentSource, UserDBInterface, CourseDBInterface } from '..';
+import type { ReplanHints } from '@db/study/SessionController';
 
 // Re-export filter types
 export type { CardFilter, FilterContext, CardFilterFactory } from './filters/types';
@@ -633,7 +634,7 @@ export abstract class ContentNavigator implements StudyContentSource {
    * Set ephemeral hints for the next pipeline run.
    * No-op for non-Pipeline navigators. Pipeline overrides this.
    */
-  setEphemeralHints(_hints: Record<string, unknown>): void {
+  setEphemeralHints(_hints: ReplanHints): void {
     // no-op — only Pipeline implements this
   }
 }

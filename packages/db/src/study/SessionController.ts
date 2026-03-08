@@ -21,6 +21,33 @@ import { captureMixerRun } from './MixerDebugger';
 import { startSessionTracking, recordCardPresentation, snapshotQueues, endSessionTracking } from './SessionDebugger';
 
 /**
+ * Typed ephemeral pipeline hints for a single run.
+ * All fields are optional. Tag/card patterns support `*` wildcards.
+ *
+ * Previously defined in Pipeline.ts; moved here so it's co-exported
+ * with ReplanOptions from the public `@vue-skuilder/db` surface.
+ */
+export interface ReplanHints {
+  /** Multiply scores for cards matching these tag patterns. */
+  boostTags?: Record<string, number>;
+  /** Multiply scores for these specific card IDs (glob patterns). */
+  boostCards?: Record<string, number>;
+  /** Cards matching these tag patterns MUST appear in results. */
+  requireTags?: string[];
+  /** These specific card IDs MUST appear in results. */
+  requireCards?: string[];
+  /** Remove cards matching these tag patterns from results. */
+  excludeTags?: string[];
+  /** Remove these specific card IDs from results. */
+  excludeCards?: string[];
+  /**
+   * Debugging label threaded from the replan requester.
+   * Prefixed with `_` to signal it's metadata, not a scoring hint.
+   */
+  _label?: string;
+}
+
+/**
  * Options for requesting a mid-session replan.
  *
  * All fields are optional — callers can pass just the fields they need.
@@ -29,7 +56,7 @@ import { startSessionTracking, recordCardPresentation, snapshotQueues, endSessio
  */
 export interface ReplanOptions {
   /** Scoring hints forwarded to the pipeline (boost/exclude/require). */
-  hints?: Record<string, unknown>;
+  hints?: ReplanHints;
   /**
    * Maximum number of new cards to return from the pipeline.
    * Default: 20 (the standard session batch size).
@@ -41,6 +68,13 @@ export interface ReplanOptions {
    * - `'merge'`: insert new cards at the front, keeping existing cards.
    */
   mode?: 'replace' | 'merge';
+  /**
+   * Guarantee that at least this many cards will be served after the
+   * replan, even if the session timer has expired. Prevents intro cards
+   * from surfacing at the end of a session with zero follow-up exercise.
+   * Decremented on each card draw while active.
+   */
+  minFollowUpCards?: number;
   /**
    * Human-readable label for debugging / provenance.
    * Appears in console logs and in card provenance entries created
@@ -156,11 +190,21 @@ export class SessionController<TView = unknown> extends Loggable {
    */
   private _depletionReplanAttempted: boolean = false;
 
+  /**
+   * When > 0, the session timer cannot end the session. Decremented on
+   * each nextCard() draw. Set by replans that include `minFollowUpCards`.
+   */
+  private _minCardsGuarantee: number = 0;
+
   private startTime: Date;
   private endTime: Date;
   private _secondsRemaining: number;
   public get secondsRemaining(): number {
     return this._secondsRemaining;
+  }
+  /** True when a card guarantee is active, preventing timer-based session end. */
+  public get hasCardGuarantee(): boolean {
+    return this._minCardsGuarantee > 0;
   }
   public get report(): string {
     const reviewCount = this.reviewQ.dequeueCount;
@@ -316,7 +360,7 @@ export class SessionController<TView = unknown> extends Loggable {
    * Typical trigger: application-level code (e.g. after a GPC intro completion)
    * calls this to ensure newly-unlocked content appears in the session.
    */
-  public async requestReplan(options?: ReplanOptions | Record<string, unknown>): Promise<void> {
+  public async requestReplan(options?: ReplanOptions | ReplanHints): Promise<void> {
     // Normalise: bare hints object (legacy callers) → ReplanOptions wrapper
     const opts = this.normalizeReplanOptions(options);
 
@@ -329,6 +373,19 @@ export class SessionController<TView = unknown> extends Loggable {
     if (this._replanPromise) {
       this.log('Replan already in progress, awaiting existing replan');
       return this._replanPromise;
+    }
+
+    // Auto-exclude the currently-displayed card so the replan doesn't
+    // surface it again (avoids showing the same card twice in a row).
+    if (this._currentCard?.item.cardID) {
+      const currentId = this._currentCard.item.cardID;
+      if (!opts.hints) opts.hints = {};
+      const hints = opts.hints;
+      const excludeCards = hints.excludeCards ?? [];
+      if (!excludeCards.includes(currentId)) {
+        excludeCards.push(currentId);
+      }
+      hints.excludeCards = excludeCards;
     }
 
     // Forward hints to all sources (CourseDB stashes them, Pipeline consumes them)
@@ -348,6 +405,12 @@ export class SessionController<TView = unknown> extends Loggable {
       ` (limit: ${opts.limit ?? 'default'}, mode: ${opts.mode ?? 'replace'}` +
       `${opts.hints ? ', with hints' : ''})`
     );
+    // Update card guarantee if requested
+    if (opts.minFollowUpCards !== undefined && opts.minFollowUpCards > 0) {
+      this._minCardsGuarantee = Math.max(this._minCardsGuarantee, opts.minFollowUpCards);
+      this.log(`[Replan] Card guarantee set to ${this._minCardsGuarantee}`);
+    }
+
     this._replanPromise = this._executeReplan(opts);
 
     try {
@@ -364,19 +427,19 @@ export class SessionController<TView = unknown> extends Loggable {
    * the presence of ReplanOptions-specific keys.
    */
   private normalizeReplanOptions(
-    input?: ReplanOptions | Record<string, unknown>
+    input?: ReplanOptions | ReplanHints
   ): ReplanOptions {
     if (!input) return {};
 
     // If the input has any ReplanOptions-specific key, treat it as ReplanOptions
-    const replanKeys = ['hints', 'limit', 'mode', 'label'];
+    const replanKeys = ['hints', 'limit', 'mode', 'label', 'minFollowUpCards'];
     const inputKeys = Object.keys(input);
     if (inputKeys.some((k) => replanKeys.includes(k))) {
       return input as ReplanOptions;
     }
 
     // Otherwise treat as legacy bare-hints object
-    return { hints: input as Record<string, unknown> };
+    return { hints: input as ReplanHints };
   }
 
   /** Minimum well-indicated cards before an additive retry is attempted */
@@ -509,6 +572,7 @@ export class SessionController<TView = unknown> extends Loggable {
         inProgress: this._replanPromise !== null,
         suppressQualityReplan: this._suppressQualityReplan,
         defaultBatchLimit: this._defaultBatchLimit,
+        minCardsGuarantee: this._minCardsGuarantee,
       },
     };
   }
@@ -709,13 +773,13 @@ export class SessionController<TView = unknown> extends Loggable {
       return null;
     }
 
-    if (this._secondsRemaining < 2 && this.failedQ.length === 0) {
+    if (this._secondsRemaining < 2 && this.failedQ.length === 0 && this._minCardsGuarantee <= 0) {
       // session is over!
       return null;
     }
 
-    // If timer expired, only return failed cards
-    if (this._secondsRemaining <= 0) {
+    // If timer expired, only return failed cards (unless card guarantee active)
+    if (this._secondsRemaining <= 0 && this._minCardsGuarantee <= 0) {
       if (this.failedQ.length > 0) {
         return this.failedQ.peek(0);
       } else {
@@ -776,6 +840,12 @@ export class SessionController<TView = unknown> extends Loggable {
   ): Promise<HydratedCard<TView> | null> {
     // dismiss (or sort to failedQ) the current card
     this.dismissCurrentCard(action);
+
+    // Decrement card guarantee counter
+    if (this._minCardsGuarantee > 0) {
+      this._minCardsGuarantee--;
+      this.log(`[CardGuarantee] ${this._minCardsGuarantee} guaranteed cards remaining`);
+    }
 
     // If a replan is in flight, wait for it to complete before drawing.
     // This ensures the user sees cards scored against their latest state
@@ -853,7 +923,7 @@ export class SessionController<TView = unknown> extends Loggable {
       void this.requestReplan();
     }
 
-    if (this._secondsRemaining <= 0 && this.failedQ.length === 0) {
+    if (this._secondsRemaining <= 0 && this.failedQ.length === 0 && this._minCardsGuarantee <= 0) {
       this._currentCard = null;
       endSessionTracking();
       return null;

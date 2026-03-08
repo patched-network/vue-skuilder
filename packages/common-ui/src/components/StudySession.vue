@@ -291,7 +291,7 @@ export default defineComponent({
      * Accepts either a ReplanOptions object (new API) or a bare hints
      * Record (legacy). SessionController.requestReplan() normalises both.
      */
-    handleReplanRequest(options?: ReplanOptions | Record<string, unknown>) {
+    handleReplanRequest(options?: ReplanOptions) {
       if (this.sessionController) {
         const label = (options as ReplanOptions)?.label;
         const tag = label ? ` [${label}]` : '';
@@ -391,6 +391,14 @@ export default defineComponent({
           )
         );
         this.sessionController.sessionRecord = this.sessionRecord;
+
+        // Apply init hints if provided (e.g. post-lesson boost tags)
+        if (this.sessionConfig?.initHints) {
+          for (const source of this.sessionContentSources) {
+            source.setEphemeralHints?.(this.sessionConfig.initHints as any);
+          }
+          console.log('[StudySession] Applied init hints to content sources');
+        }
 
         await this.sessionController.prepareSession();
         this.intervalHandler = setInterval(this.tick, 1000);

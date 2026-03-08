@@ -3,7 +3,7 @@
   "publishConfig": {
     "access": "public"
   },
-  "version": "0.1.32-a",
+  "version": "0.1.32-b",
   "type": "module",
   "scripts": {
     "dev": "vite",

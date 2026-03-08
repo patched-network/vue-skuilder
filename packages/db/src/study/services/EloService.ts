@@ -111,10 +111,29 @@ export class EloService {
     const userElo = toCourseElo(
       userCourseRegDoc.courses.find((c) => c.courseID === course_id)!.elo
     );
-    const cardElo = (await courseDB.getCardEloData([currentCard.card.card_id]))[0];
+
+    const [cardEloResults, cardTagsMap] = await Promise.all([
+      courseDB.getCardEloData([currentCard.card.card_id]),
+      courseDB.getAppliedTagsBatch([card_id]),
+    ]);
+    const cardElo = cardEloResults[0];
+
+    // Enrich TaggedPerformance with card-level tags not explicitly graded by
+    // the question's evaluate(). Category tags (concept:*, ui:*, etc.) are not
+    // emitted by individual question types; applying the global score as a proxy
+    // keeps hierarchy filter ELO thresholds functional without overriding any
+    // fine-grained per-GPC scores the question already provided.
+    const cardTags = cardTagsMap.get(card_id) ?? [];
+    const enriched: TaggedPerformance = { ...taggedPerformance };
+    const globalScore = taggedPerformance._global;
+    for (const tag of cardTags) {
+      if (!(tag in enriched)) {
+        enriched[tag] = globalScore;
+      }
+    }
 
     if (cardElo && userElo) {
-      const eloUpdate = adjustCourseScoresPerTag(userElo, cardElo, taggedPerformance);
+      const eloUpdate = adjustCourseScoresPerTag(userElo, cardElo, enriched);
       userCourseRegDoc.courses.find((c) => c.courseID === course_id)!.elo = eloUpdate.userElo;
 
       const results = await Promise.allSettled([
@@ -131,7 +150,7 @@ export class EloService {
         const card = (results[1] as PromiseFulfilledResult<any>).value;
 
         if (user.ok && card && card.ok) {
-          const tagCount = Object.keys(taggedPerformance).length - 1; // exclude _global
+          const tagCount = Object.keys(enriched).length - 1; // exclude _global
           logger.info(
             `[EloService] Updated ELOS (per-tag, ${tagCount} tags):
             \tUser: ${JSON.stringify(eloUpdate.userElo)})

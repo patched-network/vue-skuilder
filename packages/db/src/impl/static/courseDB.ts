@@ -6,6 +6,7 @@ import {
   CourseInfo,
   StudySessionItem,
 } from '../../core/interfaces';
+import type { ReplanHints } from '@db/study/SessionController';
 import { StaticDataUnpacker } from './StaticDataUnpacker';
 import { StaticCourseManifest } from '../../util/packer/types';
 import { CourseConfig, CourseElo, DataShape, Status } from '@vue-skuilder/common';
@@ -443,9 +444,9 @@ export class StaticCourseDB implements CourseDBInterface {
 
   // Study Content Source implementation
 
-  private _pendingHints: Record<string, unknown> | null = null;
+  private _pendingHints: ReplanHints | null = null;
 
-  setEphemeralHints(hints: Record<string, unknown>): void {
+  setEphemeralHints(hints: ReplanHints): void {
     this._pendingHints = hints;
   }
 

@@ -22,31 +22,9 @@ import { captureRun, buildRunReport, registerPipelineForDebug, type GeneratorSum
 //   'gpc:exercise:t-*'   — all t-variant exercises
 //
 
-/**
- * Ephemeral pipeline hints for a single run.
- * All fields are optional. Tag/card patterns support `*` wildcards.
- */
-export interface ReplanHints {
-  /** Multiply scores for cards matching these tag patterns. */
-  boostTags?: Record<string, number>;
-  /** Multiply scores for these specific card IDs (glob patterns). */
-  boostCards?: Record<string, number>;
-  /** Cards matching these tag patterns MUST appear in results. */
-  requireTags?: string[];
-  /** These specific card IDs MUST appear in results. */
-  requireCards?: string[];
-  /** Remove cards matching these tag patterns from results. */
-  excludeTags?: string[];
-  /** Remove these specific card IDs from results. */
-  excludeCards?: string[];
-  /**
-   * Debugging label threaded from the replan requester.
-   * Attached to provenance entries so card scoring history
-   * can be traced back to the originating event.
-   * Prefixed with `_` to signal it's metadata, not a scoring hint.
-   */
-  _label?: string;
-}
+// ReplanHints is the canonical type — re-export for consumers that import from Pipeline
+import { ReplanHints } from '@db/study/SessionController';
+export { ReplanHints };
 
 /**
  * Convert a glob pattern (with `*` wildcards) to a RegExp.
@@ -296,8 +274,8 @@ export class Pipeline extends ContentNavigator {
    *
    * Overrides ContentNavigator.setEphemeralHints() no-op.
    */
-  override setEphemeralHints(hints: Record<string, unknown>): void {
-    this._ephemeralHints = hints as ReplanHints;
+  override setEphemeralHints(hints: ReplanHints): void {
+    this._ephemeralHints = hints;
     logger.info(`[Pipeline] Ephemeral hints set: ${JSON.stringify(hints)}`);
   }
 
@@ -439,6 +417,9 @@ export class Pipeline extends ContentNavigator {
     // Capture run for debug API
     try {
       const courseName = await this.course?.getCourseConfig().then((c) => c.name).catch(() => undefined);
+      // Use the full post-filter sorted array (not just top N) so that
+      // showCard() can inspect provenance for cards that didn't make the cut.
+      // `cards` is the post-filter, post-hints, sorted array.
       const report = buildRunReport(
         this.course?.getCourseID() || 'unknown',
         courseName,
@@ -446,8 +427,9 @@ export class Pipeline extends ContentNavigator {
         generatorSummaries,
         generatedCount,
         filterImpacts,
-        allCardsBeforeFiltering,
-        result
+        cards,
+        result,
+        context.userElo
       );
       captureRun(report);
     } catch (e) {
@@ -705,6 +687,42 @@ export class Pipeline extends ContentNavigator {
     }
 
     return [...new Set(ids)];
+  }
+
+  // ---------------------------------------------------------------------------
+  // Tag ELO diagnostic
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Get the user's per-tag ELO data for specified tags (or all tags).
+   * Useful for diagnosing why hierarchy gates are open/closed.
+   */
+  async getTagEloStatus(
+    tagFilter?: string | string[]
+  ): Promise<Record<string, { score: number; count: number }>> {
+    const courseReg = await this.user!.getCourseRegDoc(this.course!.getCourseID());
+    const courseElo = toCourseElo(courseReg.elo);
+
+    const result: Record<string, { score: number; count: number }> = {};
+
+    if (!tagFilter) {
+      // Return all tags
+      for (const [tag, data] of Object.entries(courseElo.tags)) {
+        result[tag] = { score: data.score, count: data.count };
+      }
+    } else {
+      const patterns = Array.isArray(tagFilter) ? tagFilter : [tagFilter];
+      for (const pattern of patterns) {
+        const regex = globToRegex(pattern);
+        for (const [tag, data] of Object.entries(courseElo.tags)) {
+          if (regex.test(tag)) {
+            result[tag] = { score: data.score, count: data.count };
+          }
+        }
+      }
+    }
+
+    return result;
   }
 
   // ---------------------------------------------------------------------------
