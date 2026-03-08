@@ -18,6 +18,13 @@ export type StudySessionConfig = {
    * Default (when omitted): 20
    */
   defaultBatchLimit?: number;
+
+  /**
+   * Optional hints to apply to the very first pipeline run (session init).
+   * Uses the same format as `ReplanOptions.hints` — boost/exclude/require tags.
+   * Applied via `setEphemeralHints()` before `prepareSession()`.
+   */
+  initHints?: Record<string, unknown>;
 };
 
 /**

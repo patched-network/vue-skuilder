@@ -1,4 +1,5 @@
 import { CourseDBInterface, CourseInfo, CoursesDBInterface, UserDBInterface } from '@db/core';
+import type { ReplanHints } from '@db/study/SessionController';
 import {
   CourseConfig,
   CourseElo,
@@ -650,9 +651,9 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
    * @param limit - Maximum number of cards to return
    * @returns Cards sorted by score descending
    */
-  private _pendingHints: Record<string, unknown> | null = null;
+  private _pendingHints: ReplanHints | null = null;
 
-  public setEphemeralHints(hints: Record<string, unknown>): void {
+  public setEphemeralHints(hints: ReplanHints): void {
     this._pendingHints = hints;
   }
 

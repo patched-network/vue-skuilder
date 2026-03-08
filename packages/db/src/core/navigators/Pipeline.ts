@@ -22,31 +22,9 @@ import { captureRun, buildRunReport, registerPipelineForDebug, type GeneratorSum
 //   'gpc:exercise:t-*'   — all t-variant exercises
 //
 
-/**
- * Ephemeral pipeline hints for a single run.
- * All fields are optional. Tag/card patterns support `*` wildcards.
- */
-export interface ReplanHints {
-  /** Multiply scores for cards matching these tag patterns. */
-  boostTags?: Record<string, number>;
-  /** Multiply scores for these specific card IDs (glob patterns). */
-  boostCards?: Record<string, number>;
-  /** Cards matching these tag patterns MUST appear in results. */
-  requireTags?: string[];
-  /** These specific card IDs MUST appear in results. */
-  requireCards?: string[];
-  /** Remove cards matching these tag patterns from results. */
-  excludeTags?: string[];
-  /** Remove these specific card IDs from results. */
-  excludeCards?: string[];
-  /**
-   * Debugging label threaded from the replan requester.
-   * Attached to provenance entries so card scoring history
-   * can be traced back to the originating event.
-   * Prefixed with `_` to signal it's metadata, not a scoring hint.
-   */
-  _label?: string;
-}
+// ReplanHints is the canonical type — re-export for consumers that import from Pipeline
+import { ReplanHints } from '@db/study/SessionController';
+export { ReplanHints };
 
 /**
  * Convert a glob pattern (with `*` wildcards) to a RegExp.
@@ -296,8 +274,8 @@ export class Pipeline extends ContentNavigator {
    *
    * Overrides ContentNavigator.setEphemeralHints() no-op.
    */
-  override setEphemeralHints(hints: Record<string, unknown>): void {
-    this._ephemeralHints = hints as ReplanHints;
+  override setEphemeralHints(hints: ReplanHints): void {
+    this._ephemeralHints = hints;
     logger.info(`[Pipeline] Ephemeral hints set: ${JSON.stringify(hints)}`);
   }
 
