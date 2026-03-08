@@ -250,7 +250,6 @@ export function adjustCourseScoresPerTag(
 
     // Count-only tag (exposure tracking): increment count, use -1 sentinel score
     if (tagScore === null) {
-      const prev = userElo.tags[key]?.count ?? 0;
       userElo.tags[key] = userElo.tags[key] ?? { count: 0, score: -1 };
       userElo.tags[key] = {
         ...userElo.tags[key],
