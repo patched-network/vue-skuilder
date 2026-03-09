@@ -48,7 +48,7 @@ interface CardGenerator {
 **Implementations:**
 - `ELONavigator` — New cards scored by ELO proximity to user skill (scores 0.0-1.0)
 - `SRSNavigator` — Review cards scored by overdueness, interval recency, and **backlog pressure** (scores 0.5-1.0)
-- `HardcodedOrderNavigator` — Fixed sequence defined by course author
+- `HardcodedOrderNavigator` — Fixed sequence defined by course author // NB this no longer exists but /home/colin/pn/vue-skuilder/master/packages/db/src/core/navigators/generators/prescribed.ts does - please update the doc in place
 - `CompositeGenerator` — Merges multiple generators with frequency boost
 
 #### SRS Backlog Pressure
