@@ -468,6 +468,8 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
             reason:
               `mode=target;group=${runtime.group.id};pending=${runtime.pendingTargets.length};` +
               `surfaceable=${runtime.surfaceableTargets.length};blocked=${runtime.blockedTargets.length};` +
+              `blockedTargets=${runtime.blockedTargets.join('|') || 'none'};` +
+              `supportTags=${runtime.supportTags.join('|') || 'none'};` +
               `multiplier=${runtime.pressureMultiplier.toFixed(2)}`,
           },
         ],
@@ -507,6 +509,8 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
             score: BASE_SUPPORT_SCORE * runtime.supportMultiplier,
             reason:
               `mode=support;group=${runtime.group.id};blocked=${runtime.blockedTargets.length};` +
+              `blockedTargets=${runtime.blockedTargets.join('|') || 'none'};` +
+              `supportCard=${cardId};` +
               `supportTags=${runtime.supportTags.join('|') || 'none'};` +
               `multiplier=${runtime.supportMultiplier.toFixed(2)}`,
           },
@@ -557,40 +561,52 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
     hierarchyWalkEnabled: boolean,
     maxDepth: number
   ): { blocked: boolean; supportTags: string[] } {
-    if (!hierarchyWalkEnabled || targetTags.length === 0 || hierarchyConfigs.length === 0) {
-      return {
-        blocked: false,
-        supportTags: [],
-      };
-    }
-
     const supportTags = new Set<string>();
     let blocked = false;
 
     for (const targetTag of targetTags) {
-      for (const hierarchy of hierarchyConfigs) {
-        const prereqs = hierarchy.prerequisites[targetTag];
-        if (!prereqs || prereqs.length === 0) continue;
+      const prereqSets = hierarchyConfigs
+        .map((hierarchy) => hierarchy.prerequisites[targetTag])
+        .filter((prereqs): prereqs is TagPrerequisite[] => Array.isArray(prereqs) && prereqs.length > 0);
 
-        const unmet = prereqs.filter(
-          (pr) => !this.isPrerequisiteMet(pr, userTagElo[pr.tag], userGlobalElo)
-        );
+      if (prereqSets.length === 0) {
+        continue;
+      }
 
-        if (unmet.length === 0) {
-          continue;
+      const tagBlocked = prereqSets.some((prereqs) =>
+        prereqs.some((pr) => !this.isPrerequisiteMet(pr, userTagElo[pr.tag], userGlobalElo))
+      );
+
+      if (!tagBlocked) {
+        continue;
+      }
+
+      blocked = true;
+
+      if (!hierarchyWalkEnabled) {
+        for (const prereqs of prereqSets) {
+          for (const prereq of prereqs) {
+            if (!this.isPrerequisiteMet(prereq, userTagElo[prereq.tag], userGlobalElo)) {
+              supportTags.add(prereq.tag);
+            }
+          }
         }
+        continue;
+      }
 
-        blocked = true;
-        for (const prereq of unmet) {
-          this.collectSupportTagsRecursive(
-            prereq.tag,
-            hierarchyConfigs,
-            userTagElo,
-            userGlobalElo,
-            maxDepth,
-            new Set<string>(),
-            supportTags
-          );
+      for (const prereqs of prereqSets) {
+        for (const prereq of prereqs) {
+          if (!this.isPrerequisiteMet(prereq, userTagElo[prereq.tag], userGlobalElo)) {
+            this.collectSupportTagsRecursive(
+              prereq.tag,
+              hierarchyConfigs,
+              userTagElo,
+              userGlobalElo,
+              maxDepth,
+              new Set<string>(),
+              supportTags
+            );
+          }
         }
       }
     }
