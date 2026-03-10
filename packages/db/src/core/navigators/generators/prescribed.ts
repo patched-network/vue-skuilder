@@ -3,9 +3,8 @@ import type { UserDBInterface } from '../../interfaces/userDB';
 import { ContentNavigator } from '../index';
 import type { WeightedCard } from '../index';
 import type { ContentNavigationStrategyData } from '../../types/contentNavigationStrategy';
-import type { CardGenerator, GeneratorContext, GeneratorResult } from './types';
+import type { CardGenerator, GeneratorContext, GeneratorResult, ReplanHints } from './types';
 import { logger } from '@db/util/logger';
-import type { ReplanHints } from '../../study/SessionController';
 
 // ============================================================================
 // PRESCRIBED CARDS GENERATOR
@@ -89,6 +88,7 @@ interface GroupRuntimeState {
   surfaceableTargets: string[];
   targetTags: Map<string, string[]>;
   supportCandidates: string[];
+  discoveredSupportCandidates: string[];
   supportTags: string[];
   pressureMultiplier: number;
   supportMultiplier: number;
@@ -108,11 +108,11 @@ const DEFAULT_HIERARCHY_DEPTH = 2;
 const DEFAULT_MIN_COUNT = 3;
 const BASE_TARGET_SCORE = 1.0;
 const BASE_SUPPORT_SCORE = 0.8;
+const DISCOVERED_SUPPORT_SCORE = 12.0;
 const MAX_TARGET_MULTIPLIER = 8.0;
 const MAX_SUPPORT_MULTIPLIER = 4.0;
-const LOCKED_TAG_PREFIXES = ['concept:'];
-const LESSON_GATE_PENALTY_TAG_HINT = 'concept:';
-const PRESCRIBED_DEBUG_VERSION = 'testversion-prescribed-v2';
+
+const PRESCRIBED_DEBUG_VERSION = 'testversion-prescribed-v3';
 
 function dedupe<T>(arr: T[]): T[] {
   return [...new Set(arr)];
@@ -201,6 +201,22 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
         ? await this.course.getAppliedTagsBatch(allRelevantIds)
         : new Map<string, string[]>();
 
+    const courseTagDocs = await this.course.getCourseTagStubs().catch(
+      () =>
+        ({
+          rows: [],
+          offset: 0,
+          total_rows: 0,
+        }) as unknown as Awaited<ReturnType<CourseDBInterface['getCourseTagStubs']>>
+    );
+    const cardsByTag = new Map<string, string[]>();
+    for (const row of courseTagDocs.rows ?? []) {
+      const tagDoc = row.doc as { name?: string; taggedCards?: string[] } | undefined;
+      if (tagDoc?.name && Array.isArray(tagDoc.taggedCards)) {
+        cardsByTag.set(tagDoc.name, [...tagDoc.taggedCards]);
+      }
+    }
+
     const nextState: PrescribedProgressState = {
       updatedAt: isoNow(),
       groups: {},
@@ -217,12 +233,46 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
         activeIds,
         seenIds,
         tagsByCard,
+        cardsByTag,
         hierarchyConfigs,
         userTagElo,
         userGlobalElo,
       });
 
       groupRuntimes.push(runtime);
+
+      logger.info(
+        `[Prescribed] Group '${group.id}': ` +
+          `${group.targetCardIds.length} targets total, ` +
+          `${runtime.encounteredTargets.size} encountered, ` +
+          `${runtime.pendingTargets.length} pending ` +
+          `(${runtime.surfaceableTargets.length} surfaceable, ${runtime.blockedTargets.length} blocked), ` +
+          `${runtime.supportCandidates.length} authored support candidates, ` +
+          `${runtime.discoveredSupportCandidates.length} discovered support candidates, ` +
+          `pressure=${runtime.pressureMultiplier.toFixed(2)}`
+      );
+      if (runtime.blockedTargets.length > 0) {
+        logger.info(
+          `[Prescribed] Group '${group.id}' blocked targets: ${runtime.blockedTargets.join(', ')}`
+        );
+        logger.info(
+          `[Prescribed] Group '${group.id}' support tags needed: ${runtime.supportTags.join(', ') || '(none)'}`
+        );
+        logger.info(
+          `[Prescribed] Group '${group.id}' escalation mode: ` +
+            (runtime.supportCandidates.length > 0
+              ? 'direct-support'
+              : runtime.discoveredSupportCandidates.length > 0
+                ? 'inserted-support-candidates'
+                : 'boost-only')
+        );
+        if (runtime.discoveredSupportCandidates.length > 0) {
+          logger.info(
+            `[Prescribed] Group '${group.id}' discovered support candidates: ${runtime.discoveredSupportCandidates.join(', ')}`
+          );
+        }
+      }
+
       nextState.groups[group.id] = this.buildNextGroupState(runtime, progress.groups[group.id]);
 
       const directCards = this.buildDirectTargetCards(
@@ -235,8 +285,13 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
         courseId,
         emittedIds
       );
+      const discoveredSupportCards = this.buildDiscoveredSupportCards(
+        runtime,
+        courseId,
+        emittedIds
+      );
 
-      emitted.push(...directCards, ...supportCards);
+      emitted.push(...directCards, ...supportCards, ...discoveredSupportCards);
     }
 
     const hintSummary = this.buildSupportHintSummary(groupRuntimes);
@@ -251,8 +306,21 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
           }
         : undefined;
 
+    if (hints) {
+      const tagEntries = Object.entries(hints.boostTags ?? {}) as Array<[string, number]>;
+      logger.info(
+        `[Prescribed] Emitting ${tagEntries.length} boost hint(s): ` +
+          tagEntries.map(([tag, mult]) => `${tag}×${mult.toFixed(1)}`).join(', ')
+      );
+    } else {
+      logger.info('[Prescribed] No hints to emit (no blocked targets or no support tags)');
+    }
+
     if (emitted.length === 0) {
-      logger.debug('[Prescribed] No prescribed targets/support emitted this run');
+      logger.info(
+        '[Prescribed] 0 cards emitted (all targets blocked, authored/discovered support candidates exhausted)' +
+          (hints ? ' — boost hints emitted but may not survive filters' : '')
+      );
       await this.putStrategyState(nextState).catch((e) => {
         logger.debug(`[Prescribed] Failed to persist empty-state update: ${e}`);
       });
@@ -292,7 +360,8 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
     logger.info(
       `[Prescribed] Emitting ${finalCards.length} cards ` +
         `(${finalCards.filter((c) => c.provenance[0]?.reason.includes('mode=target')).length} target, ` +
-        `${finalCards.filter((c) => c.provenance[0]?.reason.includes('mode=support')).length} support)`
+        `${finalCards.filter((c) => c.provenance[0]?.reason.includes('mode=support')).length} support, ` +
+        `${finalCards.filter((c) => c.provenance[0]?.reason.includes('mode=discovered-support')).length} discovered support)`
     );
 
     return hints ? { cards: finalCards, hints } : { cards: finalCards };
@@ -325,14 +394,22 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
 
   private parseConfig(serializedData: string): PrescribedConfig {
     try {
-      const parsed = JSON.parse(serializedData);
+      const parsed = JSON.parse(serializedData) as { groups?: unknown[] };
       const groupsRaw = Array.isArray(parsed.groups) ? parsed.groups : [];
       const groups: PrescribedGroupConfig[] = groupsRaw
-        .map((raw: any, i: number) => ({
+        .map((raw: any, i: number): PrescribedGroupConfig => ({
           id: typeof raw.id === 'string' && raw.id.trim().length > 0 ? raw.id : `group-${i + 1}`,
-          targetCardIds: dedupe(Array.isArray(raw.targetCardIds) ? raw.targetCardIds.filter((v: unknown) => typeof v === 'string') : []),
-          supportCardIds: dedupe(Array.isArray(raw.supportCardIds) ? raw.supportCardIds.filter((v: unknown) => typeof v === 'string') : []),
-          supportTagPatterns: dedupe(Array.isArray(raw.supportTagPatterns) ? raw.supportTagPatterns.filter((v: unknown) => typeof v === 'string') : []),
+          targetCardIds: dedupe(
+            (Array.isArray(raw.targetCardIds) ? raw.targetCardIds.filter((v: unknown): v is string => typeof v === 'string') : [])
+          ),
+          supportCardIds: dedupe(
+            (Array.isArray(raw.supportCardIds) ? raw.supportCardIds.filter((v: unknown): v is string => typeof v === 'string') : [])
+          ),
+          supportTagPatterns: dedupe(
+            (Array.isArray(raw.supportTagPatterns)
+              ? raw.supportTagPatterns.filter((v: unknown): v is string => typeof v === 'string')
+              : [])
+          ),
           freshnessWindowSessions:
             typeof raw.freshnessWindowSessions === 'number' ? raw.freshnessWindowSessions : DEFAULT_FRESHNESS_WINDOW,
           maxDirectTargetsPerRun:
@@ -358,12 +435,12 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
 
   private async loadHierarchyConfigs(): Promise<HierarchyConfig[]> {
     try {
-      const strategies = await this.course.getNavigationStrategies();
+      const strategies = await this.course.getAllNavigationStrategies();
       return strategies
-        .filter((s) => s.implementingClass === 'hierarchyDefinition')
-        .map((s) => {
+        .filter((s: ContentNavigationStrategyData) => s.implementingClass === 'hierarchyDefinition')
+        .map((s: ContentNavigationStrategyData) => {
           try {
-            const parsed = JSON.parse(s.serializedData);
+            const parsed = JSON.parse(s.serializedData) as { prerequisites?: Record<string, TagPrerequisite[]> };
             return {
               prerequisites: parsed.prerequisites || {},
             } as HierarchyConfig;
@@ -383,6 +460,7 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
     activeIds: Set<string>;
     seenIds: Set<string>;
     tagsByCard: Map<string, string[]>;
+    cardsByTag: Map<string, string[]>;
     hierarchyConfigs: HierarchyConfig[];
     userTagElo: Record<string, { score: number; count: number }>;
     userGlobalElo: number;
@@ -393,6 +471,7 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
       activeIds,
       seenIds,
       tagsByCard,
+      cardsByTag,
       hierarchyConfigs,
       userTagElo,
       userGlobalElo,
@@ -468,6 +547,28 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
       ),
     ]).filter((id) => !activeIds.has(id) && !seenIds.has(id));
 
+    const discoveredSupportCandidates =
+      blockedTargets.length > 0 && supportTags.size > 0 && supportCandidates.length === 0
+        ? this.findDiscoveredSupportCards({
+            supportTags: [...supportTags],
+            cardsByTag,
+            activeIds,
+            seenIds,
+            excludedIds: new Set([
+              ...group.targetCardIds,
+              ...(group.supportCardIds ?? []),
+            ]),
+            limit: group.maxSupportCardsPerRun ?? DEFAULT_MAX_SUPPORT_PER_RUN,
+          })
+        : [];
+
+    if (blockedTargets.length > 0 && supportTags.size > 0 && discoveredSupportCandidates.length === 0) {
+      logger.info(
+        `[Prescribed] Group '${group.id}' discovered 0 broader support candidates ` +
+          `(blocked=${blockedTargets.length}; authoredSupport=${supportCandidates.length})`
+      );
+    }
+
     const sessionsSinceSurfaced = priorState?.sessionsSinceSurfaced ?? 0;
     const freshnessWindow = group.freshnessWindowSessions ?? DEFAULT_FRESHNESS_WINDOW;
     const staleSessions = Math.max(0, sessionsSinceSurfaced - freshnessWindow);
@@ -488,6 +589,7 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
       surfaceableTargets,
       targetTags,
       supportCandidates,
+      discoveredSupportCandidates,
       supportTags: [...supportTags],
       pressureMultiplier,
       supportMultiplier,
@@ -594,6 +696,50 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
     return cards;
   }
 
+  private buildDiscoveredSupportCards(
+    runtime: GroupRuntimeState,
+    courseId: string,
+    emittedIds: Set<string>
+  ): WeightedCard[] {
+    if (runtime.blockedTargets.length === 0 || runtime.discoveredSupportCandidates.length === 0) {
+      return [];
+    }
+
+    const maxSupport = runtime.group.maxSupportCardsPerRun ?? DEFAULT_MAX_SUPPORT_PER_RUN;
+    const supportIds = runtime.discoveredSupportCandidates
+      .filter((id) => !emittedIds.has(id))
+      .slice(0, maxSupport);
+
+    const cards: WeightedCard[] = [];
+    for (const cardId of supportIds) {
+      emittedIds.add(cardId);
+      cards.push({
+        cardId,
+        courseId,
+        score: DISCOVERED_SUPPORT_SCORE * runtime.supportMultiplier,
+        provenance: [
+          {
+            strategy: 'prescribed',
+            strategyName: this.strategyName || this.name,
+            strategyId: this.strategyId || 'NAVIGATION_STRATEGY-prescribed',
+            action: 'generated' as const,
+            score: DISCOVERED_SUPPORT_SCORE * runtime.supportMultiplier,
+            reason:
+              `mode=discovered-support;group=${runtime.group.id};pending=${runtime.pendingTargets.length};` +
+              `blocked=${runtime.blockedTargets.length};` +
+              `blockedTargets=${runtime.blockedTargets.join('|') || 'none'};` +
+              `supportCard=${cardId};` +
+              `supportTags=${runtime.supportTags.join('|') || 'none'};` +
+              `multiplier=${runtime.supportMultiplier.toFixed(2)};` +
+              `testversion=${runtime.debugVersion}`,
+          },
+        ],
+      });
+    }
+
+    return cards;
+  }
+
   private findSupportCardsByTags(
     group: PrescribedGroupConfig,
     tagsByCard: Map<string, string[]>,
@@ -624,6 +770,39 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
     }
 
     return [...candidates];
+  }
+
+  private findDiscoveredSupportCards(args: {
+    supportTags: string[];
+    cardsByTag: Map<string, string[]>;
+    activeIds: Set<string>;
+    seenIds: Set<string>;
+    excludedIds: Set<string>;
+    limit: number;
+  }): string[] {
+    const { supportTags, cardsByTag, activeIds, seenIds, excludedIds, limit } = args;
+
+    const byCardId = new Map<string, { cardId: string; matches: number }>();
+
+    for (const supportTag of supportTags) {
+      const taggedCards = cardsByTag.get(supportTag) ?? [];
+      for (const cardId of taggedCards) {
+        if (activeIds.has(cardId) || seenIds.has(cardId) || excludedIds.has(cardId)) {
+          continue;
+        }
+        const existing = byCardId.get(cardId);
+        if (existing) {
+          existing.matches += 1;
+        } else {
+          byCardId.set(cardId, { cardId, matches: 1 });
+        }
+      }
+    }
+
+    return [...byCardId.values()]
+      .sort((a, b) => b.matches - a.matches || a.cardId.localeCompare(b.cardId))
+      .slice(0, limit)
+      .map((entry) => entry.cardId);
   }
 
   private resolveBlockedSupportTags(
@@ -697,7 +876,6 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
     out: Set<string>
   ): void {
     if (depth < 0 || visited.has(tag)) return;
-    if (this.isHardGatedTag(tag)) return;
 
     visited.add(tag);
 
@@ -732,10 +910,7 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
     }
   }
 
-  private isHardGatedTag(tag: string): boolean {
-    return LOCKED_TAG_PREFIXES.some((prefix) => tag.startsWith(prefix)) &&
-      tag.startsWith(LESSON_GATE_PENALTY_TAG_HINT);
-  }
+
 
   private isPrerequisiteMet(
     prereq: TagPrerequisite,
