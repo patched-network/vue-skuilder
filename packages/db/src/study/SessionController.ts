@@ -16,36 +16,14 @@ import { CardRecord, CardHistory, CourseRegistrationDoc, QuestionRecord } from '
 import { recordUserOutcome } from '@db/core/orchestration/recording';
 import { Loggable } from '@db/util';
 import { getCardOrigin } from '@db/core/navigators';
+import { ReplanHints } from '@db/core/navigators/generators/types';
 import { SourceMixer, QuotaRoundRobinMixer, SourceBatch } from './SourceMixer';
 import { captureMixerRun } from './MixerDebugger';
 import { startSessionTracking, recordCardPresentation, snapshotQueues, endSessionTracking } from './SessionDebugger';
 
-/**
- * Typed ephemeral pipeline hints for a single run.
- * All fields are optional. Tag/card patterns support `*` wildcards.
- *
- * Previously defined in Pipeline.ts; moved here so it's co-exported
- * with ReplanOptions from the public `@vue-skuilder/db` surface.
- */
-export interface ReplanHints {
-  /** Multiply scores for cards matching these tag patterns. */
-  boostTags?: Record<string, number>;
-  /** Multiply scores for these specific card IDs (glob patterns). */
-  boostCards?: Record<string, number>;
-  /** Cards matching these tag patterns MUST appear in results. */
-  requireTags?: string[];
-  /** These specific card IDs MUST appear in results. */
-  requireCards?: string[];
-  /** Remove cards matching these tag patterns from results. */
-  excludeTags?: string[];
-  /** Remove these specific card IDs from results. */
-  excludeCards?: string[];
-  /**
-   * Debugging label threaded from the replan requester.
-   * Prefixed with `_` to signal it's metadata, not a scoring hint.
-   */
-  _label?: string;
-}
+// ReplanHints is defined in generators/types to avoid circular dependencies.
+// Re-exported here for backward compatibility.
+export type { ReplanHints } from '@db/core/navigators/generators/types';
 
 /**
  * Options for requesting a mid-session replan.
@@ -613,7 +591,7 @@ export class SessionController<TView = unknown> extends Loggable {
       const source = this.sources[i];
       try {
         // Fetch weighted cards for mixing
-        const weighted = await source.getWeightedCards!(limit);
+        const weighted = (await source.getWeightedCards!(limit)).cards;
 
         batches.push({
           sourceIndex: i,

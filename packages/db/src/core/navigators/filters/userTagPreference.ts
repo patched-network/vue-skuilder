@@ -4,6 +4,7 @@ import { ContentNavigator } from '../index';
 import type { WeightedCard } from '../index';
 import type { ContentNavigationStrategyData } from '../../types/contentNavigationStrategy';
 import type { CardFilter, FilterContext } from './types';
+import type { GeneratorResult } from '../generators/types';
 
 // ============================================================================
 // USER TAG PREFERENCE FILTER
@@ -208,7 +209,7 @@ export default class UserTagPreferenceFilter extends ContentNavigator implements
   /**
    * Legacy getWeightedCards - throws as filters should not be used as generators.
    */
-  async getWeightedCards(_limit: number): Promise<WeightedCard[]> {
+  async getWeightedCards(_limit: number): Promise<GeneratorResult> {
     throw new Error(
       'UserTagPreferenceFilter is a filter and should not be used as a generator. ' +
         'Use Pipeline with a generator and this filter via transform().'

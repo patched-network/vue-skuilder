@@ -1,11 +1,11 @@
 import { StudyContentSource, UserDBInterface, CourseDBInterface } from '..';
-import type { ReplanHints } from '@db/study/SessionController';
 
 // Re-export filter types
 export type { CardFilter, FilterContext, CardFilterFactory } from './filters/types';
 
 // Re-export generator types
-export type { CardGenerator, GeneratorContext, CardGeneratorFactory } from './generators/types';
+export type { CardGenerator, GeneratorContext, CardGeneratorFactory, GeneratorResult, ReplanHints } from './generators/types';
+import type { GeneratorResult, ReplanHints } from './generators/types';
 
 // Re-export pipeline debugger API
 export {
@@ -626,7 +626,7 @@ export abstract class ContentNavigator implements StudyContentSource {
    * @param limit - Maximum cards to return
    * @returns Cards sorted by score descending, with provenance trails
    */
-  async getWeightedCards(_limit: number): Promise<WeightedCard[]> {
+  async getWeightedCards(_limit: number): Promise<GeneratorResult> {
     throw new Error(`${this.constructor.name} must implement getWeightedCards(). `);
   }
 

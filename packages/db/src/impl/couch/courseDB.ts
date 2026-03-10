@@ -1,5 +1,5 @@
 import { CourseDBInterface, CourseInfo, CoursesDBInterface, UserDBInterface } from '@db/core';
-import type { ReplanHints } from '@db/study/SessionController';
+import type { GeneratorResult, ReplanHints } from '@db/core/navigators/generators/types';
 import {
   CourseConfig,
   CourseElo,
@@ -29,7 +29,7 @@ import { DataLayerResult } from '@db/core/types/db';
 import { PouchError } from './types';
 import CourseLookup from './courseLookupDB';
 import { ContentNavigationStrategyData } from '@db/core/types/contentNavigationStrategy';
-import { ContentNavigator, Navigators, WeightedCard } from '@db/core/navigators';
+import { ContentNavigator, Navigators } from '@db/core/navigators';
 import { PipelineAssembler } from '@db/core/navigators/PipelineAssembler';
 import { createDefaultPipeline } from '@db/core/navigators/defaults';
 
@@ -657,7 +657,7 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
     this._pendingHints = hints;
   }
 
-  public async getWeightedCards(limit: number): Promise<WeightedCard[]> {
+  public async getWeightedCards(limit: number): Promise<GeneratorResult> {
     const u = await this._getCurrentUser();
 
     try {

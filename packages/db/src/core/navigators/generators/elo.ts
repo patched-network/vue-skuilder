@@ -4,7 +4,7 @@ import { ContentNavigator } from '../index';
 import type { WeightedCard } from '../index';
 import { toCourseElo } from '@vue-skuilder/common';
 import type { QualifiedCardID } from '../..';
-import type { CardGenerator, GeneratorContext } from './types';
+import type { CardGenerator, GeneratorContext, GeneratorResult } from './types';
 import { logger } from '@db/util/logger';
 
 // ============================================================================
@@ -65,7 +65,7 @@ export default class ELONavigator extends ContentNavigator implements CardGenera
    * @param limit - Maximum number of cards to return
    * @param context - Optional GeneratorContext (used when called via Pipeline)
    */
-  async getWeightedCards(limit: number, context?: GeneratorContext): Promise<WeightedCard[]> {
+  async getWeightedCards(limit: number, context?: GeneratorContext): Promise<GeneratorResult> {
     // Determine user ELO - from context if available, otherwise fetch
     let userGlobalElo: number;
     if (context?.userElo !== undefined) {
@@ -125,18 +125,18 @@ export default class ELONavigator extends ContentNavigator implements CardGenera
     // Sort by sampling key descending (weighted sample without replacement)
     scored.sort((a, b) => b.score - a.score);
 
-    const result = scored.slice(0, limit);
+    const cards = scored.slice(0, limit);
 
     // Log summary for transparency
-    if (result.length > 0) {
-      const topScores = result.slice(0, 3).map((c) => c.score.toFixed(2)).join(', ');
+    if (cards.length > 0) {
+      const topScores = cards.slice(0, 3).map((c) => c.score.toFixed(2)).join(', ');
       logger.info(
-        `[ELO] Course ${this.course.getCourseID()}: ${result.length} new cards (top scores: ${topScores})`
+        `[ELO] Course ${this.course.getCourseID()}: ${cards.length} new cards (top scores: ${topScores})`
       );
     } else {
       logger.info(`[ELO] Course ${this.course.getCourseID()}: No new cards available`);
     }
 
-    return result;
+    return { cards };
   }
 }

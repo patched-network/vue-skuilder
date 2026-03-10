@@ -3,8 +3,9 @@ import type { UserDBInterface } from '../../interfaces/userDB';
 import { ContentNavigator } from '../index';
 import type { WeightedCard } from '../index';
 import type { ContentNavigationStrategyData } from '../../types/contentNavigationStrategy';
-import type { CardGenerator, GeneratorContext } from './types';
+import type { CardGenerator, GeneratorContext, GeneratorResult } from './types';
 import { logger } from '@db/util/logger';
+import type { ReplanHints } from '../../study/SessionController';
 
 // ============================================================================
 // PRESCRIBED CARDS GENERATOR
@@ -53,6 +54,7 @@ interface PrescribedConfig {
 
 interface GroupCardState {
   encounteredCardIds: string[];
+  pendingTargetIds: string[];
   lastSurfacedAt: string | null;
   sessionsSinceSurfaced: number;
   lastSupportAt: string | null;
@@ -90,6 +92,13 @@ interface GroupRuntimeState {
   supportTags: string[];
   pressureMultiplier: number;
   supportMultiplier: number;
+  debugVersion: string;
+}
+
+interface HintEmissionSummary {
+  boostTags: Record<string, number>;
+  blockedTargetIds: string[];
+  supportTags: string[];
 }
 
 const DEFAULT_FRESHNESS_WINDOW = 3;
@@ -103,6 +112,7 @@ const MAX_TARGET_MULTIPLIER = 8.0;
 const MAX_SUPPORT_MULTIPLIER = 4.0;
 const LOCKED_TAG_PREFIXES = ['concept:'];
 const LESSON_GATE_PENALTY_TAG_HINT = 'concept:';
+const PRESCRIBED_DEBUG_VERSION = 'testversion-prescribed-v2';
 
 function dedupe<T>(arr: T[]): T[] {
   return [...new Set(arr)];
@@ -154,9 +164,9 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
     return 'PrescribedProgress';
   }
 
-  async getWeightedCards(limit: number, context?: GeneratorContext): Promise<WeightedCard[]> {
+  async getWeightedCards(limit: number, context?: GeneratorContext): Promise<GeneratorResult> {
     if (this.config.groups.length === 0 || limit <= 0) {
-      return [];
+      return { cards: [] };
     }
 
     const courseId = this.course.getCourseID();
@@ -198,6 +208,7 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
 
     const emitted: WeightedCard[] = [];
     const emittedIds = new Set<string>();
+    const groupRuntimes: GroupRuntimeState[] = [];
 
     for (const group of this.config.groups) {
       const runtime = this.buildGroupRuntimeState({
@@ -211,6 +222,7 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
         userGlobalElo,
       });
 
+      groupRuntimes.push(runtime);
       nextState.groups[group.id] = this.buildNextGroupState(runtime, progress.groups[group.id]);
 
       const directCards = this.buildDirectTargetCards(
@@ -227,12 +239,24 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
       emitted.push(...directCards, ...supportCards);
     }
 
+    const hintSummary = this.buildSupportHintSummary(groupRuntimes);
+    const hints: ReplanHints | undefined =
+      Object.keys(hintSummary.boostTags).length > 0
+        ? {
+            boostTags: hintSummary.boostTags,
+            _label:
+              `prescribed-support (${hintSummary.supportTags.length} tags; ` +
+              `blocked=${hintSummary.blockedTargetIds.length}; ` +
+              `testversion=${PRESCRIBED_DEBUG_VERSION})`,
+          }
+        : undefined;
+
     if (emitted.length === 0) {
       logger.debug('[Prescribed] No prescribed targets/support emitted this run');
       await this.putStrategyState(nextState).catch((e) => {
         logger.debug(`[Prescribed] Failed to persist empty-state update: ${e}`);
       });
-      return [];
+      return hints ? { cards: [], hints } : { cards: [] };
     }
 
     const finalCards = pickTopByScore(emitted, limit);
@@ -271,7 +295,32 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
         `${finalCards.filter((c) => c.provenance[0]?.reason.includes('mode=support')).length} support)`
     );
 
-    return finalCards;
+    return hints ? { cards: finalCards, hints } : { cards: finalCards };
+  }
+
+  private buildSupportHintSummary(groupRuntimes: GroupRuntimeState[]): HintEmissionSummary {
+    const boostTags: Record<string, number> = {};
+    const blockedTargetIds = new Set<string>();
+    const supportTags = new Set<string>();
+
+    for (const runtime of groupRuntimes) {
+      if (runtime.blockedTargets.length === 0 || runtime.supportTags.length === 0) {
+        continue;
+      }
+
+      runtime.blockedTargets.forEach((cardId) => blockedTargetIds.add(cardId));
+
+      for (const tag of runtime.supportTags) {
+        supportTags.add(tag);
+        boostTags[tag] = (boostTags[tag] ?? 1) * runtime.supportMultiplier;
+      }
+    }
+
+    return {
+      boostTags,
+      blockedTargetIds: [...blockedTargetIds].sort(),
+      supportTags: [...supportTags].sort(),
+    };
   }
 
   private parseConfig(serializedData: string): PrescribedConfig {
@@ -383,7 +432,26 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
         group.hierarchyWalk?.maxDepth ?? DEFAULT_HIERARCHY_DEPTH
       );
 
-      if (resolution.blocked) {
+      const introTags = tags.filter((tag) => tag.startsWith('gpc:intro:'));
+      const exposeTags = new Set(tags.filter((tag) => tag.startsWith('gpc:expose:')));
+
+      for (const introTag of introTags) {
+        const suffix = introTag.slice('gpc:intro:'.length);
+        if (suffix) {
+          exposeTags.add(`gpc:expose:${suffix}`);
+        }
+      }
+
+      const unmetExposeTags = [...exposeTags].filter((tag) => {
+        const tagElo = userTagElo[tag];
+        return !tagElo || tagElo.count < DEFAULT_MIN_COUNT;
+      });
+
+      if (unmetExposeTags.length > 0) {
+        unmetExposeTags.forEach((tag) => supportTags.add(tag));
+      }
+
+      if (resolution.blocked || unmetExposeTags.length > 0) {
         blockedTargets.push(cardId);
         resolution.supportTags.forEach((t) => supportTags.add(t));
       } else {
@@ -423,6 +491,7 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
       supportTags: [...supportTags],
       pressureMultiplier,
       supportMultiplier,
+      debugVersion: PRESCRIBED_DEBUG_VERSION,
     };
   }
 
@@ -432,6 +501,7 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
 
     return {
       encounteredCardIds: [...runtime.encounteredTargets].sort(),
+      pendingTargetIds: [...runtime.pendingTargets].sort(),
       lastSurfacedAt: prior?.lastSurfacedAt ?? null,
       sessionsSinceSurfaced: surfacedThisRun ? 0 : carriedSessions + 1,
       lastSupportAt: prior?.lastSupportAt ?? null,
@@ -468,7 +538,10 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
             reason:
               `mode=target;group=${runtime.group.id};pending=${runtime.pendingTargets.length};` +
               `surfaceable=${runtime.surfaceableTargets.length};blocked=${runtime.blockedTargets.length};` +
-              `multiplier=${runtime.pressureMultiplier.toFixed(2)}`,
+              `blockedTargets=${runtime.blockedTargets.join('|') || 'none'};` +
+              `supportTags=${runtime.supportTags.join('|') || 'none'};` +
+              `multiplier=${runtime.pressureMultiplier.toFixed(2)};` +
+              `testversion=${runtime.debugVersion}`,
           },
         ],
       });
@@ -506,9 +579,13 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
             action: 'generated' as const,
             score: BASE_SUPPORT_SCORE * runtime.supportMultiplier,
             reason:
-              `mode=support;group=${runtime.group.id};blocked=${runtime.blockedTargets.length};` +
+              `mode=support;group=${runtime.group.id};pending=${runtime.pendingTargets.length};` +
+              `blocked=${runtime.blockedTargets.length};` +
+              `blockedTargets=${runtime.blockedTargets.join('|') || 'none'};` +
+              `supportCard=${cardId};` +
               `supportTags=${runtime.supportTags.join('|') || 'none'};` +
-              `multiplier=${runtime.supportMultiplier.toFixed(2)}`,
+              `multiplier=${runtime.supportMultiplier.toFixed(2)};` +
+              `testversion=${runtime.debugVersion}`,
           },
         ],
       });
@@ -557,40 +634,52 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
     hierarchyWalkEnabled: boolean,
     maxDepth: number
   ): { blocked: boolean; supportTags: string[] } {
-    if (!hierarchyWalkEnabled || targetTags.length === 0 || hierarchyConfigs.length === 0) {
-      return {
-        blocked: false,
-        supportTags: [],
-      };
-    }
-
     const supportTags = new Set<string>();
     let blocked = false;
 
     for (const targetTag of targetTags) {
-      for (const hierarchy of hierarchyConfigs) {
-        const prereqs = hierarchy.prerequisites[targetTag];
-        if (!prereqs || prereqs.length === 0) continue;
+      const prereqSets = hierarchyConfigs
+        .map((hierarchy) => hierarchy.prerequisites[targetTag])
+        .filter((prereqs): prereqs is TagPrerequisite[] => Array.isArray(prereqs) && prereqs.length > 0);
 
-        const unmet = prereqs.filter(
-          (pr) => !this.isPrerequisiteMet(pr, userTagElo[pr.tag], userGlobalElo)
-        );
+      if (prereqSets.length === 0) {
+        continue;
+      }
 
-        if (unmet.length === 0) {
-          continue;
+      const tagBlocked = prereqSets.some((prereqs) =>
+        prereqs.some((pr) => !this.isPrerequisiteMet(pr, userTagElo[pr.tag], userGlobalElo))
+      );
+
+      if (!tagBlocked) {
+        continue;
+      }
+
+      blocked = true;
+
+      if (!hierarchyWalkEnabled) {
+        for (const prereqs of prereqSets) {
+          for (const prereq of prereqs) {
+            if (!this.isPrerequisiteMet(prereq, userTagElo[prereq.tag], userGlobalElo)) {
+              supportTags.add(prereq.tag);
+            }
+          }
         }
+        continue;
+      }
 
-        blocked = true;
-        for (const prereq of unmet) {
-          this.collectSupportTagsRecursive(
-            prereq.tag,
-            hierarchyConfigs,
-            userTagElo,
-            userGlobalElo,
-            maxDepth,
-            new Set<string>(),
-            supportTags
-          );
+      for (const prereqs of prereqSets) {
+        for (const prereq of prereqs) {
+          if (!this.isPrerequisiteMet(prereq, userTagElo[prereq.tag], userGlobalElo)) {
+            this.collectSupportTagsRecursive(
+              prereq.tag,
+              hierarchyConfigs,
+              userTagElo,
+              userGlobalElo,
+              maxDepth,
+              new Set<string>(),
+              supportTags
+            );
+          }
         }
       }
     }

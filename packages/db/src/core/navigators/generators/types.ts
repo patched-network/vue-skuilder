@@ -3,6 +3,30 @@ import type { CourseDBInterface } from '../../interfaces/courseDB';
 import type { UserDBInterface } from '../../interfaces/userDB';
 import type { OrchestrationContext } from '../../orchestration';
 
+/**
+ * Typed ephemeral pipeline hints for a single run.
+ * All fields are optional. Tag/card patterns support `*` wildcards.
+ */
+export interface ReplanHints {
+  /** Multiply scores for cards matching these tag patterns. */
+  boostTags?: Record<string, number>;
+  /** Multiply scores for these specific card IDs (glob patterns). */
+  boostCards?: Record<string, number>;
+  /** Cards matching these tag patterns MUST appear in results. */
+  requireTags?: string[];
+  /** These specific card IDs MUST appear in results. */
+  requireCards?: string[];
+  /** Remove cards matching these tag patterns from results. */
+  excludeTags?: string[];
+  /** Remove these specific card IDs from results. */
+  excludeCards?: string[];
+  /**
+   * Debugging label threaded from the replan requester.
+   * Prefixed with `_` to signal it's metadata, not a scoring hint.
+   */
+  _label?: string;
+}
+
 // ============================================================================
 // CARD GENERATOR INTERFACE
 // ============================================================================
@@ -45,6 +69,21 @@ export interface GeneratorContext {
 }
 
 /**
+ * Structured generator result.
+ *
+ * Generators may optionally emit one-shot replan hints alongside their
+ * candidate cards. This allows a generator to shape the broader pipeline
+ * without having to enumerate every affected support card directly.
+ */
+export interface GeneratorResult {
+  /** Candidate cards produced by the generator */
+  cards: WeightedCard[];
+
+  /** Optional one-shot hints to apply after the filter chain */
+  hints?: ReplanHints;
+}
+
+/**
  * A generator that produces candidate cards with initial scores.
  *
  * Generators are the "source" stage of a navigation pipeline.
@@ -64,6 +103,9 @@ export interface GeneratorContext {
  *    internally if needed for scoring accuracy.
  *
  * 4. **Sort before returning**: Return cards sorted by score descending.
+ *
+ * 5. **Hints are optional**: Generators may return structured results with
+ *    `hints` when they need to apply pipeline-wide ephemeral pressure.
  *
  * ## Example Implementation
  *
@@ -98,9 +140,13 @@ export interface CardGenerator {
    *
    * @param limit - Maximum number of cards to return
    * @param context - Shared context (user, course, userElo, etc.)
-   * @returns Cards sorted by score descending, with provenance
+   * @returns Cards sorted by score descending, with provenance, optionally
+   *          accompanied by one-shot replan hints
    */
-  getWeightedCards(limit: number, context: GeneratorContext): Promise<WeightedCard[]>;
+  getWeightedCards(
+    limit: number,
+    context: GeneratorContext
+  ): Promise<GeneratorResult>;
 }
 
 /**

@@ -6,7 +6,7 @@ import {
   CourseInfo,
   StudySessionItem,
 } from '../../core/interfaces';
-import type { ReplanHints } from '@db/study/SessionController';
+import type { GeneratorResult, ReplanHints } from '../../core/navigators/generators/types';
 import { StaticDataUnpacker } from './StaticDataUnpacker';
 import { StaticCourseManifest } from '../../util/packer/types';
 import { CourseConfig, CourseElo, DataShape, Status } from '@vue-skuilder/common';
@@ -21,7 +21,7 @@ import {
 import { DataLayerResult } from '../../core/types/db';
 import { ContentNavigationStrategyData } from '../../core/types/contentNavigationStrategy';
 
-import { ContentNavigator, WeightedCard } from '../../core/navigators';
+import { ContentNavigator } from '../../core/navigators';
 import { logger } from '../../util/logger';
 import { createDefaultPipeline } from '@db/core/navigators/defaults';
 import { PipelineAssembler } from '@db/core/navigators/PipelineAssembler';
@@ -450,7 +450,7 @@ export class StaticCourseDB implements CourseDBInterface {
     this._pendingHints = hints;
   }
 
-  async getWeightedCards(limit: number): Promise<WeightedCard[]> {
+  async getWeightedCards(limit: number): Promise<GeneratorResult> {
     try {
       const navigator = await this.createNavigator(this.userDB);
       // Forward any pending hints to the Pipeline

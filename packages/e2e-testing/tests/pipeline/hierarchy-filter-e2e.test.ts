@@ -710,7 +710,7 @@ describe('Hierarchy Filter E2E', () => {
       // 3. Returns weighted cards from the pipeline
       //
       // This is the real end-to-end flow!
-      const cards = await courseDB.getWeightedCards(10);
+      const { cards } = await courseDB.getWeightedCards(10);
 
       // We should get cards back (may be 0 if ELO scoring excludes them,
       // but the call should succeed)

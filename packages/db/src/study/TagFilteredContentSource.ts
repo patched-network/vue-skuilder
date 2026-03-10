@@ -1,5 +1,6 @@
 import { StudyContentSource } from '@db/core/interfaces/contentSource';
 import { WeightedCard } from '@db/core/navigators';
+import type { GeneratorResult } from '@db/core/navigators/generators/types';
 import { UserDBInterface } from '@db/core';
 import { TagFilter, hasActiveFilter } from '@vue-skuilder/common';
 import { getTag } from '../impl/couch/courseDB';
@@ -117,10 +118,10 @@ export class TagFilteredContentSource implements StudyContentSource {
    * @param limit - Maximum number of cards to return
    * @returns Cards sorted by score descending (all scores = 1.0)
    */
-  public async getWeightedCards(limit: number): Promise<WeightedCard[]> {
+  public async getWeightedCards(limit: number): Promise<GeneratorResult> {
     if (!hasActiveFilter(this.filter)) {
       logger.warn('[TagFilteredContentSource] getWeightedCards called with no active filter');
-      return [];
+      return { cards: [] };
     }
 
     const eligibleCardIds = await this.resolveFilteredCardIds();
@@ -185,7 +186,7 @@ export class TagFilteredContentSource implements StudyContentSource {
     }));
 
     // Reviews first, then new cards; respect limit
-    return [...reviewWeighted, ...newCardWeighted].slice(0, limit);
+    return { cards: [...reviewWeighted, ...newCardWeighted].slice(0, limit) };
   }
 
   /**

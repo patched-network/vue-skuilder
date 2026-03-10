@@ -1,11 +1,10 @@
 import { getDataLayer } from '@db/factory';
 import { UserDBInterface } from '..';
 import { StudentClassroomDB } from '../../impl/couch/classroomDB';
-import { WeightedCard } from '../navigators';
+import type { GeneratorResult, ReplanHints } from '../navigators/generators/types';
 import { TagFilter, hasActiveFilter } from '@vue-skuilder/common';
 import { TagFilteredContentSource } from '../../study/TagFilteredContentSource';
 import { OrchestrationContext } from '../orchestration';
-import type { ReplanHints } from '@db/study/SessionController';
 
 export type StudySessionFailedItem = StudySessionFailedNewItem | StudySessionFailedReviewItem;
 
@@ -73,7 +72,7 @@ export interface StudyContentSource {
    * @param limit - Maximum number of cards to return
    * @returns Cards sorted by score descending
    */
-  getWeightedCards(limit: number): Promise<WeightedCard[]>;
+  getWeightedCards(limit: number): Promise<GeneratorResult>;
 
   /**
    * Get the orchestration context for this source.

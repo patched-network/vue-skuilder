@@ -241,7 +241,23 @@ export class CourseSyncService {
       // Step 2: Create local PouchDB and replicate
       entry.status = { state: 'syncing' };
       const localDBName = this.localDBName(courseId);
-      const localDB = new pouch(localDBName);
+      let localDB = new pouch(localDBName);
+
+      // Check for stale local replica before replicating. If the remote DB
+      // was wiped and recreated (e.g., `yarn db:seed`), the local PouchDB
+      // has documents at rev 1-oldHash while the remote has 1-newHash for
+      // the same _ids. PouchDB replication treats this as a conflict rather
+      // than an update, and the stale revision can win — causing partial or
+      // incorrect data. Destroying the stale local DB avoids this entirely.
+      const stale = await this.isLocalEpochStale(courseId, localDB);
+      if (stale) {
+        logger.info(
+          `[CourseSyncService] Stale local DB detected for course ${courseId} — destroying before sync`
+        );
+        await localDB.destroy();
+        localDB = new pouch(localDBName);
+      }
+
       entry.localDB = localDB;
 
       const remoteDB = this.getRemoteDB(courseId);

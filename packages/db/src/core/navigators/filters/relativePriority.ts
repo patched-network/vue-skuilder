@@ -4,6 +4,7 @@ import { ContentNavigator } from '../index';
 import type { WeightedCard } from '../index';
 import type { ContentNavigationStrategyData } from '../../types/contentNavigationStrategy';
 import type { CardFilter, FilterContext } from './types';
+import type { GeneratorResult } from '../generators/types';
 
 /**
  * Configuration for the RelativePriority strategy.
@@ -238,7 +239,7 @@ export default class RelativePriorityNavigator extends ContentNavigator implemen
    *
    * Use transform() via Pipeline instead.
    */
-  async getWeightedCards(_limit: number): Promise<WeightedCard[]> {
+  async getWeightedCards(_limit: number): Promise<GeneratorResult> {
     throw new Error(
       'RelativePriorityNavigator is a filter and should not be used as a generator. ' +
         'Use Pipeline with a generator and this filter via transform().'

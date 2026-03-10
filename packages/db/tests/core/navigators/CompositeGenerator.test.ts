@@ -3,7 +3,7 @@ import CompositeGenerator, {
   AggregationMode,
 } from '../../../src/core/navigators/generators/CompositeGenerator';
 import { ContentNavigator, WeightedCard } from '../../../src/core/navigators/index';
-import { GeneratorContext } from '../../../src/core/navigators/generators/types';
+import { GeneratorContext, GeneratorResult } from '../../../src/core/navigators/generators/types';
 import { UserDBInterface } from '../../../src/core/interfaces/userDB';
 import { CourseDBInterface } from '../../../src/core/interfaces/courseDB';
 
@@ -41,8 +41,8 @@ class MockGenerator extends ContentNavigator {
     this.mockWeightedCards = cards;
   }
 
-  async getWeightedCards(limit: number): Promise<WeightedCard[]> {
-    return this.mockWeightedCards.slice(0, limit);
+  async getWeightedCards(limit: number): Promise<GeneratorResult> {
+    return { cards: this.mockWeightedCards.slice(0, limit) };
   }
 }
 
@@ -96,7 +96,7 @@ describe('CompositeGenerator', () => {
       ]);
 
       const composite = new CompositeGenerator([generator]);
-      const result = await composite.getWeightedCards(10, mockContext);
+      const { cards: result } = await composite.getWeightedCards(10, mockContext);
 
       expect(result).toHaveLength(2);
       expect(result[0].cardId).toBe('card-1');
@@ -114,7 +114,7 @@ describe('CompositeGenerator', () => {
       ]);
 
       const composite = new CompositeGenerator([generator]);
-      const result = await composite.getWeightedCards(2, mockContext);
+      const { cards: result } = await composite.getWeightedCards(2, mockContext);
 
       expect(result).toHaveLength(2);
       expect(result[0].cardId).toBe('card-1');
@@ -137,7 +137,7 @@ describe('CompositeGenerator', () => {
       ]);
 
       const composite = new CompositeGenerator([gen1, gen2], AggregationMode.AVERAGE);
-      const result = await composite.getWeightedCards(10, mockContext);
+      const { cards: result } = await composite.getWeightedCards(10, mockContext);
 
       // Should have 3 unique cards
       expect(result).toHaveLength(3);
@@ -157,7 +157,7 @@ describe('CompositeGenerator', () => {
       gen2.setWeightedCards([makeWeightedCard('card-1', 'course-1', 0.9, 'new')]);
 
       const composite = new CompositeGenerator([gen1, gen2], AggregationMode.MAX);
-      const result = await composite.getWeightedCards(10, mockContext);
+      const { cards: result } = await composite.getWeightedCards(10, mockContext);
 
       expect(result).toHaveLength(1);
       expect(result[0].score).toBe(0.9);
@@ -173,7 +173,7 @@ describe('CompositeGenerator', () => {
       gen2.setWeightedCards([makeWeightedCard('card-1', 'course-1', 0.6, 'new')]);
 
       const composite = new CompositeGenerator([gen1, gen2], AggregationMode.AVERAGE);
-      const result = await composite.getWeightedCards(10, mockContext);
+      const { cards: result } = await composite.getWeightedCards(10, mockContext);
 
       expect(result).toHaveLength(1);
       expect(result[0].score).toBeCloseTo(0.7); // (0.8 + 0.6) / 2
@@ -190,7 +190,7 @@ describe('CompositeGenerator', () => {
       gen3.setWeightedCards([makeWeightedCard('card-1', 'course-1', 0.6, 'new')]);
 
       const composite = new CompositeGenerator([gen1, gen2, gen3], AggregationMode.AVERAGE);
-      const result = await composite.getWeightedCards(10, mockContext);
+      const { cards: result } = await composite.getWeightedCards(10, mockContext);
 
       expect(result).toHaveLength(1);
       expect(result[0].score).toBeCloseTo(0.7); // (0.9 + 0.6 + 0.6) / 3
@@ -206,7 +206,7 @@ describe('CompositeGenerator', () => {
       gen2.setWeightedCards([makeWeightedCard('card-1', 'course-1', 0.6, 'new')]);
 
       const composite = new CompositeGenerator([gen1, gen2]); // default mode
-      const result = await composite.getWeightedCards(10, mockContext);
+      const { cards: result } = await composite.getWeightedCards(10, mockContext);
 
       expect(result).toHaveLength(1);
       // avg = (0.8 + 0.6) / 2 = 0.7
@@ -226,7 +226,7 @@ describe('CompositeGenerator', () => {
       gen3.setWeightedCards([makeWeightedCard('card-1', 'course-1', 0.6, 'new')]);
 
       const composite = new CompositeGenerator([gen1, gen2, gen3]);
-      const result = await composite.getWeightedCards(10, mockContext);
+      const { cards: result } = await composite.getWeightedCards(10, mockContext);
 
       expect(result).toHaveLength(1);
       // avg = 0.6
@@ -243,7 +243,7 @@ describe('CompositeGenerator', () => {
       gen2.setWeightedCards([makeWeightedCard('card-2', 'course-1', 0.6, 'new')]);
 
       const composite = new CompositeGenerator([gen1, gen2]);
-      const result = await composite.getWeightedCards(10, mockContext);
+      const { cards: result } = await composite.getWeightedCards(10, mockContext);
 
       expect(result).toHaveLength(2);
       // No boost for single-generator cards
@@ -263,7 +263,7 @@ describe('CompositeGenerator', () => {
       gen2.setWeightedCards([makeWeightedCard('card-1', 'course-1', 0.9, 'new')]);
 
       const composite = new CompositeGenerator([gen1, gen2]);
-      const result = await composite.getWeightedCards(10, mockContext);
+      const { cards: result } = await composite.getWeightedCards(10, mockContext);
 
       expect(result).toHaveLength(1);
       // avg = 0.9, boost = 1.1, result = 0.99 (would be 0.99, not clamped)
@@ -282,7 +282,7 @@ describe('CompositeGenerator', () => {
       gen3.setWeightedCards([makeWeightedCard('card-1', 'course-1', 1.0, 'new')]);
 
       const composite = new CompositeGenerator([gen1, gen2, gen3]);
-      const result = await composite.getWeightedCards(10, mockContext);
+      const { cards: result } = await composite.getWeightedCards(10, mockContext);
 
       expect(result).toHaveLength(1);
       // avg = 1.0, boost = 1.2, result would be 1.2 but clamped to 1.0
@@ -300,7 +300,7 @@ describe('CompositeGenerator', () => {
       ]);
 
       const composite = new CompositeGenerator([gen1]);
-      const result = await composite.getWeightedCards(10, mockContext);
+      const { cards: result } = await composite.getWeightedCards(10, mockContext);
 
       expect(result).toHaveLength(3);
       expect(result[0].cardId).toBe('card-high');
@@ -319,7 +319,7 @@ describe('CompositeGenerator', () => {
       gen2.setWeightedCards([makeWeightedCard('card-boosted', 'course-1', 0.5, 'new')]);
 
       const composite = new CompositeGenerator([gen1, gen2]);
-      const result = await composite.getWeightedCards(10, mockContext);
+      const { cards: result } = await composite.getWeightedCards(10, mockContext);
 
       expect(result).toHaveLength(2);
       // card-boosted: avg=0.5, boost=1.1, final=0.55
