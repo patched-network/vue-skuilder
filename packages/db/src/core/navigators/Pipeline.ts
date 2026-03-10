@@ -406,6 +406,35 @@ export class Pipeline extends ContentNavigator {
     // Keep a copy of all cards for debug capture (before filtering removes any)
     const allCardsBeforeFiltering = [...cards];
 
+    // Pre-fetch any literal requireCards IDs that the generator didn't produce.
+    // requireCards is a hard guarantee — required cards bypass the filter chain
+    // and are injected directly into the final result by applyHints. We need
+    // them present in allCardsBeforeFiltering for that injection to find them.
+    // (Glob patterns are left to the existing pool-search behaviour.)
+    const pendingHints = this._ephemeralHints;
+    if (pendingHints?.requireCards?.length) {
+      const poolIds = new Set(allCardsBeforeFiltering.map((c) => c.cardId));
+      const missingIds = pendingHints.requireCards.filter(
+        (p) => !p.includes('*') && !poolIds.has(p)
+      );
+      if (missingIds.length > 0) {
+        const fetchedTags = await this.course!.getAppliedTagsBatch(missingIds);
+        const courseId = this.course!.getCourseID();
+        for (const cardId of missingIds) {
+          allCardsBeforeFiltering.push({
+            cardId,
+            courseId,
+            score: 1.0,
+            tags: fetchedTags.get(cardId) ?? [],
+            provenance: [],
+          });
+        }
+        logger.info(
+          `[Pipeline] Pre-fetched ${missingIds.length} required card(s) into pool: ${missingIds.join(', ')}`
+        );
+      }
+    }
+
     // Apply filters sequentially, tracking impact
     const filterImpacts: FilterImpact[] = [];
     for (const filter of this.filters) {
@@ -619,8 +648,8 @@ export class Pipeline extends ContentNavigator {
     const hintLabel = hints._label ? `Replan Hint (${hints._label})` : 'Replan Hint';
     const inject = (card: WeightedCard, reason: string) => {
       if (!cardIds.has(card.cardId)) {
-        // Give required cards a floor score so they sort above zero-score filler
-        const floorScore = Math.max(card.score, 1.0);
+        // Required cards must appear — score above any organic candidate
+        const floorScore = Number.POSITIVE_INFINITY;
         cards.push({
           ...card,
           score: floorScore,
