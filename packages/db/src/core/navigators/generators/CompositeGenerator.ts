@@ -3,7 +3,7 @@ import type { WeightedCard } from '../index';
 import type { ContentNavigationStrategyData } from '../../types/contentNavigationStrategy';
 import type { CourseDBInterface } from '../../interfaces/courseDB';
 import type { UserDBInterface } from '../../interfaces/userDB';
-import type { CardGenerator, GeneratorContext } from './types';
+import type { CardGenerator, GeneratorContext, GeneratorResult, ReplanHints } from './types';
 import { logger } from '../../../util/logger';
 
 // ============================================================================
@@ -36,6 +36,54 @@ export enum AggregationMode {
 
 const DEFAULT_AGGREGATION_MODE = AggregationMode.FREQUENCY_BOOST;
 const FREQUENCY_BOOST_FACTOR = 0.1;
+
+function mergeHints(allHints: Array<ReplanHints | undefined>): ReplanHints | undefined {
+  const defined = allHints.filter((h): h is ReplanHints => h !== undefined);
+  if (defined.length === 0) return undefined;
+
+  const merged: ReplanHints = {};
+
+  const boostTags: Record<string, number> = {};
+  for (const hints of defined) {
+    for (const [pattern, factor] of Object.entries(hints.boostTags ?? {})) {
+      boostTags[pattern] = (boostTags[pattern] ?? 1) * factor;
+    }
+  }
+  if (Object.keys(boostTags).length > 0) {
+    merged.boostTags = boostTags;
+  }
+
+  const boostCards: Record<string, number> = {};
+  for (const hints of defined) {
+    for (const [pattern, factor] of Object.entries(hints.boostCards ?? {})) {
+      boostCards[pattern] = (boostCards[pattern] ?? 1) * factor;
+    }
+  }
+  if (Object.keys(boostCards).length > 0) {
+    merged.boostCards = boostCards;
+  }
+
+  const concatUnique = (
+    field: 'requireTags' | 'requireCards' | 'excludeTags' | 'excludeCards'
+  ): void => {
+    const values = defined.flatMap((h) => h[field] ?? []);
+    if (values.length > 0) {
+      merged[field] = [...new Set(values)];
+    }
+  };
+
+  concatUnique('requireTags');
+  concatUnique('requireCards');
+  concatUnique('excludeTags');
+  concatUnique('excludeCards');
+
+  const labels = defined.map((h) => h._label).filter(Boolean);
+  if (labels.length > 0) {
+    merged._label = labels.join('; ');
+  }
+
+  return Object.keys(merged).length > 0 ? merged : undefined;
+}
 
 /**
  * Composes multiple generators into a single generator.
@@ -100,7 +148,7 @@ export default class CompositeGenerator extends ContentNavigator implements Card
    * @param limit - Maximum number of cards to return
    * @param context - GeneratorContext passed to child generators (required when called via Pipeline)
    */
-  async getWeightedCards(limit: number, context?: GeneratorContext): Promise<WeightedCard[]> {
+  async getWeightedCards(limit: number, context?: GeneratorContext): Promise<GeneratorResult> {
     if (!context) {
       throw new Error(
         'CompositeGenerator.getWeightedCards requires a GeneratorContext. ' +
@@ -115,7 +163,8 @@ export default class CompositeGenerator extends ContentNavigator implements Card
 
     // Log per-generator breakdown for transparency
     const generatorSummaries: string[] = [];
-    results.forEach((cards, index) => {
+    results.forEach((result, index) => {
+      const cards = result.cards;
       const gen = this.generators[index];
       const genName = gen.name || `Generator ${index}`;
       const newCards = cards.filter((c) => c.provenance[0]?.reason?.includes('new card'));
@@ -138,7 +187,8 @@ export default class CompositeGenerator extends ContentNavigator implements Card
     type WeightedResult = { card: WeightedCard; weight: number };
     const byCardId = new Map<string, WeightedResult[]>();
 
-    results.forEach((cards, index) => {
+    results.forEach((result, index) => {
+      const cards = result.cards;
       // Access learnable weight if available
       const gen = this.generators[index] as unknown as ContentNavigator;
 
@@ -205,7 +255,10 @@ export default class CompositeGenerator extends ContentNavigator implements Card
     }
 
     // Sort by score descending and limit
-    return merged.sort((a, b) => b.score - a.score).slice(0, limit);
+    const cards = merged.sort((a, b) => b.score - a.score).slice(0, limit);
+    const hints = mergeHints(results.map((result) => result.hints));
+
+    return { cards, hints };
   }
 
   /**

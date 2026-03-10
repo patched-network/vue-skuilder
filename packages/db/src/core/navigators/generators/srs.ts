@@ -5,7 +5,7 @@ import type { UserDBInterface } from '../../interfaces/userDB';
 import { ContentNavigator } from '../index';
 import type { WeightedCard } from '../index';
 import type { ContentNavigationStrategyData } from '../../types/contentNavigationStrategy';
-import type { CardGenerator, GeneratorContext } from './types';
+import type { CardGenerator, GeneratorContext, GeneratorResult } from './types';
 import { logger } from '@db/util/logger';
 
 // ============================================================================
@@ -122,7 +122,7 @@ export default class SRSNavigator extends ContentNavigator implements CardGenera
    * @param limit - Maximum number of cards to return
    * @param _context - Optional GeneratorContext (currently unused, but required for interface)
    */
-  async getWeightedCards(limit: number, _context?: GeneratorContext): Promise<WeightedCard[]> {
+  async getWeightedCards(limit: number, _context?: GeneratorContext): Promise<GeneratorResult> {
     if (!this.user || !this.course) {
       throw new Error('SRSNavigator requires user and course to be set');
     }
@@ -189,7 +189,7 @@ export default class SRSNavigator extends ContentNavigator implements CardGenera
     });
 
     // Sort by score descending and limit
-    return scored.sort((a, b) => b.score - a.score).slice(0, limit);
+    return { cards: scored.sort((a, b) => b.score - a.score).slice(0, limit) };
   }
 
   /**

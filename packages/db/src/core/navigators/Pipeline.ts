@@ -5,6 +5,7 @@ import { ContentNavigator } from './index';
 import type { WeightedCard } from './index';
 import type { CardFilter, FilterContext } from './filters/types';
 import type { CardGenerator, GeneratorContext } from './generators/types';
+import type { GeneratorResult } from './generators/types';
 import { logger } from '../../util/logger';
 import { createOrchestrationContext, OrchestrationContext } from '../orchestration';
 import { captureRun, buildRunReport, registerPipelineForDebug, type GeneratorSummary, type FilterImpact } from './PipelineDebugger';
@@ -22,9 +23,9 @@ import { captureRun, buildRunReport, registerPipelineForDebug, type GeneratorSum
 //   'gpc:exercise:t-*'   — all t-variant exercises
 //
 
-// ReplanHints is the canonical type — re-export for consumers that import from Pipeline
-import { ReplanHints } from '@db/study/SessionController';
-export { ReplanHints };
+// ReplanHints is defined in generators/types — re-export for consumers that import from Pipeline
+import type { ReplanHints } from './generators/types';
+export type { ReplanHints };
 
 /**
  * Convert a glob pattern (with `*` wildcards) to a RegExp.
@@ -45,6 +46,54 @@ function globMatch(value: string, pattern: string): boolean {
 /** Test whether any of a card's tags match a glob pattern. */
 function cardMatchesTagPattern(card: WeightedCard, pattern: string): boolean {
   return (card.tags ?? []).some((tag) => globMatch(tag, pattern));
+}
+
+function mergeHints(allHints: Array<ReplanHints | null | undefined>): ReplanHints | undefined {
+  const defined = allHints.filter((h): h is ReplanHints => h !== null && h !== undefined);
+  if (defined.length === 0) return undefined;
+
+  const merged: ReplanHints = {};
+
+  const boostTags: Record<string, number> = {};
+  for (const hints of defined) {
+    for (const [pattern, factor] of Object.entries(hints.boostTags ?? {})) {
+      boostTags[pattern] = (boostTags[pattern] ?? 1) * factor;
+    }
+  }
+  if (Object.keys(boostTags).length > 0) {
+    merged.boostTags = boostTags;
+  }
+
+  const boostCards: Record<string, number> = {};
+  for (const hints of defined) {
+    for (const [pattern, factor] of Object.entries(hints.boostCards ?? {})) {
+      boostCards[pattern] = (boostCards[pattern] ?? 1) * factor;
+    }
+  }
+  if (Object.keys(boostCards).length > 0) {
+    merged.boostCards = boostCards;
+  }
+
+  const concatUnique = (
+    field: 'requireTags' | 'requireCards' | 'excludeTags' | 'excludeCards'
+  ): void => {
+    const values = defined.flatMap((h) => h[field] ?? []);
+    if (values.length > 0) {
+      merged[field] = [...new Set(values)];
+    }
+  };
+
+  concatUnique('requireTags');
+  concatUnique('requireCards');
+  concatUnique('excludeTags');
+  concatUnique('excludeCards');
+
+  const labels = defined.map((h) => h._label).filter(Boolean);
+  if (labels.length > 0) {
+    merged._label = labels.join('; ');
+  }
+
+  return Object.keys(merged).length > 0 ? merged : undefined;
 }
 
 // ============================================================================
@@ -293,7 +342,7 @@ export class Pipeline extends ContentNavigator {
    * @param limit - Maximum number of cards to return
    * @returns Cards sorted by score descending
    */
-  async getWeightedCards(limit: number): Promise<WeightedCard[]> {
+  async getWeightedCards(limit: number): Promise<GeneratorResult> {
     const t0 = performance.now();
 
     // Build shared context once
@@ -311,9 +360,14 @@ export class Pipeline extends ContentNavigator {
     );
 
     // Get candidates from generator, passing context
-    let cards = await this.generator.getWeightedCards(fetchLimit, context);
+    const generatorResult = await this.generator.getWeightedCards(fetchLimit, context);
+    let cards = generatorResult.cards;
     const tGenerate = performance.now();
     const generatedCount = cards.length;
+
+    // Merge generator-emitted hints with any externally supplied one-shot hints
+    const mergedHints = mergeHints([this._ephemeralHints, generatorResult.hints]);
+    this._ephemeralHints = mergedHints ?? null;
     
     // Capture generator breakdown for debugging (if CompositeGenerator)
     let generatorSummaries: GeneratorSummary[] | undefined;
@@ -436,7 +490,7 @@ export class Pipeline extends ContentNavigator {
       logger.debug(`[Pipeline] Failed to capture debug run: ${e}`);
     }
 
-    return result;
+    return { cards: result };
   }
 
   /**

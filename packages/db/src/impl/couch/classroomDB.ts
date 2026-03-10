@@ -1,5 +1,6 @@
 import { StudyContentSource } from '@db/core/interfaces/contentSource';
 import { WeightedCard } from '@db/core/navigators';
+import type { GeneratorResult } from '@db/core/navigators/generators/types';
 import { ClassroomConfig } from '@vue-skuilder/common';
 import { ENV } from '@db/factory';
 import { logger } from '@db/util/logger';
@@ -126,7 +127,7 @@ export class StudentClassroomDB
    * @param limit - Maximum number of cards to return
    * @returns Cards sorted by score descending (all scores = 1.0)
    */
-  public async getWeightedCards(limit: number): Promise<WeightedCard[]> {
+  public async getWeightedCards(limit: number): Promise<GeneratorResult> {
     const weighted: WeightedCard[] = [];
 
     // Get pending reviews for this classroom
@@ -167,7 +168,7 @@ export class StudentClassroomDB
       if (content.type === 'course') {
         // Get weighted cards from the course directly
         const db = new CourseDB(content.courseID, async () => this._user);
-        const courseCards = await db.getWeightedCards(limit);
+        const { cards: courseCards } = await db.getWeightedCards(limit);
         for (const card of courseCards) {
           if (!activeCardIds.has(card.cardId)) {
             weighted.push({
@@ -235,7 +236,7 @@ export class StudentClassroomDB
     );
 
     // Sort by score descending and limit
-    return weighted.sort((a, b) => b.score - a.score).slice(0, limit);
+    return { cards: weighted.sort((a, b) => b.score - a.score).slice(0, limit) };
   }
 }
 
