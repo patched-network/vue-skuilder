@@ -3,7 +3,6 @@ import type { ScheduledCard } from '../../types/user';
 import type { CourseDBInterface } from '../../interfaces/courseDB';
 import type { UserDBInterface } from '../../interfaces/userDB';
 import { ContentNavigator } from '../index';
-import type { WeightedCard } from '../index';
 import type { ContentNavigationStrategyData } from '../../types/contentNavigationStrategy';
 import type { CardGenerator, GeneratorContext, GeneratorResult } from './types';
 import { logger } from '@db/util/logger';
