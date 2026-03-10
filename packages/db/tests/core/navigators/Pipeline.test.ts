@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Pipeline } from '../../../src/core/navigators/Pipeline';
 import { WeightedCard, ContentNavigator } from '../../../src/core/navigators/index';
 import { CardFilter, FilterContext } from '../../../src/core/navigators/filters/types';
+import type { GeneratorResult } from '../../../src/core/navigators/generators/types';
 
 import { CourseDBInterface } from '../../../src/core/interfaces/courseDB';
 import { UserDBInterface } from '../../../src/core/interfaces/userDB';
@@ -22,8 +23,8 @@ class MockGenerator extends ContentNavigator {
     this.cards = cards;
   }
 
-  async getWeightedCards(limit: number): Promise<WeightedCard[]> {
-    return this.cards.slice(0, limit);
+  async getWeightedCards(limit: number): Promise<GeneratorResult> {
+    return { cards: this.cards.slice(0, limit) };
   }
 }
 
@@ -143,7 +144,7 @@ describe('Pipeline', () => {
       const generator = new MockGenerator(cards);
       const pipeline = new Pipeline(generator, [], mockUser, mockCourse);
 
-      const result = await pipeline.getWeightedCards(10);
+      const { cards: result } = await pipeline.getWeightedCards(10);
 
       expect(result).toHaveLength(2);
       expect(result[0].cardId).toBe('card-1');
@@ -155,7 +156,7 @@ describe('Pipeline', () => {
       const generator = new MockGenerator(cards);
       const pipeline = new Pipeline(generator, [], mockUser, mockCourse);
 
-      const result = await pipeline.getWeightedCards(10);
+      const { cards: result } = await pipeline.getWeightedCards(10);
 
       expect(result[0].cardId).toBe('high');
       expect(result[1].cardId).toBe('mid');
@@ -172,7 +173,7 @@ describe('Pipeline', () => {
       const generator = new MockGenerator(cards);
       const pipeline = new Pipeline(generator, [], mockUser, mockCourse);
 
-      const result = await pipeline.getWeightedCards(2);
+      const { cards: result } = await pipeline.getWeightedCards(2);
 
       expect(result).toHaveLength(2);
       expect(result[0].cardId).toBe('card-1');
@@ -183,7 +184,7 @@ describe('Pipeline', () => {
       const generator = new MockGenerator([]);
       const pipeline = new Pipeline(generator, [], mockUser, mockCourse);
 
-      const result = await pipeline.getWeightedCards(10);
+      const { cards: result } = await pipeline.getWeightedCards(10);
 
       expect(result).toHaveLength(0);
     });
@@ -196,7 +197,7 @@ describe('Pipeline', () => {
       const filter = createMultiplierFilter('Half', 0.5);
       const pipeline = new Pipeline(generator, [filter], mockUser, mockCourse);
 
-      const result = await pipeline.getWeightedCards(10);
+      const { cards: result } = await pipeline.getWeightedCards(10);
 
       expect(result[0].score).toBe(0.5); // 1.0 * 0.5
       expect(result[1].score).toBe(0.4); // 0.8 * 0.5
@@ -209,7 +210,7 @@ describe('Pipeline', () => {
       const filter2 = createMultiplierFilter('Double', 2.0);
       const pipeline = new Pipeline(generator, [filter1, filter2], mockUser, mockCourse);
 
-      const result = await pipeline.getWeightedCards(10);
+      const { cards: result } = await pipeline.getWeightedCards(10);
 
       // 1.0 * 0.5 * 2.0 = 1.0
       expect(result[0].score).toBe(1.0);
@@ -221,7 +222,7 @@ describe('Pipeline', () => {
       const filter = createBlockingFilter('Blocker', ['block']);
       const pipeline = new Pipeline(generator, [filter], mockUser, mockCourse);
 
-      const result = await pipeline.getWeightedCards(10);
+      const { cards: result } = await pipeline.getWeightedCards(10);
 
       expect(result).toHaveLength(1);
       expect(result[0].cardId).toBe('keep');
@@ -234,7 +235,7 @@ describe('Pipeline', () => {
       const filter2 = createMultiplierFilter('Filter B', 0.8);
       const pipeline = new Pipeline(generator, [filter1, filter2], mockUser, mockCourse);
 
-      const result = await pipeline.getWeightedCards(10);
+      const { cards: result } = await pipeline.getWeightedCards(10);
 
       expect(result[0].provenance).toHaveLength(3); // generator + 2 filters
       expect(result[0].provenance[0].strategyName).toBe('Test Generator');
@@ -253,12 +254,12 @@ describe('Pipeline', () => {
       // Order: A then B
       const generator1 = new MockGenerator([...cards]);
       const pipeline1 = new Pipeline(generator1, [filterA, filterB], mockUser, mockCourse);
-      const result1 = await pipeline1.getWeightedCards(10);
+      const { cards: result1 } = await pipeline1.getWeightedCards(10);
 
       // Order: B then A
       const generator2 = new MockGenerator([...cards]);
       const pipeline2 = new Pipeline(generator2, [filterB, filterA], mockUser, mockCourse);
-      const result2 = await pipeline2.getWeightedCards(10);
+      const { cards: result2 } = await pipeline2.getWeightedCards(10);
 
       // Both should yield 1.0 * 0.5 * 0.8 = 0.4
       expect(result1[0].score).toBeCloseTo(0.4);

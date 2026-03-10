@@ -67,7 +67,7 @@ const dataLayer = await initializeDataLayer({
 
 // Use real components
 const courseDB = dataLayer.getCourseDB(courseId);
-const cards = await courseDB.getWeightedCards(10);
+const { cards } = await courseDB.getWeightedCards(10);
 
 // Assert real behavior
 expect(cards).toHaveLength(expectedCount);
