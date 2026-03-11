@@ -668,16 +668,33 @@ export class Pipeline extends ContentNavigator {
       }
     }
 
-    // 3. Require — inject from the full pool if not already present
+    // 3. Require — ensure mandatory cards have floor score and are in the pool
     const cardIds = new Set(cards.map((c) => c.cardId));
+    const cardMap = new Map(cards.map((c) => [c.cardId, c]));
     const hintLabel = hints._label ? `Replan Hint (${hints._label})` : 'Replan Hint';
-    const inject = (card: WeightedCard, reason: string) => {
-      if (!cardIds.has(card.cardId)) {
-        // Required cards must appear — score above any organic candidate
-        const floorScore = Number.POSITIVE_INFINITY;
+
+    const applyRequirement = (card: WeightedCard, reason: string) => {
+      const mandatoryScore = Number.POSITIVE_INFINITY;
+      const existing = cardMap.get(card.cardId);
+
+      if (existing) {
+        // If already in the pool, upgrade to mandatory score if not already infinite
+        if (existing.score < mandatoryScore) {
+          existing.score = mandatoryScore;
+          existing.provenance.push({
+            strategy: 'ephemeralHint',
+            strategyId: 'ephemeral-hint',
+            strategyName: hintLabel,
+            action: 'boosted',
+            score: mandatoryScore,
+            reason: `${reason} (upgrade to mandatory score)`,
+          });
+        }
+      } else {
+        // If missing, inject from the full pool
         cards.push({
           ...card,
-          score: floorScore,
+          score: mandatoryScore,
           provenance: [
             ...card.provenance,
             {
@@ -685,26 +702,46 @@ export class Pipeline extends ContentNavigator {
               strategyId: 'ephemeral-hint',
               strategyName: hintLabel,
               action: 'boosted',
-              score: floorScore,
+              score: mandatoryScore,
               reason,
             },
           ],
         });
         cardIds.add(card.cardId);
+        cardMap.set(card.cardId, cards[cards.length - 1]);
       }
     };
 
     if (hints.requireCards?.length) {
       for (const pattern of hints.requireCards) {
+        // First check candidates already in the pool
+        for (const cardId of cardIds) {
+          if (globMatch(cardId, pattern)) {
+            applyRequirement(cardMap.get(cardId)!, `requireCard ${pattern}`);
+          }
+        }
+        // Then check full pool for injection
         for (const card of allCards) {
-          if (globMatch(card.cardId, pattern)) inject(card, `requireCard ${pattern}`);
+          if (globMatch(card.cardId, pattern)) {
+            applyRequirement(card, `requireCard ${pattern}`);
+          }
         }
       }
     }
     if (hints.requireTags?.length) {
       for (const pattern of hints.requireTags) {
+        // First check candidates already in the pool
+        for (const cardId of cardIds) {
+          const card = cardMap.get(cardId)!;
+          if (cardMatchesTagPattern(card, pattern)) {
+            applyRequirement(card, `requireTag ${pattern}`);
+          }
+        }
+        // Then check full pool for injection
         for (const card of allCards) {
-          if (cardMatchesTagPattern(card, pattern)) inject(card, `requireTag ${pattern}`);
+          if (cardMatchesTagPattern(card, pattern)) {
+            applyRequirement(card, `requireTag ${pattern}`);
+          }
         }
       }
     }
