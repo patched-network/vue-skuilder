@@ -255,6 +255,181 @@ function printRunSummary(run: PipelineRunReport): void {
   console.groupEnd();
 }
 
+// ============================================================================
+// UI DEBUGGER (VANILLA HTML)
+// ============================================================================
+
+let _uiContainer: HTMLElement | null = null;
+let _selectedRunIndex: number | null = null;
+let _cardSearchQuery = '';
+
+function renderUI(): void {
+  if (!_uiContainer) return;
+
+  const runs = runHistory;
+  const selectedRun = _selectedRunIndex !== null ? runs[_selectedRunIndex] : null;
+
+  const styles = `
+    #sk-pipeline-debugger {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: #f8f9fa;
+      color: #212529;
+      z-index: 999999;
+      display: flex;
+      flex-direction: column;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-size: 14px;
+    }
+    #sk-pipeline-debugger header {
+      padding: 1rem;
+      background: #343a40;
+      color: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    #sk-pipeline-debugger .container {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+    #sk-pipeline-debugger .sidebar {
+      width: 300px;
+      border-right: 1px solid #dee2e6;
+      overflow-y: auto;
+      background: white;
+    }
+    #sk-pipeline-debugger .main-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem;
+    }
+    #sk-pipeline-debugger .run-item {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid #eee;
+      cursor: pointer;
+    }
+    #sk-pipeline-debugger .run-item:hover { background: #f1f3f5; }
+    #sk-pipeline-debugger .run-item.active { background: #e9ecef; border-left: 4px solid #007bff; }
+    #sk-pipeline-debugger h2, #sk-pipeline-debugger h3 { margin-top: 0; }
+    #sk-pipeline-debugger table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; background: white; }
+    #sk-pipeline-debugger th, #sk-pipeline-debugger td { border: 1px solid #dee2e6; padding: 0.5rem; text-align: left; }
+    #sk-pipeline-debugger th { background: #f1f3f5; }
+    #sk-pipeline-debugger code { background: #f1f3f5; padding: 0.1rem 0.3rem; border-radius: 3px; font-family: monospace; }
+    #sk-pipeline-debugger .close-btn { background: #dc3545; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; }
+    #sk-pipeline-debugger .search-box { margin-bottom: 1rem; width: 100%; padding: 0.5rem; border: 1px solid #ced4da; border-radius: 4px; }
+    #sk-pipeline-debugger .provenance { font-size: 12px; color: #666; margin-top: 0.25rem; white-space: pre-wrap; font-family: monospace; background: #f8f9fa; padding: 0.5rem; border-radius: 4px; }
+  `;
+
+  const runListHtml =
+    runs.length === 0
+      ? '<div style="padding: 1rem;">No runs captured yet.</div>'
+      : runs
+          .map(
+            (r, i) => `
+        <div class="run-item ${i === _selectedRunIndex ? 'active' : ''}" onclick="window.skuilder.pipeline._selectRun(${i})">
+          <strong>${r.timestamp.toLocaleTimeString()}</strong><br/>
+          <small>${r.courseName || r.courseId.slice(0, 8)}</small><br/>
+          <small>${r.finalCount} cards selected</small>
+        </div>
+      `
+          )
+          .join('');
+
+  let detailsHtml =
+    '<div style="color: #6c757d; text-align: center; margin-top: 5rem;">Select a run to see details</div>';
+
+  if (selectedRun) {
+    const filteredCards = selectedRun.cards.filter(
+      (c) =>
+        !_cardSearchQuery || c.cardId.toLowerCase().includes(_cardSearchQuery.toLowerCase())
+    );
+
+    detailsHtml = `
+      <h2>Run: ${selectedRun.runId}</h2>
+      <p>
+        <strong>Time:</strong> ${selectedRun.timestamp.toLocaleString()} | 
+        <strong>Course:</strong> ${selectedRun.courseName || selectedRun.courseId} | 
+        <strong>User ELO:</strong> ${selectedRun.userElo ?? 'unknown'}
+      </p>
+
+      <h3>Pipeline Config</h3>
+      <table>
+        <tr><th>Generator</th><td>${selectedRun.generatorName} (${selectedRun.generatedCount} candidates)</td></tr>
+        ${(selectedRun.generators || [])
+          .map(
+            (g) => `
+          <tr><td style="padding-left: 2rem;">↳ ${g.name}</td><td>${g.cardCount} cards (${g.newCount} new, ${g.reviewCount} review, top: ${g.topScore.toFixed(2)})</td></tr>
+        `
+          )
+          .join('')}
+      </table>
+
+      <h3>Filter Impact</h3>
+      <table>
+        <thead><tr><th>Filter</th><th>Boosted</th><th>Penalized</th><th>Passed</th><th>Removed</th></tr></thead>
+        <tbody>
+          ${selectedRun.filters
+            .map(
+              (f) => `
+            <tr><td>${f.name}</td><td>↑${f.boosted}</td><td>↓${f.penalized}</td><td>=${f.passed}</td><td>✕${f.removed}</td></tr>
+          `
+            )
+            .join('')}
+        </tbody>
+      </table>
+
+      <h3>Cards (${selectedRun.finalCount} selected / ${selectedRun.cards.length} total)</h3>
+      <input type="text" class="search-box" placeholder="Search Card ID..." value="${_cardSearchQuery}" oninput="window.skuilder.pipeline._setSearch(this.value)">
+      
+      <table>
+        <thead><tr><th>ID</th><th>Origin</th><th>Score</th><th>Selected</th></tr></thead>
+        <tbody>
+          ${filteredCards
+            .map(
+              (c) => `
+            <tr>
+              <td><code>${c.cardId}</code></td>
+              <td>${c.origin}</td>
+              <td>${c.finalScore.toFixed(3)}</td>
+              <td>${c.selected ? '✅' : '❌'}</td>
+            </tr>
+            ${
+              c.selected || _cardSearchQuery
+                ? `
+              <tr>
+                <td colspan="4">
+                  <div class="provenance">${formatProvenance(c.provenance)}</div>
+                </td>
+              </tr>
+            `
+                : ''
+            }
+          `
+            )
+            .join('')}
+        </tbody>
+      </table>
+    `;
+  }
+
+  _uiContainer.innerHTML = `
+    <style>${styles}</style>
+    <header>
+      <strong>Pipeline Debugger</strong>
+      <button class="close-btn" onclick="window.skuilder.pipeline.ui()">Close</button>
+    </header>
+    <div class="container">
+      <div class="sidebar">${runListHtml}</div>
+      <div class="main-content">${detailsHtml}</div>
+    </div>
+  `;
+}
+
 /**
  * Console API object exposed on window.skuilder.pipeline
  */
@@ -666,6 +841,46 @@ export const pipelineDebugAPI = {
   },
 
   /**
+   * Toggle the full-screen UI debugger.
+   */
+  ui(): void {
+    if (_uiContainer) {
+      document.body.removeChild(_uiContainer);
+      _uiContainer = null;
+      return;
+    }
+
+    _uiContainer = document.createElement('div');
+    _uiContainer.id = 'sk-pipeline-debugger';
+    document.body.appendChild(_uiContainer);
+
+    // Initial select last run if any
+    if (_selectedRunIndex === null && runHistory.length > 0) {
+      _selectedRunIndex = 0;
+    }
+
+    renderUI();
+  },
+
+  /**
+   * Internal UI helpers
+   * @internal
+   */
+  _selectRun(index: number): void {
+    _selectedRunIndex = index;
+    renderUI();
+  },
+
+  /**
+   * Internal UI helpers
+   * @internal
+   */
+  _setSearch(query: string): void {
+    _cardSearchQuery = query;
+    renderUI();
+  },
+
+  /**
    * Show help.
    */
   help(): void {
@@ -673,6 +888,7 @@ export const pipelineDebugAPI = {
 🔧 Pipeline Debug API
 
 Commands:
+  .ui()                  Toggle full-screen UI debugger
   .showLastRun()         Show summary of most recent pipeline run
   .showRun(id|index)     Show summary of a specific run (by index or ID suffix)
   .showCard(cardId)      Show provenance trail for a specific card
@@ -689,6 +905,7 @@ Commands:
   .help()                Show this help message
 
 Example:
+  window.skuilder.pipeline.ui()
   window.skuilder.pipeline.showLastRun()
   window.skuilder.pipeline.showRun(1)
   await window.skuilder.pipeline.diagnoseCardSpace()
