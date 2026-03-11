@@ -436,16 +436,22 @@ export class Pipeline extends ContentNavigator {
     }
 
     // Apply filters sequentially, tracking impact
+    // Track prescribed-origin cards through the filter chain for diagnostics
+    const prescribedIds = new Set(
+      cards
+        .filter((c) => c.provenance.some((p) => p.strategy === 'prescribed'))
+        .map((c) => c.cardId)
+    );
     const filterImpacts: FilterImpact[] = [];
     for (const filter of this.filters) {
       const beforeCount = cards.length;
       const beforeScores = new Map(cards.map((c) => [c.cardId, c.score]));
       cards = await filter.transform(cards, context);
-      
+
       // Count boost/penalize/pass/removed for this filter
       let boosted = 0, penalized = 0, passed = 0;
       const removed = beforeCount - cards.length;
-      
+
       for (const card of cards) {
         const before = beforeScores.get(card.cardId) ?? 0;
         if (card.score > before) boosted++;
@@ -453,7 +459,25 @@ export class Pipeline extends ContentNavigator {
         else passed++;
       }
       filterImpacts.push({ name: filter.name, boosted, penalized, passed, removed });
-      
+
+      // Report prescribed card fate through each filter
+      if (prescribedIds.size > 0) {
+        const survivingIds = new Set(cards.map((c) => c.cardId));
+        const killedPrescribed = [...prescribedIds].filter((id) => !survivingIds.has(id));
+        const zeroedPrescribed = cards
+          .filter((c) => prescribedIds.has(c.cardId) && c.score === 0)
+          .map((c) => c.cardId);
+        if (killedPrescribed.length > 0 || zeroedPrescribed.length > 0) {
+          logger.info(
+            `[Pipeline] Filter '${filter.name}' impact on prescribed cards: ` +
+              (killedPrescribed.length > 0 ? `removed=[${killedPrescribed.join(', ')}] ` : '') +
+              (zeroedPrescribed.length > 0 ? `zeroed=[${zeroedPrescribed.join(', ')}]` : '')
+          );
+          // Remove killed ones from tracking set
+          killedPrescribed.forEach((id) => prescribedIds.delete(id));
+        }
+      }
+
       logger.debug(`[Pipeline] Filter '${filter.name}': ${beforeScores.size} → ${cards.length} cards (↑${boosted} ↓${penalized} =${passed})`);
     }
 
@@ -512,7 +536,8 @@ export class Pipeline extends ContentNavigator {
         filterImpacts,
         cards,
         result,
-        context.userElo
+        context.userElo,
+        hints?? undefined
       );
       captureRun(report);
     } catch (e) {
@@ -643,16 +668,33 @@ export class Pipeline extends ContentNavigator {
       }
     }
 
-    // 3. Require — inject from the full pool if not already present
+    // 3. Require — ensure mandatory cards have floor score and are in the pool
     const cardIds = new Set(cards.map((c) => c.cardId));
+    const cardMap = new Map(cards.map((c) => [c.cardId, c]));
     const hintLabel = hints._label ? `Replan Hint (${hints._label})` : 'Replan Hint';
-    const inject = (card: WeightedCard, reason: string) => {
-      if (!cardIds.has(card.cardId)) {
-        // Required cards must appear — score above any organic candidate
-        const floorScore = Number.POSITIVE_INFINITY;
+
+    const applyRequirement = (card: WeightedCard, reason: string) => {
+      const mandatoryScore = Number.POSITIVE_INFINITY;
+      const existing = cardMap.get(card.cardId);
+
+      if (existing) {
+        // If already in the pool, upgrade to mandatory score if not already infinite
+        if (existing.score < mandatoryScore) {
+          existing.score = mandatoryScore;
+          existing.provenance.push({
+            strategy: 'ephemeralHint',
+            strategyId: 'ephemeral-hint',
+            strategyName: hintLabel,
+            action: 'boosted',
+            score: mandatoryScore,
+            reason: `${reason} (upgrade to mandatory score)`,
+          });
+        }
+      } else {
+        // If missing, inject from the full pool
         cards.push({
           ...card,
-          score: floorScore,
+          score: mandatoryScore,
           provenance: [
             ...card.provenance,
             {
@@ -660,26 +702,46 @@ export class Pipeline extends ContentNavigator {
               strategyId: 'ephemeral-hint',
               strategyName: hintLabel,
               action: 'boosted',
-              score: floorScore,
+              score: mandatoryScore,
               reason,
             },
           ],
         });
         cardIds.add(card.cardId);
+        cardMap.set(card.cardId, cards[cards.length - 1]);
       }
     };
 
     if (hints.requireCards?.length) {
       for (const pattern of hints.requireCards) {
+        // First check candidates already in the pool
+        for (const cardId of cardIds) {
+          if (globMatch(cardId, pattern)) {
+            applyRequirement(cardMap.get(cardId)!, `requireCard ${pattern}`);
+          }
+        }
+        // Then check full pool for injection
         for (const card of allCards) {
-          if (globMatch(card.cardId, pattern)) inject(card, `requireCard ${pattern}`);
+          if (globMatch(card.cardId, pattern)) {
+            applyRequirement(card, `requireCard ${pattern}`);
+          }
         }
       }
     }
     if (hints.requireTags?.length) {
       for (const pattern of hints.requireTags) {
+        // First check candidates already in the pool
+        for (const cardId of cardIds) {
+          const card = cardMap.get(cardId)!;
+          if (cardMatchesTagPattern(card, pattern)) {
+            applyRequirement(card, `requireTag ${pattern}`);
+          }
+        }
+        // Then check full pool for injection
         for (const card of allCards) {
-          if (cardMatchesTagPattern(card, pattern)) inject(card, `requireTag ${pattern}`);
+          if (cardMatchesTagPattern(card, pattern)) {
+            applyRequirement(card, `requireTag ${pattern}`);
+          }
         }
       }
     }

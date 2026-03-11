@@ -254,42 +254,6 @@ describe('CompositeGenerator', () => {
     });
   });
 
-  describe('score clamping', () => {
-    it('clamps boosted scores to maximum of 1.0', async () => {
-      const gen1 = new MockGenerator();
-      gen1.setWeightedCards([makeWeightedCard('card-1', 'course-1', 0.9, 'new')]);
-
-      const gen2 = new MockGenerator();
-      gen2.setWeightedCards([makeWeightedCard('card-1', 'course-1', 0.9, 'new')]);
-
-      const composite = new CompositeGenerator([gen1, gen2]);
-      const { cards: result } = await composite.getWeightedCards(10, mockContext);
-
-      expect(result).toHaveLength(1);
-      // avg = 0.9, boost = 1.1, result = 0.99 (would be 0.99, not clamped)
-      // But with higher scores:
-      expect(result[0].score).toBeLessThanOrEqual(1.0);
-    });
-
-    it('clamps to 1.0 when boosted score exceeds maximum', async () => {
-      const gen1 = new MockGenerator();
-      gen1.setWeightedCards([makeWeightedCard('card-1', 'course-1', 1.0, 'new')]);
-
-      const gen2 = new MockGenerator();
-      gen2.setWeightedCards([makeWeightedCard('card-1', 'course-1', 1.0, 'new')]);
-
-      const gen3 = new MockGenerator();
-      gen3.setWeightedCards([makeWeightedCard('card-1', 'course-1', 1.0, 'new')]);
-
-      const composite = new CompositeGenerator([gen1, gen2, gen3]);
-      const { cards: result } = await composite.getWeightedCards(10, mockContext);
-
-      expect(result).toHaveLength(1);
-      // avg = 1.0, boost = 1.2, result would be 1.2 but clamped to 1.0
-      expect(result[0].score).toBe(1.0);
-    });
-  });
-
   describe('sorting and limiting', () => {
     it('returns cards sorted by score descending', async () => {
       const gen1 = new MockGenerator();

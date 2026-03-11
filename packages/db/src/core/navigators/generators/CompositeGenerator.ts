@@ -223,7 +223,10 @@ export default class CompositeGenerator extends ContentNavigator implements Card
     for (const [, items] of byCardId) {
       const cards = items.map((i) => i.card);
       const aggregatedScore = this.aggregateScores(items);
-      const finalScore = Math.min(1.0, aggregatedScore); // Clamp to [0, 1]
+      // Allow scores above 1.0 to pass through — generators like prescribed
+      // intentionally use high scores to express curriculum priority.
+      // Only clamp negative scores.
+      const finalScore = Math.max(0, aggregatedScore);
 
       // Merge provenance from all generators that produced this card
       const mergedProvenance = cards.flatMap((c) => c.provenance);
