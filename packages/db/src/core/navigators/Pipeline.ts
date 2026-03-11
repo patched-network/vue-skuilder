@@ -536,7 +536,8 @@ export class Pipeline extends ContentNavigator {
         filterImpacts,
         cards,
         result,
-        context.userElo
+        context.userElo,
+        hints?? undefined
       );
       captureRun(report);
     } catch (e) {

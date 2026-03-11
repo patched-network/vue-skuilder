@@ -9,6 +9,7 @@ import {
 } from './index';
 import { logger } from '../../util/logger';
 import type { Pipeline, CardSpaceDiagnosis } from './Pipeline';
+import type { ReplanHints } from './generators/types';
 
 /**
  * Captured reference to the most recently created Pipeline instance.
@@ -82,6 +83,9 @@ export interface PipelineRunReport {
 
   // Filter phase
   filters: FilterImpact[];
+
+  /** Ephemeral hints applied during this run */
+  hints?: ReplanHints;
 
   // Results
   finalCount: number;
@@ -159,7 +163,8 @@ export function buildRunReport(
   filters: FilterImpact[],
   allCards: WeightedCard[],
   selectedCards: WeightedCard[],
-  userElo?: number
+  userElo?: number,
+  hints?: ReplanHints
 ): Omit<PipelineRunReport, 'runId' | 'timestamp'> {
   const selectedIds = new Set(selectedCards.map((c) => c.cardId));
 
@@ -185,6 +190,7 @@ export function buildRunReport(
     generators,
     generatedCount,
     filters,
+    hints,
     finalCount: selectedCards.length,
     reviewsSelected,
     newSelected,
@@ -368,6 +374,47 @@ function renderUI(): void {
           )
           .join('')}
       </table>
+
+      ${
+        selectedRun.hints
+          ? `
+        <h3>Ephemeral Hints</h3>
+        <table>
+          ${selectedRun.hints._label ? `<tr><th>Label</th><td>${selectedRun.hints._label}</td></tr>` : ''}
+          ${
+            selectedRun.hints.boostTags
+              ? `<tr><th>Boost Tags</th><td><pre style="margin:0">${JSON.stringify(selectedRun.hints.boostTags, null, 2)}</pre></td></tr>`
+              : ''
+          }
+          ${
+            selectedRun.hints.boostCards
+              ? `<tr><th>Boost Cards</th><td><pre style="margin:0">${JSON.stringify(selectedRun.hints.boostCards, null, 2)}</pre></td></tr>`
+              : ''
+          }
+          ${
+            selectedRun.hints.requireTags
+              ? `<tr><th>Require Tags</th><td>${selectedRun.hints.requireTags.join(', ')}</td></tr>`
+              : ''
+          }
+          ${
+            selectedRun.hints.requireCards
+              ? `<tr><th>Require Cards</th><td>${selectedRun.hints.requireCards.join(', ')}</td></tr>`
+              : ''
+          }
+          ${
+            selectedRun.hints.excludeTags
+              ? `<tr><th>Exclude Tags</th><td>${selectedRun.hints.excludeTags.join(', ')}</td></tr>`
+              : ''
+          }
+          ${
+            selectedRun.hints.excludeCards
+              ? `<tr><th>Exclude Cards</th><td>${selectedRun.hints.excludeCards.join(', ')}</td></tr>`
+              : ''
+          }
+        </table>
+      `
+          : ''
+      }
 
       <h3>Filter Impact</h3>
       <table>
