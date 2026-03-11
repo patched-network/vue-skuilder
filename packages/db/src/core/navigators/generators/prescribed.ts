@@ -135,6 +135,31 @@ function matchesTagPattern(tag: string, pattern: string): boolean {
   return re.test(tag);
 }
 
+/**
+ * Extract the word stem from a card ID for deduplication.
+ * ML: c-ml-{word}-{blanks} → {word}
+ * WS: c-ws-{word}-{contrast} → {word}
+ * Other: full cardId as fallback.
+ */
+function extractWordStem(cardId: string): string {
+  for (const prefix of ['c-ml-', 'c-ws-', 'c-spelling-']) {
+    if (cardId.startsWith(prefix)) {
+      const rest = cardId.slice(prefix.length);
+      const lastDash = rest.lastIndexOf('-');
+      return lastDash > 0 ? rest.slice(0, lastDash) : rest;
+    }
+  }
+  return cardId;
+}
+
+/** Fisher-Yates shuffle in place. */
+function shuffleInPlace<T>(arr: T[]): void {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+}
+
 function pickTopByScore(cards: WeightedCard[], limit: number): WeightedCard[] {
   return [...cards]
     .sort((a, b) => b.score - a.score || a.cardId.localeCompare(b.cardId))
@@ -799,8 +824,32 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
       }
     }
 
-    return [...byCardId.values()]
-      .sort((a, b) => b.matches - a.matches || a.cardId.localeCompare(b.cardId))
+    const candidates = [...byCardId.values()]
+      .sort((a, b) => b.matches - a.matches || a.cardId.localeCompare(b.cardId));
+
+    // Diversify by word stem — avoid returning 4 variants of "year".
+    // ML cards follow c-ml-{word}-{blanks}, so the stem is everything before
+    // the last dash-delimited segment of digits/commas.
+    const usedStems = new Set<string>();
+    const diverse: typeof candidates = [];
+    const deferred: typeof candidates = [];
+
+    for (const entry of candidates) {
+      const stem = extractWordStem(entry.cardId);
+      if (!usedStems.has(stem)) {
+        usedStems.add(stem);
+        diverse.push(entry);
+      } else {
+        deferred.push(entry);
+      }
+    }
+
+    // Combine diverse-first, then deferred for overflow, and shuffle within
+    // each tier so we don't always pick the same card for a given word.
+    shuffleInPlace(diverse);
+    shuffleInPlace(deferred);
+
+    return [...diverse, ...deferred]
       .slice(0, limit)
       .map((entry) => entry.cardId);
   }
