@@ -429,17 +429,26 @@ export const pipelineDebugAPI = {
         const mode = reason.match(/mode=([^;]+)/)?.[1] ?? 'unknown';
         const blocked = reason.match(/blocked=([^;]+)/)?.[1] ?? 'unknown';
         const blockedTargets = reason.match(/blockedTargets=([^;]+)/)?.[1] ?? 'none';
+        const supportCard = reason.match(/supportCard=([^;]+)/)?.[1] ?? 'none';
         const supportTags = reason.match(/supportTags=([^;]+)/)?.[1] ?? 'none';
         const multiplier = reason.match(/multiplier=([^;]+)/)?.[1] ?? 'unknown';
+        const supportSource =
+          mode === 'discovered-support'
+            ? 'discovered'
+            : mode === 'support'
+              ? 'authored'
+              : 'n/a';
 
         return {
           group: parsedGroup,
           mode,
+          supportSource,
           cardId: card.cardId,
           selected: card.selected ? 'yes' : 'no',
           finalScore: card.finalScore.toFixed(3),
           blocked,
           blockedTargets,
+          supportCard,
           supportTags,
           multiplier,
         };
@@ -462,6 +471,8 @@ export const pipelineDebugAPI = {
     const selectedRows = rows.filter((r) => r.selected === 'yes');
     const blockedTargetSet = new Set<string>();
     const supportTagSet = new Set<string>();
+    const authoredSupportSet = new Set<string>();
+    const discoveredSupportSet = new Set<string>();
 
     for (const row of rows) {
       if (row.blockedTargets && row.blockedTargets !== 'none') {
@@ -476,6 +487,13 @@ export const pipelineDebugAPI = {
           .filter(Boolean)
           .forEach((t) => supportTagSet.add(t));
       }
+      if (row.supportCard && row.supportCard !== 'none') {
+        if (row.supportSource === 'discovered') {
+          discoveredSupportSet.add(row.supportCard);
+        } else if (row.supportSource === 'authored') {
+          authoredSupportSet.add(row.supportCard);
+        }
+      }
     }
 
     logger.info(`Prescribed cards in run: ${rows.length}`);
@@ -485,6 +503,12 @@ export const pipelineDebugAPI = {
     );
     logger.info(
       `Resolved support tags referenced: ${supportTagSet.size > 0 ? [...supportTagSet].join(', ') : 'none'}`
+    );
+    logger.info(
+      `Authored support cards emitted: ${authoredSupportSet.size > 0 ? [...authoredSupportSet].join(', ') : 'none'}`
+    );
+    logger.info(
+      `Discovered support cards emitted: ${discoveredSupportSet.size > 0 ? [...discoveredSupportSet].join(', ') : 'none'}`
     );
 
     // eslint-disable-next-line no-console

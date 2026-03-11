@@ -436,16 +436,22 @@ export class Pipeline extends ContentNavigator {
     }
 
     // Apply filters sequentially, tracking impact
+    // Track prescribed-origin cards through the filter chain for diagnostics
+    const prescribedIds = new Set(
+      cards
+        .filter((c) => c.provenance.some((p) => p.strategy === 'prescribed'))
+        .map((c) => c.cardId)
+    );
     const filterImpacts: FilterImpact[] = [];
     for (const filter of this.filters) {
       const beforeCount = cards.length;
       const beforeScores = new Map(cards.map((c) => [c.cardId, c.score]));
       cards = await filter.transform(cards, context);
-      
+
       // Count boost/penalize/pass/removed for this filter
       let boosted = 0, penalized = 0, passed = 0;
       const removed = beforeCount - cards.length;
-      
+
       for (const card of cards) {
         const before = beforeScores.get(card.cardId) ?? 0;
         if (card.score > before) boosted++;
@@ -453,7 +459,25 @@ export class Pipeline extends ContentNavigator {
         else passed++;
       }
       filterImpacts.push({ name: filter.name, boosted, penalized, passed, removed });
-      
+
+      // Report prescribed card fate through each filter
+      if (prescribedIds.size > 0) {
+        const survivingIds = new Set(cards.map((c) => c.cardId));
+        const killedPrescribed = [...prescribedIds].filter((id) => !survivingIds.has(id));
+        const zeroedPrescribed = cards
+          .filter((c) => prescribedIds.has(c.cardId) && c.score === 0)
+          .map((c) => c.cardId);
+        if (killedPrescribed.length > 0 || zeroedPrescribed.length > 0) {
+          logger.info(
+            `[Pipeline] Filter '${filter.name}' impact on prescribed cards: ` +
+              (killedPrescribed.length > 0 ? `removed=[${killedPrescribed.join(', ')}] ` : '') +
+              (zeroedPrescribed.length > 0 ? `zeroed=[${zeroedPrescribed.join(', ')}]` : '')
+          );
+          // Remove killed ones from tracking set
+          killedPrescribed.forEach((id) => prescribedIds.delete(id));
+        }
+      }
+
       logger.debug(`[Pipeline] Filter '${filter.name}': ${beforeScores.size} → ${cards.length} cards (↑${boosted} ↓${penalized} =${passed})`);
     }
 
