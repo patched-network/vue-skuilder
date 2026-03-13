@@ -97,6 +97,7 @@ export interface PipelineRunReport {
     cardId: string;
     courseId: string;
     origin: 'new' | 'review' | 'unknown';
+    generator?: string;
     finalScore: number;
     /** Card's ELO (parsed from ELO generator provenance, if available) */
     cardElo?: number;
@@ -119,8 +120,10 @@ function getOrigin(card: WeightedCard): 'new' | 'review' | 'unknown' {
   const firstEntry = card.provenance[0];
   if (!firstEntry) return 'unknown';
   const reason = firstEntry.reason?.toLowerCase() || '';
-  if (reason.includes('new card')) return 'new';
-  if (reason.includes('review')) return 'review';
+  const strategy = firstEntry.strategy?.toLowerCase() || '';
+
+  if (reason.includes('new card') || strategy.includes('elo')) return 'new';
+  if (reason.includes('review') || strategy.includes('srs')) return 'review';
   return 'unknown';
 }
 
@@ -172,6 +175,7 @@ export function buildRunReport(
     cardId: card.cardId,
     courseId: card.courseId,
     origin: getOrigin(card),
+    generator: card.provenance[0]?.strategyName || card.provenance[0]?.strategy,
     finalScore: card.score,
     cardElo: parseCardElo(card.provenance),
     provenance: card.provenance,
@@ -434,13 +438,14 @@ function renderUI(): void {
       <input type="text" class="search-box" placeholder="Search Card ID..." value="${_cardSearchQuery}" oninput="window.skuilder.pipeline._setSearch(this.value)">
       
       <table>
-        <thead><tr><th>ID</th><th>Origin</th><th>Score</th><th>Selected</th></tr></thead>
+        <thead><tr><th>ID</th><th>Generator</th><th>Origin</th><th>Score</th><th>Selected</th></tr></thead>
         <tbody>
           ${filteredCards
             .map(
               (c) => `
             <tr>
               <td><code>${c.cardId}</code></td>
+              <td>${c.generator || 'unknown'}</td>
               <td>${c.origin}</td>
               <td>${c.finalScore.toFixed(3)}</td>
               <td>${c.selected ? '✅' : '❌'}</td>
@@ -449,7 +454,7 @@ function renderUI(): void {
               c.selected || _cardSearchQuery
                 ? `
               <tr>
-                <td colspan="4">
+                <td colspan="5">
                   <div class="provenance">${formatProvenance(c.provenance)}</div>
                 </td>
               </tr>
