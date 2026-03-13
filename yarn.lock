@@ -6043,7 +6043,7 @@ __metadata:
     pouchdb: "npm:^9.0.0"
     serve-static: "npm:^1.15.0"
     typescript: "npm:~5.9.3"
-    vite: "npm:^7.0.0"
+    vite: "npm:^8.0.0"
     vue: "npm:^3.5.13"
     vue-router: "npm:^4.2.0"
     vue-tsc: "npm:^1.8.0"
@@ -6106,7 +6106,7 @@ __metadata:
     pinia: "npm:^2.3.0"
     sass: "npm:^1.83.0"
     typescript: "npm:~5.9.3"
-    vite: "npm:^7.0.0"
+    vite: "npm:^8.0.0"
     vite-plugin-dts: "npm:^4.5.3"
     vitest: "npm:^4.1.0"
     vue: "npm:^3.5.13"
@@ -6147,7 +6147,7 @@ __metadata:
     moment: "npm:^2.29.4"
     paper: "npm:^0.12.3"
     typescript: "npm:^5.9.3"
-    vite: "npm:^7.0.0"
+    vite: "npm:^8.0.0"
     vite-plugin-dts: "npm:^4.5.3"
     vitest: "npm:^4.1.0"
     vue: "npm:^3.5.13"
@@ -6170,7 +6170,7 @@ __metadata:
     tsup: "npm:^8.0.2"
     typescript: "npm:~5.9.3"
     uuid: "npm:^11.1.0"
-    vite: "npm:^7.0.0"
+    vite: "npm:^8.0.0"
     vitest: "npm:^4.1.0"
   languageName: unknown
   linkType: soft
@@ -6187,7 +6187,7 @@ __metadata:
     pouchdb: "npm:^9.0.0"
     pouchdb-adapter-memory: "npm:^9.0.0"
     typescript: "npm:~5.9.3"
-    vite: "npm:^7.0.0"
+    vite: "npm:^8.0.0"
     vitest: "npm:^4.1.0"
   languageName: unknown
   linkType: soft
@@ -6218,7 +6218,7 @@ __metadata:
     pinia: "npm:^2.3.0"
     sass: "npm:^1.83.0"
     typescript: "npm:~5.9.3"
-    vite: "npm:^7.0.0"
+    vite: "npm:^8.0.0"
     vitest: "npm:^4.1.0"
     vue: "npm:^3.5.13"
     vuetify: "npm:^3.7.0"
@@ -6348,7 +6348,7 @@ __metadata:
     typescript: "npm:~5.9.3"
     typescript-eslint: "npm:^8.48.1"
     util: "npm:^0.12.5"
-    vite: "npm:^7.0.0"
+    vite: "npm:^8.0.0"
     vite-plugin-pwa: "npm:^0.21.1"
     vitest: "npm:^4.1.0"
     vue: "npm:^3.5.13"
@@ -6376,7 +6376,7 @@ __metadata:
     events: "npm:^3.3.0"
     pinia: "npm:^2.3.0"
     typescript: "npm:^5.9.3"
-    vite: "npm:^7.0.0"
+    vite: "npm:^8.0.0"
     vite-plugin-dts: "npm:^4.3.0"
     vue: "npm:^3.5.13"
     vue-router: "npm:^4.2.0"
@@ -6400,7 +6400,7 @@ __metadata:
     eslint: "npm:^9.30.1"
     pinia: "npm:^2.3.0"
     typescript: "npm:^5.9.3"
-    vite: "npm:^7.0.0"
+    vite: "npm:^8.0.0"
     vue: "npm:^3.5.13"
     vue-router: "npm:^4.2.0"
     vue-tsc: "npm:^1.8.0"
@@ -18547,7 +18547,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"vite@npm:^6.0.0 || ^7.0.0 || ^8.0.0-0":
+"vite@npm:^6.0.0 || ^7.0.0 || ^8.0.0-0, vite@npm:^8.0.0":
   version: 8.0.0
   resolution: "vite@npm:8.0.0"
   dependencies:
@@ -18602,61 +18602,6 @@ __metadata:
   bin:
     vite: bin/vite.js
   checksum: 10c0/2246d3d54788dcd53c39da82da3f934a760756642ba9a575c84c5ef9f310bc47697f7f9fde6721fa566675e93e408736b4ac068008d2ddbd75b0ed99c7fd4c67
-  languageName: node
-  linkType: hard
-
-"vite@npm:^7.0.0":
-  version: 7.2.6
-  resolution: "vite@npm:7.2.6"
-  dependencies:
-    esbuild: "npm:^0.25.0"
-    fdir: "npm:^6.5.0"
-    fsevents: "npm:~2.3.3"
-    picomatch: "npm:^4.0.3"
-    postcss: "npm:^8.5.6"
-    rollup: "npm:^4.43.0"
-    tinyglobby: "npm:^0.2.15"
-  peerDependencies:
-    "@types/node": ^20.19.0 || >=22.12.0
-    jiti: ">=1.21.0"
-    less: ^4.0.0
-    lightningcss: ^1.21.0
-    sass: ^1.70.0
-    sass-embedded: ^1.70.0
-    stylus: ">=0.54.8"
-    sugarss: ^5.0.0
-    terser: ^5.16.0
-    tsx: ^4.8.1
-    yaml: ^2.4.2
-  dependenciesMeta:
-    fsevents:
-      optional: true
-  peerDependenciesMeta:
-    "@types/node":
-      optional: true
-    jiti:
-      optional: true
-    less:
-      optional: true
-    lightningcss:
-      optional: true
-    sass:
-      optional: true
-    sass-embedded:
-      optional: true
-    stylus:
-      optional: true
-    sugarss:
-      optional: true
-    terser:
-      optional: true
-    tsx:
-      optional: true
-    yaml:
-      optional: true
-  bin:
-    vite: bin/vite.js
-  checksum: 10c0/d444a159ab8f0f854d596d1938f201b449d59ed4d336e587be9dc89005467214d85848c212c2495f76a8421372ffe4d061d023d659600f1aaa3ba5ac13e804f7
   languageName: node
   linkType: hard
 
