@@ -6,7 +6,8 @@ Pre-work already done on branch `vite-8-prep-1`:
 - `@vitejs/plugin-vue` bumped to `^6.0.5` across all packages
 - `vite-plugin-eslint` removed from `platform-ui` (dead package, last release 2022)
 
-Bump `vite` to `^8.0.0` in all packages when ready. Remaining items below.
+Vite bumped to `^8.0.0` in all packages **except `common-ui`** (pinned at `^7.0.0` — see blocker
+below).
 
 ---
 
@@ -70,8 +71,9 @@ the upgrade.
 - No `esbuild` transform option in any config.
 - CJS interop change: library packages externalize Vue etc., so the new default interop behavior
   should not affect them.
-- Cypress e2e tests are unaffected by the Cypress/Vite 8 component-testing issue (cypress#33078)
-  — this repo does not use Cypress component testing.
+- **Blocker: `common-ui` pinned at Vite 7.** `common-ui` uses Cypress component testing, and
+  Cypress does not yet support Vite 8 (cypress#33078, opened 2025-12-08, assigned, fix in
+  progress). Bump `common-ui` to `^8.0.0` once a Cypress release ships with Vite 8 support.
 
 ---
 
