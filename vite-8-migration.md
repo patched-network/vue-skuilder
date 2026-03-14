@@ -1,12 +1,15 @@
 # Vite 8 Migration
 
-Pre-work already done on branch `vite-8-prep-1`:
+Done (branch `vite-8-prep-1` / `vite-8-prep-2`):
 
 - `vitest` bumped to `^4.1.0` across all packages
 - `@vitejs/plugin-vue` bumped to `^6.0.5` across all packages
 - `vite-plugin-eslint` removed from `platform-ui` (dead package, last release 2022)
+- `vite` bumped to `^8.0.0` across all packages
+- `edit-ui`: removed stray `sourcemap: true` key from `globals` object (exposed by Rolldown's stricter validation)
+- `studio-ui`: converted `manualChunks` from object form (removed in v8) to function form
 
-Bump `vite` to `^8.0.0` in all packages when ready. Remaining items below.
+All packages building locally. Remaining deprecation cleanup below (warnings only, not blocking).
 
 ---
 
@@ -28,22 +31,17 @@ Deprecated in Vite 8. Rename in each affected config.
 
 ---
 
-## 3. Terser is no longer built-in
+## 3. Terser (resolved via hoisting — optional cleanup)
 
-Every package uses `minify: 'terser'` with `keep_classnames: true`. Terser is no longer bundled
-with Vite 8 — it must be an explicit `devDependency` or replaced.
+In practice, `minify: 'terser'` works across all packages because `terser` is hoisted from
+`platform-ui`'s devDeps in the monorepo. No breakage observed.
 
-**Option A** — keep Terser, add it explicitly. `platform-ui` already has `terser` in devDeps;
-the others (`common-ui`, `courseware`, `edit-ui`, `standalone-ui`) do not.
-
-**Option B** — migrate to Rolldown-native minification (recommended long-term):
+Long-term, migrating to Rolldown-native minification would be cleaner:
 
 ```js
 build: {
-  minify: true, // uses Oxc minifier
   rolldownOptions: {
     output: {
-      minify: { compress: true, mangle: true },
       keepNames: true, // replaces keep_classnames
     },
   },
