@@ -41,7 +41,6 @@ export default defineConfig({
           '@vue-skuilder/common': 'VueSkuilderCommon',
           '@vue-skuilder/common-ui': 'VueSkuilderCommonUI',
           '@vue-skuilder/courseware': 'VueSkuilderCourseWare',
-          sourcemap: true,
         },
         // Preserve CSS in the output bundles
         assetFileNames: (assetInfo) => {

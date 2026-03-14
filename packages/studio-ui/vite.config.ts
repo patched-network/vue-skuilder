@@ -16,9 +16,9 @@ export default defineConfig({
     sourcemap: true,
     rollupOptions: {
       output: {
-        manualChunks: {
-          vue: ['vue', 'vue-router', 'pinia'],
-          vuetify: ['vuetify']
+        manualChunks: (id) => {
+          if (id.includes('vue') || id.includes('vue-router') || id.includes('pinia')) return 'vue';
+          if (id.includes('vuetify')) return 'vuetify';
         }
       }
     }
