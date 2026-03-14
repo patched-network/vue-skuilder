@@ -1,5 +1,4 @@
 import Mousetrap from 'mousetrap';
-import 'mousetrap/plugins/global-bind/mousetrap-global-bind.js';
 import { ExtendedKeyboardEvent, MousetrapInstance } from 'mousetrap';
 
 export interface HotKey extends HotKeyMetaData {
@@ -43,6 +42,9 @@ export class SkldrMouseTrap {
 
   private constructor() {
     this.mouseTrap = new Mousetrap();
+    // Allow hotkeys to fire even when input elements are focused — the
+    // inputElementIsFocused() guard in addBinding handles selective suppression.
+    this.mouseTrap.stopCallback = () => false;
     this.hotkeys = [];
   }
 
@@ -68,7 +70,7 @@ export class SkldrMouseTrap {
 
     // Bind each hotkey
     hotkeys.forEach((k) => {
-      Mousetrap.bindGlobal(k.hotkey, (a, b) => {
+      instance.mouseTrap.bind(k.hotkey, (a, b) => {
         // Skip execution if focus is on input elements
         if (inputElementIsFocused()) {
           console.log(`Ignoring hotkey ${k.hotkey} while input element is focused`);
@@ -101,7 +103,7 @@ export class SkldrMouseTrap {
         });
 
         // Unbind from Mousetrap
-        Mousetrap.unbind(key);
+        instance.mouseTrap.unbind(key);
       });
     } else {
       // Single hotkey removal (original implementation)
@@ -112,7 +114,7 @@ export class SkldrMouseTrap {
       });
 
       // Unbind from Mousetrap
-      Mousetrap.unbind(hotkey);
+      instance.mouseTrap.unbind(hotkey);
     }
   }
 
@@ -125,7 +127,6 @@ export class SkldrMouseTrap {
       'SkldrMouseTrap.reset() may affect hotkeys registered by other components. ' +
         'Consider using removeBinding() with specific hotkeys for better component isolation.'
     );
-    Mousetrap.reset();
     SkldrMouseTrap.instance().mouseTrap.reset();
     SkldrMouseTrap.instance().hotkeys = [];
   }
