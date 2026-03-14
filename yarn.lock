@@ -6343,7 +6343,6 @@ __metadata:
     roboto-fontface: "npm:*"
     sass: "npm:^1.83.0"
     stream-browserify: "npm:^3.0.0"
-    terser: "npm:^5.39.0"
     timers-browserify: "npm:^2.0.12"
     typescript: "npm:~5.9.3"
     typescript-eslint: "npm:^8.48.1"
@@ -17429,20 +17428,6 @@ __metadata:
   bin:
     terser: bin/terser
   checksum: 10c0/4b7b550483ed0998af503e1c9414c8d33eb8976f0606b5df511809b7a4b7a40a4834b3aa1ace5ce76f2f93918bc4b5272262832f8680c9f1ffbf68738e1e76bb
-  languageName: node
-  linkType: hard
-
-"terser@npm:^5.39.0":
-  version: 5.39.0
-  resolution: "terser@npm:5.39.0"
-  dependencies:
-    "@jridgewell/source-map": "npm:^0.3.3"
-    acorn: "npm:^8.8.2"
-    commander: "npm:^2.20.0"
-    source-map-support: "npm:~0.5.20"
-  bin:
-    terser: bin/terser
-  checksum: 10c0/83326545ea1aecd6261030568b6191ccfa4cb6aa61d9ea41746a52479f50017a78b77e4725fbbc207c5df841ffa66a773c5ac33636e95c7ab94fe7e0379ae5c7
   languageName: node
   linkType: hard
 

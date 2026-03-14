@@ -8,10 +8,6 @@ import { createBaseResolve } from '../../vite.config.base.js';
 export default defineConfig({
   build: {
     target: 'es2020',
-    minify: 'terser',
-    terserOptions: {
-      keep_classnames: true,
-    },
     sourcemap: true,
     lib: {
       entry: resolve(__dirname, 'src/index.ts'),
@@ -45,6 +41,7 @@ export default defineConfig({
           'vuedraggable': 'VueDraggable',
           'sortablejs': 'Sortable',
         },
+        keepNames: true,
         // Preserve CSS in the output bundlest
         assetFileNames: (assetInfo) => {
           return `assets/[name][extname]`;

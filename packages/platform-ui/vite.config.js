@@ -11,9 +11,10 @@ export default defineConfig({
   build: {
     sourcemap: true,
     target: 'es2020',
-    minify: 'terser',
-    terserOptions: {
-      keep_classnames: true,
+    rolldownOptions: {
+      output: {
+        keepNames: true,
+      },
     },
   },
   define: {

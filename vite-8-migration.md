@@ -14,35 +14,6 @@ are deprecation cleanup (warnings only, not blocking).
 
 ---
 
-## 2. Remove trivial `manualChunks` in courseware
-
-`packages/courseware/vite.config.ts:52` has a `manualChunks` function that always returns
-`undefined`. The function form is deprecated in Vite 8. Just delete it.
-
----
-
-## 3. Terser (resolved via hoisting — optional cleanup)
-
-In practice, `minify: 'terser'` works across all packages because `terser` is hoisted from
-`platform-ui`'s devDeps in the monorepo. No breakage observed.
-
-Long-term, migrating to Rolldown-native minification would be cleaner:
-
-```js
-build: {
-  rolldownOptions: {
-    output: {
-      keepNames: true, // replaces keep_classnames
-    },
-  },
-}
-```
-
-`keep_classnames` is load-bearing for dynamic component loading — verify `keepNames` covers the
-same behavior before dropping Terser.
-
----
-
 ## 4. `define: { 'process.env': process.env }` object reference behavior
 
 `platform-ui/vite.config.js` and `standalone-ui/vite.config.ts` pass the full `process.env`

@@ -24,10 +24,6 @@ export default defineConfig({
   assetsInclude: ['**/*.svg'],
   build: {
     sourcemap: true,
-    minify: 'terser',
-    terserOptions: {
-      keep_classnames: true, // required for some dynamic component loading mechanisms
-    },
     lib: {
       entry: {
         index: resolve(__dirname, 'src/index.ts'),
@@ -46,14 +42,9 @@ export default defineConfig({
           '@vue-skuilder/db': 'VueSkuilderDB',
         },
         exports: 'named',
+        keepNames: true,
         // Ensure assets are handled properly in the build
         assetFileNames: 'assets/[name].[ext]',
-        // For backend entry, disable code splitting to create self-contained files
-        manualChunks: (id) => {
-          if (id.includes('backend')) {
-            return undefined; // Keep backend as single chunk
-          }
-        },
       },
     },
     // This is crucial for component libraries - allow CSS to be in chunks
