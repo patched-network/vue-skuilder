@@ -68,8 +68,9 @@ the upgrade.
 - No `esbuild` transform option in any config.
 - CJS interop change: library packages externalize Vue etc., so the new default interop behavior
   should not affect them.
-- Cypress e2e tests are unaffected by the Cypress/Vite 8 component-testing issue (cypress#33078)
-  — this repo does not use Cypress component testing.
+- `common-ui` uses Cypress component testing, which is blocked on cypress#33078 (Cypress 15.x
+  bundles `@cypress/vite-dev-server` requiring vite <=7). CI pins vite back to v7 for that step
+  only. Remove the pin step in `ci-pkg-common-ui.yml` once Cypress ships Vite 8 support.
 
 ---
 
