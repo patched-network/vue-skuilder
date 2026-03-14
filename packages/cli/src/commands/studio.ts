@@ -1375,13 +1375,13 @@ export default defineConfig({
     target: 'es2020',
     outDir: 'dist',
     sourcemap: true,
-    rollupOptions: {
+    rolldownOptions: {
       // Don't externalize Vue for custom questions - bundle it in
       external: [],
       output: {
-        manualChunks: {
-          vue: ['vue', 'vue-router', 'pinia'],
-          vuetify: ['vuetify']
+        manualChunks: (id) => {
+          if (id.includes('vue') || id.includes('vue-router') || id.includes('pinia')) return 'vue';
+          if (id.includes('vuetify')) return 'vuetify';
         }
       }
     }

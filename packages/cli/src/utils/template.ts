@@ -202,7 +202,7 @@ export default defineConfig({
           name: 'VueSkuilderStandaloneQuestions',
           fileName: (format) => \`questions.\${format === 'es' ? 'mjs' : 'cjs.js'}\`,
         },
-        rollupOptions: {
+        rolldownOptions: {
           // External packages that shouldn't be bundled in library mode
           // For studio integration, we bundle vue-skuilder packages to avoid npm resolution issues
           external: [

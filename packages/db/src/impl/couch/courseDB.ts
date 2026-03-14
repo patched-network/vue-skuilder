@@ -524,7 +524,7 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
   ): Promise<PouchDB.Core.GetMeta & PouchDB.Core.Document<T>> {
     // Use this.db (local when available) for read operations.
     // Falls back to the standalone helper (always remote) only if needed.
-    return await this.db.get<T>(id, options) as PouchDB.Core.GetMeta & PouchDB.Core.Document<T>;
+    return await this.db.get<T>(id, options ?? {}) as PouchDB.Core.GetMeta & PouchDB.Core.Document<T>;
   }
 
   async getCourseDocs<T extends SkuilderCourseData>(
@@ -629,7 +629,8 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
       );
       return pipeline;
     } catch (e) {
-      logger.error(`[courseDB] Error creating navigator: ${e}`);
+      const msg = e instanceof Error ? `${e.message}\n${e.stack}` : JSON.stringify(e);
+      logger.error(`[courseDB] Error creating navigator: ${msg}`);
       throw e;
     }
   }

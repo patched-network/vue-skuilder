@@ -44,20 +44,12 @@ export default defineConfig({
           // Library build configuration
           sourcemap: true,
           target: 'es2020',
-          minify: 'terser',
-          terserOptions: {
-            keep_classnames: true,
-            keep_fnames: true,
-            mangle: {
-              properties: false,
-            },
-          },
           lib: {
             entry: resolve(__dirname, 'src/questions/index.ts'),
             name: 'VueSkuilderStandaloneQuestions',
             fileName: (format) => `questions.${format === 'es' ? 'mjs' : 'cjs.js'}`,
           },
-          rollupOptions: {
+          rolldownOptions: {
             // External packages that shouldn't be bundled in library mode
             // For studio integration, we bundle vue-skuilder packages to avoid npm resolution issues
             external: [
@@ -77,6 +69,7 @@ export default defineConfig({
                 // '@vue-skuilder/db': 'VueSkuilderDB',
               },
               exports: 'named',
+              keepNames: true,
               // Preserve CSS in the output bundle
               assetFileNames: 'assets/[name].[ext]',
             },
@@ -90,9 +83,10 @@ export default defineConfig({
           // Webapp build configuration (existing)
           sourcemap: true,
           target: 'es2020',
-          minify: 'terser',
-          terserOptions: {
-            keep_classnames: true,
+          rolldownOptions: {
+            output: {
+              keepNames: true,
+            },
           },
           // Standard webapp output directory
           outDir: 'dist',

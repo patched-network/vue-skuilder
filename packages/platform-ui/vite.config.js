@@ -2,7 +2,6 @@
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import { VitePWA } from 'vite-plugin-pwa';
-import eslint from 'vite-plugin-eslint';
 import injectEnvPlugin from './vite-env-plugin';
 import { resolve } from 'path';
 import { createBaseResolve } from '../../vite.config.base.js';
@@ -12,9 +11,10 @@ export default defineConfig({
   build: {
     sourcemap: true,
     target: 'es2020',
-    minify: 'terser',
-    terserOptions: {
-      keep_classnames: true,
+    rolldownOptions: {
+      output: {
+        keepNames: true,
+      },
     },
   },
   define: {
@@ -43,13 +43,6 @@ export default defineConfig({
           // Add your icons here
         ],
       },
-    }),
-    eslint({
-      failOnError: process.env.NODE_ENV === 'production',
-      failOnWarning: false,
-      cache: false,
-      include: ['src/**/*.js', 'src/**/*.vue', 'src/**/*.ts'], // Files to include
-      exclude: ['node_modules'], // Files to exclude
     }),
   ],
   resolve: createBaseResolve(resolve(__dirname, '../..'), {

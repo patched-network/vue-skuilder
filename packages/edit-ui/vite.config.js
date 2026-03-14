@@ -7,18 +7,13 @@ import { createBaseResolve } from '../../vite.config.base.js';
 export default defineConfig({
   build: {
     target: 'es2020',
-    minify: 'terser',
-    sourcemap: true,
-    terserOptions: {
-      keep_classnames: true,
-    },
     sourcemap: true,
     lib: {
       entry: resolve(__dirname, 'src/index.ts'),
       name: 'VueSkuilderEditUI',
       fileName: (format) => `edit-ui.${format}.js`,
     },
-    rollupOptions: {
+    rolldownOptions: {
       // External packages that shouldn't be bundled
       external: [
         'vue',
@@ -41,8 +36,8 @@ export default defineConfig({
           '@vue-skuilder/common': 'VueSkuilderCommon',
           '@vue-skuilder/common-ui': 'VueSkuilderCommonUI',
           '@vue-skuilder/courseware': 'VueSkuilderCourseWare',
-          sourcemap: true,
         },
+        keepNames: true,
         // Preserve CSS in the output bundles
         assetFileNames: (assetInfo) => {
           return `assets/[name][extname]`;
