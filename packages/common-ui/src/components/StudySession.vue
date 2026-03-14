@@ -26,8 +26,9 @@
     </div>
 
     <div v-else ref="shadowWrapper" class="card-transition-container">
-      <transition :name="transitionName" :mode="transitionMode">
+      <transition :name="transitionName">
         <card-viewer
+          v-if="view"
           ref="cardViewer"
           :key="cardID"
           :class="loading ? 'muted' : ''"
@@ -683,6 +684,48 @@ a {
   justify-content: center;
 }
 
+@keyframes varFade {
+  0% {
+    box-shadow:
+      rgba(var(--r), var(--g), 0, 0.25) 0px 7px 8px -4px,
+      rgba(var(--r), var(--g), 0, 0.25) 0px 12px 17px 2px,
+      rgba(var(--r), var(--g), 0, 0.25) 0px 5px 22px 4px;
+  }
+  100% {
+    box-shadow: rgba(0, 150, 0, 0) 0px 0px;
+  }
+}
+
+@keyframes greenFade {
+  0% {
+    box-shadow:
+      rgba(0, 150, 0, 0.25) 0px 7px 8px -4px,
+      rgba(0, 150, 0, 0.25) 0px 12px 17px 2px,
+      rgba(0, 150, 0, 0.25) 0px 5px 22px 4px;
+  }
+  100% {
+    box-shadow: rgba(0, 150, 0, 0) 0px 0px;
+  }
+}
+@keyframes purpleFade {
+  0% {
+    box-shadow:
+      rgba(115, 0, 75, 0.25) 0px 7px 8px -4px,
+      rgba(115, 0, 75, 0.25) 0px 12px 17px 2px,
+      rgba(115, 0, 75, 0.25) 0px 5px 22px 4px;
+  }
+  100% {
+    box-shadow: rgba(115, 0, 75, 0) 0px 0px;
+  }
+}
+</style>
+
+<style>
+/* Transition presets — unscoped so classes reach child component root elements.
+   Vue's <Transition> adds these classes to the child's root DOM node, which
+   may be a Vuetify component (v-card). Scoped selectors can fail to match
+   when the scope attribute doesn't propagate through component boundaries. */
+
 /* Preset: component-fade (default) — simple opacity crossfade, use with mode="out-in" */
 .component-fade-enter-active,
 .component-fade-leave-active {
@@ -752,40 +795,5 @@ a {
 .card-scale-enter-from {
   transform: scale(1.03);
   opacity: 0;
-}
-
-@keyframes varFade {
-  0% {
-    box-shadow:
-      rgba(var(--r), var(--g), 0, 0.25) 0px 7px 8px -4px,
-      rgba(var(--r), var(--g), 0, 0.25) 0px 12px 17px 2px,
-      rgba(var(--r), var(--g), 0, 0.25) 0px 5px 22px 4px;
-  }
-  100% {
-    box-shadow: rgba(0, 150, 0, 0) 0px 0px;
-  }
-}
-
-@keyframes greenFade {
-  0% {
-    box-shadow:
-      rgba(0, 150, 0, 0.25) 0px 7px 8px -4px,
-      rgba(0, 150, 0, 0.25) 0px 12px 17px 2px,
-      rgba(0, 150, 0, 0.25) 0px 5px 22px 4px;
-  }
-  100% {
-    box-shadow: rgba(0, 150, 0, 0) 0px 0px;
-  }
-}
-@keyframes purpleFade {
-  0% {
-    box-shadow:
-      rgba(115, 0, 75, 0.25) 0px 7px 8px -4px,
-      rgba(115, 0, 75, 0.25) 0px 12px 17px 2px,
-      rgba(115, 0, 75, 0.25) 0px 5px 22px 4px;
-  }
-  100% {
-    box-shadow: rgba(115, 0, 75, 0) 0px 0px;
-  }
 }
 </style>
