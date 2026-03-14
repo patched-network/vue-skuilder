@@ -36,7 +36,7 @@ export default defineConfig({
       name: 'VueSkuilderCourseWare',
       fileName: (format, entryName) => `${entryName}.${format === 'es' ? 'mjs' : 'cjs.js'}`,
     },
-    rollupOptions: {
+    rolldownOptions: {
       external: ['vue', '@vue-skuilder/common', '@vue-skuilder/common-ui', '@vue-skuilder/db', 'moment'],
       output: {
         globals: {

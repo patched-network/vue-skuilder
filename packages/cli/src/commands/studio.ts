@@ -1375,7 +1375,7 @@ export default defineConfig({
     target: 'es2020',
     outDir: 'dist',
     sourcemap: true,
-    rollupOptions: {
+    rolldownOptions: {
       // Don't externalize Vue for custom questions - bundle it in
       external: [],
       output: {

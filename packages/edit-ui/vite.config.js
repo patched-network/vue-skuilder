@@ -18,7 +18,7 @@ export default defineConfig({
       name: 'VueSkuilderEditUI',
       fileName: (format) => `edit-ui.${format}.js`,
     },
-    rollupOptions: {
+    rolldownOptions: {
       // External packages that shouldn't be bundled
       external: [
         'vue',

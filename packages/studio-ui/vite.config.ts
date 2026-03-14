@@ -14,7 +14,7 @@ export default defineConfig({
     target: 'es2020',
     outDir: 'dist',
     sourcemap: true,
-    rollupOptions: {
+    rolldownOptions: {
       output: {
         manualChunks: (id) => {
           if (id.includes('vue') || id.includes('vue-router') || id.includes('pinia')) return 'vue';

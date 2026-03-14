@@ -9,18 +9,8 @@ Done (branch `vite-8-prep-1` / `vite-8-prep-2`):
 - `edit-ui`: removed stray `sourcemap: true` key from `globals` object (exposed by Rolldown's stricter validation)
 - `studio-ui`: converted `manualChunks` from object form (removed in v8) to function form
 
-All packages building locally. Remaining deprecation cleanup below (warnings only, not blocking).
-
----
-
-## 1. `build.rollupOptions` → `build.rolldownOptions`
-
-Deprecated in Vite 8. Rename in each affected config.
-
-- `packages/courseware/vite.config.ts`
-- `packages/common-ui/vite.config.js`
-- `packages/edit-ui/vite.config.js`
-- `packages/standalone-ui/vite.config.ts`
+All packages building locally. CI at parity with pre-migration baseline. Remaining items below
+are deprecation cleanup (warnings only, not blocking).
 
 ---
 
