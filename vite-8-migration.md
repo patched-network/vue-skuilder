@@ -14,15 +14,6 @@ are deprecation cleanup (warnings only, not blocking).
 
 ---
 
-## 4. `define: { 'process.env': process.env }` object reference behavior
-
-`platform-ui/vite.config.js` and `standalone-ui/vite.config.ts` pass the full `process.env`
-object via `define`. Vite 8 / Oxc no longer shares object references — each usage gets a separate
-copy. Likely fine in practice but verify env vars are read correctly in production builds after
-the upgrade.
-
----
-
 ## Notes
 
 - No `optimizeDeps.esbuildOptions` usage — nothing to migrate there.

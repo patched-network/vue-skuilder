@@ -46,7 +46,6 @@ export default defineConfig({
         assetFileNames: (assetInfo) => {
           return `assets/[name][extname]`;
         },
-        sourcemap: true,
       },
     },
     // This is crucial for component libraries - allow CSS to be in chunks
