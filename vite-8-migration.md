@@ -74,6 +74,9 @@ the upgrade.
 
 ---
 
-Note vite config templating here for packages/cli scaffolded courses:
+Note vite config templating for CLI-generated/scaffolded configs — these embed vite config as
+strings in source and need the same treatment as the package configs:
 
-/home/colin/pn/vue-skuilder/master/packages/cli/src/utils/template.ts
+- `packages/cli/src/utils/template.ts` — scaffolded standalone course vite config
+- `packages/cli/src/commands/studio.ts` (`createStudioViteConfig`) — studio build vite config
+  (already fixed: `manualChunks` object form → function form)
