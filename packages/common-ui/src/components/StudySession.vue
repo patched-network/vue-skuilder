@@ -738,12 +738,17 @@ a {
 }
 
 /* Preset: card-slide — backOutLeft exit / slide-in-right enter, use with mode="default" */
+/* !important on position/inset: child components with scoped styles (e.g.
+   `.gpc-intro[data-v-xxx] { position: relative }`) have higher specificity
+   than this unscoped class. Without !important the leaving element stays
+   in-flow and the enter/leave elements split vertical space — visible as
+   the new card sliding in "low" then popping to center. */
 .card-slide-leave-active {
   animation: cardBackOutLeft 400ms cubic-bezier(0.4, 0, 0.7, 0.2) both;
-  position: absolute;
-  top: 50%;
-  left: 0;
-  right: 0;
+  position: absolute !important;
+  inset: 0;
+  margin: auto;
+  height: fit-content;
   will-change: transform, opacity;
   pointer-events: none;
 }
@@ -758,15 +763,15 @@ a {
 
 @keyframes cardBackOutLeft {
   0% {
-    transform: translateX(0) translateY(-50%) scale(1);
+    transform: translateX(0) scale(1);
     opacity: 1;
   }
   40% {
-    transform: translateX(0) translateY(-50%) scale(0.88);
+    transform: translateX(0) scale(0.88);
     opacity: 0.8;
   }
   100% {
-    transform: translateX(-100%) translateY(-50%) scale(0.88);
+    transform: translateX(-100%) scale(0.88);
     opacity: 0;
   }
 }
