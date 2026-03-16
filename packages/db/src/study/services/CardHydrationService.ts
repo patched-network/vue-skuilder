@@ -54,6 +54,7 @@ export interface HydratedCard<TView = unknown> {
   item: StudySessionItem;
   view: TView;
   data: any[];
+  tags: string[];
 }
 
 /**
@@ -195,7 +196,10 @@ export class CardHydrationService<TView = unknown> {
 
     try {
       const courseDB = this.getCourseDB(item.courseID);
-      const cardData = await courseDB.getCourseDoc<CardData>(item.cardID);
+      const [cardData, tagsByCard] = await Promise.all([
+        courseDB.getCourseDoc<CardData>(item.cardID),
+        courseDB.getAppliedTagsBatch([item.cardID]),
+      ]);
 
       if (!isCourseElo(cardData.elo)) {
         cardData.elo = toCourseElo(cardData.elo);
@@ -234,6 +238,7 @@ export class CardHydrationService<TView = unknown> {
         item,
         view,
         data,
+        tags: tagsByCard.get(item.cardID) ?? [],
       });
 
       logger.debug(`[CardHydrationService] Hydrated card ${item.cardID}`);

@@ -66,6 +66,7 @@ export interface StudySessionRecord {
     course_id: string;
     card_id: string;
     card_elo: number;
+    tags: string[];
   };
   item: StudySessionItem;
   records: CardRecord[];
