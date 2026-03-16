@@ -622,6 +622,7 @@ export default defineComponent({
           course_id: card.item.courseID,
           card_id: card.item.cardID,
           card_elo: this.card_elo,
+          tags: card.tags ?? [],
         },
         item: card.item,
         records: [],
