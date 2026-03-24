@@ -3,7 +3,7 @@
   "publishConfig": {
     "access": "public"
   },
-  "version": "0.1.32-f",
+  "version": "0.1.33",
   "description": "an API",
   "main": "dist/index.js",
   "type": "module",
@@ -77,5 +77,5 @@
     "typescript-eslint": "^8.48.1",
     "vitest": "^4.1.0"
   },
-  "stableVersion": "0.1.31"
+  "stableVersion": "0.1.33"
 }
