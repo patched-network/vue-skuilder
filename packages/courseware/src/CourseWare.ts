@@ -46,21 +46,48 @@ export class CourseWare {
   }
 
   public getQuestion(name: string): typeof Displayable | undefined {
-    return this.questionList.find((question) => {
-      // Extract base name without potential prefix/suffix
-      const questionBaseName = question.name.replace(/^_/, '').replace(/\d+$/, '');
-      const searchBaseName = name.replace(/^_/, '').replace(/\d+$/, '');
+    const searchBaseName = name.replace(/^_/, '').replace(/\d+$/, '');
+    const registered = this.questionList.map((q) => q.name);
 
-      return (
-        // Exact match
-        question.name === name ||
-        // Match with different prefix/suffix combinations
-        questionBaseName === searchBaseName ||
-        // Original fallback for partial matches
-        question.name.includes(searchBaseName) ||
-        name.includes(questionBaseName)
-      );
+    // Pass 1: exact or stripped-exact match (safe, no false positives)
+    const exact = this.questionList.find((question) => {
+      const questionBaseName = question.name.replace(/^_/, '').replace(/\d+$/, '');
+      return question.name === name || questionBaseName === searchBaseName;
     });
+    if (exact) {
+      if (exact.name !== name) {
+        console.debug(
+          `[CourseWare.getQuestion] stripped-exact: "${name}" → "${exact.name}" (registered: ${registered.join(', ')})`,
+        );
+      }
+      return exact;
+    }
+
+    // Pass 2: fuzzy includes() fallback for bundler name-mangling resilience.
+    // Prefer the shortest-name match to avoid "GpcIntro" matching "DigraphGpcIntro".
+    const fuzzyMatches = this.questionList.filter((question) => {
+      const questionBaseName = question.name.replace(/^_/, '').replace(/\d+$/, '');
+      return question.name.includes(searchBaseName) || name.includes(questionBaseName);
+    });
+
+    if (fuzzyMatches.length === 0) {
+      console.warn(
+        `[CourseWare.getQuestion] NO MATCH: "${name}" (base: "${searchBaseName}") not found in [${registered.join(', ')}]`,
+      );
+      return undefined;
+    }
+
+    // Among fuzzy matches, prefer the one whose name length is closest to the search name
+    // (shortest delta wins). This prevents "GpcIntro" from matching "DigraphGpcIntro"
+    // when "GpcIntro" itself is registered.
+    fuzzyMatches.sort((a, b) =>
+      Math.abs(a.name.length - name.length) - Math.abs(b.name.length - name.length)
+    );
+    const winner = fuzzyMatches[0];
+    console.warn(
+      `[CourseWare.getQuestion] FUZZY: "${name}" → "${winner.name}" (candidates: ${fuzzyMatches.map((q) => q.name).join(', ')}; registered: ${registered.join(', ')})`,
+    );
+    return winner;
   }
 
   public getBaseQTypes(): Array<typeof Displayable> {
