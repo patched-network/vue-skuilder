@@ -354,18 +354,21 @@ export class SessionController<TView = unknown> extends Loggable {
       return this._replanPromise;
     }
 
-    // Auto-exclude the currently-displayed card so the replan doesn't
-    // surface it again (avoids showing the same card twice in a row).
+    // Exclude all cards already presented this session. The pipeline may
+    // not yet see their encounter records (async writes), so without this
+    // they can re-enter newQ via replaceAll and cause duplicates.
+    if (!opts.hints) opts.hints = {};
+    const hints = opts.hints;
+    const excludeSet = new Set(hints.excludeCards ?? []);
+
     if (this._currentCard?.item.cardID) {
-      const currentId = this._currentCard.item.cardID;
-      if (!opts.hints) opts.hints = {};
-      const hints = opts.hints;
-      const excludeCards = hints.excludeCards ?? [];
-      if (!excludeCards.includes(currentId)) {
-        excludeCards.push(currentId);
-      }
-      hints.excludeCards = excludeCards;
+      excludeSet.add(this._currentCard.item.cardID);
     }
+    for (const rec of this._sessionRecord) {
+      excludeSet.add(rec.card.card_id);
+    }
+
+    hints.excludeCards = [...excludeSet];
 
     // Forward hints to all sources (CourseDB stashes them, Pipeline consumes them)
     if (opts.hints) {
