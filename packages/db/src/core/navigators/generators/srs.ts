@@ -131,7 +131,29 @@ export default class SRSNavigator extends ContentNavigator implements CardGenera
     const now = moment.utc();
 
     // Filter to only cards that are actually due
-    const dueReviews = reviews.filter((r) => now.isAfter(moment.utc(r.reviewTime)));
+    let dueReviews = reviews.filter((r) => now.isAfter(moment.utc(r.reviewTime)));
+
+    // Remove scheduled reviews for cards tagged srs:skip (e.g. intro cards).
+    // These were scheduled before the tag convention existed — clean them up.
+    if (dueReviews.length > 0) {
+      const dueCardIds = [...new Set(dueReviews.map((r) => r.cardId))];
+      const tagsByCard = await this.course!.getAppliedTagsBatch(dueCardIds);
+      const skippedReviewIds: string[] = [];
+      dueReviews = dueReviews.filter((r) => {
+        const tags = tagsByCard.get(r.cardId) ?? [];
+        if (tags.includes('srs:skip')) {
+          skippedReviewIds.push(r._id);
+          return false;
+        }
+        return true;
+      });
+      if (skippedReviewIds.length > 0) {
+        logger.info(`[SRS] Removing ${skippedReviewIds.length} scheduled reviews for srs:skip cards`);
+        for (const id of skippedReviewIds) {
+          void this.user!.removeScheduledCardReview(id);
+        }
+      }
+    }
 
     // Compute backlog pressure - applies globally to all reviews
     const backlogPressure = this.computeBacklogPressure(dueReviews.length);
