@@ -173,7 +173,11 @@ export class ResponseProcessor {
     // Only schedule and update ELO for first-time attempts
     if (cardRecord.priorAttemps === 0) {
       // Schedule the card for future review based on performance (async, non-blocking)
-      void this.srsService.scheduleReview(history, studySessionItem);
+      // Cards tagged srs:skip are one-time presentations (e.g. intro cards) — no review scheduling
+      const skipSrs = currentCard.card.tags.includes('srs:skip');
+      if (!skipSrs) {
+        void this.srsService.scheduleReview(history, studySessionItem);
+      }
 
       // Parse performance (may be numeric or structured)
       const { globalScore, taggedPerformance } = this.parsePerformance(cardRecord.performance);
