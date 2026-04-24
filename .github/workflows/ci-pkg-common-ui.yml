@@ -49,11 +49,6 @@ jobs:
           cd packages/common-ui
           yarn test:unit
 
-      # Cypress 15.x bundles @cypress/vite-dev-server which requires vite <=7.
-      # Pin vite to v7 for this step only until cypress#33078 is resolved.
-      - name: Pin vite to v7 for Cypress compatibility
-        run: yarn workspace @vue-skuilder/common-ui add vite@^7.0.0 -D
-
       # Run component tests
       - name: Run Cypress component tests
         run: |
