@@ -262,6 +262,14 @@ export default defineComponent({
     console.log('[StudySession] InitSession completed in created hook');
   },
 
+  errorCaptured(err: unknown, _instance: unknown, info: string) {
+    console.error(`[StudySession] Card render error (${info}), skipping card "${this.cardID}":`, err);
+    if (this.sessionController) {
+      void this.sessionController.nextCard().then((card) => this.loadCard(card));
+    }
+    return false; // prevent propagation
+  },
+
   methods: {
     /**
      * Handle a `ready-to-advance` event from a card view that previously
