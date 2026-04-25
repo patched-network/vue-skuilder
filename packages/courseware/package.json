@@ -46,11 +46,15 @@
     "@vue-skuilder/common": "workspace:*",
     "@vue-skuilder/common-ui": "workspace:*",
     "@vue-skuilder/db": "workspace:*",
+    "abcjs": "^6.2.2",
     "moment": "^2.29.4",
     "paper": "^0.12.3",
-    "vue": "^3.5.13"
+    "tonal": "^6.4.2",
+    "vue": "^3.5.13",
+    "webmidi": "^2.5.1"
   },
   "devDependencies": {
+    "@types/webmidi": "^2.0.4",
     "@typescript-eslint/eslint-plugin": "^8.48.1",
     "@typescript-eslint/parser": "^8.48.1",
     "@vitejs/plugin-vue": "^6.0.5",
