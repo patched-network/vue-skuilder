@@ -28,6 +28,7 @@ const RequestPasswordResetView = () => import('./views/RequestPasswordReset.vue'
 const ResetPasswordView = () => import('./views/ResetPassword.vue');
 const MarkdownRenderer = () => import('@vue-skuilder/common-ui').then((m) => m.MarkdownRenderer);
 const DataInputFormTester = () => import('./dev/DataInputFormTester.vue');
+const NotationMCDebug = () => import('./dev/NotationMCDebug.vue');
 
 const router = createRouter({
   history: createWebHistory(),
@@ -44,6 +45,10 @@ const router = createRouter({
     // beforeEnter: () => authenticateAdmin ?
     //
     // const components: Component[] = [];
+    {
+      path: '/dev/notation-mc',
+      component: NotationMCDebug,
+    },
     {
       path: '/dif/:pathMatch(.*)',
       name: 'testThePathComponent',
