@@ -16,22 +16,25 @@
         :key="i"
         class="option-card"
         :class="{
+          highlighted: highlighted === i && !submitted,
           correct: submitted && option === question.correct,
           incorrect: submitted && selectedIndex === i && option !== question.correct,
         }"
         :disabled="submitted"
         @click="select(i)"
       >
-        <music-score-renderer :abc-string="option" />
+        <span class="option-key">{{ i + 1 }}</span>
+        <music-score-renderer :abc-string="noMeter(option)" />
       </v-card>
     </div>
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, computed, onMounted, PropType } from 'vue';
+import { defineComponent, ref, computed, onMounted, onBeforeUnmount, PropType } from 'vue';
 import { ViewData } from '@vue-skuilder/common';
-import { useViewable, useQuestionView } from '@vue-skuilder/common-ui';
+import { useViewable, useQuestionView, SkldrMouseTrap } from '@vue-skuilder/common-ui';
+import type { HotKey } from '@vue-skuilder/common-ui';
 import { playAbc } from '../../utility/abcPlayer';
 import { NotationMCQuestion } from '.';
 import MusicScoreRenderer from '@courseware/components/MusicScoreRender.vue';
@@ -70,13 +73,15 @@ export default defineComponent({
     questionUtils.question.value = question.value;
 
     const loading = ref(false);
-    const canPlay = ref(false);
+    const canPlay = ref(true);
     const submitted = ref(false);
     const selectedIndex = ref<number | null>(null);
+    const highlighted = ref<number | null>(null);
     const progressBar = ref<HTMLDivElement>();
     const shuffledOptions = ref<string[]>([]);
 
     shuffledOptions.value = shuffle([question.value.correct, ...question.value.distractors]);
+    const n = shuffledOptions.value.length;
 
     const runProgressBar = (durationMs: number) => {
       if (!progressBar.value) return;
@@ -95,12 +100,10 @@ export default defineComponent({
       canPlay.value = false;
       loading.value = true;
       try {
-        const durationMs = await playAbc(question.value.correct);
+        const durationMs = await playAbc(question.value.correct, 75);
         loading.value = false;
         runProgressBar(durationMs);
-        setTimeout(() => {
-          canPlay.value = true;
-        }, durationMs);
+        setTimeout(() => { canPlay.value = true; }, durationMs);
       } catch (e) {
         loading.value = false;
         canPlay.value = true;
@@ -115,7 +118,40 @@ export default defineComponent({
       questionUtils.submitAnswer({ selection: i, options: shuffledOptions.value });
     };
 
-    onMounted(play);
+    const move = (delta: number) => {
+      if (submitted.value) return;
+      highlighted.value = highlighted.value === null
+        ? (delta > 0 ? 0 : n - 1)
+        : ((highlighted.value + delta + n) % n);
+    };
+
+    const noMeter = (abc: string) => abc.replace(/^M:.*$/m, 'M:none');
+
+    const confirm = () => {
+      if (highlighted.value !== null) select(highlighted.value);
+    };
+
+    const bindings: HotKey[] = [
+      ...shuffledOptions.value.map((_, i) => ({
+        hotkey: String(i + 1),
+        command: `Select option ${i + 1}`,
+        callback: () => select(i),
+      })),
+      { hotkey: 'down',  command: 'Next option',     callback: () => move(1)  },
+      { hotkey: 'right', command: 'Next option',     callback: () => move(1)  },
+      { hotkey: 'up',    command: 'Prev option',     callback: () => move(-1) },
+      { hotkey: 'left',  command: 'Prev option',     callback: () => move(-1) },
+      { hotkey: 'enter', command: 'Confirm option',  callback: confirm        },
+      { hotkey: 'space', command: 'Play again',      callback: () => { if (canPlay.value) play(); } },
+    ];
+
+    onMounted(() => {
+      SkldrMouseTrap.addBinding(bindings);
+    });
+
+    onBeforeUnmount(() => {
+      bindings.forEach((b) => SkldrMouseTrap.removeBinding(b.hotkey));
+    });
 
     return {
       ...viewableUtils,
@@ -125,6 +161,8 @@ export default defineComponent({
       canPlay,
       submitted,
       selectedIndex,
+      highlighted,
+      noMeter,
       shuffledOptions,
       progressBar,
       play,
@@ -144,31 +182,45 @@ export default defineComponent({
 .progress-bar {
   background-color: #1976d2;
   height: 5px;
-  width: 100%;
+  width: 0%;
   animation-timing-function: linear;
 }
 
 @keyframes notation-mc-progress {
-  0% { width: 0%; }
+  0%   { width: 0%; }
   100% { width: 100%; }
 }
 
 .options {
   display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
+  flex-direction: column;
+  gap: 8px;
   margin-top: 16px;
 }
 
 .option-card {
   cursor: pointer;
-  padding: 8px;
-  flex: 1 1 300px;
+  padding: 8px 8px 8px 36px;
+  position: relative;
   transition: box-shadow 0.15s;
 }
 
 .option-card:hover:not([disabled]) {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.option-key {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  font-size: 0.75rem;
+  color: #888;
+  font-weight: 600;
+  user-select: none;
+}
+
+.option-card.highlighted {
+  outline: 2px solid #1976d2;
 }
 
 .option-card.correct {
