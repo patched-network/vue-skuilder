@@ -889,18 +889,21 @@ Currently logged-in as ${this._username}.`
    * @param course_id optional specification of individual course
    */
   async getSeenCards(course_id?: string) {
-    let prefix = DocTypePrefixes[DocType.CARDRECORD];
+    // Doc IDs follow the pattern: cardH-{courseId}-{cardId}
+    // (see getCardHistoryID in core/util)
+    const basePrefix = DocTypePrefixes[DocType.CARDRECORD];
+    let filterPrefix = basePrefix;
     if (course_id) {
-      prefix += course_id;
+      filterPrefix += `-${course_id}-`;
     }
-    const docs = await filterAllDocsByPrefix(this.localDB, prefix, {
+    const docs = await filterAllDocsByPrefix(this.localDB, filterPrefix, {
       include_docs: false,
     });
-    // const docs = await this.localDB.allDocs({});
     const ret: PouchDB.Core.DocumentId[] = [];
     docs.rows.forEach((row) => {
-      if (row.id.startsWith(DocTypePrefixes[DocType.CARDRECORD])) {
-        ret.push(row.id.substr(DocTypePrefixes[DocType.CARDRECORD].length));
+      if (row.id.startsWith(filterPrefix)) {
+        // Strip the full prefix to return bare cardId
+        ret.push(row.id.substr(filterPrefix.length));
       }
     });
     return ret;
