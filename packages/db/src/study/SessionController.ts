@@ -124,6 +124,16 @@ export class SessionController<TView = unknown> extends Loggable {
    */
   private _defaultBatchLimit: number = 20;
 
+  /**
+   * Maximum number of reviews enqueued at session start. Reviews live
+   * outside the replan flow — the queue drains via consumption and is
+   * not refilled mid-session. The session timer caps total review
+   * exposure, so overfilling here is intentional. Default is generous
+   * to accommodate Anki-style power users with hundreds of due reviews;
+   * apps targeting nimbler sessions should override via constructor.
+   */
+  private _initialReviewCap: number = 200;
+
   private sources: StudyContentSource[];
   // dataLayer and getViewComponent now injected into CardHydrationService
   private _sessionRecord: StudySessionRecord[] = [];
@@ -208,6 +218,8 @@ export class SessionController<TView = unknown> extends Loggable {
    * @param options.defaultBatchLimit - Default pipeline batch size (default: 20).
    *   Smaller values for newer users cause more frequent replans, keeping plans
    *   aligned with rapidly-changing user state.
+   * @param options.initialReviewCap - Max reviews loaded at session start (default: 200).
+   *   Applied only on initial planning; replans do not refill the review queue.
    */
   constructor(
     sources: StudyContentSource[],
@@ -215,7 +227,7 @@ export class SessionController<TView = unknown> extends Loggable {
     dataLayer: DataLayerProvider,
     getViewComponent: (viewId: string) => TView,
     mixer?: SourceMixer,
-    options?: { defaultBatchLimit?: number }
+    options?: { defaultBatchLimit?: number; initialReviewCap?: number }
   ) {
     super();
 
@@ -242,11 +254,15 @@ export class SessionController<TView = unknown> extends Loggable {
     if (options?.defaultBatchLimit !== undefined) {
       this._defaultBatchLimit = options.defaultBatchLimit;
     }
+    if (options?.initialReviewCap !== undefined) {
+      this._initialReviewCap = options.initialReviewCap;
+    }
 
     this.log(`Session constructed:
     startTime: ${this.startTime}
     endTime: ${this.endTime}
-    defaultBatchLimit: ${this._defaultBatchLimit}`);
+    defaultBatchLimit: ${this._defaultBatchLimit}
+    initialReviewCap: ${this._initialReviewCap}`);
   }
 
   private tick() {
@@ -586,7 +602,11 @@ export class SessionController<TView = unknown> extends Loggable {
   }): Promise<number> {
     const replan = options?.replan ?? false;
     const additive = options?.additive ?? false;
-    const limit = options?.limit ?? this._defaultBatchLimit;
+    const newLimit = options?.limit ?? this._defaultBatchLimit;
+    // Initial planning inflates the per-source budget so reviews can fill up
+    // to _initialReviewCap independently of the new-card budget. Replans
+    // never touch reviewQ, so the inflation is unnecessary there.
+    const fetchLimit = replan ? newLimit : newLimit + this._initialReviewCap;
 
     // Collect batches from each source
     const batches: SourceBatch[] = [];
@@ -595,7 +615,7 @@ export class SessionController<TView = unknown> extends Loggable {
       const source = this.sources[i];
       try {
         // Fetch weighted cards for mixing
-        const weighted = (await source.getWeightedCards!(limit)).cards;
+        const weighted = (await source.getWeightedCards!(fetchLimit)).cards;
 
         batches.push({
           sourceIndex: i,
@@ -624,7 +644,7 @@ export class SessionController<TView = unknown> extends Loggable {
     }
 
     // Mix weighted cards across sources using configured strategy
-    const mixedWeighted = this.mixer.mix(batches, limit * this.sources.length);
+    const mixedWeighted = this.mixer.mix(batches, fetchLimit * this.sources.length);
 
     // Capture mixer run for debugging - fetch course names
     const sourceIds = batches.map((b) => {
@@ -646,20 +666,27 @@ export class SessionController<TView = unknown> extends Loggable {
     );
     const sourceNames = sourceIds.map((id) => this.courseNameCache.get(id));
     const quotaPerSource =
-      this.mixer instanceof QuotaRoundRobinMixer ? Math.ceil((limit * this.sources.length) / batches.length) : undefined;
+      this.mixer instanceof QuotaRoundRobinMixer ? Math.ceil((fetchLimit * this.sources.length) / batches.length) : undefined;
     captureMixerRun(
       this.mixer.constructor.name,
       batches,
       sourceIds,
       sourceNames,
-      limit * this.sources.length,
+      fetchLimit * this.sources.length,
       quotaPerSource,
       mixedWeighted
     );
 
-    // Split mixed results by card origin
-    const reviewWeighted = mixedWeighted.filter((w) => getCardOrigin(w) === 'review');
-    const newWeighted = mixedWeighted.filter((w) => getCardOrigin(w) === 'new');
+    // Split mixed results by card origin, then apply per-origin caps. The
+    // pre-mixer fetch is inflated to fit both budgets; trimming here keeps
+    // newQ at the nimble batch size while letting reviewQ overfill up to
+    // _initialReviewCap (replan path discards reviewWeighted entirely).
+    const reviewWeighted = mixedWeighted
+      .filter((w) => getCardOrigin(w) === 'review')
+      .slice(0, this._initialReviewCap);
+    const newWeighted = mixedWeighted
+      .filter((w) => getCardOrigin(w) === 'new')
+      .slice(0, newLimit);
 
     logger.debug(`[reviews] got ${reviewWeighted.length} reviews from mixer`);
 
