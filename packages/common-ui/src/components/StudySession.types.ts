@@ -20,6 +20,18 @@ export type StudySessionConfig = {
   defaultBatchLimit?: number;
 
   /**
+   * Maximum number of reviews enqueued at session start.
+   *
+   * Reviews live outside the replan flow — they're loaded once at session
+   * setup and drain via consumption (no mid-session refill). The session
+   * timer caps total exposure, so overfilling is intentional.
+   *
+   * Default (when omitted): 200, generous enough for Anki-style power
+   * users. Apps targeting short, nimble sessions should set this lower.
+   */
+  initialReviewCap?: number;
+
+  /**
    * Optional hints to apply to the very first pipeline run (session init).
    * Uses the same format as `ReplanOptions.hints` — boost/exclude/require tags.
    * Applied via `setEphemeralHints()` before `prepareSession()`.

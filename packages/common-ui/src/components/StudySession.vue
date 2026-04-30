@@ -385,9 +385,13 @@ export default defineComponent({
           // db.setChangeFcn(this.handleClassroomMessage());
         });
 
-        const scOptions = this.sessionConfig?.defaultBatchLimit !== undefined
-          ? { defaultBatchLimit: this.sessionConfig.defaultBatchLimit }
-          : undefined;
+        const scOptions: { defaultBatchLimit?: number; initialReviewCap?: number } = {};
+        if (this.sessionConfig?.defaultBatchLimit !== undefined) {
+          scOptions.defaultBatchLimit = this.sessionConfig.defaultBatchLimit;
+        }
+        if (this.sessionConfig?.initialReviewCap !== undefined) {
+          scOptions.initialReviewCap = this.sessionConfig.initialReviewCap;
+        }
 
         this.sessionController = markRaw(
           new SessionController<ViewComponent>(
