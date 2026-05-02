@@ -264,11 +264,16 @@ export function adjustCourseScoresPerTag(
       throw new Error(`ELO tag score for '${key}' must be between 0 and 1 - received ${tagScore}`);
     }
 
-    // Initialize tag ELO on user if missing (use global score as baseline)
-    const userTagElo: EloRank = userElo.tags[key] ?? {
-      count: 0,
-      score: userElo.global.score,
-    };
+    // Initialize tag ELO on user if missing or if the existing entry is the
+    // count-only sentinel (-1). A sentinel entry means the tag was only seen
+    // via null/exposure interactions; treat the first real-scored interaction
+    // as a clean start from global ELO so it isn't penalized against a
+    // fictitiously low prior. Preserve accumulated count so exposure-based
+    // count-threshold progress is not discarded.
+    const existingUserTagElo = userElo.tags[key];
+    const userTagElo: EloRank = (existingUserTagElo && existingUserTagElo.score !== -1)
+      ? existingUserTagElo
+      : { count: existingUserTagElo?.count ?? 0, score: userElo.global.score };
 
     // Initialize tag ELO on card if missing (use global score as baseline)
     const cardTagElo: EloRank = cardElo.tags[key] ?? {
