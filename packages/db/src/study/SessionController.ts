@@ -373,6 +373,17 @@ export class SessionController<TView = unknown> extends Loggable {
     // Exclude all cards already presented this session. The pipeline may
     // not yet see their encounter records (async writes), so without this
     // they can re-enter newQ via replaceAll and cause duplicates.
+    //
+    // Also exclude newQ.peek(0): the imminent draw. When a replan fires
+    // from inside nextCard() (auto depletion/quality trigger) or as a
+    // deferred post-submit replan, the next-up card is about to become
+    // _currentCard but isn't yet, and hasn't yet landed in _sessionRecord.
+    // Without this, the just-drawn card can be re-seated at the head of
+    // the replaced newQ and shown twice in a row — most visible in early
+    // sessions where state is sparse and triggers fire aggressively.
+    // Only the head is excluded; deeper newQ entries are still fair game
+    // for the new plan (they aren't at risk of double-display since the
+    // old queue is replaced atomically and only its head gets drawn).
     if (!opts.hints) opts.hints = {};
     const hints = opts.hints;
     const excludeSet = new Set(hints.excludeCards ?? []);
@@ -382,6 +393,9 @@ export class SessionController<TView = unknown> extends Loggable {
     }
     for (const rec of this._sessionRecord) {
       excludeSet.add(rec.card.card_id);
+    }
+    if (this.newQ.length > 0) {
+      excludeSet.add(this.newQ.peek(0).cardID);
     }
 
     hints.excludeCards = [...excludeSet];
