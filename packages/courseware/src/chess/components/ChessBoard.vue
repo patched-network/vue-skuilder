@@ -22,6 +22,7 @@ import type { ChessPosition, Move } from './types';
 import { Dests, Key, PiecesDiff, Piece as cgPiece } from '../chessground/types';
 import { Piece as cjsPiece, Square } from 'chess.js';
 import ChessUtils from '../chessUtils';
+import { useChessgroundBounds } from '../composables/useChessgroundBounds';
 
 export interface AnimationMove {
   from: Key;
@@ -185,6 +186,11 @@ const emit = defineEmits<{
 const boardElement = ref<HTMLElement>();
 const board = ref<CgAPI>();
 const animating = ref(false);
+
+// Keep Chessground's cached board bounds in sync with the DOM —
+// parent layout shifts (flex centering, transitions, font-load reflow)
+// can leave click hitboxes offset from rendered squares until a resize.
+useChessgroundBounds(boardElement, board);
 
 // Setup and cleanup
 onMounted(() => {

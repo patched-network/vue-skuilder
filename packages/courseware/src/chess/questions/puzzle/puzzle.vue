@@ -33,6 +33,7 @@ import { useViewable, useQuestionView } from '@vue-skuilder/common-ui';
 import { ChessPuzzle } from './index';
 import { Chess, SQUARES } from 'chess.js';
 import { ViewData } from '@vue-skuilder/common';
+import { useChessgroundBounds } from '../../composables/useChessgroundBounds';
 
 // Types and interfaces
 type PromotionPiece = 'q' | 'r' | 'b' | 'n';
@@ -104,6 +105,12 @@ export default defineComponent({
     const promotionMove = ref<{ from: string; to: string } | null>(null);
 
     const ANIM_DELAY = 300;
+
+    // Keep Chessground's cached board bounds in sync with the DOM —
+    // StudySession's flex-centered transition container can shift the
+    // board after Chessground reads its rect at mount, which leaves
+    // click hitboxes offset from the rendered squares until a resize.
+    useChessgroundBounds(boardElement, chessBoard);
 
     const promotionPieces = [
       { value: 'q', name: 'Queen', whiteSymbol: '♕', blackSymbol: '♛' },
