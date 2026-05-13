@@ -159,6 +159,21 @@ export function adjustCourseScores(
   };
 }
 
+/**
+ * Hyperbolic K-factor: high sensitivity at low count (uncertain rating),
+ * converging to a stable floor as evidence accumulates.
+ *
+ *   K(0)        = 64  — first encounter, large update
+ *   K(10)       = 40  — midpoint at halflife
+ *   K(∞)        → 16  — well-established rating
+ */
+function kForCount(count: number): number {
+  const K_MIN = 16;
+  const K_MAX = 64;
+  const HALFLIFE = 10;
+  return K_MIN + (K_MAX - K_MIN) / (1 + count / HALFLIFE);
+}
+
 function adjustScores(
   userElo: EloRank,
   cardElo: EloRank,
@@ -171,11 +186,8 @@ function adjustScores(
     throw new Error(`ELO performance rating must be between 0 and 1 - received ${userScore}`);
   }
 
-  // todo: how to calculate here?
-  // todo: should / must these be equal?
-  // todo: 176 - these K values should be a fcn of `.count` values of userElo and cardElo
-  const userRanker = new EloRanker(16);
-  const cardRanker = new EloRanker(16);
+  const userRanker = new EloRanker(kForCount(userElo.count));
+  const cardRanker = new EloRanker(kForCount(cardElo.count));
 
   const exp = userRanker.getExpected(userElo.score, cardElo.score);
 

@@ -27,29 +27,29 @@ const VerifyEmailView = () => import('./views/VerifyEmail.vue');
 const RequestPasswordResetView = () => import('./views/RequestPasswordReset.vue');
 const ResetPasswordView = () => import('./views/ResetPassword.vue');
 const MarkdownRenderer = () => import('@vue-skuilder/common-ui').then((m) => m.MarkdownRenderer);
-const DataInputFormTester = () => import('./dev/DataInputFormTester.vue');
+// Dev-only playtest harness. Lazy-imported but the route entry below is
+// also wrapped in `import.meta.env.DEV` so the chunk is dropped from prod
+// builds entirely.
+const Playtest = () => import('./dev/Playtest.vue');
 
 const router = createRouter({
   history: createWebHistory(),
   // mode: 'history', // deprecated in Vue 3 / Vue Router 4
 
   routes: [
-    // {
-    //   path: '/debug/:component',
-    //   name: 'componentPreviews',
-    //   component: components[component]
-    // }
-    // todo:
-    //
-    // beforeEnter: () => authenticateAdmin ?
-    //
-    // const components: Component[] = [];
-    {
-      path: '/dif/:pathMatch(.*)',
-      name: 'testThePathComponent',
-      component: DataInputFormTester,
-      props: true,
-    },
+    // Dev-only playtest harness — see ./dev/Playtest.vue. The route is
+    // only registered when Vite is in dev mode, so prod builds neither
+    // expose the URL nor include the chunk.
+    ...(import.meta.env.DEV
+      ? [
+          {
+            path: '/play/:pathMatch(.*)?',
+            name: 'playtest',
+            component: Playtest,
+            props: true,
+          },
+        ]
+      : []),
     {
       path: '/md',
       component: MarkdownRenderer,
