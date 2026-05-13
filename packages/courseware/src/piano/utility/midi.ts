@@ -8,7 +8,7 @@ import webmidi, {
   InputEventNoteoff,
   InputEventNoteon,
 } from 'webmidi';
-import { Note, Interval } from '@tonaljs/tonal';
+import { Note, Interval } from 'tonal';
 import { alertUser } from '@vue-skuilder/common-ui';
 import { Status } from '@vue-skuilder/common';
 import { UserDBInterface } from '@vue-skuilder/db';

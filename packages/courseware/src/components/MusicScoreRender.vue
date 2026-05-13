@@ -1,10 +1,10 @@
 <template>
-  <div id="abc"></div>
+  <div ref="container"></div>
 </template>
 
 <script lang="ts">
-import abc from 'abcjs';
-import { defineComponent } from 'vue';
+import { defineComponent, ref, onMounted, watch } from 'vue';
+import abcjs from 'abcjs';
 
 export default defineComponent({
   name: 'MusicScoreRenderer',
@@ -12,19 +12,29 @@ export default defineComponent({
   props: {
     abcString: {
       type: String,
-      required: true
-    }
+      required: true,
+    },
   },
 
-  mounted() {
-    abc.renderAbc('abc', this.abcString);
-  }
+  setup(props) {
+    const container = ref<HTMLDivElement>();
+
+    const render = () => {
+      if (container.value) {
+        abcjs.renderAbc(container.value, props.abcString, { responsive: 'resize' });
+      }
+    };
+
+    onMounted(render);
+    watch(() => props.abcString, render);
+
+    return { container };
+  },
 });
 </script>
 
-<style>
-#abc {
+<style scoped>
+div {
   width: 100%;
-  height: 100%;
 }
 </style>

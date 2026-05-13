@@ -25,6 +25,7 @@ export enum DataShapeName {
 
   // Piano
   PIANO_Echo = 'Piano_Echo',
+  PIANO_NotationMC = 'Piano_NotationMC',
   PIANO_PlayNote = 'Piano_PlayNote',
 
   // Pitch

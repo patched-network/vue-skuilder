@@ -1186,6 +1186,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@babel/runtime@npm:^7.25.6, @babel/runtime@npm:^7.29.2":
+  version: 7.29.2
+  resolution: "@babel/runtime@npm:7.29.2"
+  checksum: 10c0/30b80a0140d16467792e1bbeb06f655b0dab70407da38dfac7fedae9c859f9ae9d846ef14ad77bd3814c064295fe9b1bc551f1541ea14646ae9f22b71a8bc17a
+  languageName: node
+  linkType: hard
+
 "@babel/template@npm:^7.25.9, @babel/template@npm:^7.26.8":
   version: 7.26.8
   resolution: "@babel/template@npm:7.26.8"
@@ -4532,224 +4539,297 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@tonaljs/abc-notation@npm:^3.5.4":
-  version: 3.5.5
-  resolution: "@tonaljs/abc-notation@npm:3.5.5"
+"@tonaljs/abc-notation@npm:4.9.1":
+  version: 4.9.1
+  resolution: "@tonaljs/abc-notation@npm:4.9.1"
   dependencies:
-    "@tonaljs/core": "npm:^3.5.4"
-  checksum: 10c0/9eb9bf2129640de6faef32c16b02d99652b60a9d3bdc3124cc2f9e0e2f3c0b4473f33fed43d802f25c96e7b4d88b7135da1a0ceb6327ddbb4cf6276f2cb5db3e
+    "@tonaljs/pitch-distance": "npm:5.0.5"
+    "@tonaljs/pitch-note": "npm:6.1.0"
+  checksum: 10c0/c5dabae2d326124e30140dd6894f1f4b1374f07195407403c25e9be08d1a2cafa33be92462322406ce842a8a4d26e3e0b6473ebc0e1dbee54a6dc54eb18c5cb0
   languageName: node
   linkType: hard
 
-"@tonaljs/array@npm:^3.2.8":
-  version: 3.2.9
-  resolution: "@tonaljs/array@npm:3.2.9"
+"@tonaljs/array@npm:4.8.4":
+  version: 4.8.4
+  resolution: "@tonaljs/array@npm:4.8.4"
   dependencies:
-    "@tonaljs/core": "npm:^3.5.4"
-  checksum: 10c0/340197826ababd543130a83ec66d0efb53bd0ebbe0d061e97f1f08d1765c183137b06bac6f639496187adbd7cab11a52cd52f38cf0026a051db594725477bfc6
+    "@tonaljs/pitch-note": "npm:6.1.0"
+  checksum: 10c0/7b32ac15acbaa1784c473af0ae9461697cb3cd1a12ffecca23fb6fb92a5fac9c7d041e40c3c575534a15d819da62a3c7114b77fa59ffdeedfd92eed7993784d4
   languageName: node
   linkType: hard
 
-"@tonaljs/chord-detect@npm:^3.7.0":
-  version: 3.7.0
-  resolution: "@tonaljs/chord-detect@npm:3.7.0"
+"@tonaljs/chord-detect@npm:4.9.1":
+  version: 4.9.1
+  resolution: "@tonaljs/chord-detect@npm:4.9.1"
   dependencies:
-    "@tonaljs/chord-type": "npm:^3.7.0"
-    "@tonaljs/core": "npm:^3.5.4"
-    "@tonaljs/pcset": "npm:^3.5.4"
-  checksum: 10c0/14acb9d4023e366315c28306151759b64a935dd70abe5fd86a92fc211278bbc38cf537051dccd691fc08a4701da1fb59f7bfc81c7210c465d5058c98d9a0e674
+    "@tonaljs/chord-type": "npm:5.1.1"
+    "@tonaljs/pcset": "npm:4.10.1"
+    "@tonaljs/pitch-note": "npm:6.1.0"
+  checksum: 10c0/7e2dad57b9572aab2d2c18d82ad946239db8e4227e810fcab9c277f2ef7f8b3f0903d09277e32af08df88030a2bba9840b6ff6069c08e3a05f1790d0f6411357
   languageName: node
   linkType: hard
 
-"@tonaljs/chord-type@npm:^3.5.4, @tonaljs/chord-type@npm:^3.7.0":
-  version: 3.7.0
-  resolution: "@tonaljs/chord-type@npm:3.7.0"
+"@tonaljs/chord-type@npm:5.1.1":
+  version: 5.1.1
+  resolution: "@tonaljs/chord-type@npm:5.1.1"
   dependencies:
-    "@tonaljs/core": "npm:^3.5.4"
-    "@tonaljs/pcset": "npm:^3.5.4"
-  checksum: 10c0/97d932f5dbf97b02816244e63a136d9de6f962ebab202b59729c1c24fe542b80a2f366978f59cd1441fb0a8e6d4d1036cb8ff953910dfe4fc7de0d774c454928
+    "@tonaljs/pcset": "npm:4.10.1"
+  checksum: 10c0/81c2889a249ae03b97218eb277cc1bf685f20ed73efd0f38b40e888554315f56ed91923d98bbdb3c89b208e6a5997f5c82eecd185cb574029d0339aa0e48d767
   languageName: node
   linkType: hard
 
-"@tonaljs/chord@npm:^3.6.4, @tonaljs/chord@npm:^3.9.0":
-  version: 3.9.0
-  resolution: "@tonaljs/chord@npm:3.9.0"
+"@tonaljs/chord@npm:6.1.2":
+  version: 6.1.2
+  resolution: "@tonaljs/chord@npm:6.1.2"
   dependencies:
-    "@tonaljs/chord-detect": "npm:^3.7.0"
-    "@tonaljs/chord-type": "npm:^3.7.0"
-    "@tonaljs/collection": "npm:^3.5.3"
-    "@tonaljs/core": "npm:^3.5.4"
-    "@tonaljs/pcset": "npm:^3.5.4"
-    "@tonaljs/scale-type": "npm:^3.6.0"
-  checksum: 10c0/25f2672cc7d0121ef133445c5093765d905ea8405ccf05e629450873ca03839524757b48cf35d8f7fc6b2da4225f79ff8ee2d49dc9c1c33e5bdd2c235bd80b71
+    "@tonaljs/chord-detect": "npm:4.9.1"
+    "@tonaljs/chord-type": "npm:5.1.1"
+    "@tonaljs/collection": "npm:4.9.0"
+    "@tonaljs/interval": "npm:^5.1.0"
+    "@tonaljs/pcset": "npm:4.10.1"
+    "@tonaljs/pitch-distance": "npm:5.0.5"
+    "@tonaljs/pitch-note": "npm:6.1.0"
+    "@tonaljs/scale-type": "npm:4.9.2"
+  checksum: 10c0/1d3b62028f806d4034896da2044ab28a3282953bd9ae7d02c864c633c7c5972983d8b497033e05c0e27849ea0c20c98119bc41819a886271b8c00c8d3995fdde
   languageName: node
   linkType: hard
 
-"@tonaljs/collection@npm:^3.5.3":
-  version: 3.5.3
-  resolution: "@tonaljs/collection@npm:3.5.3"
-  checksum: 10c0/fafa0983dbd4e07986d6c2e7a049411f9bcf0da5f0cfb69bfb347892f244ed1203ebd1e8f266d88ef4bbf56f3d8b2673432e2f6c0f1e59f8d332af92e3f74b23
+"@tonaljs/collection@npm:4.9.0":
+  version: 4.9.0
+  resolution: "@tonaljs/collection@npm:4.9.0"
+  checksum: 10c0/b67326f1a15c691b7589be838baa07752ee54baf5f3100b62bd26fa584a0ad73bbdb1bf34cab359d62e4ee6f58f8bd9dbd6c8f32d5f2d0e90fce5cf0d7263bc2
   languageName: node
   linkType: hard
 
-"@tonaljs/core@npm:^3.5.3, @tonaljs/core@npm:^3.5.4":
-  version: 3.5.4
-  resolution: "@tonaljs/core@npm:3.5.4"
-  checksum: 10c0/225068c4e9d208bb6fc9a0e261415b1c5823b4aa6ea7046367916afb14eb3fb142326ee96538bdbaef04bb863daf3acc20697a62bb2b181403899215d1b0e522
-  languageName: node
-  linkType: hard
-
-"@tonaljs/duration-value@npm:^3.6.3":
-  version: 3.6.3
-  resolution: "@tonaljs/duration-value@npm:3.6.3"
-  checksum: 10c0/fc8d398952fb33b82fe524d0108eca6c20ef0a2c53c46ec00864cf99aa7ec4c90b3d275304918b1232aa5169cc5afc5606792fa3c485b137c7daa4dc293fc849
-  languageName: node
-  linkType: hard
-
-"@tonaljs/interval@npm:^3.5.3":
-  version: 3.5.4
-  resolution: "@tonaljs/interval@npm:3.5.4"
+"@tonaljs/core@npm:5.0.2":
+  version: 5.0.2
+  resolution: "@tonaljs/core@npm:5.0.2"
   dependencies:
-    "@tonaljs/core": "npm:^3.5.4"
-  checksum: 10c0/7371f595f39c2f3b832a956d36166b13190e84573f95687c3239eb59d5ce6e0e872fb0b75bce780b54c7e1ad07fd2961ebbabc3673ff5377562666db5ff04bdc
+    "@tonaljs/pitch": "npm:5.0.2"
+    "@tonaljs/pitch-distance": "npm:5.0.5"
+    "@tonaljs/pitch-interval": "npm:6.1.0"
+    "@tonaljs/pitch-note": "npm:6.1.0"
+  checksum: 10c0/5d57700139e29326d0150faa07c22051f213723dee4711bfda645b57b3cdc07e652033fb53df1c0abc8620a94834e16614d5e680157508885704812383a1065b
   languageName: node
   linkType: hard
 
-"@tonaljs/key@npm:^3.5.5":
-  version: 3.5.5
-  resolution: "@tonaljs/key@npm:3.5.5"
+"@tonaljs/duration-value@npm:4.9.0":
+  version: 4.9.0
+  resolution: "@tonaljs/duration-value@npm:4.9.0"
+  checksum: 10c0/2df67d4a6faef43b766ce75fd2232313883ef570aa655d5d90b1b1ae006dbd42d110f5f5010e948a032e7170a0638bfb9245c09f1f278f07ea942ddb69cbcb12
+  languageName: node
+  linkType: hard
+
+"@tonaljs/interval@npm:5.1.0, @tonaljs/interval@npm:^5.1.0":
+  version: 5.1.0
+  resolution: "@tonaljs/interval@npm:5.1.0"
   dependencies:
-    "@tonaljs/core": "npm:^3.5.3"
-    "@tonaljs/note": "npm:^3.5.3"
-    "@tonaljs/roman-numeral": "npm:^3.5.3"
-  checksum: 10c0/6059e2d5ace791cf1facc3b7fc05042d1fb5a5ad6c3e526154bf707baafb00786c88f1ecfae13bb163e357a77d31d4609e8544bb63d04eba0834d9cb5785b622
+    "@tonaljs/pitch": "npm:^5.0.2"
+    "@tonaljs/pitch-distance": "npm:^5.0.4"
+    "@tonaljs/pitch-interval": "npm:^6.0.0"
+  checksum: 10c0/060e9202069bfdb74dc5599aed2a9e1484776555f12e81d4545b22bae339bfcb6d4898b1438ad346bfaaf7f4198e5c876f5e48cf07b41ab78c5b177ea9668960
   languageName: node
   linkType: hard
 
-"@tonaljs/midi@npm:^3.5.3, @tonaljs/midi@npm:^3.5.4":
-  version: 3.5.4
-  resolution: "@tonaljs/midi@npm:3.5.4"
+"@tonaljs/key@npm:4.11.2":
+  version: 4.11.2
+  resolution: "@tonaljs/key@npm:4.11.2"
   dependencies:
-    "@tonaljs/core": "npm:^3.5.4"
-  checksum: 10c0/666449434e8ab5da683fece16a45ff2328b69d0894cf55896e341e1044f3c8a9fdf9be4dabe12cbc804a9edd4aaff99344e1302d2581b06002977f0006221011
+    "@tonaljs/note": "npm:4.12.1"
+    "@tonaljs/pitch-note": "npm:6.1.0"
+    "@tonaljs/roman-numeral": "npm:4.9.1"
+  checksum: 10c0/93707a3b8fb3ca7cc902d8af812c8d5ec10d9f4f9d9031507c4a4c4d2f4439e8bea6b2e92f4543e21a07b0753bf25487a8f7bb449cfbb0efcae82fe3961befac
   languageName: node
   linkType: hard
 
-"@tonaljs/mode@npm:^3.5.3":
-  version: 3.5.4
-  resolution: "@tonaljs/mode@npm:3.5.4"
+"@tonaljs/midi@npm:4.10.2":
+  version: 4.10.2
+  resolution: "@tonaljs/midi@npm:4.10.2"
   dependencies:
-    "@tonaljs/core": "npm:^3.5.4"
-    "@tonaljs/pcset": "npm:^3.5.4"
-  checksum: 10c0/5a82e759e3f15ad9088a8252b1955cf3050f7aa4035538e2d3932091342553cebfaed1692f99348e3797953a3a75bfa14587c37d1168e885335e39b40ab51217
+    "@tonaljs/pitch-note": "npm:6.1.0"
+  checksum: 10c0/c1ed18e686423e732910a34e193760442f8ce7e84bce972d4a5479828f71bd0de89a7725eac398c904483bafbb59d42d917c23d25a11de7777978735bae2e489
   languageName: node
   linkType: hard
 
-"@tonaljs/note@npm:^3.5.3, @tonaljs/note@npm:^3.6.0":
-  version: 3.6.0
-  resolution: "@tonaljs/note@npm:3.6.0"
+"@tonaljs/mode@npm:4.9.2":
+  version: 4.9.2
+  resolution: "@tonaljs/mode@npm:4.9.2"
   dependencies:
-    "@tonaljs/core": "npm:^3.5.4"
-    "@tonaljs/midi": "npm:^3.5.4"
-  checksum: 10c0/8614bec201db2bd0a04295ddae8c28a4c05f2574b45ccde8bf6d684fdc84c97e19ed98c667e2d9ba2478a37a437c0374e04871ee04bf0285d0c6cfcaddf99f82
+    "@tonaljs/collection": "npm:4.9.0"
+    "@tonaljs/interval": "npm:5.1.0"
+    "@tonaljs/pcset": "npm:4.10.1"
+    "@tonaljs/pitch-distance": "npm:5.0.5"
+    "@tonaljs/pitch-note": "npm:6.1.0"
+    "@tonaljs/scale-type": "npm:4.9.2"
+  checksum: 10c0/41a6298988742caf4bf8eee5d4611409b3e6cf87ee12f53ae1a02ca8c934d4edcc36bf643dd60516d0e577abe842463b9dd550c0ea06d521581ee1a62470b5d0
   languageName: node
   linkType: hard
 
-"@tonaljs/pcset@npm:^3.5.3, @tonaljs/pcset@npm:^3.5.4":
-  version: 3.5.4
-  resolution: "@tonaljs/pcset@npm:3.5.4"
+"@tonaljs/note@npm:4.12.1":
+  version: 4.12.1
+  resolution: "@tonaljs/note@npm:4.12.1"
   dependencies:
-    "@tonaljs/collection": "npm:^3.5.3"
-    "@tonaljs/core": "npm:^3.5.4"
-  checksum: 10c0/c1bd62b33cc7292b5fb70569d12a5afbe140ce2bf639b918939e52ebc452ceb3ff823bb4cd224b88b340d59d0a61cf6141c2866ca0d7a71ed1d00d08439f89a2
+    "@tonaljs/midi": "npm:4.10.2"
+    "@tonaljs/pitch": "npm:5.0.2"
+    "@tonaljs/pitch-distance": "npm:5.0.5"
+    "@tonaljs/pitch-interval": "npm:6.1.0"
+    "@tonaljs/pitch-note": "npm:6.1.0"
+  checksum: 10c0/cd82e5c1a57a20e0a6683d26ee88bf55bb88a510bb98053fe2b94f604482a1eafae61b5371c03c5ddeec3c0c486c40697433f15fe10f56d0f5f4511c5269974d
   languageName: node
   linkType: hard
 
-"@tonaljs/progression@npm:^3.5.6":
-  version: 3.7.0
-  resolution: "@tonaljs/progression@npm:3.7.0"
+"@tonaljs/pcset@npm:4.10.1":
+  version: 4.10.1
+  resolution: "@tonaljs/pcset@npm:4.10.1"
   dependencies:
-    "@tonaljs/chord": "npm:^3.9.0"
-    "@tonaljs/core": "npm:^3.5.4"
-    "@tonaljs/roman-numeral": "npm:^3.5.4"
-  checksum: 10c0/c94a9f5554e197cd33a739b4f52c3cb5e3e94a2be943ac50ff601fc5026a289dfab0816ca84409dae2714cbf9cb75f7babc12ca1bde04cecdc7a053a8542db75
+    "@tonaljs/collection": "npm:4.9.0"
+    "@tonaljs/pitch": "npm:5.0.2"
+    "@tonaljs/pitch-distance": "npm:5.0.5"
+    "@tonaljs/pitch-interval": "npm:6.1.0"
+    "@tonaljs/pitch-note": "npm:6.1.0"
+  checksum: 10c0/dcda39b84058eb01a0d984b906b09e20764cf13ecd864c1f4e584a066de99ee78fe923883b76466b3b77c185935d23048f278ab056084056c920f05422f8ed1a
   languageName: node
   linkType: hard
 
-"@tonaljs/range@npm:^3.5.3":
-  version: 3.6.0
-  resolution: "@tonaljs/range@npm:3.6.0"
+"@tonaljs/pitch-distance@npm:5.0.5, @tonaljs/pitch-distance@npm:^5.0.4":
+  version: 5.0.5
+  resolution: "@tonaljs/pitch-distance@npm:5.0.5"
   dependencies:
-    "@tonaljs/collection": "npm:^3.5.3"
-    "@tonaljs/midi": "npm:^3.5.4"
-  checksum: 10c0/5eb1786492791476181ee820e1bd6fe6983bacf88e7d02f562bf853c7064c6080ade99d5475b32c05432fba322253806bb3507e0994ab7db376805060ccb5335
+    "@tonaljs/pitch": "npm:5.0.2"
+    "@tonaljs/pitch-interval": "npm:6.1.0"
+    "@tonaljs/pitch-note": "npm:6.1.0"
+  checksum: 10c0/6ed7cf1c0070ebded7deaf95f00a7b0eac8789d857b1bc3b8e2c47f50fdf7999f2e3cc4993437237e7c7680c43c1a3b16177ebde705522c75cedfb87650cd386
   languageName: node
   linkType: hard
 
-"@tonaljs/roman-numeral@npm:^3.5.3, @tonaljs/roman-numeral@npm:^3.5.4":
-  version: 3.5.4
-  resolution: "@tonaljs/roman-numeral@npm:3.5.4"
+"@tonaljs/pitch-interval@npm:6.1.0, @tonaljs/pitch-interval@npm:^6.0.0":
+  version: 6.1.0
+  resolution: "@tonaljs/pitch-interval@npm:6.1.0"
   dependencies:
-    "@tonaljs/core": "npm:^3.5.4"
-  checksum: 10c0/2efc6ba27d92db76e244ee9e878fd6df338e67b21dd40343834f8bd53ab4f772607600ce9f02dbfa00fcfe9262a23ebd7b52fb8bca17ed4ef98dd0e396386a4d
+    "@tonaljs/pitch": "npm:5.0.2"
+  checksum: 10c0/a5562139ce72ce417c497138d7fcf4114a2ff46b37c5ac33e8131a3a29ec8f894e76ebccf07736dd3bbfccdbc439ba485a468f7d4da35dac8072e526418f6266
   languageName: node
   linkType: hard
 
-"@tonaljs/scale-type@npm:^3.5.4, @tonaljs/scale-type@npm:^3.6.0":
-  version: 3.6.0
-  resolution: "@tonaljs/scale-type@npm:3.6.0"
+"@tonaljs/pitch-note@npm:6.1.0":
+  version: 6.1.0
+  resolution: "@tonaljs/pitch-note@npm:6.1.0"
   dependencies:
-    "@tonaljs/core": "npm:^3.5.4"
-    "@tonaljs/pcset": "npm:^3.5.4"
-  checksum: 10c0/6649152ecf75d30f112812e2a34f1d727ca75eab9924d18892ba02d5c3128e307ebdadef5a6813031b2dac3c90349675f1e4dd4413533563e754aed813b3baab
+    "@tonaljs/pitch": "npm:5.0.2"
+  checksum: 10c0/9bc679afad1cd610e217c7af4b111418f20e8417a6d6ca457e67792e7348b700c06bca402fb20fb306428ce6c7b9e7f1906c2f2981ec3d6274445f60419d4e4f
   languageName: node
   linkType: hard
 
-"@tonaljs/scale@npm:^3.5.5":
-  version: 3.7.0
-  resolution: "@tonaljs/scale@npm:3.7.0"
+"@tonaljs/pitch@npm:5.0.2, @tonaljs/pitch@npm:^5.0.2":
+  version: 5.0.2
+  resolution: "@tonaljs/pitch@npm:5.0.2"
+  checksum: 10c0/76764dddcf93259b07bf4d9e0c132d2ca9b0abebf5afd2d33be75ee141fafe14017fbb101670a0a0ebb0cb88061461cea8e092ff2e703497d8ae193efdb4d48d
+  languageName: node
+  linkType: hard
+
+"@tonaljs/progression@npm:4.9.2":
+  version: 4.9.2
+  resolution: "@tonaljs/progression@npm:4.9.2"
   dependencies:
-    "@tonaljs/chord-type": "npm:^3.7.0"
-    "@tonaljs/collection": "npm:^3.5.3"
-    "@tonaljs/core": "npm:^3.5.4"
-    "@tonaljs/note": "npm:^3.6.0"
-    "@tonaljs/pcset": "npm:^3.5.4"
-    "@tonaljs/scale-type": "npm:^3.6.0"
-  checksum: 10c0/c204bde65eeab3a641d6ee8ee71d23a8e4ab2909940efb69ccff1064801d6e12bb9588c5f8e45d867b346f53c9775afe4cb8ea98c0f58592c619469c35910674
+    "@tonaljs/chord": "npm:6.1.2"
+    "@tonaljs/pitch-distance": "npm:5.0.5"
+    "@tonaljs/pitch-interval": "npm:6.1.0"
+    "@tonaljs/pitch-note": "npm:6.1.0"
+    "@tonaljs/roman-numeral": "npm:4.9.1"
+  checksum: 10c0/4da527e125c985d7e6499e620a12cff2e2e0ba4c581e07c801bc26514baa6025bc2e192c53386ff579b40bced1e830472570e3d8ffdc6cc15c410f18b5fb0a74
   languageName: node
   linkType: hard
 
-"@tonaljs/time-signature@npm:^3.6.3":
-  version: 3.6.3
-  resolution: "@tonaljs/time-signature@npm:3.6.3"
-  checksum: 10c0/2069686ea163039bdc652a1cee54aa4ab4f0e8109eb34361f0813d2316989a0c8ad76c95182621f9fea5eea0eb637a08e5ddbea80d3d8fd24e0f1380a40ab778
-  languageName: node
-  linkType: hard
-
-"@tonaljs/tonal@npm:^3.6.0":
-  version: 3.7.5
-  resolution: "@tonaljs/tonal@npm:3.7.5"
+"@tonaljs/range@npm:4.9.2":
+  version: 4.9.2
+  resolution: "@tonaljs/range@npm:4.9.2"
   dependencies:
-    "@tonaljs/abc-notation": "npm:^3.5.4"
-    "@tonaljs/array": "npm:^3.2.8"
-    "@tonaljs/chord": "npm:^3.6.4"
-    "@tonaljs/chord-type": "npm:^3.5.4"
-    "@tonaljs/collection": "npm:^3.5.3"
-    "@tonaljs/core": "npm:^3.5.3"
-    "@tonaljs/duration-value": "npm:^3.6.3"
-    "@tonaljs/interval": "npm:^3.5.3"
-    "@tonaljs/key": "npm:^3.5.5"
-    "@tonaljs/midi": "npm:^3.5.3"
-    "@tonaljs/mode": "npm:^3.5.3"
-    "@tonaljs/note": "npm:^3.5.3"
-    "@tonaljs/pcset": "npm:^3.5.3"
-    "@tonaljs/progression": "npm:^3.5.6"
-    "@tonaljs/range": "npm:^3.5.3"
-    "@tonaljs/roman-numeral": "npm:^3.5.3"
-    "@tonaljs/scale": "npm:^3.5.5"
-    "@tonaljs/scale-type": "npm:^3.5.4"
-    "@tonaljs/time-signature": "npm:^3.6.3"
-  checksum: 10c0/78047415627949acbf98903fcefc201ebd32a91a2d6bfb9e423ef31700a47cbfba046dd300edcb2a745fa7f2220d074c3eb87e344ffbc05258867dca689c21a0
+    "@tonaljs/collection": "npm:4.9.0"
+    "@tonaljs/midi": "npm:4.10.2"
+  checksum: 10c0/1e5240bf45d2eba1924001c2c36da5512e6f3e6a14be21cfee28bf136f3e4b906064d910a0670f8f35b1ce5bf240d3245b1d34fba5bce18d7f918d9f94af97f0
+  languageName: node
+  linkType: hard
+
+"@tonaljs/rhythm-pattern@npm:1.0.0":
+  version: 1.0.0
+  resolution: "@tonaljs/rhythm-pattern@npm:1.0.0"
+  checksum: 10c0/68f0ddfeeda9f62b6b26a64a086fc6a37a43b648dee635deb0ab1ee461e8ba8fd7c136437e0e0efc8c196955cd1a22cdbea2b271630b0ff4dc5e8ae09adc0586
+  languageName: node
+  linkType: hard
+
+"@tonaljs/roman-numeral@npm:4.9.1":
+  version: 4.9.1
+  resolution: "@tonaljs/roman-numeral@npm:4.9.1"
+  dependencies:
+    "@tonaljs/pitch": "npm:5.0.2"
+    "@tonaljs/pitch-interval": "npm:6.1.0"
+    "@tonaljs/pitch-note": "npm:6.1.0"
+  checksum: 10c0/6ed8bd28ea7c173e24f2d9e6e6a23178c356ae6cdaf7dcd95adc5aa762802748f514f80b03e075223f5cb243c0ed6f28ad3f713123948d317258259351b5c358
+  languageName: node
+  linkType: hard
+
+"@tonaljs/scale-type@npm:4.9.2":
+  version: 4.9.2
+  resolution: "@tonaljs/scale-type@npm:4.9.2"
+  dependencies:
+    "@tonaljs/pcset": "npm:4.10.1"
+  checksum: 10c0/f0fa1b0ef7799f804042d096c7b56aaa115bcd9f99056254e09ed1c038279dcdc26ea84f4d86600516e0b30ebbc2ceb1b79fec6945a975495c7944f6658b0046
+  languageName: node
+  linkType: hard
+
+"@tonaljs/scale@npm:4.13.4":
+  version: 4.13.4
+  resolution: "@tonaljs/scale@npm:4.13.4"
+  dependencies:
+    "@tonaljs/chord-type": "npm:5.1.1"
+    "@tonaljs/collection": "npm:4.9.0"
+    "@tonaljs/note": "npm:4.12.1"
+    "@tonaljs/pcset": "npm:4.10.1"
+    "@tonaljs/pitch-distance": "npm:5.0.5"
+    "@tonaljs/pitch-note": "npm:6.1.0"
+    "@tonaljs/scale-type": "npm:4.9.2"
+  checksum: 10c0/8a09a14a5ce5eb1c6b1ba91d844f81cc34112802a6892d6daecb10f84f2e4ff4e4d5863f1b9b1d23af3b8c2cfc70978dfa07fc1ceab5022e252e76fe5d59d02c
+  languageName: node
+  linkType: hard
+
+"@tonaljs/time-signature@npm:4.9.0":
+  version: 4.9.0
+  resolution: "@tonaljs/time-signature@npm:4.9.0"
+  checksum: 10c0/9163f9bf53e9ebc0ec28cca8a88f06561efee9f1063346039925396f6b406b0e234ec5200f5ee01595843117097d44e2c602fb29e170f15e70b02784b680d8da
+  languageName: node
+  linkType: hard
+
+"@tonaljs/voice-leading@npm:5.1.2":
+  version: 5.1.2
+  resolution: "@tonaljs/voice-leading@npm:5.1.2"
+  dependencies:
+    "@tonaljs/note": "npm:4.12.1"
+  checksum: 10c0/6abe8ee6209c2e0314ad0524a135e81b7a221d20e1cf0b2111db0e971be7be62c000da9b4dae7f6c062396868904a82262a1081a81592a926171630a0edf198a
+  languageName: node
+  linkType: hard
+
+"@tonaljs/voicing-dictionary@npm:5.1.3":
+  version: 5.1.3
+  resolution: "@tonaljs/voicing-dictionary@npm:5.1.3"
+  dependencies:
+    "@tonaljs/chord": "npm:6.1.2"
+    "@tonaljs/note": "npm:4.12.1"
+    "@tonaljs/voice-leading": "npm:5.1.2"
+  checksum: 10c0/e51f75cd30dded9a435b5b4d15945686c5c0753aad844ab4d1357286128ce4a3f8c0fa1f08c90917e51363e0f4d5252ca49b9d2de797f34f125062134a032928
+  languageName: node
+  linkType: hard
+
+"@tonaljs/voicing@npm:5.1.3":
+  version: 5.1.3
+  resolution: "@tonaljs/voicing@npm:5.1.3"
+  dependencies:
+    "@tonaljs/chord": "npm:6.1.2"
+    "@tonaljs/interval": "npm:5.1.0"
+    "@tonaljs/note": "npm:4.12.1"
+    "@tonaljs/range": "npm:4.9.2"
+    "@tonaljs/voice-leading": "npm:5.1.2"
+    "@tonaljs/voicing-dictionary": "npm:5.1.3"
+  checksum: 10c0/901b9a99db2cf31c8488f2923c698f3db37851d4d345ae7d59151f01466feb52b2515c3952268e4a10ef54fde8091b230eca7dab8789ef0f0b93fae8e52ca60c
   languageName: node
   linkType: hard
 
@@ -6159,6 +6239,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@vue-skuilder/courseware@workspace:packages/courseware"
   dependencies:
+    "@types/webmidi": "npm:^2.0.4"
     "@typescript-eslint/eslint-plugin": "npm:^8.48.1"
     "@typescript-eslint/parser": "npm:^8.48.1"
     "@vitejs/plugin-vue": "npm:^6.0.5"
@@ -6166,17 +6247,21 @@ __metadata:
     "@vue-skuilder/common-ui": "workspace:*"
     "@vue-skuilder/db": "workspace:*"
     "@vue/eslint-config-typescript": "npm:^14.4.0"
+    abcjs: "npm:^6.2.2"
     eslint: "npm:^9.21.0"
     eslint-config-prettier: "npm:^10.0.2"
     eslint-plugin-vue: "npm:^9.32.0"
     jsdom: "npm:^26.0.0"
     moment: "npm:^2.29.4"
     paper: "npm:^0.12.3"
+    tonal: "npm:^6.4.2"
+    tone: "npm:^14.7.77"
     typescript: "npm:^5.9.3"
     vite: "npm:^8.0.0"
     vite-plugin-dts: "npm:^4.5.3"
     vitest: "npm:^4.1.0"
     vue: "npm:^3.5.13"
+    webmidi: "npm:^2.5.1"
   peerDependencies:
     vue: ^3.2.0
   languageName: unknown
@@ -6323,13 +6408,11 @@ __metadata:
     "@mdi/font": "npm:^7.3.67"
     "@testing-library/jest-dom": "npm:^6.6.3"
     "@testing-library/vue": "npm:^8.1.0"
-    "@tonaljs/tonal": "npm:^3.6.0"
     "@types/canvas-confetti": "npm:^1.9.0"
     "@types/cypress": "npm:1.1.6"
     "@types/dom-mediacapture-record": "npm:^1.0.9"
     "@types/mousetrap": "npm:^1.6.8"
     "@types/wavesurfer.js": "npm:^5.1.0"
-    "@types/webmidi": "npm:^2.0.4"
     "@typescript-eslint/eslint-plugin": "npm:^8.48.1"
     "@typescript-eslint/parser": "npm:^8.48.1"
     "@vitejs/plugin-vue": "npm:^6.0.5"
@@ -6345,7 +6428,6 @@ __metadata:
     "@vue/runtime-dom": "npm:^3.5.13"
     "@vue/test-utils": "npm:^2.4.6"
     "@vuetify/loader-shared": "npm:^2.1.0"
-    abcjs: "npm:^6.2.2"
     assert: "npm:^2.1.0"
     autoprefixer: "npm:^10.4.20"
     buffer: "npm:^6.0.3"
@@ -6381,7 +6463,6 @@ __metadata:
     vuetify: "npm:^3.7.0"
     wait-on: "npm:8.0.2"
     wavesurfer.js: "npm:^5.1.0"
-    webmidi: "npm:^2.5.1"
   languageName: unknown
   linkType: soft
 
@@ -7380,6 +7461,16 @@ __metadata:
   version: 5.0.1
   resolution: "auto-bind@npm:5.0.1"
   checksum: 10c0/a703375350ea7b6e92405d8e6bcc6dbfb84b0d7c7172b33e5788a7593929a18227999ff9aa9c32436741d06d021e6672457b1cec73287efe3fab95cff6627eaf
+  languageName: node
+  linkType: hard
+
+"automation-events@npm:^7.0.9":
+  version: 7.1.19
+  resolution: "automation-events@npm:7.1.19"
+  dependencies:
+    "@babel/runtime": "npm:^7.29.2"
+    tslib: "npm:^2.8.1"
+  checksum: 10c0/f95b1c589c6ddf68521b916285e79449493c9c3cf836bca51ac24aae9af7d5c2881bc4d5be1e59cf1a046be8e7e9aa59fb3eed03d72adb1c51fe51ab03d3d911
   languageName: node
   linkType: hard
 
@@ -17097,6 +17188,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"standardized-audio-context@npm:^25.3.70":
+  version: 25.3.77
+  resolution: "standardized-audio-context@npm:25.3.77"
+  dependencies:
+    "@babel/runtime": "npm:^7.25.6"
+    automation-events: "npm:^7.0.9"
+    tslib: "npm:^2.7.0"
+  checksum: 10c0/41d5e3a64b881691fecd709313045ab9bddb864ed79c6eb51490056cec080e808e9f5b3ef94d734567b9da88f9c95e68cc63a3a0343374b2f865b1a961fb46ef
+  languageName: node
+  linkType: hard
+
 "statuses@npm:2.0.1":
   version: 2.0.1
   resolution: "statuses@npm:2.0.1"
@@ -17733,6 +17835,47 @@ __metadata:
   languageName: node
   linkType: hard
 
+"tonal@npm:^6.4.2":
+  version: 6.4.3
+  resolution: "tonal@npm:6.4.3"
+  dependencies:
+    "@tonaljs/abc-notation": "npm:4.9.1"
+    "@tonaljs/array": "npm:4.8.4"
+    "@tonaljs/chord": "npm:6.1.2"
+    "@tonaljs/chord-type": "npm:5.1.1"
+    "@tonaljs/collection": "npm:4.9.0"
+    "@tonaljs/core": "npm:5.0.2"
+    "@tonaljs/duration-value": "npm:4.9.0"
+    "@tonaljs/interval": "npm:5.1.0"
+    "@tonaljs/key": "npm:4.11.2"
+    "@tonaljs/midi": "npm:4.10.2"
+    "@tonaljs/mode": "npm:4.9.2"
+    "@tonaljs/note": "npm:4.12.1"
+    "@tonaljs/pcset": "npm:4.10.1"
+    "@tonaljs/progression": "npm:4.9.2"
+    "@tonaljs/range": "npm:4.9.2"
+    "@tonaljs/rhythm-pattern": "npm:1.0.0"
+    "@tonaljs/roman-numeral": "npm:4.9.1"
+    "@tonaljs/scale": "npm:4.13.4"
+    "@tonaljs/scale-type": "npm:4.9.2"
+    "@tonaljs/time-signature": "npm:4.9.0"
+    "@tonaljs/voice-leading": "npm:5.1.2"
+    "@tonaljs/voicing": "npm:5.1.3"
+    "@tonaljs/voicing-dictionary": "npm:5.1.3"
+  checksum: 10c0/03d4f467d90ed41b44b6fbdf892500fd854e49c9482599a5bde42ac91d043d1e4354ed0ba095be5c59f5d6385d2196360a048c1283419a8a87163767c3476aa3
+  languageName: node
+  linkType: hard
+
+"tone@npm:^14.7.77":
+  version: 14.9.17
+  resolution: "tone@npm:14.9.17"
+  dependencies:
+    standardized-audio-context: "npm:^25.3.70"
+    tslib: "npm:^2.3.1"
+  checksum: 10c0/81ef07af0c4f3f365c3fe4e1f0feb207f586bcb9ffde428527c49d68928abde10834fbadc19baacccb15cede24bc1c6f7b98841d548d7f4efdb44f7d7a5b03d8
+  languageName: node
+  linkType: hard
+
 "totalist@npm:^3.0.0":
   version: 3.0.1
   resolution: "totalist@npm:3.0.1"
@@ -17886,7 +18029,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tslib@npm:^2.0.0, tslib@npm:^2.1.0, tslib@npm:^2.4.0, tslib@npm:^2.6.2":
+"tslib@npm:^2.0.0, tslib@npm:^2.1.0, tslib@npm:^2.3.1, tslib@npm:^2.4.0, tslib@npm:^2.6.2, tslib@npm:^2.7.0, tslib@npm:^2.8.1":
   version: 2.8.1
   resolution: "tslib@npm:2.8.1"
   checksum: 10c0/9c4759110a19c53f992d9aae23aac5ced636e99887b51b9e61def52611732872ff7668757d4e4c61f19691e36f4da981cd9485e869b4a7408d689f6bf1f14e62
