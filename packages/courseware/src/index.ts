@@ -18,7 +18,17 @@ export { useViewable } from '@vue-skuilder/common-ui';
 import { useQuestionView as _useQuestionView } from '@vue-skuilder/common-ui';
 export const useQuestionView = _useQuestionView as typeof _useQuestionView;
 
-import defaultCourse from './default';
+// `defaultCourse` (the built-in "spelling" course based on BlanksCard) is no
+// longer eagerly registered with `allCourseWare`. Consumers that need it must
+// import and register it explicitly:
+//
+//   import { allCourseWare, defaultCourse } from '@vue-skuilder/courseware';
+//   allCourseWare.courses.push(defaultCourse);
+//
+// This keeps the `BlanksCard` machinery (which pulls in MarkdownRenderer +
+// markdown-it) out of the bundles of consumers that don't render BlanksCard
+// content (e.g. LettersPractice, which uses entirely custom inline cards).
+export { default as defaultCourse } from './default';
 
 /**
  * A `CourseWare` is a container for a set of related `Question` types.
@@ -68,15 +78,23 @@ export type { ViewDescriptor };
  */
 export type { ShapeDescriptor };
 
-import chess from './chess';
-import french from './french';
-import math from './math';
-import piano from './piano';
-import pitch from './pitch';
-import sightSing from './sightsing';
-import typing from './typing';
-import wordWork from './word-work';
-
+// Subcourses are no longer eagerly imported here. Previously, `allCourseWare`
+// was constructed with all subcourses inlined, which forced every consumer
+// (regardless of which courses it actually uses) to ship chess, piano, math,
+// pitch, etc. in its bundle (~200-300 KB gzip dead weight for consumers like
+// LettersPractice that don't use any of them).
+//
+// Subcourses remain available via:
+//   - Named static import:  `import { chess } from '@vue-skuilder/courseware'`
+//     (consumers that don't reference these names will tree-shake them out.)
+//   - Async loader:         `import('@vue-skuilder/courseware/chess')` style not
+//     yet supported via subpath exports; consumers register a specific subcourse
+//     by calling `loadSubcourse('chess')` or via the convenience
+//     `loadAllSubcourses()` (returns a Promise).
+//
+// `allCourseWare` now starts pre-populated only with `defaultCourse`. Consumers
+// that previously depended on `allCourseWare` being fully populated (e.g.
+// platform-ui, flutor) must explicitly register the subcourses they need.
 export { default as chess } from './chess';
 export { default as french } from './french';
 export { default as math } from './math';
@@ -85,6 +103,61 @@ export { default as pitch } from './pitch';
 export { default as sightSing } from './sightsing';
 export { default as typing } from './typing';
 export { default as wordWork } from './word-work';
+
+/**
+ * Name of a built-in subcourse that can be lazily loaded.
+ */
+export type SubcourseName =
+  | 'chess'
+  | 'french'
+  | 'math'
+  | 'piano'
+  | 'pitch'
+  | 'sightSing'
+  | 'typing'
+  | 'wordWork';
+
+/**
+ * Lazily load a single built-in subcourse and register it with `allCourseWare`.
+ *
+ * Dynamic imports are inlined in the function body (rather than held in a
+ * top-level table) so Rollup can statically prove the function is dead code
+ * when consumers don't reference it — enabling tree-shaking of every
+ * subcourse module the app doesn't need.
+ *
+ * No-op if the subcourse is already registered (by name).
+ */
+export async function loadSubcourse(name: SubcourseName): Promise<CourseWare> {
+  let mod: { default: CourseWare };
+  switch (name) {
+    case 'chess': mod = await import('./chess'); break;
+    case 'french': mod = await import('./french'); break;
+    case 'math': mod = await import('./math'); break;
+    case 'piano': mod = await import('./piano'); break;
+    case 'pitch': mod = await import('./pitch'); break;
+    case 'sightSing': mod = await import('./sightsing'); break;
+    case 'typing': mod = await import('./typing'); break;
+    case 'wordWork': mod = await import('./word-work'); break;
+  }
+  const cw = mod.default;
+  if (!allCourseWare.courses.find((existing) => existing.name === cw.name)) {
+    allCourseWare.courses.push(cw);
+  }
+  return cw;
+}
+
+/**
+ * Lazily load and register all built-in subcourses. Use this in consumers
+ * (e.g. platform-ui) that historically depended on `allCourseWare` being
+ * fully pre-populated. Consumers that only need specific subcourses should
+ * prefer `loadSubcourse(name)` instead.
+ */
+export async function loadAllSubcourses(): Promise<void> {
+  const names: SubcourseName[] = [
+    'chess', 'french', 'math', 'piano', 'pitch', 'sightSing', 'typing', 'wordWork',
+  ];
+  await Promise.all(names.map((n) => loadSubcourse(n)));
+}
 
 export { BlanksCard, BlanksCardDataShapes } from './default/questions/fillIn';
 export { default as gradeSpellingAttempt } from './default/questions/fillIn/blanksCorrection';
@@ -271,14 +344,18 @@ export class AllCourseWare {
   }
 }
 
-export const allCourseWare: AllCourseWare = new AllCourseWare([
-  math,
-  wordWork,
-  french,
-  defaultCourse,
-  piano,
-  pitch,
-  sightSing,
-  chess,
-  typing,
-]);
+// Starts empty. All built-in courses (including `defaultCourse`, chess, piano,
+// math, pitch, etc.) must be explicitly registered by the consumer:
+//
+//   // Eager registration of a specific built-in course:
+//   import { allCourseWare, defaultCourse } from '@vue-skuilder/courseware';
+//   allCourseWare.courses.push(defaultCourse);
+//
+//   // Or lazy registration:
+//   import { loadSubcourse } from '@vue-skuilder/courseware';
+//   await loadSubcourse('pitch');
+//
+// This keeps consumers from paying the bundle cost of subcourses they don't
+// use. The previous pre-populated default was convenient for prototyping but
+// silently bloated production bundles with chess/piano/math/sightsing/etc.
+export const allCourseWare: AllCourseWare = new AllCourseWare([]);
