@@ -92,9 +92,9 @@ export type { ShapeDescriptor };
 //     by calling `loadSubcourse('chess')` or via the convenience
 //     `loadAllSubcourses()` (returns a Promise).
 //
-// `allCourseWare` now starts pre-populated only with `defaultCourse`. Consumers
-// that previously depended on `allCourseWare` being fully populated (e.g.
-// platform-ui, flutor) must explicitly register the subcourses they need.
+// `allCourseWare` now starts empty. Consumers that previously depended on
+// `allCourseWare` being fully populated (e.g. platform-ui) must explicitly
+// register the subcourses (and `defaultCourse`) they need.
 export { default as chess } from './chess';
 export { default as french } from './french';
 export { default as math } from './math';

@@ -24,6 +24,23 @@ import { aliases, mdi } from 'vuetify/iconsets/mdi';
 import '@vue-skuilder/courseware/style';
 import '@vue-skuilder/common-ui/style';
 
+// Register built-in courseware. As of the courseware tree-shaking refactor,
+// `allCourseWare` starts empty; docs embeds (EmbeddedCourse, HeroStudySession)
+// resolve view components through this registry, so we eagerly load all
+// subcourses + defaultCourse here. See packages/courseware/src/index.ts.
+import {
+  allCourseWare,
+  defaultCourse,
+  loadAllSubcourses,
+} from '@vue-skuilder/courseware';
+if (!allCourseWare.courses.find((c) => c.name === defaultCourse.name)) {
+  allCourseWare.courses.push(defaultCourse);
+}
+// Fire-and-forget: docs embeds initialize lazily on user interaction, so by
+// the time a card is rendered the dynamic imports have resolved. enhanceApp
+// is sync-friendly; avoid blocking initial page render with `await` here.
+void loadAllSubcourses();
+
 // Import components to register globally
 import EmbeddedCourse from './components/EmbeddedCourse.vue';
 import HeroStudySession from './components/HeroStudySession.vue';

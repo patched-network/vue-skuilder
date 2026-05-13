@@ -27,8 +27,19 @@ import { initializeDataLayer } from '@vue-skuilder/db';
   const pinia = createPinia();
   const app = createApp(App);
 
-  // Dynamically import { allCourseWare }
-  const { allCourseWare: Courses } = await import('@vue-skuilder/courseware');
+  // Dynamically import { allCourseWare } and register all built-in courses.
+  // As of the courseware tree-shaking refactor, `allCourseWare` starts empty;
+  // platform-ui historically depended on all subcourses being available, so
+  // we eagerly load them all here. See packages/courseware/src/index.ts.
+  const {
+    allCourseWare: Courses,
+    defaultCourse,
+    loadAllSubcourses,
+  } = await import('@vue-skuilder/courseware');
+  if (!Courses.courses.find((c) => c.name === defaultCourse.name)) {
+    Courses.courses.push(defaultCourse);
+  }
+  await loadAllSubcourses();
 
   // Register all view components globally
   const viewComponents = Courses.allViewsRaw();
