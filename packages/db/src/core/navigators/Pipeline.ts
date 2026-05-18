@@ -524,8 +524,11 @@ export class Pipeline extends ContentNavigator {
     // Capture run for debug API
     try {
       const courseName = await this.course?.getCourseConfig().then((c) => c.name).catch(() => undefined);
-      // Use the full post-filter sorted array (not just top N) so that
-      // showCard() can inspect provenance for cards that didn't make the cut.
+      // Pass the full post-filter sorted array; buildRunReport retains all
+      // selected cards plus the top-N highest-scoring near-misses and
+      // summarizes the discarded tail (see DISCARDED_KEEP_TOP). This keeps
+      // showCard() useful for "why didn't this rank?" inspection without
+      // pinning hundreds of low-score candidates' provenance per run.
       // `cards` is the post-filter, post-hints, sorted array.
       const report = buildRunReport(
         this.course?.getCourseID() || 'unknown',
