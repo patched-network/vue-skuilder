@@ -92,7 +92,19 @@ export interface PipelineRunReport {
   reviewsSelected: number;
   newSelected: number;
 
-  // Full card data for inspection
+  /**
+   * Card data for inspection.
+   *
+   * To keep the in-memory ring buffer small, this contains:
+   *   - All selected cards (the actual session output).
+   *   - The top-N highest-scoring non-selected cards (see DISCARDED_KEEP_TOP),
+   *     useful for understanding "near misses" and filter behavior.
+   *
+   * The remaining low-score tail of the candidate pool (mostly ELO-window
+   * pull remnants that filters scored down) is summarized in `discardedTail`
+   * rather than retained verbatim — each retained card carries a multi-KB
+   * provenance trail, and the tail is typically hundreds of cards per run.
+   */
   cards: Array<{
     cardId: string;
     courseId: string;
@@ -105,6 +117,26 @@ export interface PipelineRunReport {
     tags?: string[];
     selected: boolean;
   }>;
+
+  /**
+   * Summary of the discarded tail of the candidate pool — cards that were
+   * generated and scored but neither selected nor retained in `cards`.
+   *
+   * Provides breadcrumbs for "where did card X go?" investigations without
+   * the memory cost of keeping every dropped candidate's provenance.
+   *
+   * Future: may carry a bloom filter of discarded cardIds so callers can
+   * ask "was X in this run's discard tail?" with bounded memory cost.
+   */
+  discardedTail?: {
+    count: number;
+    /** [min, max] finalScore across the discarded tail. */
+    scoreRange?: [number, number];
+    /** [min, max] cardElo across the discarded tail (where parseable). */
+    eloRange?: [number, number];
+    /** Human-readable note for console display. */
+    note: string;
+  };
 }
 
 /**
@@ -112,6 +144,30 @@ export interface PipelineRunReport {
  */
 const MAX_RUNS = 10;
 const runHistory: PipelineRunReport[] = [];
+
+/**
+ * Cap on non-selected ("discarded") cards retained per run report.
+ *
+ * Pipeline candidate pools are typically hundreds of cards (ELO window pull
+ * + generators), but most are scored down by filters and never selected.
+ * Their provenance trails are the dominant text-memory cost in the ring
+ * buffer (each entry ~1–2 KB). Retaining only the top-N "near misses"
+ * preserves debugging value while collapsing memory roughly an order of
+ * magnitude or more.
+ */
+const DISCARDED_KEEP_TOP = 25;
+
+/**
+ * Programmatic clear of pipeline run history.
+ *
+ * Called by session-lifecycle hooks (session end, course switch, logout)
+ * to release retained provenance/tag arrays once they're no longer useful
+ * for in-session debugging. The interactive `clear()` debug method remains
+ * for manual use.
+ */
+export function clearRunHistory(): void {
+  runHistory.length = 0;
+}
 
 /**
  * Determine card origin from provenance trail.
@@ -171,7 +227,11 @@ export function buildRunReport(
 ): Omit<PipelineRunReport, 'runId' | 'timestamp'> {
   const selectedIds = new Set(selectedCards.map((c) => c.cardId));
 
-  const cards = allCards.map((card) => ({
+  // `allCards` arrives post-filter and sorted by score (desc). Partition
+  // into selected vs not-selected, then retain only the top-N of the
+  // non-selected group to bound memory. The remaining low-score tail is
+  // summarized rather than kept (see discardedTail).
+  const toReport = (card: WeightedCard) => ({
     cardId: card.cardId,
     courseId: card.courseId,
     origin: getOrigin(card),
@@ -181,7 +241,55 @@ export function buildRunReport(
     provenance: card.provenance,
     tags: card.tags,
     selected: selectedIds.has(card.cardId),
-  }));
+  });
+
+  const selectedReported: ReturnType<typeof toReport>[] = [];
+  const nearMissReported: ReturnType<typeof toReport>[] = [];
+  const discardedTailCards: WeightedCard[] = [];
+
+  let nonSelectedSeen = 0;
+  for (const card of allCards) {
+    if (selectedIds.has(card.cardId)) {
+      selectedReported.push(toReport(card));
+    } else if (nonSelectedSeen < DISCARDED_KEEP_TOP) {
+      nearMissReported.push(toReport(card));
+      nonSelectedSeen++;
+    } else {
+      discardedTailCards.push(card);
+    }
+  }
+
+  const cards = [...selectedReported, ...nearMissReported];
+
+  let discardedTail: PipelineRunReport['discardedTail'];
+  if (discardedTailCards.length > 0) {
+    let scoreMin = Infinity;
+    let scoreMax = -Infinity;
+    let eloMin = Infinity;
+    let eloMax = -Infinity;
+    let eloSeen = false;
+    for (const c of discardedTailCards) {
+      if (c.score < scoreMin) scoreMin = c.score;
+      if (c.score > scoreMax) scoreMax = c.score;
+      const elo = parseCardElo(c.provenance);
+      if (elo !== undefined) {
+        eloSeen = true;
+        if (elo < eloMin) eloMin = elo;
+        if (elo > eloMax) eloMax = elo;
+      }
+    }
+    const eloFragment = eloSeen ? `, ELO ${eloMin}–${eloMax}` : '';
+    discardedTail = {
+      count: discardedTailCards.length,
+      scoreRange: [scoreMin, scoreMax],
+      eloRange: eloSeen ? [eloMin, eloMax] : undefined,
+      note:
+        `${discardedTailCards.length} additional candidate(s) scored below the ` +
+        `top ${DISCARDED_KEEP_TOP} near-misses and were not retained ` +
+        `(score ${scoreMin.toExponential(2)}–${scoreMax.toExponential(2)}${eloFragment}). ` +
+        `Likely ELO-window pull remnants filtered out by hierarchy/lesson/priority gates.`,
+    };
+  }
 
   const reviewsSelected = selectedCards.filter((c) => getOrigin(c) === 'review').length;
   const newSelected = selectedCards.filter((c) => getOrigin(c) === 'new').length;
@@ -199,6 +307,7 @@ export function buildRunReport(
     reviewsSelected,
     newSelected,
     cards,
+    discardedTail,
   };
 }
 
@@ -614,7 +723,19 @@ export const pipelineDebugAPI = {
         return;
       }
     }
-    logger.info(`[Pipeline Debug] Card '${cardId}' not found in recent runs.`);
+    // Not found in any retained card list. If runs have discarded tails, the
+    // card may have been in the low-score remnant pool — surface that as a
+    // breadcrumb rather than a flat "not found".
+    const runsWithTails = runHistory.filter((r) => r.discardedTail && r.discardedTail.count > 0);
+    if (runsWithTails.length > 0) {
+      logger.info(
+        `[Pipeline Debug] Card '${cardId}' not found in retained cards. ` +
+          `${runsWithTails.length} run(s) have discarded tails that were not retained — ` +
+          `the card may have been a low-score candidate. See run.discardedTail for ranges.`
+      );
+    } else {
+      logger.info(`[Pipeline Debug] Card '${cardId}' not found in recent runs.`);
+    }
   },
 
   /**
