@@ -1,4 +1,5 @@
 import { logger } from '../util/logger';
+import { clearRunHistory as clearPipelineRunHistory } from '../core/navigators/PipelineDebugger';
 
 // ============================================================================
 // SESSION DEBUGGER
@@ -75,6 +76,13 @@ export function startSessionTracking(
   newQLength: number,
   failedQLength: number
 ): void {
+  // Release pipeline run-history memory before this session begins piling
+  // new runs on top of the previous session's retained reports. Clearing on
+  // session START (rather than END) keeps post-session inspection — the
+  // dominant debugging workflow — fully functional: a finished session's
+  // run history sits intact until the user actually begins another one.
+  clearPipelineRunHistory();
+
   const sessionId = `session-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
   activeSession = {
