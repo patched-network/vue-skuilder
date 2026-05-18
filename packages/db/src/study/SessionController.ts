@@ -343,8 +343,19 @@ export class SessionController<TView = unknown> extends Loggable {
   /**
    * Request a mid-session replan. Re-runs the pipeline with current user state
    * and atomically replaces the newQ contents. Safe to call at any time during
-   * a session — if called while a replan is already in progress, returns the
-   * existing replan promise (no duplicate work).
+   * a session.
+   *
+   * Concurrency policy:
+   * - Two unhinted auto-replans never run in parallel; the second coalesces
+   *   into the first (returns the same promise).
+   * - A hint-bearing replan that arrives while another replan is in flight
+   *   is queued to run **after** the in-flight one rather than dropped.
+   *   This preserves caller intent (label, requireCards, excludeTags,
+   *   limit, minFollowUpCards) instead of silently discarding it. Without
+   *   queueing, a background auto-replan that started just before a
+   *   completion-triggered replan would clobber the queue with unhinted
+   *   results (e.g. surfacing another gpc-intro card right after one
+   *   completed, skipping the prescribed `c-wst-*` follow-up).
    *
    * Does NOT affect reviewQ or failedQ.
    *
@@ -365,11 +376,69 @@ export class SessionController<TView = unknown> extends Loggable {
       this._depletionReplanAttempted = false;
     }
 
+    const hasIntent = this._replanHasIntent(opts);
+
     if (this._replanPromise) {
-      this.log('Replan already in progress, awaiting existing replan');
-      return this._replanPromise;
+      if (!hasIntent) {
+        this.log('Replan already in progress, coalescing unhinted auto-replan');
+        return this._replanPromise;
+      }
+
+      // Queue the hint-bearing replan behind the in-flight one rather than
+      // dropping its hints. See class comment above for rationale.
+      const labelTag = opts.label ? ` [${opts.label}]` : '';
+      this.log(
+        `Replan in progress; queueing hint-bearing replan${labelTag} behind in-flight run`
+      );
+      const inflight = this._replanPromise;
+      const queued: Promise<void> = inflight
+        // Swallow errors in the upstream replan so the downstream still runs
+        // (the user's intent is independent of whether the prior run succeeded).
+        .catch(() => undefined)
+        .then(() => this._runReplan(opts));
+
+      this._replanPromise = queued.finally(() => {
+        if (this._replanPromise === queued) this._replanPromise = null;
+      });
+
+      return queued;
     }
 
+    const run = this._runReplan(opts);
+    this._replanPromise = run.finally(() => {
+      if (this._replanPromise === run) this._replanPromise = null;
+    });
+
+    await run;
+  }
+
+  /**
+   * True when a requestReplan call carries caller intent that must not be
+   * silently dropped. Bare unhinted auto-replans (depletion / quality
+   * triggers in nextCard) return false and may coalesce.
+   */
+  private _replanHasIntent(opts: ReplanOptions): boolean {
+    if (opts.label) return true;
+    if (opts.limit !== undefined) return true;
+    if (opts.minFollowUpCards !== undefined) return true;
+    if (opts.mode && opts.mode !== 'replace') return true;
+    if (opts.hints && Object.keys(opts.hints).length > 0) return true;
+    return false;
+  }
+
+  /**
+   * Body of a single replan: populate auto-excludes, stash hints on
+   * sources, log, then run the pipeline. Extracted so it can be invoked
+   * either immediately (no in-flight replan) or queued (chained after
+   * the in-flight one resolves).
+   *
+   * IMPORTANT: hint stash and the queue-state snapshot used to build
+   * excludeCards happen at *invocation* time, not at *queue* time. For a
+   * queued replan that means excludes reflect the state after the prior
+   * replan landed — which is what we want, since the prior replan's
+   * newQ.peek(0) is the imminent draw we need to exclude.
+   */
+  private async _runReplan(opts: ReplanOptions): Promise<void> {
     // Exclude all cards already presented this session. The pipeline may
     // not yet see their encounter records (async writes), so without this
     // they can re-enter newQ via replaceAll and cause duplicates.
@@ -423,13 +492,7 @@ export class SessionController<TView = unknown> extends Loggable {
       this.log(`[Replan] Card guarantee set to ${this._minCardsGuarantee}`);
     }
 
-    this._replanPromise = this._executeReplan(opts);
-
-    try {
-      await this._replanPromise;
-    } finally {
-      this._replanPromise = null;
-    }
+    await this._executeReplan(opts);
   }
 
   /**

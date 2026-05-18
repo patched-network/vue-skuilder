@@ -33,7 +33,10 @@ Usage: tsx split-words.ts <audio-file> <word-list> [-o <output-dir>] [--noise <d
 
 Arguments:
   <audio-file>       Path to the full session recording (.wav)
-  <word-list>        Text file with one word per line, in recording order
+  <word-list>        Text file with one entry per line, in recording order.
+                     The first whitespace-delimited token of each line is used
+                     as the output filename; any trailing tokens are treated
+                     as reader cues and ignored (e.g. "AE cat man hat" → AE.wav).
 
 Options:
   -o <output-dir>    Directory to write split .wav files (created if needed)
@@ -223,12 +226,13 @@ async function main() {
     log(`Created output directory: ${absoluteOutputDir}`);
   }
 
-  // Read word list
+  // Read word list. Blank lines and `#`-prefixed comments are skipped so the
+  // list can double as a human-readable recording script with section headers.
   const words = fs
     .readFileSync(absoluteWordListPath, 'utf-8')
     .split('\n')
     .map((line) => line.trim())
-    .filter((line) => line.length > 0);
+    .filter((line) => line.length > 0 && !line.startsWith('#'));
 
   if (words.length === 0) {
     error('Word list is empty');
@@ -280,7 +284,10 @@ async function main() {
 
   // Extract each segment with padding
   for (let i = 0; i < segments.length; i++) {
-    const word = words[i];
+    // Filename = first whitespace-delimited token of the line.
+    // Lets the list double as a recording script: trailing tokens (e.g.
+    // exemplar words for a phoneme) are cues for the reader and ignored here.
+    const word = words[i].split(/\s+/)[0];
     const seg = segments[i];
     const outputPath = path.join(absoluteOutputDir, `${word}.wav`);
 

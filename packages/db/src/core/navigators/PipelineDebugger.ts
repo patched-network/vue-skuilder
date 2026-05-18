@@ -273,6 +273,50 @@ let _uiContainer: HTMLElement | null = null;
 let _selectedRunIndex: number | null = null;
 let _cardSearchQuery = '';
 
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function escapeAttr(s: string): string {
+  return escapeHtml(s).replace(/"/g, '&quot;');
+}
+
+function copyTextToClipboard(text: string, btn?: HTMLElement): void {
+  const done = () => {
+    if (!btn) return;
+    const orig = btn.textContent ?? 'Copy';
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = orig;
+      btn.classList.remove('copied');
+    }, 1200);
+  };
+  const fallback = () => {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      document.execCommand('copy');
+    } catch (e) {
+      logger.warn(`[Pipeline Debug] Copy failed: ${e}`);
+    }
+    document.body.removeChild(ta);
+    done();
+  };
+  if (navigator.clipboard?.writeText) {
+    navigator.clipboard.writeText(text).then(done).catch(fallback);
+  } else {
+    fallback();
+  }
+}
+
 function renderUI(): void {
   if (!_uiContainer) return;
 
@@ -333,6 +377,13 @@ function renderUI(): void {
     #sk-pipeline-debugger .close-btn { background: #dc3545; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; }
     #sk-pipeline-debugger .search-box { margin-bottom: 1rem; width: 100%; padding: 0.5rem; border: 1px solid #ced4da; border-radius: 4px; }
     #sk-pipeline-debugger .provenance { font-size: 12px; color: #666; margin-top: 0.25rem; white-space: pre-wrap; font-family: monospace; background: #f8f9fa; padding: 0.5rem; border-radius: 4px; }
+    #sk-pipeline-debugger .run-label { display: inline-block; margin-top: 0.25rem; padding: 0.1rem 0.4rem; background: #fff3cd; color: #664d03; border-radius: 3px; font-family: monospace; font-size: 11px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; }
+    #sk-pipeline-debugger .label-banner { display: inline-block; padding: 0.25rem 0.6rem; background: #fff3cd; color: #664d03; border-radius: 4px; font-family: monospace; font-size: 13px; margin: 0 0 0.75rem 0; }
+    #sk-pipeline-debugger .copy-btn { background: #0d6efd; color: white; border: none; padding: 0.25rem 0.6rem; border-radius: 3px; cursor: pointer; font-size: 12px; margin-left: 0.5rem; }
+    #sk-pipeline-debugger .copy-btn:hover { background: #0b5ed7; }
+    #sk-pipeline-debugger .copy-btn.copied { background: #198754; }
+    #sk-pipeline-debugger .section-head { display: flex; align-items: center; justify-content: space-between; margin-top: 1rem; }
+    #sk-pipeline-debugger .section-head h3 { margin: 0; }
   `;
 
   const runListHtml =
@@ -345,6 +396,7 @@ function renderUI(): void {
           <strong>${r.timestamp.toLocaleTimeString()}</strong><br/>
           <small>${r.courseName || r.courseId.slice(0, 8)}</small><br/>
           <small>${r.finalCount} cards selected</small>
+          ${r.hints?._label ? `<br/><span class="run-label" title="${escapeAttr(r.hints._label)}">${escapeHtml(r.hints._label)}</span>` : ''}
         </div>
       `
           )
@@ -359,11 +411,13 @@ function renderUI(): void {
         !_cardSearchQuery || c.cardId.toLowerCase().includes(_cardSearchQuery.toLowerCase())
     );
 
+    const labelText = selectedRun.hints?._label ?? '(no label)';
     detailsHtml = `
       <h2>Run: ${selectedRun.runId}</h2>
+      <div class="label-banner" title="${escapeAttr(labelText)}">${escapeHtml(labelText)}</div>
       <p>
-        <strong>Time:</strong> ${selectedRun.timestamp.toLocaleString()} | 
-        <strong>Course:</strong> ${selectedRun.courseName || selectedRun.courseId} | 
+        <strong>Time:</strong> ${selectedRun.timestamp.toLocaleString()} |
+        <strong>Course:</strong> ${selectedRun.courseName || selectedRun.courseId} |
         <strong>User ELO:</strong> ${selectedRun.userElo ?? 'unknown'}
       </p>
 
@@ -382,7 +436,10 @@ function renderUI(): void {
       ${
         selectedRun.hints
           ? `
-        <h3>Ephemeral Hints</h3>
+        <div class="section-head">
+          <h3>Ephemeral Hints</h3>
+          <button class="copy-btn" onclick="window.skuilder.pipeline._copyConfig('${selectedRun.runId}', this)">Copy config</button>
+        </div>
         <table>
           ${selectedRun.hints._label ? `<tr><th>Label</th><td>${selectedRun.hints._label}</td></tr>` : ''}
           ${
@@ -434,7 +491,10 @@ function renderUI(): void {
         </tbody>
       </table>
 
-      <h3>Cards (${selectedRun.finalCount} selected / ${selectedRun.cards.length} total)</h3>
+      <div class="section-head">
+        <h3>Cards (${selectedRun.finalCount} selected / ${selectedRun.cards.length} total)</h3>
+        <button class="copy-btn" onclick="window.skuilder.pipeline._copyResults('${selectedRun.runId}', this)">Copy results</button>
+      </div>
       <input type="text" class="search-box" placeholder="Search Card ID..." value="${_cardSearchQuery}" oninput="window.skuilder.pipeline._setSearch(this.value)">
       
       <table>
@@ -930,6 +990,55 @@ export const pipelineDebugAPI = {
   _setSearch(query: string): void {
     _cardSearchQuery = query;
     renderUI();
+  },
+
+  /**
+   * Internal UI helpers
+   * @internal
+   */
+  _copyConfig(runId: string, btn?: HTMLElement): void {
+    const run = runHistory.find((r) => r.runId === runId);
+    if (!run) return;
+    const payload = {
+      runId: run.runId,
+      timestamp: run.timestamp.toISOString(),
+      courseId: run.courseId,
+      courseName: run.courseName,
+      hints: run.hints ?? null,
+    };
+    copyTextToClipboard(JSON.stringify(payload, null, 2), btn);
+  },
+
+  /**
+   * Internal UI helpers
+   * @internal
+   *
+   * Copies an "abridged" view of results: just the selected cards with their
+   * generator, origin, final score, and the top provenance reason. Designed
+   * for pasting into bug reports without flooding with full provenance.
+   */
+  _copyResults(runId: string, btn?: HTMLElement): void {
+    const run = runHistory.find((r) => r.runId === runId);
+    if (!run) return;
+    const selected = run.cards
+      .filter((c) => c.selected)
+      .sort((a, b) => b.finalScore - a.finalScore)
+      .map((c) => ({
+        cardId: c.cardId,
+        generator: c.generator,
+        origin: c.origin,
+        score: Number(c.finalScore.toFixed(3)),
+        topReason: c.provenance[0]?.reason ?? '',
+      }));
+    const payload = {
+      runId: run.runId,
+      label: run.hints?._label ?? null,
+      finalCount: run.finalCount,
+      newSelected: run.newSelected,
+      reviewsSelected: run.reviewsSelected,
+      selected,
+    };
+    copyTextToClipboard(JSON.stringify(payload, null, 2), btn);
   },
 
   /**
