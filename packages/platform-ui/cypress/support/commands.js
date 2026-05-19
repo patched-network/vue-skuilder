@@ -51,7 +51,8 @@ Cypress.Commands.add('registerForCourse', (courseName) => {
       timeout: 30_000
     }).click()
   } else {
-    // Join the first available course
+    // Expand the available courses list, then join the first one
+    cy.get('[data-cy="courses-show-more-button"]').click();
     cy.get('[data-cy="available-course-card"]')
       .first()
       .find('[data-cy="register-course-button"]')

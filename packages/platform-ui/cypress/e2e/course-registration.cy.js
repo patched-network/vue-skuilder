@@ -18,6 +18,9 @@ describe('Course Registration', () => {
     // Check that the available courses section is visible
     cy.contains('h2', 'Available Quilts').should('be.visible');
 
+    // Expand the available courses list
+    cy.get('[data-cy="courses-show-more-button"]').click();
+
     // Verify that course cards are displayed
     cy.get('[data-cy="available-course-card"]').should('have.length.at.least', 1);
   });
@@ -25,6 +28,9 @@ describe('Course Registration', () => {
   it('should allow a user to register for a course', () => {
     // Navigate to the quilts page
     cy.visit('/quilts');
+
+    // Expand the available courses list
+    cy.get('[data-cy="courses-show-more-button"]').click();
 
     // Get the initial count of registered courses (handling the case when there are none)
     cy.get('body').then(($body) => {
@@ -54,8 +60,7 @@ describe('Course Registration', () => {
     // Register for the first available course
     cy.registerForCourse();
 
-    // Verify registration by checking the registered courses panel
-    cy.get('[data-cy="registered-quilts-panel"]').click();
+    // Panel auto-expands after registration — just assert directly
     cy.get('[data-cy="registered-course"]').should('have.length.at.least', 1);
   });
 
