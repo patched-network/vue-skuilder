@@ -113,9 +113,19 @@ jobs:
           echo
           echo "==== HEAD /assets/questions.mjs ===="
           curl -sI http://localhost:7174/assets/questions.mjs || echo "(curl failed)"
-          echo "==== first 200 bytes of body ===="
-          curl -s http://localhost:7174/assets/questions.mjs | head -c 200 || echo "(curl failed)"
-          echo
+          echo "==== all relative imports in questions.mjs ===="
+          curl -s http://localhost:7174/assets/questions.mjs \
+            | grep -oE 'from"\.[^"]*"' \
+            | sort -u
+          echo "==== HEAD each referenced chunk ===="
+          curl -s http://localhost:7174/assets/questions.mjs \
+            | grep -oE 'from"\./[^"]+"' \
+            | sed -E 's|from"\./||; s|"$||' \
+            | sort -u \
+            | while read chunk; do
+                echo "--- /assets/$chunk"
+                curl -sI "http://localhost:7174/assets/$chunk" | head -3
+              done
           echo "==== sibling: HEAD on a known-good asset ===="
           curl -sI http://localhost:7174/ | head -20 || true
 
