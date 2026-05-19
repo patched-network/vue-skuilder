@@ -1,12 +1,19 @@
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import dts from 'vite-plugin-dts';
+import { libInjectCss } from 'vite-plugin-lib-inject-css';
 import { resolve } from 'path';
 import { createBaseResolve } from '../../vite.config.base.js';
 
 export default defineConfig({
   plugins: [
     vue({}),
+    // Inject each chunk's extracted CSS as a JS side-effect import. Without
+    // this, subcourses split into their own chunks (chess, piano, math, …)
+    // ship CSS sidecars (e.g. dist/assets/chess.css) that consumers never
+    // load — the chess board renders unstyled in prod. See
+    // packages/courseware/src/index.ts for the dynamic subcourse loaders.
+    libInjectCss(),
     dts({
       insertTypesEntry: true,
       // Exclude test files from type generation
