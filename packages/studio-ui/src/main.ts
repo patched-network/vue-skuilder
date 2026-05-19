@@ -65,9 +65,24 @@ const vuetify = createVuetify({
   // Check for custom questions configuration and import if available
   console.log('🎨 Studio Mode: Checking for custom questions configuration');
   let customQuestions = null;
+  const customQuestionsStatus: {
+    configFetched: boolean;
+    configStatus?: number;
+    hasCustomQuestions?: boolean;
+    importPath?: string;
+    importAttempted: boolean;
+    importSucceeded: boolean;
+    moduleExports?: string[];
+    allCustomQuestionsType?: string;
+    coursesCount?: number;
+    questionClassesCount?: number;
+    error?: string;
+  } = { configFetched: false, importAttempted: false, importSucceeded: false };
   try {
     console.log('   📁 Fetching custom-questions-config.json');
     const configResponse = await fetch('/custom-questions-config.json');
+    customQuestionsStatus.configFetched = true;
+    customQuestionsStatus.configStatus = configResponse.status;
 
     console.log(`   🔍 Config fetch response status: ${configResponse.status}`);
     console.log(`   🔍 Config fetch response URL: ${configResponse.url}`);
@@ -76,6 +91,8 @@ const vuetify = createVuetify({
       console.log('   ✅ Custom questions config file found');
       const customConfig = await configResponse.json();
       console.log('   📋 Custom config parsed:', customConfig);
+      customQuestionsStatus.hasCustomQuestions = customConfig.hasCustomQuestions;
+      customQuestionsStatus.importPath = customConfig.importPath;
 
       if (customConfig.hasCustomQuestions && customConfig.importPath) {
         console.log(`🎨 Studio Mode: Loading custom questions from ${customConfig.packageName}`);
@@ -83,36 +100,51 @@ const vuetify = createVuetify({
 
         try {
           console.log('   🔄 Attempting dynamic import...');
+          customQuestionsStatus.importAttempted = true;
           const customModule = await import(/* @vite-ignore */ customConfig.importPath);
+          customQuestionsStatus.importSucceeded = true;
+          customQuestionsStatus.moduleExports = Object.keys(customModule);
+          customQuestionsStatus.allCustomQuestionsType = typeof customModule.allCustomQuestions;
           console.log('   ✅ Custom module imported successfully');
           console.log('   🔍 Module exports:', Object.keys(customModule));
 
           customQuestions = customModule.allCustomQuestions?.();
           if (customQuestions) {
+            customQuestionsStatus.coursesCount = customQuestions.courses?.length ?? 0;
+            customQuestionsStatus.questionClassesCount = customQuestions.questionClasses?.length ?? 0;
             console.log(
               `   ✅ Loaded custom questions: ${customQuestions.questionClasses?.length || 0} types`
             );
             console.log('   📊 Custom questions object:', customQuestions);
           } else {
+            customQuestionsStatus.error = 'allCustomQuestions() returned null/undefined';
             console.error('   ❌ FATAL: Custom module did not return questions data!');
             console.error('   🔍 allCustomQuestions result:', customQuestions);
             console.error('   🔍 allCustomQuestions function:', customModule.allCustomQuestions);
           }
         } catch (importError) {
+          customQuestionsStatus.error = `Import failed: ${importError instanceof Error ? importError.message : String(importError)}`;
           console.error('   ❌ FATAL: Failed to import custom questions module!');
           console.error('   🔍 Import path attempted:', customConfig.importPath);
           console.error('   🔍 Error:', importError);
-          throw importError; // Re-throw to make it visible
+          // Note: previously this rethrew, which prevented the rest of studio
+          // bootstrap (BlanksCard registration, app mount) from running.
+          // Keep silent here so the app still mounts and the DOM surfaces the
+          // diagnostic state via the customQuestionsStatus provide() below.
         }
       } else {
+        customQuestionsStatus.error =
+          'config exists but hasCustomQuestions is false or importPath is missing';
         console.warn('   ⚠️  Config exists but hasCustomQuestions is false or importPath is missing');
         console.warn('   🔍 Config content:', customConfig);
       }
     } else {
+      customQuestionsStatus.error = `config fetch returned HTTP ${configResponse.status}`;
       console.warn(`   ⚠️  Custom questions config not found (HTTP ${configResponse.status})`);
       console.warn(`   🔍 Attempted URL: ${configResponse.url}`);
     }
   } catch (configError) {
+    customQuestionsStatus.error = `config fetch threw: ${configError instanceof Error ? configError.message : String(configError)}`;
     console.error('   ❌ Error fetching custom questions config:', configError);
     // Don't throw - missing config is valid for non-custom courses
   }
@@ -233,6 +265,10 @@ const vuetify = createVuetify({
     console.log('   ℹ️  No inline markdown components available');
     app.provide('markdownComponents', {});
   }
+
+  // Surface custom-questions load status to views (CreateCardView reads this
+  // to render a diagnostic error panel when shape resolution fails).
+  app.provide('customQuestionsStatus', customQuestionsStatus);
 
   app.use(pinia);
   app.use(vuetify);

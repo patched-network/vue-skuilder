@@ -67,6 +67,10 @@
                   .join('; ') || '(none)'
               }}
             </p>
+            <p v-if="customQuestionsStatus" class="text-caption">
+              customQuestions load status:
+              <code data-cy="custom-questions-status">{{ JSON.stringify(customQuestionsStatus) }}</code>
+            </p>
           </div>
         </div>
 
@@ -95,6 +99,13 @@ const selectedDataShapeIndex = ref<number>(0);
 
 // Get custom courseware from app provider
 const studioCourseWare = inject<AllCourseWare>('studioCourseWare', allCourseWare);
+
+// Diagnostic state injected by studio-ui main.ts so the page can surface
+// custom-questions load failures without requiring browser console access.
+const customQuestionsStatus = inject<Record<string, unknown> | null>(
+  'customQuestionsStatus',
+  null
+);
 
 // Get available data shapes
 const availableDataShapes = computed(() => {
