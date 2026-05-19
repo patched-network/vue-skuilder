@@ -50,8 +50,13 @@ export async function copyDirectory(
     const sourcePath = path.join(source, entry.name);
     const destPath = path.join(destination, entry.name);
 
-    // Skip excluded patterns
-    if (excludePatterns.some((pattern) => entry.name.includes(pattern))) {
+    // Skip excluded patterns by EXACT name match. Previously used
+    // `entry.name.includes(pattern)`, which incorrectly skipped any file
+    // whose name happened to contain a pattern substring — notably vite's
+    // chunk filenames like `dist-<hash>.js` when copying a library build
+    // output. That broke studio mode (custom questions failed to import
+    // because their sibling chunks never reached node_modules/<pkg>/).
+    if (excludePatterns.includes(entry.name)) {
       continue;
     }
 
@@ -222,6 +227,14 @@ export default defineConfig({
               // '@vue-skuilder/db': 'VueSkuilderDB',
             },
             exports: 'named',
+            // Emit the library as a single file. Vite >= 8 (rolldown) splits
+            // library builds into multiple chunks (e.g. moment-<hash>.js,
+            // MarkdownRenderer-<hash>.js) by default. The CLI studio command
+            // serves questions.mjs from a different URL than the chunks live
+            // at on disk, so relative chunk imports fail in the browser.
+            // Inlining keeps everything in one file and sidesteps the
+            // chunk-resolution problem entirely.
+            inlineDynamicImports: true,
             // Preserve CSS in the output bundle
             assetFileNames: 'assets/[name].[ext]',
           },

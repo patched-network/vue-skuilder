@@ -12,6 +12,8 @@ on:
       - 'packages/courseware/**'
       - 'packages/express/**'
       - 'packages/standalone-ui/**'
+      - 'packages/studio-ui/**'
+      - 'packages/mcp/**'
       - '.github/workflows/ci-pkg-cli.yml'
       - 'package.json'
       - 'yarn.lock'
@@ -102,8 +104,30 @@ jobs:
         run: |
           echo "Giving studio 3 minutes to build and start..."
           sleep 180
-          echo "Done waiting, checking studio log:"
-          tail -20 studio.log || echo "No log file"
+          echo "==== studio.log (full) ===="
+          cat studio.log || echo "No log file"
+          echo "==== .skuilder/studio-builds contents ===="
+          ls -laR .skuilder/studio-builds 2>/dev/null || echo "No studio-builds dir"
+          echo "==== custom-questions-config.json (if served by studio) ===="
+          curl -sf http://localhost:7174/custom-questions-config.json | head -c 2000 || echo "(not reachable)"
+          echo
+          echo "==== HEAD /assets/questions.mjs ===="
+          curl -sI http://localhost:7174/assets/questions.mjs || echo "(curl failed)"
+          echo "==== all relative imports in questions.mjs ===="
+          curl -s http://localhost:7174/assets/questions.mjs \
+            | grep -oE 'from"\.[^"]*"' \
+            | sort -u
+          echo "==== HEAD each referenced chunk ===="
+          curl -s http://localhost:7174/assets/questions.mjs \
+            | grep -oE 'from"\./[^"]+"' \
+            | sed -E 's|from"\./||; s|"$||' \
+            | sort -u \
+            | while read chunk; do
+                echo "--- /assets/$chunk"
+                curl -sI "http://localhost:7174/assets/$chunk" | head -3
+              done
+          echo "==== sibling: HEAD on a known-good asset ===="
+          curl -sI http://localhost:7174/ | head -20 || true
 
       - name: Run custom questions studio mode tests
         working-directory: packages/cli
