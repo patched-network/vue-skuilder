@@ -1,5 +1,3 @@
-const ANATOMY_COURSE_ID = 'e92135c6c3ba6fba79367e7f26001ef3';
-
 describe('Content Authoring', () => {
   it('should allow adding new course content with proper authentication', () => {
     // Generate a random tag to avoid conflicts between test runs
@@ -14,7 +12,7 @@ describe('Content Authoring', () => {
       cy.wait(2_000);
 
       // Navigate to anatomy course page
-      cy.visit(`/q/${ANATOMY_COURSE_ID}`);
+      cy.visit('/q/e92135c6c3ba6fba79367e7f26001ef3');
 
       // Wait for the slow course loading to complete
       cy.wait(60_000);
@@ -53,7 +51,7 @@ describe('Content Authoring', () => {
 
       // Add a test tag to validate tag creation and authorship
       cy.log(`Adding test tag: ${testTag}`);
-      cy.get('[data-cy="tags-input"] input').type(`${testTag}{enter}`);
+      cy.get('[data-cy="tags-input"]').type(`${testTag} `);
       cy.wait(1_000);
 
       // Find and click the Add Card button
@@ -61,11 +59,11 @@ describe('Content Authoring', () => {
       cy.wait(2_000);
 
       // Return to CourseInformation page to verify card count increment
-      cy.visit(`/q/${ANATOMY_COURSE_ID}`);
+      cy.visit('/q/e92135c6c3ba6fba79367e7f26001ef3');
+      cy.wait(5_000); // Wait for page reload and data refresh
 
-      // Assert that the card count has incremented by 1.
-      // Anatomy course loads slowly — use a long timeout to match the first visit.
-      cy.get('[data-cy="paginating-toolbar-subtitle"]', { timeout: 60_000 }).should('contain.text', '(')
+      // Assert that the card count has incremented by 1
+      cy.get('[data-cy="paginating-toolbar-subtitle"]').should('contain.text', '(')
         .invoke('text').then((text) => {
           const match = text.match(/\((\d+)\)/);
           if (match) {
@@ -75,10 +73,13 @@ describe('Content Authoring', () => {
           }
         });
 
-      // Navigate directly to the tag page — the new tag may not yet appear in
-      // the course-page tag list within the wait window.
+      // Verify the test tag appears on the course information page
+      cy.log(`Verifying tag exists: ${testTag}`);
+      cy.contains(testTag).should('be.visible');
+
+      // Navigate to the tag page and verify it has exactly 1 card (the one we just created)
       cy.log(`Navigating to tag page: ${testTag}`);
-      cy.visit(`/q/${ANATOMY_COURSE_ID}/tags/${testTag}`);
+      cy.contains(testTag).click();
       cy.wait(3_000); // Wait for tag page to load
 
       // Verify the tag page shows exactly 1 card
