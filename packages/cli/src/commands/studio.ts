@@ -1203,27 +1203,53 @@ async function buildStudioUIWithCustomQuestions(
       console.log(chalk.gray(`   Custom questions config copied to dist directory`));
     }
 
-    // Copy the built questions.mjs file to dist/assets for proper serving
-    const nodeModulesQuestionsPath = path.join(
-      buildPath,
-      'node_modules',
-      customQuestionsData.packageName,
-      'questions.mjs'
-    );
+    // Copy the built questions library to dist/assets for proper serving.
+    //
+    // Vite >= 8 emits library builds as multiple chunks: questions.mjs has
+    // relative imports to sibling chunks like ./moment-DkzwXzJF.js and
+    // ./MarkdownRenderer-<hash>.js. The browser resolves those against the
+    // request URL (/assets/), so every sibling chunk must live in
+    // dist/assets/ too. Copy all .mjs/.js chunks (skip CJS variant, type
+    // defs, sourcemaps, package metadata) plus the assets/ subdir for CSS.
+    const libRoot = path.join(buildPath, 'node_modules', customQuestionsData.packageName);
     const distAssetsPath = path.join(distPath, 'assets');
-    const distQuestionsPath = path.join(distAssetsPath, 'questions.mjs');
 
-    if (fs.existsSync(nodeModulesQuestionsPath)) {
-      // Ensure assets directory exists
+    if (fs.existsSync(libRoot)) {
       if (!fs.existsSync(distAssetsPath)) {
         fs.mkdirSync(distAssetsPath, { recursive: true });
       }
-      fs.copyFileSync(nodeModulesQuestionsPath, distQuestionsPath);
-      console.log(chalk.gray(`   Built questions.mjs copied to dist/assets directory`));
-    } else {
+
+      let copied = 0;
+      for (const entry of fs.readdirSync(libRoot)) {
+        if (!/\.(mjs|js)$/.test(entry)) continue;
+        if (entry.endsWith('.cjs.js')) continue; // CJS variant, not for browser
+        if (entry.endsWith('.d.ts')) continue;
+        fs.copyFileSync(path.join(libRoot, entry), path.join(distAssetsPath, entry));
+        copied++;
+      }
+
+      // Library's own assets/ subdir (CSS extracted from .vue components etc.)
+      const libAssetsDir = path.join(libRoot, 'assets');
+      if (fs.existsSync(libAssetsDir)) {
+        for (const entry of fs.readdirSync(libAssetsDir)) {
+          fs.copyFileSync(path.join(libAssetsDir, entry), path.join(distAssetsPath, entry));
+          copied++;
+        }
+      }
+
       console.log(
-        chalk.yellow(`   Warning: questions.mjs not found at ${nodeModulesQuestionsPath}`)
+        chalk.gray(`   Copied ${copied} questions-library file(s) to dist/assets/`)
       );
+
+      if (!fs.existsSync(path.join(distAssetsPath, 'questions.mjs'))) {
+        console.log(
+          chalk.yellow(
+            `   Warning: questions.mjs not found among copied files in ${libRoot}`
+          )
+        );
+      }
+    } else {
+      console.log(chalk.yellow(`   Warning: library output dir not found at ${libRoot}`));
     }
 
     // Step 7: Verify build output exists
