@@ -24,9 +24,14 @@ import '@vue-skuilder/courseware/style';
 import '@vue-skuilder/common-ui/style';
 
 // Import allCourseWare singleton and exampleCourse
-import { allCourseWare } from '@vue-skuilder/courseware';
+import { allCourseWare, defaultCourse } from '@vue-skuilder/courseware';
 import { exampleCourse } from './questions/exampleCourse';
 
+// Register the built-in default course (BlanksCard etc.) — imported static
+// courses from CouchDB typically reference `default.question.*` views.
+if (!allCourseWare.courses.find((c) => c.name === defaultCourse.name)) {
+  allCourseWare.courses.push(defaultCourse);
+}
 // Add the example course to the allCourseWare singleton
 allCourseWare.courses.push(exampleCourse);
 
