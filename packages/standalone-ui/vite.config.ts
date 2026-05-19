@@ -70,6 +70,14 @@ export default defineConfig({
               },
               exports: 'named',
               keepNames: true,
+              // Emit the library as a single file. Vite >= 8 (rolldown) splits
+              // library builds into multiple chunks (e.g. moment-<hash>.js,
+              // MarkdownRenderer-<hash>.js) by default. The CLI studio command
+              // serves questions.mjs from a different URL than the chunks live
+              // at on disk, so relative chunk imports fail in the browser.
+              // Inlining keeps everything in one file and sidesteps the
+              // chunk-resolution problem entirely.
+              inlineDynamicImports: true,
               // Preserve CSS in the output bundle
               assetFileNames: 'assets/[name].[ext]',
             },
