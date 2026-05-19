@@ -48,6 +48,26 @@
             <v-icon color="warning" size="24">mdi-alert</v-icon>
             <p class="mt-2">No card types available in this course</p>
           </div>
+
+          <div v-else class="pa-4">
+            <v-icon color="error" size="24">mdi-alert-circle</v-icon>
+            <p class="mt-2 text-error">
+              Could not resolve DataShape
+              <code>{{ availableDataShapes[selectedDataShapeIndex]?.name }}</code>
+              against any registered course in studioCourseWare.
+            </p>
+            <p class="mt-2 text-caption">
+              Configured shapes: {{ availableDataShapes.map((s) => s.name).join(', ') }}
+            </p>
+            <p class="text-caption">
+              Registered courses:
+              {{
+                studioCourseWare.courses
+                  .map((c) => `${c.name} (${c.questions.flatMap((q) => q.dataShapes.map((d) => d.name)).join('/')})`)
+                  .join('; ') || '(none)'
+              }}
+            </p>
+          </div>
         </div>
 
         <div v-else>
