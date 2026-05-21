@@ -686,7 +686,12 @@ Currently logged-in as ${this._username}.`
             _rev: existingDoc._rev,
           });
         } catch (e: unknown) {
-          if (e instanceof Error && e.name === 'not_found') {
+          // NB: PouchDB errors are plain objects ({error, reason, status, name,
+          // message, ...}), not Error instances — `e instanceof Error` is false
+          // for them. Check `.name` directly. The outer catch at line ~697
+          // already does this correctly; mirror that style here so the
+          // not_found → "create new doc" path actually fires for fresh user DBs.
+          if ((e as { name?: string })?.name === 'not_found') {
             // Create new doc
             await this.remoteDB.put(doc);
           } else {
@@ -716,7 +721,10 @@ Currently logged-in as ${this._username}.`
         _rev: existingDoc._rev,
       });
     } catch (e: unknown) {
-      if (e instanceof Error && e.name === 'conflict' && retries > 0) {
+      // NB: PouchDB errors are plain objects, not Error instances — see
+      // applyDesignDocs() above. Check `.name` directly so the conflict-retry
+      // path actually fires.
+      if ((e as { name?: string })?.name === 'conflict' && retries > 0) {
         await new Promise((resolve) => setTimeout(resolve, 1000));
         return this.applyDesignDoc(doc, retries - 1);
       }
