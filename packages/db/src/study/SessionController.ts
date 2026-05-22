@@ -933,11 +933,18 @@ export class SessionController<TView = unknown> extends Loggable {
       this.log(`[CardGuarantee] ${this._minCardsGuarantee} guaranteed cards remaining`);
     }
 
-    // If a replan is in flight, wait for it to complete before drawing.
-    // This ensures the user sees cards scored against their latest state
-    // (e.g. after a GPC intro unlocked new content).
-    if (this._replanPromise) {
-      this.log('nextCard: awaiting in-flight replan before drawing');
+    // If a replan is in flight AND we have nothing queued to serve, wait for
+    // it. When queues still have cards, draw from them immediately and let
+    // the replan land asynchronously — blocking here adds visible lag
+    // between cards for a marginal scoring-freshness benefit. The
+    // wedge-breaker below handles the genuinely-empty case.
+    if (
+      this._replanPromise &&
+      this.newQ.length === 0 &&
+      this.reviewQ.length === 0 &&
+      this.failedQ.length === 0
+    ) {
+      this.log('nextCard: queues empty, awaiting in-flight replan before drawing');
       await this._replanPromise;
     }
 
