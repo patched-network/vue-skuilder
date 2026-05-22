@@ -172,14 +172,6 @@ export class SessionController<TView = unknown> extends Loggable {
   private _suppressQualityReplan: boolean = false;
 
   /**
-   * Guards against infinite depletion-triggered replans. Set to true
-   * when a depletion replan fires; cleared when a replan produces
-   * content (newQ.length > 0 after replan) or when an explicit
-   * (non-auto) replan is requested.
-   */
-  private _depletionReplanAttempted: boolean = false;
-
-  /**
    * When > 0, the session timer cannot end the session. Decremented on
    * each nextCard() draw. Set by replans that include `minFollowUpCards`.
    */
@@ -370,12 +362,6 @@ export class SessionController<TView = unknown> extends Loggable {
     // Normalise: bare hints object (legacy callers) → ReplanOptions wrapper
     const opts = this.normalizeReplanOptions(options);
 
-    // Explicit (non-auto) replans clear the depletion guard — the caller
-    // is providing fresh intent that may change pipeline results.
-    if (opts.hints || opts.label || opts.limit) {
-      this._depletionReplanAttempted = false;
-    }
-
     const hasIntent = this._replanHasIntent(opts);
 
     if (this._replanPromise) {
@@ -496,6 +482,26 @@ export class SessionController<TView = unknown> extends Loggable {
   }
 
   /**
+   * Run a replan, bypassing requestReplan()'s coalesce logic.
+   *
+   * Use this when correctness depends on a *fresh* pipeline run, not on
+   * the existence of *some* in-flight replan. Specifically: the
+   * wedge-breaker path in nextCard(), where coalescing into a previous
+   * run that we now know produced insufficient content would re-create
+   * the bug we're trying to prevent.
+   *
+   * Still tracks _replanPromise like requestReplan() does so concurrent
+   * observers (auto-trigger guards in nextCard()) see consistent state.
+   */
+  private async _replanUncoalesced(opts: ReplanOptions): Promise<void> {
+    const run = this._runReplan(opts);
+    this._replanPromise = run.finally(() => {
+      if (this._replanPromise === run) this._replanPromise = null;
+    });
+    await run;
+  }
+
+  /**
    * Normalise the requestReplan argument. Accepts either a ReplanOptions
    * object (new API) or a plain Record<string, unknown> (legacy callers
    * that passed hints directly). Distinguishes the two by checking for
@@ -563,12 +569,6 @@ export class SessionController<TView = unknown> extends Loggable {
       this.log(
         `[Replan] Only ${wellIndicated}/${SessionController.MIN_WELL_INDICATED} well-indicated cards after replan`
       );
-    }
-
-    // If the replan produced content, clear the depletion guard so future
-    // depletions can trigger fresh replans.
-    if (this.newQ.length > 0) {
-      this._depletionReplanAttempted = false;
     }
 
     await this.hydrationService.ensureHydratedCards();
@@ -941,60 +941,45 @@ export class SessionController<TView = unknown> extends Loggable {
       await this._replanPromise;
     }
 
-    // --- Auto-replan triggers ---
-    // Two automatic replan triggers maintain queue freshness:
+    // --- Replan triggers ---
     //
-    // 1. Depletion: newQ is running dry → fire a replan so fresh content
-    //    is ready by the time the last card is consumed.
-    //    - newQ === 1: background replan — overlaps pipeline latency with
-    //      the user's interaction on the last card. On the *next*
-    //      nextCard(), the _replanPromise await at the top ensures the
-    //      replan has landed before we try to draw.
-    //    - newQ === 0 && all queues empty: blocking await — nothing else
-    //      to serve, so we must wait for the pipeline before proceeding.
-    //    - newQ === 0 && other queues have content: background — the user
-    //      draws from reviewQ/failedQ while the pipeline runs.
+    // Two flavors:
     //
-    // 2. Quality: few well-indicated cards remain → background replan so
-    //    the refreshed queue is ready by the time the buffer is consumed.
-    //    Suppressed after a burst replan to avoid clobbering burst cards.
+    //  (a) OPPORTUNISTIC PREFETCH (best-effort, may coalesce, may no-op):
+    //      `depletion` and `quality` triggers below. Their job is to make
+    //      replans happen *early*, so the user doesn't wait. They are
+    //      *not* responsible for making replans happen *at all* — if every
+    //      one of them gets eaten by coalescing or suppression, that's
+    //      fine. They are perf optimizations.
+    //
+    //  (b) LOAD-BEARING WEDGE-BREAKER (correctness):
+    //      Below, right before the draw loop. Invariant: if the clock is
+    //      ticking and we'd otherwise serve null, the pipeline runs. No
+    //      coalesce, no latch, no flag. This is the *only* guarantee.
+    //
+    // Rule of thumb: a redundant pipeline run is a perf bug, a missing
+    // pipeline run is a correctness bug. Bias toward the cheaper failure.
 
-    // 1. Depletion trigger
-    //    Guarded by _depletionReplanAttempted to avoid infinite loops when
-    //    the pipeline consistently returns no new content.
+    // Opportunistic depletion: newQ running dry → background prefetch.
+    // No latch — if this fires repeatedly when the pipeline keeps coming
+    // back empty, the wedge-breaker's local backoff handles spin protection.
     if (
       this.newQ.length <= 1 &&
       this._secondsRemaining > 0 &&
-      !this._replanPromise &&
-      !this._depletionReplanAttempted
+      !this._replanPromise
     ) {
-      this._suppressQualityReplan = false; // burst is (nearly) consumed, clear suppression
-      this._depletionReplanAttempted = true;
-
+      this._suppressQualityReplan = false; // burst is (nearly) consumed
       const otherContent = this.reviewQ.length + this.failedQ.length;
-
-      if (this.newQ.length === 0 && otherContent === 0) {
-        // Truly empty — nothing to serve. Must block until the pipeline delivers.
-        this.log(
-          `[AutoReplan:depletion] All queues empty with ${this._secondsRemaining}s remaining. ` +
-          `Awaiting replan.`
-        );
-        await this.requestReplan();
-      } else {
-        // Either 1 card remains (look-ahead) or other queues can cover.
-        // Fire in background — pipeline runs while the user works.
-        this.log(
-          `[AutoReplan:depletion] newQ has ${this.newQ.length} card(s) ` +
-          `(${otherContent} in other queues) with ${this._secondsRemaining}s remaining. ` +
-          `Triggering background replan.`
-        );
-        void this.requestReplan();
-      }
+      this.log(
+        `[AutoReplan:depletion] newQ has ${this.newQ.length} card(s) ` +
+        `(${otherContent} in other queues) with ${this._secondsRemaining}s remaining. ` +
+        `Triggering background replan.`
+      );
+      void this.requestReplan();
     }
 
-    // 2. Quality trigger: few well-indicated cards remain. The buffer of
-    //    remaining good cards covers replan latency.
-    //    Suppressed after a burst replan to avoid clobbering burst cards.
+    // Opportunistic quality: few well-indicated cards remain.
+    // Suppressed after a burst replan to avoid clobbering burst cards.
     const REPLAN_BUFFER = 3;
     if (
       !this._suppressQualityReplan &&
@@ -1013,6 +998,49 @@ export class SessionController<TView = unknown> extends Loggable {
       this._currentCard = null;
       endSessionTracking();
       return null;
+    }
+
+    // Wedge-breaker (correctness path).
+    //
+    // If we'd otherwise be about to draw from empty queues with time on
+    // the clock, run the pipeline. Bypasses requestReplan() coalesce
+    // because coalescing into a previous run that we now know produced
+    // insufficient content is the exact failure mode this defends against.
+    //
+    // Bounded by an empty-streak counter: if the pipeline consistently
+    // returns nothing, we eventually give up and let the session end
+    // gracefully rather than spin forever.
+    const WEDGE_MAX_EMPTY_STREAK = 3;
+    const WEDGE_BACKOFF_MS = 250;
+    let wedgeEmptyStreak = 0;
+    while (
+      this._secondsRemaining > 0 &&
+      this.newQ.length === 0 &&
+      this.reviewQ.length === 0 &&
+      this.failedQ.length === 0
+    ) {
+      this.log(
+        `[WedgeBreaker] All queues empty with ${this._secondsRemaining}s remaining. ` +
+        `Running pipeline (attempt ${wedgeEmptyStreak + 1}/${WEDGE_MAX_EMPTY_STREAK}).`
+      );
+      await this._replanUncoalesced({ label: 'wedge-breaker' });
+      if (
+        this.newQ.length === 0 &&
+        this.reviewQ.length === 0 &&
+        this.failedQ.length === 0
+      ) {
+        wedgeEmptyStreak++;
+        if (wedgeEmptyStreak >= WEDGE_MAX_EMPTY_STREAK) {
+          this.log(
+            `[WedgeBreaker] Pipeline returned no content ${WEDGE_MAX_EMPTY_STREAK} consecutive ` +
+            `times. Giving up; session will end.`
+          );
+          break;
+        }
+        await new Promise((resolve) => setTimeout(resolve, WEDGE_BACKOFF_MS));
+      } else {
+        wedgeEmptyStreak = 0;
+      }
     }
 
     // Try multiple cards in case some fail hydration (e.g., deleted from DB)
