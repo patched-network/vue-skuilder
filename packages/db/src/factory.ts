@@ -37,6 +37,18 @@ export interface DataLayerConfig {
     COUCHDB_PASSWORD?: string;
 
     COURSE_IDS?: string[];
+
+    /**
+     * Per-app tuning for the CouchDB→PouchDB course sync. Only applies when
+     * `type === 'couch'` and the course has `localSync.enabled === true`.
+     * See CourseSyncService.ReplicationOptions for defaults.
+     */
+    courseSync?: {
+      replication?: {
+        batchSize?: number;
+        batchesLimit?: number;
+      };
+    };
   };
 }
 
@@ -68,6 +80,11 @@ export async function initializeDataLayer(config: DataLayerConfig): Promise<Data
     ENV.COUCHDB_SERVER_URL = config.options.COUCHDB_SERVER_URL;
     ENV.COUCHDB_USERNAME = config.options.COUCHDB_USERNAME;
     ENV.COUCHDB_PASSWORD = config.options.COUCHDB_PASSWORD;
+
+    if (config.options.courseSync) {
+      const { CourseSyncService } = await import('./impl/couch/CourseSyncService');
+      CourseSyncService.getInstance().configure(config.options.courseSync);
+    }
 
     if (
       config.options.COUCHDB_PASSWORD &&

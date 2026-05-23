@@ -82,10 +82,33 @@ interface SyncEntry {
  *
  * The service is a singleton — course sync state is shared across the app.
  */
+/**
+ * Tuning knobs for one-shot remote→local replication.
+ * Defaults are chosen for one-shot snapshot replication of bounded course
+ * corpora (text/JSON docs, no large attachments). PouchDB's built-in
+ * defaults (100/10) target live continuous sync — too conservative for
+ * cold-load UX on a course of a few thousand docs.
+ *
+ * Apps with smaller/larger corpora can override via
+ * `initializeDataLayer({ options: { courseSync: { replication: {...} } } })`.
+ */
+export interface ReplicationOptions {
+  /** Docs per `_bulk_get` HTTP request. Higher = fewer roundtrips. */
+  batchSize?: number;
+  /** Concurrent batches in flight. */
+  batchesLimit?: number;
+}
+
+const DEFAULT_REPLICATION: Required<ReplicationOptions> = {
+  batchSize: 1000,
+  batchesLimit: 5,
+};
+
 export class CourseSyncService {
   private static instance: CourseSyncService | null = null;
 
   private entries: Map<string, SyncEntry> = new Map();
+  private replicationOptions: Required<ReplicationOptions> = DEFAULT_REPLICATION;
 
   private constructor() {}
 
@@ -94,6 +117,24 @@ export class CourseSyncService {
       CourseSyncService.instance = new CourseSyncService();
     }
     return CourseSyncService.instance;
+  }
+
+  /**
+   * Apply replication tuning. Typically called once from `initializeDataLayer`.
+   * Partial overrides merge with defaults.
+   */
+  configure(opts: { replication?: ReplicationOptions }): void {
+    if (opts.replication) {
+      this.replicationOptions = {
+        ...DEFAULT_REPLICATION,
+        ...opts.replication,
+      };
+      logger.info(
+        `[CourseSyncService] Replication configured: ` +
+          `batch_size=${this.replicationOptions.batchSize}, ` +
+          `batches_limit=${this.replicationOptions.batchesLimit}`
+      );
+    }
   }
 
   /**
@@ -264,7 +305,9 @@ export class CourseSyncService {
       const syncStart = Date.now();
 
       logger.info(
-        `[CourseSyncService] Starting one-shot replication for course ${courseId}`
+        `[CourseSyncService] Starting one-shot replication for course ${courseId} ` +
+          `(batch_size=${this.replicationOptions.batchSize}, ` +
+          `batches_limit=${this.replicationOptions.batchesLimit})`
       );
 
       const result = await this.replicate(remoteDB, localDB);
@@ -339,6 +382,8 @@ export class CourseSyncService {
     return new Promise((resolve, reject) => {
       void pouch.replicate(source, target, {
         // One-shot, not live. Local is a read-only snapshot.
+        batch_size: this.replicationOptions.batchSize,
+        batches_limit: this.replicationOptions.batchesLimit,
       })
         .on('complete', (info) => {
           resolve(info);
