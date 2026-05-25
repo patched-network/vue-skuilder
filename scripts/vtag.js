@@ -3,8 +3,8 @@
 const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
+const readline = require('readline');
 
-// All packages that need version updates
 const PACKAGES = [
   'common',
   'db',
@@ -20,124 +20,137 @@ const PACKAGES = [
   'cli',
 ];
 
-function main() {
-  const tagString = process.argv[2];
+const ROOT = path.join(__dirname, '..');
 
-  if (!tagString) {
-    console.error('Usage: node vtag.js <version-string>');
-    console.error('Example: node vtag.js 0.1.8-3');
-    process.exit(1);
-  }
-  if (tagString.startsWith('v')) {
-    console.error(
-      'Version string should not start with "v". Please provide a version like "0.1.8-3", "0.2.5", etc.'
-    );
-    process.exit(1);
-  }
+function ask(question) {
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  return new Promise((resolve) => rl.question(question, (ans) => { rl.close(); resolve(ans.trim()); }));
+}
 
-  console.log(`🏷️  Setting all packages to version: ${tagString}`);
-
-  // Update all package.json versions
-  for (const packageName of PACKAGES) {
-    const packagePath = path.join(__dirname, '..', 'packages', packageName);
-    const packageJsonPath = path.join(packagePath, 'package.json');
-
-    if (!fs.existsSync(packageJsonPath)) {
-      console.error(`❌ Package not found: ${packagePath}`);
-      continue;
-    }
-
-    try {
-      // Read package.json
-      const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
-
-      // Update version
-      const oldVersion = packageJson.version;
-      packageJson.version = tagString;
-
-      // Update stableVersion if this is a pure semver version (no hyphens)
-      if (!tagString.includes('-')) {
-        const oldStableVersion = packageJson.stableVersion;
-        packageJson.stableVersion = tagString;
-        if (oldStableVersion && oldStableVersion !== tagString) {
-          console.log(`  📌 stableVersion: ${oldStableVersion} → ${tagString}`);
-        }
-      }
-
-      // Write back to file
-      fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2) + '\n');
-
-      console.log(`✅ ${packageName}: ${oldVersion} → ${tagString}`);
-    } catch (error) {
-      console.error(`❌ Failed to update ${packageName}: ${error.message}`);
-    }
-  }
-
-  console.log(`\n📦 Updating yarn lockfile...`);
-
-  // Run yarn to update lockfile
-  const yarnProcess = spawn('yarn', ['install'], {
-    stdio: 'inherit',
-    cwd: path.join(__dirname, '..'),
-  });
-
-  yarnProcess.on('close', (yarnCode) => {
-    if (yarnCode !== 0) {
-      console.error(`❌ Yarn install failed with exit code ${yarnCode}`);
-      process.exit(1);
-    }
-
-    console.log(`✅ Yarn lockfile updated`);
-    console.log(`\n📝 Committing changes...`);
-
-    // Commit the changes
-    const commitProcess = spawn('git', ['commit', '-am', `bump: version ${tagString}`], {
-      stdio: 'inherit',
-      cwd: path.join(__dirname, '..'),
-    });
-
-    commitProcess.on('close', (commitCode) => {
-      if (commitCode !== 0) {
-        console.error(`❌ Git commit failed with exit code ${commitCode}`);
-        process.exit(1);
-      }
-
-      console.log(`✅ Changes committed`);
-      console.log(`\n🏷️  Creating git tag: v${tagString}`);
-
-      // Create git tag
-      const gitProcess = spawn('git', ['tag', `v${tagString}`], {
-        stdio: 'inherit',
-        cwd: path.join(__dirname, '..'),
-      });
-
-      gitProcess.on('close', (code) => {
-        if (code === 0) {
-          console.log(`✅ Git tag v${tagString} created successfully`);
-          console.log(`\nNext steps:`);
-          console.log(`  git push origin v${tagString}  # Push tag to trigger release`);
-        } else {
-          console.error(`❌ Git tag creation failed with exit code ${code}`);
-          process.exit(1);
-        }
-      });
-
-      gitProcess.on('error', (error) => {
-        console.error(`❌ Failed to create git tag: ${error.message}`);
-        process.exit(1);
-      });
-    });
-
-    commitProcess.on('error', (error) => {
-      console.error(`❌ Failed to commit changes: ${error.message}`);
-      process.exit(1);
-    });
-  });
-
-  yarnProcess.on('error', (error) => {
-    console.error(`❌ Failed to run yarn install: ${error.message}`);
-    process.exit(1);
+function run(cmd, args) {
+  return new Promise((resolve, reject) => {
+    const proc = spawn(cmd, args, { stdio: 'inherit', cwd: ROOT });
+    proc.on('close', (code) => (code === 0 ? resolve() : reject(new Error(`${cmd} exited ${code}`))));
+    proc.on('error', reject);
   });
 }
 
-main();
+function readCurrentVersion() {
+  const versions = new Map();
+  for (const pkg of PACKAGES) {
+    const p = path.join(ROOT, 'packages', pkg, 'package.json');
+    if (!fs.existsSync(p)) continue;
+    const { version } = JSON.parse(fs.readFileSync(p, 'utf8'));
+    versions.set(pkg, version);
+  }
+  return versions;
+}
+
+function bumpVersion(version, type) {
+  // Strip prerelease suffix before bumping
+  const base = version.replace(/-.*$/, '');
+  const [major, minor, patch] = base.split('.').map(Number);
+  if (type === 'major') return `${major + 1}.0.0`;
+  if (type === 'minor') return `${major}.${minor + 1}.0`;
+  if (type === 'patch') return `${major}.${minor}.${patch + 1}`;
+  throw new Error(`Unknown bump type: ${type}`);
+}
+
+function applyVersion(tagString) {
+  for (const pkg of PACKAGES) {
+    const p = path.join(ROOT, 'packages', pkg, 'package.json');
+    if (!fs.existsSync(p)) { console.error(`❌ Package not found: ${pkg}`); continue; }
+    try {
+      const json = JSON.parse(fs.readFileSync(p, 'utf8'));
+      const old = json.version;
+      json.version = tagString;
+      if (!tagString.includes('-')) {
+        if (json.stableVersion && json.stableVersion !== tagString)
+          console.log(`  📌 stableVersion: ${json.stableVersion} → ${tagString}`);
+        json.stableVersion = tagString;
+      }
+      fs.writeFileSync(p, JSON.stringify(json, null, 2) + '\n');
+      console.log(`✅ ${pkg}: ${old} → ${tagString}`);
+    } catch (e) {
+      console.error(`❌ Failed to update ${pkg}: ${e.message}`);
+    }
+  }
+}
+
+async function runRelease(tagString) {
+  if (tagString.startsWith('v')) {
+    console.error('Version string should not start with "v".');
+    process.exit(1);
+  }
+
+  console.log(`\n🏷️  Setting all packages to version: ${tagString}`);
+  applyVersion(tagString);
+
+  console.log('\n📦 Updating yarn lockfile...');
+  await run('yarn', ['install']);
+  console.log('✅ Yarn lockfile updated');
+
+  console.log('\n📝 Committing changes...');
+  await run('git', ['commit', '-am', `bump: version ${tagString}`]);
+  console.log('✅ Changes committed');
+
+  console.log(`\n🏷️  Creating git tag: v${tagString}`);
+  await run('git', ['tag', `v${tagString}`]);
+  console.log(`✅ Git tag v${tagString} created`);
+
+  const push = await ask(`\nPush v${tagString} to trigger publish? [y/N] `);
+  if (push.toLowerCase() === 'y') {
+    console.log(`\n🚀 Pushing tag...`);
+    await run('git', ['push', 'origin', `v${tagString}`]);
+    console.log(`✅ Tag pushed — publish workflow triggered`);
+  } else {
+    console.log(`\nSkipped push. Run when ready:\n  git push origin v${tagString}`);
+  }
+}
+
+async function main() {
+  const tagString = process.argv[2];
+
+  if (tagString) {
+    await runRelease(tagString);
+    return;
+  }
+
+  // Interactive mode
+  const versions = readCurrentVersion();
+  const uniqueVersions = [...new Set(versions.values())];
+
+  if (uniqueVersions.length === 1) {
+    console.log(`Current version: ${uniqueVersions[0]}`);
+  } else {
+    console.log('Packages have divergent versions:');
+    for (const [pkg, v] of versions) console.log(`  ${pkg}@${v}`);
+    process.exit(0);
+  }
+
+  const current = uniqueVersions[0];
+  const major = bumpVersion(current, 'major');
+  const minor = bumpVersion(current, 'minor');
+  const patch = bumpVersion(current, 'patch');
+
+  console.log(`\n  M) major → ${major}`);
+  console.log(`  m) minor → ${minor}`);
+  console.log(`  p) patch → ${patch}`);
+
+  const choice = await ask('\nBump type [M/m/p] or enter version directly, blank to cancel: ');
+
+  let next;
+  if (choice === 'M') next = major;
+  else if (choice === 'm') next = minor;
+  else if (choice === 'p') next = patch;
+  else if (choice === '') { console.log('Cancelled.'); return; }
+  else if (/^\d+\.\d+\.\d+/.test(choice)) next = choice;
+  else { console.error(`Unrecognised input: ${choice}`); process.exit(1); }
+
+  const confirm = await ask(`\nBump ${current} → ${next}? [y/N] `);
+  if (confirm.toLowerCase() !== 'y') { console.log('Cancelled.'); return; }
+
+  await runRelease(next);
+}
+
+main().catch((e) => { console.error(`❌ ${e.message}`); process.exit(1); });
