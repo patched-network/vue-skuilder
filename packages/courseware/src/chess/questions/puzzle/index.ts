@@ -31,10 +31,10 @@ export class ChessPuzzle extends Question {
               }
 
               const split = s.split(',');
-              if (split.length != 10) {
+              if (split.length < 10 || split.length > 11) {
                 return {
                   status: Status.error,
-                  msg: 'puzzleData must have 8 comma-separated fields',
+                  msg: `puzzleData must have 10 or 11 comma-separated fields (got ${split.length})`,
                 };
               } else {
                 return {
