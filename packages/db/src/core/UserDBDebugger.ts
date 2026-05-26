@@ -99,10 +99,16 @@ export const userDBDebugAPI = {
    */
   async showScheduledReviews(courseId?: string): Promise<void> {
     const userDB = getUserDB();
-    if (!userDB) return;
+    if (!userDB) {
+      logger.info('[UserDB Debug] Data layer not available');
+      return;
+    }
+
+    logger.info(`[UserDB Debug] Fetching pending reviews${courseId ? ` for course: ${courseId}` : ''}...`);
 
     try {
       const reviews = await userDB.getPendingReviews(courseId);
+      logger.info(`[UserDB Debug] Got ${reviews.length} reviews`);
 
       // eslint-disable-next-line no-console
       console.group(`📅 Scheduled Reviews${courseId ? ` (${courseId})` : ''}`);
