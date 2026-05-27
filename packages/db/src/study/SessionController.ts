@@ -536,6 +536,20 @@ export class SessionController<TView = unknown> extends Loggable {
   private static readonly WELL_INDICATED_SCORE = 0.10;
 
   /**
+   * newQ length at or below which the opportunistic depletion-prefetch
+   * fires. Sets the lead time available for the background replan to land
+   * before the user actually empties the queue and falls into the
+   * (synchronous) wedge-breaker path.
+   *
+   * Set to a small absolute value (not a fraction of batch limit) because
+   * pipeline latency is roughly fixed regardless of batch size — what
+   * matters is "how many cards of user-pace do we have left." 3 cards
+   * × ~3-5s/card = ~10-15s of lead time, comfortably exceeding typical
+   * pipeline latency.
+   */
+  private static readonly DEPLETION_PREFETCH_THRESHOLD = 3;
+
+  /**
    * Internal replan execution. Runs the pipeline, builds a new newQ,
    * atomically swaps it in, and triggers hydration for the new contents.
    *
@@ -970,8 +984,16 @@ export class SessionController<TView = unknown> extends Loggable {
     // Opportunistic depletion: newQ running dry → background prefetch.
     // No latch — if this fires repeatedly when the pipeline keeps coming
     // back empty, the wedge-breaker's local backoff handles spin protection.
+    //
+    // Threshold sized to give the pipeline enough lead time to land the
+    // replan before the user empties the queue. Previously hardcoded to 1,
+    // which raced user pace against pipeline latency — fast users would hit
+    // an empty queue mid-session and feel the wedge-breaker's synchronous
+    // pipeline call as a "hang". DEPLETION_PREFETCH_THRESHOLD trades a
+    // slightly earlier prefetch (which is anyway desirable for content
+    // freshness) for a much more reliable lead time.
     if (
-      this.newQ.length <= 1 &&
+      this.newQ.length <= SessionController.DEPLETION_PREFETCH_THRESHOLD &&
       this._secondsRemaining > 0 &&
       !this._replanPromise
     ) {
