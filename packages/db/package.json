@@ -4,7 +4,7 @@
   "publishConfig": {
     "access": "public"
   },
-  "version": "0.2.0",
+  "version": "-p",
   "description": "Database layer for vue-skuilder",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
