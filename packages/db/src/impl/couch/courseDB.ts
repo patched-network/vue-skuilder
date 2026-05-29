@@ -302,19 +302,34 @@ export class CourseDB implements CourseDBInterface {
     elo = parseInt(elo as any);
     const limit = cardLimit ? cardLimit : 25;
 
+    const tQ0 = performance.now();
+    // `stale: 'update_after'` returns the currently-indexed view immediately and
+    // rebuilds the index in the background. The `elo` view is invalidated on
+    // every answered card (card-ELO docs are rewritten), so without this each
+    // study run pays a synchronous full re-index. Study selection only needs
+    // ELO *eligibility*, not a freshly-exact ranking, so slight staleness here
+    // is acceptable and the dominant per-run cost disappears.
     const below: PouchDB.Query.Response<object> = await this.db.query('elo', {
       limit: Math.ceil(limit / 2),
       startkey: elo,
       descending: true,
+      stale: 'update_after',
     });
+    const tBelowQ = performance.now();
 
     const aboveLimit = limit - below.rows.length;
 
     const above: PouchDB.Query.Response<object> = await this.db.query('elo', {
       limit: aboveLimit,
       startkey: elo + 1,
+      stale: 'update_after',
     });
-    // logger.log(JSON.stringify(below));
+    const tAbove = performance.now();
+    logger.info(
+      `[perf][getCardsByELO] reqLimit=${limit} ` +
+        `below=${(tBelowQ - tQ0).toFixed(0)}ms(${below.rows.length}r) ` +
+        `above=${(tAbove - tBelowQ).toFixed(0)}ms(${above.rows.length}r)`
+    );
 
     let cards = below.rows;
     cards = cards.concat(above.rows);
@@ -654,6 +669,19 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
    */
   private _pendingHints: ReplanHints | null = null;
 
+  /**
+   * Session-scoped cache of the broad ELO-neighbor pool used by
+   * getCardsCenteredAtELO. The `elo` view query re-indexes on first touch per
+   * call (PouchDB 9 ignores `stale`), so without this each plan/replan pays
+   * ~1.5-2s. The pool is fetched once and re-ranked against the live (roaming)
+   * ELO in memory on subsequent calls.
+   */
+  private _eloPoolCache: {
+    rows: (QualifiedCardID & { elo?: number })[];
+    fetchedAt: number;
+  } | null = null;
+  private readonly _eloPoolTtlMs = 5 * 60 * 1000;
+
   public setEphemeralHints(hints: ReplanHints): void {
     this._pendingHints = hints;
   }
@@ -662,12 +690,22 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
     const u = await this._getCurrentUser();
 
     try {
+      const tNav0 = performance.now();
       const navigator = await this.createNavigator(u);
+      const tNav1 = performance.now();
       if (this._pendingHints) {
         navigator.setEphemeralHints(this._pendingHints);
         this._pendingHints = null;
       }
-      return navigator.getWeightedCards(limit);
+      const result = await navigator.getWeightedCards(limit);
+      const tRun = performance.now();
+      logger.info(
+        `[perf][courseDB] getWeightedCards(limit=${limit}): ` +
+          `createNavigator=${(tNav1 - tNav0).toFixed(0)}ms ` +
+          `pipelineRun=${(tRun - tNav1).toFixed(0)}ms ` +
+          `total=${(tRun - tNav0).toFixed(0)}ms`
+      );
+      return result;
     } catch (e) {
       logger.error(`[courseDB] Error getting weighted cards: ${e}`);
       throw e;
@@ -684,6 +722,8 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
     },
     filter?: (a: QualifiedCardID) => boolean
   ): Promise<StudySessionItem[]> {
+    logger.info('[perf][run] getCardsCenteredAtELO rewrite (session pool cache + in-memory recenter)');
+    const tCelo0 = performance.now();
     let targetElo: number;
 
     if (options.elo === 'user') {
@@ -706,25 +746,58 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
       targetElo = options.elo;
     }
 
-    let cards: (QualifiedCardID & { elo?: number })[] = [];
-    let mult: number = 4;
-    let previousCount: number = -1;
-    let newCount: number = 0;
+    const tReg = performance.now();
 
-    while (cards.length < options.limit && newCount !== previousCount) {
-      cards = await this.getCardsByELO(targetElo, mult * options.limit);
-      previousCount = newCount;
-      newCount = cards.length;
+    // Broad neighbor pool fetched once per session and re-used. We over-fetch
+    // (POOL_SIZE >> limit) so that the in-memory active-card filter and the
+    // slowly-roaming ELO both have ample headroom before a refetch is needed.
+    const POOL_SIZE = Math.max(2000, options.limit * 4);
+    const nowMs = Date.now();
+    let cacheStatus: 'hit' | 'miss' | 'refresh' = 'hit';
 
-      logger.debug(`Found ${cards.length} elo neighbor cards...`);
-
-      if (filter) {
-        cards = cards.filter(filter);
-        logger.debug(`Filtered to ${cards.length} cards...`);
-      }
-
-      mult *= 2;
+    if (!this._eloPoolCache || nowMs - this._eloPoolCache.fetchedAt > this._eloPoolTtlMs) {
+      // MISS: pay the (reindexing) view query once, then cache the raw pool.
+      this._eloPoolCache = {
+        rows: await this.getCardsByELO(targetElo, POOL_SIZE),
+        fetchedAt: nowMs,
+      };
+      cacheStatus = 'miss';
     }
+
+    // Apply the (fresh) caller filter, then re-center against the *current* ELO.
+    // Returns a new array each call — the cached pool is never mutated, and the
+    // ranking reflects the live ELO even as it drifts within a session.
+    const rankAgainstCurrentElo = (): (QualifiedCardID & { elo?: number })[] => {
+      const raw = this._eloPoolCache!.rows;
+      const survivors = filter ? raw.filter((c) => filter(c)) : raw;
+      return survivors
+        .map((c) => ({ ...c }))
+        .sort(
+          (a, b) =>
+            Math.abs((a.elo ?? targetElo) - targetElo) -
+            Math.abs((b.elo ?? targetElo) - targetElo)
+        );
+    };
+
+    let cards = rankAgainstCurrentElo();
+
+    // The active-card filter has grown enough to exhaust the cached pool —
+    // refetch a fresh window once (pays the view query again, but rarely).
+    if (cards.length < options.limit && cacheStatus === 'hit') {
+      this._eloPoolCache = {
+        rows: await this.getCardsByELO(targetElo, POOL_SIZE),
+        fetchedAt: nowMs,
+      };
+      cards = rankAgainstCurrentElo();
+      cacheStatus = 'refresh';
+    }
+
+    logger.info(
+      `[perf][centeredAtELO] regDoc=${(tReg - tCelo0).toFixed(0)}ms ` +
+        `cache=${cacheStatus} build=${(performance.now() - tReg).toFixed(0)}ms ` +
+        `poolRaw=${this._eloPoolCache!.rows.length} postFilter=${cards.length} ` +
+        `limit=${options.limit} targetElo=${targetElo}`
+    );
 
     const selectedCards: {
       courseID: string;
