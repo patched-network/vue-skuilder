@@ -588,6 +588,8 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
 
   async addNavigationStrategy(data: ContentNavigationStrategyData): Promise<void> {
     logger.debug(`[courseDB] Adding navigation strategy: ${data._id}`);
+    // Strategy set changed — drop the cached navigator so it rebuilds.
+    this.invalidateNavigatorCache();
     // Admin write operation — use remote DB.
     return this.remoteDB.put(data).then(() => {});
   }
@@ -682,6 +684,22 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
   } | null = null;
   private readonly _eloPoolTtlMs = 5 * 60 * 1000;
 
+  /**
+   * Cached assembled navigator (Pipeline). createNavigator() reads strategy
+   * docs and builds a fresh Pipeline every call — whose internal `_tagCache`
+   * and `_cachedOrchestration` are designed to make replans cheap but never
+   * survive, because the instance is discarded each run. Caching it lets those
+   * caches persist across plan/replan within a session (SessionController holds
+   * one CourseDB instance for the session's lifetime). Rebuilt on user change,
+   * TTL expiry, or explicit invalidation after a strategy-doc write.
+   */
+  private _cachedNavigator: {
+    navigator: ContentNavigator;
+    userId: string;
+    builtAt: number;
+  } | null = null;
+  private readonly _navigatorTtlMs = 5 * 60 * 1000;
+
   public setEphemeralHints(hints: ReplanHints): void {
     this._pendingHints = hints;
   }
@@ -691,7 +709,7 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
 
     try {
       const tNav0 = performance.now();
-      const navigator = await this.createNavigator(u);
+      const { navigator, cacheStatus: navCache } = await this._getCachedNavigator(u);
       const tNav1 = performance.now();
       if (this._pendingHints) {
         navigator.setEphemeralHints(this._pendingHints);
@@ -701,7 +719,7 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
       const tRun = performance.now();
       logger.info(
         `[perf][courseDB] getWeightedCards(limit=${limit}): ` +
-          `createNavigator=${(tNav1 - tNav0).toFixed(0)}ms ` +
+          `navigator=${(tNav1 - tNav0).toFixed(0)}ms(${navCache}) ` +
           `pipelineRun=${(tRun - tNav1).toFixed(0)}ms ` +
           `total=${(tRun - tNav0).toFixed(0)}ms`
       );
@@ -710,6 +728,37 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
       logger.error(`[courseDB] Error getting weighted cards: ${e}`);
       throw e;
     }
+  }
+
+  /**
+   * Return the assembled navigator, reusing the cached instance when possible.
+   * Reuse preserves the Pipeline's per-session caches (tags, orchestration
+   * context) across replans, which is the dominant per-replan cost once the
+   * ELO-pool cost is removed. Rebuilds on user change or TTL expiry.
+   */
+  private async _getCachedNavigator(
+    user: UserDBInterface
+  ): Promise<{ navigator: ContentNavigator; cacheStatus: 'hit' | 'miss' }> {
+    const userId = user.getUsername();
+    const now = Date.now();
+    if (
+      this._cachedNavigator &&
+      this._cachedNavigator.userId === userId &&
+      now - this._cachedNavigator.builtAt < this._navigatorTtlMs
+    ) {
+      return { navigator: this._cachedNavigator.navigator, cacheStatus: 'hit' };
+    }
+    const navigator = await this.createNavigator(user);
+    this._cachedNavigator = { navigator, userId, builtAt: now };
+    return { navigator, cacheStatus: 'miss' };
+  }
+
+  /**
+   * Drop the cached navigator so the next getWeightedCards() rebuilds it.
+   * Call after mutating this course's navigation strategy documents.
+   */
+  public invalidateNavigatorCache(): void {
+    this._cachedNavigator = null;
   }
 
   public async getCardsCenteredAtELO(
