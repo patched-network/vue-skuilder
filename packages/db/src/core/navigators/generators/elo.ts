@@ -66,6 +66,7 @@ export default class ELONavigator extends ContentNavigator implements CardGenera
    * @param context - Optional GeneratorContext (used when called via Pipeline)
    */
   async getWeightedCards(limit: number, context?: GeneratorContext): Promise<GeneratorResult> {
+    const tElo0 = performance.now();
     // Determine user ELO - from context if available, otherwise fetch
     let userGlobalElo: number;
     if (context?.userElo !== undefined) {
@@ -75,18 +76,24 @@ export default class ELONavigator extends ContentNavigator implements CardGenera
       const userElo = toCourseElo(courseReg.elo);
       userGlobalElo = userElo.global.score;
     }
+    const tUser = performance.now();
 
     const activeCards = await this.user.getActiveCards();
+    const tActive = performance.now();
     const newCards = (
       await this.course.getCardsCenteredAtELO(
         { limit, elo: 'user' },
         (c: QualifiedCardID) => !activeCards.some((ac) => c.cardID === ac.cardID)
       )
     ).map((c) => ({ ...c, status: 'new' as const }));
-
-    // Get ELO data for all cards in one batch
-    const cardIds = newCards.map((c) => c.cardID);
-    const cardEloData = await this.course.getCardEloData(cardIds);
+    const tCentered = performance.now();
+    logger.info(
+      `[perf][ELOgen] total=${(tCentered - tElo0).toFixed(0)}ms ` +
+        `(userElo=${(tUser - tElo0).toFixed(0)} ` +
+        `activeCards=${(tActive - tUser).toFixed(0)} ` +
+        `centeredAtELO=${(tCentered - tActive).toFixed(0)}) ` +
+        `[active=${activeCards.length} candidates=${newCards.length}]`
+    );
 
     // Score new cards by ELO distance, then apply weighted sampling without
     // replacement using the Efraimidis-Spirakis (A-Res) algorithm:
@@ -99,8 +106,13 @@ export default class ELONavigator extends ContentNavigator implements CardGenera
     // cards from looping back every session when many cards share similar ELO.
     //
     // Edge case: rawScore=0 → key=0, never selected (correct exclusion).
-    const scored: WeightedCard[] = newCards.map((c, i) => {
-      const cardElo = cardEloData[i]?.global?.score ?? 1000;
+    //
+    // Card ELO is read from the pooled `.elo` carried on each candidate by
+    // getCardsCenteredAtELO — verified equal to a separate getCardEloData()
+    // fetch (0/500 mismatch on real data), so the redundant fetch is gone.
+    const scored: WeightedCard[] = newCards.map((c) => {
+      const cardElo = c.elo ?? 1000;
+
       const distance = Math.abs(cardElo - userGlobalElo);
       const rawScore = Math.max(0, 1 - distance / 500);
       const samplingKey = rawScore > 0 ? Math.random() ** (1 / rawScore) : 0;
