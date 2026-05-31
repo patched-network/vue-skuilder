@@ -302,11 +302,19 @@ export class CourseDB implements CourseDBInterface {
     elo = parseInt(elo as any);
     const limit = cardLimit ? cardLimit : 25;
 
+    // const tQ0 = performance.now();
+    // NOTE: `stale: 'update_after'` was tried here and removed — it gave no
+    // measurable speedup (PouchDB 9 effectively ignores it for the reindex
+    // cost) AND it can return an empty result on the first query after a cold
+    // DB open (index not yet loaded), which then poisons the pool cache. The
+    // session pool cache (see getCardsCenteredAtELO) is what removes the
+    // per-run cost, so we read the view normally (always-fresh) here.
     const below: PouchDB.Query.Response<object> = await this.db.query('elo', {
       limit: Math.ceil(limit / 2),
       startkey: elo,
       descending: true,
     });
+    // const tBelowQ = performance.now();
 
     const aboveLimit = limit - below.rows.length;
 
@@ -314,7 +322,13 @@ export class CourseDB implements CourseDBInterface {
       limit: aboveLimit,
       startkey: elo + 1,
     });
-    // logger.log(JSON.stringify(below));
+    // const tAbove = performance.now();
+    // [perf] parked: getCardsByELO view-query timing (below/above split)
+    // logger.info(
+      // `[perf][getCardsByELO] reqLimit=${limit} ` +
+        // `below=${(tBelowQ - tQ0).toFixed(0)}ms(${below.rows.length}r) ` +
+        // `above=${(tAbove - tBelowQ).toFixed(0)}ms(${above.rows.length}r)`
+    // );
 
     let cards = below.rows;
     cards = cards.concat(above.rows);
@@ -573,6 +587,8 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
 
   async addNavigationStrategy(data: ContentNavigationStrategyData): Promise<void> {
     logger.debug(`[courseDB] Adding navigation strategy: ${data._id}`);
+    // Strategy set changed — drop the cached navigator so it rebuilds.
+    this.invalidateNavigatorCache();
     // Admin write operation — use remote DB.
     return this.remoteDB.put(data).then(() => {});
   }
@@ -654,6 +670,35 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
    */
   private _pendingHints: ReplanHints | null = null;
 
+  /**
+   * Session-scoped cache of the broad ELO-neighbor pool used by
+   * getCardsCenteredAtELO. The `elo` view query re-indexes on first touch per
+   * call (PouchDB 9 ignores `stale`), so without this each plan/replan pays
+   * ~1.5-2s. The pool is fetched once and re-ranked against the live (roaming)
+   * ELO in memory on subsequent calls.
+   */
+  private _eloPoolCache: {
+    rows: (QualifiedCardID & { elo?: number })[];
+    fetchedAt: number;
+  } | null = null;
+  private readonly _eloPoolTtlMs = 5 * 60 * 1000;
+
+  /**
+   * Cached assembled navigator (Pipeline). createNavigator() reads strategy
+   * docs and builds a fresh Pipeline every call — whose internal `_tagCache`
+   * and `_cachedOrchestration` are designed to make replans cheap but never
+   * survive, because the instance is discarded each run. Caching it lets those
+   * caches persist across plan/replan within a session (SessionController holds
+   * one CourseDB instance for the session's lifetime). Rebuilt on user change,
+   * TTL expiry, or explicit invalidation after a strategy-doc write.
+   */
+  private _cachedNavigator: {
+    navigator: ContentNavigator;
+    userId: string;
+    builtAt: number;
+  } | null = null;
+  private readonly _navigatorTtlMs = 5 * 60 * 1000;
+
   public setEphemeralHints(hints: ReplanHints): void {
     this._pendingHints = hints;
   }
@@ -662,16 +707,58 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
     const u = await this._getCurrentUser();
 
     try {
-      const navigator = await this.createNavigator(u);
+      // const tNav0 = performance.now(); // [perf] parked
+      const { navigator } = await this._getCachedNavigator(u);
+      // const tNav1 = performance.now(); // [perf] parked
       if (this._pendingHints) {
         navigator.setEphemeralHints(this._pendingHints);
         this._pendingHints = null;
       }
-      return navigator.getWeightedCards(limit);
+      const result = await navigator.getWeightedCards(limit);
+      // const tRun = performance.now(); // [perf] parked
+      // [perf] parked 2026-05 (pipeline-docs-workup) — uncomment to re-measure
+      // logger.info(
+        // `[perf][courseDB] getWeightedCards(limit=${limit}): ` +
+          // `navigator=${(tNav1 - tNav0).toFixed(0)}ms(${navCache}) ` +
+          // `pipelineRun=${(tRun - tNav1).toFixed(0)}ms ` +
+          // `total=${(tRun - tNav0).toFixed(0)}ms`
+      // );
+      return result;
     } catch (e) {
       logger.error(`[courseDB] Error getting weighted cards: ${e}`);
       throw e;
     }
+  }
+
+  /**
+   * Return the assembled navigator, reusing the cached instance when possible.
+   * Reuse preserves the Pipeline's per-session caches (tags, orchestration
+   * context) across replans, which is the dominant per-replan cost once the
+   * ELO-pool cost is removed. Rebuilds on user change or TTL expiry.
+   */
+  private async _getCachedNavigator(
+    user: UserDBInterface
+  ): Promise<{ navigator: ContentNavigator; cacheStatus: 'hit' | 'miss' }> {
+    const userId = user.getUsername();
+    const now = Date.now();
+    if (
+      this._cachedNavigator &&
+      this._cachedNavigator.userId === userId &&
+      now - this._cachedNavigator.builtAt < this._navigatorTtlMs
+    ) {
+      return { navigator: this._cachedNavigator.navigator, cacheStatus: 'hit' };
+    }
+    const navigator = await this.createNavigator(user);
+    this._cachedNavigator = { navigator, userId, builtAt: now };
+    return { navigator, cacheStatus: 'miss' };
+  }
+
+  /**
+   * Drop the cached navigator so the next getWeightedCards() rebuilds it.
+   * Call after mutating this course's navigation strategy documents.
+   */
+  public invalidateNavigatorCache(): void {
+    this._cachedNavigator = null;
   }
 
   public async getCardsCenteredAtELO(
@@ -684,6 +771,9 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
     },
     filter?: (a: QualifiedCardID) => boolean
   ): Promise<StudySessionItem[]> {
+    // [perf] parked: getCardsCenteredAtELO rewrite banner
+    // logger.info('[perf][run] getCardsCenteredAtELO rewrite (session pool cache + in-memory recenter)');
+    // const tCelo0 = performance.now();
     let targetElo: number;
 
     if (options.elo === 'user') {
@@ -706,25 +796,64 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
       targetElo = options.elo;
     }
 
-    let cards: (QualifiedCardID & { elo?: number })[] = [];
-    let mult: number = 4;
-    let previousCount: number = -1;
-    let newCount: number = 0;
+    // const tReg = performance.now();
 
-    while (cards.length < options.limit && newCount !== previousCount) {
-      cards = await this.getCardsByELO(targetElo, mult * options.limit);
-      previousCount = newCount;
-      newCount = cards.length;
+    // Broad neighbor pool fetched once per session and re-used. We over-fetch
+    // (POOL_SIZE >> limit) so that the in-memory active-card filter and the
+    // slowly-roaming ELO both have ample headroom before a refetch is needed.
+    const POOL_SIZE = Math.max(2000, options.limit * 4);
+    const nowMs = Date.now();
+    let cacheStatus: 'hit' | 'miss' | 'refresh' = 'hit';
 
-      logger.debug(`Found ${cards.length} elo neighbor cards...`);
-
-      if (filter) {
-        cards = cards.filter(filter);
-        logger.debug(`Filtered to ${cards.length} cards...`);
+    if (!this._eloPoolCache || nowMs - this._eloPoolCache.fetchedAt > this._eloPoolTtlMs) {
+      // MISS: pay the (reindexing) view query once, then cache the raw pool.
+      // Guard: never cache an EMPTY pool. A cold-DB-open or sync-race fetch can
+      // transiently return [], and caching it would starve the session for the
+      // whole TTL. Leaving the cache untouched lets the next call retry.
+      const fetched = await this.getCardsByELO(targetElo, POOL_SIZE);
+      if (fetched.length > 0) {
+        this._eloPoolCache = { rows: fetched, fetchedAt: nowMs };
       }
-
-      mult *= 2;
+      cacheStatus = 'miss';
     }
+
+    // Apply the (fresh) caller filter, then re-center against the *current* ELO.
+    // Returns a new array each call — the cached pool is never mutated, and the
+    // ranking reflects the live ELO even as it drifts within a session.
+    const rankAgainstCurrentElo = (): (QualifiedCardID & { elo?: number })[] => {
+      const raw = this._eloPoolCache?.rows ?? [];
+      const survivors = filter ? raw.filter((c) => filter(c)) : raw;
+      return survivors
+        .map((c) => ({ ...c }))
+        .sort(
+          (a, b) =>
+            Math.abs((a.elo ?? targetElo) - targetElo) -
+            Math.abs((b.elo ?? targetElo) - targetElo)
+        );
+    };
+
+    let cards = rankAgainstCurrentElo();
+
+    // Refetch once if the pool can't satisfy the limit — either the active-card
+    // filter has grown past pool coverage (hit), or the pool is missing because
+    // a prior fetch came back empty (cold open / sync race). A miss that cached
+    // a non-empty-but-small pool (genuinely small course) is left alone.
+    if (cards.length < options.limit && (cacheStatus === 'hit' || !this._eloPoolCache)) {
+      const fetched = await this.getCardsByELO(targetElo, POOL_SIZE);
+      if (fetched.length > 0) {
+        this._eloPoolCache = { rows: fetched, fetchedAt: nowMs };
+      }
+      cards = rankAgainstCurrentElo();
+      cacheStatus = 'refresh';
+    }
+
+    // [perf] parked: centeredAtELO regDoc / pool-cache timing
+    // logger.info(
+      // `[perf][centeredAtELO] regDoc=${(tReg - tCelo0).toFixed(0)}ms ` +
+        // `cache=${cacheStatus} build=${(performance.now() - tReg).toFixed(0)}ms ` +
+        // `poolRaw=${this._eloPoolCache?.rows.length ?? 0} postFilter=${cards.length} ` +
+        // `limit=${options.limit} targetElo=${targetElo}`
+    // );
 
     const selectedCards: {
       courseID: string;

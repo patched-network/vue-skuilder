@@ -163,6 +163,9 @@ export class CardHydrationService<TView = unknown> {
     }
 
     this.hydrationInProgress = true;
+    // [perf] parked 2026-05 (pipeline-docs-workup) — batch hydration timing
+    // const tFill0 = performance.now();
+    // let hydratedThisBatch = 0;
 
     try {
       const itemsToHydrate = this.getItemsToHydrate();
@@ -175,12 +178,20 @@ export class CardHydrationService<TView = unknown> {
 
         try {
           await this.hydrateCard(item);
+          // hydratedThisBatch++; // [perf] parked
         } catch (e) {
           logger.error(`[CardHydrationService] Error hydrating card ${item.cardID}:`, e);
         }
       }
     } finally {
       this.hydrationInProgress = false;
+      // [perf] parked: batch hydration timing
+      // if (hydratedThisBatch > 0) {
+      //   logger.info(
+      //     `[perf][Hydrate] batch: hydrated ${hydratedThisBatch} card(s) in ` +
+      //       `${(performance.now() - tFill0).toFixed(0)}ms`
+      //   );
+      // }
     }
   }
 
@@ -195,11 +206,13 @@ export class CardHydrationService<TView = unknown> {
     this.hydrationInFlight.add(item.cardID);
 
     try {
+      // const tH0 = performance.now(); // [perf] parked
       const courseDB = this.getCourseDB(item.courseID);
       const [cardData, tagsByCard] = await Promise.all([
         courseDB.getCourseDoc<CardData>(item.cardID),
         courseDB.getAppliedTagsBatch([item.cardID]),
       ]);
+      // const tFetch = performance.now(); // [perf] parked
 
       if (!isCourseElo(cardData.elo)) {
         cardData.elo = toCourseElo(cardData.elo);
@@ -214,6 +227,7 @@ export class CardHydrationService<TView = unknown> {
           })
         )
       );
+      // const tDocs = performance.now(); // [perf] parked
 
       // Extract audio URLs from all data fields and prefetch them
       const audioToPrefetch: string[] = [];
@@ -224,6 +238,7 @@ export class CardHydrationService<TView = unknown> {
       });
 
       // Dedupe and prefetch, waiting for browser cache to be ready
+      // const tAudioStart = performance.now(); // [perf] parked
       const uniqueAudioUrls = [...new Set(audioToPrefetch)];
       if (uniqueAudioUrls.length > 0) {
         logger.debug(
@@ -231,6 +246,7 @@ export class CardHydrationService<TView = unknown> {
         );
         await Promise.allSettled(uniqueAudioUrls.map(prefetchAudio));
       }
+      // const tAudio = performance.now(); // [perf] parked
 
       const data = dataDocs.map(displayableDataToViewData).reverse();
 
@@ -241,6 +257,14 @@ export class CardHydrationService<TView = unknown> {
         tags: tagsByCard.get(item.cardID) ?? [],
       });
 
+      // [perf] parked: per-card hydration timing (cardDoc+tags / dataDocs / audio)
+      // logger.info(
+      //   `[perf][Hydrate] ${item.cardID}: ` +
+      //     `cardDoc+tags=${(tFetch - tH0).toFixed(0)}ms ` +
+      //     `dataDocs=${(tDocs - tFetch).toFixed(0)}ms ` +
+      //     `audioPrefetch=${(tAudio - tAudioStart).toFixed(0)}ms(${uniqueAudioUrls.length} files) ` +
+      //     `total=${(tAudio - tH0).toFixed(0)}ms`
+      // );
       logger.debug(`[CardHydrationService] Hydrated card ${item.cardID}`);
     } finally {
       this.hydrationInFlight.delete(item.cardID);

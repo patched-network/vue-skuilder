@@ -443,10 +443,14 @@ export class Pipeline extends ContentNavigator {
         .map((c) => c.cardId)
     );
     const filterImpacts: FilterImpact[] = [];
+    // [perf] parked 2026-05 (pipeline-docs-workup) — uncomment to re-measure
+    // const filterTimings: string[] = [];
     for (const filter of this.filters) {
+      // const tFilterStart = performance.now();
       const beforeCount = cards.length;
       const beforeScores = new Map(cards.map((c) => [c.cardId, c.score]));
       cards = await filter.transform(cards, context);
+      // filterTimings.push(`${filter.name}=${(performance.now() - tFilterStart).toFixed(0)}ms`);
 
       // Count boost/penalize/pass/removed for this filter
       let boosted = 0, penalized = 0, passed = 0;
