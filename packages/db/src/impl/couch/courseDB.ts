@@ -302,34 +302,33 @@ export class CourseDB implements CourseDBInterface {
     elo = parseInt(elo as any);
     const limit = cardLimit ? cardLimit : 25;
 
-    const tQ0 = performance.now();
-    // `stale: 'update_after'` returns the currently-indexed view immediately and
-    // rebuilds the index in the background. The `elo` view is invalidated on
-    // every answered card (card-ELO docs are rewritten), so without this each
-    // study run pays a synchronous full re-index. Study selection only needs
-    // ELO *eligibility*, not a freshly-exact ranking, so slight staleness here
-    // is acceptable and the dominant per-run cost disappears.
+    // const tQ0 = performance.now();
+    // NOTE: `stale: 'update_after'` was tried here and removed — it gave no
+    // measurable speedup (PouchDB 9 effectively ignores it for the reindex
+    // cost) AND it can return an empty result on the first query after a cold
+    // DB open (index not yet loaded), which then poisons the pool cache. The
+    // session pool cache (see getCardsCenteredAtELO) is what removes the
+    // per-run cost, so we read the view normally (always-fresh) here.
     const below: PouchDB.Query.Response<object> = await this.db.query('elo', {
       limit: Math.ceil(limit / 2),
       startkey: elo,
       descending: true,
-      stale: 'update_after',
     });
-    const tBelowQ = performance.now();
+    // const tBelowQ = performance.now();
 
     const aboveLimit = limit - below.rows.length;
 
     const above: PouchDB.Query.Response<object> = await this.db.query('elo', {
       limit: aboveLimit,
       startkey: elo + 1,
-      stale: 'update_after',
     });
-    const tAbove = performance.now();
-    logger.info(
-      `[perf][getCardsByELO] reqLimit=${limit} ` +
-        `below=${(tBelowQ - tQ0).toFixed(0)}ms(${below.rows.length}r) ` +
-        `above=${(tAbove - tBelowQ).toFixed(0)}ms(${above.rows.length}r)`
-    );
+    // const tAbove = performance.now();
+    // [perf] parked: getCardsByELO view-query timing (below/above split)
+    // logger.info(
+      // `[perf][getCardsByELO] reqLimit=${limit} ` +
+        // `below=${(tBelowQ - tQ0).toFixed(0)}ms(${below.rows.length}r) ` +
+        // `above=${(tAbove - tBelowQ).toFixed(0)}ms(${above.rows.length}r)`
+    // );
 
     let cards = below.rows;
     cards = cards.concat(above.rows);
@@ -708,21 +707,22 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
     const u = await this._getCurrentUser();
 
     try {
-      const tNav0 = performance.now();
-      const { navigator, cacheStatus: navCache } = await this._getCachedNavigator(u);
-      const tNav1 = performance.now();
+      // const tNav0 = performance.now(); // [perf] parked
+      const { navigator } = await this._getCachedNavigator(u);
+      // const tNav1 = performance.now(); // [perf] parked
       if (this._pendingHints) {
         navigator.setEphemeralHints(this._pendingHints);
         this._pendingHints = null;
       }
       const result = await navigator.getWeightedCards(limit);
-      const tRun = performance.now();
-      logger.info(
-        `[perf][courseDB] getWeightedCards(limit=${limit}): ` +
-          `navigator=${(tNav1 - tNav0).toFixed(0)}ms(${navCache}) ` +
-          `pipelineRun=${(tRun - tNav1).toFixed(0)}ms ` +
-          `total=${(tRun - tNav0).toFixed(0)}ms`
-      );
+      // const tRun = performance.now(); // [perf] parked
+      // [perf] parked 2026-05 (pipeline-docs-workup) — uncomment to re-measure
+      // logger.info(
+        // `[perf][courseDB] getWeightedCards(limit=${limit}): ` +
+          // `navigator=${(tNav1 - tNav0).toFixed(0)}ms(${navCache}) ` +
+          // `pipelineRun=${(tRun - tNav1).toFixed(0)}ms ` +
+          // `total=${(tRun - tNav0).toFixed(0)}ms`
+      // );
       return result;
     } catch (e) {
       logger.error(`[courseDB] Error getting weighted cards: ${e}`);
@@ -771,8 +771,9 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
     },
     filter?: (a: QualifiedCardID) => boolean
   ): Promise<StudySessionItem[]> {
-    logger.info('[perf][run] getCardsCenteredAtELO rewrite (session pool cache + in-memory recenter)');
-    const tCelo0 = performance.now();
+    // [perf] parked: getCardsCenteredAtELO rewrite banner
+    // logger.info('[perf][run] getCardsCenteredAtELO rewrite (session pool cache + in-memory recenter)');
+    // const tCelo0 = performance.now();
     let targetElo: number;
 
     if (options.elo === 'user') {
@@ -795,7 +796,7 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
       targetElo = options.elo;
     }
 
-    const tReg = performance.now();
+    // const tReg = performance.now();
 
     // Broad neighbor pool fetched once per session and re-used. We over-fetch
     // (POOL_SIZE >> limit) so that the in-memory active-card filter and the
@@ -806,10 +807,13 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
 
     if (!this._eloPoolCache || nowMs - this._eloPoolCache.fetchedAt > this._eloPoolTtlMs) {
       // MISS: pay the (reindexing) view query once, then cache the raw pool.
-      this._eloPoolCache = {
-        rows: await this.getCardsByELO(targetElo, POOL_SIZE),
-        fetchedAt: nowMs,
-      };
+      // Guard: never cache an EMPTY pool. A cold-DB-open or sync-race fetch can
+      // transiently return [], and caching it would starve the session for the
+      // whole TTL. Leaving the cache untouched lets the next call retry.
+      const fetched = await this.getCardsByELO(targetElo, POOL_SIZE);
+      if (fetched.length > 0) {
+        this._eloPoolCache = { rows: fetched, fetchedAt: nowMs };
+      }
       cacheStatus = 'miss';
     }
 
@@ -817,7 +821,7 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
     // Returns a new array each call — the cached pool is never mutated, and the
     // ranking reflects the live ELO even as it drifts within a session.
     const rankAgainstCurrentElo = (): (QualifiedCardID & { elo?: number })[] => {
-      const raw = this._eloPoolCache!.rows;
+      const raw = this._eloPoolCache?.rows ?? [];
       const survivors = filter ? raw.filter((c) => filter(c)) : raw;
       return survivors
         .map((c) => ({ ...c }))
@@ -830,23 +834,26 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
 
     let cards = rankAgainstCurrentElo();
 
-    // The active-card filter has grown enough to exhaust the cached pool —
-    // refetch a fresh window once (pays the view query again, but rarely).
-    if (cards.length < options.limit && cacheStatus === 'hit') {
-      this._eloPoolCache = {
-        rows: await this.getCardsByELO(targetElo, POOL_SIZE),
-        fetchedAt: nowMs,
-      };
+    // Refetch once if the pool can't satisfy the limit — either the active-card
+    // filter has grown past pool coverage (hit), or the pool is missing because
+    // a prior fetch came back empty (cold open / sync race). A miss that cached
+    // a non-empty-but-small pool (genuinely small course) is left alone.
+    if (cards.length < options.limit && (cacheStatus === 'hit' || !this._eloPoolCache)) {
+      const fetched = await this.getCardsByELO(targetElo, POOL_SIZE);
+      if (fetched.length > 0) {
+        this._eloPoolCache = { rows: fetched, fetchedAt: nowMs };
+      }
       cards = rankAgainstCurrentElo();
       cacheStatus = 'refresh';
     }
 
-    logger.info(
-      `[perf][centeredAtELO] regDoc=${(tReg - tCelo0).toFixed(0)}ms ` +
-        `cache=${cacheStatus} build=${(performance.now() - tReg).toFixed(0)}ms ` +
-        `poolRaw=${this._eloPoolCache!.rows.length} postFilter=${cards.length} ` +
-        `limit=${options.limit} targetElo=${targetElo}`
-    );
+    // [perf] parked: centeredAtELO regDoc / pool-cache timing
+    // logger.info(
+      // `[perf][centeredAtELO] regDoc=${(tReg - tCelo0).toFixed(0)}ms ` +
+        // `cache=${cacheStatus} build=${(performance.now() - tReg).toFixed(0)}ms ` +
+        // `poolRaw=${this._eloPoolCache?.rows.length ?? 0} postFilter=${cards.length} ` +
+        // `limit=${options.limit} targetElo=${targetElo}`
+    // );
 
     const selectedCards: {
       courseID: string;

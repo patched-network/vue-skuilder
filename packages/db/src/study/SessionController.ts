@@ -478,7 +478,13 @@ export class SessionController<TView = unknown> extends Loggable {
       this.log(`[Replan] Card guarantee set to ${this._minCardsGuarantee}`);
     }
 
+    // [perf] parked 2026-05 (pipeline-docs-workup) — uncomment to re-measure
+    // const tReplan0 = performance.now();
     await this._executeReplan(opts);
+    // logger.info(
+    //   `[perf][SessionController] replan${labelTag} (limit=${opts.limit ?? 'default'}, ` +
+    //     `mode=${opts.mode ?? 'replace'}) took ${(performance.now() - tReplan0).toFixed(0)}ms`
+    // );
   }
 
   /**
@@ -691,6 +697,7 @@ export class SessionController<TView = unknown> extends Loggable {
     additive?: boolean;
     limit?: number;
   }): Promise<number> {
+    // const tGwc0 = performance.now(); // [perf] parked
     const replan = options?.replan ?? false;
     const additive = options?.additive ?? false;
     const newLimit = options?.limit ?? this._defaultBatchLimit;
@@ -721,6 +728,8 @@ export class SessionController<TView = unknown> extends Loggable {
       }
     }
 
+    // const tSources = performance.now(); // [perf] parked
+
     // Verify we got content from at least one source
     if (batches.length === 0) {
       if (replan) {
@@ -736,6 +745,7 @@ export class SessionController<TView = unknown> extends Loggable {
 
     // Mix weighted cards across sources using configured strategy
     const mixedWeighted = this.mixer.mix(batches, fetchLimit * this.sources.length);
+    // const tMixed = performance.now(); // [perf] parked
 
     // Capture mixer run for debugging - fetch course names
     const sourceIds = batches.map((b) => {
@@ -834,6 +844,18 @@ export class SessionController<TView = unknown> extends Loggable {
     }
 
     this.log(report);
+
+    // [perf] parked: getWeightedContent stage timing
+    // const tEnd = performance.now();
+    // logger.info(
+    //   `[perf][SessionController] getWeightedContent(replan=${replan}): ` +
+    //     `sources=${(tSources - tGwc0).toFixed(0)}ms ` +
+    //     `mix=${(tMixed - tSources).toFixed(0)}ms ` +
+    //     `post=${(tEnd - tMixed).toFixed(0)}ms ` +
+    //     `total=${(tEnd - tGwc0).toFixed(0)}ms ` +
+    //     `[sources=${this.sources.length} fetchLimit=${fetchLimit} newLimit=${newLimit}]`
+    // );
+
     return wellIndicated;
   }
 
@@ -938,6 +960,10 @@ export class SessionController<TView = unknown> extends Loggable {
   public async nextCard(
     action: SessionAction = 'dismiss-success'
   ): Promise<HydratedCard<TView> | null> {
+    // [perf] parked: nextCard provenance/timing (awaitedReplan, wedgeRuns)
+    // const tNext0 = performance.now();
+    // let awaitedInFlightReplan = false;
+    // let wedgeRuns = 0;
     // dismiss (or sort to failedQ) the current card
     this.dismissCurrentCard(action);
 
@@ -959,6 +985,7 @@ export class SessionController<TView = unknown> extends Loggable {
       this.failedQ.length === 0
     ) {
       this.log('nextCard: queues empty, awaiting in-flight replan before drawing');
+      // awaitedInFlightReplan = true; // [perf] parked
       await this._replanPromise;
     }
 
@@ -1053,6 +1080,7 @@ export class SessionController<TView = unknown> extends Loggable {
         `Running pipeline (attempt ${wedgeEmptyStreak + 1}/${WEDGE_MAX_EMPTY_STREAK}).`
       );
       await this._replanUncoalesced({ label: 'wedge-breaker' });
+      // wedgeRuns++; // [perf] parked
       if (
         this.newQ.length === 0 &&
         this.reviewQ.length === 0 &&
@@ -1115,6 +1143,11 @@ export class SessionController<TView = unknown> extends Loggable {
         // Snapshot queue state
         snapshotQueues(this.reviewQ.length, this.newQ.length, this.failedQ.length);
 
+        // [perf] parked: per-draw nextCard timing
+        // logger.info(
+        //   `[perf][nextCard] -> ${card.item.cardID} in ${(performance.now() - tNext0).toFixed(0)}ms ` +
+        //     `(awaitedReplan=${awaitedInFlightReplan} wedgeRuns=${wedgeRuns})`
+        // );
         return card;
       }
 
