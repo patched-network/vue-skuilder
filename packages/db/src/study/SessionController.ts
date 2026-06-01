@@ -12,7 +12,7 @@ import {
   StudySessionReviewItem,
 } from '@db/impl/couch';
 
-import { CardRecord, CardHistory, CourseRegistrationDoc, QuestionRecord } from '@db/core';
+import { CardRecord, CardHistory, CourseRegistrationDoc, QuestionRecord, isQuestionRecord } from '@db/core';
 import { recordUserOutcome } from '@db/core/orchestration/recording';
 import { Loggable } from '@db/util';
 import { getCardOrigin } from '@db/core/navigators';
@@ -125,6 +125,64 @@ export interface ResponseResult {
   shouldClearFeedbackShadow: boolean;
 }
 
+/**
+ * Read-only snapshot of a single processed response, handed to every
+ * registered {@link OutcomeObserver} after ELO/SRS have been recorded.
+ *
+ * Only emitted for question records (non-question dismisses are skipped).
+ */
+export interface SessionOutcome {
+  /** The user's response. Includes `isCorrect`, `performance`, `priorAttemps`. */
+  readonly record: QuestionRecord;
+  /**
+   * The card that was answered, including its `tags` — the primary key an
+   * observer matches against (e.g. `gpc:exercise:*`). `card_elo` reflects
+   * pre-update state; the ELO write for this response is already in flight.
+   */
+  readonly card: StudySessionRecord['card'];
+  /** The navigation decision produced for this response (read-only). */
+  readonly result: Readonly<ResponseResult>;
+}
+
+/**
+ * The narrow capability surface handed to an {@link OutcomeObserver}. This is
+ * the *only* way an observer can affect the session — it cannot touch ELO,
+ * the queues, the timer, or mutate the `ResponseResult`. A misbehaving
+ * observer degrades to "wrong boost", never "corrupted session".
+ */
+export interface SessionControls {
+  /** Current session-durable hints, or null. For read-modify-write. */
+  getSessionHints(): ReplanHints | null;
+  /** Replace the session-durable hints wholesale (no decay). */
+  setSessionHints(hints: ReplanHints | null): void;
+  /**
+   * Merge `hints` into the existing session-durable hints via the pipeline's
+   * `mergeHints` (boosts multiply, require/exclude lists concat-dedup).
+   * Convenience for the common "add a boost on top of what's there" case.
+   * Note: multiplicative + no decay — clamp boost factors yourself if a
+   * repeatedly-failed tag could compound unboundedly.
+   */
+  mergeSessionHints(hints: ReplanHints): void;
+  /** Request a replan (e.g. `{ mode: 'merge' }` for immediate visibility). */
+  requestReplan(opts?: ReplanOptions): Promise<void>;
+}
+
+/**
+ * A consumer-supplied hook invoked after each question response is processed.
+ *
+ * Fires on *every* question response (gate inside on `record.isCorrect` /
+ * `result.nextCardAction` as needed). Awaited but isolated: a throwing
+ * observer is caught and logged, never wedging the session. Keep the
+ * synchronous body cheap and `void` any long work (e.g. a triggered replan)
+ * so you don't stall navigation.
+ *
+ * Registered via `StudySessionConfig.outcomeObservers` → constructor options.
+ */
+export type OutcomeObserver = (
+  outcome: SessionOutcome,
+  controls: SessionControls
+) => void | Promise<void>;
+
 interface SessionServices {
   response: ResponseProcessor;
 }
@@ -216,6 +274,19 @@ export class SessionController<TView = unknown> extends Loggable {
    */
   private _sessionHints: ReplanHints | null = null;
 
+  /**
+   * Consumer-supplied hooks invoked after each question response is processed.
+   * Seeded from constructor options (threaded from
+   * `StudySessionConfig.outcomeObservers`). See {@link OutcomeObserver}.
+   */
+  private _outcomeObservers: OutcomeObserver[] = [];
+
+  /**
+   * Lazily-built, stable capability object handed to observers. Bound to
+   * `this`; constructed once so observers can rely on referential identity.
+   */
+  private _sessionControls: SessionControls | null = null;
+
   private startTime: Date;
   private endTime: Date;
   private _secondsRemaining: number;
@@ -258,7 +329,11 @@ export class SessionController<TView = unknown> extends Loggable {
     dataLayer: DataLayerProvider,
     getViewComponent: (viewId: string) => TView,
     mixer?: SourceMixer,
-    options?: { defaultBatchLimit?: number; initialReviewCap?: number }
+    options?: {
+      defaultBatchLimit?: number;
+      initialReviewCap?: number;
+      outcomeObservers?: OutcomeObserver[];
+    }
   ) {
     super();
 
@@ -287,6 +362,9 @@ export class SessionController<TView = unknown> extends Loggable {
     }
     if (options?.initialReviewCap !== undefined) {
       this._initialReviewCap = options.initialReviewCap;
+    }
+    if (options?.outcomeObservers?.length) {
+      this._outcomeObservers = [...options.outcomeObservers];
     }
 
     this.log(`Session constructed:
@@ -553,6 +631,26 @@ export class SessionController<TView = unknown> extends Loggable {
   }
 
   /**
+   * Read the current session-durable hints (for read-modify-write callers,
+   * e.g. an outcome observer that clamps a compounding boost).
+   */
+  public getSessionHints(): ReplanHints | null {
+    return this._sessionHints;
+  }
+
+  /**
+   * Merge `hints` into the durable session hints via the pipeline's
+   * `mergeHints` (boosts multiply, require/exclude lists concat-dedup).
+   * Convenience over get-then-set for the common additive case. Note the
+   * multiplicative, no-decay semantics — clamp boost factors at the call
+   * site if a repeatedly-emphasised tag could compound unboundedly.
+   */
+  public mergeSessionHints(hints: ReplanHints): void {
+    this._sessionHints = mergeHints([this._sessionHints, hints]) ?? null;
+    this.log(`Session hints merged: ${JSON.stringify(this._sessionHints)}`);
+  }
+
+  /**
    * Merge the durable `_sessionHints` with this run's one-shot hints and
    * push the result to every source for consumption on the next pipeline
    * run. Centralised so the initial plan and all replan paths apply session
@@ -569,6 +667,56 @@ export class SessionController<TView = unknown> extends Loggable {
 
     for (const source of this.sources) {
       source.setEphemeralHints?.(merged);
+    }
+  }
+
+  /**
+   * Build (once) the stable capability object handed to outcome observers.
+   * Methods are bound to `this`; the object identity is stable across calls
+   * so observers may key off it.
+   */
+  private _getSessionControls(): SessionControls {
+    if (!this._sessionControls) {
+      this._sessionControls = {
+        getSessionHints: () => this.getSessionHints(),
+        setSessionHints: (h) => this.setSessionHints(h),
+        mergeSessionHints: (h) => this.mergeSessionHints(h),
+        requestReplan: (opts) => this.requestReplan(opts),
+      };
+    }
+    return this._sessionControls;
+  }
+
+  /**
+   * Notify registered outcome observers about a processed response.
+   *
+   * Only question records are surfaced (non-question dismisses are skipped).
+   * Observers run after ELO/SRS are recorded and before navigation. Each is
+   * awaited but isolated in try/catch — a throwing observer is logged and
+   * skipped, never wedging the session. Keep observers cheap and `void` any
+   * long work (e.g. a triggered replan) to avoid stalling the draw.
+   */
+  private async _notifyOutcomeObservers(
+    record: CardRecord,
+    currentCard: StudySessionRecord,
+    result: ResponseResult
+  ): Promise<void> {
+    if (this._outcomeObservers.length === 0) return;
+    if (!isQuestionRecord(record)) return;
+
+    const outcome: SessionOutcome = {
+      record,
+      card: currentCard.card,
+      result,
+    };
+    const controls = this._getSessionControls();
+
+    for (const observer of this._outcomeObservers) {
+      try {
+        await observer(outcome, controls);
+      } catch (e) {
+        this.error('[OutcomeObserver] observer threw; ignoring', e);
+      }
     }
   }
 
@@ -1285,7 +1433,7 @@ export class SessionController<TView = unknown> extends Loggable {
       ...currentCard.item,
     };
 
-    return await this.services.response.processResponse(
+    const result = await this.services.response.processResponse(
       cardRecord,
       cardHistory,
       studySessionItem,
@@ -1297,6 +1445,14 @@ export class SessionController<TView = unknown> extends Loggable {
       maxSessionViews,
       sessionViews
     );
+
+    // Surface the processed outcome to any registered observers (e.g. a
+    // difficulty-booster that bumps session hints on a failed exercise tag).
+    // Runs after ELO/SRS recording, before the caller navigates. Isolated so
+    // a faulty observer can't break response handling.
+    await this._notifyOutcomeObservers(cardRecord, currentCard, result);
+
+    return result;
   }
 
   private dismissCurrentCard(action: SessionAction = 'dismiss-success') {
