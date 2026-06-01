@@ -1,3 +1,5 @@
+import type { ReplanHints } from '@vue-skuilder/db';
+
 /**
  * Misc. config for a study StudySessionConfig
  */
@@ -32,11 +34,16 @@ export type StudySessionConfig = {
   initialReviewCap?: number;
 
   /**
-   * Optional hints to apply to the very first pipeline run (session init).
+   * Optional session-durable hints applied from session init onward.
    * Uses the same format as `ReplanOptions.hints` — boost/exclude/require tags.
-   * Applied via `setEphemeralHints()` before `prepareSession()`.
+   *
+   * Routed to `SessionController.setSessionHints()` before `prepareSession()`,
+   * so they are re-merged into every pipeline run for the rest of the session
+   * (initial plan + every replan), not consumed by the first run alone. This
+   * is what a post-lesson concept boost wants: emphasis that outlives the
+   * first queue rebuild rather than being clobbered by the first auto-replan.
    */
-  initHints?: Record<string, unknown>;
+  initHints?: ReplanHints;
 };
 
 /**
