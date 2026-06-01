@@ -17,6 +17,7 @@ import { recordUserOutcome } from '@db/core/orchestration/recording';
 import { Loggable } from '@db/util';
 import { getCardOrigin } from '@db/core/navigators';
 import { ReplanHints } from '@db/core/navigators/generators/types';
+import { mergeHints } from '@db/core/navigators/Pipeline';
 import { SourceMixer, QuotaRoundRobinMixer, SourceBatch } from './SourceMixer';
 import { captureMixerRun } from './MixerDebugger';
 import { startSessionTracking, recordCardPresentation, snapshotQueues, endSessionTracking } from './SessionDebugger';
@@ -35,6 +36,28 @@ export type { ReplanHints } from '@db/core/navigators/generators/types';
 export interface ReplanOptions {
   /** Scoring hints forwarded to the pipeline (boost/exclude/require). */
   hints?: ReplanHints;
+  /**
+   * Session-durable scoring hints. Unlike `hints` (one-shot, applied to
+   * exactly the run this replan triggers), `sessionHints` are stashed on
+   * the controller and re-merged into *every* subsequent pipeline run for
+   * the remainder of the session — including the bare auto-replans
+   * (depletion/quality) that carry no caller hints, and the wedge-breaker.
+   *
+   * Use for "emphasis that should outlive a single queue rebuild" — e.g.
+   * boosting a just-failed concept tag, or a post-lesson concept boost set
+   * at session start. Without this, a one-shot `hints` boost evaporates on
+   * the next replan and the freshly-rebuilt (replace-mode) queue clobbers
+   * whatever it surfaced.
+   *
+   * Semantics (KISS): setting `sessionHints` *replaces* the prior session
+   * hints wholesale (caller beware — no accumulation, no decay). They live
+   * until session end or until explicitly overwritten. Normal usage applies
+   * a fixed boost, so repeated identical requests are no-ops.
+   *
+   * Merged with per-run `hints` via the pipeline's `mergeHints` (boosts
+   * multiply, require/exclude lists concatenate).
+   */
+  sessionHints?: ReplanHints;
   /**
    * Maximum number of new cards to return from the pipeline.
    * Default: 20 (the standard session batch size).
@@ -176,6 +199,22 @@ export class SessionController<TView = unknown> extends Loggable {
    * each nextCard() draw. Set by replans that include `minFollowUpCards`.
    */
   private _minCardsGuarantee: number = 0;
+
+  /**
+   * Session-durable scoring hints. Re-merged into every pipeline run for
+   * the rest of the session (initial plan + every replan, including bare
+   * auto-replans and the wedge-breaker), via `_applyHintsToSources`.
+   *
+   * Set by `setSessionHints()` (e.g. session-start post-lesson boost) or by
+   * any replan carrying `ReplanOptions.sessionHints` (e.g. a just-failed
+   * concept boost). Replace semantics, no decay — lives until overwritten
+   * or session end. See `ReplanOptions.sessionHints` for rationale.
+   *
+   * Note: the controller-managed auto-excludes (current card, session
+   * record, imminent draw) are intentionally NOT folded in here — those are
+   * recomputed per-run in `_runReplan` and would otherwise go stale.
+   */
+  private _sessionHints: ReplanHints | null = null;
 
   private startTime: Date;
   private endTime: Date;
@@ -409,6 +448,7 @@ export class SessionController<TView = unknown> extends Loggable {
     if (opts.minFollowUpCards !== undefined) return true;
     if (opts.mode && opts.mode !== 'replace') return true;
     if (opts.hints && Object.keys(opts.hints).length > 0) return true;
+    if (opts.sessionHints !== undefined) return true;
     return false;
   }
 
@@ -455,16 +495,20 @@ export class SessionController<TView = unknown> extends Loggable {
 
     hints.excludeCards = [...excludeSet];
 
-    // Forward hints to all sources (CourseDB stashes them, Pipeline consumes them)
-    if (opts.hints) {
-      // Thread label into hints so Pipeline can attach it to provenance
-      const hintsWithLabel = opts.label
-        ? { ...opts.hints, _label: opts.label }
-        : opts.hints;
-      for (const source of this.sources) {
-        source.setEphemeralHints?.(hintsWithLabel);
-      }
+    // Replace session-durable hints if this replan carries them. KISS:
+    // wholesale replace, no accumulation/decay (see ReplanOptions.sessionHints).
+    if (opts.sessionHints !== undefined) {
+      this._sessionHints = opts.sessionHints;
+      this.log(
+        `[Replan] Session hints ${opts.sessionHints ? 'set' : 'cleared'}: ` +
+        `${JSON.stringify(opts.sessionHints)}`
+      );
     }
+
+    // Forward hints to all sources (CourseDB stashes them, Pipeline consumes
+    // them). The one-shot `opts.hints` are merged with the durable
+    // `_sessionHints` so session emphasis survives this and every later run.
+    this._applyHintsToSources(opts.hints, opts.label);
 
     const labelTag = opts.label ? ` [${opts.label}]` : '';
     this.log(
@@ -485,6 +529,47 @@ export class SessionController<TView = unknown> extends Loggable {
     //   `[perf][SessionController] replan${labelTag} (limit=${opts.limit ?? 'default'}, ` +
     //     `mode=${opts.mode ?? 'replace'}) took ${(performance.now() - tReplan0).toFixed(0)}ms`
     // );
+  }
+
+  /**
+   * Set the session-durable scoring hints (replace semantics, no decay).
+   *
+   * Unlike a one-shot replan hint, these are re-merged into every pipeline
+   * run for the rest of the session — including the initial plan when set
+   * before `prepareSession()`, every replan, the bare auto-replans, and the
+   * wedge-breaker. Pass `null` to clear.
+   *
+   * Typical callers:
+   * - `StudySession` at session start, threading `StudySessionConfig.initHints`
+   *   (e.g. a post-lesson concept boost) — so the boost outlives the first
+   *   queue rebuild instead of being clobbered by the first auto-replan.
+   * - A consumer view on a failure, boosting the just-failed concept tag.
+   *
+   * Does not itself trigger a replan; the next plan/replan picks it up.
+   */
+  public setSessionHints(hints: ReplanHints | null): void {
+    this._sessionHints = hints;
+    this.log(`Session hints ${hints ? 'set' : 'cleared'}: ${JSON.stringify(hints)}`);
+  }
+
+  /**
+   * Merge the durable `_sessionHints` with this run's one-shot hints and
+   * push the result to every source for consumption on the next pipeline
+   * run. Centralised so the initial plan and all replan paths apply session
+   * emphasis identically. No-op when there are no hints of either kind.
+   */
+  private _applyHintsToSources(oneShot?: ReplanHints, label?: string): void {
+    // Thread the provenance label into the one-shot layer; mergeHints will
+    // fold it into the combined `_label`.
+    const oneShotWithLabel: ReplanHints | undefined =
+      oneShot && label ? { ...oneShot, _label: label } : oneShot;
+
+    const merged = mergeHints([this._sessionHints, oneShotWithLabel]);
+    if (!merged) return;
+
+    for (const source of this.sources) {
+      source.setEphemeralHints?.(merged);
+    }
   }
 
   /**
@@ -519,7 +604,7 @@ export class SessionController<TView = unknown> extends Loggable {
     if (!input) return {};
 
     // If the input has any ReplanOptions-specific key, treat it as ReplanOptions
-    const replanKeys = ['hints', 'limit', 'mode', 'label', 'minFollowUpCards'];
+    const replanKeys = ['hints', 'sessionHints', 'limit', 'mode', 'label', 'minFollowUpCards'];
     const inputKeys = Object.keys(input);
     if (inputKeys.some((k) => replanKeys.includes(k))) {
       return input as ReplanOptions;
@@ -705,6 +790,14 @@ export class SessionController<TView = unknown> extends Loggable {
     // to _initialReviewCap independently of the new-card budget. Replans
     // never touch reviewQ, so the inflation is unnecessary there.
     const fetchLimit = replan ? newLimit : newLimit + this._initialReviewCap;
+
+    // Initial plan: push session-durable hints to sources so the very first
+    // pipeline run reflects them (e.g. a post-lesson boost). Replans push
+    // their own session+one-shot merge via _runReplan before reaching here,
+    // so we must NOT re-apply here or we'd drop their per-run excludeCards.
+    if (!replan) {
+      this._applyHintsToSources();
+    }
 
     // Collect batches from each source
     const batches: SourceBatch[] = [];

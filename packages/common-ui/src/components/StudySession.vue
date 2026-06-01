@@ -405,12 +405,14 @@ export default defineComponent({
         );
         this.sessionController.sessionRecord = this.sessionRecord;
 
-        // Apply init hints if provided (e.g. post-lesson boost tags)
+        // Apply init hints as SESSION-DURABLE hints (e.g. post-lesson boost
+        // tags). Routed through the controller's session-hints accumulator so
+        // they are re-merged into every pipeline run for the rest of the
+        // session — rather than being consumed by the initial plan alone and
+        // then clobbered by the first (replace-mode) auto-replan.
         if (this.sessionConfig?.initHints) {
-          for (const source of this.sessionContentSources) {
-            source.setEphemeralHints?.(this.sessionConfig.initHints as any);
-          }
-          console.log('[StudySession] Applied init hints to content sources');
+          this.sessionController.setSessionHints(this.sessionConfig.initHints);
+          console.log('[StudySession] Applied init hints as session-durable hints');
         }
 
         await this.sessionController.prepareSession();

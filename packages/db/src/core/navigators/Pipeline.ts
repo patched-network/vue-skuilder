@@ -48,7 +48,7 @@ function cardMatchesTagPattern(card: WeightedCard, pattern: string): boolean {
   return (card.tags ?? []).some((tag) => globMatch(tag, pattern));
 }
 
-function mergeHints(allHints: Array<ReplanHints | null | undefined>): ReplanHints | undefined {
+export function mergeHints(allHints: Array<ReplanHints | null | undefined>): ReplanHints | undefined {
   const defined = allHints.filter((h): h is ReplanHints => h !== null && h !== undefined);
   if (defined.length === 0) return undefined;
 
