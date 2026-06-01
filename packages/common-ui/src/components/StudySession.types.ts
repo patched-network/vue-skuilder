@@ -1,4 +1,4 @@
-import type { ReplanHints } from '@vue-skuilder/db';
+import type { ReplanHints, OutcomeObserver } from '@vue-skuilder/db';
 
 /**
  * Misc. config for a study StudySessionConfig
@@ -44,6 +44,18 @@ export type StudySessionConfig = {
    * first queue rebuild rather than being clobbered by the first auto-replan.
    */
   initHints?: ReplanHints;
+
+  /**
+   * Hooks invoked after each question response is processed, for the whole
+   * session. The framework-blessed seam for cross-cutting reactions to
+   * observed performance — e.g. boosting a just-failed concept tag via
+   * session-durable hints, in one place rather than per question view.
+   *
+   * Each observer receives a read-only `SessionOutcome` (record + card tags +
+   * nav result) and a narrow `SessionControls` capability (read/merge/replace
+   * session hints, request a replan). See `OutcomeObserver` in `@vue-skuilder/db`.
+   */
+  outcomeObservers?: OutcomeObserver[];
 };
 
 /**
