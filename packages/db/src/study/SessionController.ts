@@ -21,6 +21,7 @@ import { mergeHints } from '@db/core/navigators/Pipeline';
 import { SourceMixer, QuotaRoundRobinMixer, SourceBatch } from './SourceMixer';
 import { captureMixerRun } from './MixerDebugger';
 import { startSessionTracking, recordCardPresentation, snapshotQueues, endSessionTracking } from './SessionDebugger';
+import { registerActiveController, type SessionDebugSnapshot, type SessionQueueDebug } from './SessionOverlay';
 
 // ReplanHints is defined in generators/types to avoid circular dependencies.
 // Re-exported here for backward compatibility.
@@ -237,6 +238,14 @@ export class SessionController<TView = unknown> extends Loggable {
   private _replanPromise: Promise<void> | null = null;
 
   /**
+   * Reason for the replan currently executing in `_runReplan`, surfaced by the
+   * debug overlay's spinner. The caller's `opts.label` when present, else
+   * `'(auto)'`. Only meaningful while `_replanPromise` is non-null; cleared
+   * when the in-flight chain settles.
+   */
+  private _activeReplanLabel: string | null = null;
+
+  /**
    * Number of well-indicated new cards remaining before the queue
    * degrades to poorly-indicated content. Decremented on each newQ
    * draw; when it hits 0, a replan is triggered automatically
@@ -372,6 +381,11 @@ export class SessionController<TView = unknown> extends Loggable {
     endTime: ${this.endTime}
     defaultBatchLimit: ${this._defaultBatchLimit}
     initialReviewCap: ${this._initialReviewCap}`);
+
+    // Expose this (now the most-recently-constructed) controller to the debug
+    // overlay (window.skuilder.session.dbgOverlay()). A new session overwrites
+    // the prior handle; no-op overhead when the overlay is never opened.
+    registerActiveController(this);
   }
 
   private tick() {
@@ -500,17 +514,33 @@ export class SessionController<TView = unknown> extends Loggable {
         .catch(() => undefined)
         .then(() => this._runReplan(opts));
 
-      this._replanPromise = queued.finally(() => {
-        if (this._replanPromise === queued) this._replanPromise = null;
+      // Compare against the promise we actually store. `.finally()` returns a
+      // NEW promise, so guarding on `=== queued` (the pre-finally promise) never
+      // matches and would leak _replanPromise. `tracked` is read only inside the
+      // async callback (after init), so the self-reference is safe.
+      const tracked: Promise<void> = queued.finally(() => {
+        if (this._replanPromise === tracked) {
+          this._replanPromise = null;
+          this._activeReplanLabel = null;
+        }
       });
+      this._replanPromise = tracked;
 
       return queued;
     }
 
     const run = this._runReplan(opts);
-    this._replanPromise = run.finally(() => {
-      if (this._replanPromise === run) this._replanPromise = null;
+    // Compare against the wrapped promise we store, not `run` — `.finally()`
+    // returns a new promise, so `=== run` never matches and _replanPromise
+    // would never clear (perpetual "replan in progress"). Safe self-reference:
+    // `tracked` is read only in the async callback, after initialization.
+    const tracked: Promise<void> = run.finally(() => {
+      if (this._replanPromise === tracked) {
+        this._replanPromise = null;
+        this._activeReplanLabel = null;
+      }
     });
+    this._replanPromise = tracked;
 
     await run;
   }
@@ -521,7 +551,12 @@ export class SessionController<TView = unknown> extends Loggable {
    * triggers in nextCard) return false and may coalesce.
    */
   private _replanHasIntent(opts: ReplanOptions): boolean {
-    if (opts.label) return true;
+    // NOTE: `label` is intentionally NOT an intent signal. It is observability-
+    // only metadata (debug overlay spinner, log tags, Pipeline strategy names),
+    // so labelling a replan must never change scheduling. Intent is strictly
+    // "does this replan carry scheduling-relevant options". This lets the
+    // unlabeled-but-named auto-replans (auto:depletion / auto:quality) keep
+    // coalescing while still showing a reason in the overlay.
     if (opts.limit !== undefined) return true;
     if (opts.minFollowUpCards !== undefined) return true;
     if (opts.mode && opts.mode !== 'replace') return true;
@@ -543,6 +578,11 @@ export class SessionController<TView = unknown> extends Loggable {
    * newQ.peek(0) is the imminent draw we need to exclude.
    */
   private async _runReplan(opts: ReplanOptions): Promise<void> {
+    // Surface the executing replan's reason to the debug overlay spinner.
+    // `label` is observability-only (see _replanHasIntent); '(auto)' covers any
+    // unlabeled path.
+    this._activeReplanLabel = opts.label ?? '(auto)';
+
     // Exclude all cards already presented this session. The pipeline may
     // not yet see their encounter records (async writes), so without this
     // they can re-enter newQ via replaceAll and cause duplicates.
@@ -636,6 +676,35 @@ export class SessionController<TView = unknown> extends Loggable {
    */
   public getSessionHints(): ReplanHints | null {
     return this._sessionHints;
+  }
+
+  /**
+   * Live state snapshot for the debug overlay (window.skuilder.session
+   * .dbgOverlay()). Reads directly from the private queues and hints, so it
+   * always reflects the current moment — unlike the passive SessionDebugger
+   * snapshots, which only capture what was explicitly pushed to them.
+   */
+  public getDebugSnapshot(): SessionDebugSnapshot {
+    const describe = <T extends { cardID: string }>(q: ItemQueue<T>): SessionQueueDebug => {
+      const cards: string[] = [];
+      for (let i = 0; i < q.length; i++) {
+        cards.push(q.peek(i).cardID);
+      }
+      return { length: q.length, dequeueCount: q.dequeueCount, cards };
+    };
+    return {
+      secondsRemaining: this.secondsRemaining,
+      hasCardGuarantee: this.hasCardGuarantee,
+      minCardsGuarantee: this._minCardsGuarantee,
+      wellIndicatedRemaining: this._wellIndicatedRemaining,
+      currentCard: this._currentCard?.item.cardID ?? null,
+      sessionHints: this._sessionHints,
+      replanActive: this._replanPromise !== null,
+      replanLabel: this._activeReplanLabel,
+      reviewQ: describe(this.reviewQ),
+      newQ: describe(this.newQ),
+      failedQ: describe(this.failedQ),
+    };
   }
 
   /**
@@ -734,9 +803,14 @@ export class SessionController<TView = unknown> extends Loggable {
    */
   private async _replanUncoalesced(opts: ReplanOptions): Promise<void> {
     const run = this._runReplan(opts);
-    this._replanPromise = run.finally(() => {
-      if (this._replanPromise === run) this._replanPromise = null;
+    // See requestReplan: guard against the wrapped promise we store, not `run`.
+    const tracked: Promise<void> = run.finally(() => {
+      if (this._replanPromise === tracked) {
+        this._replanPromise = null;
+        this._activeReplanLabel = null;
+      }
     });
+    this._replanPromise = tracked;
     await run;
   }
 
@@ -1272,7 +1346,8 @@ export class SessionController<TView = unknown> extends Loggable {
         `(${otherContent} in other queues) with ${this._secondsRemaining}s remaining. ` +
         `Triggering background replan.`
       );
-      void this.requestReplan();
+      // label is observability-only (overlay/logs); does not affect coalescing.
+      void this.requestReplan({ label: 'auto:depletion' });
     }
 
     // Opportunistic quality: few well-indicated cards remain.
@@ -1288,7 +1363,8 @@ export class SessionController<TView = unknown> extends Loggable {
         `[AutoReplan:quality] ${this._wellIndicatedRemaining} well-indicated cards remaining ` +
         `(newQ: ${this.newQ.length}). Triggering background replan.`
       );
-      void this.requestReplan();
+      // label is observability-only (overlay/logs); does not affect coalescing.
+      void this.requestReplan({ label: 'auto:quality' });
     }
 
     if (this._secondsRemaining <= 0 && this.failedQ.length === 0 && this._minCardsGuarantee <= 0) {

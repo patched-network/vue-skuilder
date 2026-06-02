@@ -1,5 +1,6 @@
 import { logger } from '../util/logger';
 import { clearRunHistory as clearPipelineRunHistory } from '../core/navigators/PipelineDebugger';
+import { toggleSessionOverlay } from './SessionOverlay';
 
 // ============================================================================
 // SESSION DEBUGGER
@@ -345,6 +346,14 @@ export const sessionDebugAPI = {
   },
 
   /**
+   * Toggle the pinned, live-updating DOM overlay for the active controller
+   * (queues, session hints, timer). No-ops in non-browser hosts.
+   */
+  dbgOverlay(): void {
+    toggleSessionOverlay();
+  },
+
+  /**
    * Show presentation history for current or past session.
    */
   showHistory(sessionIndex: number = 0): void {
@@ -413,6 +422,7 @@ export const sessionDebugAPI = {
 🎯 Session Debug API
 
 Commands:
+  .dbgOverlay()             Toggle the pinned live overlay (queues, hints, timer)
   .showQueue()              Show current queue state (active session only)
   .showHistory(index?)      Show presentation history (0=current/last, 1=previous, etc)
   .showInterleaving(index?) Analyze course interleaving pattern

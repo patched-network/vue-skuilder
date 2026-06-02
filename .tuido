@@ -1,2 +1,4 @@
 extensions=md,ts,js,vue
 writeto=/home/colin/pn/vue-skuilder/master/.tuido
+exclude=devlog
+
