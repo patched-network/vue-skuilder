@@ -35,10 +35,17 @@ export function splitByDelimiters(text: string, l: string, r: string): string[] 
   return ret;
 }
 
+/** Strip trailing newline characters (but not spaces/tabs) from a string. */
+function stripTrailingNewlines(text: string): string {
+  return text.replace(/[\r\n]+$/, '');
+}
+
 export function splitTextToken(token: Tokens.Text): Tokens.Text[] {
   if (containsComponent(token)) {
-    const textChunks = splitByDelimiters(token.text, '{{', '}}');
-    const rawChunks = splitByDelimiters(token.raw, '{{', '}}');
+    // See splitParagraphToken: normalize trailing newlines (only) to neutralize
+    // marked's text/raw asymmetry without disturbing trailing spaces.
+    const textChunks = splitByDelimiters(stripTrailingNewlines(token.text), '{{', '}}');
+    const rawChunks = splitByDelimiters(stripTrailingNewlines(token.raw), '{{', '}}');
 
     if (textChunks.length === rawChunks.length) {
       return textChunks.map((_c, i) => {
@@ -62,8 +69,14 @@ export function splitParagraphToken(token: Tokens.Paragraph): TokenOrComponent[]
   let ret: MarkedToken[] = [];
 
   if (containsComponent(token)) {
-    const textChunks = splitByDelimiters(token.text, '{{', '}}');
-    const rawChunks = splitByDelimiters(token.raw, '{{', '}}');
+    // marked strips a trailing newline from token.text but keeps it on token.raw.
+    // When a blank/component is the last token, that asymmetry gives raw an extra
+    // trailing chunk, tripping the length check below and throwing. Strip trailing
+    // newlines (only) from both so the splits stay parallel. We must NOT strip
+    // trailing spaces: a trailing-space chunk is the documented workaround that
+    // keeps a final component from being treated as `last` (see MdTokenRenderer).
+    const textChunks = splitByDelimiters(stripTrailingNewlines(token.text), '{{', '}}');
+    const rawChunks = splitByDelimiters(stripTrailingNewlines(token.raw), '{{', '}}');
     if (textChunks.length === rawChunks.length) {
       for (let i = 0; i < textChunks.length; i++) {
         const textToken = {
