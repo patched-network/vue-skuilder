@@ -21,7 +21,12 @@ import { mergeHints } from '@db/core/navigators/Pipeline';
 import { SourceMixer, QuotaRoundRobinMixer, SourceBatch } from './SourceMixer';
 import { captureMixerRun } from './MixerDebugger';
 import { startSessionTracking, recordCardPresentation, snapshotQueues, endSessionTracking } from './SessionDebugger';
-import { registerActiveController, type SessionDebugSnapshot, type SessionQueueDebug } from './SessionOverlay';
+import {
+  registerActiveController,
+  type SessionDebugSnapshot,
+  type SessionDrawnCardDebug,
+  type SessionQueueDebug,
+} from './SessionOverlay';
 
 // ReplanHints is defined in generators/types to avoid circular dependencies.
 // Re-exported here for backward compatibility.
@@ -716,6 +721,16 @@ export class SessionController<TView = unknown> extends Loggable {
       }
       return { length: q.length, dequeueCount: q.dequeueCount, cards };
     };
+    const drawnCards: SessionDrawnCardDebug[] = this._sessionRecord.map((r) => {
+      const last = r.records[r.records.length - 1];
+      return {
+        cardID: r.item.cardID,
+        status: r.item.status,
+        attempts: r.records.length,
+        correct: last && isQuestionRecord(last) ? last.isCorrect : null,
+        timeSpentMs: r.records.reduce((sum, rec) => sum + rec.timeSpent, 0),
+      };
+    });
     return {
       secondsRemaining: this.secondsRemaining,
       hasCardGuarantee: this.hasCardGuarantee,
@@ -728,6 +743,7 @@ export class SessionController<TView = unknown> extends Loggable {
       reviewQ: describe(this.reviewQ),
       newQ: describe(this.newQ),
       failedQ: describe(this.failedQ),
+      drawnCards,
     };
   }
 

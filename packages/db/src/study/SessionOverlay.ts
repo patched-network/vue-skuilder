@@ -25,6 +25,22 @@ export interface SessionQueueDebug {
   cards: string[];
 }
 
+/**
+ * A card the learner has interacted with this session (one entry per card in
+ * the session record, regardless of which queue — if any — still holds it).
+ */
+export interface SessionDrawnCardDebug {
+  cardID: string;
+  /** Queue status at draw time: 'new' | 'review' | 'failed-new' | 'failed-review'. */
+  status: string;
+  /** Number of CardRecords logged for this card this session (≥1). */
+  attempts: number;
+  /** Latest record's correctness; null for non-question (info) records. */
+  correct: boolean | null;
+  /** Total time spent across all of this card's records, in ms. */
+  timeSpentMs: number;
+}
+
 /** Live snapshot of the controller, read fresh on each overlay tick. */
 export interface SessionDebugSnapshot {
   secondsRemaining: number;
@@ -42,6 +58,8 @@ export interface SessionDebugSnapshot {
   reviewQ: SessionQueueDebug;
   newQ: SessionQueueDebug;
   failedQ: SessionQueueDebug;
+  /** Every card the learner has interacted with this session, draw order. */
+  drawnCards: SessionDrawnCardDebug[];
 }
 
 /** The narrow surface the overlay needs from a SessionController. */
@@ -89,8 +107,22 @@ let spinnerFrame = 0;
 let overlayEl: HTMLElement | null = null;
 let pollHandle: ReturnType<typeof setInterval> | null = null;
 
-/** Expansion state for collapsible (large) queues, preserved across re-renders. */
-const expanded: Record<string, boolean> = { reviewQ: false, newQ: false, failedQ: false };
+/**
+ * Most recent snapshot rendered, retained so the click-to-copy button can
+ * serialise exactly what is on screen at click time (decoupled from the poll).
+ */
+let lastSnapshot: SessionDebugSnapshot | null = null;
+
+/** Epoch ms until which the copy button shows its "copied" confirmation. */
+let copyFlashUntil = 0;
+
+/** Expansion state for collapsible (large) lists, preserved across re-renders. */
+const expanded: Record<string, boolean> = {
+  reviewQ: false,
+  newQ: false,
+  failedQ: false,
+  drawn: false,
+};
 
 /**
  * Toggle the pinned overlay on/off. No-ops (with a console hint) when there is
@@ -153,11 +185,14 @@ function render(): void {
 
   const ctrl = getActiveController();
   if (!ctrl) {
+    lastSnapshot = null;
     overlayEl.innerHTML = headerHtml() + `<div style="opacity:.65">No active session.</div>`;
+    attachHandlers();
     return;
   }
 
   const s = ctrl.getDebugSnapshot();
+  lastSnapshot = s;
   overlayEl.innerHTML =
     headerHtml() +
     replanHtml(s) +
@@ -165,9 +200,17 @@ function render(): void {
     hintsHtml(s.sessionHints) +
     queueHtml('reviewQ', 'reviewQ', s.reviewQ) +
     queueHtml('newQ', 'newQ', s.newQ) +
-    queueHtml('failedQ', 'failedQ', s.failedQ);
+    queueHtml('failedQ', 'failedQ', s.failedQ) +
+    drawnHtml('drawn', s.drawnCards);
 
-  // Re-attach toggle handlers for collapsible queue headers each render.
+  attachHandlers();
+}
+
+/** (Re-)bind click handlers after each innerHTML rewrite. */
+function attachHandlers(): void {
+  if (!overlayEl) return;
+
+  // Toggle handlers for collapsible queue / drawn-list headers and footers.
   overlayEl.querySelectorAll<HTMLElement>('[data-q]').forEach((el) => {
     el.onclick = () => {
       const key = el.dataset.q;
@@ -176,10 +219,46 @@ function render(): void {
       render();
     };
   });
+
+  // Global click-to-copy: dump the currently-displayed snapshot as plain text.
+  const copyBtn = overlayEl.querySelector<HTMLElement>('[data-copy]');
+  if (copyBtn) {
+    copyBtn.onclick = (ev) => {
+      ev.stopPropagation();
+      copySnapshot();
+    };
+  }
+}
+
+/** Serialise the on-screen snapshot to the clipboard, with a transient flash. */
+function copySnapshot(): void {
+  const text = snapshotToText(lastSnapshot);
+  const flash = () => {
+    copyFlashUntil = Date.now() + 1200;
+    render();
+  };
+  const clip = typeof navigator !== 'undefined' ? navigator.clipboard : undefined;
+  if (clip?.writeText) {
+    clip.writeText(text).then(flash, (err) => {
+      logger.warn(`[Session Overlay] Clipboard write failed: ${String(err)}`);
+    });
+  } else {
+    logger.info(`[Session Overlay] Clipboard unavailable; snapshot follows:\n${text}`);
+  }
 }
 
 function headerHtml(): string {
-  return `<div style="font-weight:600;color:#93c5fd;margin-bottom:4px">⚙ SessionController</div>`;
+  const flashing = Date.now() < copyFlashUntil;
+  const btnLabel = flashing ? '✓ copied' : '⎘ copy';
+  const btnColor = flashing ? '#86efac' : '#93c5fd';
+  const copyBtn =
+    `<span data-copy style="cursor:pointer;float:right;font-weight:400;` +
+    `color:${btnColor};border:1px solid currentColor;border-radius:4px;` +
+    `padding:0 4px;line-height:1.3">${btnLabel}</span>`;
+  return (
+    `<div style="font-weight:600;color:#93c5fd;margin-bottom:4px">` +
+    `${copyBtn}⚙ SessionController</div>`
+  );
 }
 
 function replanHtml(s: SessionDebugSnapshot): string {
@@ -270,6 +349,109 @@ function queueHtml(key: string, label: string, q: SessionQueueDebug): string {
   }
 
   return title + body;
+}
+
+/** Compact, colour-coded per-card glyph: ✓ correct, ✗ wrong, · info-only. */
+function outcomeGlyph(correct: boolean | null): string {
+  if (correct === true) return `<span style="color:#86efac">✓</span>`;
+  if (correct === false) return `<span style="color:#fca5a5">✗</span>`;
+  return `<span style="opacity:.5">·</span>`;
+}
+
+/**
+ * Expandable list of every card the learner has interacted with this session.
+ * Mirrors `queueHtml`'s collapse behaviour but renders richer per-card detail
+ * (status, outcome, attempt count) since this is the audit trail, not a queue.
+ */
+function drawnHtml(key: string, drawn: SessionDrawnCardDebug[]): string {
+  const collapsible = drawn.length > INLINE_THRESHOLD;
+  const isOpen = collapsible && expanded[key];
+  const caret = collapsible ? (expanded[key] ? '▾ ' : '▸ ') : '';
+  const titleStyle = collapsible ? 'cursor:pointer;color:#c4b5fd' : 'color:#c4b5fd';
+  const titleAttr = collapsible ? ` data-q="${key}"` : '';
+  const title = `<div${titleAttr} style="${titleStyle}">${caret}drawn: ${drawn.length}</div>`;
+
+  if (!drawn.length) {
+    return title + `<div style="margin:1px 0 6px 6px;opacity:.5">none yet</div>`;
+  }
+
+  const shown = isOpen ? drawn : drawn.slice(0, INLINE_THRESHOLD);
+  const hiddenCount = drawn.length - shown.length;
+  const listMarginBottom = collapsible ? 2 : 6;
+
+  const rows = shown
+    .map((d) => {
+      const retries = d.attempts > 1 ? `<span style="opacity:.5"> ×${d.attempts}</span>` : '';
+      const time = `<span style="opacity:.45"> ${Math.round(d.timeSpentMs / 100) / 10}s</span>`;
+      return (
+        `<li style="white-space:nowrap">${outcomeGlyph(d.correct)} ${esc(d.cardID)}` +
+        `<span style="opacity:.5"> [${esc(d.status)}]</span>${retries}${time}</li>`
+      );
+    })
+    .join('');
+
+  let body = `<ol style="margin:2px 0 ${listMarginBottom}px 0;padding-left:20px">${rows}</ol>`;
+
+  if (collapsible) {
+    const footer = isOpen ? '▾ show less' : `… +${hiddenCount} more`;
+    body += `<div data-q="${key}" style="cursor:pointer;margin:0 0 6px 20px;opacity:.6">${footer}</div>`;
+  }
+
+  return title + body;
+}
+
+/**
+ * Plain-text rendering of a snapshot for the clipboard. Mirrors the on-screen
+ * sections (without truncation) so a copied dump is a complete, paste-able
+ * picture of session state at the moment of the click.
+ */
+function snapshotToText(s: SessionDebugSnapshot | null): string {
+  if (!s) return 'SessionController — no active session.';
+
+  const lines: string[] = [];
+  lines.push('=== SessionController ===');
+  lines.push(`time ${formatTime(s.secondsRemaining)}`);
+  if (s.hasCardGuarantee) lines.push(`guarantee: ${s.minCardsGuarantee}`);
+  lines.push(`well-indicated left: ${s.wellIndicatedRemaining}`);
+  lines.push(`current: ${s.currentCard ?? '—'}`);
+  lines.push(
+    s.replanActive ? `replan: ACTIVE [${s.replanLabel ?? '(auto)'}]` : 'replan: idle'
+  );
+
+  lines.push('');
+  lines.push('sessionHints:');
+  const h = s.sessionHints;
+  const hintParts: string[] = [];
+  if (h) {
+    if (h.boostTags && Object.keys(h.boostTags).length)
+      hintParts.push(`  boost: ${Object.entries(h.boostTags).map(([k, v]) => `${k}×${v}`).join(', ')}`);
+    if (h.boostCards && Object.keys(h.boostCards).length)
+      hintParts.push(`  boostCards: ${Object.entries(h.boostCards).map(([k, v]) => `${k}×${v}`).join(', ')}`);
+    if (h.requireCards?.length) hintParts.push(`  require: ${h.requireCards.join(', ')}`);
+    if (h.requireTags?.length) hintParts.push(`  requireTags: ${h.requireTags.join(', ')}`);
+    if (h.excludeTags?.length) hintParts.push(`  exclude: ${h.excludeTags.join(', ')}`);
+    if (h.excludeCards?.length) hintParts.push(`  excludeCards: ${h.excludeCards.join(', ')}`);
+  }
+  lines.push(hintParts.length ? hintParts.join('\n') : '  none');
+
+  const queueText = (label: string, q: SessionQueueDebug) => {
+    lines.push('');
+    lines.push(`${label}: ${q.length} (drawn ${q.dequeueCount})`);
+    q.cards.forEach((c, i) => lines.push(`  ${i + 1}. ${c}`));
+  };
+  queueText('reviewQ', s.reviewQ);
+  queueText('newQ', s.newQ);
+  queueText('failedQ', s.failedQ);
+
+  lines.push('');
+  lines.push(`drawn: ${s.drawnCards.length}`);
+  s.drawnCards.forEach((d, i) => {
+    const mark = d.correct === true ? '✓' : d.correct === false ? '✗' : '·';
+    const time = `${Math.round(d.timeSpentMs / 100) / 10}s`;
+    lines.push(`  ${i + 1}. ${mark} ${d.cardID} [${d.status}] ×${d.attempts} ${time}`);
+  });
+
+  return lines.join('\n');
 }
 
 function formatTime(totalSeconds: number): string {
