@@ -1629,6 +1629,16 @@ export class SessionController<TView = unknown> extends Loggable {
    * Remove an item from its source queue after consumption by nextCard().
    */
   private removeItemFromQueue(item: StudySessionItem): void {
+    // Durable-until-drawn requirements: a caller may place a card ID in the
+    // session-durable `requireCards` (via mergeSessionHints) so every later
+    // replan re-asserts it at +INF until it actually surfaces — e.g. a
+    // prescribed intro follow-up that must survive the replace-mode burst/auto
+    // replans that would otherwise clobber a one-shot requirement. The
+    // requirement is satisfied the instant the card is drawn, so clear it here
+    // (the single consumption choke-point) to stop it being re-injected forever
+    // and to bound accumulation. Generic: card-ID only, no domain vocabulary.
+    this._clearDurableRequirement(item.cardID);
+
     // Check each queue - item should be at the front of one of them
     if (this.reviewQ.peek(0)?.cardID === item.cardID) {
       this.reviewQ.dequeue((queueItem) => queueItem.cardID);
@@ -1640,6 +1650,28 @@ export class SessionController<TView = unknown> extends Loggable {
     } else if (this.failedQ.peek(0)?.cardID === item.cardID) {
       this.failedQ.dequeue((queueItem) => queueItem.cardID);
     }
+  }
+
+  /**
+   * Remove a satisfied card ID from the durable session-hint `requireCards`
+   * list. Called when a card is consumed (see removeItemFromQueue). No-op if
+   * the card was not a durable requirement.
+   *
+   * Matches literal IDs only: a glob/pattern requirement (which may stand for
+   * several cards) is NOT considered satisfied by a single draw and is left in
+   * place — durable patterns are the caller's responsibility, one-shot `hints`
+   * remain the right tool for them.
+   */
+  private _clearDurableRequirement(cardID: string): void {
+    const req = this._sessionHints?.requireCards;
+    if (!req || req.length === 0) return;
+    const next = req.filter((id) => id !== cardID);
+    if (next.length === req.length) return; // not a durable requirement
+    this._sessionHints = {
+      ...this._sessionHints!,
+      requireCards: next.length > 0 ? next : undefined,
+    };
+    this.log(`[Replan] Durable requirement satisfied & cleared on draw: ${cardID}`);
   }
 
   /**
