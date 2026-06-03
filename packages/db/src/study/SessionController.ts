@@ -304,6 +304,22 @@ export class SessionController<TView = unknown> extends Loggable {
   private _sessionHints: ReplanHints | null = null;
 
   /**
+   * Card IDs that have been *served* (drawn/consumed) this session. Populated
+   * at the single consumption choke-point (removeItemFromQueue), so it reflects
+   * a draw the instant it happens — earlier than `_sessionRecord`, which only
+   * lands once the card is *responded to*.
+   *
+   * Used to keep already-served cards out of newQ on every (re)plan: a `new`
+   * card shown once must never re-enter newQ this session. This is the general
+   * guard against re-presentation — including the case where a replan in flight
+   * captured a now-drawn card (e.g. a +INF require-injected follow-up the
+   * depletion prefetch grabbed just before it was drawn). Reviews/failed cards
+   * legitimately recur and are tracked by their own queues, so this only gates
+   * `new`-origin candidates.
+   */
+  private _servedCardIds: Set<string> = new Set();
+
+  /**
    * Consumer-supplied hooks invoked after each question response is processed.
    * Seeded from constructor options (threaded from
    * `StudySessionConfig.outcomeObservers`). See {@link OutcomeObserver}.
@@ -1140,8 +1156,13 @@ export class SessionController<TView = unknown> extends Loggable {
     const reviewWeighted = mixedWeighted
       .filter((w) => getCardOrigin(w) === 'review')
       .slice(0, this._initialReviewCap);
+    // Proactive de-dup: a `new` card served earlier this session must never
+    // re-enter newQ — whether it slipped back via a +INF require-injection, an
+    // additive merge, or a stale generator candidate. This is the general guard
+    // (see _servedCardIds); it makes re-presentation structurally impossible
+    // rather than relying on each upstream path to exclude correctly.
     const newWeighted = mixedWeighted
-      .filter((w) => getCardOrigin(w) === 'new')
+      .filter((w) => getCardOrigin(w) === 'new' && !this._servedCardIds.has(w.cardId))
       .slice(0, newLimit);
 
     logger.debug(`[reviews] got ${reviewWeighted.length} reviews from mixer`);
@@ -1638,6 +1659,11 @@ export class SessionController<TView = unknown> extends Loggable {
     // (the single consumption choke-point) to stop it being re-injected forever
     // and to bound accumulation. Generic: card-ID only, no domain vocabulary.
     this._clearDurableRequirement(item.cardID);
+
+    // Record the draw immediately (earlier than _sessionRecord, which waits for
+    // a response) so getWeightedContent can keep this card out of newQ on any
+    // replan that lands after this draw.
+    this._servedCardIds.add(item.cardID);
 
     // Check each queue - item should be at the front of one of them
     if (this.reviewQ.peek(0)?.cardID === item.cardID) {
