@@ -75,7 +75,11 @@ export function getActiveController(): SessionDebugTarget | null {
 
 const OVERLAY_ID = 'skuilder-session-overlay';
 const POLL_MS = 300;
-/** Queues with at most this many cards are listed outright; larger ones collapse to a count. */
+/**
+ * Cap on how many cards a queue lists by default. Queues at or below this show
+ * in full; larger ones show the first INLINE_THRESHOLD then a clickable
+ * "… +N more" affordance that expands to the full list (and back).
+ */
 const INLINE_THRESHOLD = 5;
 
 /** Braille spinner frames, advanced once per render tick (≈POLL_MS cadence). */
@@ -238,26 +242,33 @@ function hintsHtml(h: ReplanHints | null): string {
 
 function queueHtml(key: string, label: string, q: SessionQueueDebug): string {
   const collapsible = q.length > INLINE_THRESHOLD;
-  const isOpen = !collapsible || expanded[key];
+  const isOpen = collapsible && expanded[key];
   const caret = collapsible ? (expanded[key] ? '▾ ' : '▸ ') : '';
   const drawn = q.dequeueCount ? ` <span style="opacity:.5">drawn ${q.dequeueCount}</span>` : '';
-  const titleStyle = collapsible
-    ? 'cursor:pointer;color:#f9a8d4'
-    : 'color:#f9a8d4';
+  const titleStyle = collapsible ? 'cursor:pointer;color:#f9a8d4' : 'color:#f9a8d4';
   const titleAttr = collapsible ? ` data-q="${key}"` : '';
   const title = `<div${titleAttr} style="${titleStyle}">${caret}${label}: ${q.length}${drawn}</div>`;
 
-  let body = '';
-  if (isOpen && q.cards.length) {
-    body =
-      `<ol style="margin:2px 0 6px 0;padding-left:20px">` +
-      q.cards.map((c) => `<li style="white-space:nowrap">${esc(c)}</li>`).join('') +
-      `</ol>`;
-  } else if (!q.cards.length) {
-    body = `<div style="margin:1px 0 6px 6px;opacity:.5">empty</div>`;
-  } else {
-    body = `<div style="margin:1px 0 6px 6px;opacity:.55">(${q.length} cards — click to expand)</div>`;
+  if (!q.cards.length) {
+    return title + `<div style="margin:1px 0 6px 6px;opacity:.5">empty</div>`;
   }
+
+  // Always list up to INLINE_THRESHOLD cards; the remainder hides behind an
+  // expand toggle so long queues never blow out the overlay but stay inspectable.
+  const shown = isOpen ? q.cards : q.cards.slice(0, INLINE_THRESHOLD);
+  const hiddenCount = q.length - shown.length;
+  const listMarginBottom = collapsible ? 2 : 6;
+
+  let body =
+    `<ol style="margin:2px 0 ${listMarginBottom}px 0;padding-left:20px">` +
+    shown.map((c) => `<li style="white-space:nowrap">${esc(c)}</li>`).join('') +
+    `</ol>`;
+
+  if (collapsible) {
+    const footer = isOpen ? '▾ show less' : `… +${hiddenCount} more`;
+    body += `<div data-q="${key}" style="cursor:pointer;margin:0 0 6px 20px;opacity:.6">${footer}</div>`;
+  }
+
   return title + body;
 }
 
