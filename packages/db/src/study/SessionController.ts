@@ -60,6 +60,21 @@ export interface ReplanOptions {
    */
   sessionHints?: ReplanHints;
   /**
+   * Like `sessionHints`, but *merged* into the existing session-durable hints
+   * (via `mergeHints`) instead of replacing them. Use when emphasis should
+   * *accumulate* across replans rather than clobber — e.g. introducing a second
+   * concept mid-session must not wipe the first concept's boost, nor any
+   * `difficultyBooster`/`conceptBackoff` state on other concepts.
+   *
+   * Merge semantics (see `mergeHints`): boosts MULTIPLY, require/exclude lists
+   * concat-dedup. Re-emphasising the *same* tag therefore compounds — callers
+   * boosting a tag they may have already boosted should clamp at the call site.
+   *
+   * If both `sessionHints` and `mergeSessionHints` are supplied, the replace is
+   * applied first, then the merge — but they are normally mutually exclusive.
+   */
+  mergeSessionHints?: ReplanHints;
+  /**
    * Maximum number of new cards to return from the pipeline.
    * Default: 20 (the standard session batch size).
    */
@@ -562,6 +577,7 @@ export class SessionController<TView = unknown> extends Loggable {
     if (opts.mode && opts.mode !== 'replace') return true;
     if (opts.hints && Object.keys(opts.hints).length > 0) return true;
     if (opts.sessionHints !== undefined) return true;
+    if (opts.mergeSessionHints !== undefined) return true;
     return false;
   }
 
@@ -621,6 +637,14 @@ export class SessionController<TView = unknown> extends Loggable {
         `[Replan] Session hints ${opts.sessionHints ? 'set' : 'cleared'}: ` +
         `${JSON.stringify(opts.sessionHints)}`
       );
+    }
+
+    // Additive emphasis: merge (don't clobber) into durable hints. Lets a new
+    // concept's boost accumulate on top of prior concepts' boosts and any
+    // observer-managed boost/decay state. Boosts multiply, lists concat-dedup.
+    if (opts.mergeSessionHints !== undefined) {
+      this._sessionHints = mergeHints([this._sessionHints, opts.mergeSessionHints]) ?? null;
+      this.log(`[Replan] Session hints merged: ${JSON.stringify(this._sessionHints)}`);
     }
 
     // Forward hints to all sources (CourseDB stashes them, Pipeline consumes
