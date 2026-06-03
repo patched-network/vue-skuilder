@@ -1387,7 +1387,10 @@ export class SessionController<TView = unknown> extends Loggable {
         `Triggering background replan.`
       );
       // label is observability-only (overlay/logs); does not affect coalescing.
-      void this.requestReplan({ label: 'auto:depletion' });
+      // mode:'merge' preserves any already-queued cards (e.g. an undrawn
+      // prescribed WST whose one-shot requireCards won't be re-asserted by this
+      // bare replan) instead of replaceAll() wiping them. See mergeToFront.
+      void this.requestReplan({ label: 'auto:depletion', mode: 'merge' });
     }
 
     // Opportunistic quality: few well-indicated cards remain.
