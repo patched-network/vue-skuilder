@@ -7,6 +7,13 @@ import type { QualifiedCardID } from '../..';
 import type { CardGenerator, GeneratorContext, GeneratorResult } from './types';
 import { logger } from '@db/util/logger';
 
+/**
+ * Std-dev (in ELO points) of the Gaussian that converts card↔user ELO distance
+ * into a relevance weight. 300 reproduces the legacy linear ramp's half-weight
+ * point (distance 250 → ~0.5) while removing its hard zero beyond distance 500.
+ */
+const ELO_RELEVANCE_SIGMA = 300;
+
 // ============================================================================
 // ELO NAVIGATOR
 // ============================================================================
@@ -96,17 +103,31 @@ export default class ELONavigator extends ContentNavigator implements CardGenera
         // `[active=${activeCards.length} candidates=${newCards.length}]`
     // );
 
-    // Score new cards by ELO distance, then apply weighted sampling without
-    // replacement using the Efraimidis-Spirakis (A-Res) algorithm:
+    // Score new cards by ELO proximity, then apply bounded multiplicative
+    // jitter for session-to-session variety.
     //
-    //   key = U ^ (1 / rawScore)   where U ~ Uniform(0, 1)
+    //   relevance = exp(-(distance / SIGMA)^2)   // Gaussian: smooth, always > 0
+    //   score     = relevance * (0.5 + 0.5 * U)  // U ~ Uniform(0, 1)
     //
-    // Sorting by key descending produces a weighted random sample: high-score
-    // cards are still preferred, but cards with equal scores are shuffled
-    // uniformly rather than deterministically. This prevents the same failed
-    // cards from looping back every session when many cards share similar ELO.
+    // This replaces the legacy `rawScore = max(0, 1 - distance/500)` ramp +
+    // Efraimidis-Spirakis key `U^(1/rawScore)`, which introduced two
+    // discontinuities that defeated downstream replan boosts:
+    //   1. The ramp's clamp made every card ≥500 ELO from the user a HARD zero.
+    //      The pipeline DELETES zero-score cards (filter score>0) *before* boosts
+    //      are applied, so no boost could resurface an under-ELO'd target — e.g.
+    //      a freshly-introduced grapheme sitting ~475 below an inflated global
+    //      ELO. (See packages/db/docs/todo-intro-concept-emphasis-and-retrieval.md.)
+    //   2. The A-Res key `U^(1/rawScore)` ALSO manufactured effective zeros: as
+    //      rawScore→0 the exponent explodes and `U^huge` underflows to 0, with
+    //      wild variance just above it — so a downstream boost multiplied a
+    //      lottery ticket rather than a stable relevance.
     //
-    // Edge case: rawScore=0 → key=0, never selected (correct exclusion).
+    // Gaussian relevance never hits zero (no cliff, survives the score>0 filter,
+    // so a boost can always lift a low-ELO target), and the [0.5, 1] jitter keeps
+    // ELO ordering up to a 2× factor while still shuffling near-equal cards so the
+    // same cards don't loop every session. SIGMA=300 reproduces the old ramp's
+    // half-weight point (distance 250 → ~0.5), leaving center-of-range difficulty
+    // matching unchanged.
     //
     // Card ELO is read from the pooled `.elo` carried on each candidate by
     // getCardsCenteredAtELO — verified equal to a separate getCardEloData()
@@ -115,8 +136,8 @@ export default class ELONavigator extends ContentNavigator implements CardGenera
       const cardElo = c.elo ?? 1000;
 
       const distance = Math.abs(cardElo - userGlobalElo);
-      const rawScore = Math.max(0, 1 - distance / 500);
-      const samplingKey = rawScore > 0 ? Math.random() ** (1 / rawScore) : 0;
+      const relevance = Math.exp(-((distance / ELO_RELEVANCE_SIGMA) ** 2));
+      const samplingKey = relevance * (0.5 + 0.5 * Math.random());
 
       return {
         cardId: c.cardID,
@@ -129,7 +150,7 @@ export default class ELONavigator extends ContentNavigator implements CardGenera
             strategyId: this.strategyId || 'NAVIGATION_STRATEGY-ELO-default',
             action: 'generated',
             score: samplingKey,
-            reason: `ELO distance ${Math.round(distance)} (card: ${Math.round(cardElo)}, user: ${Math.round(userGlobalElo)}), raw ${rawScore.toFixed(3)}, key ${samplingKey.toFixed(3)}`,
+            reason: `ELO distance ${Math.round(distance)} (card: ${Math.round(cardElo)}, user: ${Math.round(userGlobalElo)}), relevance ${relevance.toFixed(3)}, key ${samplingKey.toFixed(3)}`,
           },
         ],
       };

@@ -21,7 +21,12 @@ import { mergeHints } from '@db/core/navigators/Pipeline';
 import { SourceMixer, QuotaRoundRobinMixer, SourceBatch } from './SourceMixer';
 import { captureMixerRun } from './MixerDebugger';
 import { startSessionTracking, recordCardPresentation, snapshotQueues, endSessionTracking } from './SessionDebugger';
-import { registerActiveController, type SessionDebugSnapshot, type SessionQueueDebug } from './SessionOverlay';
+import {
+  registerActiveController,
+  type SessionDebugSnapshot,
+  type SessionDrawnCardDebug,
+  type SessionQueueDebug,
+} from './SessionOverlay';
 
 // ReplanHints is defined in generators/types to avoid circular dependencies.
 // Re-exported here for backward compatibility.
@@ -59,6 +64,21 @@ export interface ReplanOptions {
    * multiply, require/exclude lists concatenate).
    */
   sessionHints?: ReplanHints;
+  /**
+   * Like `sessionHints`, but *merged* into the existing session-durable hints
+   * (via `mergeHints`) instead of replacing them. Use when emphasis should
+   * *accumulate* across replans rather than clobber — e.g. introducing a second
+   * concept mid-session must not wipe the first concept's boost, nor any
+   * `difficultyBooster`/`conceptBackoff` state on other concepts.
+   *
+   * Merge semantics (see `mergeHints`): boosts MULTIPLY, require/exclude lists
+   * concat-dedup. Re-emphasising the *same* tag therefore compounds — callers
+   * boosting a tag they may have already boosted should clamp at the call site.
+   *
+   * If both `sessionHints` and `mergeSessionHints` are supplied, the replace is
+   * applied first, then the merge — but they are normally mutually exclusive.
+   */
+  mergeSessionHints?: ReplanHints;
   /**
    * Maximum number of new cards to return from the pipeline.
    * Default: 20 (the standard session batch size).
@@ -282,6 +302,22 @@ export class SessionController<TView = unknown> extends Loggable {
    * recomputed per-run in `_runReplan` and would otherwise go stale.
    */
   private _sessionHints: ReplanHints | null = null;
+
+  /**
+   * Card IDs that have been *served* (drawn/consumed) this session. Populated
+   * at the single consumption choke-point (removeItemFromQueue), so it reflects
+   * a draw the instant it happens — earlier than `_sessionRecord`, which only
+   * lands once the card is *responded to*.
+   *
+   * Used to keep already-served cards out of newQ on every (re)plan: a `new`
+   * card shown once must never re-enter newQ this session. This is the general
+   * guard against re-presentation — including the case where a replan in flight
+   * captured a now-drawn card (e.g. a +INF require-injected follow-up the
+   * depletion prefetch grabbed just before it was drawn). Reviews/failed cards
+   * legitimately recur and are tracked by their own queues, so this only gates
+   * `new`-origin candidates.
+   */
+  private _servedCardIds: Set<string> = new Set();
 
   /**
    * Consumer-supplied hooks invoked after each question response is processed.
@@ -562,6 +598,7 @@ export class SessionController<TView = unknown> extends Loggable {
     if (opts.mode && opts.mode !== 'replace') return true;
     if (opts.hints && Object.keys(opts.hints).length > 0) return true;
     if (opts.sessionHints !== undefined) return true;
+    if (opts.mergeSessionHints !== undefined) return true;
     return false;
   }
 
@@ -621,6 +658,14 @@ export class SessionController<TView = unknown> extends Loggable {
         `[Replan] Session hints ${opts.sessionHints ? 'set' : 'cleared'}: ` +
         `${JSON.stringify(opts.sessionHints)}`
       );
+    }
+
+    // Additive emphasis: merge (don't clobber) into durable hints. Lets a new
+    // concept's boost accumulate on top of prior concepts' boosts and any
+    // observer-managed boost/decay state. Boosts multiply, lists concat-dedup.
+    if (opts.mergeSessionHints !== undefined) {
+      this._sessionHints = mergeHints([this._sessionHints, opts.mergeSessionHints]) ?? null;
+      this.log(`[Replan] Session hints merged: ${JSON.stringify(this._sessionHints)}`);
     }
 
     // Forward hints to all sources (CourseDB stashes them, Pipeline consumes
@@ -692,6 +737,16 @@ export class SessionController<TView = unknown> extends Loggable {
       }
       return { length: q.length, dequeueCount: q.dequeueCount, cards };
     };
+    const drawnCards: SessionDrawnCardDebug[] = this._sessionRecord.map((r) => {
+      const last = r.records[r.records.length - 1];
+      return {
+        cardID: r.item.cardID,
+        status: r.item.status,
+        attempts: r.records.length,
+        correct: last && isQuestionRecord(last) ? last.isCorrect : null,
+        timeSpentMs: r.records.reduce((sum, rec) => sum + rec.timeSpent, 0),
+      };
+    });
     return {
       secondsRemaining: this.secondsRemaining,
       hasCardGuarantee: this.hasCardGuarantee,
@@ -704,6 +759,7 @@ export class SessionController<TView = unknown> extends Loggable {
       reviewQ: describe(this.reviewQ),
       newQ: describe(this.newQ),
       failedQ: describe(this.failedQ),
+      drawnCards,
     };
   }
 
@@ -1100,8 +1156,13 @@ export class SessionController<TView = unknown> extends Loggable {
     const reviewWeighted = mixedWeighted
       .filter((w) => getCardOrigin(w) === 'review')
       .slice(0, this._initialReviewCap);
+    // Proactive de-dup: a `new` card served earlier this session must never
+    // re-enter newQ — whether it slipped back via a +INF require-injection, an
+    // additive merge, or a stale generator candidate. This is the general guard
+    // (see _servedCardIds); it makes re-presentation structurally impossible
+    // rather than relying on each upstream path to exclude correctly.
     const newWeighted = mixedWeighted
-      .filter((w) => getCardOrigin(w) === 'new')
+      .filter((w) => getCardOrigin(w) === 'new' && !this._servedCardIds.has(w.cardId))
       .slice(0, newLimit);
 
     logger.debug(`[reviews] got ${reviewWeighted.length} reviews from mixer`);
@@ -1347,7 +1408,10 @@ export class SessionController<TView = unknown> extends Loggable {
         `Triggering background replan.`
       );
       // label is observability-only (overlay/logs); does not affect coalescing.
-      void this.requestReplan({ label: 'auto:depletion' });
+      // mode:'merge' preserves any already-queued cards (e.g. an undrawn
+      // prescribed WST whose one-shot requireCards won't be re-asserted by this
+      // bare replan) instead of replaceAll() wiping them. See mergeToFront.
+      void this.requestReplan({ label: 'auto:depletion', mode: 'merge' });
     }
 
     // Opportunistic quality: few well-indicated cards remain.
@@ -1586,6 +1650,21 @@ export class SessionController<TView = unknown> extends Loggable {
    * Remove an item from its source queue after consumption by nextCard().
    */
   private removeItemFromQueue(item: StudySessionItem): void {
+    // Durable-until-drawn requirements: a caller may place a card ID in the
+    // session-durable `requireCards` (via mergeSessionHints) so every later
+    // replan re-asserts it at +INF until it actually surfaces — e.g. a
+    // prescribed intro follow-up that must survive the replace-mode burst/auto
+    // replans that would otherwise clobber a one-shot requirement. The
+    // requirement is satisfied the instant the card is drawn, so clear it here
+    // (the single consumption choke-point) to stop it being re-injected forever
+    // and to bound accumulation. Generic: card-ID only, no domain vocabulary.
+    this._clearDurableRequirement(item.cardID);
+
+    // Record the draw immediately (earlier than _sessionRecord, which waits for
+    // a response) so getWeightedContent can keep this card out of newQ on any
+    // replan that lands after this draw.
+    this._servedCardIds.add(item.cardID);
+
     // Check each queue - item should be at the front of one of them
     if (this.reviewQ.peek(0)?.cardID === item.cardID) {
       this.reviewQ.dequeue((queueItem) => queueItem.cardID);
@@ -1597,6 +1676,28 @@ export class SessionController<TView = unknown> extends Loggable {
     } else if (this.failedQ.peek(0)?.cardID === item.cardID) {
       this.failedQ.dequeue((queueItem) => queueItem.cardID);
     }
+  }
+
+  /**
+   * Remove a satisfied card ID from the durable session-hint `requireCards`
+   * list. Called when a card is consumed (see removeItemFromQueue). No-op if
+   * the card was not a durable requirement.
+   *
+   * Matches literal IDs only: a glob/pattern requirement (which may stand for
+   * several cards) is NOT considered satisfied by a single draw and is left in
+   * place — durable patterns are the caller's responsibility, one-shot `hints`
+   * remain the right tool for them.
+   */
+  private _clearDurableRequirement(cardID: string): void {
+    const req = this._sessionHints?.requireCards;
+    if (!req || req.length === 0) return;
+    const next = req.filter((id) => id !== cardID);
+    if (next.length === req.length) return; // not a durable requirement
+    this._sessionHints = {
+      ...this._sessionHints!,
+      requireCards: next.length > 0 ? next : undefined,
+    };
+    this.log(`[Replan] Durable requirement satisfied & cleared on draw: ${cardID}`);
   }
 
   /**
