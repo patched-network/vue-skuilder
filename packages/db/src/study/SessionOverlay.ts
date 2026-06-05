@@ -116,6 +116,13 @@ let lastSnapshot: SessionDebugSnapshot | null = null;
 /** Epoch ms until which the copy button shows its "copied" confirmation. */
 let copyFlashUntil = 0;
 
+/**
+ * When minified, the overlay collapses to just its header bar (title + copy +
+ * restore button), suppressing all body sections. The poll keeps running so
+ * `lastSnapshot` — and therefore the copy button — stays current underneath.
+ */
+let minified = false;
+
 /** Expansion state for collapsible (large) lists, preserved across re-renders. */
 const expanded: Record<string, boolean> = {
   reviewQ: false,
@@ -143,6 +150,7 @@ export function toggleSessionOverlay(): void {
 }
 
 function mount(): void {
+  minified = false;
   overlayEl = document.createElement('div');
   overlayEl.id = OVERLAY_ID;
   Object.assign(overlayEl.style, {
@@ -186,13 +194,21 @@ function render(): void {
   const ctrl = getActiveController();
   if (!ctrl) {
     lastSnapshot = null;
-    overlayEl.innerHTML = headerHtml() + `<div style="opacity:.65">No active session.</div>`;
+    overlayEl.innerHTML =
+      headerHtml() + (minified ? '' : `<div style="opacity:.65">No active session.</div>`);
     attachHandlers();
     return;
   }
 
   const s = ctrl.getDebugSnapshot();
   lastSnapshot = s;
+
+  if (minified) {
+    overlayEl.innerHTML = headerHtml();
+    attachHandlers();
+    return;
+  }
+
   overlayEl.innerHTML =
     headerHtml() +
     replanHtml(s) +
@@ -228,6 +244,16 @@ function attachHandlers(): void {
       copySnapshot();
     };
   }
+
+  // Minify / restore: collapse the overlay to its header bar and back.
+  const minBtn = overlayEl.querySelector<HTMLElement>('[data-min]');
+  if (minBtn) {
+    minBtn.onclick = (ev) => {
+      ev.stopPropagation();
+      minified = !minified;
+      render();
+    };
+  }
 }
 
 /** Serialise the on-screen snapshot to the clipboard, with a transient flash. */
@@ -255,9 +281,14 @@ function headerHtml(): string {
     `<span data-copy style="cursor:pointer;float:right;font-weight:400;` +
     `color:${btnColor};border:1px solid currentColor;border-radius:4px;` +
     `padding:0 4px;line-height:1.3">${btnLabel}</span>`;
+  const minBtn =
+    `<span data-min title="${minified ? 'Restore' : 'Minify'}" ` +
+    `style="cursor:pointer;float:right;font-weight:400;color:#93c5fd;` +
+    `border:1px solid currentColor;border-radius:4px;padding:0 5px;` +
+    `margin-right:4px;line-height:1.3">${minified ? '▢' : '—'}</span>`;
   return (
-    `<div style="font-weight:600;color:#93c5fd;margin-bottom:4px">` +
-    `${copyBtn}⚙ SessionController</div>`
+    `<div style="font-weight:600;color:#93c5fd;margin-bottom:${minified ? 0 : 4}px">` +
+    `${copyBtn}${minBtn}⚙ SessionController</div>`
   );
 }
 
