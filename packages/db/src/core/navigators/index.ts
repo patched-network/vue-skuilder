@@ -5,6 +5,14 @@ export type { CardFilter, FilterContext, CardFilterFactory } from './filters/typ
 
 // Re-export generator types
 export type { CardGenerator, GeneratorContext, CardGeneratorFactory, GeneratorResult, ReplanHints } from './generators/types';
+
+// Re-export the diversity re-rank stage (pipeline stage 3)
+export {
+  diversityRerank,
+  DIVERSITY_STRENGTH,
+  DIVERSITY_FLOOR,
+  type DiversityRerankOptions,
+} from './diversityRerank';
 import type { GeneratorResult, ReplanHints } from './generators/types';
 
 // Re-export pipeline debugger API

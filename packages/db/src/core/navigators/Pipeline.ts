@@ -9,6 +9,7 @@ import type { GeneratorResult } from './generators/types';
 import { logger } from '../../util/logger';
 import { createOrchestrationContext, OrchestrationContext } from '../orchestration';
 import { captureRun, buildRunReport, registerPipelineForDebug, type GeneratorSummary, type FilterImpact } from './PipelineDebugger';
+import { diversityRerank } from './diversityRerank';
 
 // ============================================================================
 // REPLAN HINTS
@@ -180,7 +181,7 @@ function logResultCards(cards: WeightedCard[]): void {
     const c = cards[i];
     const tags = c.tags?.slice(0, 3).join(', ') || '';
     const filters = c.provenance
-      .filter((p) => p.strategy === 'hierarchyDefinition' || p.strategy === 'priorityDefinition' || p.strategy === 'interferenceFilter' || p.strategy === 'letterGating' || p.strategy === 'ephemeralHint')
+      .filter((p) => p.strategy === 'hierarchyDefinition' || p.strategy === 'priorityDefinition' || p.strategy === 'interferenceFilter' || p.strategy === 'letterGating' || p.strategy === 'ephemeralHint' || p.strategy === 'diversityRerank')
       .map((p) => {
         const arrow = p.action === 'boosted' ? '↑' : p.action === 'penalized' ? '↓' : '=';
         return `${p.strategyName}${arrow}${p.score.toFixed(2)}`;
@@ -494,6 +495,14 @@ export class Pipeline extends ContentNavigator {
       this._ephemeralHints = null; // consume
       cards = this.applyHints(cards, hints, allCardsBeforeFiltering);
     }
+
+    // Stage 3: diversity re-rank (post-filter, post-hints, pre-sort). Demotes
+    // cards whose distinctive tags already appeared among higher-ranked
+    // candidates so a single answer/concept can't monopolise the head of the
+    // queue. Tag-agnostic (rarity-weighted overlap — no namespace privileged)
+    // and expressed as score penalties so the ordering survives the final sort
+    // here AND the SourceMixer's score-descending re-sort downstream.
+    cards = diversityRerank(cards);
 
     // Sort by score descending
     cards.sort((a, b) => b.score - a.score);

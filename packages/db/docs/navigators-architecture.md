@@ -117,8 +117,12 @@ class Pipeline {
       cards = await filter.transform(cards, context);
     }
 
-    return cards.filter(c => c.score > 0)
-                .sort((a, b) => b.score - a.score)
+    cards = cards.filter(c => c.score > 0);
+
+    // Stage 3: diversity re-rank (post-filter, pre-sort)
+    cards = diversityRerank(cards);
+
+    return cards.sort((a, b) => b.score - a.score)
                 .slice(0, limit);
   }
 }
@@ -128,7 +132,42 @@ class Pipeline {
 - **Context building** — Fetches shared data (user ELO, orchestration context) once for all strategies
 - **Data hydration** — Pre-fetches commonly needed data (tags) in batch queries
 - **Filter orchestration** — Applies filters in sequence, accumulating provenance
+- **Diversity re-rank** — Demotes repeated answers/concepts so no one tag monopolises the head of the queue (see below)
 - **Result selection** — Removes zero-scores, sorts, and returns top N
+
+### Diversity Re-rank (Stage 3)
+
+A first-class stage that runs **after** the filter chain on the final scores. The
+three-stage model is: generators *produce* → filters *weigh* → re-rank
+*diversifies*. It exists to break "ruts" where many top-scoring candidates share
+the same answer (e.g. a run of missing-letter cards that all resolve to `i`), so
+the learner can't go on autopilot pressing one key.
+
+**Why a separate stage, not a filter:** filters are documented as
+order-independent multipliers (see [Score Semantics](#score-semantics)). The
+re-rank is *rank-dependent* — a card's penalty depends on what outscored it — so
+it deliberately sits outside the commutative filter chain, running last.
+
+**Tag-agnostic by construction.** Tags are the only structured similarity signal
+the framework has, so the re-rank operates on tags — but privileges none. It
+weights each shared tag by its rarity in the candidate pool (inverse document
+frequency): ubiquitous scaffolding tags (`ui:*`, incidental `gpc:expose:*`)
+contribute ~0, while the distinctive tag a cluster shares dominates. No namespace
+is hardcoded, so any course benefits for free *provided its sameness axis is
+tagged* ("tag-agnostic" = no tag is special, not "needs no tags").
+
+**Algorithm** (greedy maximal-marginal-relevance): walk candidates in score
+order; a candidate's repetition load is `Σ idf[tag]·(#already-emitted cards with
+tag)`; emit `argmax(score / (1 + strength·load))` each step, flooring the penalty
+so a strong-but-repeated card is never driven under downstream "well-indicated"
+thresholds. Penalties are expressed as **scores** (not a positional shuffle) so
+the ordering survives both the Pipeline's final sort and the `SourceMixer`'s
+score-descending re-sort downstream.
+
+Per-source: the stage lives inside each Pipeline run, so in multi-source sessions
+it diversifies each source's contribution before the mixer interleaves sources.
+Two global knobs (`strength`, `floor`) have course-general defaults; promote to
+strategy `serializedData` if you want them learnable under orchestration.
 
 ## Pipeline Assembly
 
@@ -590,6 +629,7 @@ return { ...card, score: card.score * multiplier };
 | `core/navigators/generators/types.ts` | `CardGenerator`, `GeneratorContext` |
 | `core/navigators/filters/types.ts` | `CardFilter`, `FilterContext` |
 | `core/navigators/Pipeline.ts` | Pipeline orchestration |
+| `core/navigators/diversityRerank.ts` | Diversity re-rank stage (IDF-weighted MMR, pipeline stage 3) |
 | `core/navigators/PipelineAssembler.ts` | Builds Pipeline from strategy docs |
 | `core/navigators/CompositeGenerator.ts` | Merges multiple generators |
 | `core/navigators/generators/elo.ts` | ELO generator |
