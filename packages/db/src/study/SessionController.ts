@@ -1161,9 +1161,22 @@ export class SessionController<TView = unknown> extends Loggable {
     // additive merge, or a stale generator candidate. This is the general guard
     // (see _servedCardIds); it makes re-presentation structurally impossible
     // rather than relying on each upstream path to exclude correctly.
-    const newWeighted = mixedWeighted
-      .filter((w) => getCardOrigin(w) === 'new' && !this._servedCardIds.has(w.cardId))
-      .slice(0, newLimit);
+    const newCandidates = mixedWeighted.filter(
+      (w) => getCardOrigin(w) === 'new' && !this._servedCardIds.has(w.cardId)
+    );
+    // `+INF` is the hard "include at all costs" sentinel applied by require*
+    // injection (see Pipeline.applyRequirement). Partition these mandatory cards
+    // to the front and exempt them from the newLimit slice, so neither the
+    // mixer's source-shuffle/round-robin nor the cap can bury or drop a required
+    // card before it reaches newQ. The set is also handed to mergeToFront so an
+    // already-queued required card gets re-fronted rather than leapfrogged.
+    const mandatoryWeighted = newCandidates.filter((w) => w.score === Number.POSITIVE_INFINITY);
+    const optionalWeighted = newCandidates.filter((w) => w.score !== Number.POSITIVE_INFINITY);
+    const newWeighted = [
+      ...mandatoryWeighted,
+      ...optionalWeighted.slice(0, Math.max(0, newLimit - mandatoryWeighted.length)),
+    ];
+    const mandatoryIds = new Set(mandatoryWeighted.map((w) => w.cardId));
 
     logger.debug(`[reviews] got ${reviewWeighted.length} reviews from mixer`);
 
@@ -1206,8 +1219,10 @@ export class SessionController<TView = unknown> extends Loggable {
     }
 
     if (additive) {
-      // Additive replan: merge new candidates into front of existing queue
-      const added = this.newQ.mergeToFront(newItems, (item) => item.cardID);
+      // Additive replan: merge new candidates into front of existing queue.
+      // Pass mandatory (+INF) ids so an already-queued required card is pulled
+      // back to the front instead of being buried by fresh non-required cards.
+      const added = this.newQ.mergeToFront(newItems, (item) => item.cardID, mandatoryIds);
       report += `Additive merge: ${added} new cards added to front of newQ\n`;
     } else if (replan) {
       // Atomic swap: replace entire newQ contents at once (no empty-queue window)
