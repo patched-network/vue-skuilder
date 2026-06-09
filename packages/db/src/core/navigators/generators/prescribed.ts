@@ -45,6 +45,21 @@ interface PrescribedGroupConfig {
   maxSupportCardsPerRun?: number;
   hierarchyWalk?: HierarchyWalkConfig;
   retireOnEncounter?: boolean;
+  /**
+   * Tag patterns identifying *practice* skills to drill once unlocked. For each
+   * course tag matching one of these patterns that is (a) unlocked — all its
+   * hierarchy prerequisites met, i.e. the learner has been introduced to it —
+   * but (b) still under-practiced (per-tag attempt count below
+   * `practiceMinCount`), the generator emits cards carrying that tag into the
+   * candidate pool. This closes the post-intro drilling gap independent of
+   * global-ELO retrieval (easy drill cards that the ELO window never reaches).
+   * Ordering/emphasis is left to the pipeline's scoring + decaying boost.
+   */
+  practiceTagPatterns?: string[];
+  /** Attempt-count threshold below which a practice skill is "under-practiced". */
+  practiceMinCount?: number;
+  /** Cap on practice cards emitted per run (across all under-practiced skills). */
+  maxPracticeCardsPerRun?: number;
 }
 
 interface PrescribedConfig {
@@ -106,9 +121,15 @@ const DEFAULT_MAX_DIRECT_PER_RUN = 3;
 const DEFAULT_MAX_SUPPORT_PER_RUN = 3;
 const DEFAULT_HIERARCHY_DEPTH = 2;
 const DEFAULT_MIN_COUNT = 3;
+const DEFAULT_PRACTICE_MIN_COUNT = 3;
+const DEFAULT_MAX_PRACTICE_PER_RUN = 4;
 const BASE_TARGET_SCORE = 1.0;
 const BASE_SUPPORT_SCORE = 0.8;
 const DISCOVERED_SUPPORT_SCORE = 12.0;
+// Practice drill cards enter the pool at parity with a well-matched target so
+// they survive into the candidate set; per-skill *emphasis* (recency, decay) is
+// the durable boost's job, not this base score's.
+const BASE_PRACTICE_SCORE = 1.0;
 const MAX_TARGET_MULTIPLIER = 8.0;
 const MAX_SUPPORT_MULTIPLIER = 4.0;
 
@@ -315,8 +336,19 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
         courseId,
         emittedIds
       );
+      const practiceCards = this.buildPracticeCards({
+        group,
+        courseId,
+        emittedIds,
+        cardsByTag,
+        hierarchyConfigs,
+        userTagElo,
+        userGlobalElo,
+        activeIds,
+        seenIds,
+      });
 
-      emitted.push(...directCards, ...supportCards, ...discoveredSupportCards);
+      emitted.push(...directCards, ...supportCards, ...discoveredSupportCards, ...practiceCards);
     }
 
     const hintSummary = this.buildSupportHintSummary(groupRuntimes);
@@ -357,6 +389,10 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
     const surfacedByGroup = new Map<string, { targetIds: string[]; supportIds: string[] }>();
     for (const card of finalCards) {
       const prov = card.provenance[0];
+      // Practice cards are not target/support surfacing — they must not reset a
+      // group's freshness/pressure state (which tracks whether *intro targets*
+      // are getting through). Skip them here.
+      if (prov?.reason.includes('mode=practice')) continue;
       const groupId = prov?.reason.match(/group=([^;]+)/)?.[1];
       const mode = prov?.reason.includes('mode=support') ? 'supportIds' : 'targetIds';
       if (!groupId) continue;
@@ -449,6 +485,17 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
                 : DEFAULT_HIERARCHY_DEPTH,
           },
           retireOnEncounter: raw.retireOnEncounter !== false,
+          practiceTagPatterns: dedupe(
+            Array.isArray(raw.practiceTagPatterns)
+              ? raw.practiceTagPatterns.filter((v: unknown): v is string => typeof v === 'string')
+              : []
+          ),
+          practiceMinCount:
+            typeof raw.practiceMinCount === 'number' ? raw.practiceMinCount : DEFAULT_PRACTICE_MIN_COUNT,
+          maxPracticeCardsPerRun:
+            typeof raw.maxPracticeCardsPerRun === 'number'
+              ? raw.maxPracticeCardsPerRun
+              : DEFAULT_MAX_PRACTICE_PER_RUN,
         }))
         .filter((g) => g.targetCardIds.length > 0);
 
@@ -763,6 +810,131 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
     }
 
     return cards;
+  }
+
+  /**
+   * Emit drill cards for *unlocked-but-under-practiced* skills.
+   *
+   * For each course tag matching the group's `practiceTagPatterns` that is both
+   * unlocked (all hierarchy prerequisites met — i.e. the learner has been
+   * introduced to it) and under-practiced (per-tag attempt count below
+   * `practiceMinCount`), this resolves cards carrying that tag and emits them
+   * into the candidate pool. It exists because global-ELO retrieval
+   * systematically fails to fetch the (low-ELO) drill cards for a
+   * freshly-introduced skill — putting them in the pool here lets the pipeline's
+   * scoring + the durable per-skill boost order them. Ordering/emphasis is NOT
+   * this method's job; it only guarantees presence.
+   *
+   * Fully data-driven: the unlock relation comes from the hierarchy config and
+   * practice-status from per-tag ELO. No card-id or tag-namespace hard-coding.
+   */
+  private buildPracticeCards(args: {
+    group: PrescribedGroupConfig;
+    courseId: string;
+    emittedIds: Set<string>;
+    cardsByTag: Map<string, string[]>;
+    hierarchyConfigs: HierarchyConfig[];
+    userTagElo: Record<string, { score: number; count: number }>;
+    userGlobalElo: number;
+    activeIds: Set<string>;
+    seenIds: Set<string>;
+  }): WeightedCard[] {
+    const {
+      group,
+      courseId,
+      emittedIds,
+      cardsByTag,
+      hierarchyConfigs,
+      userTagElo,
+      userGlobalElo,
+      activeIds,
+      seenIds,
+    } = args;
+
+    const patterns = group.practiceTagPatterns ?? [];
+    if (patterns.length === 0) return [];
+
+    const practiceMinCount = group.practiceMinCount ?? DEFAULT_PRACTICE_MIN_COUNT;
+    const maxPractice = group.maxPracticeCardsPerRun ?? DEFAULT_MAX_PRACTICE_PER_RUN;
+
+    const practiceTags = [...cardsByTag.keys()].filter(
+      (tag) =>
+        patterns.some((p) => matchesTagPattern(tag, p)) &&
+        this.isUnlockedGatedSkill(tag, hierarchyConfigs, userTagElo, userGlobalElo) &&
+        (userTagElo[tag]?.count ?? 0) < practiceMinCount
+    );
+
+    if (practiceTags.length === 0) return [];
+
+    // Reuse the diversity-aware tag→cards collector (stem-dedup + shuffle).
+    const practiceCardIds = this.findDiscoveredSupportCards({
+      supportTags: practiceTags,
+      cardsByTag,
+      activeIds,
+      seenIds,
+      excludedIds: emittedIds,
+      limit: maxPractice,
+    });
+
+    if (practiceCardIds.length === 0) return [];
+
+    logger.info(
+      `[Prescribed] Group '${group.id}' practice: ${practiceTags.length} unlocked under-practiced ` +
+        `skill(s), emitting ${practiceCardIds.length} drill card(s)`
+    );
+
+    const cards: WeightedCard[] = [];
+    for (const cardId of practiceCardIds) {
+      emittedIds.add(cardId);
+      cards.push({
+        cardId,
+        courseId,
+        score: BASE_PRACTICE_SCORE,
+        provenance: [
+          {
+            strategy: 'prescribed',
+            strategyName: this.strategyName || this.name,
+            strategyId: this.strategyId || 'NAVIGATION_STRATEGY-prescribed',
+            action: 'generated' as const,
+            score: BASE_PRACTICE_SCORE,
+            reason:
+              `mode=practice;group=${group.id};` +
+              `underPracticedSkills=${practiceTags.length};` +
+              `practiceTags=${practiceTags.slice(0, 8).join('|')}${practiceTags.length > 8 ? '|…' : ''};` +
+              `testversion=${PRESCRIBED_DEBUG_VERSION}`,
+          },
+        ],
+      });
+    }
+
+    return cards;
+  }
+
+  /**
+   * True for a skill that was *gated and is now reached*: it has at least one
+   * declared hierarchy prerequisite set, and every set is fully satisfied by the
+   * learner's per-tag ELO. This deliberately EXCLUDES tags with no prerequisites
+   * — an ungated tag was never "introduced" in the curricular sense, so it isn't
+   * a post-intro drill target (e.g. whole-word spelling tags that share the
+   * `gpc:exercise:*` prefix but have no intro gate). Those are left to normal
+   * ELO retrieval. This is the precise population the retrieval gap strands:
+   * just-unlocked, low-ELO skills.
+   */
+  private isUnlockedGatedSkill(
+    tag: string,
+    hierarchyConfigs: HierarchyConfig[],
+    userTagElo: Record<string, { score: number; count: number }>,
+    userGlobalElo: number
+  ): boolean {
+    const prereqSets = hierarchyConfigs
+      .map((hierarchy) => hierarchy.prerequisites[tag])
+      .filter((prereqs): prereqs is TagPrerequisite[] => Array.isArray(prereqs) && prereqs.length > 0);
+
+    if (prereqSets.length === 0) return false;
+
+    return prereqSets.every((prereqs) =>
+      prereqs.every((pr) => this.isPrerequisiteMet(pr, userTagElo[pr.tag], userGlobalElo))
+    );
   }
 
   private findSupportCardsByTags(
