@@ -73,8 +73,21 @@ export class ItemQueue<T> {
    * Merge new items into the front of the queue, skipping duplicates.
    * Used by additive replans to inject high-quality candidates without
    * discarding the existing queue contents.
+   *
+   * `forceFrontIds` carries the mandatory (`+INF`) cards in this batch — a
+   * durable `requireCard`/`requireTag` re-asserted by every replan. An ordinary
+   * duplicate is left in place (skip), but a mandatory one that's *already*
+   * queued is pulled out of its current slot so it rejoins at the front in batch
+   * order. Without this, an additive merge unshifts fresh non-required cards
+   * ahead of an already-present required card, steadily burying it until it never
+   * gets drawn — defeating the "must appear" guarantee. Returns the count of
+   * genuinely new cards added (re-fronted duplicates are not counted).
    */
-  public mergeToFront(items: T[], cardIdExtractor: (item: T) => string): number {
+  public mergeToFront(
+    items: T[],
+    cardIdExtractor: (item: T) => string,
+    forceFrontIds?: ReadonlySet<string>
+  ): number {
     let added = 0;
     const toInsert: T[] = [];
     for (const item of items) {
@@ -83,6 +96,11 @@ export class ItemQueue<T> {
         this.seenCardIds.push(cardId);
         toInsert.push(item);
         added++;
+      } else if (forceFrontIds?.has(cardId)) {
+        const idx = this.q.findIndex((qi) => cardIdExtractor(qi) === cardId);
+        if (idx >= 0) {
+          toInsert.push(...this.q.splice(idx, 1));
+        }
       }
     }
     this.q.unshift(...toInsert);
