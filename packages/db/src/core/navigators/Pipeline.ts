@@ -255,7 +255,22 @@ function logCardProvenance(cards: WeightedCard[], maxCards: number = 3): void {
  * const cards = await pipeline.getWeightedCards(20);
  * ```
  */
-export class Pipeline extends ContentNavigator {
+
+/**
+ * Narrow capability surface for out-of-band, commit-free reads against a live
+ * pipeline (see {@link getActivePipeline}). Kept minimal on purpose — consumers
+ * get the forecast capability, not the whole `Pipeline` class.
+ */
+export interface PipelineForecaster {
+  forecast(opts?: {
+    hints?: ReplanHints;
+    unseenOnly?: boolean;
+    threshold?: number;
+    limit?: number;
+  }): Promise<WeightedCard[]>;
+}
+
+export class Pipeline extends ContentNavigator implements PipelineForecaster {
   private generator: CardGenerator;
   private filters: CardFilter[];
 
@@ -889,6 +904,83 @@ export class Pipeline extends ContentNavigator {
   // ---------------------------------------------------------------------------
   // Card-space diagnostic
   // ---------------------------------------------------------------------------
+
+  /**
+   * Commit-free forecast: score the user's full card space through the filter
+   * chain and return the cards that are currently *reachable* (score >=
+   * threshold), optionally nudged by caller-supplied hints and/or restricted
+   * to cards the user hasn't seen yet.
+   *
+   * This is a GENERIC primitive — it returns scored, tag-hydrated cards and
+   * stops there. It has no knowledge of any particular tag convention; callers
+   * decide what the surviving cards mean (e.g. filter to their own "intro"
+   * tag family). Nothing is written and no session is started.
+   *
+   * The optional `hints` are the "out-of-band kick": they run through the same
+   * {@link applyHints} path a live replan uses, so the two semantics carry over —
+   *   - `boostTags`/`boostCards` reweight *within* gating (a gated score-0 card
+   *     stays out), and
+   *   - `requireTags`/`requireCards` inject from the full pre-filter pool,
+   *     *bypassing* gating (use when you want a card regardless of reachability).
+   * Note `unseenOnly` is applied LAST, so it can drop a `require`d card that the
+   * user has already seen — pass `unseenOnly: false` if that matters.
+   *
+   * Cost note: like {@link diagnoseCardSpace}, this scans every card through the
+   * filters, so it's heavier than a normal replan. Intended for one-shot
+   * out-of-band use (e.g. a session-end "what's next" snapshot), not the hot path.
+   *
+   * @param opts.hints       Optional ephemeral hints to apply after the filter chain.
+   * @param opts.unseenOnly  Only return cards the user hasn't encountered (default true).
+   * @param opts.threshold   Min score to count as reachable (default 0.10).
+   * @param opts.limit       Optional cap on results (already sorted desc).
+   */
+  async forecast(opts?: {
+    hints?: ReplanHints;
+    unseenOnly?: boolean;
+    threshold?: number;
+    limit?: number;
+  }): Promise<WeightedCard[]> {
+    const threshold = opts?.threshold ?? 0.10;
+    const unseenOnly = opts?.unseenOnly ?? true;
+
+    const courseId = this.course!.getCourseID();
+    const allCardIds = await this.course!.getAllCardIds();
+
+    let cards: WeightedCard[] = allCardIds.map((cardId) => ({
+      cardId,
+      courseId,
+      score: 1.0,
+      provenance: [],
+    }));
+
+    cards = await this.hydrateTags(cards);
+    // Snapshot the full pool before filtering, for require-injection in applyHints.
+    const fullPool = cards.slice();
+
+    const context = await this.buildContext();
+    for (const filter of this.filters) {
+      cards = await filter.transform(cards, context);
+    }
+
+    if (opts?.hints) {
+      cards = this.applyHints(cards, opts.hints, fullPool);
+    }
+
+    cards = cards.filter((c) => c.score >= threshold);
+
+    if (unseenOnly) {
+      let encountered: Set<string>;
+      try {
+        encountered = new Set(await this.user!.getSeenCards(courseId));
+      } catch {
+        encountered = new Set();
+      }
+      cards = cards.filter((c) => !encountered.has(c.cardId));
+    }
+
+    cards.sort((a, b) => b.score - a.score);
+    return opts?.limit ? cards.slice(0, opts.limit) : cards;
+  }
 
   /**
    * Scan every card in the course through the filter chain and report

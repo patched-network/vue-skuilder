@@ -8,7 +8,7 @@ import {
   isFilter,
 } from './index';
 import { logger } from '../../util/logger';
-import type { Pipeline, CardSpaceDiagnosis } from './Pipeline';
+import type { Pipeline, CardSpaceDiagnosis, PipelineForecaster } from './Pipeline';
 import type { ReplanHints } from './generators/types';
 
 /**
@@ -23,6 +23,16 @@ let _activePipeline: Pipeline | null = null;
  */
 export function registerPipelineForDebug(pipeline: Pipeline): void {
   _activePipeline = pipeline;
+}
+
+/**
+ * The most recently constructed pipeline for the current session, or null if
+ * none has been built yet. This is the supported, non-debug accessor for
+ * out-of-band reads against the live pipeline (e.g. a commit-free
+ * `forecast()`), replacing reach-ins through `window.skuilder.pipeline`.
+ */
+export function getActivePipeline(): PipelineForecaster | null {
+  return _activePipeline;
 }
 
 // ============================================================================

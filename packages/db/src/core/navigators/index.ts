@@ -19,10 +19,14 @@ import type { GeneratorResult, ReplanHints } from './generators/types';
 export {
   pipelineDebugAPI,
   mountPipelineDebugger,
+  getActivePipeline,
   type PipelineRunReport,
   type GeneratorSummary,
   type FilterImpact,
 } from './PipelineDebugger';
+
+// Re-export the commit-free forecast capability surface.
+export type { PipelineForecaster } from './Pipeline';
 
 import { LearnableWeight } from '../types/contentNavigationStrategy';
 export type { ContentNavigationStrategyData, LearnableWeight } from '../types/contentNavigationStrategy';
