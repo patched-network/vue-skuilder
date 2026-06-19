@@ -3,6 +3,7 @@ import type { ScheduledCard } from '../../types/user';
 import type { CourseDBInterface } from '../../interfaces/courseDB';
 import type { UserDBInterface } from '../../interfaces/userDB';
 import { ContentNavigator } from '../index';
+import { captureSrsBacklog } from '../SrsDebugger';
 import type { ContentNavigationStrategyData } from '../../types/contentNavigationStrategy';
 import type { CardGenerator, GeneratorContext, GeneratorResult } from './types';
 import { logger } from '@db/util/logger';
@@ -41,10 +42,19 @@ import { logger } from '@db/util/logger';
 const DEFAULT_HEALTHY_BACKLOG = 20;
 
 /**
- * Maximum backlog pressure contribution to score.
- * At 3x healthy backlog, pressure maxes out.
+ * Maximum backlog pressure as a *multiplier* on review urgency.
+ *
+ * Backlog pressure is multiplicative (×1.0 at/below healthy, scaling up as the
+ * due pile grows, maxing here at 3× healthy backlog). It replaces an older
+ * additive +0..+0.5 term that was a [0,1]-era modifier — once review scores
+ * stopped being clamped to 1.0 and new cards could be boosted well past it
+ * (e.g. an intro ×5 → 7+), a flat +0.5 was both too small to compete and mostly
+ * eaten by the old 1.0 clamp. A multiplier scales review priority onto the same
+ * open scale the boosted new cards live on, so a heavy backlog can genuinely
+ * lift reviews into competition. Tunable — verify review vs new ordering in the
+ * dbg overlay's "review backpressure" panel.
  */
-const MAX_BACKLOG_PRESSURE = 0.5;
+const MAX_BACKLOG_MULTIPLIER = 2.0;
 
 /**
  * Configuration for the SRS strategy.
@@ -158,14 +168,31 @@ export default class SRSNavigator extends ContentNavigator implements CardGenera
       }
     }
 
-    // Compute backlog pressure - applies globally to all reviews
-    const backlogPressure = this.computeBacklogPressure(dueReviews.length);
+    // Compute backlog pressure (multiplicative) - applies globally to all reviews
+    const backlogMultiplier = this.computeBacklogMultiplier(dueReviews.length);
+
+    // Time until the next not-yet-due review (for the debug overlay): shows
+    // reviews are *coming* even when none are due right now.
+    const notDue = reviews.filter((r) => !now.isAfter(moment.utc(r.reviewTime)));
+    let nextDueIn: string | null = null;
+    if (notDue.length > 0) {
+      const next = notDue.reduce((a, b) =>
+        moment.utc(a.reviewTime).isBefore(moment.utc(b.reviewTime)) ? a : b
+      );
+      const until = moment.duration(moment.utc(next.reviewTime).diff(now));
+      nextDueIn =
+        until.asHours() < 1
+          ? `${Math.round(until.asMinutes())}m`
+          : until.asHours() < 24
+            ? `${Math.round(until.asHours())}h`
+            : `${Math.round(until.asDays())}d`;
+    }
 
     // Log review status for transparency
     if (dueReviews.length > 0) {
       const pressureNote =
-        backlogPressure > 0
-          ? ` [backlog pressure: +${backlogPressure.toFixed(2)}]`
+        backlogMultiplier > 1
+          ? ` [backlog pressure: ×${backlogMultiplier.toFixed(2)}]`
           : ` [healthy backlog]`;
       logger.info(
         `[SRS] Course ${courseId}: ${dueReviews.length} reviews due now (of ${reviews.length} scheduled)${pressureNote}`
@@ -192,7 +219,7 @@ export default class SRSNavigator extends ContentNavigator implements CardGenera
     }
 
     const scored = dueReviews.map((review) => {
-      const { score, reason } = this.computeUrgencyScore(review, now, backlogPressure);
+      const { score, reason } = this.computeUrgencyScore(review, now, backlogMultiplier);
 
       return {
         cardId: review.cardId,
@@ -213,41 +240,56 @@ export default class SRSNavigator extends ContentNavigator implements CardGenera
     });
 
     // Sort by score descending and limit
+    const sorted = scored.sort((a, b) => b.score - a.score);
+
+    // Capture backlog state for the live session overlay (see SrsDebugger).
+    captureSrsBacklog({
+      courseId,
+      scheduledTotal: reviews.length,
+      dueNow: dueReviews.length,
+      healthyBacklog: this.healthyBacklog,
+      backlogMultiplier,
+      maxBacklogMultiplier: MAX_BACKLOG_MULTIPLIER,
+      topReviewScore: sorted.length > 0 ? sorted[0].score : null,
+      nextDueIn,
+      timestamp: Date.now(),
+    });
+
     // [perf] parked: SRSgen / getPendingReviews timing
-    // const srsResult = { cards: scored.sort((a, b) => b.score - a.score).slice(0, limit) };
+    // const srsResult = { cards: sorted.slice(0, limit) };
     // logger.info(
     //   `[perf][SRSgen] total=${(performance.now() - tSrs0).toFixed(0)}ms ` +
     //     `(pendingReviews=${(tReviews - tSrs0).toFixed(0)}) ` +
     //     `[scheduled=${reviews.length} due=${dueReviews.length}]`
     // );
-    return { cards: scored.sort((a, b) => b.score - a.score).slice(0, limit) };
+    return { cards: sorted.slice(0, limit) };
   }
 
   /**
-   * Compute backlog pressure based on number of due reviews.
+   * Compute the multiplicative backlog pressure based on number of due reviews.
    *
-   * Backlog pressure is 0 when at or below healthy threshold,
-   * and increases linearly above it, maxing out at MAX_BACKLOG_PRESSURE.
+   * ×1.0 at or below the healthy threshold (no boost), increasing linearly above
+   * it and maxing out at MAX_BACKLOG_MULTIPLIER at 3× the healthy backlog.
    *
-   * Examples (with default healthyBacklog=20):
-   * - 10 due reviews → 0.00 (healthy)
-   * - 20 due reviews → 0.00 (at threshold)
-   * - 40 due reviews → 0.25 (2x threshold)
-   * - 60 due reviews → 0.50 (3x threshold, maxed)
+   * Examples (with default healthyBacklog=20, MAX_BACKLOG_MULTIPLIER=2.0):
+   * - 10 due reviews → ×1.00 (healthy)
+   * - 20 due reviews → ×1.00 (at threshold)
+   * - 40 due reviews → ×1.50 (2x threshold)
+   * - 60 due reviews → ×2.00 (3x threshold, maxed)
    *
    * @param dueCount - Number of reviews currently due
-   * @returns Backlog pressure score to add to urgency (0 to MAX_BACKLOG_PRESSURE)
+   * @returns Multiplier applied to review urgency (1.0 to MAX_BACKLOG_MULTIPLIER)
    */
-  private computeBacklogPressure(dueCount: number): number {
+  private computeBacklogMultiplier(dueCount: number): number {
     if (dueCount <= this.healthyBacklog) {
-      return 0;
+      return 1.0;
     }
 
-    // Linear increase: at 2x healthy, pressure = 0.25; at 3x, pressure = 0.50
+    // Linear in excess: ×1 at healthy, reaching MAX at 3× healthy (excess = 2×healthy).
     const excess = dueCount - this.healthyBacklog;
-    const pressure = (excess / this.healthyBacklog) * (MAX_BACKLOG_PRESSURE / 2);
+    const multiplier = 1 + (excess / this.healthyBacklog) * ((MAX_BACKLOG_MULTIPLIER - 1) / 2);
 
-    return Math.min(MAX_BACKLOG_PRESSURE, pressure);
+    return Math.min(MAX_BACKLOG_MULTIPLIER, multiplier);
   }
 
   /**
@@ -263,22 +305,23 @@ export default class SRSNavigator extends ContentNavigator implements CardGenera
    *    - 30 days (720h) → ~0.56
    *    - 180 days → ~0.30
    *
-   * 3. Backlog pressure = global boost when review backlog exceeds healthy threshold
-   *    - At healthy backlog: 0
-   *    - At 2x healthy: +0.25
-   *    - At 3x+ healthy: +0.50 (max)
+   * 3. Backlog pressure = global *multiplier* when review backlog exceeds the
+   *    healthy threshold (×1.0 healthy → up to MAX_BACKLOG_MULTIPLIER at 3×).
    *
-   * Combined: base 0.5 + (urgency factors * 0.45) + backlog pressure
-   * Result range: 0.5 to 1.0 (uncapped to allow high-urgency reviews to compete with new cards)
+   * Combined: (base 0.5 + urgency factors * 0.45) × backlog multiplier.
+   * Per-card range before pressure: ~0.57–0.95. NOT clamped to 1.0 — under a
+   * heavy backlog reviews scale onto the open scale to compete with (and exceed)
+   * new cards; what keeps them from running away is the bounded multiplier, not
+   * a hard ceiling.
    *
    * @param review - The scheduled card to score
    * @param now - Current time
-   * @param backlogPressure - Pre-computed backlog pressure (0 to 0.5)
+   * @param backlogMultiplier - Pre-computed backlog multiplier (1.0 to MAX_BACKLOG_MULTIPLIER)
    */
   private computeUrgencyScore(
     review: ScheduledCard,
     now: moment.Moment,
-    backlogPressure: number
+    backlogMultiplier: number
   ): { score: number; reason: string } {
     const scheduledAt = moment.utc(review.scheduledAt);
     const due = moment.utc(review.reviewTime);
@@ -299,10 +342,11 @@ export default class SRSNavigator extends ContentNavigator implements CardGenera
     const overdueContribution = Math.min(1.0, Math.max(0, relativeOverdue));
     const urgency = overdueContribution * 0.5 + recencyFactor * 0.5;
 
-    // Final score: base 0.5 + urgency contribution + backlog pressure
-    // Uncapped at 1.0 (no 0.95 ceiling) - allows high-urgency reviews to compete with new cards
+    // Final score: per-card urgency (base 0.5 + contribution) scaled by the
+    // global backlog multiplier. No 1.0 clamp — reviews compete on the open
+    // scale; the bounded multiplier (not a ceiling) caps the lift.
     const baseScore = 0.5 + urgency * 0.45;
-    const score = Math.min(1.0, baseScore + backlogPressure);
+    const score = baseScore * backlogMultiplier;
 
     // Build reason string with all contributing factors
     const reasonParts = [
@@ -312,8 +356,8 @@ export default class SRSNavigator extends ContentNavigator implements CardGenera
       `recency: ${recencyFactor.toFixed(2)}`,
     ];
 
-    if (backlogPressure > 0) {
-      reasonParts.push(`backlog: +${backlogPressure.toFixed(2)}`);
+    if (backlogMultiplier > 1) {
+      reasonParts.push(`backlog: ×${backlogMultiplier.toFixed(2)}`);
     }
 
     reasonParts.push('review');
