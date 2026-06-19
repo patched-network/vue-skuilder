@@ -388,14 +388,10 @@ export default defineComponent({
 
         const scOptions: {
           defaultBatchLimit?: number;
-          initialReviewCap?: number;
           outcomeObservers?: OutcomeObserver[];
         } = {};
         if (this.sessionConfig?.defaultBatchLimit !== undefined) {
           scOptions.defaultBatchLimit = this.sessionConfig.defaultBatchLimit;
-        }
-        if (this.sessionConfig?.initialReviewCap !== undefined) {
-          scOptions.initialReviewCap = this.sessionConfig.initialReviewCap;
         }
         if (this.sessionConfig?.outcomeObservers?.length) {
           scOptions.outcomeObservers = this.sessionConfig.outcomeObservers;

@@ -15,7 +15,7 @@ import {
 import { CardRecord, CardHistory, CourseRegistrationDoc, QuestionRecord, isQuestionRecord } from '@db/core';
 import { recordUserOutcome } from '@db/core/orchestration/recording';
 import { Loggable } from '@db/util';
-import { getCardOrigin } from '@db/core/navigators';
+import { getCardOrigin, WeightedCard, getSrsBacklogDebug } from '@db/core/navigators';
 import { ReplanHints } from '@db/core/navigators/generators/types';
 import { mergeHints } from '@db/core/navigators/Pipeline';
 import { SourceMixer, QuotaRoundRobinMixer, SourceBatch } from './SourceMixer';
@@ -26,6 +26,7 @@ import {
   type SessionDebugSnapshot,
   type SessionDrawnCardDebug,
   type SessionQueueDebug,
+  type SessionQueueItemDebug,
 } from './SessionOverlay';
 
 // ReplanHints is defined in generators/types to avoid circular dependencies.
@@ -85,8 +86,8 @@ export interface ReplanOptions {
    */
   limit?: number;
   /**
-   * How to integrate the new cards into the existing newQ.
-   * - `'replace'` (default): atomically swap the entire newQ.
+   * How to integrate the new cards into the existing supplyQ.
+   * - `'replace'` (default): atomically swap the entire supplyQ.
    * - `'merge'`: insert new cards at the front, keeping existing cards.
    */
   mode?: 'replace' | 'merge';
@@ -226,16 +227,6 @@ export class SessionController<TView = unknown> extends Loggable {
    */
   private _defaultBatchLimit: number = 20;
 
-  /**
-   * Maximum number of reviews enqueued at session start. Reviews live
-   * outside the replan flow — the queue drains via consumption and is
-   * not refilled mid-session. The session timer caps total review
-   * exposure, so overfilling here is intentional. Default is generous
-   * to accommodate Anki-style power users with hundreds of due reviews;
-   * apps targeting nimbler sessions should override via constructor.
-   */
-  private _initialReviewCap: number = 200;
-
   private sources: StudyContentSource[];
   // dataLayer and getViewComponent now injected into CardHydrationService
   private _sessionRecord: StudySessionRecord[] = [];
@@ -246,10 +237,29 @@ export class SessionController<TView = unknown> extends Loggable {
   // Session card stores
   private _currentCard: HydratedCard<TView> | null = null;
 
-  private reviewQ: ItemQueue<StudySessionReviewItem> = new ItemQueue<StudySessionReviewItem>();
-  private newQ: ItemQueue<StudySessionNewItem> = new ItemQueue<StudySessionNewItem>();
+  /**
+   * The single supply queue: `new` + `review` items interleaved in pipeline
+   * rank order (the mixer's score-ordered, source-interleaved output, with
+   * `+INF` required cards floated to the front). Drawn front-to-back; reviews
+   * and new compete on one cross-comparable scale rather than being re-mixed
+   * by a probability gate. Replaced/re-ranked wholesale on replan. See
+   * `docs/decision-single-supply-queue.md`.
+   */
+  private supplyQ: ItemQueue<StudySessionItem> = new ItemQueue<StudySessionItem>();
   private failedQ: ItemQueue<StudySessionFailedItem> = new ItemQueue<StudySessionFailedItem>();
   // END   Session card stores
+
+  /**
+   * Supply draws since the last failed-queue *event* (a failed draw, or a card
+   * entering failedQ on failure). Drives the light steady failed-interleave
+   * (§7): after this many consecutive supply draws, a pending failed card is
+   * drawn so remediation doesn't starve mid-session. Incremented on each supply
+   * draw; reset to 0 both when a failed card is drawn AND when one is added to
+   * failedQ — the latter gives a just-failed card spacing instead of an instant
+   * retry (the counter would otherwise already be ≥ threshold from the preceding
+   * supply run).
+   */
+  private _supplyDrawsSinceFailed: number = 0;
 
   /**
    * Promise tracking a currently in-progress replan, or null if idle.
@@ -266,8 +276,8 @@ export class SessionController<TView = unknown> extends Loggable {
   private _activeReplanLabel: string | null = null;
 
   /**
-   * Number of well-indicated new cards remaining before the queue
-   * degrades to poorly-indicated content. Decremented on each newQ
+   * Number of well-indicated supply cards remaining before the queue
+   * degrades to poorly-indicated content. Decremented on each supplyQ
    * draw; when it hits 0, a replan is triggered automatically
    * (user state has changed from completing good cards).
    */
@@ -277,7 +287,7 @@ export class SessionController<TView = unknown> extends Loggable {
    * When true, suppresses the quality-based auto-replan trigger in
    * nextCard(). Set after a burst replan (small limit) to prevent the
    * auto-replan from clobbering the burst cards before they're consumed.
-   * Cleared when the depletion-triggered replan fires (newQ exhausted).
+   * Cleared when the depletion-triggered replan fires (supplyQ exhausted).
    */
   private _suppressQualityReplan: boolean = false;
 
@@ -309,13 +319,15 @@ export class SessionController<TView = unknown> extends Loggable {
    * a draw the instant it happens — earlier than `_sessionRecord`, which only
    * lands once the card is *responded to*.
    *
-   * Used to keep already-served cards out of newQ on every (re)plan: a `new`
-   * card shown once must never re-enter newQ this session. This is the general
-   * guard against re-presentation — including the case where a replan in flight
-   * captured a now-drawn card (e.g. a +INF require-injected follow-up the
-   * depletion prefetch grabbed just before it was drawn). Reviews/failed cards
-   * legitimately recur and are tracked by their own queues, so this only gates
-   * `new`-origin candidates.
+   * Used to keep already-served cards out of supplyQ on every (re)plan, across
+   * ALL origins: a `new` card shown once must never re-enter, and once replans
+   * re-pull reviews, an answered/in-flight review must not re-enter the supply
+   * before its SRS reschedule clears the due-window (the review-loop guard,
+   * decision doc §4). This is the general guard against re-presentation —
+   * including the case where a replan in flight captured a now-drawn card (e.g.
+   * a +INF require-injected follow-up the depletion prefetch grabbed just before
+   * it was drawn). failedQ is separate and controller-owned, so failed cards
+   * legitimately recur there without being gated here.
    */
   private _servedCardIds: Set<string> = new Set();
 
@@ -343,14 +355,12 @@ export class SessionController<TView = unknown> extends Loggable {
     return this._minCardsGuarantee > 0;
   }
   public get report(): string {
-    const reviewCount = this.reviewQ.dequeueCount;
-    const newCount = this.newQ.dequeueCount;
-    const reviewWord = reviewCount === 1 ? 'review' : 'reviews';
-    const newCardWord = newCount === 1 ? 'new card' : 'new cards';
-    return `${reviewCount} ${reviewWord}, ${newCount} ${newCardWord}`;
+    const supplyCount = this.supplyQ.dequeueCount;
+    const supplyWord = supplyCount === 1 ? 'card' : 'cards';
+    return `${supplyCount} supply ${supplyWord} drawn`;
   }
   public get detailedReport(): string {
-    return this.newQ.toString + '\n' + this.reviewQ.toString + '\n' + this.failedQ.toString;
+    return this.supplyQ.toString + '\n' + this.failedQ.toString;
   }
   // @ts-expect-error NodeJS.Timeout type not available in browser context
   private _intervalHandle: NodeJS.Timeout;
@@ -362,11 +372,9 @@ export class SessionController<TView = unknown> extends Loggable {
    * @param getViewComponent - Function to resolve view components
    * @param mixer - Optional source mixer strategy (defaults to QuotaRoundRobinMixer)
    * @param options - Optional session-level configuration
-   * @param options.defaultBatchLimit - Default pipeline batch size (default: 20).
+   * @param options.defaultBatchLimit - Default supply working-set size (default: 20).
    *   Smaller values for newer users cause more frequent replans, keeping plans
    *   aligned with rapidly-changing user state.
-   * @param options.initialReviewCap - Max reviews loaded at session start (default: 200).
-   *   Applied only on initial planning; replans do not refill the review queue.
    */
   constructor(
     sources: StudyContentSource[],
@@ -376,7 +384,6 @@ export class SessionController<TView = unknown> extends Loggable {
     mixer?: SourceMixer,
     options?: {
       defaultBatchLimit?: number;
-      initialReviewCap?: number;
       outcomeObservers?: OutcomeObserver[];
     }
   ) {
@@ -405,9 +412,6 @@ export class SessionController<TView = unknown> extends Loggable {
     if (options?.defaultBatchLimit !== undefined) {
       this._defaultBatchLimit = options.defaultBatchLimit;
     }
-    if (options?.initialReviewCap !== undefined) {
-      this._initialReviewCap = options.initialReviewCap;
-    }
     if (options?.outcomeObservers?.length) {
       this._outcomeObservers = [...options.outcomeObservers];
     }
@@ -415,8 +419,7 @@ export class SessionController<TView = unknown> extends Loggable {
     this.log(`Session constructed:
     startTime: ${this.startTime}
     endTime: ${this.endTime}
-    defaultBatchLimit: ${this._defaultBatchLimit}
-    initialReviewCap: ${this._initialReviewCap}`);
+    defaultBatchLimit: ${this._defaultBatchLimit}`);
 
     // Expose this (now the most-recently-constructed) controller to the debug
     // overlay (window.skuilder.session.dbgOverlay()). A new session overwrites
@@ -464,16 +467,6 @@ export class SessionController<TView = unknown> extends Loggable {
     return ret;
   }
 
-  /**
-   * Extremely rough, conservative, estimate of amound of time to complete
-   * all scheduled reviews
-   */
-  private estimateReviewTime(): number {
-    const ret = 5 * this.reviewQ.length;
-    this.log(`Review card time estimate: ${ret}`);
-    return ret;
-  }
-
   public async prepareSession() {
     // All content sources must implement getWeightedCards()
     if (this.sources.some((s) => typeof s.getWeightedCards !== 'function')) {
@@ -492,7 +485,7 @@ export class SessionController<TView = unknown> extends Loggable {
     await this.hydrationService.ensureHydratedCards();
 
     // Start session tracking for debugging
-    startSessionTracking(this.reviewQ.length, this.newQ.length, this.failedQ.length);
+    startSessionTracking(this.supplyQ.length, this.failedQ.length);
 
     this._intervalHandle = setInterval(() => {
       this.tick();
@@ -501,8 +494,8 @@ export class SessionController<TView = unknown> extends Loggable {
 
   /**
    * Request a mid-session replan. Re-runs the pipeline with current user state
-   * and atomically replaces the newQ contents. Safe to call at any time during
-   * a session.
+   * and atomically replaces (or merges into) the supplyQ contents. Safe to call
+   * at any time during a session.
    *
    * Concurrency policy:
    * - Two unhinted auto-replans never run in parallel; the second coalesces
@@ -516,7 +509,8 @@ export class SessionController<TView = unknown> extends Loggable {
    *   results (e.g. surfacing another gpc-intro card right after one
    *   completed, skipping the prescribed `c-wst-*` follow-up).
    *
-   * Does NOT affect reviewQ or failedQ.
+   * Re-pulls and re-ranks the whole supply (including reviews); does NOT affect
+   * failedQ (controller-owned remediation).
    *
    * If nextCard() is called while a replan is in flight, it will automatically
    * await the replan before drawing from queues, ensuring the user always sees
@@ -612,7 +606,7 @@ export class SessionController<TView = unknown> extends Loggable {
    * excludeCards happen at *invocation* time, not at *queue* time. For a
    * queued replan that means excludes reflect the state after the prior
    * replan landed — which is what we want, since the prior replan's
-   * newQ.peek(0) is the imminent draw we need to exclude.
+   * supplyQ.peek(0) is the imminent draw we need to exclude.
    */
   private async _runReplan(opts: ReplanOptions): Promise<void> {
     // Surface the executing replan's reason to the debug overlay spinner.
@@ -622,16 +616,16 @@ export class SessionController<TView = unknown> extends Loggable {
 
     // Exclude all cards already presented this session. The pipeline may
     // not yet see their encounter records (async writes), so without this
-    // they can re-enter newQ via replaceAll and cause duplicates.
+    // they can re-enter supplyQ via replaceAll and cause duplicates.
     //
-    // Also exclude newQ.peek(0): the imminent draw. When a replan fires
+    // Also exclude supplyQ.peek(0): the imminent draw. When a replan fires
     // from inside nextCard() (auto depletion/quality trigger) or as a
     // deferred post-submit replan, the next-up card is about to become
     // _currentCard but isn't yet, and hasn't yet landed in _sessionRecord.
     // Without this, the just-drawn card can be re-seated at the head of
-    // the replaced newQ and shown twice in a row — most visible in early
+    // the replaced supplyQ and shown twice in a row — most visible in early
     // sessions where state is sparse and triggers fire aggressively.
-    // Only the head is excluded; deeper newQ entries are still fair game
+    // Only the head is excluded; deeper supplyQ entries are still fair game
     // for the new plan (they aren't at risk of double-display since the
     // old queue is replaced atomically and only its head gets drawn).
     if (!opts.hints) opts.hints = {};
@@ -644,8 +638,8 @@ export class SessionController<TView = unknown> extends Loggable {
     for (const rec of this._sessionRecord) {
       excludeSet.add(rec.card.card_id);
     }
-    if (this.newQ.length > 0) {
-      excludeSet.add(this.newQ.peek(0).cardID);
+    if (this.supplyQ.length > 0) {
+      excludeSet.add(this.supplyQ.peek(0).cardID);
     }
 
     hints.excludeCards = [...excludeSet];
@@ -730,10 +724,16 @@ export class SessionController<TView = unknown> extends Loggable {
    * snapshots, which only capture what was explicitly pushed to them.
    */
   public getDebugSnapshot(): SessionDebugSnapshot {
-    const describe = <T extends { cardID: string }>(q: ItemQueue<T>): SessionQueueDebug => {
-      const cards: string[] = [];
+    const describe = <T extends StudySessionItem>(q: ItemQueue<T>): SessionQueueDebug => {
+      const cards: SessionQueueItemDebug[] = [];
       for (let i = 0; i < q.length; i++) {
-        cards.push(q.peek(i).cardID);
+        const item = q.peek(i);
+        cards.push({
+          cardID: item.cardID,
+          status: item.status,
+          origin: isReview(item) ? 'review' : 'new',
+          score: item.score,
+        });
       }
       return { length: q.length, dequeueCount: q.dequeueCount, cards };
     };
@@ -756,9 +756,9 @@ export class SessionController<TView = unknown> extends Loggable {
       sessionHints: this._sessionHints,
       replanActive: this._replanPromise !== null,
       replanLabel: this._activeReplanLabel,
-      reviewQ: describe(this.reviewQ),
-      newQ: describe(this.newQ),
+      supplyQ: describe(this.supplyQ),
       failedQ: describe(this.failedQ),
+      reviewBacklog: getSrsBacklogDebug(),
       drawnCards,
     };
   }
@@ -905,7 +905,7 @@ export class SessionController<TView = unknown> extends Loggable {
   private static readonly WELL_INDICATED_SCORE = 0.10;
 
   /**
-   * newQ length at or below which the opportunistic depletion-prefetch
+   * supplyQ length at or below which the opportunistic depletion-prefetch
    * fires. Sets the lead time available for the background replan to land
    * before the user actually empties the queue and falls into the
    * (synchronous) wedge-breaker path.
@@ -919,7 +919,7 @@ export class SessionController<TView = unknown> extends Loggable {
   private static readonly DEPLETION_PREFETCH_THRESHOLD = 3;
 
   /**
-   * Internal replan execution. Runs the pipeline, builds a new newQ,
+   * Internal replan execution. Runs the pipeline, rebuilds the supplyQ,
    * atomically swaps it in, and triggers hydration for the new contents.
    *
    * If the initial replan produces fewer than MIN_WELL_INDICATED cards that
@@ -939,7 +939,7 @@ export class SessionController<TView = unknown> extends Loggable {
 
     // Burst replan: suppress quality-based auto-replan so the background
     // replan doesn't clobber the small hinted queue before it's consumed.
-    // The depletion trigger (newQ empty) takes over instead.
+    // The depletion trigger (supplyQ empty) takes over instead.
     if (limit !== undefined && limit < this._defaultBatchLimit) {
       this._suppressQualityReplan = true;
       this.log(`[Replan] Burst mode (limit=${limit}): suppressing quality-based auto-replan`);
@@ -956,10 +956,10 @@ export class SessionController<TView = unknown> extends Loggable {
 
     await this.hydrationService.ensureHydratedCards();
     const labelTag = opts.label ? ` [${opts.label}]` : '';
-    this.log(`Replan complete${labelTag}: newQ now has ${this.newQ.length} cards (mode=${mode})`);
+    this.log(`Replan complete${labelTag}: supplyQ now has ${this.supplyQ.length} cards (mode=${mode})`);
 
     // Snapshot queue state for debugging
-    snapshotQueues(this.reviewQ.length, this.newQ.length, this.failedQ.length);
+    snapshotQueues(this.supplyQ.length, this.failedQ.length);
   }
 
   public addTime(seconds: number) {
@@ -971,10 +971,10 @@ export class SessionController<TView = unknown> extends Loggable {
   }
 
   public toString() {
-    return `Session: ${this.reviewQ.length} Reviews, ${this.newQ.length} New, ${this.failedQ.length} failed`;
+    return `Session: ${this.supplyQ.length} supply, ${this.failedQ.length} failed`;
   }
   public reportString() {
-    return `${this.reviewQ.dequeueCount} Reviews, ${this.newQ.dequeueCount} New, ${this.failedQ.dequeueCount} failed`;
+    return `${this.supplyQ.dequeueCount} supply, ${this.failedQ.dequeueCount} failed`;
   }
 
   /**
@@ -995,6 +995,7 @@ export class SessionController<TView = unknown> extends Loggable {
           courseID: item.courseID || 'unknown',
           cardID: item.cardID || 'unknown',
           status: item.status || 'unknown',
+          score: item.score,
         });
       }
       return items;
@@ -1007,15 +1008,10 @@ export class SessionController<TView = unknown> extends Loggable {
           ? 'Using getWeightedCards() API with scored candidates'
           : 'ERROR: getWeightedCards() not a function.',
       },
-      reviewQueue: {
-        length: this.reviewQ.length,
-        dequeueCount: this.reviewQ.dequeueCount,
-        items: extractQueueItems(this.reviewQ),
-      },
-      newQueue: {
-        length: this.newQ.length,
-        dequeueCount: this.newQ.dequeueCount,
-        items: extractQueueItems(this.newQ),
+      supplyQueue: {
+        length: this.supplyQ.length,
+        dequeueCount: this.supplyQ.dequeueCount,
+        items: extractQueueItems(this.supplyQ),
       },
       failedQueue: {
         length: this.failedQ.length,
@@ -1036,22 +1032,21 @@ export class SessionController<TView = unknown> extends Loggable {
   }
 
   /**
-   * Fetch content using the getWeightedCards API and mix across sources.
+   * Fetch weighted content from all sources, mix across sources, and populate
+   * the single supply queue in pipeline rank order.
    *
-   * This method:
-   * 1. Fetches weighted cards from each source
-   * 2. Fetches full review data (we need ScheduledCard fields for queue)
-   * 3. Uses SourceMixer to balance content across sources
-   * 4. Populates review and new card queues with mixed results
-   */
-  /**
-   * Fetch weighted content from all sources and populate session queues.
+   * Reviews and new cards compete on one cross-comparable scale (SRS 0.5–1.0
+   * w/ backlog pressure vs ELO 0.0–1.0) — there is no origin split and no
+   * second mixer. The working set is `supplyLimit` cards (the top of the mixed
+   * ranking, plus any `+INF` required cards floated to the front); replans
+   * re-pull and re-rank the whole supply, so a heavy review backlog surfaces as
+   * a refreshed top-ranked working set rather than a frozen 200-card snapshot.
    *
    * @param options.replan - If true, this is a mid-session replan rather than
-   *   initial session setup. Skips review queue population (avoiding duplicates),
-   *   atomically replaces newQ contents, and treats empty results as non-fatal.
-   * @param options.additive - If true (replan only), merge new high-quality
-   *   candidates into the front of the existing newQ instead of replacing it.
+   *   initial session setup. Atomically replaces supplyQ contents and treats
+   *   empty results as non-fatal.
+   * @param options.additive - If true (replan only), merge high-quality
+   *   candidates into the front of the existing supplyQ instead of replacing it.
    * @returns Number of "well-indicated" cards (passed all hierarchy filters)
    *   in the new content. Returns -1 if no content was loaded.
    */
@@ -1063,11 +1058,12 @@ export class SessionController<TView = unknown> extends Loggable {
     // const tGwc0 = performance.now(); // [perf] parked
     const replan = options?.replan ?? false;
     const additive = options?.additive ?? false;
-    const newLimit = options?.limit ?? this._defaultBatchLimit;
-    // Initial planning inflates the per-source budget so reviews can fill up
-    // to _initialReviewCap independently of the new-card budget. Replans
-    // never touch reviewQ, so the inflation is unnecessary there.
-    const fetchLimit = replan ? newLimit : newLimit + this._initialReviewCap;
+    const supplyLimit = options?.limit ?? this._defaultBatchLimit;
+    // Single working set: fetch the top `supplyLimit` from each source and let
+    // the mixer interleave them. Reviews and new are ranked together, so there
+    // is no separate review budget to inflate for (cf. the old dual-budget
+    // fetch that over-fetched to fill a frozen review cap).
+    const fetchLimit = supplyLimit;
 
     // Initial plan: push session-durable hints to sources so the very first
     // pipeline run reflects them (e.g. a post-lesson boost). Replans push
@@ -1105,7 +1101,7 @@ export class SessionController<TView = unknown> extends Loggable {
     if (batches.length === 0) {
       if (replan) {
         // Replan finding no content is non-fatal — old queue remains
-        this.log('Replan: no content from any source, keeping existing newQ');
+        this.log('Replan: no content from any source, keeping existing supplyQ');
         return -1;
       }
       throw new Error(
@@ -1149,88 +1145,61 @@ export class SessionController<TView = unknown> extends Loggable {
       mixedWeighted
     );
 
-    // Split mixed results by card origin, then apply per-origin caps. The
-    // pre-mixer fetch is inflated to fit both budgets; trimming here keeps
-    // newQ at the nimble batch size while letting reviewQ overfill up to
-    // _initialReviewCap (replan path discards reviewWeighted entirely).
-    const reviewWeighted = mixedWeighted
-      .filter((w) => getCardOrigin(w) === 'review')
-      .slice(0, this._initialReviewCap);
-    // Proactive de-dup: a `new` card served earlier this session must never
-    // re-enter newQ — whether it slipped back via a +INF require-injection, an
-    // additive merge, or a stale generator candidate. This is the general guard
-    // (see _servedCardIds); it makes re-presentation structurally impossible
-    // rather than relying on each upstream path to exclude correctly.
-    const newCandidates = mixedWeighted.filter(
-      (w) => getCardOrigin(w) === 'new' && !this._servedCardIds.has(w.cardId)
-    );
+    // Single supply working set — no origin split. Reviews and new compete on
+    // one rank. Drop already-served cards across ALL origins: a `new` card
+    // shown once must never recur, and once replans re-pull reviews, an
+    // answered/in-flight review must not re-enter the supply before its SRS
+    // reschedule clears the due-window (the review-loop guard, decision doc §4).
+    // failedQ is separate, so this never blocks legitimate failed re-presentation.
+    const candidates = mixedWeighted.filter((w) => !this._servedCardIds.has(w.cardId));
+
     // `+INF` is the hard "include at all costs" sentinel applied by require*
-    // injection (see Pipeline.applyRequirement). Partition these mandatory cards
-    // to the front and exempt them from the newLimit slice, so neither the
+    // injection (see Pipeline.applyRequirement). Float these mandatory cards to
+    // the front and exempt them from the supplyLimit slice, so neither the
     // mixer's source-shuffle/round-robin nor the cap can bury or drop a required
-    // card before it reaches newQ. The set is also handed to mergeToFront so an
+    // card. This preserves rank-respect through the mixer — it is NOT a per-item
+    // "mandatory" flag (the supplyQ is drawn front-to-back, and the timer guards
+    // honour `_minCardsGuarantee`, so a required follow-up is served on its own
+    // merits; see decision doc §3). The set is also handed to mergeToFront so an
     // already-queued required card gets re-fronted rather than leapfrogged.
-    const mandatoryWeighted = newCandidates.filter((w) => w.score === Number.POSITIVE_INFINITY);
-    const optionalWeighted = newCandidates.filter((w) => w.score !== Number.POSITIVE_INFINITY);
-    const newWeighted = [
+    const mandatoryWeighted = candidates.filter((w) => w.score === Number.POSITIVE_INFINITY);
+    const optionalWeighted = candidates.filter((w) => w.score !== Number.POSITIVE_INFINITY);
+    const supplyWeighted = [
       ...mandatoryWeighted,
-      ...optionalWeighted.slice(0, Math.max(0, newLimit - mandatoryWeighted.length)),
+      ...optionalWeighted.slice(0, Math.max(0, supplyLimit - mandatoryWeighted.length)),
     ];
     const mandatoryIds = new Set(mandatoryWeighted.map((w) => w.cardId));
-
-    logger.debug(`[reviews] got ${reviewWeighted.length} reviews from mixer`);
-
-    // Populate review queue from mixed results (skip during replan to avoid duplicates)
-    let report = replan ? 'Replan content:\n' : 'Mixed content session created with:\n';
-    if (!replan) {
-      for (const w of reviewWeighted) {
-        const reviewItem: StudySessionReviewItem = {
-          cardID: w.cardId,
-          courseID: w.courseId,
-          contentSourceType: 'course',
-          contentSourceID: w.courseId,
-          reviewID: w.reviewID!,
-          status: 'review',
-        };
-        this.reviewQ.add(reviewItem, reviewItem.cardID);
-        report += `Review: ${w.courseId}::${w.cardId} (score: ${w.score.toFixed(2)})\n`;
-      }
-    }
 
     // Count well-indicated cards by final score. Cards above the threshold
     // are genuinely appropriate content; cards below are fallback filler
     // that survived only because no strategy hard-removed them.
-    const wellIndicated = newWeighted.filter(
+    const wellIndicated = supplyWeighted.filter(
       (w) => w.score >= SessionController.WELL_INDICATED_SCORE
     ).length;
 
-    // Build new card items
-    const newItems: StudySessionNewItem[] = [];
-    for (const w of newWeighted) {
-      const newItem: StudySessionNewItem = {
-        cardID: w.cardId,
-        courseID: w.courseId,
-        contentSourceType: 'course',
-        contentSourceID: w.courseId,
-        status: 'new',
-      };
-      newItems.push(newItem);
-      report += `New: ${w.courseId}::${w.cardId} (score: ${w.score.toFixed(2)})\n`;
-    }
+    // Build heterogeneous supply items in rank order (review items carry
+    // reviewID; score is carried for the debug overlay).
+    let report = replan ? 'Replan content:\n' : 'Mixed content session created with:\n';
+    const supplyItems: StudySessionItem[] = supplyWeighted.map((w) => {
+      const origin = getCardOrigin(w);
+      const scoreStr = Number.isFinite(w.score) ? w.score.toFixed(2) : '+INF';
+      report += `${origin === 'review' ? 'Review' : 'New'}: ${w.courseId}::${w.cardId} (score: ${scoreStr})\n`;
+      return this._buildSupplyItem(w, origin);
+    });
 
     if (additive) {
-      // Additive replan: merge new candidates into front of existing queue.
+      // Additive replan: merge candidates into front of existing queue.
       // Pass mandatory (+INF) ids so an already-queued required card is pulled
       // back to the front instead of being buried by fresh non-required cards.
-      const added = this.newQ.mergeToFront(newItems, (item) => item.cardID, mandatoryIds);
-      report += `Additive merge: ${added} new cards added to front of newQ\n`;
+      const added = this.supplyQ.mergeToFront(supplyItems, (item) => item.cardID, mandatoryIds);
+      report += `Additive merge: ${added} cards added to front of supplyQ\n`;
     } else if (replan) {
-      // Atomic swap: replace entire newQ contents at once (no empty-queue window)
-      this.newQ.replaceAll(newItems, (item) => item.cardID);
+      // Atomic swap: replace entire supplyQ contents at once (no empty-queue window)
+      this.supplyQ.replaceAll(supplyItems, (item) => item.cardID);
     } else {
       // Initial session setup: add items normally
-      for (const item of newItems) {
-        this.newQ.add(item, item.cardID);
+      for (const item of supplyItems) {
+        this.supplyQ.add(item, item.cardID);
       }
     }
 
@@ -1244,10 +1213,31 @@ export class SessionController<TView = unknown> extends Loggable {
     //     `mix=${(tMixed - tSources).toFixed(0)}ms ` +
     //     `post=${(tEnd - tMixed).toFixed(0)}ms ` +
     //     `total=${(tEnd - tGwc0).toFixed(0)}ms ` +
-    //     `[sources=${this.sources.length} fetchLimit=${fetchLimit} newLimit=${newLimit}]`
+    //     `[sources=${this.sources.length} fetchLimit=${fetchLimit} supplyLimit=${supplyLimit}]`
     // );
 
     return wellIndicated;
+  }
+
+  /**
+   * Build a supply item from a weighted candidate. Review-origin cards carry
+   * their `reviewID` so SRS outcome tracking and re-presentation work; new
+   * cards do not. `score` is carried on both for the debug overlay.
+   */
+  private _buildSupplyItem(w: WeightedCard, origin = getCardOrigin(w)): StudySessionItem {
+    const base = {
+      cardID: w.cardId,
+      courseID: w.courseId,
+      contentSourceType: 'course' as const,
+      contentSourceID: w.courseId,
+      score: w.score,
+    };
+    if (origin === 'review') {
+      const reviewItem: StudySessionReviewItem = { ...base, status: 'review', reviewID: w.reviewID! };
+      return reviewItem;
+    }
+    const newItem: StudySessionNewItem = { ...base, status: 'new' };
+    return newItem;
   }
 
   /**
@@ -1257,15 +1247,15 @@ export class SessionController<TView = unknown> extends Loggable {
    */
   private _getItemsToHydrate(): StudySessionItem[] {
     const items: StudySessionItem[] = [];
-    const ITEMS_PER_QUEUE = 2;
+    // Prefetch a little deeper into supplyQ (the primary draw source) than the
+    // intermittently-drawn failedQ.
+    const SUPPLY_PREFETCH = 3;
+    const FAILED_PREFETCH = 2;
 
-    for (let i = 0; i < Math.min(ITEMS_PER_QUEUE, this.reviewQ.length); i++) {
-      items.push(this.reviewQ.peek(i));
+    for (let i = 0; i < Math.min(SUPPLY_PREFETCH, this.supplyQ.length); i++) {
+      items.push(this.supplyQ.peek(i));
     }
-    for (let i = 0; i < Math.min(ITEMS_PER_QUEUE, this.newQ.length); i++) {
-      items.push(this.newQ.peek(i));
-    }
-    for (let i = 0; i < Math.min(ITEMS_PER_QUEUE, this.failedQ.length); i++) {
+    for (let i = 0; i < Math.min(FAILED_PREFETCH, this.failedQ.length); i++) {
       items.push(this.failedQ.peek(i));
     }
 
@@ -1274,78 +1264,94 @@ export class SessionController<TView = unknown> extends Loggable {
 
   /**
    * Selects the next item to present to the user.
-   * Nondeterministic: uses probability to balance between queues based on session state.
+   *
+   * The supplyQ is already rank-ordered (the pipeline + mixer did the mixing,
+   * with `+INF` required cards floated to the front), so the primary path is a
+   * deterministic front-to-back draw — no second new-vs-review mixer. The only
+   * remaining decisions are (a) when the session ends and (b) when to interleave
+   * a remediation card from failedQ. See decision doc §2/§3/§7.
    */
   private _selectNextItemToHydrate(): StudySessionItem | null {
-    const choice = Math.random();
-    let newBound: number = 0.1;
-    let reviewBound: number = 0.75;
-
-    if (this.reviewQ.length === 0 && this.failedQ.length === 0 && this.newQ.length === 0) {
+    if (this.supplyQ.length === 0 && this.failedQ.length === 0) {
       // all queues empty - session is over (and course is complete?)
       return null;
     }
 
-    if (this._secondsRemaining < 2 && this.failedQ.length === 0 && this._minCardsGuarantee <= 0) {
-      // session is over!
+    // Near/at session end with no remediation pending and no guarantee active:
+    // don't start a card we can't finish. A `_minCardsGuarantee` (set by a
+    // replan's minFollowUpCards) holds the session open so a required follow-up
+    // and its practice can still be drawn past the timer — see decision doc §3.
+    if (
+      this._secondsRemaining < 2 &&
+      this.failedQ.length === 0 &&
+      this._minCardsGuarantee <= 0
+    ) {
       return null;
     }
 
-    // If timer expired, only return failed cards (unless card guarantee active)
+    // Timer expired, no guarantee: drain remediation only, then end.
     if (this._secondsRemaining <= 0 && this._minCardsGuarantee <= 0) {
-      if (this.failedQ.length > 0) {
-        return this.failedQ.peek(0);
-      } else {
-        return null; // No more failed cards, session over
-      }
+      return this.failedQ.length > 0 ? this.failedQ.peek(0) : null;
     }
 
-    // supply new cards at start of session
-    if (this.newQ.dequeueCount < this.sources.length && this.newQ.length) {
-      return this.newQ.peek(0);
+    const supplyTop = this.supplyQ.length > 0 ? this.supplyQ.peek(0) : null;
+
+    // A card guarantee exists to surface supplyQ follow-ups past the timer
+    // (e.g. an intro's required WST + practice). Don't let the failed-interleave
+    // consume those guaranteed draws.
+    if (this._minCardsGuarantee > 0 && supplyTop) {
+      return supplyTop;
     }
 
-    const cleanupTime = this.estimateCleanupTime();
-    const reviewTime = this.estimateReviewTime();
-    const availableTime = this._secondsRemaining - (cleanupTime + reviewTime);
-
-    // if time-remaing vs (reviewQ + failureQ) looks good,
-    // lean toward newQ
-    if (availableTime > 20) {
-      newBound = 0.5;
-      reviewBound = 0.9;
-    }
-    // else if time-remaining vs failureQ looks good,
-    // lean toward reviewQ
-    else if (this._secondsRemaining - cleanupTime > 20) {
-      newBound = 0.05;
-      reviewBound = 0.9;
-    }
-    // else (time-remaining vs failureQ looks bad!)
-    // lean heavily toward failureQ
-    else {
-      newBound = 0.01;
-      reviewBound = 0.1;
-    }
-
-    // exclude possibility of drawing from empty queues
-    if (this.failedQ.length === 0) {
-      reviewBound = 1;
-    }
-    if (this.reviewQ.length === 0) {
-      newBound = reviewBound;
-    }
-
-    if (choice < newBound && this.newQ.length) {
-      return this.newQ.peek(0);
-    } else if (choice < reviewBound && this.reviewQ.length) {
-      return this.reviewQ.peek(0);
-    } else if (this.failedQ.length) {
+    // Failed-interleave (§7): pressure-based endgame + a light steady cadence so
+    // remediation neither starves mid-session nor overruns the clock.
+    if (this.failedQ.length > 0 && this._shouldInterleaveFailed(supplyTop !== null)) {
       return this.failedQ.peek(0);
-    } else {
-      this.log(`No more cards available for the session!`);
-      return null;
     }
+
+    if (supplyTop) {
+      return supplyTop;
+    }
+
+    // Supply exhausted; remediation remains.
+    if (this.failedQ.length > 0) {
+      return this.failedQ.peek(0);
+    }
+
+    this.log(`No more cards available for the session!`);
+    return null;
+  }
+
+  /** Supply draws between forced failed-queue interleaves (light steady cadence). */
+  private static readonly FAILED_INTERLEAVE_EVERY = 4;
+  /**
+   * Slack (seconds) below which the endgame failed-pressure kicks in: when the
+   * time left after clearing remediation drops under this, bias hard to failed
+   * so the session doesn't end with un-cleared remediation. Mirrors the old
+   * `availableTime > 20` ladder thresholds.
+   */
+  private static readonly FAILED_ENDGAME_SLACK_SECONDS = 20;
+
+  /**
+   * Whether to interleave a failed (remediation) card now instead of drawing
+   * the supply head. Replaces the old `newBound`/`reviewBound` probability
+   * ladder's failed path (decision doc §7).
+   *
+   * @param supplyAvailable - whether supplyQ has a card to draw instead.
+   */
+  private _shouldInterleaveFailed(supplyAvailable: boolean): boolean {
+    if (this.failedQ.length === 0) return false;
+    // Nothing else to draw — failed is all that's left.
+    if (!supplyAvailable) return true;
+
+    // Endgame pressure: as estimateCleanupTime → secondsRemaining, the time
+    // left after clearing remediation shrinks; once it's under the slack,
+    // prioritise failed so remediation isn't stranded by session end.
+    const availableTime = this._secondsRemaining - this.estimateCleanupTime();
+    if (availableTime <= SessionController.FAILED_ENDGAME_SLACK_SECONDS) return true;
+
+    // Light steady interleave so failed doesn't starve while supply is healthy.
+    return this._supplyDrawsSinceFailed >= SessionController.FAILED_INTERLEAVE_EVERY;
   }
 
   public async nextCard(
@@ -1371,8 +1377,7 @@ export class SessionController<TView = unknown> extends Loggable {
     // wedge-breaker below handles the genuinely-empty case.
     if (
       this._replanPromise &&
-      this.newQ.length === 0 &&
-      this.reviewQ.length === 0 &&
+      this.supplyQ.length === 0 &&
       this.failedQ.length === 0
     ) {
       this.log('nextCard: queues empty, awaiting in-flight replan before drawing');
@@ -1399,7 +1404,7 @@ export class SessionController<TView = unknown> extends Loggable {
     // Rule of thumb: a redundant pipeline run is a perf bug, a missing
     // pipeline run is a correctness bug. Bias toward the cheaper failure.
 
-    // Opportunistic depletion: newQ running dry → background prefetch.
+    // Opportunistic depletion: supplyQ running dry → background prefetch.
     // No latch — if this fires repeatedly when the pipeline keeps coming
     // back empty, the wedge-breaker's local backoff handles spin protection.
     //
@@ -1411,15 +1416,14 @@ export class SessionController<TView = unknown> extends Loggable {
     // slightly earlier prefetch (which is anyway desirable for content
     // freshness) for a much more reliable lead time.
     if (
-      this.newQ.length <= SessionController.DEPLETION_PREFETCH_THRESHOLD &&
+      this.supplyQ.length <= SessionController.DEPLETION_PREFETCH_THRESHOLD &&
       this._secondsRemaining > 0 &&
       !this._replanPromise
     ) {
       this._suppressQualityReplan = false; // burst is (nearly) consumed
-      const otherContent = this.reviewQ.length + this.failedQ.length;
       this.log(
-        `[AutoReplan:depletion] newQ has ${this.newQ.length} card(s) ` +
-        `(${otherContent} in other queues) with ${this._secondsRemaining}s remaining. ` +
+        `[AutoReplan:depletion] supplyQ has ${this.supplyQ.length} card(s) ` +
+        `(${this.failedQ.length} failed pending) with ${this._secondsRemaining}s remaining. ` +
         `Triggering background replan.`
       );
       // label is observability-only (overlay/logs); does not affect coalescing.
@@ -1435,12 +1439,12 @@ export class SessionController<TView = unknown> extends Loggable {
     if (
       !this._suppressQualityReplan &&
       this._wellIndicatedRemaining <= REPLAN_BUFFER &&
-      this.newQ.length > 0 &&
+      this.supplyQ.length > 0 &&
       !this._replanPromise
     ) {
       this.log(
         `[AutoReplan:quality] ${this._wellIndicatedRemaining} well-indicated cards remaining ` +
-        `(newQ: ${this.newQ.length}). Triggering background replan.`
+        `(supplyQ: ${this.supplyQ.length}). Triggering background replan.`
       );
       // label is observability-only (overlay/logs); does not affect coalescing.
       void this.requestReplan({ label: 'auto:quality' });
@@ -1467,8 +1471,7 @@ export class SessionController<TView = unknown> extends Loggable {
     let wedgeEmptyStreak = 0;
     while (
       this._secondsRemaining > 0 &&
-      this.newQ.length === 0 &&
-      this.reviewQ.length === 0 &&
+      this.supplyQ.length === 0 &&
       this.failedQ.length === 0
     ) {
       this.log(
@@ -1478,8 +1481,7 @@ export class SessionController<TView = unknown> extends Loggable {
       await this._replanUncoalesced({ label: 'wedge-breaker' });
       // wedgeRuns++; // [perf] parked
       if (
-        this.newQ.length === 0 &&
-        this.reviewQ.length === 0 &&
+        this.supplyQ.length === 0 &&
         this.failedQ.length === 0
       ) {
         wedgeEmptyStreak++;
@@ -1522,22 +1524,24 @@ export class SessionController<TView = unknown> extends Loggable {
         await this.hydrationService.ensureHydratedCards();
         this._currentCard = card;
 
-        // Record presentation for debugging
+        // Record presentation for debugging. `origin` is the item's nature
+        // (new vs review); `queueSource` is which controller queue it was drawn
+        // from (supplyQ vs the remediation failedQ).
         const origin = nextItem.status === 'review' || nextItem.status === 'failed-review' ? 'review' :
                        nextItem.status === 'new' || nextItem.status === 'failed-new' ? 'new' : 'failed';
-        const queueSource = nextItem.status.startsWith('failed') ? 'failedQ' :
-                           (nextItem.status === 'review' ? 'reviewQ' : 'newQ');
+        const queueSource = nextItem.status.startsWith('failed') ? 'failedQ' : 'supplyQ';
 
         recordCardPresentation(
           nextItem.cardID,
           nextItem.courseID,
           this.courseNameCache.get(nextItem.courseID),
           origin,
-          queueSource as 'reviewQ' | 'newQ' | 'failedQ'
+          queueSource,
+          nextItem.score
         );
 
         // Snapshot queue state
-        snapshotQueues(this.reviewQ.length, this.newQ.length, this.failedQ.length);
+        snapshotQueues(this.supplyQ.length, this.failedQ.length);
 
         // [perf] parked: per-draw nextCard timing
         // logger.info(
@@ -1651,6 +1655,12 @@ export class SessionController<TView = unknown> extends Loggable {
         }
 
         this.failedQ.add(failedItem, failedItem.cardID);
+        // Reset the failed-interleave cadence so a just-failed card gets spacing:
+        // it now waits FAILED_INTERLEAVE_EVERY supply draws before being
+        // re-presented, rather than being instantly "due" because the counter
+        // had already climbed during a healthy supply run. (Endgame pressure in
+        // _shouldInterleaveFailed still overrides this near session end.)
+        this._supplyDrawsSinceFailed = 0;
       } else if (action === 'dismiss-error') {
         // Remove from cache on error as well
         this.hydrationService.removeCard(this._currentCard.item.cardID);
@@ -1676,20 +1686,21 @@ export class SessionController<TView = unknown> extends Loggable {
     this._clearDurableRequirement(item.cardID);
 
     // Record the draw immediately (earlier than _sessionRecord, which waits for
-    // a response) so getWeightedContent can keep this card out of newQ on any
+    // a response) so getWeightedContent can keep this card out of supplyQ on any
     // replan that lands after this draw.
     this._servedCardIds.add(item.cardID);
 
-    // Check each queue - item should be at the front of one of them
-    if (this.reviewQ.peek(0)?.cardID === item.cardID) {
-      this.reviewQ.dequeue((queueItem) => queueItem.cardID);
-    } else if (this.newQ.peek(0)?.cardID === item.cardID) {
-      this.newQ.dequeue((queueItem) => queueItem.cardID);
+    // Item should be at the front of one of the two queues. Track the
+    // failed-interleave cadence: reset on a failed draw, advance on a supply draw.
+    if (this.failedQ.peek(0)?.cardID === item.cardID) {
+      this.failedQ.dequeue((queueItem) => queueItem.cardID);
+      this._supplyDrawsSinceFailed = 0;
+    } else if (this.supplyQ.peek(0)?.cardID === item.cardID) {
+      this.supplyQ.dequeue((queueItem) => queueItem.cardID);
+      this._supplyDrawsSinceFailed++;
       if (this._wellIndicatedRemaining > 0) {
         this._wellIndicatedRemaining--;
       }
-    } else if (this.failedQ.peek(0)?.cardID === item.cardID) {
-      this.failedQ.dequeue((queueItem) => queueItem.cardID);
     }
   }
 

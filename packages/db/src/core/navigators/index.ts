@@ -27,6 +27,11 @@ export {
 
 // Re-export the commit-free forecast capability surface.
 export type { PipelineForecaster } from './Pipeline';
+export {
+  getSrsBacklogDebug,
+  clearSrsBacklogDebug,
+  type SrsBacklogDebug,
+} from './SrsDebugger';
 
 import { LearnableWeight } from '../types/contentNavigationStrategy';
 export type { ContentNavigationStrategyData, LearnableWeight } from '../types/contentNavigationStrategy';
