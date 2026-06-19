@@ -18,7 +18,7 @@ A card with a suitability score, audit trail, and pre-fetched metadata:
 interface WeightedCard {
   cardId: string;
   courseId: string;
-  score: number;              // 0-1 suitability score
+  score: number;              // suitability; anchored at [0,1] but unbounded above (see Score Semantics)
   provenance: StrategyContribution[];  // Audit trail
   tags?: string[];            // Pre-fetched tags (hydrated by Pipeline)
 }
@@ -47,17 +47,21 @@ interface CardGenerator {
 
 **Implementations:**
 - `ELONavigator` — New cards scored by ELO proximity to user skill (scores 0.0-1.0)
-- `SRSNavigator` — Review cards scored by overdueness, interval recency, and **backlog pressure** (scores 0.5-1.0)
-- `HardcodedOrderNavigator` — Fixed sequence defined by course author // NB this no longer exists but /home/colin/pn/vue-skuilder/master/packages/db/src/core/navigators/generators/prescribed.ts does - please update the doc in place
+- `SRSNavigator` — Review cards scored by overdueness, interval recency, and a multiplicative **backlog pressure** (base urgency ~0.5–0.95, scaled up by the backlog multiplier — can exceed 1.0)
+- `PrescribedCardsGenerator` — Stateful generator for authored, course-prescribed content (e.g. intro cards that must eventually surface). Tracks whether prescribed targets have been encountered, applies progressive pressure to stale/pending target groups, can emit upstream support cards to satisfy prereqs of still-blocked targets, and can drill unlocked-but-under-practiced skills. Registered as `prescribed`. See `generators/prescribed.ts`.
 - `CompositeGenerator` — Merges multiple generators with frequency boost
 
 #### SRS Backlog Pressure
 
-The SRS generator implements a self-regulating **backlog pressure** mechanism that prevents review pile-up while maintaining healthy new/review balance:
+The SRS generator implements a self-regulating **backlog pressure** mechanism that prevents review pile-up while maintaining healthy new/review balance.
 
-- **Healthy backlog** (≤20 due reviews): No pressure boost, scores 0.5-0.95. New content (ELO) naturally dominates.
-- **Elevated backlog** (40 due): +0.25 boost, scores 0.75-1.0. Reviews compete with new cards.
-- **High backlog** (60+ due): +0.50 boost (max), scores 0.95-1.0. Reviews take priority.
+Each review's per-card urgency is `base 0.5 + (overdueness/recency factors)·0.45` → ~0.5–0.95. Backlog pressure then **multiplies** that urgency by a global factor that grows as the due pile exceeds the healthy threshold (default `MAX_BACKLOG_MULTIPLIER = 2.0`, reached at 3× healthy):
+
+- **Healthy backlog** (≤20 due reviews): ×1.0 — no boost, scores ~0.5–0.95. New content (ELO) naturally dominates.
+- **Elevated backlog** (40 due): ×1.5 — scores ~0.85–1.4. Reviews compete with new cards.
+- **High backlog** (60+ due): ×2.0 (max) — scores ~1.1–1.9. Reviews take priority.
+
+**Why multiplicative, and not clamped to 1.0:** review scores are *not* capped at 1.0. They are designed to be cross-comparable with new-card scores, which are themselves no longer [0,1]-bounded — session hints multiply scores (an intro can boost its exercise tag ×5+), and `SessionController` draws one rank-ordered supply queue where reviews and new compete on a single open scale (see `decision-single-supply-queue.md`). A flat additive `+0.5` (the previous design) was both too small to contend with such boosts and largely swallowed by the old 1.0 clamp. A bounded multiplier scales review priority onto the same open scale, so a heavy backlog can genuinely lift reviews into contention; the cap (not a score ceiling) is what keeps them from running away.
 
 This treats SRS scheduling times as **eligibility dates** rather than hard due dates—reviewing slightly later may be optimal. The system maintains a healthy backlog rather than always clearing to zero (avoiding "Anki death spiral").
 
@@ -66,7 +70,7 @@ Configuration via strategy `serializedData`:
 { "healthyBacklog": 20 }
 ```
 
-See `todo-review-adaptation.md` for planned per-user adaptation extensions.
+`MAX_BACKLOG_MULTIPLIER` is currently a module constant in `generators/srs.ts` (tune against the dbg overlay's "review backpressure" panel). See `todo-review-adaptation.md` for planned per-user adaptation extensions.
 
 ### CardFilter
 
@@ -200,10 +204,14 @@ Pipeline(
 
 | Score | Meaning |
 |-------|---------|
-| 1.0 | Fully suitable |
+| 1.0 | Fully suitable (the generator anchor, **not** a ceiling) |
 | 0.5 | Neutral |
 | 0.0 | Exclude (hard filter) |
 | 0.x | Proportional suitability |
+| >1.0 | Boosted / elevated-urgency — above the nominal "fully suitable" anchor |
+| +INF | Mandatory — a required card injected by a `requireCards`/`requireTags` hint |
+
+**1.0 is an anchor, not a cap.** Generators emit in ~[0,1], but the final score is an *open* scale: multiplicative filters and session hints can push scores above 1.0 (an intro boosting its exercise tag ×5), and the SRS backlog multiplier lifts urgent reviews past 1.0 under heavy backlog. This is deliberate — it lets reviews and new cards compete on one cross-comparable scale, which is what `SessionController`'s single supply queue draws against (see `decision-single-supply-queue.md`). `+INF` is the require-injection sentinel; such cards float to the head of the supply.
 
 **All filters are multipliers.** This means:
 - Filter order doesn't affect final scores (multiplication is commutative)
@@ -640,8 +648,9 @@ return { ...card, score: card.score * multiplier };
 | `core/navigators/PipelineAssembler.ts` | Builds Pipeline from strategy docs |
 | `core/navigators/CompositeGenerator.ts` | Merges multiple generators |
 | `core/navigators/generators/elo.ts` | ELO generator |
-| `core/navigators/generators/srs.ts` | SRS generator (with backlog pressure) |
-| `core/navigators/hardcodedOrder.ts` | Fixed-order generator |
+| `core/navigators/generators/srs.ts` | SRS generator (multiplicative backlog pressure) |
+| `core/navigators/generators/prescribed.ts` | Prescribed-content generator (authored targets, support cards, practice drilling) |
+| `core/navigators/SrsDebugger.ts` | Per-run SRS backlog capture for the session overlay |
 | `core/navigators/hierarchyDefinition.ts` | Prerequisite filter |
 | `core/navigators/interferenceMitigator.ts` | Interference filter |
 | `core/navigators/relativePriority.ts` | Priority filter |
