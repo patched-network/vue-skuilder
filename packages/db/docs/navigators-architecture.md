@@ -48,7 +48,7 @@ interface CardGenerator {
 **Implementations:**
 - `ELONavigator` — New cards scored by ELO proximity to user skill (scores 0.0-1.0)
 - `SRSNavigator` — Review cards scored by overdueness, interval recency, and a multiplicative **backlog pressure** (base urgency ~0.5–0.95, scaled up by the backlog multiplier — can exceed 1.0)
-- `PrescribedCardsGenerator` — Stateful generator for authored, course-prescribed content (e.g. intro cards that must eventually surface). Tracks whether prescribed targets have been encountered, applies progressive pressure to stale/pending target groups, can emit upstream support cards to satisfy prereqs of still-blocked targets, and can drill unlocked-but-under-practiced skills. Registered as `prescribed`. See `generators/prescribed.ts`.
+- `PrescribedCardsGenerator` — Stateful generator for authored, course-prescribed content (e.g. intro cards that must eventually surface). Tracks whether prescribed targets have been encountered, applies progressive pressure to stale/pending target groups, can emit upstream support cards to satisfy prereqs of still-blocked targets, and drills unlocked-but-under-practiced skills under a **practice-debt pressure** (base ×2 escalating with debt age, capped — a persistent, self-discharging analog of SRS backlog pressure that guarantees a minimum number of reps land after intro). Registered as `prescribed`. See `generators/prescribed.ts`.
 - `CompositeGenerator` — Merges multiple generators with frequency boost
 
 #### SRS Backlog Pressure

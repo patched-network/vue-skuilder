@@ -79,6 +79,14 @@ interface GroupCardState {
 interface PrescribedProgressState {
   updatedAt: string;
   groups: Record<string, GroupCardState>;
+  /**
+   * Per-practice-tag debt age: tag → ISO timestamp when the skill first appeared
+   * unlocked-but-under-practiced. Drives the practice-debt staleness escalation
+   * (older unpaid debt → higher pressure). An entry is carried while the debt is
+   * open and dropped the moment the skill reaches `practiceMinCount` — so the
+   * map self-prunes and "staleness" is measured from first-owed, not last-seen.
+   */
+  practiceDebt?: Record<string, string>;
 }
 
 interface TagPrerequisite {
@@ -126,10 +134,20 @@ const DEFAULT_MAX_PRACTICE_PER_RUN = 4;
 const BASE_TARGET_SCORE = 1.0;
 const BASE_SUPPORT_SCORE = 0.8;
 const DISCOVERED_SUPPORT_SCORE = 12.0;
-// Practice drill cards enter the pool at parity with a well-matched target so
-// they survive into the candidate set; per-skill *emphasis* (recency, decay) is
-// the durable boost's job, not this base score's.
+// Practice drill cards: a *practice-debt pressure*, parallel to the SRS backlog
+// multiplier. An unlocked-but-under-practiced skill owes reps; that debt is
+// durable (keyed off per-tag attempt count) and discharges by practice, not
+// time. The score is base × a debt multiplier that starts at PRACTICE_BASE_MULT
+// (so a few reps land promptly after intro, competing with pressured reviews)
+// and escalates by how long the debt has stayed open (capped), so a chronically
+// out-competed skill eventually forces exposure rather than competing at flat
+// parity forever. Replaces the old flat 1.0, which punted emphasis to the
+// session-scoped intro boost that evaporates at session end.
 const BASE_PRACTICE_SCORE = 1.0;
+const PRACTICE_BASE_MULT = 2.0;
+const MAX_PRACTICE_MULTIPLIER = 4.0;
+// Added to the multiplier per day the debt stays open (linear, then clamped).
+const PRACTICE_STALENESS_BUMP_PER_DAY = 0.5;
 const MAX_TARGET_MULTIPLIER = 8.0;
 const MAX_SUPPORT_MULTIPLIER = 4.0;
 
@@ -271,6 +289,10 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
     const emitted: WeightedCard[] = [];
     const emittedIds = new Set<string>();
     const groupRuntimes: GroupRuntimeState[] = [];
+    // Practice-debt ages carried forward: stamped when a skill first appears
+    // under-practiced, dropped once it's discharged (see buildPracticeCards).
+    const priorPracticeDebt = progress.practiceDebt ?? {};
+    const nextPracticeDebt: Record<string, string> = {};
 
     for (const group of this.config.groups) {
       const runtime = this.buildGroupRuntimeState({
@@ -346,10 +368,16 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
         userGlobalElo,
         activeIds,
         seenIds,
+        priorPracticeDebt,
+        nextPracticeDebt,
       });
 
       emitted.push(...directCards, ...supportCards, ...discoveredSupportCards, ...practiceCards);
     }
+
+    // Persist the carried-forward practice debt (self-pruned: discharged skills
+    // simply aren't re-stamped above, so they drop out of the next state).
+    nextState.practiceDebt = nextPracticeDebt;
 
     const hintSummary = this.buildSupportHintSummary(groupRuntimes);
     const hints: ReplanHints | undefined =
@@ -821,9 +849,16 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
    * `practiceMinCount`), this resolves cards carrying that tag and emits them
    * into the candidate pool. It exists because global-ELO retrieval
    * systematically fails to fetch the (low-ELO) drill cards for a
-   * freshly-introduced skill — putting them in the pool here lets the pipeline's
-   * scoring + the durable per-skill boost order them. Ordering/emphasis is NOT
-   * this method's job; it only guarantees presence.
+   * freshly-introduced skill — putting them in the pool here guarantees presence.
+   *
+   * Emphasis is a **practice-debt pressure** (parallel to SRS backlog pressure):
+   * cards score `base × multiplier`, where the multiplier starts at
+   * PRACTICE_BASE_MULT (so a few reps land promptly post-intro, competing with
+   * pressured reviews) and escalates by how long the debt has stayed open
+   * (per-tag, time-based via `priorPracticeDebt`/`nextPracticeDebt`), clamped at
+   * MAX_PRACTICE_MULTIPLIER. The debt is durable and self-discharges the instant
+   * the skill reaches `practiceMinCount` — so this no longer relies on the
+   * session-scoped intro boost to actually surface.
    *
    * Fully data-driven: the unlock relation comes from the hierarchy config and
    * practice-status from per-tag ELO. No card-id or tag-namespace hard-coding.
@@ -838,6 +873,8 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
     userGlobalElo: number;
     activeIds: Set<string>;
     seenIds: Set<string>;
+    priorPracticeDebt: Record<string, string>;
+    nextPracticeDebt: Record<string, string>;
   }): WeightedCard[] {
     const {
       group,
@@ -849,6 +886,8 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
       userGlobalElo,
       activeIds,
       seenIds,
+      priorPracticeDebt,
+      nextPracticeDebt,
     } = args;
 
     const patterns = group.practiceTagPatterns ?? [];
@@ -865,6 +904,25 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
     );
 
     if (practiceTags.length === 0) return [];
+
+    // Carry forward (or open) each under-practiced skill's debt age, and derive
+    // its practice multiplier: base + staleness-since-first-owed, clamped. Done
+    // for every under-practiced tag (not just emitted ones) so the debt clock
+    // keeps running even on runs where the cap or de-dup emits nothing.
+    const now = Date.now();
+    const DAY_MS = 24 * 60 * 60 * 1000;
+    const tagMultiplier = new Map<string, number>();
+    for (const tag of practiceTags) {
+      const firstOwedAt = priorPracticeDebt[tag] ?? isoNow();
+      nextPracticeDebt[tag] = firstOwedAt;
+      const staleDays = Math.max(0, (now - new Date(firstOwedAt).getTime()) / DAY_MS);
+      const mult = clamp(
+        PRACTICE_BASE_MULT + staleDays * PRACTICE_STALENESS_BUMP_PER_DAY,
+        PRACTICE_BASE_MULT,
+        MAX_PRACTICE_MULTIPLIER
+      );
+      tagMultiplier.set(tag, mult);
+    }
 
     // Reuse the diversity-aware tag→cards collector (stem-dedup + shuffle).
     const practiceCardIds = this.findDiscoveredSupportCards({
@@ -886,19 +944,28 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
     const cards: WeightedCard[] = [];
     for (const cardId of practiceCardIds) {
       emittedIds.add(cardId);
+      // Most-stale wins: a card may carry several practice tags; take the
+      // highest debt multiplier among the ones it serves.
+      let mult = PRACTICE_BASE_MULT;
+      for (const tag of practiceTags) {
+        if ((cardsByTag.get(tag)?.includes(cardId) ?? false)) {
+          mult = Math.max(mult, tagMultiplier.get(tag) ?? PRACTICE_BASE_MULT);
+        }
+      }
+      const score = BASE_PRACTICE_SCORE * mult;
       cards.push({
         cardId,
         courseId,
-        score: BASE_PRACTICE_SCORE,
+        score,
         provenance: [
           {
             strategy: 'prescribed',
             strategyName: this.strategyName || this.name,
             strategyId: this.strategyId || 'NAVIGATION_STRATEGY-prescribed',
             action: 'generated' as const,
-            score: BASE_PRACTICE_SCORE,
+            score,
             reason:
-              `mode=practice;group=${group.id};` +
+              `mode=practice;group=${group.id};debtMult=×${mult.toFixed(2)};` +
               `underPracticedSkills=${practiceTags.length};` +
               `practiceTags=${practiceTags.slice(0, 8).join('|')}${practiceTags.length > 8 ? '|…' : ''};` +
               `testversion=${PRESCRIBED_DEBUG_VERSION}`,
