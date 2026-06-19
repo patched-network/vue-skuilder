@@ -1,5 +1,6 @@
 import { logger } from '../util/logger';
 import { clearRunHistory as clearPipelineRunHistory } from '../core/navigators/PipelineDebugger';
+import { clearSrsBacklogDebug } from '../core/navigators/SrsDebugger';
 import { toggleSessionOverlay } from './SessionOverlay';
 
 // ============================================================================
@@ -23,11 +24,9 @@ import { toggleSessionOverlay } from './SessionOverlay';
  */
 export interface QueueSnapshot {
   timestamp: Date;
-  reviewQLength: number;
-  newQLength: number;
+  supplyQLength: number;
   failedQLength: number;
-  reviewQNext3?: string[]; // cardIds of next 3 in reviewQ
-  newQNext3?: string[]; // cardIds of next 3 in newQ
+  supplyQNext3?: string[]; // cardIds of next 3 in supplyQ
 }
 
 /**
@@ -40,7 +39,7 @@ export interface CardPresentation {
   courseId: string;
   courseName?: string;
   origin: 'review' | 'new' | 'failed';
-  queueSource: 'reviewQ' | 'newQ' | 'failedQ';
+  queueSource: 'supplyQ' | 'failedQ';
   score?: number; // If available from weighted cards
 }
 
@@ -73,8 +72,7 @@ const MAX_HISTORY = 5;
  * Start tracking a new session.
  */
 export function startSessionTracking(
-  reviewQLength: number,
-  newQLength: number,
+  supplyQLength: number,
   failedQLength: number
 ): void {
   // Release pipeline run-history memory before this session begins piling
@@ -83,6 +81,7 @@ export function startSessionTracking(
   // dominant debugging workflow — fully functional: a finished session's
   // run history sits intact until the user actually begins another one.
   clearPipelineRunHistory();
+  clearSrsBacklogDebug();
 
   const sessionId = `session-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
@@ -91,8 +90,7 @@ export function startSessionTracking(
     startTime: new Date(),
     initialQueues: {
       timestamp: new Date(),
-      reviewQLength,
-      newQLength,
+      supplyQLength,
       failedQLength,
     },
     presentations: [],
@@ -110,7 +108,7 @@ export function recordCardPresentation(
   courseId: string,
   courseName: string | undefined,
   origin: 'review' | 'new' | 'failed',
-  queueSource: 'reviewQ' | 'newQ' | 'failedQ',
+  queueSource: 'supplyQ' | 'failedQ',
   score?: number
 ): void {
   if (!activeSession) {
@@ -134,11 +132,9 @@ export function recordCardPresentation(
  * Take a snapshot of current queue state.
  */
 export function snapshotQueues(
-  reviewQLength: number,
-  newQLength: number,
+  supplyQLength: number,
   failedQLength: number,
-  reviewQNext3?: string[],
-  newQNext3?: string[]
+  supplyQNext3?: string[]
 ): void {
   if (!activeSession) {
     return;
@@ -146,11 +142,9 @@ export function snapshotQueues(
 
   activeSession.queueSnapshots.push({
     timestamp: new Date(),
-    reviewQLength,
-    newQLength,
+    supplyQLength,
     failedQLength,
-    reviewQNext3,
-    newQNext3,
+    supplyQNext3,
   });
 }
 
@@ -191,13 +185,9 @@ function showCurrentQueue(): void {
 
   // eslint-disable-next-line no-console
   console.group('📊 Current Queue State');
-  logger.info(`Review Queue: ${latest.reviewQLength} cards`);
-  if (latest.reviewQNext3 && latest.reviewQNext3.length > 0) {
-    logger.info(`  Next: ${latest.reviewQNext3.join(', ')}`);
-  }
-  logger.info(`New Queue: ${latest.newQLength} cards`);
-  if (latest.newQNext3 && latest.newQNext3.length > 0) {
-    logger.info(`  Next: ${latest.newQNext3.join(', ')}`);
+  logger.info(`Supply Queue: ${latest.supplyQLength} cards`);
+  if (latest.supplyQNext3 && latest.supplyQNext3.length > 0) {
+    logger.info(`  Next: ${latest.supplyQNext3.join(', ')}`);
   }
   logger.info(`Failed Queue: ${latest.failedQLength} cards`);
   // eslint-disable-next-line no-console

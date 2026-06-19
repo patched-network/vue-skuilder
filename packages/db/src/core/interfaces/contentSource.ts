@@ -40,6 +40,13 @@ export interface StudySessionItem {
   cardID: string;
   courseID: string;
   elo?: number;
+  /**
+   * Pipeline suitability score at queue-build time, carried for observability
+   * (the debug overlay renders the now-load-bearing supply ranking). `+INF`
+   * marks a mandatory required card. Not used for any draw decision — the
+   * supplyQ is already ordered, so the controller draws front-to-back.
+   */
+  score?: number;
   // reviewID?: string;
 }
 

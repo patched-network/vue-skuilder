@@ -1,5 +1,6 @@
 import { logger } from '../util/logger';
 import type { ReplanHints } from '@db/core/navigators/generators/types';
+import type { SrsBacklogDebug } from '@db/core/navigators/SrsDebugger';
 
 // ============================================================================
 // SESSION OVERLAY
@@ -17,12 +18,23 @@ import type { ReplanHints } from '@db/core/navigators/generators/types';
 //
 // ============================================================================
 
-/** Per-queue debug view: total length, cumulative draws, and head-first cardIDs. */
+/** A single queued item, carrying the now-load-bearing rank score + origin. */
+export interface SessionQueueItemDebug {
+  cardID: string;
+  /** Item status: 'new' | 'review' | 'failed-new' | 'failed-review'. */
+  status: string;
+  /** Card nature, collapsed from status: 'new' | 'review'. */
+  origin: 'new' | 'review';
+  /** Pipeline suitability score at queue-build time; `+INF` marks a required card. */
+  score?: number;
+}
+
+/** Per-queue debug view: total length, cumulative draws, and head-first items. */
 export interface SessionQueueDebug {
   length: number;
   dequeueCount: number;
-  /** cardIDs in queue order, head (next draw) first. */
-  cards: string[];
+  /** Items in queue order, head (next draw) first. */
+  cards: SessionQueueItemDebug[];
 }
 
 /**
@@ -55,9 +67,11 @@ export interface SessionDebugSnapshot {
   replanActive: boolean;
   /** Reason for the in-flight replan (caller label, or '(auto)'); may be stale when idle. */
   replanLabel: string | null;
-  reviewQ: SessionQueueDebug;
-  newQ: SessionQueueDebug;
+  /** The single rank-ordered supply (new + review interleaved), head first. */
+  supplyQ: SessionQueueDebug;
   failedQ: SessionQueueDebug;
+  /** SRS backlog state per course (drives the "is review starvation permanent?" read). */
+  reviewBacklog: SrsBacklogDebug[];
   /** Every card the learner has interacted with this session, draw order. */
   drawnCards: SessionDrawnCardDebug[];
 }
@@ -125,8 +139,7 @@ let minified = false;
 
 /** Expansion state for collapsible (large) lists, preserved across re-renders. */
 const expanded: Record<string, boolean> = {
-  reviewQ: false,
-  newQ: false,
+  supplyQ: false,
   failedQ: false,
   drawn: false,
 };
@@ -214,8 +227,8 @@ function render(): void {
     replanHtml(s) +
     metaHtml(s) +
     hintsHtml(s.sessionHints) +
-    queueHtml('reviewQ', 'reviewQ', s.reviewQ) +
-    queueHtml('newQ', 'newQ', s.newQ) +
+    backlogHtml(s.reviewBacklog) +
+    queueHtml('supplyQ', 'supplyQ', s.supplyQ) +
     queueHtml('failedQ', 'failedQ', s.failedQ) +
     drawnHtml('drawn', s.drawnCards);
 
@@ -350,6 +363,65 @@ function hintsHtml(h: ReplanHints | null): string {
   );
 }
 
+/**
+ * SRS backlog panel — answers "is review starvation permanent?". Backlog
+ * pressure is a multiplier (×1.0 healthy → max) on review urgency; reviews are
+ * no longer clamped to 1.0, so under a heavy backlog they scale up to compete
+ * with (and exceed) new cards. So:
+ *  - multiplier climbing, below max → reviews will rise as the backlog grows
+ *    (temporary — they'll start winning slots);
+ *  - multiplier maxed but still out-competed → the boosts in `sessionHints`
+ *    simply sit higher; reviews only resurface once those relax (backoff), not
+ *    from more backlog. Compare `top review` here against the supplyQ head score.
+ */
+function backlogHtml(backlog: SrsBacklogDebug[]): string {
+  if (!backlog.length) return '';
+  const rows = backlog
+    .map((b) => {
+      const maxed = b.backlogMultiplier >= b.maxBacklogMultiplier - 1e-9;
+      const multColor = b.backlogMultiplier <= 1 ? '#86efac' : maxed ? '#fca5a5' : '#fcd34d';
+      const headroom = maxed
+        ? 'maxed — boosts decide order until they relax'
+        : b.backlogMultiplier > 1
+          ? 'climbing as backlog grows'
+          : 'healthy — no pressure';
+      const top = b.topReviewScore !== null ? b.topReviewScore.toFixed(2) : '—';
+      const next = b.nextDueIn ? ` <span style="opacity:.6">· next due ${esc(b.nextDueIn)}</span>` : '';
+      return (
+        `<div style="margin-left:6px">` +
+        `<span style="opacity:.7">${esc(b.courseId.slice(0, 8))}</span> ` +
+        `due ${b.dueNow}/${b.scheduledTotal} <span style="opacity:.6">(healthy ${b.healthyBacklog})</span>${next}` +
+        `<div style="margin-left:6px">` +
+        `pressure <span style="color:${multColor}">×${b.backlogMultiplier.toFixed(2)}/${b.maxBacklogMultiplier.toFixed(2)}</span> ` +
+        `<span style="opacity:.6">${headroom} · top review ${top}</span></div>` +
+        `</div>`
+      );
+    })
+    .join('');
+  return (
+    `<div style="margin-bottom:6px">` +
+    `<div style="color:#93c5fd">review backpressure</div>${rows}</div>`
+  );
+}
+
+/** Format a rank score for display: finite → 2dp, `+INF` → REQ (required). */
+function fmtScore(score?: number): string {
+  if (score === undefined) return '';
+  if (!Number.isFinite(score)) return 'REQ';
+  return score.toFixed(2);
+}
+
+/** One supply/failed queue line: `cardID [r 0.82]` with origin-coloured tag. */
+function queueItemHtml(item: SessionQueueItemDebug): string {
+  const tagColor = item.origin === 'review' ? '#93c5fd' : '#fcd34d';
+  const score = fmtScore(item.score);
+  const label = `${item.origin === 'review' ? 'r' : 'n'}${score ? ' ' + score : ''}`;
+  return (
+    `${esc(item.cardID)}` +
+    `<span style="color:${tagColor};opacity:.85"> [${label}]</span>`
+  );
+}
+
 function queueHtml(key: string, label: string, q: SessionQueueDebug): string {
   const collapsible = q.length > INLINE_THRESHOLD;
   const isOpen = collapsible && expanded[key];
@@ -371,7 +443,7 @@ function queueHtml(key: string, label: string, q: SessionQueueDebug): string {
 
   let body =
     `<ol style="margin:2px 0 ${listMarginBottom}px 0;padding-left:20px">` +
-    shown.map((c) => `<li style="white-space:nowrap">${esc(c)}</li>`).join('') +
+    shown.map((c) => `<li style="white-space:nowrap">${queueItemHtml(c)}</li>`).join('') +
     `</ol>`;
 
   if (collapsible) {
@@ -465,13 +537,36 @@ function snapshotToText(s: SessionDebugSnapshot | null): string {
   }
   lines.push(hintParts.length ? hintParts.join('\n') : '  none');
 
+  if (s.reviewBacklog.length) {
+    lines.push('');
+    lines.push('review backpressure:');
+    for (const b of s.reviewBacklog) {
+      const maxed = b.backlogMultiplier >= b.maxBacklogMultiplier - 1e-9;
+      const headroom = maxed
+        ? 'maxed (boosts decide order)'
+        : b.backlogMultiplier > 1
+          ? 'climbing'
+          : 'healthy';
+      const top = b.topReviewScore !== null ? b.topReviewScore.toFixed(2) : '—';
+      const next = b.nextDueIn ? `, next due ${b.nextDueIn}` : '';
+      lines.push(
+        `  ${b.courseId.slice(0, 8)}: due ${b.dueNow}/${b.scheduledTotal} ` +
+          `(healthy ${b.healthyBacklog})${next}; pressure ×${b.backlogMultiplier.toFixed(2)}/` +
+          `${b.maxBacklogMultiplier.toFixed(2)} ${headroom}; top review ${top}`
+      );
+    }
+  }
+
   const queueText = (label: string, q: SessionQueueDebug) => {
     lines.push('');
     lines.push(`${label}: ${q.length} (drawn ${q.dequeueCount})`);
-    q.cards.forEach((c, i) => lines.push(`  ${i + 1}. ${c}`));
+    q.cards.forEach((c, i) => {
+      const score = fmtScore(c.score);
+      const tag = `${c.origin === 'review' ? 'r' : 'n'}${score ? ' ' + score : ''}`;
+      lines.push(`  ${i + 1}. ${c.cardID} [${tag}]`);
+    });
   };
-  queueText('reviewQ', s.reviewQ);
-  queueText('newQ', s.newQ);
+  queueText('supplyQ', s.supplyQ);
   queueText('failedQ', s.failedQ);
 
   lines.push('');

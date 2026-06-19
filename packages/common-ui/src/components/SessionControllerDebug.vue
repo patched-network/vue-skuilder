@@ -8,58 +8,29 @@
 
     <v-card-text class="pa-2">
       <v-row dense>
-        <!-- Review Queue -->
-        <v-col cols="12" md="4">
+        <!-- Supply Queue (new + review, rank-ordered) -->
+        <v-col cols="12" md="8">
           <div class="debug-section">
             <div class="debug-header">
-              <v-icon size="x-small" class="mr-1">mdi-calendar-check</v-icon>
-              <strong>Review Queue</strong>
+              <v-icon size="x-small" class="mr-1">mdi-sort</v-icon>
+              <strong>Supply Queue</strong>
             </div>
             <div class="debug-stats">
-              <span class="text-caption">Length: {{ debugInfo.reviewQueue.length }}</span>
-              <span class="text-caption ml-2">Dequeued: {{ debugInfo.reviewQueue.dequeueCount }}</span>
+              <span class="text-caption">Length: {{ debugInfo.supplyQueue.length }}</span>
+              <span class="text-caption ml-2">Dequeued: {{ debugInfo.supplyQueue.dequeueCount }}</span>
             </div>
-            <div v-if="debugInfo.reviewQueue.items.length > 0" class="debug-items">
+            <div v-if="debugInfo.supplyQueue.items.length > 0" class="debug-items">
               <div
-                v-for="(item, idx) in debugInfo.reviewQueue.items.slice(0, 5)"
+                v-for="(item, idx) in debugInfo.supplyQueue.items.slice(0, 8)"
                 :key="idx"
                 class="debug-item"
               >
                 <span class="text-caption">{{ idx }}: {{ item.courseID }}::{{ item.cardID }}</span>
                 <span class="text-caption text-grey ml-1">({{ item.status }})</span>
+                <span class="text-caption ml-1" style="color:#90caf9">{{ fmtScore(item.score) }}</span>
               </div>
-              <div v-if="debugInfo.reviewQueue.items.length > 5" class="text-caption text-grey">
-                ... +{{ debugInfo.reviewQueue.items.length - 5 }} more
-              </div>
-            </div>
-            <div v-else class="text-caption text-grey">
-              (empty)
-            </div>
-          </div>
-        </v-col>
-
-        <!-- New Cards Queue -->
-        <v-col cols="12" md="4">
-          <div class="debug-section">
-            <div class="debug-header">
-              <v-icon size="x-small" class="mr-1">mdi-file-document-plus</v-icon>
-              <strong>New Cards Queue</strong>
-            </div>
-            <div class="debug-stats">
-              <span class="text-caption">Length: {{ debugInfo.newQueue.length }}</span>
-              <span class="text-caption ml-2">Dequeued: {{ debugInfo.newQueue.dequeueCount }}</span>
-            </div>
-            <div v-if="debugInfo.newQueue.items.length > 0" class="debug-items">
-              <div
-                v-for="(item, idx) in debugInfo.newQueue.items.slice(0, 5)"
-                :key="idx"
-                class="debug-item"
-              >
-                <span class="text-caption">{{ idx }}: {{ item.courseID }}::{{ item.cardID }}</span>
-                <span class="text-caption text-grey ml-1">({{ item.status }})</span>
-              </div>
-              <div v-if="debugInfo.newQueue.items.length > 5" class="text-caption text-grey">
-                ... +{{ debugInfo.newQueue.items.length - 5 }} more
+              <div v-if="debugInfo.supplyQueue.items.length > 8" class="text-caption text-grey">
+                ... +{{ debugInfo.supplyQueue.items.length - 8 }} more
               </div>
             </div>
             <div v-else class="text-caption text-grey">
@@ -141,7 +112,7 @@ import { SessionController } from '@vue-skuilder/db';
 interface QueueDebugInfo {
   length: number;
   dequeueCount: number;
-  items: Array<{ courseID: string; cardID: string; status: string }>;
+  items: Array<{ courseID: string; cardID: string; status: string; score?: number }>;
 }
 
 interface HydratedCacheInfo {
@@ -151,8 +122,7 @@ interface HydratedCacheInfo {
 }
 
 export interface SessionDebugInfo {
-  reviewQueue: QueueDebugInfo;
-  newQueue: QueueDebugInfo;
+  supplyQueue: QueueDebugInfo;
   failedQueue: QueueDebugInfo;
   hydratedCache: HydratedCacheInfo;
 }
@@ -190,8 +160,7 @@ export default defineComponent({
 
       if (!props.sessionController) {
         return {
-          reviewQueue: { length: 0, dequeueCount: 0, items: [] },
-          newQueue: { length: 0, dequeueCount: 0, items: [] },
+          supplyQueue: { length: 0, dequeueCount: 0, items: [] },
           failedQueue: { length: 0, dequeueCount: 0, items: [] },
           hydratedCache: { count: 0, failedCacheSize: 0, items: [] },
         };
@@ -200,8 +169,16 @@ export default defineComponent({
       return props.sessionController.getDebugInfo();
     });
 
+    /** Format a rank score: finite → 2dp, `+INF` → REQ (required), missing → ''. */
+    const fmtScore = (score?: number): string => {
+      if (score === undefined) return '';
+      if (!Number.isFinite(score)) return 'REQ';
+      return score.toFixed(2);
+    };
+
     return {
       debugInfo,
+      fmtScore,
     };
   },
 });
