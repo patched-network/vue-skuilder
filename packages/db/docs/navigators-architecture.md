@@ -531,8 +531,15 @@ class MyFilter extends ContentNavigator implements CardFilter {
 ```
 
 This enables **single source of truth** patterns: the consumer app writes state
-via `UsrCrsDataInterface.putStrategyState()`, and the consumer filter reads it
-via the same key. No framework changes needed.
+through the course-scoped interface, which is reached via the **async**
+`getCourseInterface(courseId)` (await it first — it returns a `Promise`):
+
+```typescript
+const courseDb = await userDB.getCourseInterface(courseId);
+await courseDb.putStrategyState<MyStateType>('MySharedStateKey', data);
+```
+
+The consumer filter then reads it via the same key. No framework changes needed.
 
 ---
 
