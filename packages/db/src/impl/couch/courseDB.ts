@@ -438,9 +438,18 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
   }
 
   async getAllCardIds(): Promise<string[]> {
+    // Card `_id`s are minted as `<DocTypePrefixes[CARD]>-<...>` (see courseAPI),
+    // i.e. the `c-` prefix \u2014 for both framework-minted uuid ids (`c-<uuid>`) and
+    // course-authored deterministic ids (e.g. LettersPractice's `c-intro-s-S`).
+    //
+    // The previous implementation hardcoded a `CARD-` prefix range, which never
+    // matched any card and silently returned an EMPTY list, starving the only
+    // callers (`forecast()` / `diagnoseCardSpace()`). Use the prefix const so
+    // the range stays correct if the scheme ever changes.
+    const prefix = `${DocTypePrefixes[DocType.CARD]}-`;
     const result = await this.db.allDocs({
-      startkey: 'CARD-',
-      endkey: 'CARD-\ufff0',
+      startkey: prefix,
+      endkey: `${prefix}\ufff0`,
       include_docs: false,
     });
     return result.rows.map((row) => row.id);
