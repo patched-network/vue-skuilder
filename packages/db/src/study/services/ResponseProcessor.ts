@@ -189,7 +189,9 @@ export class ResponseProcessor {
         const nullTags = tagKeys.filter((k) => taggedPerformance[k] === null);
         const scoredTags = tagKeys.filter((k) => taggedPerformance[k] !== null);
         logger.info(
-          `[ResponseProcessor] per-tag ELO update for ${cardId}: scored=[${scoredTags.join(', ')}] count-only=[${nullTags.join(', ')}]`
+          `[FirstContactElo] correct first-attempt per-tag ELO update for ${cardId} ` +
+            `(historyLen=${history.records.length}, priorAttemps=${cardRecord.priorAttemps}): ` +
+            `scored=[${scoredTags.join(', ')}] count-only=[${nullTags.join(', ')}]`
         );
 
         void this.eloService.updateUserAndCardEloPerTag(
@@ -225,7 +227,8 @@ export class ResponseProcessor {
           );
         }
         logger.info(
-          '[ResponseProcessor] Processed correct response with SRS scheduling and ELO update'
+          `[FirstContactElo] correct first-attempt ELO update (score=${userScore.toFixed(3)}) ` +
+            `for ${cardId} (historyLen=${history.records.length}, priorAttemps=${cardRecord.priorAttemps})`
         );
       }
 
@@ -270,8 +273,17 @@ export class ResponseProcessor {
     // Parse performance (may be numeric or structured)
     const { taggedPerformance } = this.parsePerformance(cardRecord.performance);
 
-    // Update ELO for first-time failures (not subsequent attempts on same card)
-    if (history.records.length !== 1 && cardRecord.priorAttemps === 0) {
+    // Tracks whether this response already produced an ELO update, so the
+    // dismiss-failed branch below doesn't double-penalize the same record (the
+    // two coincide when maxAttemptsPerView === 1: first contact and final
+    // failure land on one response).
+    let eloUpdated = false;
+
+    // Update ELO on the first attempt of a presentation — symmetric with the
+    // correct path. Previously this was gated on `history.records.length !== 1`,
+    // so first-EVER failures were skipped while first-ever successes updated,
+    // biasing cold-start ELO upward. See WORKING-first-contact-elo-asymmetry.md.
+    if (cardRecord.priorAttemps === 0) {
       if (taggedPerformance) {
         // Per-tag ELO update for incorrect response
         void this.eloService.updateUserAndCardEloPerTag(
@@ -282,7 +294,9 @@ export class ResponseProcessor {
           currentCard
         );
         logger.info(
-          `[ResponseProcessor] Processed incorrect response with per-tag ELO update (${Object.keys(taggedPerformance).length - 1} tags)`
+          `[FirstContactElo] incorrect first-attempt per-tag ELO update for ${cardId} ` +
+            `(historyLen=${history.records.length}, priorAttemps=${cardRecord.priorAttemps}, ` +
+            `tags=${Object.keys(taggedPerformance).length - 1})`
         );
       } else {
         // Standard single-score ELO update
@@ -293,32 +307,52 @@ export class ResponseProcessor {
           courseRegistrationDoc,
           currentCard
         );
-        logger.info('[ResponseProcessor] Processed incorrect response with ELO update');
+        logger.info(
+          `[FirstContactElo] incorrect first-attempt ELO update (score=0) for ${cardId} ` +
+            `(historyLen=${history.records.length}, priorAttemps=${cardRecord.priorAttemps})`
+        );
       }
+      eloUpdated = true;
     } else {
-      logger.info('[ResponseProcessor] Processed incorrect response (no ELO update needed)');
+      logger.info(
+        `[FirstContactElo] incorrect retry — no ELO update for ${cardId} ` +
+          `(historyLen=${history.records.length}, priorAttemps=${cardRecord.priorAttemps})`
+      );
     }
 
     // Determine navigation based on attempt limits
     if (currentCard.records.length >= maxAttemptsPerView) {
       if (sessionViews >= maxSessionViews) {
-        // Too many session views - dismiss completely with ELO penalty
-        if (taggedPerformance) {
-          // Use tagged performance for final failure
-          void this.eloService.updateUserAndCardEloPerTag(
-            taggedPerformance,
-            courseId,
-            cardId,
-            courseRegistrationDoc,
-            currentCard
+        // Too many session views - dismiss completely with ELO penalty.
+        // Skip if this response already updated ELO above, to avoid a double
+        // penalty on the same record (happens when maxAttemptsPerView === 1).
+        if (!eloUpdated) {
+          if (taggedPerformance) {
+            // Use tagged performance for final failure
+            void this.eloService.updateUserAndCardEloPerTag(
+              taggedPerformance,
+              courseId,
+              cardId,
+              courseRegistrationDoc,
+              currentCard
+            );
+          } else {
+            void this.eloService.updateUserAndCardElo(
+              0,
+              courseId,
+              cardId,
+              courseRegistrationDoc,
+              currentCard
+            );
+          }
+          logger.info(
+            `[FirstContactElo] dismiss-failed final ELO penalty for ${cardId} ` +
+              `(historyLen=${history.records.length}, sessionViews=${sessionViews})`
           );
         } else {
-          void this.eloService.updateUserAndCardElo(
-            0,
-            courseId,
-            cardId,
-            courseRegistrationDoc,
-            currentCard
+          logger.info(
+            `[FirstContactElo] dismiss-failed — ELO already updated this response, ` +
+              `skipping double penalty for ${cardId}`
           );
         }
         return {
