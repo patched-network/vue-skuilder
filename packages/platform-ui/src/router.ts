@@ -1,7 +1,7 @@
 import { getCurrentUser } from '@vue-skuilder/common-ui';
 import { useAuthRedirectStore } from './stores/useAuthRedirectStore';
 import { isRegistrationEnabled } from './utils/registrationGuard';
-import { createRouter, createWebHistory } from 'vue-router';
+import { createRouter, createWebHistory, type RouteRecordRaw, type Router } from 'vue-router';
 
 // Eager: landing and auth-flow views (needed for first paint / common entry)
 import Home from './views/Home.vue';
@@ -32,198 +32,241 @@ const MarkdownRenderer = () => import('@vue-skuilder/common-ui').then((m) => m.M
 // builds entirely.
 const Playtest = () => import('./dev/Playtest.vue');
 
-const router = createRouter({
-  history: createWebHistory(),
-  // mode: 'history', // deprecated in Vue 3 / Vue Router 4
-
-  routes: [
-    // Dev-only playtest harness — see ./dev/Playtest.vue. The route is
-    // only registered when Vite is in dev mode, so prod builds neither
-    // expose the URL nor include the chunk.
-    ...(import.meta.env.DEV
-      ? [
-          {
-            path: '/play/:pathMatch(.*)?',
-            name: 'playtest',
-            component: Playtest,
-            props: true,
-          },
-        ]
-      : []),
-    {
-      path: '/md',
-      component: MarkdownRenderer,
-    },
-    {
-      path: '/',
-      alias: ['/home'],
-      name: 'home',
-      component: Home,
-    },
-    {
-      path: '/about',
-      name: 'about',
-      component: About,
-    },
-    {
-      path: '/login',
-      name: 'login',
-      component: Login,
-    },
-    {
-      path: '/signup',
-      name: 'signup',
-      component: SignUp,
-      beforeEnter: () => {
-        if (!isRegistrationEnabled()) {
-          return { name: 'home' };
-        }
-      },
-    },
-    {
-      path: '/verify',
-      name: 'verify',
-      component: VerifyEmailView,
-    },
-    {
-      path: '/request-reset',
-      name: 'request-reset',
-      component: RequestPasswordResetView,
-    },
-    {
-      path: '/reset-password',
-      name: 'reset-password',
-      component: ResetPasswordView,
-    },
-    {
-      path: '/notes',
-      component: ReleaseNotes,
-    },
-    {
-      path: '/edit/:course',
-      props: true,
-      component: CourseEditor,
-    },
-    {
-      path: '/study',
-      name: 'study',
-      component: Study,
-    },
-    {
-      path: '/study/:focusCourseID',
-      component: Study,
-      props: true,
-    },
-    {
-      path: '/random',
-      name: 'random',
-      alias: ['/r'],
-      props: {
-        randomPreview: true,
-      },
-      component: Study,
-    },
-    {
-      path: '/classrooms',
-      name: 'classrooms',
-      component: Classrooms,
-    },
-    {
-      path: '/classrooms/:classroomId',
-      props: true,
-      alias: '/c/:classroomId',
-      component: ClassroomCtrlPanel,
-    },
-    {
-      path: '/classrooms/:classroomId/code',
-      props: true,
-      alias: '/c/:classroomId',
-      component: JoinCode,
-    },
-    {
-      path: '/courses',
-      alias: ['/quilts', '/q'],
-      component: Courses,
-    },
-    {
-      path: '/courses/:query',
-      props: true,
-      alias: ['/quilts/:query', '/q/:query'],
-      component: CourseRouter,
-    },
-    {
-      path: '/courses/:courseId/elo',
-      props: true,
-      alias: ['/quilts/:courseId/elo', '/q/:courseId/elo'],
-      component: ELOModerator,
-    },
-    {
-      path: '/courses/:courseId/tags/:tagId',
-      props: true,
-      alias: ['/quilts/:courseId/tags/:tagId', '/q/:courseId/tags/:tagId'],
-      component: TagInformation,
-    },
-    {
-      path: '/courses/:previewCourseID/preview',
-      props: true,
-      alias: ['/quilts/:previewCourseID/preview', '/q/:previewCourseID/preview'],
-      component: Study,
-    },
-    {
-      path: '/admin',
-      component: AdminDashboard,
-      meta: { requiresAdmin: true },
-    },
-    {
-      path: '/user/:username',
-      alias: '/u/:username',
-      props: true,
-      component: User,
-      children: [
+/**
+ * The built-in platform-ui routes (the eduQuilt / diffdoc multi-tenant shell).
+ *
+ * Exported so a consuming application can inspect or selectively reuse them.
+ * Most hosts should instead append their own views via the `extraRoutes`
+ * option of {@link createAppRouter} rather than reconstructing this array.
+ */
+export const platformRoutes: RouteRecordRaw[] = [
+  // Dev-only playtest harness — see ./dev/Playtest.vue. The route is
+  // only registered when Vite is in dev mode, so prod builds neither
+  // expose the URL nor include the chunk.
+  ...(import.meta.env.DEV
+    ? [
         {
-          path: 'new',
-          component: User,
-        }, //,
-        // {
-        //   path: '/stats',
-        //   component: Stats,
-        // },
-      ],
+          path: '/play/:pathMatch(.*)?',
+          name: 'playtest',
+          component: Playtest,
+          props: true,
+        },
+      ]
+    : []),
+  {
+    path: '/md',
+    component: MarkdownRenderer,
+  },
+  {
+    path: '/',
+    alias: ['/home'],
+    name: 'home',
+    component: Home,
+  },
+  {
+    path: '/about',
+    name: 'about',
+    component: About,
+  },
+  {
+    path: '/login',
+    name: 'login',
+    component: Login,
+  },
+  {
+    path: '/signup',
+    name: 'signup',
+    component: SignUp,
+    beforeEnter: () => {
+      if (!isRegistrationEnabled()) {
+        return { name: 'home' };
+      }
     },
-    {
-      path: '/user/:_id/stats',
-      props: true,
-      alias: ['/u/:_id/stats'],
-      component: Stats,
+  },
+  {
+    path: '/verify',
+    name: 'verify',
+    component: VerifyEmailView,
+  },
+  {
+    path: '/request-reset',
+    name: 'request-reset',
+    component: RequestPasswordResetView,
+  },
+  {
+    path: '/reset-password',
+    name: 'reset-password',
+    component: ResetPasswordView,
+  },
+  {
+    path: '/notes',
+    component: ReleaseNotes,
+  },
+  {
+    path: '/edit/:course',
+    props: true,
+    component: CourseEditor,
+  },
+  {
+    path: '/study',
+    name: 'study',
+    component: Study,
+  },
+  {
+    path: '/study/:focusCourseID',
+    component: Study,
+    props: true,
+  },
+  {
+    path: '/random',
+    name: 'random',
+    alias: ['/r'],
+    props: {
+      randomPreview: true,
     },
-  ],
-});
+    component: Study,
+  },
+  {
+    path: '/classrooms',
+    name: 'classrooms',
+    component: Classrooms,
+  },
+  {
+    path: '/classrooms/:classroomId',
+    props: true,
+    alias: '/c/:classroomId',
+    component: ClassroomCtrlPanel,
+  },
+  {
+    path: '/classrooms/:classroomId/code',
+    props: true,
+    alias: '/c/:classroomId',
+    component: JoinCode,
+  },
+  {
+    path: '/courses',
+    alias: ['/quilts', '/q'],
+    component: Courses,
+  },
+  {
+    path: '/courses/:query',
+    props: true,
+    alias: ['/quilts/:query', '/q/:query'],
+    component: CourseRouter,
+  },
+  {
+    path: '/courses/:courseId/elo',
+    props: true,
+    alias: ['/quilts/:courseId/elo', '/q/:courseId/elo'],
+    component: ELOModerator,
+  },
+  {
+    path: '/courses/:courseId/tags/:tagId',
+    props: true,
+    alias: ['/quilts/:courseId/tags/:tagId', '/q/:courseId/tags/:tagId'],
+    component: TagInformation,
+  },
+  {
+    path: '/courses/:previewCourseID/preview',
+    props: true,
+    alias: ['/quilts/:previewCourseID/preview', '/q/:previewCourseID/preview'],
+    component: Study,
+  },
+  {
+    path: '/admin',
+    component: AdminDashboard,
+    meta: { requiresAdmin: true },
+  },
+  {
+    path: '/user/:username',
+    alias: '/u/:username',
+    props: true,
+    component: User,
+    children: [
+      {
+        path: 'new',
+        component: User,
+      }, //,
+      // {
+      //   path: '/stats',
+      //   component: Stats,
+      // },
+    ],
+  },
+  {
+    path: '/user/:_id/stats',
+    props: true,
+    alias: ['/u/:_id/stats'],
+    component: Stats,
+  },
+];
 
-router.beforeEach(async (to, _from, next) => {
-  // paths that should be handled by the server, not the SPA
-  const apiPaths = ['/express', '/couch'];
+export interface CreateAppRouterOptions {
+  /**
+   * Additional routes appended after the built-in {@link platformRoutes}.
+   * This is the primary extension seam for consuming apps (e.g. diffdoc's
+   * drift-queue / reconciliation views).
+   */
+  extraRoutes?: RouteRecordRaw[];
+}
 
-  if (apiPaths.some((path) => to.path.startsWith(path))) {
-    // Return false to cancel navigation and let the browser handle the request
-    return false;
-  }
+/**
+ * Build the platform-ui router.
+ *
+ * This module previously exported a singleton router instance. It is now a
+ * factory so that consuming applications can inject their own routes and own
+ * the Vue app lifecycle (see {@link createPlatformApp}). The default eduQuilt
+ * host obtains its router via `createPlatformApp()` with no `extraRoutes`,
+ * preserving prior behaviour exactly.
+ */
+export function createAppRouter(options: CreateAppRouterOptions = {}): Router {
+  const router = createRouter({
+    history: createWebHistory(),
+    routes: [...platformRoutes, ...(options.extraRoutes ?? [])],
+  });
 
-  if (to.meta.requiresAdmin) {
-    try {
-      const user = await getCurrentUser();
-      if (user && user.getUsername() === 'admin') {
-        next();
-      } else {
-        const redirectStore = useAuthRedirectStore();
-        let reason: 'admin-required' | 'auth-required' | 'auth-failed';
+  router.beforeEach(async (to, _from, next) => {
+    // paths that should be handled by the server, not the SPA
+    const apiPaths = ['/express', '/couch'];
 
-        if (user) {
-          // User is logged in but not admin
-          reason = 'admin-required';
+    if (apiPaths.some((path) => to.path.startsWith(path))) {
+      // Return false to cancel navigation and let the browser handle the request
+      return false;
+    }
+
+    if (to.meta.requiresAdmin) {
+      try {
+        const user = await getCurrentUser();
+        if (user && user.getUsername() === 'admin') {
+          next();
         } else {
-          // User is not logged in
-          reason = 'auth-required';
+          const redirectStore = useAuthRedirectStore();
+          let reason: 'admin-required' | 'auth-required' | 'auth-failed';
+
+          if (user) {
+            // User is logged in but not admin
+            reason = 'admin-required';
+          } else {
+            // User is not logged in
+            reason = 'auth-required';
+          }
+
+          // Set context in store (fallback for refresh)
+          redirectStore.setPendingRedirect(to.fullPath, reason);
+
+          // Navigate with history state (primary method)
+          next({
+            name: 'login',
+            state: {
+              redirect: to.fullPath,
+              reason,
+              timestamp: Date.now(),
+            },
+          });
         }
+      } catch {
+        const redirectStore = useAuthRedirectStore();
+        const reason = 'auth-failed';
 
         // Set context in store (fallback for refresh)
         redirectStore.setPendingRedirect(to.fullPath, reason);
@@ -238,26 +281,10 @@ router.beforeEach(async (to, _from, next) => {
           },
         });
       }
-    } catch {
-      const redirectStore = useAuthRedirectStore();
-      const reason = 'auth-failed';
-
-      // Set context in store (fallback for refresh)
-      redirectStore.setPendingRedirect(to.fullPath, reason);
-
-      // Navigate with history state (primary method)
-      next({
-        name: 'login',
-        state: {
-          redirect: to.fullPath,
-          reason,
-          timestamp: Date.now(),
-        },
-      });
+    } else {
+      next();
     }
-  } else {
-    next();
-  }
-});
+  });
 
-export default router;
+  return router;
+}
