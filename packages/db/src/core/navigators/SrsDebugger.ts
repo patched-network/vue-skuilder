@@ -3,10 +3,11 @@
 // ============================================================================
 //
 // A tiny module-level capture of the SRS generator's per-run backlog state,
-// so the live session overlay can show whether reviews being out-competed by
-// (boosted) new cards is *temporary* (the backlog multiplier still has headroom
-// to climb and lift reviews) or *boost-driven* (the multiplier is maxed and the
-// new-card boosts simply sit higher — only a hint relaxation reorders them).
+// so the live session overlay can show how much runway remains before reviews
+// out-compete the current (boosted) new/prescribed cards: the backlog
+// multiplier is exponential and uncapped, so it always has headroom to climb
+// further — the question is just how large the backlog needs to get before it
+// crosses whatever the competing boosts currently sit at.
 //
 // Mirrors MixerDebugger/PipelineDebugger: the generator pushes a snapshot each
 // run (keyed by course, latest wins); the overlay reads it via the controller's
@@ -23,10 +24,10 @@ export interface SrsBacklogDebug {
   dueNow: number;
   /** Healthy backlog threshold; multiplier is ×1.0 at or below this. */
   healthyBacklog: number;
-  /** Global multiplier applied to every due review's urgency this run (1.0 → max). */
+  /** Global multiplier applied to every due review's urgency this run (>= 1.0, unbounded). */
   backlogMultiplier: number;
-  /** Max achievable backlog multiplier (the cap), for headroom context. */
-  maxBacklogMultiplier: number;
+  /** Exponential growth-rate base the multiplier climbs by per multiple of healthyBacklog excess. */
+  backlogGrowthRate: number;
   /** Highest review score produced this run (post-multiplier; can exceed 1.0); null if none due. */
   topReviewScore: number | null;
   /** Human-readable time until the next review comes due, or null if some are due now. */

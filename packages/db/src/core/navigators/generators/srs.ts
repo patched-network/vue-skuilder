@@ -42,19 +42,27 @@ import { logger } from '@db/util/logger';
 const DEFAULT_HEALTHY_BACKLOG = 20;
 
 /**
- * Maximum backlog pressure as a *multiplier* on review urgency.
+ * Growth-rate base for backlog pressure as a *multiplier* on review urgency.
  *
- * Backlog pressure is multiplicative (×1.0 at/below healthy, scaling up as the
- * due pile grows, maxing here at 3× healthy backlog). It replaces an older
- * additive +0..+0.5 term that was a [0,1]-era modifier — once review scores
- * stopped being clamped to 1.0 and new cards could be boosted well past it
- * (e.g. an intro ×5 → 7+), a flat +0.5 was both too small to compete and mostly
- * eaten by the old 1.0 clamp. A multiplier scales review priority onto the same
- * open scale the boosted new cards live on, so a heavy backlog can genuinely
- * lift reviews into competition. Tunable — verify review vs new ordering in the
- * dbg overlay's "review backpressure" panel.
+ * Backlog pressure is multiplicative (×1.0 at/below healthy) and exponential
+ * in the backlog's excess over healthy, expressed in multiples of
+ * `healthyBacklog` (see computeBacklogMultiplier) — deliberately uncapped. It
+ * replaces an older additive +0..+0.5 term that was a [0,1]-era modifier —
+ * once review scores stopped being clamped to 1.0 and new cards could be
+ * boosted well past it (e.g. an intro ×5 → 7+), a flat +0.5 was both too small
+ * to compete and mostly eaten by the old 1.0 clamp. A linear-then-capped
+ * multiplier came next, but that just moved the problem: other generators
+ * (e.g. Prescribed Intro Backpressure) score on a much larger open scale with
+ * their own, independently-tuned caps, so a hard review-side ceiling meant
+ * reviews could never win out no matter how backlogged they got. Exponential
+ * growth has no such ceiling — a sufficiently neglected backlog keeps
+ * climbing until it outcompetes anything, which is the intended long-term
+ * fallback: other generators can dominate short-term, but SRS is the
+ * framework-invariant backstop and should always win eventually. Tunable —
+ * verify review vs new ordering in the dbg overlay's "review backpressure"
+ * panel.
  */
-const MAX_BACKLOG_MULTIPLIER = 2.0;
+const BACKLOG_GROWTH_RATE = 2;
 
 /**
  * Configuration for the SRS strategy.
@@ -249,7 +257,7 @@ export default class SRSNavigator extends ContentNavigator implements CardGenera
       dueNow: dueReviews.length,
       healthyBacklog: this.healthyBacklog,
       backlogMultiplier,
-      maxBacklogMultiplier: MAX_BACKLOG_MULTIPLIER,
+      backlogGrowthRate: BACKLOG_GROWTH_RATE,
       topReviewScore: sorted.length > 0 ? sorted[0].score : null,
       nextDueIn,
       timestamp: Date.now(),
@@ -268,28 +276,32 @@ export default class SRSNavigator extends ContentNavigator implements CardGenera
   /**
    * Compute the multiplicative backlog pressure based on number of due reviews.
    *
-   * ×1.0 at or below the healthy threshold (no boost), increasing linearly above
-   * it and maxing out at MAX_BACKLOG_MULTIPLIER at 3× the healthy backlog.
+   * ×1.0 at or below the healthy threshold (no boost); above it, grows as
+   * BACKLOG_GROWTH_RATE raised to the excess expressed in multiples of the
+   * healthy threshold. Uncapped — self-regulating instead: reviews winning
+   * slots depletes dueCount, which drops the ratio and relaxes the multiplier
+   * next run.
    *
-   * Examples (with default healthyBacklog=20, MAX_BACKLOG_MULTIPLIER=2.0):
-   * - 10 due reviews → ×1.00 (healthy)
-   * - 20 due reviews → ×1.00 (at threshold)
-   * - 40 due reviews → ×1.50 (2x threshold)
-   * - 60 due reviews → ×2.00 (3x threshold, maxed)
+   * Examples (with default healthyBacklog=20, BACKLOG_GROWTH_RATE=1.5):
+   * - 10 due reviews → ×1.00  (healthy)
+   * - 20 due reviews → ×1.00  (at threshold, ratio 0)
+   * - 40 due reviews → ×1.50  (ratio 1, 2x threshold)
+   * - 60 due reviews → ×2.25  (ratio 2, 3x threshold — old hard cap was ×2.00 here)
+   * - 100 due reviews → ×5.06 (ratio 4, 5x threshold)
+   * - 160 due reviews → ×17.09 (ratio 7, 8x threshold)
    *
    * @param dueCount - Number of reviews currently due
-   * @returns Multiplier applied to review urgency (1.0 to MAX_BACKLOG_MULTIPLIER)
+   * @returns Multiplier applied to review urgency (>= 1.0, unbounded)
    */
   private computeBacklogMultiplier(dueCount: number): number {
     if (dueCount <= this.healthyBacklog) {
       return 1.0;
     }
 
-    // Linear in excess: ×1 at healthy, reaching MAX at 3× healthy (excess = 2×healthy).
     const excess = dueCount - this.healthyBacklog;
-    const multiplier = 1 + (excess / this.healthyBacklog) * ((MAX_BACKLOG_MULTIPLIER - 1) / 2);
+    const ratio = excess / this.healthyBacklog;
 
-    return Math.min(MAX_BACKLOG_MULTIPLIER, multiplier);
+    return Math.pow(BACKLOG_GROWTH_RATE, ratio);
   }
 
   /**
@@ -306,17 +318,17 @@ export default class SRSNavigator extends ContentNavigator implements CardGenera
    *    - 180 days → ~0.30
    *
    * 3. Backlog pressure = global *multiplier* when review backlog exceeds the
-   *    healthy threshold (×1.0 healthy → up to MAX_BACKLOG_MULTIPLIER at 3×).
+   *    healthy threshold (×1.0 healthy → exponential growth, uncapped, above it).
    *
    * Combined: (base 0.5 + urgency factors * 0.45) × backlog multiplier.
    * Per-card range before pressure: ~0.57–0.95. NOT clamped to 1.0 — under a
    * heavy backlog reviews scale onto the open scale to compete with (and exceed)
-   * new cards; what keeps them from running away is the bounded multiplier, not
-   * a hard ceiling.
+   * new cards; there's no ceiling at all now, so a bad enough backlog always
+   * wins eventually — self-regulating because winning slots depletes dueCount.
    *
    * @param review - The scheduled card to score
    * @param now - Current time
-   * @param backlogMultiplier - Pre-computed backlog multiplier (1.0 to MAX_BACKLOG_MULTIPLIER)
+   * @param backlogMultiplier - Pre-computed backlog multiplier (>= 1.0, unbounded)
    */
   private computeUrgencyScore(
     review: ScheduledCard,
