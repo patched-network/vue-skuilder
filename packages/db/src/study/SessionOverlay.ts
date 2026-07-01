@@ -365,25 +365,24 @@ function hintsHtml(h: ReplanHints | null): string {
 
 /**
  * SRS backlog panel — answers "is review starvation permanent?". Backlog
- * pressure is a multiplier (×1.0 healthy → max) on review urgency; reviews are
- * no longer clamped to 1.0, so under a heavy backlog they scale up to compete
- * with (and exceed) new cards. So:
- *  - multiplier climbing, below max → reviews will rise as the backlog grows
- *    (temporary — they'll start winning slots);
- *  - multiplier maxed but still out-competed → the boosts in `sessionHints`
- *    simply sit higher; reviews only resurface once those relax (backoff), not
- *    from more backlog. Compare `top review` here against the supplyQ head score.
+ * pressure is a multiplier (×1.0 healthy → exponential, uncapped) on review
+ * urgency; reviews are no longer clamped to 1.0, so under a heavy backlog they
+ * scale up to compete with (and exceed) new cards. There's no ceiling, so
+ * reviews always win eventually — the panel shows how far the current
+ * multiplier is from that crossover, not whether it's "maxed": compare
+ * `top review` here against the supplyQ head score to see how much further
+ * the backlog needs to grow (or the boosts need to relax) before reviews win
+ * slots.
  */
 function backlogHtml(backlog: SrsBacklogDebug[]): string {
   if (!backlog.length) return '';
   const rows = backlog
     .map((b) => {
-      const maxed = b.backlogMultiplier >= b.maxBacklogMultiplier - 1e-9;
-      const multColor = b.backlogMultiplier <= 1 ? '#86efac' : maxed ? '#fca5a5' : '#fcd34d';
-      const headroom = maxed
-        ? 'maxed — boosts decide order until they relax'
-        : b.backlogMultiplier > 1
-          ? 'climbing as backlog grows'
+      const hot = b.backlogMultiplier >= 3;
+      const multColor = b.backlogMultiplier <= 1 ? '#86efac' : hot ? '#fca5a5' : '#fcd34d';
+      const headroom =
+        b.backlogMultiplier > 1
+          ? `climbing (×${b.backlogGrowthRate.toFixed(2)} per ${b.healthyBacklog}-review excess, unbounded)`
           : 'healthy — no pressure';
       const top = b.topReviewScore !== null ? b.topReviewScore.toFixed(2) : '—';
       const next = b.nextDueIn ? ` <span style="opacity:.6">· next due ${esc(b.nextDueIn)}</span>` : '';
@@ -392,7 +391,7 @@ function backlogHtml(backlog: SrsBacklogDebug[]): string {
         `<span style="opacity:.7">${esc(b.courseId.slice(0, 8))}</span> ` +
         `due ${b.dueNow}/${b.scheduledTotal} <span style="opacity:.6">(healthy ${b.healthyBacklog})</span>${next}` +
         `<div style="margin-left:6px">` +
-        `pressure <span style="color:${multColor}">×${b.backlogMultiplier.toFixed(2)}/${b.maxBacklogMultiplier.toFixed(2)}</span> ` +
+        `pressure <span style="color:${multColor}">×${b.backlogMultiplier.toFixed(2)}</span> ` +
         `<span style="opacity:.6">${headroom} · top review ${top}</span></div>` +
         `</div>`
       );
@@ -541,18 +540,13 @@ function snapshotToText(s: SessionDebugSnapshot | null): string {
     lines.push('');
     lines.push('review backpressure:');
     for (const b of s.reviewBacklog) {
-      const maxed = b.backlogMultiplier >= b.maxBacklogMultiplier - 1e-9;
-      const headroom = maxed
-        ? 'maxed (boosts decide order)'
-        : b.backlogMultiplier > 1
-          ? 'climbing'
-          : 'healthy';
+      const headroom = b.backlogMultiplier > 1 ? 'climbing' : 'healthy';
       const top = b.topReviewScore !== null ? b.topReviewScore.toFixed(2) : '—';
       const next = b.nextDueIn ? `, next due ${b.nextDueIn}` : '';
       lines.push(
         `  ${b.courseId.slice(0, 8)}: due ${b.dueNow}/${b.scheduledTotal} ` +
-          `(healthy ${b.healthyBacklog})${next}; pressure ×${b.backlogMultiplier.toFixed(2)}/` +
-          `${b.maxBacklogMultiplier.toFixed(2)} ${headroom}; top review ${top}`
+          `(healthy ${b.healthyBacklog})${next}; pressure ×${b.backlogMultiplier.toFixed(2)} ` +
+          `${headroom}; top review ${top}`
       );
     }
   }
