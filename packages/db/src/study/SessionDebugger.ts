@@ -69,20 +69,28 @@ const sessionHistory: SessionRunReport[] = [];
 const MAX_HISTORY = 5;
 
 /**
+ * Release pipeline run-history / SRS backlog debug memory from the previous
+ * session before this session begins piling new runs on top of it. Must be
+ * called before the first pipeline run of the new session (including the
+ * bootstrap run in prepareSession) — clearing on session START rather than
+ * END keeps post-session inspection, the dominant debugging workflow, fully
+ * functional: a finished session's run history sits intact until the user
+ * actually begins another one. It's a separate call from startSessionTracking
+ * because that function can't run until supplyQ/failedQ are populated by the
+ * bootstrap pipeline run, which would otherwise be cleared out from under it.
+ */
+export function clearStaleSessionDebugState(): void {
+  clearPipelineRunHistory();
+  clearSrsBacklogDebug();
+}
+
+/**
  * Start tracking a new session.
  */
 export function startSessionTracking(
   supplyQLength: number,
   failedQLength: number
 ): void {
-  // Release pipeline run-history memory before this session begins piling
-  // new runs on top of the previous session's retained reports. Clearing on
-  // session START (rather than END) keeps post-session inspection — the
-  // dominant debugging workflow — fully functional: a finished session's
-  // run history sits intact until the user actually begins another one.
-  clearPipelineRunHistory();
-  clearSrsBacklogDebug();
-
   const sessionId = `session-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
   activeSession = {

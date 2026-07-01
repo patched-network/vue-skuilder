@@ -20,7 +20,7 @@ import { ReplanHints } from '@db/core/navigators/generators/types';
 import { mergeHints } from '@db/core/navigators/Pipeline';
 import { SourceMixer, QuotaRoundRobinMixer, SourceBatch } from './SourceMixer';
 import { captureMixerRun } from './MixerDebugger';
-import { startSessionTracking, recordCardPresentation, snapshotQueues, endSessionTracking } from './SessionDebugger';
+import { startSessionTracking, recordCardPresentation, snapshotQueues, endSessionTracking, clearStaleSessionDebugState } from './SessionDebugger';
 import {
   registerActiveController,
   type SessionDebugSnapshot,
@@ -474,6 +474,10 @@ export class SessionController<TView = unknown> extends Loggable {
         '[SessionController] All content sources must implement getWeightedCards().'
       );
     }
+
+    // Clear the previous session's debug state before this session's
+    // bootstrap pipeline run fires, so that run's own report isn't wiped out.
+    clearStaleSessionDebugState();
 
     const wellIndicated = await this.getWeightedContent();
     this._wellIndicatedRemaining = wellIndicated;
