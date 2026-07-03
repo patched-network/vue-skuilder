@@ -214,6 +214,19 @@ Currently logged-in as ${this._username}.`
     }
 
     const ret = await this.syncStrategy.logout!();
+
+    // Mint a FRESH guest identity on logout rather than re-adopting whatever
+    // sk-guest-uuid happens to survive in localStorage. A stale UUID can point
+    // at an already-consumed guest DB (one previously migrated into a real
+    // account); re-adopting it would resurface that account's progress and, on
+    // the next signup, migrate it into the new account. Clearing the pointer
+    // forces accomodateGuest() to generate a new UUID + empty guest DB.
+    try {
+      localStorage.removeItem('sk-guest-uuid');
+    } catch (e) {
+      logger.warn('localStorage not available (Node.js environment):', e);
+    }
+
     // return to 'guest' mode
     this._username = await this.syncStrategy.getCurrentUsername();
     await this.init();

@@ -228,6 +228,23 @@ export class CouchDBSyncStrategy implements SyncStrategy {
         logger.info('No documents to migrate from funnel account');
       }
 
+      // Destroy the consumed guest DB so it can never be re-migrated into a
+      // future account. Without this, an orphaned userdb-sk-guest-<uuid> lingers
+      // in IndexedDB indefinitely; if its stale identity is later re-adopted
+      // (e.g. on logout via a surviving sk-guest-uuid), its progress bleeds into
+      // the next new account. Best-effort: migration has already succeeded, so a
+      // teardown failure must not fail account creation.
+      try {
+        await oldLocalDB.destroy();
+        logger.info(`Destroyed consumed guest DB for ${oldUsername}`);
+      } catch (destroyErr) {
+        logger.warn(
+          `Failed to destroy consumed guest DB for ${oldUsername} (non-fatal): ${
+            destroyErr instanceof Error ? destroyErr.message : String(destroyErr)
+          }`
+        );
+      }
+
       return { success: true };
     } catch (error) {
       logger.error('Migration failed:', error);
