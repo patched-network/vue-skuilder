@@ -459,14 +459,14 @@ export class Pipeline extends ContentNavigator implements PipelineForecaster {
         .map((c) => c.cardId)
     );
     const filterImpacts: FilterImpact[] = [];
-    // [perf] parked 2026-05 (pipeline-docs-workup) — uncomment to re-measure
-    // const filterTimings: string[] = [];
+    // [perf] re-enabled 2026-07 (todo-replan-db-perf): per-filter timing within the filter stage
+    const filterTimings: string[] = [];
     for (const filter of this.filters) {
-      // const tFilterStart = performance.now();
+      const tFilterStart = performance.now();
       const beforeCount = cards.length;
       const beforeScores = new Map(cards.map((c) => [c.cardId, c.score]));
       cards = await filter.transform(cards, context);
-      // filterTimings.push(`${filter.name}=${(performance.now() - tFilterStart).toFixed(0)}ms`);
+      filterTimings.push(`${filter.name}=${(performance.now() - tFilterStart).toFixed(0)}ms`);
 
       // Count boost/penalize/pass/removed for this filter
       let boosted = 0, penalized = 0, passed = 0;
@@ -529,7 +529,8 @@ export class Pipeline extends ContentNavigator implements PipelineForecaster {
     logger.info(
       `[Pipeline:timing] total=${(tFilter - t0).toFixed(0)}ms ` +
       `(context=${(tContext - t0).toFixed(0)} generate=${(tGenerate - tContext).toFixed(0)} ` +
-      `hydrate=${(tHydrate - tGenerate).toFixed(0)} filter=${(tFilter - tHydrate).toFixed(0)})`
+      `hydrate=${(tHydrate - tGenerate).toFixed(0)} filter=${(tFilter - tHydrate).toFixed(0)})` +
+      ` [filters: ${filterTimings.join(' ')}]`
     );
 
     // Toggle execution summary logging:
