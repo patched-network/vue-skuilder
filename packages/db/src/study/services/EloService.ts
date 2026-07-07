@@ -41,14 +41,20 @@ export class EloService {
       logger.warn(`k value interpretation not currently implemented`);
     }
     const courseDB = this.dataLayer.getCourseDB(currentCard.card.course_id);
-    const userElo = toCourseElo(
-      userCourseRegDoc.courses.find((c) => c.courseID === course_id)!.elo
-    );
+    const courseReg = userCourseRegDoc.courses.find((c) => c.courseID === course_id);
+    if (!courseReg) {
+      logger.error(
+        `[EloService] No registration for course ${course_id} on user's registration doc — ` +
+          `skipping ELO update for card ${card_id}. (Is the user registered for this course?)`
+      );
+      return;
+    }
+    const userElo = toCourseElo(courseReg.elo);
     const cardElo = (await courseDB.getCardEloData([currentCard.card.card_id]))[0];
 
     if (cardElo && userElo) {
       const eloUpdate = adjustCourseScores(userElo, cardElo, userScore);
-      userCourseRegDoc.courses.find((c) => c.courseID === course_id)!.elo = eloUpdate.userElo;
+      courseReg.elo = eloUpdate.userElo;
 
       const results = await Promise.allSettled([
         this.user.updateUserElo(course_id, eloUpdate.userElo),
@@ -108,9 +114,15 @@ export class EloService {
     currentCard: StudySessionRecord
   ): Promise<void> {
     const courseDB = this.dataLayer.getCourseDB(currentCard.card.course_id);
-    const userElo = toCourseElo(
-      userCourseRegDoc.courses.find((c) => c.courseID === course_id)!.elo
-    );
+    const courseReg = userCourseRegDoc.courses.find((c) => c.courseID === course_id);
+    if (!courseReg) {
+      logger.error(
+        `[EloService] No registration for course ${course_id} on user's registration doc — ` +
+          `skipping per-tag ELO update for card ${card_id}. (Is the user registered for this course?)`
+      );
+      return;
+    }
+    const userElo = toCourseElo(courseReg.elo);
 
     const [cardEloResults, cardTagsMap] = await Promise.all([
       courseDB.getCardEloData([currentCard.card.card_id]),
@@ -134,7 +146,7 @@ export class EloService {
 
     if (cardElo && userElo) {
       const eloUpdate = adjustCourseScoresPerTag(userElo, cardElo, enriched);
-      userCourseRegDoc.courses.find((c) => c.courseID === course_id)!.elo = eloUpdate.userElo;
+      courseReg.elo = eloUpdate.userElo;
 
       const results = await Promise.allSettled([
         this.user.updateUserElo(course_id, eloUpdate.userElo),
