@@ -11,7 +11,7 @@
 
     <br v-if="!frameless" />
 
-    <div v-if="sessionFinished">
+    <div v-if="sessionFinished" class="session-finished-area">
       <slot name="session-finished" :session-record="sessionRecord" :report="sessionController?.report">
         <div class="text-h4">
           <p>Study session finished! Great job!</p>
@@ -691,6 +691,16 @@ a {
   display: flex;
   flex-direction: column;
   min-height: 0;
+}
+
+/* Let session-finished slot content fill the remaining column height (e.g.
+   full-bleed end-screen heroes). The default fallback content is height:auto
+   and unaffected beyond stretching to full width. */
+.session-finished-area {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .card-transition-container {
