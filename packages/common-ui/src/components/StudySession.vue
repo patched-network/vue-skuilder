@@ -26,7 +26,7 @@
     </div>
 
     <div v-else ref="shadowWrapper" class="card-transition-container">
-      <transition :name="transitionName">
+      <transition :name="transitionName" :mode="resolvedTransitionMode">
         <card-viewer
           v-if="view"
           ref="cardViewer"
@@ -222,6 +222,16 @@ export default defineComponent({
   computed: {
     currentCard(): StudySessionRecord {
       return this.sessionRecord[this.sessionRecord.length - 1];
+    },
+    /**
+     * Vue's <transition> mode accepts 'out-in' | 'in-out' | undefined; our
+     * 'default' preset value means "simultaneous", i.e. no mode. (This prop
+     * was declared but never bound until 2026-07; presets documented as
+     * "use with mode=out-in" ran simultaneous, leaving both cards in-flow
+     * mid-transition.)
+     */
+    resolvedTransitionMode(): 'out-in' | 'in-out' | undefined {
+      return this.transitionMode === 'default' ? undefined : this.transitionMode;
     },
   },
 
