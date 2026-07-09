@@ -7,6 +7,19 @@ import { ScheduledCard } from '@db/core/types/user';
 
 export const REVIEW_TIME_FORMAT: string = 'YYYY-MM-DD--kk:mm:ss-SSS';
 
+/**
+ * Build a ScheduledCard `_id` for the given review time.
+ *
+ * The id suffix is not a mere uniquifier: `getReviewstoDate` PARSES the id
+ * (with {@link REVIEW_TIME_FORMAT}) to decide due-ness, so the id is the
+ * datum. Anything that writes or rewrites scheduled-card docs (scheduling,
+ * user-state snapshot rebasing) must construct ids through this helper —
+ * a hand-rolled formatter will get moment's `kk` token (01-24 hours) wrong.
+ */
+export function makeScheduledCardId(reviewTime: string | Date | moment.Moment): string {
+  return DocTypePrefixes[DocType.SCHEDULED_CARD] + moment.utc(reviewTime).format(REVIEW_TIME_FORMAT);
+}
+
 import pouch from '../couch/pouchdb-setup';
 import { getDbPath } from '../../util/dataDirectory';
 
@@ -123,7 +136,7 @@ export function scheduleCardReviewLocal(
   const now = moment.utc();
   logger.info(`Scheduling for review in: ${review.time.diff(now, 'h') / 24} days`);
   void userDB.put<ScheduledCard>({
-    _id: DocTypePrefixes[DocType.SCHEDULED_CARD] + review.time.format(REVIEW_TIME_FORMAT),
+    _id: makeScheduledCardId(review.time),
     cardId: review.card_id,
     reviewTime: review.time.toISOString(),
     courseId: review.course_id,
