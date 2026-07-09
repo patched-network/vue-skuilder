@@ -416,9 +416,9 @@ Currently logged-in as ${this._username}.`
       .map((r) => r.doc!);
   }
 
-  public async getReviewsForcast(daysCount: number) {
+  public async getReviewsForcast(daysCount: number, course_id?: string) {
     const time = moment.utc().add(daysCount, 'days');
-    return this.getReviewstoDate(time);
+    return this.getReviewstoDate(time, course_id);
   }
 
   public async getPendingReviews(course_id?: string) {

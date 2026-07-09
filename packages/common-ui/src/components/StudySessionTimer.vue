@@ -12,7 +12,7 @@
           :model-value="percentageRemaining"
         >
           <v-btn
-            v-if="timeRemaining > 0 && hovered"
+            v-if="allowAddTime && timeRemaining > 0 && hovered"
             icon
             color="transparent"
             location="bottom left"
@@ -48,6 +48,16 @@ export default defineComponent({
       type: Number,
       required: true,
       default: 5,
+    },
+    /**
+     * Whether to offer the hover-reveal "+" (add-time) affordance at all.
+     * Courses with a deliberate session-dose policy (fixed, age-measured
+     * screen time) set this false so the control is absent rather than
+     * present-but-inert.
+     */
+    allowAddTime: {
+      type: Boolean,
+      default: true,
     },
   },
 

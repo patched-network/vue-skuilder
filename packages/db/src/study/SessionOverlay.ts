@@ -81,6 +81,19 @@ export interface SessionDebugTarget {
   getDebugSnapshot(): SessionDebugSnapshot;
 }
 
+/**
+ * The live-session surface available to out-of-tree callers through the
+ * active-controller registry: the debug snapshot, plus the small set of
+ * user-facing session controls a view may need without holding a ref into
+ * the `<StudySession>` component's internals (e.g. wiring a timer's
+ * add-time button from a composable). Keep this narrow — it is not a
+ * general escape hatch to `SessionController`.
+ */
+export interface ActiveSessionHandle extends SessionDebugTarget {
+  /** Extend the session clock by `seconds`. */
+  addTime(seconds: number): void;
+}
+
 // ----------------------------------------------------------------------------
 // Active-controller registry
 // ----------------------------------------------------------------------------
@@ -90,14 +103,14 @@ export interface SessionDebugTarget {
 // registrar without pulling in the overlay's DOM code or risking an import
 // cycle with SessionDebugger.
 
-let activeController: SessionDebugTarget | null = null;
+let activeController: ActiveSessionHandle | null = null;
 
 /** Called by SessionController's constructor. Pass `null` to deregister. */
-export function registerActiveController(controller: SessionDebugTarget | null): void {
+export function registerActiveController(controller: ActiveSessionHandle | null): void {
   activeController = controller;
 }
 
-export function getActiveController(): SessionDebugTarget | null {
+export function getActiveController(): ActiveSessionHandle | null {
   return activeController;
 }
 
