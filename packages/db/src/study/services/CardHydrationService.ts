@@ -250,8 +250,16 @@ export class CardHydrationService<TView = unknown> {
 
       const data = dataDocs.map(displayableDataToViewData).reverse();
 
+      // Attach the card doc's authored ELO to the item. Generators don't carry
+      // card ELO onto StudySessionItems (reviews couldn't know it without a
+      // lookup), so without this every downstream consumer of `item.elo` —
+      // StudySession's `card_elo`, CardViewer's modify-difficulty, session
+      // outcomes — fell back to the 1000 default for EVERY card. The doc is
+      // already fetched here, making this the one seam that covers all card
+      // origins for free. Copy rather than mutate: the queue holds the same
+      // item reference.
       this.hydratedCards.set(item.cardID, {
-        item,
+        item: { ...item, elo: toCourseElo(cardData.elo).global.score },
         view,
         data,
         tags: tagsByCard.get(item.cardID) ?? [],
