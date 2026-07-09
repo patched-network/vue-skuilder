@@ -55,6 +55,14 @@ export interface UserDBReader {
    */
   getPendingReviews(courseId?: string): Promise<ScheduledCard[]>;
 
+  /**
+   * Get all scheduled reviews due within the next `daysCount` days —
+   * including ones not yet due. `getPendingReviews` is the `daysCount = 0`
+   * special case: it returns only reviews already due, so a review scheduled
+   * moments ago (necessarily in the future) will never appear in it.
+   */
+  getReviewsForcast(daysCount: number, courseId?: string): Promise<ScheduledCard[]>;
+
   getActivityRecords(): Promise<ActivityRecord[]>;
 
   /**
