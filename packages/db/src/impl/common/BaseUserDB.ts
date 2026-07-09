@@ -288,18 +288,28 @@ Currently logged-in as ${this._username}.`
   public async getActiveCards() {
     const keys = getStartAndEndKeys(DocTypePrefixes[DocType.SCHEDULED_CARD]);
 
+    // [perf] 2026-07 (todo-replan-db-perf): full SCHEDULED_CARD scan w/ include_docs.
+    // Splits CouchDB-side scan+transfer (allDocs await) from main-thread deserialize/map.
+    // NB: identical scan to getReviewstoDate() — run once per replan by each, see doc.
+    const tReq = performance.now();
     const reviews = await this.remoteDB.allDocs<ScheduledCard>({
       startkey: keys.startkey,
       endkey: keys.endkey,
       include_docs: true,
     });
+    const tResp = performance.now();
 
-    return reviews.rows.map((r) => {
+    const mapped = reviews.rows.map((r) => {
       return {
         courseID: r.doc!.courseId,
         cardID: r.doc!.cardId,
       };
     });
+    logger.info(
+      `[perf][getActiveCards] allDocs=${(tResp - tReq).toFixed(0)}ms ` +
+        `map=${(performance.now() - tResp).toFixed(0)}ms rows=${reviews.rows.length}`
+    );
+    return mapped;
   }
 
   public async getActivityRecords(): Promise<ActivityRecord[]> {
@@ -388,18 +398,23 @@ Currently logged-in as ${this._username}.`
   private async getReviewstoDate(targetDate: Moment, course_id?: string) {
     const keys = getStartAndEndKeys(DocTypePrefixes[DocType.SCHEDULED_CARD]);
 
+    // [perf] 2026-07 (todo-replan-db-perf): same full SCHEDULED_CARD scan as
+    // getActiveCards() — fetches ALL scheduled cards then filters to due in JS.
+    // Splits CouchDB-side scan+transfer from main-thread deserialize/filter/map.
+    const tReq = performance.now();
     const reviews = await this.remoteDB.allDocs<ScheduledCard>({
       startkey: keys.startkey,
       endkey: keys.endkey,
       include_docs: true,
     });
+    const tResp = performance.now();
 
     log(
       `Fetching ${this._username}'s scheduled reviews${
         course_id ? ` for course ${course_id}` : ''
       }.`
     );
-    return reviews.rows
+    const ret = reviews.rows
       .filter((r) => {
         if (r.id.startsWith(DocTypePrefixes[DocType.SCHEDULED_CARD])) {
           const date = moment.utc(
@@ -414,6 +429,12 @@ Currently logged-in as ${this._username}.`
         }
       })
       .map((r) => r.doc!);
+    logger.info(
+      `[perf][getReviewstoDate] allDocs=${(tResp - tReq).toFixed(0)}ms ` +
+        `filter+map=${(performance.now() - tResp).toFixed(0)}ms ` +
+        `scanned=${reviews.rows.length} due=${ret.length}`
+    );
+    return ret;
   }
 
   public async getReviewsForcast(daysCount: number, course_id?: string) {

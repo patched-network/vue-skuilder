@@ -683,13 +683,13 @@ export class SessionController<TView = unknown> extends Loggable {
       this.log(`[Replan] Card guarantee set to ${this._minCardsGuarantee}`);
     }
 
-    // [perf] parked 2026-05 (pipeline-docs-workup) — uncomment to re-measure
-    // const tReplan0 = performance.now();
+    // [perf] re-enabled 2026-07 (todo-replan-db-perf diagnostic) — top of the replan waterfall
+    const tReplan0 = performance.now();
     await this._executeReplan(opts);
-    // logger.info(
-    //   `[perf][SessionController] replan${labelTag} (limit=${opts.limit ?? 'default'}, ` +
-    //     `mode=${opts.mode ?? 'replace'}) took ${(performance.now() - tReplan0).toFixed(0)}ms`
-    // );
+    logger.info(
+      `[perf][SessionController] replan${labelTag} (limit=${opts.limit ?? 'default'}, ` +
+        `mode=${opts.mode ?? 'replace'}) took ${(performance.now() - tReplan0).toFixed(0)}ms`
+    );
   }
 
   /**
@@ -1059,7 +1059,7 @@ export class SessionController<TView = unknown> extends Loggable {
     additive?: boolean;
     limit?: number;
   }): Promise<number> {
-    // const tGwc0 = performance.now(); // [perf] parked
+    const tGwc0 = performance.now(); // [perf] re-enabled 2026-07 (todo-replan-db-perf)
     const replan = options?.replan ?? false;
     const additive = options?.additive ?? false;
     const supplyLimit = options?.limit ?? this._defaultBatchLimit;
@@ -1099,7 +1099,7 @@ export class SessionController<TView = unknown> extends Loggable {
       }
     }
 
-    // const tSources = performance.now(); // [perf] parked
+    const tSources = performance.now(); // [perf] re-enabled 2026-07
 
     // Verify we got content from at least one source
     if (batches.length === 0) {
@@ -1116,7 +1116,7 @@ export class SessionController<TView = unknown> extends Loggable {
 
     // Mix weighted cards across sources using configured strategy
     const mixedWeighted = this.mixer.mix(batches, fetchLimit * this.sources.length);
-    // const tMixed = performance.now(); // [perf] parked
+    const tMixed = performance.now(); // [perf] re-enabled 2026-07
 
     // Capture mixer run for debugging - fetch course names
     const sourceIds = batches.map((b) => {
@@ -1209,16 +1209,16 @@ export class SessionController<TView = unknown> extends Loggable {
 
     this.log(report);
 
-    // [perf] parked: getWeightedContent stage timing
-    // const tEnd = performance.now();
-    // logger.info(
-    //   `[perf][SessionController] getWeightedContent(replan=${replan}): ` +
-    //     `sources=${(tSources - tGwc0).toFixed(0)}ms ` +
-    //     `mix=${(tMixed - tSources).toFixed(0)}ms ` +
-    //     `post=${(tEnd - tMixed).toFixed(0)}ms ` +
-    //     `total=${(tEnd - tGwc0).toFixed(0)}ms ` +
-    //     `[sources=${this.sources.length} fetchLimit=${fetchLimit} supplyLimit=${supplyLimit}]`
-    // );
+    // [perf] re-enabled 2026-07 (todo-replan-db-perf): stage split for getWeightedContent
+    const tEnd = performance.now();
+    logger.info(
+      `[perf][SessionController] getWeightedContent(replan=${replan}): ` +
+        `sources=${(tSources - tGwc0).toFixed(0)}ms ` +
+        `mix=${(tMixed - tSources).toFixed(0)}ms ` +
+        `post=${(tEnd - tMixed).toFixed(0)}ms ` +
+        `total=${(tEnd - tGwc0).toFixed(0)}ms ` +
+        `[sources=${this.sources.length} fetchLimit=${fetchLimit} supplyLimit=${supplyLimit}]`
+    );
 
     return wellIndicated;
   }

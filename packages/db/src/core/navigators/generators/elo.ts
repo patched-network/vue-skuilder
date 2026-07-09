@@ -73,7 +73,7 @@ export default class ELONavigator extends ContentNavigator implements CardGenera
    * @param context - Optional GeneratorContext (used when called via Pipeline)
    */
   async getWeightedCards(limit: number, context?: GeneratorContext): Promise<GeneratorResult> {
-    // const tElo0 = performance.now(); // [perf] parked
+    const tElo0 = performance.now(); // [perf] re-enabled 2026-07 (todo-replan-db-perf)
     // Determine user ELO - from context if available, otherwise fetch
     let userGlobalElo: number;
     if (context?.userElo !== undefined) {
@@ -83,25 +83,24 @@ export default class ELONavigator extends ContentNavigator implements CardGenera
       const userElo = toCourseElo(courseReg.elo);
       userGlobalElo = userElo.global.score;
     }
-    // const tUser = performance.now(); // [perf] parked
+    const tUser = performance.now(); // [perf] re-enabled 2026-07
 
     const activeCards = await this.user.getActiveCards();
-    // const tActive = performance.now(); // [perf] parked
+    const tActive = performance.now(); // [perf] re-enabled 2026-07
     const newCards = (
       await this.course.getCardsCenteredAtELO(
         { limit, elo: 'user' },
         (c: QualifiedCardID) => !activeCards.some((ac) => c.cardID === ac.cardID)
       )
     ).map((c) => ({ ...c, status: 'new' as const }));
-    // const tCentered = performance.now(); // [perf] parked
-    // [perf] parked 2026-05 (pipeline-docs-workup) — uncomment to re-measure
-    // logger.info(
-      // `[perf][ELOgen] total=${(tCentered - tElo0).toFixed(0)}ms ` +
-        // `(userElo=${(tUser - tElo0).toFixed(0)} ` +
-        // `activeCards=${(tActive - tUser).toFixed(0)} ` +
-        // `centeredAtELO=${(tCentered - tActive).toFixed(0)}) ` +
-        // `[active=${activeCards.length} candidates=${newCards.length}]`
-    // );
+    const tCentered = performance.now(); // [perf] re-enabled 2026-07
+    logger.info(
+      `[perf][ELOgen] total=${(tCentered - tElo0).toFixed(0)}ms ` +
+        `(userElo=${(tUser - tElo0).toFixed(0)} ` +
+        `activeCards=${(tActive - tUser).toFixed(0)} ` +
+        `centeredAtELO=${(tCentered - tActive).toFixed(0)}) ` +
+        `[active=${activeCards.length} candidates=${newCards.length}]`
+    );
 
     // Score new cards by ELO proximity, then apply bounded multiplicative
     // jitter for session-to-session variety.
