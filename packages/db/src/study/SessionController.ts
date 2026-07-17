@@ -15,7 +15,12 @@ import {
 import { CardRecord, CardHistory, CourseRegistrationDoc, QuestionRecord, isQuestionRecord } from '@db/core';
 import { recordUserOutcome } from '@db/core/orchestration/recording';
 import { Loggable } from '@db/util';
-import { getCardOrigin, WeightedCard, getSrsBacklogDebug } from '@db/core/navigators';
+import {
+  getCardOrigin,
+  WeightedCard,
+  getSrsBacklogDebug,
+  getStrategyPressureDebug,
+} from '@db/core/navigators';
 import { ReplanHints } from '@db/core/navigators/generators/types';
 import { mergeHints } from '@db/core/navigators/Pipeline';
 import { SourceMixer, QuotaRoundRobinMixer, SourceBatch } from './SourceMixer';
@@ -763,6 +768,7 @@ export class SessionController<TView = unknown> extends Loggable {
       supplyQ: describe(this.supplyQ),
       failedQ: describe(this.failedQ),
       reviewBacklog: getSrsBacklogDebug(),
+      strategyPressure: getStrategyPressureDebug(),
       drawnCards,
     };
   }

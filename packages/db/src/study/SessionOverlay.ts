@@ -1,6 +1,10 @@
 import { logger } from '../util/logger';
 import type { ReplanHints } from '@db/core/navigators/generators/types';
 import type { SrsBacklogDebug } from '@db/core/navigators/SrsDebugger';
+import type {
+  StrategyPressureDebug,
+  PressureGaugeDebug,
+} from '@db/core/navigators/StrategyPressureDebugger';
 
 // ============================================================================
 // SESSION OVERLAY
@@ -72,6 +76,8 @@ export interface SessionDebugSnapshot {
   failedQ: SessionQueueDebug;
   /** SRS backlog state per course (drives the "is review starvation permanent?" read). */
   reviewBacklog: SrsBacklogDebug[];
+  /** Per-strategy backpressure gauges (prescribed pressure, practice debt, ...). */
+  strategyPressure: StrategyPressureDebug[];
   /** Every card the learner has interacted with this session, draw order. */
   drawnCards: SessionDrawnCardDebug[];
 }
@@ -241,6 +247,7 @@ function render(): void {
     metaHtml(s) +
     hintsHtml(s.sessionHints) +
     backlogHtml(s.reviewBacklog) +
+    strategyPressureHtml(s.strategyPressure) +
     queueHtml('supplyQ', 'supplyQ', s.supplyQ) +
     queueHtml('failedQ', 'failedQ', s.failedQ) +
     drawnHtml('drawn', s.drawnCards);
@@ -416,6 +423,93 @@ function backlogHtml(backlog: SrsBacklogDebug[]): string {
   );
 }
 
+/**
+ * Colour for a pressure multiplier. Green at ×1.0 (no pressure); when the
+ * gauge is capped, amber → red by fraction of headroom used; when unbounded,
+ * fall back to the SRS panel's absolute threshold (×3 = hot).
+ */
+function pressureColor(multiplier: number, max?: number): string {
+  if (multiplier <= 1.001) return '#86efac';
+  if (max !== undefined && max > 1) {
+    return (multiplier - 1) / (max - 1) >= 0.75 ? '#fca5a5' : '#fcd34d';
+  }
+  return multiplier >= 3 ? '#fca5a5' : '#fcd34d';
+}
+
+/** data-q keys land in HTML attributes; strip anything outside a safe set. */
+function toggleKey(raw: string): string {
+  return raw.replace(/[^\w:.|-]/g, '_');
+}
+
+/**
+ * One gauge row: `label ×2.50/8 — detail`, with an item list underneath that
+ * mirrors the queues' collapse behaviour (INLINE_THRESHOLD shown, "+N more"
+ * expands).
+ */
+function gaugeHtml(sectionKey: string, g: PressureGaugeDebug): string {
+  const cap = g.max !== undefined ? `<span style="opacity:.5">/${g.max}</span>` : '';
+  const detail = g.detail ? ` <span style="opacity:.6">${esc(g.detail)}</span>` : '';
+  let html =
+    `<div style="margin-left:6px">${esc(g.label)} ` +
+    `<span style="color:${pressureColor(g.multiplier, g.max)}">×${g.multiplier.toFixed(2)}</span>` +
+    `${cap}${detail}`;
+
+  const items = g.items ?? [];
+  if (items.length > 0) {
+    const key = toggleKey(`sp|${sectionKey}|${g.id}`);
+    const isOpen = !!expanded[key];
+    const shown = isOpen ? items : items.slice(0, INLINE_THRESHOLD);
+    html +=
+      `<div style="margin-left:6px">` +
+      shown
+        .map(
+          (it) =>
+            `<div style="white-space:nowrap;opacity:.75">${esc(it.label)}` +
+            `${it.value ? ` <span style="opacity:.6">${esc(it.value)}</span>` : ''}</div>`
+        )
+        .join('');
+    if (items.length > INLINE_THRESHOLD) {
+      const footer = isOpen ? '▾ show less' : `… +${items.length - shown.length} more`;
+      html += `<div data-q="${key}" style="cursor:pointer;opacity:.6">${footer}</div>`;
+    }
+    html += `</div>`;
+  }
+
+  return html + `</div>`;
+}
+
+/**
+ * Strategy backpressure panel — the generic counterpart of the SRS panel
+ * above, fed by `captureStrategyPressure` pushes from navigation strategies
+ * (built-in prescribed, or consumer-registered). Per source: gauge rows with
+ * cap-aware colour, then a `top score` line that reads against the supplyQ
+ * head exactly like the SRS panel's `top review`.
+ */
+function strategyPressureHtml(list: StrategyPressureDebug[]): string {
+  if (!list.length) return '';
+  const sections = list
+    .map((s) => {
+      const sectionKey = `${s.source}:${s.courseId.slice(0, 8)}`;
+      const top = s.topScore !== null && s.topScore !== undefined ? s.topScore.toFixed(2) : '—';
+      const hints = s.hintsLabel
+        ? `<div style="margin-left:6px;opacity:.6">hints: ${esc(s.hintsLabel)}</div>`
+        : '';
+      return (
+        `<div style="margin-left:6px">` +
+        `<span style="opacity:.7">${esc(s.source)} · ${esc(s.courseId.slice(0, 8))}</span>` +
+        ` <span style="opacity:.6">top score ${top}</span>` +
+        s.gauges.map((g) => gaugeHtml(sectionKey, g)).join('') +
+        hints +
+        `</div>`
+      );
+    })
+    .join('');
+  return (
+    `<div style="margin-bottom:6px">` +
+    `<div style="color:#fdba74">strategy backpressure</div>${sections}</div>`
+  );
+}
+
 /** Format a rank score for display: finite → 2dp, `+INF` → REQ (required). */
 function fmtScore(score?: number): string {
   if (score === undefined) return '';
@@ -561,6 +655,25 @@ function snapshotToText(s: SessionDebugSnapshot | null): string {
           `(healthy ${b.healthyBacklog})${next}; pressure ×${b.backlogMultiplier.toFixed(2)} ` +
           `${headroom}; top review ${top}`
       );
+    }
+  }
+
+  if (s.strategyPressure.length) {
+    lines.push('');
+    lines.push('strategy backpressure:');
+    for (const sp of s.strategyPressure) {
+      const top = sp.topScore !== null && sp.topScore !== undefined ? sp.topScore.toFixed(2) : '—';
+      lines.push(`  ${sp.source} (${sp.courseId.slice(0, 8)}): top score ${top}`);
+      for (const g of sp.gauges) {
+        const cap = g.max !== undefined ? `/${g.max}` : '';
+        lines.push(
+          `    ${g.label} ×${g.multiplier.toFixed(2)}${cap}${g.detail ? ` — ${g.detail}` : ''}`
+        );
+        for (const it of g.items ?? []) {
+          lines.push(`      ${it.label}${it.value ? ` (${it.value})` : ''}`);
+        }
+      }
+      if (sp.hintsLabel) lines.push(`    hints: ${sp.hintsLabel}`);
     }
   }
 
