@@ -1,6 +1,7 @@
 import { logger } from '../util/logger';
 import { clearRunHistory as clearPipelineRunHistory } from '../core/navigators/PipelineDebugger';
 import { clearSrsBacklogDebug } from '../core/navigators/SrsDebugger';
+import { clearStrategyPressureDebug } from '../core/navigators/StrategyPressureDebugger';
 import { toggleSessionOverlay } from './SessionOverlay';
 
 // ============================================================================
@@ -82,6 +83,7 @@ const MAX_HISTORY = 5;
 export function clearStaleSessionDebugState(): void {
   clearPipelineRunHistory();
   clearSrsBacklogDebug();
+  clearStrategyPressureDebug();
 }
 
 /**

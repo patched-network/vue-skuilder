@@ -4,6 +4,10 @@ import { ContentNavigator } from '../index';
 import type { WeightedCard } from '../index';
 import type { ContentNavigationStrategyData } from '../../types/contentNavigationStrategy';
 import type { CardGenerator, GeneratorContext, GeneratorResult, ReplanHints } from './types';
+import {
+  captureStrategyPressure,
+  type PressureGaugeDebug,
+} from '../StrategyPressureDebugger';
 import { logger } from '@db/util/logger';
 
 // ============================================================================
@@ -115,7 +119,17 @@ interface GroupRuntimeState {
   supportTags: string[];
   pressureMultiplier: number;
   supportMultiplier: number;
+  /** Carried-forward staleness count driving the pressure multipliers. */
+  sessionsSinceSurfaced: number;
   debugVersion: string;
+}
+
+/** One open practice debt, surfaced for the strategy-pressure debug channel. */
+interface PracticeDebtDebug {
+  tag: string;
+  multiplier: number;
+  /** ISO timestamp when the skill first appeared unlocked-but-under-practiced. */
+  firstOwedAt: string;
 }
 
 interface HintEmissionSummary {
@@ -197,6 +211,15 @@ function shuffleInPlace<T>(arr: T[]): void {
     const j = Math.floor(Math.random() * (i + 1));
     [arr[i], arr[j]] = [arr[j], arr[i]];
   }
+}
+
+/** Compact age string for debt-open durations: 42m / 7h / 3d. */
+function formatAge(ms: number): string {
+  const minutes = Math.max(0, Math.round(ms / 60000));
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${hours}h`;
+  return `${Math.round(hours / 24)}d`;
 }
 
 function pickTopByScore(cards: WeightedCard[], limit: number): WeightedCard[] {
@@ -293,6 +316,7 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
     // under-practiced, dropped once it's discharged (see buildPracticeCards).
     const priorPracticeDebt = progress.practiceDebt ?? {};
     const nextPracticeDebt: Record<string, string> = {};
+    const practiceDebtsByGroup = new Map<string, PracticeDebtDebug[]>();
 
     for (const group of this.config.groups) {
       const runtime = this.buildGroupRuntimeState({
@@ -358,7 +382,7 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
         courseId,
         emittedIds
       );
-      const practiceCards = this.buildPracticeCards({
+      const practice = this.buildPracticeCards({
         group,
         courseId,
         emittedIds,
@@ -371,8 +395,9 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
         priorPracticeDebt,
         nextPracticeDebt,
       });
+      practiceDebtsByGroup.set(group.id, practice.debts);
 
-      emitted.push(...directCards, ...supportCards, ...discoveredSupportCards, ...practiceCards);
+      emitted.push(...directCards, ...supportCards, ...discoveredSupportCards, ...practice.cards);
     }
 
     // Persist the carried-forward practice debt (self-pruned: discharged skills
@@ -400,6 +425,11 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
     } else {
       logger.info('[Prescribed] No hints to emit (no blocked targets or no support tags)');
     }
+
+    // Push this run's pressure state to the live-overlay debug channel. Done
+    // before the empty-emission return — an all-blocked run is exactly the
+    // state the overlay most needs to show.
+    this.capturePressureSnapshot(courseId, groupRuntimes, practiceDebtsByGroup, emitted, hints);
 
     if (emitted.length === 0) {
       logger.info(
@@ -479,6 +509,80 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
       blockedTargetIds: [...blockedTargetIds].sort(),
       supportTags: [...supportTags].sort(),
     };
+  }
+
+  /**
+   * Translate this run's per-group runtimes and practice debts into gauges on
+   * the generic strategy-pressure debug channel (rendered by the live session
+   * overlay's "strategy backpressure" section).
+   */
+  private capturePressureSnapshot(
+    courseId: string,
+    groupRuntimes: GroupRuntimeState[],
+    practiceDebtsByGroup: Map<string, PracticeDebtDebug[]>,
+    emitted: WeightedCard[],
+    hints: ReplanHints | undefined
+  ): void {
+    const now = Date.now();
+    const gauges: PressureGaugeDebug[] = [];
+
+    for (const runtime of groupRuntimes) {
+      const group = runtime.group;
+      const window = group.freshnessWindowSessions ?? DEFAULT_FRESHNESS_WINDOW;
+
+      gauges.push({
+        id: `group:${group.id}:target`,
+        label: `${group.id} targets`,
+        multiplier: runtime.pressureMultiplier,
+        max: MAX_TARGET_MULTIPLIER,
+        detail:
+          `${runtime.pendingTargets.length} pending ` +
+          `(${runtime.surfaceableTargets.length} surfaceable, ${runtime.blockedTargets.length} blocked) · ` +
+          `sinceSurfaced ${runtime.sessionsSinceSurfaced}/${window}`,
+        items: runtime.blockedTargets.map((cardId) => ({ label: cardId, value: 'blocked' })),
+      });
+
+      if (runtime.blockedTargets.length > 0) {
+        const mode =
+          runtime.supportCandidates.length > 0
+            ? 'direct-support'
+            : runtime.discoveredSupportCandidates.length > 0
+              ? 'inserted-support'
+              : 'boost-only';
+        gauges.push({
+          id: `group:${group.id}:support`,
+          label: `${group.id} support`,
+          multiplier: runtime.supportMultiplier,
+          max: MAX_SUPPORT_MULTIPLIER,
+          detail: `mode=${mode} · ${runtime.supportTags.length} support tag(s)`,
+          items: runtime.supportTags.map((tag) => ({ label: tag })),
+        });
+      }
+
+      const debts = practiceDebtsByGroup.get(group.id) ?? [];
+      if (debts.length > 0) {
+        gauges.push({
+          id: `group:${group.id}:practice-debt`,
+          label: `${group.id} practice debt`,
+          multiplier: Math.max(...debts.map((d) => d.multiplier)),
+          max: MAX_PRACTICE_MULTIPLIER,
+          detail: `${debts.length} under-practiced skill(s)`,
+          items: debts.map((d) => ({
+            label: d.tag,
+            value: `×${d.multiplier.toFixed(2)} · open ${formatAge(now - new Date(d.firstOwedAt).getTime())}`,
+          })),
+        });
+      }
+    }
+
+    captureStrategyPressure({
+      source: 'prescribed',
+      courseId,
+      gauges,
+      topScore: emitted.length > 0 ? Math.max(...emitted.map((c) => c.score)) : null,
+      hintsLabel: hints?._label,
+      timestamp: now,
+    });
   }
 
   private parseConfig(serializedData: string): PrescribedConfig {
@@ -693,6 +797,7 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
       supportTags: [...supportTags],
       pressureMultiplier,
       supportMultiplier,
+      sessionsSinceSurfaced,
       debugVersion: PRESCRIBED_DEBUG_VERSION,
     };
   }
@@ -875,7 +980,7 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
     seenIds: Set<string>;
     priorPracticeDebt: Record<string, string>;
     nextPracticeDebt: Record<string, string>;
-  }): WeightedCard[] {
+  }): { cards: WeightedCard[]; debts: PracticeDebtDebug[] } {
     const {
       group,
       courseId,
@@ -891,7 +996,7 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
     } = args;
 
     const patterns = group.practiceTagPatterns ?? [];
-    if (patterns.length === 0) return [];
+    if (patterns.length === 0) return { cards: [], debts: [] };
 
     const practiceMinCount = group.practiceMinCount ?? DEFAULT_PRACTICE_MIN_COUNT;
     const maxPractice = group.maxPracticeCardsPerRun ?? DEFAULT_MAX_PRACTICE_PER_RUN;
@@ -903,7 +1008,7 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
         (userTagElo[tag]?.count ?? 0) < practiceMinCount
     );
 
-    if (practiceTags.length === 0) return [];
+    if (practiceTags.length === 0) return { cards: [], debts: [] };
 
     // Carry forward (or open) each under-practiced skill's debt age, and derive
     // its practice multiplier: base + staleness-since-first-owed, clamped. Done
@@ -924,6 +1029,16 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
       tagMultiplier.set(tag, mult);
     }
 
+    // Debug view of every open debt (built before the emission early-return so
+    // the pressure channel sees debts even on runs that emit no drill cards).
+    const debts: PracticeDebtDebug[] = practiceTags
+      .map((tag) => ({
+        tag,
+        multiplier: tagMultiplier.get(tag) ?? PRACTICE_BASE_MULT,
+        firstOwedAt: nextPracticeDebt[tag],
+      }))
+      .sort((a, b) => b.multiplier - a.multiplier || a.tag.localeCompare(b.tag));
+
     // Reuse the diversity-aware tag→cards collector (stem-dedup + shuffle).
     const practiceCardIds = this.findDiscoveredSupportCards({
       supportTags: practiceTags,
@@ -934,7 +1049,7 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
       limit: maxPractice,
     });
 
-    if (practiceCardIds.length === 0) return [];
+    if (practiceCardIds.length === 0) return { cards: [], debts };
 
     logger.info(
       `[Prescribed] Group '${group.id}' practice: ${practiceTags.length} unlocked under-practiced ` +
@@ -974,7 +1089,7 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
       });
     }
 
-    return cards;
+    return { cards, debts };
   }
 
   /**

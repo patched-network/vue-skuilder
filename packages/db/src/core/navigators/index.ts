@@ -33,6 +33,18 @@ export {
   type SrsBacklogDebug,
 } from './SrsDebugger';
 
+// Re-export the generic strategy-pressure debug channel. `captureStrategyPressure`
+// is part of the consumer surface: client-defined strategies (registered via
+// registerNavigator) push their backpressure state through it for the live
+// session overlay.
+export {
+  captureStrategyPressure,
+  getStrategyPressureDebug,
+  clearStrategyPressureDebug,
+  type StrategyPressureDebug,
+  type PressureGaugeDebug,
+} from './StrategyPressureDebugger';
+
 import { LearnableWeight } from '../types/contentNavigationStrategy';
 export type { ContentNavigationStrategyData, LearnableWeight } from '../types/contentNavigationStrategy';
 import type { ContentNavigationStrategyData } from '../types/contentNavigationStrategy';
