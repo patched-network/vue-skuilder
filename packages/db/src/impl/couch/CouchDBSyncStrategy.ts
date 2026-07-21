@@ -56,15 +56,14 @@ export class CouchDBSyncStrategy implements SyncStrategy {
     localDB: PouchDB.Database,
     remoteDB: PouchDB.Database
   ): Promise<{ docsWritten: number }> {
+    // A one-shot Replication is itself a promise of the completed result, so
+    // it can be awaited directly — the handle is retained only so a pull that
+    // outlives its timeout can be cancelled.
     const replication = pouch.replicate(remoteDB, localDB, {});
     this.hydrationHandle = replication;
 
     try {
-      const info = await new Promise<PouchDB.Replication.ReplicationResultComplete<object>>(
-        (resolve, reject) => {
-          replication.on('complete', resolve).on('error', reject);
-        }
-      );
+      const info = await replication;
       return { docsWritten: info.docs_written };
     } finally {
       this.hydrationHandle = undefined;
