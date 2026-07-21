@@ -55,7 +55,14 @@ export class CouchDBSyncStrategy implements SyncStrategy {
 
   stopSync?(): void {
     if (this.syncHandle) {
-      this.syncHandle.cancel();
+      // Called from BaseUser.init(), which is on the app boot path — a throw
+      // here would leave BaseUser._initialized false forever, and
+      // BaseUser.instance() polls that flag. Drop the handle regardless.
+      try {
+        this.syncHandle.cancel();
+      } catch (e) {
+        logger.warn(`Failed to cancel user sync (continuing anyway): ${e}`);
+      }
       this.syncHandle = undefined;
     }
   }

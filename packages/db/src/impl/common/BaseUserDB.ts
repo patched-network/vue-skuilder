@@ -643,6 +643,18 @@ Currently logged-in as ${this._username}.`
       return;
     }
 
+    // Cancel replication left over from the previous identity BEFORE rebinding
+    // the DB handles below. init() runs on every identity change (login,
+    // logout, account creation, data reset), and each one points localDB /
+    // remoteDB somewhere new — so without this, the prior sync keeps running
+    // against handles nobody holds a reference to anymore.
+    //
+    // Logout is the case that bites: the guest branch of startSync() never
+    // replaces the handle (it only ever assigns when a sync is actually
+    // started), so the departing user's live sync survived indefinitely. Its
+    // session cookie is gone by then, leaving it to 401-and-retry forever.
+    this.syncStrategy.stopSync?.();
+
     this.setDBandQ();
 
     this.syncStrategy.startSync(this.localDB, this.remoteDB);
