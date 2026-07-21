@@ -43,14 +43,20 @@ export class CouchDBSyncStrategy implements SyncStrategy {
   }
 
   startSync(localDB: PouchDB.Database, remoteDB: PouchDB.Database): void {
-    // Only sync if local and remote are different instances
-    if (localDB !== remoteDB) {
+    // Compare by NAME, not object identity. In guest mode setupRemoteDB()
+    // returns getLocalUserDB(username) — the same database as localDB — but
+    // getLocalUserDB() constructs a fresh PouchDB handle on every call rather
+    // than caching, so `localDB !== remoteDB` was always true and guests ran a
+    // live sync of a database against itself. Names are unambiguous here:
+    // local DBs are named `userdb-<username>` (or a filesystem path in Node),
+    // remote ones are a full `protocol://host/userdb-<hex>` URL.
+    if (localDB.name !== remoteDB.name) {
       this.syncHandle = pouch.sync(localDB, remoteDB, {
         live: true,
         retry: true,
       });
     }
-    // If they're the same (guest mode), no sync needed
+    // If they're the same DB (guest mode), no sync needed
   }
 
   stopSync?(): void {
