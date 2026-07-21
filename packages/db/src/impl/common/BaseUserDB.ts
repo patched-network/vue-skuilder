@@ -127,16 +127,41 @@ export class BaseUser implements UserDBInterface, DocumentUpdater {
   private updateQueue!: UpdateQueue;
 
   private _hydration: UserHydrationStatus = { state: 'not-required' };
+  /** In-flight hydration, so concurrent callers can wait for a real answer. */
+  private _hydrationPromise: Promise<void> | null = null;
 
   /**
-   * How far the local mirror can be trusted. See {@link UserHydrationStatus}.
+   * How far the local mirror can be trusted, RIGHT NOW. See
+   * {@link UserHydrationStatus}.
    *
-   * Consumers that would otherwise read a 404 as "new user" — onboarding
-   * gates, first-run experiences, progress dashboards — should check for
-   * `failed` and present a retry affordance rather than an empty state.
+   * This is a snapshot, and during login it can legitimately read
+   * `hydrating` — prefer awaitHydration() anywhere a decision hangs on the
+   * answer.
    */
   public hydrationStatus(): UserHydrationStatus {
     return { ...this._hydration };
+  }
+
+  /**
+   * The hydration status once it has settled — never `hydrating`.
+   *
+   * Resolves immediately unless a pull is in flight. Exists for callers that
+   * must decide something (a route guard, a first-run branch) and would
+   * otherwise sample `hydrating` and guess. Since init() is awaited by both
+   * app startup and login(), that only happens when something navigates
+   * concurrently with a login still in progress — a window that stretches to
+   * HYDRATION_TIMEOUT_MS on a slow connection.
+   */
+  public async awaitHydration(): Promise<UserHydrationStatus> {
+    // hydrateLocalMirror() records failures rather than throwing, so this
+    // cannot reject — but a stray rejection must not become the caller's
+    // problem when a status is available either way.
+    try {
+      await this._hydrationPromise;
+    } catch {
+      // fall through to the recorded status
+    }
+    return this.hydrationStatus();
   }
 
   /**
@@ -736,7 +761,13 @@ Currently logged-in as ${this._username}.`
 
     // Populate the local mirror BEFORE anything can read it, and before live
     // sync can push local state upward. See hydrateLocalMirror().
-    await this.hydrateLocalMirror();
+    //
+    // Retained (not just awaited) so awaitHydration() can hand the same
+    // promise to anything that asks mid-flight. Assigned synchronously with
+    // respect to init()'s entry, so no caller can observe a previous
+    // identity's promise here.
+    this._hydrationPromise = this.hydrateLocalMirror();
+    await this._hydrationPromise;
 
     this.syncStrategy.startSync(this.localDB, this.remoteDB);
     this.applyDesignDocs().catch((error) => {

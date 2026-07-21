@@ -246,6 +246,55 @@ describe('user DB hydration', () => {
     expect(order).toEqual(['hydrate', 'startSync']);
   });
 
+  it('awaitHydration resolves to the settled status, never "hydrating"', async () => {
+    // The race this closes: a route guard sampling status while a login is
+    // still pulling. It would see 'hydrating', fall through, and render an
+    // established learner as brand new — the original bug, via a side door.
+    const realName = freshUsername();
+    await seedRemote(realName);
+
+    let releaseHydrate: (v: { docsWritten: number }) => void = () => {};
+    const hydrate = vi.fn(
+      () =>
+        new Promise<{ docsWritten: number }>((resolve) => {
+          releaseHydrate = resolve;
+        })
+    );
+
+    const guestName = 'sk-guest-mid-login';
+    const strategy = {
+      ...authedStrategy(realName, { hydrate }),
+      // Guest before login, real remote after — mirroring setupRemoteDB.
+      setupRemoteDB: (u: string) => (u.startsWith('sk-guest-') ? localDB(u) : remoteDB(realName)),
+      getWriteDB: (u: string) => (u.startsWith('sk-guest-') ? localDB(u) : remoteDB(realName)),
+      authenticate: async () => ({ ok: true }),
+    } as SyncStrategy;
+
+    // Starts as a guest: nothing to hydrate.
+    const user = await BaseUser.instance(strategy, guestName);
+    expect(user.hydrationStatus().state).toBe('not-required');
+
+    // Log in, but do NOT await it — this is the window a stray navigation
+    // lands in.
+    const loginPromise = user.login(realName, 'password');
+
+    while (hydrate.mock.calls.length === 0) {
+      await new Promise((resolve) => setImmediate(resolve));
+    }
+
+    // Mid-flight: the snapshot is honest about being unsettled...
+    expect(user.hydrationStatus().state).toBe('hydrating');
+
+    // ...and a caller that needs an answer waits for the real one.
+    const settled = user.awaitHydration();
+    releaseHydrate({ docsWritten: 3 });
+
+    expect((await settled).state).toBe('hydrated');
+    expect(user.hydrationStatus().state).toBe('hydrated');
+
+    await loginPromise;
+  });
+
   it('gives up on a pull that hangs', async () => {
     await seedRemote(username);
     // Fake setTimeout only — PouchDB's internals rely on the other async

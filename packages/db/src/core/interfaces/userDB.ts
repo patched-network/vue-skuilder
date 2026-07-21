@@ -21,14 +21,27 @@ export interface UserDBReader {
   isLoggedIn(): boolean;
 
   /**
-   * How far this device's local mirror of the user's data can be trusted.
+   * How far this device's local mirror of the user's data can be trusted,
+   * as of right now.
    *
    * Reads answer from the local mirror, so on a device that has never synced
    * this account "document not found" does not mean "no such data". Anything
    * that would otherwise interpret an empty read as a new user should check
    * for `failed` first. See {@link UserHydrationStatus}.
+   *
+   * Can return `hydrating`; use {@link awaitHydration} to decide on a settled
+   * answer instead of a snapshot.
    */
   hydrationStatus(): UserHydrationStatus;
+
+  /**
+   * The hydration status once settled — never `hydrating`.
+   *
+   * Resolves immediately unless a pull is in flight. Prefer this over
+   * hydrationStatus() wherever the answer gates behaviour, such as a route
+   * guard that may run while a login is still completing.
+   */
+  awaitHydration(): Promise<UserHydrationStatus>;
 
   /**
    * Get user configuration
