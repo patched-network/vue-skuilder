@@ -1,4 +1,12 @@
-import { DocType, DocTypePrefixes, StrategyStateDoc, buildStrategyStateId } from '@db/core';
+import {
+  DocType,
+  DocTypePrefixes,
+  StrategyStateDoc,
+  buildStrategyStateId,
+  HYDRATION_MARKER_ID,
+  type HydrationMarker,
+  type UserHydrationStatus,
+} from '@db/core';
 import { getCardHistoryID } from '@db/core/util';
 import { CourseElo, Status } from '@vue-skuilder/common';
 import moment, { Moment } from 'moment';
@@ -51,6 +59,35 @@ interface DesignDoc {
 }
 
 /**
+ * Ceiling on the initial pull of a user's data before we give up and report
+ * `failed`. Generous relative to the expected payload (a user database is a
+ * config doc, registrations, strategy state, and per-card history), so hitting
+ * it indicates a genuinely unusable connection rather than a large account.
+ */
+const HYDRATION_TIMEOUT_MS = 15_000;
+
+/**
+ * Reject if `p` has not settled within `ms`.
+ *
+ * Note the underlying work is not cancelled by this — callers that need the
+ * operation stopped must do so themselves.
+ */
+function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+
+  return Promise.race([
+    p,
+    new Promise<never>((_resolve, reject) => {
+      timer = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
+    }),
+  ]).finally(() => {
+    if (timer !== undefined) {
+      clearTimeout(timer);
+    }
+  }) as Promise<T>;
+}
+
+/**
  * Base user database implementation that uses a pluggable sync strategy.
  * Handles local storage operations and delegates sync/remote operations to the strategy.
  */
@@ -87,8 +124,33 @@ export class BaseUser implements UserDBInterface, DocumentUpdater {
   private localDB!: PouchDB.Database;
   private remoteDB!: PouchDB.Database;
   private writeDB!: PouchDB.Database; // Database to use for write operations (local-first approach)
-
   private updateQueue!: UpdateQueue;
+
+  private _hydration: UserHydrationStatus = { state: 'not-required' };
+
+  /**
+   * How far the local mirror can be trusted. See {@link UserHydrationStatus}.
+   *
+   * Consumers that would otherwise read a 404 as "new user" — onboarding
+   * gates, first-run experiences, progress dashboards — should check for
+   * `failed` and present a retry affordance rather than an empty state.
+   */
+  public hydrationStatus(): UserHydrationStatus {
+    return { ...this._hydration };
+  }
+
+  /**
+   * Whether a missing document may be treated as genuinely absent, allowing
+   * callers to create it with defaults.
+   *
+   * False only when hydration failed or is still running: a 404 then may just
+   * mean "not pulled down yet", and materializing a default would both lie to
+   * the user and, once live sync starts, push a rev-1 document that loses to
+   * the real one — silently discarding it.
+   */
+  private canMaterializeDefaults(): boolean {
+    return this._hydration.state !== 'failed' && this._hydration.state !== 'hydrating';
+  }
 
   public async createAccount(
     username: string,
@@ -257,6 +319,14 @@ Currently logged-in as ${this._username}.`
     } catch (e) {
       const err = e as PouchError;
       if (err.status === 404) {
+        if (!this.canMaterializeDefaults()) {
+          throw new Error(
+            `Cannot read course registrations for ${this._username}: the local mirror is ` +
+              `unavailable (hydration state '${this._hydration.state}'). Refusing to create an ` +
+              `empty registration doc — that would report an existing user as unregistered, and ` +
+              `then lose to their real document once sync resumes.`
+          );
+        }
         await this.localDB.put<CourseRegistrationDoc>({
           _id: BaseUser.DOC_IDS.COURSE_REGISTRATIONS,
           courses: [],
@@ -556,6 +626,13 @@ Currently logged-in as ${this._username}.`
     } catch (e) {
       const err = e as PouchError;
       if (err.name && err.name === 'not_found') {
+        if (!this.canMaterializeDefaults()) {
+          throw new Error(
+            `Cannot read config for ${this._username}: the local mirror is unavailable ` +
+              `(hydration state '${this._hydration.state}'). Refusing to write a default config ` +
+              `over what may be an existing one.`
+          );
+        }
         await this.localDB.put<UserConfig>(defaultConfig);
         return this.getConfig();
       } else {
@@ -657,6 +734,10 @@ Currently logged-in as ${this._username}.`
 
     this.setDBandQ();
 
+    // Populate the local mirror BEFORE anything can read it, and before live
+    // sync can push local state upward. See hydrateLocalMirror().
+    await this.hydrateLocalMirror();
+
     this.syncStrategy.startSync(this.localDB, this.remoteDB);
     this.applyDesignDocs().catch((error) => {
       log(`Error in applyDesignDocs background task: ${error}`);
@@ -671,6 +752,104 @@ Currently logged-in as ${this._username}.`
       }
     });
     BaseUser._initialized = true;
+  }
+
+  /**
+   * Pull this account's documents into the local mirror, if that hasn't
+   * happened on this device before.
+   *
+   * Runs between setDBandQ() and startSync() — after the handles exist, before
+   * anything can observe an empty local DB or replicate one upward.
+   *
+   * Never throws: a failure is recorded as `failed` state and reported through
+   * hydrationStatus(), because throwing here would abort init() and leave
+   * BaseUser._initialized false forever (BaseUser.instance() polls it with no
+   * ceiling). Callers decide what a failure means for them.
+   */
+  private async hydrateLocalMirror(): Promise<void> {
+    // Guests and static-mode users have no remote — setupRemoteDB() hands back
+    // the local database itself, so there is nothing to pull from.
+    if (this.localDB.name === this.remoteDB.name || !this.syncStrategy.hydrate) {
+      this._hydration = { state: 'not-required' };
+      return;
+    }
+
+    if (await this.hasHydrationMarker()) {
+      // A full pull already completed on this device, so local reads return
+      // real data and live sync will close any gap. Blocking here would break
+      // offline startup to re-fetch what we already have.
+      this._hydration = { state: 'stale' };
+      return;
+    }
+
+    this._hydration = { state: 'hydrating' };
+    const start = Date.now();
+
+    try {
+      const { docsWritten } = await withTimeout(
+        this.syncStrategy.hydrate(this.localDB, this.remoteDB),
+        HYDRATION_TIMEOUT_MS,
+        `Hydration of local mirror for ${this._username}`
+      );
+      await this.writeHydrationMarker();
+      this._hydration = {
+        state: 'hydrated',
+        docsWritten,
+        durationMs: Date.now() - start,
+      };
+      log(
+        `Hydrated local mirror for ${this._username}: ` +
+          `${docsWritten} docs in ${this._hydration.durationMs}ms`
+      );
+    } catch (e) {
+      // Cancel the pull if it is merely slow rather than dead — otherwise it
+      // races the live sync we are about to start over the same documents.
+      this.syncStrategy.stopSync?.();
+      this._hydration = {
+        state: 'failed',
+        durationMs: Date.now() - start,
+        error: e instanceof Error ? e.message : String(e),
+      };
+      logger.error(`Failed to hydrate local mirror for ${this._username}:`, e);
+    }
+  }
+
+  /**
+   * Has a full pull completed on this device for the CURRENT account?
+   *
+   * The marker is a `_local/` document, which never replicates — so its
+   * presence describes this device's mirror and cannot arrive from elsewhere.
+   */
+  private async hasHydrationMarker(): Promise<boolean> {
+    try {
+      const marker = await this.localDB.get<HydrationMarker>(HYDRATION_MARKER_ID);
+      return marker.username === this._username;
+    } catch {
+      // Absent, or unreadable — either way, treat as never hydrated. The cost
+      // of a false negative is one redundant pull.
+      return false;
+    }
+  }
+
+  private async writeHydrationMarker(): Promise<void> {
+    try {
+      let existingRev: string | undefined;
+      try {
+        existingRev = (await this.localDB.get<HydrationMarker>(HYDRATION_MARKER_ID))._rev;
+      } catch {
+        // First hydration on this device.
+      }
+
+      await this.localDB.put<HydrationMarker>({
+        _id: HYDRATION_MARKER_ID,
+        _rev: existingRev,
+        username: this._username,
+        hydratedAt: new Date().toISOString(),
+      });
+    } catch (e) {
+      // Costs a redundant pull on next startup, not correctness.
+      logger.warn(`Could not write hydration marker for ${this._username}: ${e}`);
+    }
   }
 
   private static designDocs: DesignDoc[] = [
@@ -1095,6 +1274,15 @@ Currently logged-in as ${this._username}.`
     } catch (e) {
       const err = e as PouchError;
       if (err.status === 404) {
+        // `null` here means "this user has no such state" — a first-run signal
+        // consumers act on. When the mirror is untrusted we cannot honestly say
+        // that, so fail instead of reporting an established user as new.
+        if (!this.canMaterializeDefaults()) {
+          throw new Error(
+            `Cannot read strategy state '${strategyKey}' for ${this._username}: the local mirror ` +
+              `is unavailable (hydration state '${this._hydration.state}').`
+          );
+        }
         return null;
       }
       throw e;

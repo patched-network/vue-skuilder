@@ -21,6 +21,8 @@ const log = (s: any) => {
  */
 export class CouchDBSyncStrategy implements SyncStrategy {
   private syncHandle?: any; // Handle to cancel sync if needed
+  /** In-flight one-shot hydration pull, so a timed-out pull can be abandoned. */
+  private hydrationHandle?: PouchDB.Replication.Replication<object>;
 
   setupRemoteDB(username: string): PouchDB.Database {
     if (username === GuestUsername || username.startsWith(GuestUsername)) {
@@ -42,6 +44,33 @@ export class CouchDBSyncStrategy implements SyncStrategy {
     }
   }
 
+  /**
+   * One-shot remote → local pull. Resolves once the local mirror is caught up.
+   *
+   * Pull only: pushing here would upload whatever the local DB happens to hold
+   * before we know what the remote already has, which is the conflict-leaf
+   * problem hydration exists to avoid. Local changes go up when startSync()
+   * takes over.
+   */
+  async hydrate(
+    localDB: PouchDB.Database,
+    remoteDB: PouchDB.Database
+  ): Promise<{ docsWritten: number }> {
+    const replication = pouch.replicate(remoteDB, localDB, {});
+    this.hydrationHandle = replication;
+
+    try {
+      const info = await new Promise<PouchDB.Replication.ReplicationResultComplete<object>>(
+        (resolve, reject) => {
+          replication.on('complete', resolve).on('error', reject);
+        }
+      );
+      return { docsWritten: info.docs_written };
+    } finally {
+      this.hydrationHandle = undefined;
+    }
+  }
+
   startSync(localDB: PouchDB.Database, remoteDB: PouchDB.Database): void {
     // Compare by NAME, not object identity. In guest mode setupRemoteDB()
     // returns getLocalUserDB(username) — the same database as localDB — but
@@ -60,6 +89,15 @@ export class CouchDBSyncStrategy implements SyncStrategy {
   }
 
   stopSync?(): void {
+    if (this.hydrationHandle) {
+      try {
+        this.hydrationHandle.cancel();
+      } catch (e) {
+        logger.warn(`Failed to cancel hydration pull (continuing anyway): ${e}`);
+      }
+      this.hydrationHandle = undefined;
+    }
+
     if (this.syncHandle) {
       // Called from BaseUser.init(), which is on the app boot path — a throw
       // here would leave BaseUser._initialized false forever, and
