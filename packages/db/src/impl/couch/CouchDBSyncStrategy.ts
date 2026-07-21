@@ -21,6 +21,8 @@ const log = (s: any) => {
  */
 export class CouchDBSyncStrategy implements SyncStrategy {
   private syncHandle?: any; // Handle to cancel sync if needed
+  /** In-flight one-shot hydration pull, so a timed-out pull can be abandoned. */
+  private hydrationHandle?: PouchDB.Replication.Replication<object>;
 
   setupRemoteDB(username: string): PouchDB.Database {
     if (username === GuestUsername || username.startsWith(GuestUsername)) {
@@ -42,20 +44,68 @@ export class CouchDBSyncStrategy implements SyncStrategy {
     }
   }
 
+  /**
+   * One-shot remote → local pull. Resolves once the local mirror is caught up.
+   *
+   * Pull only: pushing here would upload whatever the local DB happens to hold
+   * before we know what the remote already has, which is the conflict-leaf
+   * problem hydration exists to avoid. Local changes go up when startSync()
+   * takes over.
+   */
+  async hydrate(
+    localDB: PouchDB.Database,
+    remoteDB: PouchDB.Database
+  ): Promise<{ docsWritten: number }> {
+    // A one-shot Replication is itself a promise of the completed result, so
+    // it can be awaited directly — the handle is retained only so a pull that
+    // outlives its timeout can be cancelled.
+    const replication = pouch.replicate(remoteDB, localDB, {});
+    this.hydrationHandle = replication;
+
+    try {
+      const info = await replication;
+      return { docsWritten: info.docs_written };
+    } finally {
+      this.hydrationHandle = undefined;
+    }
+  }
+
   startSync(localDB: PouchDB.Database, remoteDB: PouchDB.Database): void {
-    // Only sync if local and remote are different instances
-    if (localDB !== remoteDB) {
+    // Compare by NAME, not object identity. In guest mode setupRemoteDB()
+    // returns getLocalUserDB(username) — the same database as localDB — but
+    // getLocalUserDB() constructs a fresh PouchDB handle on every call rather
+    // than caching, so `localDB !== remoteDB` was always true and guests ran a
+    // live sync of a database against itself. Names are unambiguous here:
+    // local DBs are named `userdb-<username>` (or a filesystem path in Node),
+    // remote ones are a full `protocol://host/userdb-<hex>` URL.
+    if (localDB.name !== remoteDB.name) {
       this.syncHandle = pouch.sync(localDB, remoteDB, {
         live: true,
         retry: true,
       });
     }
-    // If they're the same (guest mode), no sync needed
+    // If they're the same DB (guest mode), no sync needed
   }
 
   stopSync?(): void {
+    if (this.hydrationHandle) {
+      try {
+        this.hydrationHandle.cancel();
+      } catch (e) {
+        logger.warn(`Failed to cancel hydration pull (continuing anyway): ${e}`);
+      }
+      this.hydrationHandle = undefined;
+    }
+
     if (this.syncHandle) {
-      this.syncHandle.cancel();
+      // Called from BaseUser.init(), which is on the app boot path — a throw
+      // here would leave BaseUser._initialized false forever, and
+      // BaseUser.instance() polls that flag. Drop the handle regardless.
+      try {
+        this.syncHandle.cancel();
+      } catch (e) {
+        logger.warn(`Failed to cancel user sync (continuing anyway): ${e}`);
+      }
       this.syncHandle = undefined;
     }
   }

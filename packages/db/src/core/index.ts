@@ -5,6 +5,7 @@ export * from './types/types-legacy';
 export * from './types/user';
 export * from './types/strategyState';
 export * from './types/userOutcome';
+export * from './types/hydration';
 export * from '../util/Loggable';
 export * from './util';
 export * from './navigators';

@@ -22,6 +22,25 @@ export interface SyncStrategy {
   getWriteDB?(username: string): PouchDB.Database;
 
   /**
+   * Pull the remote database into the local one and RESOLVE WHEN DONE.
+   *
+   * Distinct from startSync(): this is a one-shot, awaitable catch-up used to
+   * populate an empty local mirror before the user object is handed out. A
+   * strategy that omits it declares that it has no remote worth waiting for.
+   *
+   * Mechanism only — BaseUser owns the policy (whether to run it, timeout,
+   * marker bookkeeping, resulting hydration state).
+   *
+   * @param localDB The local PouchDB instance
+   * @param remoteDB The remote PouchDB instance
+   * @returns Count of documents written locally
+   */
+  hydrate?(
+    localDB: PouchDB.Database,
+    remoteDB: PouchDB.Database
+  ): Promise<{ docsWritten: number }>;
+
+  /**
    * Start synchronization between local and remote databases
    * @param localDB The local PouchDB instance
    * @param remoteDB The remote PouchDB instance

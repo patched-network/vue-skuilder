@@ -9,6 +9,7 @@ import { Moment } from 'moment';
 import { CardHistory, CardRecord, QualifiedCardID } from '../types/types-legacy';
 import { UserOutcomeRecord } from '../types/userOutcome';
 import { UserConfig } from '../types/user';
+import { UserHydrationStatus } from '../types/hydration';
 import { DocumentUpdater } from '@db/study';
 
 /**
@@ -18,6 +19,16 @@ export interface UserDBReader {
   get<T>(id: string): Promise<T & PouchDB.Core.RevisionIdMeta>;
   getUsername(): string;
   isLoggedIn(): boolean;
+
+  /**
+   * How far this device's local mirror of the user's data can be trusted.
+   *
+   * Reads answer from the local mirror, so on a device that has never synced
+   * this account "document not found" does not mean "no such data". Anything
+   * that would otherwise interpret an empty read as a new user should check
+   * for `failed` first. See {@link UserHydrationStatus}.
+   */
+  hydrationStatus(): UserHydrationStatus;
 
   /**
    * Get user configuration
