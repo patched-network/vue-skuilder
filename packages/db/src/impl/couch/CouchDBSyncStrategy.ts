@@ -51,26 +51,61 @@ export class CouchDBSyncStrategy implements SyncStrategy {
    * before we know what the remote already has, which is the conflict-leaf
    * problem hydration exists to avoid. Local changes go up when startSync()
    * takes over.
+   *
+   * Into an EMPTY local DB this skips deleted documents, because a mirror that
+   * never held a document does not need to be told it was removed. That
+   * matters more than it sounds: scheduled reviews (`card_review_*`) are
+   * created and deleted once per review completed, so the changes feed is
+   * dominated by tombstones and grows without bound, while the durable record
+   * lives in card history. One real account measured 385 live documents behind
+   * 8,370 deletions — an unfiltered pull moved 9,520 documents and took ~20s,
+   * blowing the hydration timeout on a phone; filtered, the same pull moves
+   * 404 and takes ~2s, reaching a byte-identical local state.
+   *
+   * The filter runs server-side, so `last_seq` still reports the source's true
+   * sequence. Returning it lets startSync() begin the live pull from there
+   * instead of re-walking the same history in the background — without that,
+   * the cost is merely deferred, not removed.
    */
   async hydrate(
     localDB: PouchDB.Database,
     remoteDB: PouchDB.Database
-  ): Promise<{ docsWritten: number }> {
+  ): Promise<{ docsWritten: number; lastSeq?: string | number }> {
+    // Skipping tombstones is only sound when there is nothing local for a
+    // missed deletion to strand. A non-empty local DB here means a previous
+    // hydration failed partway (no marker was written, so we are retrying) and
+    // may hold documents the remote has since deleted — take the slow, honest
+    // path and let the full changes feed reconcile them.
+    const pristine = (await localDB.info()).doc_count === 0;
+
     // A one-shot Replication is itself a promise of the completed result, so
     // it can be awaited directly — the handle is retained only so a pull that
     // outlives its timeout can be cancelled.
-    const replication = pouch.replicate(remoteDB, localDB, {});
+    const replication = pouch.replicate(
+      remoteDB,
+      localDB,
+      pristine ? { selector: { _deleted: { $exists: false } } } : {}
+    );
     this.hydrationHandle = replication;
 
     try {
       const info = await replication;
-      return { docsWritten: info.docs_written };
+      return {
+        docsWritten: info.docs_written,
+        // Only a pristine pull is a trustworthy starting point for the live
+        // sync; otherwise leave startSync() to its own checkpoint.
+        lastSeq: pristine ? info.last_seq : undefined,
+      };
     } finally {
       this.hydrationHandle = undefined;
     }
   }
 
-  startSync(localDB: PouchDB.Database, remoteDB: PouchDB.Database): void {
+  startSync(
+    localDB: PouchDB.Database,
+    remoteDB: PouchDB.Database,
+    since?: string | number
+  ): void {
     // Compare by NAME, not object identity. In guest mode setupRemoteDB()
     // returns getLocalUserDB(username) — the same database as localDB — but
     // getLocalUserDB() constructs a fresh PouchDB handle on every call rather
@@ -82,6 +117,19 @@ export class CouchDBSyncStrategy implements SyncStrategy {
       this.syncHandle = pouch.sync(localDB, remoteDB, {
         live: true,
         retry: true,
+        // `since` applies to the pull only, and only when hydrate() just
+        // established that local matches remote at that sequence. Without it,
+        // a filtered hydration leaves the pull with no usable checkpoint (the
+        // filter changes the replication id), so it restarts from zero and
+        // re-walks in the background exactly the tombstone history hydration
+        // just skipped — same work, now competing with the study session.
+        //
+        // Deliberately NOT persisted across launches: on later boots hydration
+        // is skipped and the pull's own checkpoint is the correct resume
+        // point, so a stored sequence could only be stale. If the app dies
+        // before that first checkpoint is written, the next launch simply
+        // walks the full feed once.
+        ...(since !== undefined ? { pull: { since } } : {}),
       });
     }
     // If they're the same DB (guest mode), no sync needed

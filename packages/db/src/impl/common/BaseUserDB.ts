@@ -129,6 +129,14 @@ export class BaseUser implements UserDBInterface, DocumentUpdater {
   private _hydration: UserHydrationStatus = { state: 'not-required' };
   /** In-flight hydration, so concurrent callers can wait for a real answer. */
   private _hydrationPromise: Promise<void> | null = null;
+  /**
+   * Sequence the local mirror was filled to by a hydration that succeeded in
+   * THIS init(), handed to startSync() so the live pull can skip history it
+   * would otherwise re-walk. Undefined whenever there is no such guarantee —
+   * hydration skipped, not required, or failed. Never persisted; see the
+   * `since` note in CouchDBSyncStrategy.startSync().
+   */
+  private _hydratedSeq?: string | number;
 
   /**
    * How far the local mirror can be trusted, RIGHT NOW. See
@@ -769,7 +777,10 @@ Currently logged-in as ${this._username}.`
     this._hydrationPromise = this.hydrateLocalMirror();
     await this._hydrationPromise;
 
-    this.syncStrategy.startSync(this.localDB, this.remoteDB);
+    // _hydratedSeq is set only by a hydration that just succeeded above, for
+    // this identity — see hydrateLocalMirror(). Anything else leaves it
+    // undefined and the live sync resumes from its own checkpoint.
+    this.syncStrategy.startSync(this.localDB, this.remoteDB, this._hydratedSeq);
     this.applyDesignDocs().catch((error) => {
       log(`Error in applyDesignDocs background task: ${error}`);
       if (error && typeof error === 'object') {
@@ -798,6 +809,11 @@ Currently logged-in as ${this._username}.`
    * ceiling). Callers decide what a failure means for them.
    */
   private async hydrateLocalMirror(): Promise<void> {
+    // Clear first: init() reruns on every identity change, and a sequence from
+    // the departing account would be meaningless against the incoming one's
+    // database. Every path below either sets it or leaves it unset.
+    this._hydratedSeq = undefined;
+
     // Guests and static-mode users have no remote — setupRemoteDB() hands back
     // the local database itself, so there is nothing to pull from.
     if (this.localDB.name === this.remoteDB.name || !this.syncStrategy.hydrate) {
@@ -817,11 +833,12 @@ Currently logged-in as ${this._username}.`
     const start = Date.now();
 
     try {
-      const { docsWritten } = await withTimeout(
+      const { docsWritten, lastSeq } = await withTimeout(
         this.syncStrategy.hydrate(this.localDB, this.remoteDB),
         HYDRATION_TIMEOUT_MS,
         `Hydration of local mirror for ${this._username}`
       );
+      this._hydratedSeq = lastSeq;
       await this.writeHydrationMarker();
       this._hydration = {
         state: 'hydrated',
