@@ -33,19 +33,28 @@ export interface SyncStrategy {
    *
    * @param localDB The local PouchDB instance
    * @param remoteDB The remote PouchDB instance
-   * @returns Count of documents written locally
+   * @returns Count of documents written locally, and — only when the pull is
+   *   known to have landed the remote's complete current state — the sequence
+   *   it corresponds to, for startSync() to resume from. Omitted means "no
+   *   safe shortcut, walk from the checkpoint".
    */
   hydrate?(
     localDB: PouchDB.Database,
     remoteDB: PouchDB.Database
-  ): Promise<{ docsWritten: number }>;
+  ): Promise<{ docsWritten: number; lastSeq?: string | number }>;
 
   /**
    * Start synchronization between local and remote databases
    * @param localDB The local PouchDB instance
    * @param remoteDB The remote PouchDB instance
+   * @param since Sequence to start the pull from, as returned by a hydrate()
+   *   in the same session. Omit to resume from the stored checkpoint.
    */
-  startSync(localDB: PouchDB.Database, remoteDB: PouchDB.Database): void;
+  startSync(
+    localDB: PouchDB.Database,
+    remoteDB: PouchDB.Database,
+    since?: string | number
+  ): void;
 
   /**
    * Stop synchronization (optional - for cleanup)
@@ -93,7 +102,11 @@ export interface SyncStrategy {
  */
 export abstract class BaseSyncStrategy implements SyncStrategy {
   abstract setupRemoteDB(username: string): PouchDB.Database;
-  abstract startSync(localDB: PouchDB.Database, remoteDB: PouchDB.Database): void;
+  abstract startSync(
+    localDB: PouchDB.Database,
+    remoteDB: PouchDB.Database,
+    since?: string | number
+  ): void;
   abstract canCreateAccount(): boolean;
   abstract canAuthenticate(): boolean;
   abstract getCurrentUsername(): Promise<string>;
