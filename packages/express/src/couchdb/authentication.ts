@@ -26,6 +26,29 @@ export type AuthResult =
   | { authenticated: false };
 
 /**
+ * Verify a username + password against CouchDB's _session, WITHOUT establishing
+ * a client session. Returns true only on correct credentials.
+ *
+ * Used by the login-identifier resolver so the email→username mapping is gated
+ * on proof of ownership — every wrong-credential path returns the same result,
+ * so the endpoint is not an account-enumeration oracle.
+ */
+export async function verifyCredentials(
+  username: string,
+  password: string
+): Promise<boolean> {
+  try {
+    const authResult = await Nano({ url: getCouchURLWithProtocol() }).auth(
+      username,
+      password
+    );
+    return authResult.ok === true;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Get the authenticated user from the request's session cookie or authorization header.
  * Returns the username from the session - does NOT trust req.body.user.
  *

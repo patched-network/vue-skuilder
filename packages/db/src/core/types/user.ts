@@ -16,7 +16,12 @@ export interface UserConfig {
   darkMode: boolean;
   likesConfetti: boolean;
   sessionTimeLimit: number; // Session time limit in minutes
-  email?: string; // Optional email for verification flows (added for enhanced auth)
+  /**
+   * @deprecated Retired in favour of the _users-doc email (the single source of
+   * truth, written by /auth/send-verification and read by /auth/status). No
+   * live code writes or reads this field; it may linger on older CONFIG docs.
+   */
+  email?: string;
 
   // Session tracking for trial enforcement (per-course)
   // Key is courseId (e.g., 'letterspractice-basic')

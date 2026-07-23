@@ -5,11 +5,12 @@ import {
   findUserByUsername,
   findUserByToken,
   findUserByEmail,
-  getUserEmail,
+  findVerifiedUserByEmail,
   updateUserDoc,
 } from '../couchdb/userLookup.js';
 import { generateSecureToken, getTokenExpiry, isTokenExpired } from '../utils/tokens.js';
 import { sendVerificationEmail, sendPasswordResetEmail } from '../services/email.js';
+import { verifyCredentials } from '../couchdb/authentication.js';
 import logger from '../logger.js';
 
 interface CouchSession {
@@ -29,21 +30,38 @@ const router = express.Router();
 
 /**
  * POST /auth/send-verification
- * Trigger verification email for a newly created account.
+ * Trigger verification email for the *authenticated* account.
+ *
+ * Requires an AuthSession cookie; the account is derived from the session, NOT
+ * from the request body. This endpoint mutates the account's recovery email and
+ * status, so trusting a body-supplied username would let an anonymous caller
+ * overwrite another user's recovery address and hijack it via /request-reset.
  *
  * Body params:
- *   - username: string (required)
  *   - email: string (optional) - If provided, uses this email directly (avoids DB sync race condition)
  *   - origin: string (optional) - Frontend origin URL for constructing verification link
  */
 router.post('/send-verification', (req: Request, res: Response) => {
   void (async () => {
     try {
-    const { username, email: providedEmail, origin } = req.body;
-
-    if (!username) {
-      return res.status(400).json({ ok: false, error: 'Username required' });
+    // Authenticate from the session cookie — never trust a body-supplied
+    // username (see the route doc-comment: it's an account-takeover vector).
+    const authCookie: string = req.cookies?.AuthSession;
+    if (!authCookie) {
+      return res.status(401).json({ ok: false, error: 'Not authenticated' });
     }
+
+    const session: CouchSession = await Nano({
+      cookie: 'AuthSession=' + authCookie,
+      url: getCouchURLWithProtocol(),
+    }).session();
+
+    const username = session.userCtx.name;
+    if (!username) {
+      return res.status(401).json({ ok: false, error: 'Invalid session' });
+    }
+
+    const { email: providedEmail, origin } = req.body;
 
     // Get user doc
     const userDoc = await findUserByUsername(username);
@@ -51,10 +69,12 @@ router.post('/send-verification', (req: Request, res: Response) => {
       return res.status(404).json({ ok: false, error: 'User not found' });
     }
 
-    // Use provided email if available, otherwise lookup in database
+    // Use the provided email if present; otherwise fall back to the address
+    // already on the _users doc — the single source of truth. (CONFIG.email was
+    // a second, divergent copy; it has been retired.)
     let email = providedEmail;
     if (!email) {
-      email = await getUserEmail(username);
+      email = userDoc.email;
       if (!email) {
         return res.status(400).json({
           ok: false,
@@ -72,8 +92,17 @@ router.post('/send-verification', (req: Request, res: Response) => {
     userDoc.verificationTokenExpiresAt = expiresAt;
     userDoc.status = 'pending_verification';
 
-    // Save email to _users doc if not already present (enables findUserByEmail)
-    if (email && !userDoc.email) {
+    // Persist the email onto the _users doc (enables findUserByEmail for
+    // recovery). The caller is session-verified as this account's owner
+    // (see route auth), so an *explicitly provided* address may REPLACE the
+    // stored one — this is how a user corrects a typo'd, still-unverified
+    // email. Uniqueness is not lost: a collision with another account's
+    // address is caught when they attempt to verify it (by_verified_email).
+    // When the address came from a lookup rather than the request body, keep
+    // the original fill-if-absent behaviour.
+    if (providedEmail) {
+      userDoc.email = providedEmail as string;
+    } else if (email && !userDoc.email) {
       userDoc.email = email as string;
     }
 
@@ -119,6 +148,29 @@ router.post('/verify', (req: Request, res: Response) => {
       isTokenExpired(userDoc.verificationTokenExpiresAt)
     ) {
       return res.status(400).json({ ok: false, error: 'Token has expired' });
+    }
+
+    // Invariant: at most one *verified* account per email. This doc isn't
+    // verified yet, so any hit is a DIFFERENT account that already owns the
+    // address. (Not an attacker vector — the verification link is delivered to
+    // the email itself, so only the mailbox owner can reach this point.)
+    if (userDoc.email) {
+      const existingVerified = await findVerifiedUserByEmail(userDoc.email);
+      if (existingVerified && existingVerified.name !== userDoc.name) {
+        // Retire the spent token so it can't dangle; leave this account
+        // pending — study is never gated on verification.
+        userDoc.verificationToken = null;
+        userDoc.verificationTokenExpiresAt = null;
+        await updateUserDoc(userDoc);
+        logger.warn(
+          `Verification blocked for ${userDoc.name}: ${userDoc.email} already verified on another account`
+        );
+        return res.status(409).json({
+          ok: false,
+          error:
+            'This email is already verified on another account. Please sign in to that account instead.',
+        });
+      }
     }
 
     // Update user status
@@ -180,6 +232,58 @@ router.get('/status', (req: Request, res: Response) => {
     } catch (error) {
       logger.error('Error fetching user status:', error);
       res.status(500).json({ ok: false, error: 'Failed to fetch user status' });
+    }
+  })();
+});
+
+/**
+ * POST /auth/resolve-login
+ * Resolve a login identifier (username OR email) to a couch username — but ONLY
+ * when the supplied password is correct.
+ *
+ * Login is browser-direct-to-couch and couch `_session` only accepts a
+ * username, so email login needs an email→username step. Gating that resolution
+ * on the correct password keeps the endpoint from being an account-enumeration
+ * oracle: every failure (unknown identifier, unverified email, wrong password)
+ * returns the same generic error, and the address is verified exactly once
+ * (uniform couch round-trip) to avoid a timing side-channel.
+ *
+ * Only *verified* emails resolve (via by_verified_email; the uniqueness
+ * invariant guarantees a single target) — unverified-email users log in by
+ * username.
+ *
+ * Body params:
+ *   - identifier: string (required) — a username, or an email (contains '@')
+ *   - password: string (required)
+ */
+router.post('/resolve-login', (req: Request, res: Response) => {
+  void (async () => {
+    try {
+      const { identifier, password } = req.body;
+
+      if (!identifier || !password) {
+        return res
+          .status(400)
+          .json({ ok: false, error: 'Identifier and password required' });
+      }
+
+      // Resolve email → username; a username passes through as-is. An email
+      // that doesn't resolve falls back to the raw identifier so the couch auth
+      // below still runs and fails — keeping timing uniform (no existence leak).
+      let username: string = identifier;
+      if (typeof identifier === 'string' && identifier.includes('@')) {
+        const verifiedUser = await findVerifiedUserByEmail(identifier);
+        username = verifiedUser?.name ?? identifier;
+      }
+
+      if (!(await verifyCredentials(username, password))) {
+        return res.status(401).json({ ok: false, error: 'Invalid credentials' });
+      }
+
+      res.json({ ok: true, username });
+    } catch (error) {
+      logger.error('Error resolving login identifier:', error);
+      res.status(500).json({ ok: false, error: 'Failed to resolve login' });
     }
   })();
 });

@@ -209,12 +209,11 @@ Author: ${this.author}
               this.authStore.loginAndRegistration.init = false;
               this.authStore.loginAndRegistration.init = true;
 
-              // Save email to user config if provided
+              // Send verification email if an address was provided. The address
+              // is persisted to the _users doc by send-verification (the single
+              // source of truth); no separate CONFIG.email copy is kept.
               if (this.email) {
                 try {
-                  const currentUser = await getCurrentUser();
-                  await currentUser.setConfig({ email: this.email });
-
                   // Trigger verification email send with current origin
                   const origin = typeof window !== 'undefined' ? window.location.origin : undefined;
                   const verificationResult = await sendVerificationEmail(this.username, this.email, origin);

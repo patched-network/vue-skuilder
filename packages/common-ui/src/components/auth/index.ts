@@ -14,9 +14,11 @@ export {
   sendVerificationEmail,
   verifyEmail,
   getUserStatus,
+  resolveLoginIdentifier,
   requestPasswordReset,
   resetPassword,
   type AuthResponse,
   type VerifyEmailResponse,
   type UserStatusResponse,
+  type ResolveLoginResponse,
 } from '../../services/authAPI';
