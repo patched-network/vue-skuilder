@@ -90,8 +90,17 @@ router.post('/send-verification', (req: Request, res: Response) => {
     userDoc.verificationTokenExpiresAt = expiresAt;
     userDoc.status = 'pending_verification';
 
-    // Save email to _users doc if not already present (enables findUserByEmail)
-    if (email && !userDoc.email) {
+    // Persist the email onto the _users doc (enables findUserByEmail for
+    // recovery). The caller is session-verified as this account's owner
+    // (see route auth), so an *explicitly provided* address may REPLACE the
+    // stored one — this is how a user corrects a typo'd, still-unverified
+    // email. Uniqueness is not lost: a collision with another account's
+    // address is caught when they attempt to verify it (by_verified_email).
+    // When the address came from a lookup rather than the request body, keep
+    // the original fill-if-absent behaviour.
+    if (providedEmail) {
+      userDoc.email = providedEmail as string;
+    } else if (email && !userDoc.email) {
       userDoc.email = email as string;
     }
 
