@@ -25,6 +25,20 @@ export const usersDesignDoc = {
       }`,
     },
     /**
+     * Index *verified* users by email address. Backs the "at most one verified
+     * account per email" invariant enforced at POST /auth/verify.
+     * The _count reduce also serves the pre-enable audit: query with
+     * ?group=true and look for any value > 1 to find pre-existing duplicates.
+     */
+    by_verified_email: {
+      map: `function(doc) {
+        if (doc.type === 'user' && doc.email && doc.status === 'verified') {
+          emit(doc.email, doc._id);
+        }
+      }`,
+      reduce: '_count',
+    },
+    /**
      * Index users by verification token.
      */
     by_verification_token: {

@@ -5,6 +5,7 @@ import {
   findUserByUsername,
   findUserByToken,
   findUserByEmail,
+  findVerifiedUserByEmail,
   getUserEmail,
   updateUserDoc,
 } from '../couchdb/userLookup.js';
@@ -136,6 +137,29 @@ router.post('/verify', (req: Request, res: Response) => {
       isTokenExpired(userDoc.verificationTokenExpiresAt)
     ) {
       return res.status(400).json({ ok: false, error: 'Token has expired' });
+    }
+
+    // Invariant: at most one *verified* account per email. This doc isn't
+    // verified yet, so any hit is a DIFFERENT account that already owns the
+    // address. (Not an attacker vector — the verification link is delivered to
+    // the email itself, so only the mailbox owner can reach this point.)
+    if (userDoc.email) {
+      const existingVerified = await findVerifiedUserByEmail(userDoc.email);
+      if (existingVerified && existingVerified.name !== userDoc.name) {
+        // Retire the spent token so it can't dangle; leave this account
+        // pending — study is never gated on verification.
+        userDoc.verificationToken = null;
+        userDoc.verificationTokenExpiresAt = null;
+        await updateUserDoc(userDoc);
+        logger.warn(
+          `Verification blocked for ${userDoc.name}: ${userDoc.email} already verified on another account`
+        );
+        return res.status(409).json({
+          ok: false,
+          error:
+            'This email is already verified on another account. Please sign in to that account instead.',
+        });
+      }
     }
 
     // Update user status

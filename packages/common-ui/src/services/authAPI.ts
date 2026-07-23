@@ -127,9 +127,17 @@ export async function verifyEmail(token: string): Promise<VerifyEmailResponse> {
     });
 
     if (!response.ok) {
+      // Prefer the server's explanatory message (expired token, email already
+      // verified on another account, …) over a bare HTTP status.
+      let serverError: string | undefined;
+      try {
+        serverError = (await response.json())?.error;
+      } catch {
+        // non-JSON body — fall through to the generic message
+      }
       return {
         ok: false,
-        error: `HTTP ${response.status}: ${response.statusText}`,
+        error: serverError || `HTTP ${response.status}: ${response.statusText}`,
       };
     }
 
