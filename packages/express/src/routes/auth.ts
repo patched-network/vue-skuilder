@@ -29,21 +29,38 @@ const router = express.Router();
 
 /**
  * POST /auth/send-verification
- * Trigger verification email for a newly created account.
+ * Trigger verification email for the *authenticated* account.
+ *
+ * Requires an AuthSession cookie; the account is derived from the session, NOT
+ * from the request body. This endpoint mutates the account's recovery email and
+ * status, so trusting a body-supplied username would let an anonymous caller
+ * overwrite another user's recovery address and hijack it via /request-reset.
  *
  * Body params:
- *   - username: string (required)
  *   - email: string (optional) - If provided, uses this email directly (avoids DB sync race condition)
  *   - origin: string (optional) - Frontend origin URL for constructing verification link
  */
 router.post('/send-verification', (req: Request, res: Response) => {
   void (async () => {
     try {
-    const { username, email: providedEmail, origin } = req.body;
-
-    if (!username) {
-      return res.status(400).json({ ok: false, error: 'Username required' });
+    // Authenticate from the session cookie — never trust a body-supplied
+    // username (see the route doc-comment: it's an account-takeover vector).
+    const authCookie: string = req.cookies?.AuthSession;
+    if (!authCookie) {
+      return res.status(401).json({ ok: false, error: 'Not authenticated' });
     }
+
+    const session: CouchSession = await Nano({
+      cookie: 'AuthSession=' + authCookie,
+      url: getCouchURLWithProtocol(),
+    }).session();
+
+    const username = session.userCtx.name;
+    if (!username) {
+      return res.status(401).json({ ok: false, error: 'Invalid session' });
+    }
+
+    const { email: providedEmail, origin } = req.body;
 
     // Get user doc
     const userDoc = await findUserByUsername(username);
