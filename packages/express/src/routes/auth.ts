@@ -6,7 +6,6 @@ import {
   findUserByToken,
   findUserByEmail,
   findVerifiedUserByEmail,
-  getUserEmail,
   updateUserDoc,
 } from '../couchdb/userLookup.js';
 import { generateSecureToken, getTokenExpiry, isTokenExpired } from '../utils/tokens.js';
@@ -70,10 +69,12 @@ router.post('/send-verification', (req: Request, res: Response) => {
       return res.status(404).json({ ok: false, error: 'User not found' });
     }
 
-    // Use provided email if available, otherwise lookup in database
+    // Use the provided email if present; otherwise fall back to the address
+    // already on the _users doc — the single source of truth. (CONFIG.email was
+    // a second, divergent copy; it has been retired.)
     let email = providedEmail;
     if (!email) {
-      email = await getUserEmail(username);
+      email = userDoc.email;
       if (!email) {
         return res.status(400).json({
           ok: false,
