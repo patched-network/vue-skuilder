@@ -68,6 +68,10 @@ export interface UserStatusResponse extends AuthResponse {
   entitlements?: UserEntitlements;
 }
 
+export interface ResolveLoginResponse extends AuthResponse {
+  username?: string;
+}
+
 /**
  * Triggers verification email send for a newly created account.
  *
@@ -129,6 +133,46 @@ export async function verifyEmail(token: string): Promise<VerifyEmailResponse> {
     if (!response.ok) {
       // Prefer the server's explanatory message (expired token, email already
       // verified on another account, …) over a bare HTTP status.
+      let serverError: string | undefined;
+      try {
+        serverError = (await response.json())?.error;
+      } catch {
+        // non-JSON body — fall through to the generic message
+      }
+      return {
+        ok: false,
+        error: serverError || `HTTP ${response.status}: ${response.statusText}`,
+      };
+    }
+
+    return await response.json();
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : 'Network error',
+    };
+  }
+}
+
+/**
+ * Resolve a login identifier (username OR email) to a couch username, gated on
+ * the correct password. Returns the username only on success; every failure is
+ * a uniform "invalid credentials" (no account-enumeration leak). Used by the
+ * login form before calling user.login() when the identifier is an email.
+ */
+export async function resolveLoginIdentifier(
+  identifier: string,
+  password: string
+): Promise<ResolveLoginResponse> {
+  try {
+    const response = await fetch(`${getApiBase()}/auth/resolve-login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ identifier, password }),
+    });
+
+    if (!response.ok) {
       let serverError: string | undefined;
       try {
         serverError = (await response.json())?.error;

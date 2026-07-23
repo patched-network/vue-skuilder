@@ -11,6 +11,7 @@ import {
 } from '../couchdb/userLookup.js';
 import { generateSecureToken, getTokenExpiry, isTokenExpired } from '../utils/tokens.js';
 import { sendVerificationEmail, sendPasswordResetEmail } from '../services/email.js';
+import { verifyCredentials } from '../couchdb/authentication.js';
 import logger from '../logger.js';
 
 interface CouchSession {
@@ -230,6 +231,58 @@ router.get('/status', (req: Request, res: Response) => {
     } catch (error) {
       logger.error('Error fetching user status:', error);
       res.status(500).json({ ok: false, error: 'Failed to fetch user status' });
+    }
+  })();
+});
+
+/**
+ * POST /auth/resolve-login
+ * Resolve a login identifier (username OR email) to a couch username — but ONLY
+ * when the supplied password is correct.
+ *
+ * Login is browser-direct-to-couch and couch `_session` only accepts a
+ * username, so email login needs an email→username step. Gating that resolution
+ * on the correct password keeps the endpoint from being an account-enumeration
+ * oracle: every failure (unknown identifier, unverified email, wrong password)
+ * returns the same generic error, and the address is verified exactly once
+ * (uniform couch round-trip) to avoid a timing side-channel.
+ *
+ * Only *verified* emails resolve (via by_verified_email; the uniqueness
+ * invariant guarantees a single target) — unverified-email users log in by
+ * username.
+ *
+ * Body params:
+ *   - identifier: string (required) — a username, or an email (contains '@')
+ *   - password: string (required)
+ */
+router.post('/resolve-login', (req: Request, res: Response) => {
+  void (async () => {
+    try {
+      const { identifier, password } = req.body;
+
+      if (!identifier || !password) {
+        return res
+          .status(400)
+          .json({ ok: false, error: 'Identifier and password required' });
+      }
+
+      // Resolve email → username; a username passes through as-is. An email
+      // that doesn't resolve falls back to the raw identifier so the couch auth
+      // below still runs and fails — keeping timing uniform (no existence leak).
+      let username: string = identifier;
+      if (typeof identifier === 'string' && identifier.includes('@')) {
+        const verifiedUser = await findVerifiedUserByEmail(identifier);
+        username = verifiedUser?.name ?? identifier;
+      }
+
+      if (!(await verifyCredentials(username, password))) {
+        return res.status(401).json({ ok: false, error: 'Invalid credentials' });
+      }
+
+      res.json({ ok: true, username });
+    } catch (error) {
+      logger.error('Error resolving login identifier:', error);
+      res.status(500).json({ ok: false, error: 'Failed to resolve login' });
     }
   })();
 });

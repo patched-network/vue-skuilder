@@ -6,10 +6,10 @@
       <v-form onsubmit="return false;" @submit.prevent="login">
         <v-text-field
           id=""
-          v-model="username"
+          v-model="identifier"
           autofocus
           name="username"
-          label="Username"
+          label="Username or email"
           prepend-icon="mdi-account-circle"
         ></v-text-field>
         <v-text-field
@@ -67,6 +67,7 @@ import { Status } from '@vue-skuilder/common';
 import { User } from '@vue-skuilder/db';
 import { getCurrentUser, useAuthStore } from '../../stores/useAuthStore';
 import { useConfigStore } from '../../stores/useConfigStore';
+import { resolveLoginIdentifier } from '../../services/authAPI';
 
 // Define props
 interface Props {
@@ -89,7 +90,8 @@ const route = useRoute();
 const authStore = useAuthStore();
 const configStore = useConfigStore();
 
-const username = ref('');
+// Holds a username OR an email address (see login()).
+const identifier = ref('');
 const password = ref('');
 const passwordVisible = ref(false);
 const awaitingResponse = ref(false);
@@ -120,7 +122,7 @@ const initBadLogin = () => {
 const login = async () => {
   awaitingResponse.value = true;
   log('Starting login attempt');
-  log(`Login attempt for username: ${username.value}`);
+  log(`Login attempt for identifier: ${identifier.value}`);
 
   try {
     log('Attempting to get User instance');
@@ -128,7 +130,23 @@ const login = async () => {
     user.value = await getCurrentUser();
     log('Got User instance, attempting login');
 
-    await user.value.login(username.value, password.value);
+    // Couch _session authenticates by username only. When the identifier is an
+    // email, resolve it to the account username first — server-side and gated
+    // on the correct password, so it can't be used to enumerate accounts. A
+    // plain username is passed straight through.
+    let loginName = identifier.value;
+    if (identifier.value.includes('@')) {
+      const resolved = await resolveLoginIdentifier(identifier.value, password.value);
+      if (!resolved.ok || !resolved.username) {
+        log('Email identifier did not resolve (bad credentials)');
+        initBadLogin();
+        awaitingResponse.value = false;
+        return;
+      }
+      loginName = resolved.username;
+    }
+
+    await user.value.login(loginName, password.value);
     log('Login successful');
 
     // load user config
