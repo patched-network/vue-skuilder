@@ -70,6 +70,16 @@ export interface UserStatusResponse extends AuthResponse {
 
 export interface ResolveLoginResponse extends AuthResponse {
   username?: string;
+  /**
+   * HTTP status of the resolve call on failure, so callers can distinguish a
+   * genuine credential rejection from a system/service failure. The server
+   * returns a uniform 401 for every real auth failure (unknown identifier,
+   * unverified email, wrong password — no enumeration leak); anything else
+   * (404 = route not deployed, 5xx, or `undefined` for a network error) means
+   * the resolver itself is unavailable, not that the credentials were wrong.
+   * Undefined on success.
+   */
+  status?: number;
 }
 
 /**
@@ -181,12 +191,15 @@ export async function resolveLoginIdentifier(
       }
       return {
         ok: false,
+        status: response.status,
         error: serverError || `HTTP ${response.status}: ${response.statusText}`,
       };
     }
 
     return await response.json();
   } catch (error) {
+    // Network / fetch failure — no HTTP status. Left undefined so callers treat
+    // it as a system failure, not a credential rejection.
     return {
       ok: false,
       error: error instanceof Error ? error.message : 'Network error',
