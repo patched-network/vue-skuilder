@@ -76,7 +76,23 @@ jobs:
       - name: Restart Express backend service
         run: |
           echo "Restarting Express backend service..."
-          ssh ${{ secrets.DO_USERNAME }}@eduquilt.com "sudo systemctl restart express-backend || echo 'Service not found - will need manual setup'"
+          # A previous '|| echo' mask here let a failed restart (non-interactive
+          # sudo needs a password on the box, so it exits non-zero) pass as green
+          # — the service ran a stale build for ~6 months undetected. No mask now:
+          # a failed restart fails the job, and we assert the process actually
+          # cycled by comparing MainPID before/after.
+          SVC=express-backend
+          HOST=${{ secrets.DO_USERNAME }}@eduquilt.com
+          BEFORE=$(ssh "$HOST" "systemctl show $SVC -p MainPID --value")
+          echo "MainPID before restart: $BEFORE"
+          ssh "$HOST" "sudo systemctl restart $SVC"
+          AFTER=$(ssh "$HOST" "systemctl show $SVC -p MainPID --value")
+          echo "MainPID after restart:  $AFTER"
+          if [ "$AFTER" = "$BEFORE" ] || [ "$AFTER" = "0" ]; then
+            echo "::error::$SVC did not restart (MainPID unchanged or service down) — check passwordless sudo for 'systemctl restart $SVC' on the host"
+            ssh "$HOST" "systemctl status $SVC --no-pager || true"
+            exit 1
+          fi
 
       - name: Health check
         run: |

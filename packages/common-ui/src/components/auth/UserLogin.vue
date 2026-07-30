@@ -26,7 +26,7 @@
         ></v-text-field>
 
         <v-snackbar v-model="badLoginAttempt" location="bottom right" :timeout="errorTimeout">
-          Username or password was incorrect.
+          {{ errorMessage }}
           <v-btn color="pink" variant="text" @click="badLoginAttempt = false">Close</v-btn>
         </v-snackbar>
 
@@ -97,6 +97,15 @@ const passwordVisible = ref(false);
 const awaitingResponse = ref(false);
 const badLoginAttempt = ref(false);
 const errorTimeout = ref(7000);
+const errorMessage = ref('Username or password was incorrect.');
+
+// Shown when the email→username resolver is unreachable (route missing / 5xx /
+// network) rather than when credentials are actually wrong. Telling the two
+// apart matters: "wrong password" sends the user to re-check what is in fact
+// correct, and hides a real backend outage.
+const BAD_CREDENTIALS_MSG = 'Username or password was incorrect.';
+const LOGIN_UNAVAILABLE_MSG =
+  'Login is temporarily unavailable. Please try again in a moment.';
 const user = ref<User | undefined>(undefined);
 
 const loginRoute = computed(() => route.name === 'login');
@@ -106,11 +115,12 @@ const buttonStatus = computed(() => ({
   text: badLoginAttempt.value ? 'Try again' : 'Log In',
 }));
 
-const initBadLogin = () => {
+const initBadLogin = (message: string = BAD_CREDENTIALS_MSG) => {
+  errorMessage.value = message;
   badLoginAttempt.value = true;
 
   alertUser({
-    text: 'Username or password was incorrect.',
+    text: message,
     status: Status.error,
     timeout: errorTimeout.value,
   });
@@ -138,8 +148,16 @@ const login = async () => {
     if (identifier.value.includes('@')) {
       const resolved = await resolveLoginIdentifier(identifier.value, password.value);
       if (!resolved.ok || !resolved.username) {
-        log('Email identifier did not resolve (bad credentials)');
-        initBadLogin();
+        // 401 is the server's uniform "real auth failure" code; anything else
+        // (404 = route not deployed, 5xx, or no status = network) means the
+        // resolver is unavailable, not that the credentials were wrong.
+        if (resolved.status === 401) {
+          log('Email identifier did not resolve: invalid credentials');
+          initBadLogin();
+        } else {
+          log(`Email login unavailable (resolver error: ${resolved.error ?? 'network'})`);
+          initBadLogin(LOGIN_UNAVAILABLE_MSG);
+        }
         awaitingResponse.value = false;
         return;
       }
