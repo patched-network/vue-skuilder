@@ -302,7 +302,7 @@ export class CourseDB implements CourseDBInterface {
     elo = parseInt(elo as any);
     const limit = cardLimit ? cardLimit : 25;
 
-    // const tQ0 = performance.now();
+    const tQ0 = performance.now(); // [perf] re-enabled 2026-07 (todo-replan-db-perf) — the suspected view re-index cost
     // NOTE: `stale: 'update_after'` was tried here and removed — it gave no
     // measurable speedup (PouchDB 9 effectively ignores it for the reindex
     // cost) AND it can return an empty result on the first query after a cold
@@ -314,7 +314,7 @@ export class CourseDB implements CourseDBInterface {
       startkey: elo,
       descending: true,
     });
-    // const tBelowQ = performance.now();
+    const tBelowQ = performance.now();
 
     const aboveLimit = limit - below.rows.length;
 
@@ -322,13 +322,13 @@ export class CourseDB implements CourseDBInterface {
       limit: aboveLimit,
       startkey: elo + 1,
     });
-    // const tAbove = performance.now();
-    // [perf] parked: getCardsByELO view-query timing (below/above split)
-    // logger.info(
-      // `[perf][getCardsByELO] reqLimit=${limit} ` +
-        // `below=${(tBelowQ - tQ0).toFixed(0)}ms(${below.rows.length}r) ` +
-        // `above=${(tAbove - tBelowQ).toFixed(0)}ms(${above.rows.length}r)`
-    // );
+    const tAbove = performance.now();
+    // [perf] re-enabled 2026-07 (todo-replan-db-perf): getCardsByELO view-query timing (below/above split)
+    logger.info(
+      `[perf][getCardsByELO] reqLimit=${limit} ` +
+        `below=${(tBelowQ - tQ0).toFixed(0)}ms(${below.rows.length}r) ` +
+        `above=${(tAbove - tBelowQ).toFixed(0)}ms(${above.rows.length}r)`
+    );
 
     let cards = below.rows;
     cards = cards.concat(above.rows);
@@ -716,22 +716,21 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
     const u = await this._getCurrentUser();
 
     try {
-      // const tNav0 = performance.now(); // [perf] parked
-      const { navigator } = await this._getCachedNavigator(u);
-      // const tNav1 = performance.now(); // [perf] parked
+      const tNav0 = performance.now(); // [perf] re-enabled 2026-07 (todo-replan-db-perf)
+      const { navigator, cacheStatus: navCache } = await this._getCachedNavigator(u);
+      const tNav1 = performance.now();
       if (this._pendingHints) {
         navigator.setEphemeralHints(this._pendingHints);
         this._pendingHints = null;
       }
       const result = await navigator.getWeightedCards(limit);
-      // const tRun = performance.now(); // [perf] parked
-      // [perf] parked 2026-05 (pipeline-docs-workup) — uncomment to re-measure
-      // logger.info(
-        // `[perf][courseDB] getWeightedCards(limit=${limit}): ` +
-          // `navigator=${(tNav1 - tNav0).toFixed(0)}ms(${navCache}) ` +
-          // `pipelineRun=${(tRun - tNav1).toFixed(0)}ms ` +
-          // `total=${(tRun - tNav0).toFixed(0)}ms`
-      // );
+      const tRun = performance.now();
+      logger.info(
+        `[perf][courseDB] getWeightedCards(limit=${limit}): ` +
+          `navigator=${(tNav1 - tNav0).toFixed(0)}ms(${navCache}) ` +
+          `pipelineRun=${(tRun - tNav1).toFixed(0)}ms ` +
+          `total=${(tRun - tNav0).toFixed(0)}ms`
+      );
       return result;
     } catch (e) {
       logger.error(`[courseDB] Error getting weighted cards: ${e}`);
@@ -780,9 +779,8 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
     },
     filter?: (a: QualifiedCardID) => boolean
   ): Promise<StudySessionItem[]> {
-    // [perf] parked: getCardsCenteredAtELO rewrite banner
-    // logger.info('[perf][run] getCardsCenteredAtELO rewrite (session pool cache + in-memory recenter)');
-    // const tCelo0 = performance.now();
+    // [perf] re-enabled 2026-07 (todo-replan-db-perf): pool-cache hit/miss is the I/O-vs-cache tell
+    const tCelo0 = performance.now();
     let targetElo: number;
 
     if (options.elo === 'user') {
@@ -805,7 +803,7 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
       targetElo = options.elo;
     }
 
-    // const tReg = performance.now();
+    const tReg = performance.now(); // [perf] re-enabled 2026-07
 
     // Broad neighbor pool fetched once per session and re-used. We over-fetch
     // (POOL_SIZE >> limit) so that the in-memory active-card filter and the
@@ -856,13 +854,13 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
       cacheStatus = 'refresh';
     }
 
-    // [perf] parked: centeredAtELO regDoc / pool-cache timing
-    // logger.info(
-      // `[perf][centeredAtELO] regDoc=${(tReg - tCelo0).toFixed(0)}ms ` +
-        // `cache=${cacheStatus} build=${(performance.now() - tReg).toFixed(0)}ms ` +
-        // `poolRaw=${this._eloPoolCache?.rows.length ?? 0} postFilter=${cards.length} ` +
-        // `limit=${options.limit} targetElo=${targetElo}`
-    // );
+    // [perf] re-enabled 2026-07 (todo-replan-db-perf): regDoc read vs pool build, with cache status
+    logger.info(
+      `[perf][centeredAtELO] regDoc=${(tReg - tCelo0).toFixed(0)}ms ` +
+        `cache=${cacheStatus} build=${(performance.now() - tReg).toFixed(0)}ms ` +
+        `poolRaw=${this._eloPoolCache?.rows.length ?? 0} postFilter=${cards.length} ` +
+        `limit=${options.limit} targetElo=${targetElo}`
+    );
 
     const selectedCards: {
       courseID: string;

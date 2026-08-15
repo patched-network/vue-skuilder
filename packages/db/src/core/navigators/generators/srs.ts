@@ -144,11 +144,11 @@ export default class SRSNavigator extends ContentNavigator implements CardGenera
       throw new Error('SRSNavigator requires user and course to be set');
     }
 
-    // [perf] parked 2026-05 (pipeline-docs-workup) — uncomment to re-measure
-    // const tSrs0 = performance.now();
+    // [perf] re-enabled 2026-07 (todo-replan-db-perf): review-path cost (getPendingReviews)
+    const tSrs0 = performance.now();
     const courseId = this.course.getCourseID();
     const reviews = await this.user.getPendingReviews(courseId);
-    // const tReviews = performance.now();
+    const tReviews = performance.now();
     const now = moment.utc();
 
     // Filter to only cards that are actually due
@@ -263,13 +263,12 @@ export default class SRSNavigator extends ContentNavigator implements CardGenera
       timestamp: Date.now(),
     });
 
-    // [perf] parked: SRSgen / getPendingReviews timing
-    // const srsResult = { cards: sorted.slice(0, limit) };
-    // logger.info(
-    //   `[perf][SRSgen] total=${(performance.now() - tSrs0).toFixed(0)}ms ` +
-    //     `(pendingReviews=${(tReviews - tSrs0).toFixed(0)}) ` +
-    //     `[scheduled=${reviews.length} due=${dueReviews.length}]`
-    // );
+    // [perf] re-enabled 2026-07 (todo-replan-db-perf): SRSgen / getPendingReviews timing
+    logger.info(
+      `[perf][SRSgen] total=${(performance.now() - tSrs0).toFixed(0)}ms ` +
+        `(pendingReviews=${(tReviews - tSrs0).toFixed(0)}) ` +
+        `[scheduled=${reviews.length} due=${dueReviews.length}]`
+    );
     return { cards: sorted.slice(0, limit) };
   }
 
