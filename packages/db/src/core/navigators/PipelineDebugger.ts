@@ -79,6 +79,15 @@ export interface FilterImpact {
  */
 export interface PipelineRunReport {
   runId: string;
+  /**
+   * The study session this run belongs to, if the run happened inside one.
+   *
+   * Runs were always *implicitly* session-scoped — `clearStaleSessionDebugState()`
+   * wipes the buffer at each session start — but carried no label, so a run
+   * could not be joined to the responses it produced. Absent for runs fired
+   * outside a session (forecasts, studio/editor probes).
+   */
+  sessionId?: string;
   timestamp: Date;
   courseId: string;
   courseName?: string;
@@ -156,6 +165,56 @@ const MAX_RUNS = 10;
 const runHistory: PipelineRunReport[] = [];
 
 /**
+ * Session id stamped onto captured runs.
+ *
+ * Module-level rather than threaded through `Pipeline` because a pipeline is
+ * constructed per content-source and can outlive/predate any one session,
+ * while "which session is running right now" is genuinely ambient — the same
+ * reason `registerPipelineForDebug` is shaped this way. Set by
+ * `SessionController` at construction; cleared when the session ends.
+ */
+let _currentSessionId: string | undefined;
+
+/** Set (or clear, with `undefined`) the session id stamped onto captured runs. */
+export function setDebugSessionId(sessionId: string | undefined): void {
+  _currentSessionId = sessionId;
+}
+
+/**
+ * Runs captured since the last drain.
+ *
+ * A single "plan" at the session level can be several pipeline runs — one per
+ * content source — and the *label* for those runs ('bootstrap',
+ * 'auto:depletion', 'wedge-breaker', …) is known to `SessionController`, not
+ * to the pipeline. So rather than threading the label down, the controller
+ * drains what was captured immediately after each plan and applies its own
+ * label. Bounded in practice by being drained every plan.
+ */
+let _pendingRuns: PipelineRunReport[] = [];
+
+/**
+ * Take (and clear) the runs captured since the previous call, in execution
+ * order. See {@link _pendingRuns} for why this exists.
+ */
+export function drainCapturedRuns(): PipelineRunReport[] {
+  const drained = _pendingRuns;
+  _pendingRuns = [];
+  return drained;
+}
+
+/**
+ * Pipeline runs captured for `sessionId`, oldest first.
+ *
+ * `runHistory` is newest-first and bounded at {@link MAX_RUNS}; this returns
+ * execution order, which is what a session-level reader wants. A long session
+ * can push its earliest runs out of the buffer — the durable per-run summary
+ * on `StudySessionDoc.runs` is the complete record.
+ */
+export function getRunsForSession(sessionId: string): PipelineRunReport[] {
+  return runHistory.filter((r) => r.sessionId === sessionId).reverse();
+}
+
+/**
  * Cap on non-selected ("discarded") cards retained per run report.
  *
  * Pipeline candidate pools are typically hundreds of cards (ELO window pull
@@ -177,6 +236,7 @@ const DISCARDED_KEEP_TOP = 25;
  */
 export function clearRunHistory(): void {
   runHistory.length = 0;
+  _pendingRuns = [];
 }
 
 /**
@@ -196,10 +256,13 @@ function getOrigin(card: WeightedCard): 'new' | 'review' | 'unknown' {
 /**
  * Capture a pipeline run for later inspection.
  */
-export function captureRun(report: Omit<PipelineRunReport, 'runId' | 'timestamp'>): void {
+export function captureRun(
+  report: Omit<PipelineRunReport, 'runId' | 'timestamp' | 'sessionId'>
+): PipelineRunReport {
   const fullReport: PipelineRunReport = {
     ...report,
     runId: `run-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    sessionId: _currentSessionId,
     timestamp: new Date(),
   };
 
@@ -207,6 +270,11 @@ export function captureRun(report: Omit<PipelineRunReport, 'runId' | 'timestamp'
   if (runHistory.length > MAX_RUNS) {
     runHistory.pop();
   }
+  _pendingRuns.push(fullReport);
+
+  // Returned so the caller can record a durable summary of the run without
+  // re-deriving the id.
+  return fullReport;
 }
 
 /**

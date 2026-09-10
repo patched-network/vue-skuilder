@@ -8,6 +8,7 @@ import { CourseElo, Status } from '@vue-skuilder/common';
 import { Moment } from 'moment';
 import { CardHistory, CardRecord, QualifiedCardID } from '../types/types-legacy';
 import { UserOutcomeRecord } from '../types/userOutcome';
+import { StudySessionDoc } from '../types/studySession';
 import { UserConfig } from '../types/user';
 import { UserHydrationStatus } from '../types/hydration';
 import { DocumentUpdater } from '@db/study';
@@ -78,6 +79,15 @@ export interface UserDBReader {
    * Get user's pending reviews
    */
   getPendingReviews(courseId?: string): Promise<ScheduledCard[]>;
+
+  /**
+   * All study-session records for a course, newest session-start first.
+   *
+   * The read counterpart to `putStudySession`. Sessions are the join target
+   * for `CardRecord.sessionId`, so this is the entry point for "replay what
+   * the navigator did across this learner's last N sittings".
+   */
+  getStudySessions(courseId?: string): Promise<StudySessionDoc[]>;
 
   /**
    * Get all scheduled reviews due within the next `daysCount` days —
@@ -215,6 +225,16 @@ export interface UserDBWriter extends DocumentUpdater {
    * Record a user learning outcome for evolutionary orchestration.
    */
   putUserOutcome(record: UserOutcomeRecord): Promise<void>;
+
+  /**
+   * Write (or overwrite) a study-session record.
+   *
+   * Called twice per session by `SessionController` — once at
+   * `prepareSession()` with `status: 'open'`, once at termination with the
+   * close-side fields filled in. The id is stable across both writes, so the
+   * second is a plain overwrite.
+   */
+  putStudySession(doc: StudySessionDoc): Promise<void>;
 }
 
 /**

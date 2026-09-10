@@ -1,4 +1,4 @@
-import type { ReplanHints, OutcomeObserver } from '@vue-skuilder/db';
+import type { ReplanHints, OutcomeObserver, SessionStateSnapshotProvider } from '@vue-skuilder/db';
 
 /**
  * Misc. config for a study StudySessionConfig
@@ -44,6 +44,23 @@ export type StudySessionConfig = {
    * session hints, request a replan). See `OutcomeObserver` in `@vue-skuilder/db`.
    */
   outcomeObservers?: OutcomeObserver[];
+
+  /**
+   * Optional hook for a thin learner-state snapshot, invoked once at session
+   * open and once at close and stored on the session's `StudySessionDoc`.
+   *
+   * Exists so post-hoc navigation-strategy work can ask "given *this* state,
+   * what did the pipeline choose, and did the sitting go well?" — the question
+   * card records alone can't answer, since they carry outcomes but no
+   * before-picture.
+   *
+   * Keep the returned object small (counts, ids, scores). See
+   * `SessionStateSnapshot` in `@vue-skuilder/db` for why a full user-state
+   * dump is the wrong thing here. The provider is time-boxed and error-isolated
+   * by the controller; a slow or throwing one degrades the record, not the
+   * learner's session.
+   */
+  sessionStateSnapshot?: SessionStateSnapshotProvider;
 };
 
 /**

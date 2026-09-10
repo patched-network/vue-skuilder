@@ -113,6 +113,7 @@ import {
 import confetti from 'canvas-confetti';
 
 import { StudySessionConfig, CardTransitionPreset, CardTransitionMode } from './StudySession.types';
+import type { SessionStateSnapshotProvider } from '@vue-skuilder/db';
 
 interface StudyRefs {
   shadowWrapper: HTMLDivElement;
@@ -273,6 +274,20 @@ export default defineComponent({
     console.log('[StudySession] InitSession completed in created hook');
   },
 
+  beforeUnmount() {
+    // Close the session record as `abandoned` when the study view is torn down
+    // mid-session (route change, parent v-if). `endSession` is idempotent, so
+    // a session that already ended naturally keeps its `closed` status; only a
+    // genuinely-interrupted one is marked here. Without this, walking away
+    // would be indistinguishable from closing the tab.
+    if (this.sessionController && !this.sessionFinished) {
+      void this.sessionController.endSession('abandoned');
+    }
+    if (this.intervalHandler) {
+      clearInterval(this.intervalHandler);
+    }
+  },
+
   errorCaptured(err: unknown, _instance: unknown, info: string) {
     console.error(`[StudySession] Card render error (${info}), skipping card "${this.cardID}":`, err);
     if (this.sessionController) {
@@ -399,12 +414,25 @@ export default defineComponent({
         const scOptions: {
           defaultBatchLimit?: number;
           outcomeObservers?: OutcomeObserver[];
+          courseId?: string;
+          stateSnapshotProvider?: SessionStateSnapshotProvider;
         } = {};
         if (this.sessionConfig?.defaultBatchLimit !== undefined) {
           scOptions.defaultBatchLimit = this.sessionConfig.defaultBatchLimit;
         }
         if (this.sessionConfig?.outcomeObservers?.length) {
           scOptions.outcomeObservers = this.sessionConfig.outcomeObservers;
+        }
+        // Course the durable session record is filed under. A session can span
+        // several sources; the first course-type one is the owner for
+        // record-keeping (classroom sources study a course's content anyway).
+        // Absent it, the controller runs without session recording.
+        const recordingCourseId = this.contentSources.find((s) => s.type === 'course')?.id;
+        if (recordingCourseId) {
+          scOptions.courseId = recordingCourseId;
+        }
+        if (this.sessionConfig?.sessionStateSnapshot) {
+          scOptions.stateSnapshotProvider = this.sessionConfig.sessionStateSnapshot;
         }
 
         this.sessionController = markRaw(
@@ -487,6 +515,11 @@ export default defineComponent({
 
       r.cardID = this.cardID;
       r.courseID = this.courseID;
+      // Stamp the session identity here — the single chokepoint every response
+      // passes through on its way to `putCardRecord`. This is what lets a
+      // `cardH-*` record be grouped back into the sitting that produced it,
+      // instead of that grouping being re-derived from timestamp gaps.
+      r.sessionId = this.sessionController?.sessionId;
       this.currentCard.records.push(r);
 
       console.log(`[StudySession] StudySession.processResponse is running...`);
