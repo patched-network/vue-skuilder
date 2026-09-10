@@ -1,5 +1,6 @@
 import { DocType, DocTypePrefixes } from './types-legacy';
 import type { ReplanHints } from '../navigators/generators/types';
+import type { GeneratorSummary, FilterImpact } from '../navigators/PipelineDebugger';
 
 /**
  * Durable per-sitting record. Join target for `CardRecord.sessionId`.
@@ -69,6 +70,30 @@ export interface StudySessionRunSummary {
   finalCount: number;
   reviewsSelected: number;
   newSelected: number;
+
+  // --- Detail projected from PipelineRunReport at record time ------------
+  // These make a run self-explanatory after the in-memory ring buffer that
+  // holds the full `PipelineRunReport` has rolled over (MAX_RUNS=10) — which
+  // is almost always, by the time anyone reads a persisted session. The
+  // multi-KB per-card provenance trail is deliberately NOT persisted; only
+  // the compact phase summaries are. All optional: absent on runs recorded
+  // before this shipped, and on any run whose report lacked the field.
+
+  /** User's global ELO at the moment this run's pipeline executed. */
+  userElo?: number;
+  /** Per-generator contribution (name, card/new/review counts, top score). */
+  generators?: GeneratorSummary[];
+  /** Per-filter impact (boosted / penalized / passed / removed). */
+  filters?: FilterImpact[];
+  /** Ephemeral replan hints in force for this run (what the navigator was told). */
+  hints?: ReplanHints;
+  /** Compact summary of the scored-but-dropped candidate tail. */
+  discardedTail?: {
+    count: number;
+    scoreRange?: [number, number];
+    eloRange?: [number, number];
+    note: string;
+  };
 }
 
 /**
