@@ -59,6 +59,7 @@ export interface SessionDrawnCardDebug {
 
 /** Live snapshot of the controller, read fresh on each overlay tick. */
 export interface SessionDebugSnapshot {
+  sessionId: string;
   secondsRemaining: number;
   hasCardGuarantee: boolean;
   minCardsGuarantee: number;

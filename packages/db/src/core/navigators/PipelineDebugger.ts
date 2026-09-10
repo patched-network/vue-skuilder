@@ -79,6 +79,8 @@ export interface FilterImpact {
  */
 export interface PipelineRunReport {
   runId: string;
+  /** Absent for runs fired outside a session (forecasts, editor probes). */
+  sessionId?: string;
   timestamp: Date;
   courseId: string;
   courseName?: string;
@@ -156,6 +158,38 @@ const MAX_RUNS = 10;
 const runHistory: PipelineRunReport[] = [];
 
 /**
+ * Ambient, like `registerPipelineForDebug` — a pipeline is per content-source
+ * and can outlive any one session. Set by `SessionController`.
+ */
+let _currentSessionId: string | undefined;
+
+export function setDebugSessionId(sessionId: string | undefined): void {
+  _currentSessionId = sessionId;
+}
+
+/**
+ * Runs captured since the last drain. `SessionController` drains after each
+ * plan and applies its own label — one plan can be several runs (one per
+ * source), and the label is the controller's knowledge, not the pipeline's.
+ */
+let _pendingRuns: PipelineRunReport[] = [];
+
+/** Take and clear the runs captured since the previous call, in execution order. */
+export function drainCapturedRuns(): PipelineRunReport[] {
+  const drained = _pendingRuns;
+  _pendingRuns = [];
+  return drained;
+}
+
+/**
+ * Runs for `sessionId`, oldest first. Bounded by {@link MAX_RUNS} — the
+ * complete record is `StudySessionDoc.runs`.
+ */
+export function getRunsForSession(sessionId: string): PipelineRunReport[] {
+  return runHistory.filter((r) => r.sessionId === sessionId).reverse();
+}
+
+/**
  * Cap on non-selected ("discarded") cards retained per run report.
  *
  * Pipeline candidate pools are typically hundreds of cards (ELO window pull
@@ -177,6 +211,7 @@ const DISCARDED_KEEP_TOP = 25;
  */
 export function clearRunHistory(): void {
   runHistory.length = 0;
+  _pendingRuns = [];
 }
 
 /**
@@ -196,10 +231,13 @@ function getOrigin(card: WeightedCard): 'new' | 'review' | 'unknown' {
 /**
  * Capture a pipeline run for later inspection.
  */
-export function captureRun(report: Omit<PipelineRunReport, 'runId' | 'timestamp'>): void {
+export function captureRun(
+  report: Omit<PipelineRunReport, 'runId' | 'timestamp' | 'sessionId'>
+): PipelineRunReport {
   const fullReport: PipelineRunReport = {
     ...report,
     runId: `run-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    sessionId: _currentSessionId,
     timestamp: new Date(),
   };
 
@@ -207,6 +245,8 @@ export function captureRun(report: Omit<PipelineRunReport, 'runId' | 'timestamp'
   if (runHistory.length > MAX_RUNS) {
     runHistory.pop();
   }
+  _pendingRuns.push(fullReport);
+  return fullReport;
 }
 
 /**

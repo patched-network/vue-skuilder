@@ -1,4 +1,4 @@
-import type { ReplanHints, OutcomeObserver } from '@vue-skuilder/db';
+import type { ReplanHints, OutcomeObserver, SessionStateSnapshotProvider } from '@vue-skuilder/db';
 
 /**
  * Misc. config for a study StudySessionConfig
@@ -44,6 +44,13 @@ export type StudySessionConfig = {
    * session hints, request a replan). See `OutcomeObserver` in `@vue-skuilder/db`.
    */
   outcomeObservers?: OutcomeObserver[];
+
+  /**
+   * Thin learner-state snapshot taken at session open and close, stored on the
+   * session's `StudySessionDoc`. Keep the returned object small — counts, ids,
+   * scores. Time-boxed and error-isolated by the controller.
+   */
+  sessionStateSnapshot?: SessionStateSnapshotProvider;
 };
 
 /**

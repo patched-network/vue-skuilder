@@ -13,6 +13,15 @@ import {
 } from '@db/impl/couch';
 
 import { CardRecord, CardHistory, CourseRegistrationDoc, QuestionRecord, isQuestionRecord } from '@db/core';
+import { DocType } from '@db/core/types/types-legacy';
+import {
+  makeStudySessionId,
+  newSessionId,
+  type SessionStateSnapshot,
+  type SessionStateSnapshotProvider,
+  type StudySessionDoc,
+  type StudySessionRunSummary,
+} from '@db/core/types/studySession';
 import { recordUserOutcome } from '@db/core/orchestration/recording';
 import { Loggable } from '@db/util';
 import {
@@ -20,6 +29,8 @@ import {
   WeightedCard,
   getSrsBacklogDebug,
   getStrategyPressureDebug,
+  setDebugSessionId,
+  drainCapturedRuns,
 } from '@db/core/navigators';
 import { ReplanHints } from '@db/core/navigators/generators/types';
 import { mergeHints } from '@db/core/navigators/Pipeline';
@@ -349,6 +360,30 @@ export class SessionController<TView = unknown> extends Loggable {
    */
   private _sessionControls: SessionControls | null = null;
 
+  /**
+   * Minted at construction so the bootstrap pipeline run in `prepareSession()`
+   * can carry it. Stamped onto every CardRecord and pipeline run this session.
+   */
+  public readonly sessionId: string;
+
+  /** Host-supplied. Without it, no durable session doc is written. */
+  private _courseId?: string;
+  private _stateSnapshotProvider?: SessionStateSnapshotProvider;
+
+  private _sessionDoc: StudySessionDoc | null = null;
+
+  /**
+   * Awaited by the close path — the open write is slow (time-boxed snapshot)
+   * and would otherwise land last, leaving a finished session marked `open`.
+   */
+  private _openDocPromise: Promise<void> | null = null;
+
+  private _runLog: StudySessionRunSummary[] = [];
+  private static readonly MAX_LOGGED_RUNS = 100;
+
+  /** Guards `endSession()` against the several termination paths racing it. */
+  private _sessionClosed: boolean = false;
+
   private startTime: Date;
   private endTime: Date;
   private _secondsRemaining: number;
@@ -390,9 +425,15 @@ export class SessionController<TView = unknown> extends Loggable {
     options?: {
       defaultBatchLimit?: number;
       outcomeObservers?: OutcomeObserver[];
+      /** Omit to run without durable session recording. */
+      courseId?: string;
+      stateSnapshotProvider?: SessionStateSnapshotProvider;
     }
   ) {
     super();
+
+    this.sessionId = newSessionId();
+    setDebugSessionId(this.sessionId);
 
     this.dataLayer = dataLayer;
     this.mixer = mixer || new QuotaRoundRobinMixer();
@@ -420,8 +461,11 @@ export class SessionController<TView = unknown> extends Loggable {
     if (options?.outcomeObservers?.length) {
       this._outcomeObservers = [...options.outcomeObservers];
     }
+    this._courseId = options?.courseId;
+    this._stateSnapshotProvider = options?.stateSnapshotProvider;
 
     this.log(`Session constructed:
+    sessionId: ${this.sessionId}
     startTime: ${this.startTime}
     endTime: ${this.endTime}
     defaultBatchLimit: ${this._defaultBatchLimit}`);
@@ -485,6 +529,7 @@ export class SessionController<TView = unknown> extends Loggable {
     clearStaleSessionDebugState();
 
     const wellIndicated = await this.getWeightedContent();
+    this._recordRuns('bootstrap');
     this._wellIndicatedRemaining = wellIndicated;
     if (wellIndicated >= 0 && wellIndicated < SessionController.MIN_WELL_INDICATED) {
       this.log(
@@ -494,11 +539,79 @@ export class SessionController<TView = unknown> extends Loggable {
     await this.hydrationService.ensureHydratedCards();
 
     // Start session tracking for debugging
-    startSessionTracking(this.supplyQ.length, this.failedQ.length);
+    startSessionTracking(this.sessionId, this.supplyQ.length, this.failedQ.length);
+
+    // Not awaited — a session must never block on an analytics write.
+    this._openDocPromise = this._openSessionDoc();
 
     this._intervalHandle = setInterval(() => {
       this.tick();
     }, 1000);
+  }
+
+  /** Label the runs the last plan produced. The pipeline can't know the why. */
+  private _recordRuns(label: string, mode?: string): void {
+    for (const run of drainCapturedRuns()) {
+      if (this._runLog.length >= SessionController.MAX_LOGGED_RUNS) break;
+      this._runLog.push({
+        runId: run.runId,
+        at: run.timestamp.toISOString(),
+        label,
+        ...(mode ? { mode } : {}),
+        generatedCount: run.generatedCount,
+        finalCount: run.finalCount,
+        reviewsSelected: run.reviewsSelected,
+        newSelected: run.newSelected,
+      });
+    }
+  }
+
+  /** Time-boxed and isolated — a bad provider degrades the record, not the session. */
+  private async _captureState(
+    phase: 'start' | 'end'
+  ): Promise<SessionStateSnapshot | undefined> {
+    if (!this._stateSnapshotProvider) return undefined;
+    const TIMEOUT_MS = 3000;
+    try {
+      return await Promise.race([
+        Promise.resolve(this._stateSnapshotProvider(phase)),
+        new Promise<undefined>((resolve) => setTimeout(() => resolve(undefined), TIMEOUT_MS)),
+      ]);
+    } catch (e) {
+      this.log(`[Session] state snapshot (${phase}) failed: ${e}`);
+      return undefined;
+    }
+  }
+
+  /** Writing at open is what makes an unclosed session visible at all. */
+  private async _openSessionDoc(): Promise<void> {
+    if (!this._courseId) return;
+    try {
+      const user = this.dataLayer.getUserDB();
+      const doc: StudySessionDoc = {
+        _id: makeStudySessionId(this._courseId, user.getUsername(), this.sessionId),
+        docType: DocType.STUDY_SESSION,
+        sessionId: this.sessionId,
+        courseId: this._courseId,
+        userId: user.getUsername(),
+        startTime: this.startTime.toISOString(),
+        status: 'open',
+        plannedSeconds: Math.round((this.endTime.valueOf() - this.startTime.valueOf()) / 1000),
+        config: {
+          defaultBatchLimit: this._defaultBatchLimit,
+          sourceCount: this.sources.length,
+          initHints: this._sessionHints,
+        },
+        initialQueues: { supplyQ: this.supplyQ.length, failedQ: this.failedQ.length },
+        runs: [...this._runLog],
+        stateAtStart: await this._captureState('start'),
+      };
+      this._sessionDoc = doc;
+      await user.putStudySession(doc);
+      this.log(`[Session] Opened session record ${doc._id}`);
+    } catch (e) {
+      logger.warn(`[SessionController] Failed to open session record: ${e}`);
+    }
   }
 
   /**
@@ -757,6 +870,7 @@ export class SessionController<TView = unknown> extends Loggable {
       };
     });
     return {
+      sessionId: this.sessionId,
       secondsRemaining: this.secondsRemaining,
       hasCardGuarantee: this.hasCardGuarantee,
       minCardsGuarantee: this._minCardsGuarantee,
@@ -945,6 +1059,7 @@ export class SessionController<TView = unknown> extends Loggable {
       additive: mode === 'merge',
       limit,
     });
+    this._recordRuns(opts.label ?? '(auto)', mode);
     this._wellIndicatedRemaining = wellIndicated;
 
     // Burst replan: suppress quality-based auto-replan so the background
@@ -1463,6 +1578,7 @@ export class SessionController<TView = unknown> extends Loggable {
     if (this._secondsRemaining <= 0 && this.failedQ.length === 0 && this._minCardsGuarantee <= 0) {
       this._currentCard = null;
       endSessionTracking();
+      void this._terminate();
       return null;
     }
 
@@ -1515,6 +1631,7 @@ export class SessionController<TView = unknown> extends Loggable {
       if (!nextItem) {
         this._currentCard = null;
         endSessionTracking();
+        void this._terminate();
         return null;
       }
 
@@ -1571,7 +1688,15 @@ export class SessionController<TView = unknown> extends Loggable {
     this.log(`Exhausted ${MAX_SKIP} skip attempts finding a hydratable card`);
     this._currentCard = null;
     endSessionTracking();
+    void this._terminate();
     return null;
+  }
+
+  /** Not awaited — the host renders the end screen off `nextCard()`'s null. */
+  private _terminate(): void {
+    void this.endSession().catch((e) => {
+      logger.warn(`[SessionController] endSession failed: ${e}`);
+    });
   }
 
   /**
@@ -1742,7 +1867,20 @@ export class SessionController<TView = unknown> extends Loggable {
    * This method aggregates all responses from the session and records a
    * UserOutcomeRecord if evolutionary orchestration is enabled.
    */
-  public async endSession(): Promise<void> {
+  /**
+   * Idempotent. Called from every `nextCard()` path that returns null; hosts
+   * should also call it with `'abandoned'` when tearing down mid-session.
+   */
+  public async endSession(reason: 'closed' | 'abandoned' = 'closed'): Promise<void> {
+    if (this._sessionClosed) return;
+    this._sessionClosed = true;
+
+    clearInterval(this._intervalHandle);
+    setDebugSessionId(undefined);
+
+    // Closed even with zero responses — "answered nothing" is itself a finding.
+    await this._closeSessionDoc(reason);
+
     if (!this._sessionRecord || this._sessionRecord.length === 0) {
       return;
     }
@@ -1796,5 +1934,44 @@ export class SessionController<TView = unknown> extends Loggable {
       questionRecords,
       strategies
     );
+  }
+
+  private async _closeSessionDoc(reason: 'closed' | 'abandoned'): Promise<void> {
+    // Ordered behind the open write; it swallows its own errors.
+    if (this._openDocPromise) await this._openDocPromise;
+
+    const doc = this._sessionDoc;
+    if (!doc) return;
+
+    const records = this._sessionRecord.flatMap((r) => r.records);
+    const questionRecords = records.filter(isQuestionRecord);
+
+    try {
+      const closed: StudySessionDoc = {
+        ...doc,
+        status: reason,
+        endTime: new Date().toISOString(),
+        tally: {
+          cardsPresented: this._sessionRecord.length,
+          responses: records.length,
+          correct: questionRecords.filter((r) => r.isCorrect).length,
+          incorrect: questionRecords.filter((r) => !r.isCorrect).length,
+          failedQRemaining: this.failedQ.length,
+          secondsRemaining: Math.max(0, this._secondsRemaining),
+        },
+        runs: [...this._runLog],
+        finalHints: this._sessionHints,
+        stateAtEnd: await this._captureState('end'),
+      };
+      this._sessionDoc = closed;
+      await this.dataLayer.getUserDB().putStudySession(closed);
+      this.log(
+        `[Session] Session record ${closed._id} -> ${reason} ` +
+        `(${closed.tally!.cardsPresented} cards, ${closed.tally!.responses} responses, ` +
+        `${this._runLog.length} pipeline runs)`
+      );
+    } catch (e) {
+      logger.warn(`[SessionController] Failed to close session record: ${e}`);
+    }
   }
 }

@@ -29,6 +29,7 @@ import {
 import { DocumentUpdater } from '@db/study';
 import { CardHistory, CardRecord } from '../../core/types/types-legacy';
 import { UserOutcomeRecord } from '../../core/types/userOutcome';
+import { StudySessionDoc } from '../../core/types/studySession';
 import type { SyncStrategy } from './SyncStrategy';
 import {
   filterAllDocsByPrefix,
@@ -1362,6 +1363,41 @@ Currently logged-in as ${this._username}.`
     };
 
     await this.localDB.put(doc);
+  }
+
+  /**
+   * Open and close write the same `_id`, so the 409 path is the expected
+   * route for the second write, not an error case.
+   */
+  public async putStudySession(doc: StudySessionDoc): Promise<void> {
+    try {
+      await this.localDB.put(doc);
+    } catch (err: any) {
+      if (err.status === 409) {
+        const existing = await this.localDB.get(doc._id);
+        await this.localDB.put({ ...doc, _rev: existing._rev });
+      } else {
+        throw err;
+      }
+    }
+  }
+
+  public async getStudySessions(courseId?: string): Promise<StudySessionDoc[]> {
+    const prefix = courseId
+      ? `${DocTypePrefixes[DocType.STUDY_SESSION]}::${courseId}::`
+      : `${DocTypePrefixes[DocType.STUDY_SESSION]}::`;
+    const keys = getStartAndEndKeys(prefix);
+
+    const res = await this.localDB.allDocs<StudySessionDoc>({
+      startkey: keys.startkey,
+      endkey: keys.endkey,
+      include_docs: true,
+    });
+
+    return res.rows
+      .map((r) => r.doc)
+      .filter((d): d is StudySessionDoc & PouchDB.Core.RevisionIdMeta => !!d)
+      .sort((a, b) => b.startTime.localeCompare(a.startTime));
   }
 
   public async putUserOutcome(record: UserOutcomeRecord): Promise<void> {

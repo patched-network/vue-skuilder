@@ -87,14 +87,15 @@ export function clearStaleSessionDebugState(): void {
 }
 
 /**
- * Start tracking a new session.
+ * Start tracking a new session. The id is owned by `SessionController` — it is
+ * minted at construction so pipeline runs from `prepareSession()` onward can
+ * carry it.
  */
 export function startSessionTracking(
+  sessionId: string,
   supplyQLength: number,
   failedQLength: number
 ): void {
-  const sessionId = `session-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-
   activeSession = {
     sessionId,
     startTime: new Date(),

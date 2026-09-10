@@ -22,6 +22,7 @@ export enum DocType {
   STRATEGY_STATE = 'STRATEGY_STATE',
   USER_OUTCOME = 'USER_OUTCOME',
   STRATEGY_LEARNING_STATE = 'STRATEGY_LEARNING_STATE',
+  STUDY_SESSION = 'STUDY_SESSION',
 }
 
 export interface QualifiedCardID {
@@ -109,6 +110,7 @@ export const DocTypePrefixes = {
   [DocType.STRATEGY_STATE]: 'STRATEGY_STATE',
   [DocType.USER_OUTCOME]: 'USER_OUTCOME',
   [DocType.STRATEGY_LEARNING_STATE]: 'STRATEGY_LEARNING_STATE',
+  [DocType.STUDY_SESSION]: 'SESSION',
 } as const;
 
 export interface CardHistory<T extends CardRecord> {
@@ -166,6 +168,12 @@ export interface CardRecord {
    * time of user submission.
    */
   timeStamp: Moment;
+  /**
+   * The study session this response was produced in. Absent on records
+   * predating session stamping, and on responses made outside a
+   * SessionController.
+   */
+  sessionId?: string;
 }
 
 export interface QuestionRecord extends CardRecord, Evaluation {

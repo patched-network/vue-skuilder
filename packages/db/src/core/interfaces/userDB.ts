@@ -8,6 +8,7 @@ import { CourseElo, Status } from '@vue-skuilder/common';
 import { Moment } from 'moment';
 import { CardHistory, CardRecord, QualifiedCardID } from '../types/types-legacy';
 import { UserOutcomeRecord } from '../types/userOutcome';
+import { StudySessionDoc } from '../types/studySession';
 import { UserConfig } from '../types/user';
 import { UserHydrationStatus } from '../types/hydration';
 import { DocumentUpdater } from '@db/study';
@@ -78,6 +79,9 @@ export interface UserDBReader {
    * Get user's pending reviews
    */
   getPendingReviews(courseId?: string): Promise<ScheduledCard[]>;
+
+  /** Study-session records for a course, newest session-start first. */
+  getStudySessions(courseId?: string): Promise<StudySessionDoc[]>;
 
   /**
    * Get all scheduled reviews due within the next `daysCount` days —
@@ -215,6 +219,9 @@ export interface UserDBWriter extends DocumentUpdater {
    * Record a user learning outcome for evolutionary orchestration.
    */
   putUserOutcome(record: UserOutcomeRecord): Promise<void>;
+
+  /** Write or overwrite a study-session record. */
+  putStudySession(doc: StudySessionDoc): Promise<void>;
 }
 
 /**
