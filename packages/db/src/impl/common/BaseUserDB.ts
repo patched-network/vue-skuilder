@@ -1366,9 +1366,8 @@ Currently logged-in as ${this._username}.`
   }
 
   /**
-   * Write (or overwrite) a study-session record. Called once at session open
-   * and once at close with the same `_id`, so a 409 on the second write is
-   * expected and resolved by re-reading the rev.
+   * Open and close write the same `_id`, so the 409 path is the expected
+   * route for the second write, not an error case.
    */
   public async putStudySession(doc: StudySessionDoc): Promise<void> {
     try {

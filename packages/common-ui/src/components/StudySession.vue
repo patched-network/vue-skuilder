@@ -275,11 +275,8 @@ export default defineComponent({
   },
 
   beforeUnmount() {
-    // Close the session record as `abandoned` when the study view is torn down
-    // mid-session (route change, parent v-if). `endSession` is idempotent, so
-    // a session that already ended naturally keeps its `closed` status; only a
-    // genuinely-interrupted one is marked here. Without this, walking away
-    // would be indistinguishable from closing the tab.
+    // Torn down mid-session (route change, parent v-if) = abandoned.
+    // `endSession` is idempotent, so a naturally-ended session keeps `closed`.
     if (this.sessionController && !this.sessionFinished) {
       void this.sessionController.endSession('abandoned');
     }
@@ -423,10 +420,8 @@ export default defineComponent({
         if (this.sessionConfig?.outcomeObservers?.length) {
           scOptions.outcomeObservers = this.sessionConfig.outcomeObservers;
         }
-        // Course the durable session record is filed under. A session can span
-        // several sources; the first course-type one is the owner for
-        // record-keeping (classroom sources study a course's content anyway).
-        // Absent it, the controller runs without session recording.
+        // A session can span several sources; the first course-type one owns
+        // the record. Absent it, the controller skips session recording.
         const recordingCourseId = this.contentSources.find((s) => s.type === 'course')?.id;
         if (recordingCourseId) {
           scOptions.courseId = recordingCourseId;
@@ -515,10 +510,8 @@ export default defineComponent({
 
       r.cardID = this.cardID;
       r.courseID = this.courseID;
-      // Stamp the session identity here — the single chokepoint every response
-      // passes through on its way to `putCardRecord`. This is what lets a
-      // `cardH-*` record be grouped back into the sitting that produced it,
-      // instead of that grouping being re-derived from timestamp gaps.
+      // The single chokepoint every response passes through en route to
+      // putCardRecord.
       r.sessionId = this.sessionController?.sessionId;
       this.currentCard.records.push(r);
 

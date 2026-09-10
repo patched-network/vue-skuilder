@@ -128,7 +128,9 @@ export class ResponseProcessor {
           courseRegistrationDoc,
           currentCard,
           courseId,
-          cardId
+          cardId,
+          maxSessionViews,
+          sessionViews
         );
       } else {
         // Handle incorrect responses
@@ -178,7 +180,9 @@ export class ResponseProcessor {
     courseRegistrationDoc: CourseRegistrationDoc,
     currentCard: StudySessionRecord,
     courseId: string,
-    cardId: string
+    cardId: string,
+    maxSessionViews: number,
+    sessionViews: number
   ): ResponseResult {
     // Only schedule and update ELO for first-time attempts
     if (cardRecord.priorAttemps === 0) {
@@ -250,14 +254,38 @@ export class ResponseProcessor {
         shouldClearFeedbackShadow: true,
       };
     } else {
+      // Correct, but not on the first attempt of this presentation.
+      //
+      // Re-present the card for consolidation — but only while there is
+      // session-view budget left. This branch used to return 'marked-failed'
+      // unconditionally, with no reference to sessionViews/maxSessionViews,
+      // which made a *correct* answer the one outcome that could never end a
+      // card's life in a session:
+      //
+      //   present -> stumble -> get it right -> back to failedQ
+      //   -> re-present -> stumble -> get it right -> back to failedQ -> ...
+      //
+      // The incorrect path spends the budget (`sessionViews >= maxSessionViews`
+      // -> 'dismiss-failed'), so the only escape was to keep answering *wrong*
+      // until the card was dismissed. When supplyQ is thin the loop is also
+      // tight rather than merely long: `_shouldInterleaveFailed` returns true
+      // immediately with no supply available, so the same card is redrawn on
+      // the very next `nextCard()` and the session reads as hung.
+      const budgetSpent = sessionViews >= maxSessionViews;
+
       logger.info(
-        '[ResponseProcessor] Processed correct response (retry attempt - no scheduling/ELO)'
+        `[ResponseProcessor] Processed correct response (retry attempt - no scheduling/ELO); ` +
+          `sessionViews=${sessionViews}/${maxSessionViews} -> ` +
+          `${budgetSpent ? 'dismiss-success' : 'marked-failed'}`
       );
 
       const { globalScore } = this.parsePerformance(cardRecord.performance);
 
       return {
-        nextCardAction: 'marked-failed',
+        // Budget spent: the learner did get it right, so retire the card as a
+        // success rather than penalising it ('dismiss-failed' would apply an
+        // ELO penalty for an answer that was correct).
+        nextCardAction: budgetSpent ? 'dismiss-success' : 'marked-failed',
         shouldLoadNextCard: true,
         isCorrect: true,
         performanceScore: globalScore,

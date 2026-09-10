@@ -87,14 +87,9 @@ export function clearStaleSessionDebugState(): void {
 }
 
 /**
- * Start tracking a new session.
- *
- * The id is minted by (and owned by) the `SessionController` constructor, not
- * here. It used to be minted at this call — which happens *after* the
- * bootstrap pipeline run in `prepareSession()` — so the run that decides a
- * session's opening content executed before the session had an identity to
- * attribute it to. Taking the id as a parameter is what lets that first run
- * be labelled.
+ * Start tracking a new session. The id is owned by `SessionController` — it is
+ * minted at construction so pipeline runs from `prepareSession()` onward can
+ * carry it.
  */
 export function startSessionTracking(
   sessionId: string,

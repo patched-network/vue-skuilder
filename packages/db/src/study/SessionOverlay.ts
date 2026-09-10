@@ -59,11 +59,6 @@ export interface SessionDrawnCardDebug {
 
 /** Live snapshot of the controller, read fresh on each overlay tick. */
 export interface SessionDebugSnapshot {
-  /**
-   * This session's durable identity. Same value stamped onto every
-   * `CardRecord` and pipeline run produced this session, so a live overlay
-   * reading and a stored `SESSION::*` doc can be lined up.
-   */
   sessionId: string;
   secondsRemaining: number;
   hasCardGuarantee: boolean;

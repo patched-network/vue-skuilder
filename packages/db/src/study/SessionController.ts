@@ -361,48 +361,23 @@ export class SessionController<TView = unknown> extends Loggable {
   private _sessionControls: SessionControls | null = null;
 
   /**
-   * This session's durable identity.
-   *
-   * Minted here, in the constructor, rather than at `startSessionTracking()`
-   * as it was previously: that call happens *after* the bootstrap pipeline run
-   * inside `prepareSession()`, so the run that decides the session's opening
-   * content used to execute before an id existed to attribute it to.
-   *
-   * Stamped onto every `CardRecord` produced this session (by the host, at
-   * `StudySession.processResponse`) and onto every pipeline run captured while
-   * it is current, making the session the join key for post-hoc analysis.
+   * Minted at construction so the bootstrap pipeline run in `prepareSession()`
+   * can carry it. Stamped onto every CardRecord and pipeline run this session.
    */
   public readonly sessionId: string;
 
-  /**
-   * Course the session doc is filed under. Supplied by the host, since the
-   * controller can be constructed over several sources and has no inherent
-   * single course. Without it the session is still tracked in-memory but no
-   * durable doc is written.
-   */
+  /** Host-supplied. Without it, no durable session doc is written. */
   private _courseId?: string;
   private _stateSnapshotProvider?: SessionStateSnapshotProvider;
 
-  /**
-   * The durable session doc, once opened. `undefined` when no `courseId` was
-   * supplied or the open write failed — in which case session recording is
-   * simply skipped, never fatal to the learner's session.
-   */
   private _sessionDoc: StudySessionDoc | null = null;
 
   /**
-   * In-flight open write. Awaited by the close path so a session that ends
-   * before the (time-boxed, snapshot-bearing) open write lands doesn't lose
-   * its close — otherwise the open write would arrive last and leave a
-   * finished session recorded as `open`.
+   * Awaited by the close path — the open write is slow (time-boxed snapshot)
+   * and would otherwise land last, leaving a finished session marked `open`.
    */
   private _openDocPromise: Promise<void> | null = null;
 
-  /**
-   * Per-run summaries accumulated across the session, in execution order.
-   * Capped so a very long session can't grow the doc without bound; the tail
-   * is what matters least for "how did this session open and adapt".
-   */
   private _runLog: StudySessionRunSummary[] = [];
   private static readonly MAX_LOGGED_RUNS = 100;
 
@@ -450,23 +425,14 @@ export class SessionController<TView = unknown> extends Loggable {
     options?: {
       defaultBatchLimit?: number;
       outcomeObservers?: OutcomeObserver[];
-      /**
-       * Course to file the durable session doc under. Omit to run without
-       * session recording (in-memory debug tracking still applies).
-       */
+      /** Omit to run without durable session recording. */
       courseId?: string;
-      /**
-       * Host hook for a thin learner-state snapshot at session open and close.
-       * See `SessionStateSnapshotProvider`.
-       */
       stateSnapshotProvider?: SessionStateSnapshotProvider;
     }
   ) {
     super();
 
     this.sessionId = newSessionId();
-    // Label pipeline runs from this point on — this is before the bootstrap
-    // run in prepareSession(), which is the whole point of minting here.
     setDebugSessionId(this.sessionId);
 
     this.dataLayer = dataLayer;
@@ -575,9 +541,7 @@ export class SessionController<TView = unknown> extends Loggable {
     // Start session tracking for debugging
     startSessionTracking(this.sessionId, this.supplyQ.length, this.failedQ.length);
 
-    // Open the durable session record. Not awaited: a study session must never
-    // be blocked on an analytics write. The handle is kept so the close path
-    // can order itself behind it.
+    // Not awaited — a session must never block on an analytics write.
     this._openDocPromise = this._openSessionDoc();
 
     this._intervalHandle = setInterval(() => {
@@ -585,15 +549,7 @@ export class SessionController<TView = unknown> extends Loggable {
     }, 1000);
   }
 
-  /**
-   * Drain the pipeline runs captured since the previous plan and append them
-   * to the session's run log under this plan's label.
-   *
-   * The label lives here rather than in the pipeline because it describes
-   * *why* the controller asked for a plan ('bootstrap', 'auto:depletion',
-   * 'wedge-breaker', a caller's post-intro follow-up), which the pipeline has
-   * no view of.
-   */
+  /** Label the runs the last plan produced. The pipeline can't know the why. */
   private _recordRuns(label: string, mode?: string): void {
     for (const run of drainCapturedRuns()) {
       if (this._runLog.length >= SessionController.MAX_LOGGED_RUNS) break;
@@ -610,12 +566,7 @@ export class SessionController<TView = unknown> extends Loggable {
     }
   }
 
-  /**
-   * Best-effort learner-state snapshot from the host provider.
-   *
-   * Isolated and time-boxed: a provider that throws or hangs degrades the
-   * analysis record, never the learner's session.
-   */
+  /** Time-boxed and isolated — a bad provider degrades the record, not the session. */
   private async _captureState(
     phase: 'start' | 'end'
   ): Promise<SessionStateSnapshot | undefined> {
@@ -632,14 +583,7 @@ export class SessionController<TView = unknown> extends Loggable {
     }
   }
 
-  /**
-   * Write the session doc with `status: 'open'`.
-   *
-   * Writing at open rather than only at close is deliberate: a doc left open
-   * is how an *abandoned* session gets recorded. Closing-only would make the
-   * sessions most worth understanding — the ones the learner walked away
-   * from — the exact ones that leave no trace.
-   */
+  /** Writing at open is what makes an unclosed session visible at all. */
   private async _openSessionDoc(): Promise<void> {
     if (!this._courseId) return;
     try {
@@ -1748,14 +1692,7 @@ export class SessionController<TView = unknown> extends Loggable {
     return null;
   }
 
-  /**
-   * Fire the session close without making `nextCard()` await it.
-   *
-   * `nextCard()` returning `null` is what the host renders the end-of-session
-   * screen from; blocking that on a couple of DB writes would put a visible
-   * stall in front of the learner. Errors are already swallowed inside
-   * `endSession`'s two halves, so this is a genuine fire-and-forget.
-   */
+  /** Not awaited — the host renders the end screen off `nextCard()`'s null. */
   private _terminate(): void {
     void this.endSession().catch((e) => {
       logger.warn(`[SessionController] endSession failed: ${e}`);
@@ -1931,30 +1868,17 @@ export class SessionController<TView = unknown> extends Loggable {
    * UserOutcomeRecord if evolutionary orchestration is enabled.
    */
   /**
-   * Close the session: finalise the durable session record, then record the
-   * learning outcome for evolutionary orchestration.
-   *
-   * Idempotent, and called from every path that terminates a session (each
-   * `nextCard()` return of `null`). Hosts should also call it with
-   * `'abandoned'` when tearing the study view down mid-session, so a learner
-   * who navigates away is recorded as such rather than left indistinguishable
-   * from a closed tab.
-   *
-   * NB this method previously existed but had **no callers anywhere in the
-   * monorepo**, which meant `recordUserOutcome` never ran in production and no
-   * `USER_OUTCOME` doc was ever written by the live app. Wiring it to the
-   * termination paths is part of making the session a real, closeable unit.
+   * Idempotent. Called from every `nextCard()` path that returns null; hosts
+   * should also call it with `'abandoned'` when tearing down mid-session.
    */
   public async endSession(reason: 'closed' | 'abandoned' = 'closed'): Promise<void> {
     if (this._sessionClosed) return;
     this._sessionClosed = true;
 
     clearInterval(this._intervalHandle);
-    // Stop attributing pipeline runs to a session that is over.
     setDebugSessionId(undefined);
 
-    // Always close the durable record, even for a session that produced no
-    // responses — "opened and answered nothing" is itself a finding.
+    // Closed even with zero responses — "answered nothing" is itself a finding.
     await this._closeSessionDoc(reason);
 
     if (!this._sessionRecord || this._sessionRecord.length === 0) {
@@ -2012,14 +1936,8 @@ export class SessionController<TView = unknown> extends Loggable {
     );
   }
 
-  /**
-   * Overwrite the session doc with its close-side fields. No-op if the doc
-   * was never opened (no `courseId`, or the open write failed) — in which case
-   * nothing durable was promised in the first place.
-   */
   private async _closeSessionDoc(reason: 'closed' | 'abandoned'): Promise<void> {
-    // Order behind the open write (see _openDocPromise). It swallows its own
-    // errors, so this can't reject.
+    // Ordered behind the open write; it swallows its own errors.
     if (this._openDocPromise) await this._openDocPromise;
 
     const doc = this._sessionDoc;

@@ -169,18 +169,9 @@ export interface CardRecord {
    */
   timeStamp: Moment;
   /**
-   * The study session this response was produced in — see
-   * {@link StudySessionDoc}. Stamped by the host at the single response
-   * chokepoint (`StudySession.processResponse`), so it lands in the
-   * `cardH-*` doc alongside the rest of the record.
-   *
-   * Optional because it is (a) additive over records written before session
-   * identity existed, and (b) genuinely absent for responses produced
-   * outside a SessionController (previews, editor/studio test runs).
-   *
-   * This is what makes a session the unit of post-hoc analysis: card
-   * histories are stored per-card, so without it the only way to recover
-   * "what happened in one sitting" is timestamp-gap clustering.
+   * The study session this response was produced in. Absent on records
+   * predating session stamping, and on responses made outside a
+   * SessionController.
    */
   sessionId?: string;
 }

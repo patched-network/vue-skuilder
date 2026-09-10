@@ -46,19 +46,9 @@ export type StudySessionConfig = {
   outcomeObservers?: OutcomeObserver[];
 
   /**
-   * Optional hook for a thin learner-state snapshot, invoked once at session
-   * open and once at close and stored on the session's `StudySessionDoc`.
-   *
-   * Exists so post-hoc navigation-strategy work can ask "given *this* state,
-   * what did the pipeline choose, and did the sitting go well?" — the question
-   * card records alone can't answer, since they carry outcomes but no
-   * before-picture.
-   *
-   * Keep the returned object small (counts, ids, scores). See
-   * `SessionStateSnapshot` in `@vue-skuilder/db` for why a full user-state
-   * dump is the wrong thing here. The provider is time-boxed and error-isolated
-   * by the controller; a slow or throwing one degrades the record, not the
-   * learner's session.
+   * Thin learner-state snapshot taken at session open and close, stored on the
+   * session's `StudySessionDoc`. Keep the returned object small — counts, ids,
+   * scores. Time-boxed and error-isolated by the controller.
    */
   sessionStateSnapshot?: SessionStateSnapshotProvider;
 };
