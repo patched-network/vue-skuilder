@@ -562,6 +562,15 @@ export class SessionController<TView = unknown> extends Loggable {
         finalCount: run.finalCount,
         reviewsSelected: run.reviewsSelected,
         newSelected: run.newSelected,
+        // Compact detail projected off the full report so a persisted run is
+        // self-explanatory once the in-memory ring buffer has rolled over.
+        // Per-card provenance (`run.cards`) is intentionally left out — it's
+        // the dominant memory cost and not worth persisting per run.
+        ...(typeof run.userElo === 'number' ? { userElo: run.userElo } : {}),
+        ...(run.generators ? { generators: run.generators } : {}),
+        ...(run.filters ? { filters: run.filters } : {}),
+        ...(run.hints ? { hints: run.hints } : {}),
+        ...(run.discardedTail ? { discardedTail: run.discardedTail } : {}),
       });
     }
   }
