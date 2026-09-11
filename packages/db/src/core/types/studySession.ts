@@ -53,6 +53,16 @@ export interface StudySessionDoc {
   /** Bootstrap run plus every replan, in execution order. */
   runs?: StudySessionRunSummary[];
 
+  /**
+   * Per-response ELO exchanges, in the order they resolved. One entry per
+   * ELO-updating response (first attempt of a presentation; retries don't
+   * move ELO). Flushed at close from an in-memory log — so `open`/`abandoned`
+   * sessions that never reached the close write carry none, and a same-card
+   * event still in flight at close may be missing. Absent on sessions
+   * recorded before this shipped.
+   */
+  eloEvents?: SessionEloEvent[];
+
   finalHints?: ReplanHints | null;
 
   stateAtStart?: SessionStateSnapshot;
@@ -94,6 +104,38 @@ export interface StudySessionRunSummary {
     eloRange?: [number, number];
     note: string;
   };
+}
+
+/**
+ * One learner↔card ELO exchange, captured at the moment it resolved so a
+ * session can be read as an ELO ledger (why did 88% accuracy net -1?). The
+ * exchange is otherwise write-once-and-discard: only the updated aggregates
+ * survive on the user/card docs, and ELO is path-dependent, so a response's
+ * move can't be reconstructed after the fact. Joins to a `CardRecord` by
+ * `cardId` + nearest `at`.
+ */
+export interface SessionEloEvent {
+  /** Card this exchange was for. */
+  cardId: string;
+  /** ISO time the exchange resolved (fires just after the response record). */
+  at: string;
+  /**
+   * Global performance in [0,1] that drove the update. Note this is the ELO
+   * `userScore`, not raw correctness: the numeric path maps a correct answer
+   * to `0.5 + performance/2` (so a plain correct is 1.0, a graded-correct
+   * less) and a miss to 0; the tagged path uses `_global`.
+   */
+  userScore: number;
+  /** Learner global ELO before → after this response. */
+  global: { before: number; after: number };
+  /** Card global ELO before → after (absent if the card ELO was unreadable). */
+  card?: { before: number; after: number };
+  /**
+   * Per-tag learner ELO before → after, for every tag the exchange touched.
+   * `score` is the per-tag performance applied, or null for a count-only
+   * exposure tag (`gpc:expose:*`) that increments count without moving ELO.
+   */
+  tags?: Record<string, { before: number; after: number; score: number | null }>;
 }
 
 /**

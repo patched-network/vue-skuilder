@@ -4,6 +4,7 @@ import {
   CourseRegistrationDoc,
   isQuestionRecord,
   QuestionRecord,
+  SessionEloEvent,
   StudySessionItem,
 } from '@db/core';
 import { logger } from '@db/util/logger';
@@ -29,10 +30,17 @@ interface ParsedPerformance {
 export class ResponseProcessor {
   private srsService: SrsService;
   private eloService: EloService;
+  /** Sink for resolved ELO exchanges, wired to the session's in-memory log. */
+  private onEloEvent?: (event: SessionEloEvent) => void;
 
-  constructor(srsService: SrsService, eloService: EloService) {
+  constructor(
+    srsService: SrsService,
+    eloService: EloService,
+    onEloEvent?: (event: SessionEloEvent) => void
+  ) {
     this.srsService = srsService;
     this.eloService = eloService;
+    this.onEloEvent = onEloEvent;
   }
 
   /**
@@ -43,6 +51,24 @@ export class ResponseProcessor {
   private logEloFailure(context: string, cardId: string): (e: unknown) => void {
     return (e) =>
       logger.error(`[ResponseProcessor] ELO update failed (${context}) for ${cardId}:`, e);
+  }
+
+  /**
+   * Fire an ELO update without blocking response handling, forwarding the
+   * resolved exchange to the session log (if any) and surfacing failures.
+   * Mirrors the previous `void update(...).catch(logEloFailure)` shape, with
+   * the added `.then` capturing the before→after event for diagnostics.
+   */
+  private trackElo(
+    update: Promise<SessionEloEvent | null>,
+    context: string,
+    cardId: string
+  ): void {
+    void update
+      .then((event) => {
+        if (event) this.onEloEvent?.(event);
+      })
+      .catch(this.logEloFailure(context, cardId));
   }
 
   /**
@@ -208,37 +234,49 @@ export class ResponseProcessor {
             `scored=[${scoredTags.join(', ')}] count-only=[${nullTags.join(', ')}]`
         );
 
-        void this.eloService
-          .updateUserAndCardEloPerTag(
+        this.trackElo(
+          this.eloService.updateUserAndCardEloPerTag(
             taggedPerformance,
             courseId,
             cardId,
             courseRegistrationDoc,
             currentCard
-          )
-          .catch(this.logEloFailure('correct per-tag', cardId));
+          ),
+          'correct per-tag',
+          cardId
+        );
       } else {
         // Standard single-score ELO update (backward compatible)
         const userScore = 0.5 + globalScore / 2;
 
         if (history.records.length === 1) {
           // First interaction with this card - standard ELO update
-          void this.eloService
-            .updateUserAndCardElo(userScore, courseId, cardId, courseRegistrationDoc, currentCard)
-            .catch(this.logEloFailure('correct', cardId));
+          this.trackElo(
+            this.eloService.updateUserAndCardElo(
+              userScore,
+              courseId,
+              cardId,
+              courseRegistrationDoc,
+              currentCard
+            ),
+            'correct',
+            cardId
+          );
         } else {
           // Multiple interactions - reduce K-factor to limit ELO volatility
           const k = Math.ceil(32 / history.records.length);
-          void this.eloService
-            .updateUserAndCardElo(
+          this.trackElo(
+            this.eloService.updateUserAndCardElo(
               userScore,
               courseId,
               cardId,
               courseRegistrationDoc,
               currentCard,
               k
-            )
-            .catch(this.logEloFailure('correct repeat-view', cardId));
+            ),
+            'correct repeat-view',
+            cardId
+          );
         }
         logger.info(
           `[FirstContactElo] correct first-attempt ELO update (score=${userScore.toFixed(3)}) ` +
@@ -324,15 +362,17 @@ export class ResponseProcessor {
     if (cardRecord.priorAttemps === 0) {
       if (taggedPerformance) {
         // Per-tag ELO update for incorrect response
-        void this.eloService
-          .updateUserAndCardEloPerTag(
+        this.trackElo(
+          this.eloService.updateUserAndCardEloPerTag(
             taggedPerformance,
             courseId,
             cardId,
             courseRegistrationDoc,
             currentCard
-          )
-          .catch(this.logEloFailure('incorrect per-tag', cardId));
+          ),
+          'incorrect per-tag',
+          cardId
+        );
         logger.info(
           `[FirstContactElo] incorrect first-attempt per-tag ELO update for ${cardId} ` +
             `(historyLen=${history.records.length}, priorAttemps=${cardRecord.priorAttemps}, ` +
@@ -340,15 +380,17 @@ export class ResponseProcessor {
         );
       } else {
         // Standard single-score ELO update
-        void this.eloService
-          .updateUserAndCardElo(
+        this.trackElo(
+          this.eloService.updateUserAndCardElo(
             0, // Failed response = 0 score
             courseId,
             cardId,
             courseRegistrationDoc,
             currentCard
-          )
-          .catch(this.logEloFailure('incorrect', cardId));
+          ),
+          'incorrect',
+          cardId
+        );
         logger.info(
           `[FirstContactElo] incorrect first-attempt ELO update (score=0) for ${cardId} ` +
             `(historyLen=${history.records.length}, priorAttemps=${cardRecord.priorAttemps})`
@@ -371,19 +413,29 @@ export class ResponseProcessor {
         if (!eloUpdated) {
           if (taggedPerformance) {
             // Use tagged performance for final failure
-            void this.eloService
-              .updateUserAndCardEloPerTag(
+            this.trackElo(
+              this.eloService.updateUserAndCardEloPerTag(
                 taggedPerformance,
                 courseId,
                 cardId,
                 courseRegistrationDoc,
                 currentCard
-              )
-              .catch(this.logEloFailure('dismiss-failed per-tag', cardId));
+              ),
+              'dismiss-failed per-tag',
+              cardId
+            );
           } else {
-            void this.eloService
-              .updateUserAndCardElo(0, courseId, cardId, courseRegistrationDoc, currentCard)
-              .catch(this.logEloFailure('dismiss-failed', cardId));
+            this.trackElo(
+              this.eloService.updateUserAndCardElo(
+                0,
+                courseId,
+                cardId,
+                courseRegistrationDoc,
+                currentCard
+              ),
+              'dismiss-failed',
+              cardId
+            );
           }
           logger.info(
             `[FirstContactElo] dismiss-failed final ELO penalty for ${cardId} ` +
