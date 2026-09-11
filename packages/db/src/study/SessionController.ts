@@ -17,6 +17,7 @@ import { DocType } from '@db/core/types/types-legacy';
 import {
   makeStudySessionId,
   newSessionId,
+  type SessionEloEvent,
   type SessionStateSnapshot,
   type SessionStateSnapshotProvider,
   type StudySessionDoc,
@@ -381,6 +382,14 @@ export class SessionController<TView = unknown> extends Loggable {
   private _runLog: StudySessionRunSummary[] = [];
   private static readonly MAX_LOGGED_RUNS = 100;
 
+  /**
+   * Per-response ELO exchanges as they resolve (see `SessionEloEvent`). Fed by
+   * the ResponseProcessor's `onEloEvent` sink; flushed to the session doc at
+   * close. Bounded so a runaway session can't grow it without limit.
+   */
+  private _eloLog: SessionEloEvent[] = [];
+  private static readonly MAX_LOGGED_ELO_EVENTS = 2000;
+
   /** Guards `endSession()` against the several termination paths racing it. */
   private _sessionClosed: boolean = false;
 
@@ -447,7 +456,9 @@ export class SessionController<TView = unknown> extends Loggable {
     );
 
     this.services = {
-      response: new ResponseProcessor(this.srsService, this.eloService),
+      response: new ResponseProcessor(this.srsService, this.eloService, (event) =>
+        this._recordEloEvent(event)
+      ),
     };
 
     this.sources = sources;
@@ -954,6 +965,17 @@ export class SessionController<TView = unknown> extends Loggable {
    * skipped, never wedging the session. Keep observers cheap and `void` any
    * long work (e.g. a triggered replan) to avoid stalling the draw.
    */
+  /**
+   * Append a resolved ELO exchange to the in-memory log. Fires async (the ELO
+   * update is non-blocking), so an event can land after the response that
+   * produced it has returned — but well before close, which is when the log is
+   * persisted. Bounded to avoid unbounded growth.
+   */
+  private _recordEloEvent(event: SessionEloEvent): void {
+    if (this._eloLog.length >= SessionController.MAX_LOGGED_ELO_EVENTS) return;
+    this._eloLog.push(event);
+  }
+
   private async _notifyOutcomeObservers(
     record: CardRecord,
     currentCard: StudySessionRecord,
@@ -1969,6 +1991,7 @@ export class SessionController<TView = unknown> extends Loggable {
           secondsRemaining: Math.max(0, this._secondsRemaining),
         },
         runs: [...this._runLog],
+        eloEvents: [...this._eloLog],
         finalHints: this._sessionHints,
         stateAtEnd: await this._captureState('end'),
       };

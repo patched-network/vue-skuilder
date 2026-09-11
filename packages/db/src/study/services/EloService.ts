@@ -4,7 +4,12 @@ import {
   toCourseElo,
   TaggedPerformance,
 } from '@vue-skuilder/common';
-import { DataLayerProvider, UserDBInterface, CourseRegistrationDoc } from '@db/core';
+import {
+  DataLayerProvider,
+  UserDBInterface,
+  CourseRegistrationDoc,
+  SessionEloEvent,
+} from '@db/core';
 import { StudySessionRecord } from '../SessionController';
 import { logger } from '@db/util/logger';
 
@@ -28,6 +33,8 @@ export class EloService {
    * @param userCourseRegDoc User's course registration document (will be mutated)
    * @param currentCard Current card session record
    * @param k Optional K-factor for ELO calculation
+   * @returns The captured before→after exchange for session logging, or null
+   *   if no update was applied (missing registration / unreadable ELO).
    */
   public async updateUserAndCardElo(
     userScore: number,
@@ -36,7 +43,7 @@ export class EloService {
     userCourseRegDoc: CourseRegistrationDoc,
     currentCard: StudySessionRecord,
     k?: number
-  ): Promise<void> {
+  ): Promise<SessionEloEvent | null> {
     if (k) {
       logger.warn(`k value interpretation not currently implemented`);
     }
@@ -47,14 +54,42 @@ export class EloService {
         `[EloService] No registration for course ${course_id} on user's registration doc — ` +
           `skipping ELO update for card ${card_id}. (Is the user registered for this course?)`
       );
-      return;
+      return null;
     }
     const userElo = toCourseElo(courseReg.elo);
     const cardElo = (await courseDB.getCardEloData([currentCard.card.card_id]))[0];
 
     if (cardElo && userElo) {
+      // Capture before-scores as numbers up front: adjustCourseScores mutates
+      // userElo/cardElo in place (and returns the same refs). This path grades
+      // every tag already present on the card with the single global score.
+      const beforeUserGlobal = userElo.global.score;
+      const beforeCardGlobal = cardElo.global.score;
+      const cardTagKeys = Object.keys(cardElo.tags);
+      const beforeUserTag: Record<string, number> = {};
+      for (const tag of cardTagKeys) {
+        beforeUserTag[tag] = userElo.tags[tag]?.score ?? userElo.global.score;
+      }
+
       const eloUpdate = adjustCourseScores(userElo, cardElo, userScore);
       courseReg.elo = eloUpdate.userElo;
+
+      const tags: NonNullable<SessionEloEvent['tags']> = {};
+      for (const tag of cardTagKeys) {
+        tags[tag] = {
+          before: beforeUserTag[tag],
+          after: eloUpdate.userElo.tags[tag].score,
+          score: userScore,
+        };
+      }
+      const event: SessionEloEvent = {
+        cardId: card_id,
+        at: new Date().toISOString(),
+        userScore,
+        global: { before: beforeUserGlobal, after: eloUpdate.userElo.global.score },
+        card: { before: beforeCardGlobal, after: eloUpdate.cardElo.global.score },
+        ...(cardTagKeys.length ? { tags } : {}),
+      };
 
       const results = await Promise.allSettled([
         this.user.updateUserElo(course_id, eloUpdate.userElo),
@@ -93,7 +128,11 @@ export class EloService {
           logger.error('[EloService] Card ELO update error:', results[1].reason);
         }
       }
+
+      return event;
     }
+
+    return null;
   }
 
   /**
@@ -112,7 +151,7 @@ export class EloService {
     card_id: string,
     userCourseRegDoc: CourseRegistrationDoc,
     currentCard: StudySessionRecord
-  ): Promise<void> {
+  ): Promise<SessionEloEvent | null> {
     const courseDB = this.dataLayer.getCourseDB(currentCard.card.course_id);
     const courseReg = userCourseRegDoc.courses.find((c) => c.courseID === course_id);
     if (!courseReg) {
@@ -120,7 +159,7 @@ export class EloService {
         `[EloService] No registration for course ${course_id} on user's registration doc — ` +
           `skipping per-tag ELO update for card ${card_id}. (Is the user registered for this course?)`
       );
-      return;
+      return null;
     }
     const userElo = toCourseElo(courseReg.elo);
 
@@ -145,8 +184,38 @@ export class EloService {
     }
 
     if (cardElo && userElo) {
+      // Capture before-scores up front — adjustCourseScoresPerTag mutates the
+      // ELO objects in place. Every tag in `enriched` (except _global) is
+      // touched; count-only tags (null score) increment count without moving
+      // ELO and are recorded with score: null.
+      const beforeUserGlobal = userElo.global.score;
+      const beforeCardGlobal = cardElo.global.score;
+      const touchedTags = Object.keys(enriched).filter((key) => key !== '_global');
+      const beforeUserTag: Record<string, number> = {};
+      for (const tag of touchedTags) {
+        beforeUserTag[tag] = userElo.tags[tag]?.score ?? userElo.global.score;
+      }
+
       const eloUpdate = adjustCourseScoresPerTag(userElo, cardElo, enriched);
       courseReg.elo = eloUpdate.userElo;
+
+      const tags: NonNullable<SessionEloEvent['tags']> = {};
+      for (const tag of touchedTags) {
+        const score = enriched[tag];
+        // Count-only exposure tags (null score) get a -1 sentinel score, not a
+        // real ELO move — record before===after so a naive after-before reads 0.
+        const after =
+          score === null ? beforeUserTag[tag] : eloUpdate.userElo.tags[tag]?.score ?? beforeUserTag[tag];
+        tags[tag] = { before: beforeUserTag[tag], after, score };
+      }
+      const event: SessionEloEvent = {
+        cardId: card_id,
+        at: new Date().toISOString(),
+        userScore: globalScore,
+        global: { before: beforeUserGlobal, after: eloUpdate.userElo.global.score },
+        card: { before: beforeCardGlobal, after: eloUpdate.cardElo.global.score },
+        ...(touchedTags.length ? { tags } : {}),
+      };
 
       const results = await Promise.allSettled([
         this.user.updateUserElo(course_id, eloUpdate.userElo),
@@ -186,6 +255,10 @@ export class EloService {
           logger.error('[EloService] Card ELO update error:', results[1].reason);
         }
       }
+
+      return event;
     }
+
+    return null;
   }
 }
