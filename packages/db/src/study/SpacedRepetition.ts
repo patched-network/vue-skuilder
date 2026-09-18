@@ -92,7 +92,12 @@ function lastSuccessfulInterval(cardHistory: QuestionRecord[]): number {
   return getInitialInterval(cardHistory); // used as a magic number here - indicates no prior intervals
 }
 
-function getStreak(records: QuestionRecord[]): number {
+/**
+ * Number of trailing consecutive correct records (retries within a single
+ * presentation count as separate records). Exported so the persisted
+ * `CardHistory.streak` can be kept in step with this derivation.
+ */
+export function getStreak(records: QuestionRecord[]): number {
   let streak = 0;
   let index = records.length - 1;
 
@@ -103,7 +108,11 @@ function getStreak(records: QuestionRecord[]): number {
 
   return streak;
 }
-function getLapses(records: QuestionRecord[]): number {
+/**
+ * Total number of incorrect records on the card. Exported so the persisted
+ * `CardHistory.lapses` can be kept in step with this derivation.
+ */
+export function getLapses(records: QuestionRecord[]): number {
   return records.filter((r) => r.isCorrect === false).length;
 }
 
