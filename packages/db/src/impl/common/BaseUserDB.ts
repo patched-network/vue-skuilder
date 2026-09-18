@@ -7,7 +7,7 @@ import {
   type HydrationMarker,
   type UserHydrationStatus,
 } from '@db/core';
-import { getCardHistoryID } from '@db/core/util';
+import { areQuestionRecords, getCardHistoryID } from '@db/core/util';
 import { CourseElo, Status } from '@vue-skuilder/common';
 import moment, { Moment } from 'moment';
 import { GuestUsername } from '../../core/types/types-legacy';
@@ -26,7 +26,7 @@ import {
   ScheduledCard,
   UserConfig,
 } from '@db/core/types/user';
-import { DocumentUpdater } from '@db/study';
+import { DocumentUpdater, getLapses, getStreak } from '@db/study';
 import { CardHistory, CardRecord } from '../../core/types/types-legacy';
 import { UserOutcomeRecord } from '../../core/types/userOutcome';
 import { StudySessionDoc } from '../../core/types/studySession';
@@ -1018,8 +1018,17 @@ Currently logged-in as ${this._username}.`
         function (h: CardHistory<T>) {
           h.records.push(record);
           h.bestInterval = h.bestInterval || 0;
-          h.lapses = h.lapses || 0;
-          h.streak = h.streak || 0;
+          // Scheduling (SpacedRepetition.newQuestionInterval) re-derives
+          // lapses/streak from `records` on every call, so these persisted
+          // fields are informational — kept current so the stored doc reads
+          // truthfully when inspected outside a session.
+          if (areQuestionRecords(h)) {
+            h.lapses = getLapses(h.records);
+            h.streak = getStreak(h.records);
+          } else {
+            h.lapses = h.lapses || 0;
+            h.streak = h.streak || 0;
+          }
           return h;
         }
       );
