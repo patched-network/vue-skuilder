@@ -12,6 +12,7 @@ import {
 } from '@db/core';
 import { StudySessionRecord } from '../SessionController';
 import { logger } from '@db/util/logger';
+import { recordTagPresentations } from './tagRecent';
 
 /**
  * Service responsible for ELO rating calculations and updates.
@@ -197,6 +198,24 @@ export class EloService {
       }
 
       const eloUpdate = adjustCourseScoresPerTag(userElo, cardElo, enriched);
+      const at = new Date().toISOString();
+
+      // Mastery signal: one ring-buffer entry per scored tag per presentation.
+      // Retries (priorAttemps > 0 on the current record) add nothing — that
+      // includes the dismiss-failed penalty, which lands here on a retry.
+      // Only the question's own graded tags count, not the card-level tags
+      // enriched with the global score above.
+      const recorded = recordTagPresentations(
+        eloUpdate.userElo,
+        taggedPerformance,
+        currentCard.records,
+        card_id,
+        at
+      );
+      if (recorded.length) {
+        logger.info(`[EloService] recent-presentation entries for ${card_id}: [${recorded.join(', ')}]`);
+      }
+
       courseReg.elo = eloUpdate.userElo;
 
       const tags: NonNullable<SessionEloEvent['tags']> = {};
@@ -210,7 +229,7 @@ export class EloService {
       }
       const event: SessionEloEvent = {
         cardId: card_id,
-        at: new Date().toISOString(),
+        at,
         userScore: globalScore,
         global: { before: beforeUserGlobal, after: eloUpdate.userElo.global.score },
         card: { before: beforeCardGlobal, after: eloUpdate.cardElo.global.score },

@@ -28,10 +28,52 @@ export type CourseElo = {
   };
 };
 
-type EloRank = {
+/**
+ * One presentation of a card that exercised a tag, as seen by the learner.
+ * Recorded once per presentation (first attempt only — retries within the
+ * same presentation are not evidence). The ring buffer of these on a tag's
+ * EloRank is the mastery *signal*; how it is read (window, weighting,
+ * thresholds) is a consumer policy, deliberately not encoded here.
+ */
+export type TagPresentation = {
+  /** ISO timestamp of the presentation */
+  at: string;
+  /** First-attempt correct */
+  ok: boolean;
+  /** The 0–1 tag performance the record carried */
+  perf: number;
+  /** cardID, so a reader can tell "one card, twelve times" from breadth */
+  card: string;
+};
+
+/** Ring-buffer capacity for `EloRank.recent`. Oldest entry is dropped on push. */
+export const TAG_RECENT_MAX = 12;
+
+export type EloRank = {
   score: number;
   count: number;
+  /**
+   * Most recent presentations, oldest first, length ≤ TAG_RECENT_MAX.
+   * Optional: absent on docs written before the buffer existed, and never
+   * present on card-side ranks. Preserved (not stripped) by the adjusters.
+   */
+  recent?: TagPresentation[];
 };
+
+/**
+ * Append a presentation to a rank's ring buffer, returning a new rank.
+ * Pure: neither `rank` nor its `recent` array is mutated.
+ */
+export function pushTagPresentation(
+  rank: EloRank,
+  entry: TagPresentation,
+  max: number = TAG_RECENT_MAX
+): EloRank {
+  const prior = rank.recent ?? [];
+  const next = [...prior, entry];
+  const trimmed = next.length > max ? next.slice(next.length - max) : next;
+  return { ...rank, recent: trimmed };
+}
 
 type Eloish = number | EloRank | CourseElo;
 
@@ -194,12 +236,15 @@ function adjustScores(
   const updatedUserElo = userRanker.updateRating(exp, userScore, userElo.score);
   const updatedCardElo = cardRanker.updateRating(1 - exp, 1 - userScore, cardElo.score);
 
+  // Spread first so sibling fields (e.g. `recent`) survive the adjustment.
   return {
     userElo: {
+      ...userElo,
       score: updatedUserElo,
       count: userElo.count + 1,
     },
     cardElo: {
+      ...cardElo,
       score: updatedCardElo,
       count: cardElo.count + 1,
     },
@@ -285,7 +330,11 @@ export function adjustCourseScoresPerTag(
     const existingUserTagElo = userElo.tags[key];
     const userTagElo: EloRank = (existingUserTagElo && existingUserTagElo.score !== -1)
       ? existingUserTagElo
-      : { count: existingUserTagElo?.count ?? 0, score: userElo.global.score };
+      : {
+          ...(existingUserTagElo ?? {}),
+          count: existingUserTagElo?.count ?? 0,
+          score: userElo.global.score,
+        };
 
     // Initialize tag ELO on card if missing (use global score as baseline)
     const cardTagElo: EloRank = cardElo.tags[key] ?? {
