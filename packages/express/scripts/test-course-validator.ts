@@ -133,7 +133,12 @@ function stepped(doc: Doc, dScore = -12): Doc {
 
 async function main() {
   // Ensure the non-admin user exists (CI couch starts with only the admin).
-  // Idempotent: a 409 means it is already there.
+  // A fresh CouchDB 2.x has no `_users` database until cluster setup runs,
+  // so create it first (201 new, 412 exists). Then the user (409 = exists).
+  const mkUsersDb = await req(ADMIN, 'PUT', '_users');
+  if (mkUsersDb.status !== 201 && mkUsersDb.status !== 412) {
+    throw new Error(`could not ensure _users db: ${mkUsersDb.status} ${JSON.stringify(mkUsersDb.json)}`);
+  }
   const userDocId = `_users/org.couchdb.user:${USER.name}`;
   const mk = await req(ADMIN, 'PUT', userDocId, {
     name: USER.name,
