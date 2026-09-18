@@ -52,5 +52,10 @@ jobs:
           yarn workspace @vue-skuilder/express build
           # yarn workspace @vue-skuilder/express test
 
+      # The course-DB validate_doc_update (assets/courseValidateDocUpdate.js)
+      # is sandboxed ES5 with no other coverage; exercise it against real couch.
+      - name: Course validator test matrix
+        run: yarn workspace @vue-skuilder/express test:validator
+
       - name: Type check
         run: yarn workspace @vue-skuilder/express type-check
