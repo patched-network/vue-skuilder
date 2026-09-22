@@ -464,6 +464,10 @@ export default defineComponent({
         console.error('[StudySession] Error during session preparation:', error);
         // Notify parent component about the error
         this.$emit('session-error', { message: 'Failed to prepare study session', error });
+        // Stop here. The controller exists (constructed before prepareSession),
+        // so falling through would call nextCard() against the same failed
+        // source: a doomed wedge-breaker loop and a second, redundant error.
+        return;
       }
 
       try {

@@ -1244,8 +1244,12 @@ export class SessionController<TView = unknown> extends Loggable {
         });
       } catch (error) {
         this.error(`Failed to get content from source ${i}:`, error);
-        // Re-throw if this is the only source - we can't proceed without any content
-        if (this.sources.length === 1) {
+        // Re-throw if this is the only source - we can't proceed without any content.
+        // Initial load only: a replan falls through to the non-fatal
+        // `batches.length === 0` path below and keeps the existing queue.
+        // Throwing there would escape nextCard() (via the wedge-breaker) and
+        // strand the host mid-session with neither a card nor a null.
+        if (this.sources.length === 1 && !replan) {
           throw new Error(`Cannot start session: failed to load content from source ${i}`);
         }
       }
