@@ -11,6 +11,7 @@ import {
 import { generateSecureToken, getTokenExpiry, isTokenExpired } from '../utils/tokens.js';
 import { sendVerificationEmail, sendPasswordResetEmail } from '../services/email.js';
 import { verifyCredentials } from '../couchdb/authentication.js';
+import { normalizeEmail } from '../utils/email.js';
 import logger from '../logger.js';
 
 interface CouchSession {
@@ -72,7 +73,7 @@ router.post('/send-verification', (req: Request, res: Response) => {
     // Use the provided email if present; otherwise fall back to the address
     // already on the _users doc — the single source of truth. (CONFIG.email was
     // a second, divergent copy; it has been retired.)
-    let email = providedEmail;
+    let email = typeof providedEmail === 'string' ? normalizeEmail(providedEmail) : providedEmail;
     if (!email) {
       email = userDoc.email;
       if (!email) {
@@ -101,7 +102,7 @@ router.post('/send-verification', (req: Request, res: Response) => {
     // When the address came from a lookup rather than the request body, keep
     // the original fill-if-absent behaviour.
     if (providedEmail) {
-      userDoc.email = providedEmail as string;
+      userDoc.email = email as string;
     } else if (email && !userDoc.email) {
       userDoc.email = email as string;
     }
@@ -267,16 +268,40 @@ router.post('/resolve-login', (req: Request, res: Response) => {
           .json({ ok: false, error: 'Identifier and password required' });
       }
 
-      // Resolve email → username; a username passes through as-is. An email
-      // that doesn't resolve falls back to the raw identifier so the couch auth
-      // below still runs and fails — keeping timing uniform (no existence leak).
-      let username: string = identifier;
+      // Resolve email → username; a username passes through as-is.
+      //
+      // For an email identifier, candidates are tried in order until one
+      // authenticates:
+      //   1. the account that has *verified* this email (it may have a legacy
+      //      non-email username),
+      //   2. the normalized email itself — accounts created with the email as
+      //      their username (stored normalized), which may be unverified,
+      //   3. the raw identifier, for any legacy username containing '@' that
+      //      predates normalization.
+      // A verified-email owner and an email-named account can coexist (the
+      // latter is blocked from verifying — see /verify), so falling through
+      // past (1) is required. Every failure returns the same 401, but not in
+      // uniform time: the candidate count, and whether each candidate is a real
+      // account (couch hashes for real users, fast-fails unknown ones), vary.
+      // Same class of timing signal the single-candidate version had.
+      const candidates: string[] = [];
       if (typeof identifier === 'string' && identifier.includes('@')) {
-        const verifiedUser = await findVerifiedUserByEmail(identifier);
-        username = verifiedUser?.name ?? identifier;
+        const normalized = normalizeEmail(identifier);
+        const verifiedUser = await findVerifiedUserByEmail(normalized);
+        if (verifiedUser?.name) candidates.push(verifiedUser.name);
+        candidates.push(normalized);
+      }
+      candidates.push(identifier);
+
+      let username: string | null = null;
+      for (const candidate of new Set(candidates)) {
+        if (await verifyCredentials(candidate, password)) {
+          username = candidate;
+          break;
+        }
       }
 
-      if (!(await verifyCredentials(username, password))) {
+      if (!username) {
         return res.status(401).json({ ok: false, error: 'Invalid credentials' });
       }
 
@@ -299,14 +324,23 @@ router.post('/resolve-login', (req: Request, res: Response) => {
 router.post('/request-reset', (req: Request, res: Response) => {
   void (async () => {
     try {
-    const { email, origin } = req.body;
+    const { email: rawEmail, origin } = req.body;
 
-    if (!email) {
+    if (!rawEmail || typeof rawEmail !== 'string') {
       return res.status(400).json({ ok: false, error: 'Email required' });
     }
+    const email = normalizeEmail(rawEmail);
 
-    // Find user by email (using design doc view)
-    const userDoc = await findUserByEmail(email);
+    // Find user by email (using design doc view). Fallback: an account whose
+    // *username* is this email but which never got an email persisted (the
+    // address is only written by /send-verification, which is best-effort at
+    // signup). Only when the doc has no email at all — if the owner has since
+    // set a different address, the username-address is not theirs to trust.
+    let userDoc = await findUserByEmail(email);
+    if (!userDoc) {
+      const byName = await findUserByUsername(email);
+      if (byName && !byName.email) userDoc = byName;
+    }
     if (!userDoc) {
       // Don't reveal whether email exists (security best practice)
       logger.warn(`Password reset requested for non-existent email: ${email}`);

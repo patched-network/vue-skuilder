@@ -3,6 +3,7 @@ import type { CouchDbUserDoc } from '@vue-skuilder/db';
 import { getCouchDB } from './index.js';
 import logger from '../logger.js';
 import { isNanoError } from '../utils/types.js';
+import { normalizeEmail } from '../utils/email.js';
 
 /**
  * User lookup utilities for authentication flows.
@@ -79,7 +80,7 @@ export async function findUserByEmail(
     const usersDB = getUsersDB();
 
     const result = await usersDB.view('users', 'by_email', {
-      key: email,
+      key: normalizeEmail(email),
       include_docs: true,
       limit: 1,
     });
@@ -112,7 +113,7 @@ export async function findVerifiedUserByEmail(
     const usersDB = getUsersDB();
 
     const result = await usersDB.view('users', 'by_verified_email', {
-      key: email,
+      key: normalizeEmail(email),
       include_docs: true,
       reduce: false,
       limit: 1,
