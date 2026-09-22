@@ -3,6 +3,7 @@ import type { CouchDbUserDoc } from '@vue-skuilder/db';
 import { getCouchDB } from './index.js';
 import logger from '../logger.js';
 import { isNanoError } from '../utils/types.js';
+import { normalizeEmail } from '../utils/email.js';
 
 /**
  * User lookup utilities for authentication flows.
@@ -79,7 +80,7 @@ export async function findUserByEmail(
     const usersDB = getUsersDB();
 
     const result = await usersDB.view('users', 'by_email', {
-      key: email,
+      key: normalizeEmail(email),
       include_docs: true,
       limit: 1,
     });
@@ -100,6 +101,32 @@ export async function findUserByEmail(
 }
 
 /**
+ * Usernames of every account (verified or not) that has this email on its
+ * _users doc, capped at `limit`. Used by login resolution, where the password
+ * check — not verification — is what proves ownership.
+ */
+export async function findUsernamesByEmail(email: string, limit = 3): Promise<string[]> {
+  try {
+    const usersDB = getUsersDB();
+    const result = await usersDB.view('users', 'by_email', {
+      key: normalizeEmail(email),
+      include_docs: true,
+      limit,
+    });
+    return result.rows
+      .map((row) => (row.doc as CouchDbUserDoc | undefined)?.name)
+      .filter((name): name is string => typeof name === 'string');
+  } catch (error: unknown) {
+    if (isNanoError(error) && error.statusCode === 404) {
+      logger.warn('Design doc or view not found for email lookup');
+      return [];
+    }
+    logger.error(`Error finding usernames by email ${email}:`, error);
+    throw error;
+  }
+}
+
+/**
  * Find a *verified* user by email using the by_verified_email view.
  * Used to enforce the "at most one verified account per email" invariant.
  * Note: the view carries a _count reduce, so reduce:false is required to read
@@ -112,7 +139,7 @@ export async function findVerifiedUserByEmail(
     const usersDB = getUsersDB();
 
     const result = await usersDB.view('users', 'by_verified_email', {
-      key: email,
+      key: normalizeEmail(email),
       include_docs: true,
       reduce: false,
       limit: 1,

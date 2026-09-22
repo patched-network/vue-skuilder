@@ -15,12 +15,14 @@ export const usersDesignDoc = {
   _id: '_design/users',
   views: {
     /**
-     * Index users by email address.
+     * Index users by email address. Keys are normalized (trim + lowercase, see
+     * utils/email.ts normalizeEmail) so lookups are case-insensitive even for
+     * addresses stored before normalization was introduced.
      */
     by_email: {
       map: `function(doc) {
-        if (doc.type === 'user' && doc.email) {
-          emit(doc.email, doc._id);
+        if (doc.type === 'user' && typeof doc.email === 'string' && doc.email) {
+          emit(doc.email.trim().toLowerCase(), doc._id);
         }
       }`,
     },
@@ -32,8 +34,8 @@ export const usersDesignDoc = {
      */
     by_verified_email: {
       map: `function(doc) {
-        if (doc.type === 'user' && doc.email && doc.status === 'verified') {
-          emit(doc.email, doc._id);
+        if (doc.type === 'user' && typeof doc.email === 'string' && doc.email && doc.status === 'verified') {
+          emit(doc.email.trim().toLowerCase(), doc._id);
         }
       }`,
       reduce: '_count',
