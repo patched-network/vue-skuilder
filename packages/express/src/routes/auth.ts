@@ -13,6 +13,9 @@ import { generateSecureToken, getTokenExpiry, isTokenExpired } from '../utils/to
 import { sendVerificationEmail, sendPasswordResetEmail } from '../services/email.js';
 import { verifyCredentials } from '../couchdb/authentication.js';
 import { normalizeEmail } from '../utils/email.js';
+import { resolveAssertedIdentity } from '../couchdb/identityAssertion.js';
+import { mintAuthSessionCookie } from '../couchdb/sessionCookie.js';
+import crypto from 'crypto';
 import logger from '../logger.js';
 
 interface CouchSession {
@@ -600,6 +603,80 @@ router.post('/permissions', (req: Request, res: Response) => {
         ok: false,
         error: 'Failed to grant permissions',
       });
+    }
+  })();
+});
+
+/**
+ * POST /auth/assert-identity
+ * Server-to-server: a trusted caller (e.g. a backend that has verified a
+ * Google ID token) asserts that a person controls an email address. Resolves,
+ * links or creates the account under the rules in couchdb/identityAssertion.ts
+ * and returns a freshly minted CouchDB session cookie for it, which the caller
+ * forwards to the browser.
+ *
+ * Disabled (404) unless IDENTITY_ASSERTION_SECRET is set. Authenticated by
+ * `Authorization: Bearer <IDENTITY_ASSERTION_SECRET>`; this route mints
+ * sessions for arbitrary accounts, so the secret is as sensitive as the
+ * CouchDB admin password.
+ *
+ * Body params:
+ *   - email: string (required)
+ *   - provider: string (required) - e.g. 'google'
+ *   - authoritative: boolean (required) - whether the provider is
+ *     authoritative for this address; linking an existing account requires it
+ *
+ * Responses:
+ *   - 200 { ok, username, outcome: 'existing'|'linked'|'created', cookie: { name, value, maxAge } }
+ *   - 403 { ok: false, code } - privileged_account | link_requires_authoritative
+ *   - 409 { ok: false, code: 'username_conflict' }
+ */
+router.post('/assert-identity', (req: Request, res: Response) => {
+  void (async () => {
+    const secret = process.env.IDENTITY_ASSERTION_SECRET;
+    if (!secret) {
+      return res.status(404).json({ ok: false, error: 'Not found' });
+    }
+
+    // Compare digests, not the raw header: equal-length, and an early-exit
+    // mismatch reveals nothing about the secret itself.
+    const digest = (v: string) => crypto.createHash('sha256').update(v).digest('hex');
+    if (digest(req.headers.authorization ?? '') !== digest(`Bearer ${secret}`)) {
+      logger.warn('Unauthorized assert-identity request');
+      return res.status(401).json({ ok: false, error: 'Unauthorized' });
+    }
+
+    const { email, provider, authoritative } = req.body ?? {};
+    if (
+      typeof email !== 'string' ||
+      !email.includes('@') ||
+      typeof provider !== 'string' ||
+      !provider ||
+      typeof authoritative !== 'boolean'
+    ) {
+      return res.status(400).json({
+        ok: false,
+        error: 'Required: email (string), provider (string), authoritative (boolean)',
+      });
+    }
+
+    try {
+      const resolution = await resolveAssertedIdentity({ email, provider, authoritative });
+      if (!resolution.ok) {
+        const status = resolution.code === 'username_conflict' ? 409 : 403;
+        return res.status(status).json({ ok: false, code: resolution.code });
+      }
+
+      const cookie = await mintAuthSessionCookie(resolution.username);
+      res.json({
+        ok: true,
+        username: resolution.username,
+        outcome: resolution.outcome,
+        cookie,
+      });
+    } catch (error) {
+      logger.error('Error asserting identity:', error);
+      res.status(500).json({ ok: false, error: 'Failed to assert identity' });
     }
   })();
 });

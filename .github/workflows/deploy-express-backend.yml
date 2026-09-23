@@ -39,9 +39,26 @@ jobs:
           echo "Building @vue-skuilder/db..."
           yarn workspace @vue-skuilder/db build
 
+      # The EXPRESS_ENV blob is being retired in favour of one named secret per
+      # key. Named values are appended after the blob; dotenv takes the LAST
+      # occurrence of a key, so a named value overrides the blob and a key can
+      # migrate out of the blob without a flag day. To migrate a key: create
+      # the named secret, add it to `env:` and the list below, then delete the
+      # line from the blob.
       - name: Set production environment
         working-directory: ./packages/express
-        run: printf "${{ secrets.EXPRESS_ENV }}" > .env.production
+        env:
+          IDENTITY_ASSERTION_SECRET: ${{ secrets.IDENTITY_ASSERTION_SECRET }}
+        run: |
+          printf "${{ secrets.EXPRESS_ENV }}" > .env.production
+          for key in IDENTITY_ASSERTION_SECRET; do
+            value="${!key}"
+            if [ -z "$value" ]; then
+              echo "::warning::$key is not set in repo secrets; skipping"
+              continue
+            fi
+            printf '\n%s=%s\n' "$key" "$value" >> .env.production
+          done
 
       - name: Build Express backend
         run: yarn workspace @vue-skuilder/express build

@@ -257,6 +257,16 @@ export interface UserDBAuthenticator {
   logout(): Promise<{
     ok: boolean;
   }>;
+
+  /**
+   * Adopt a session established outside this client (e.g. third-party
+   * sign-in completed server-side), optionally migrating guest data.
+   */
+  adoptSession(opts: { migrateGuestData: boolean }): Promise<{
+    ok: boolean;
+    error?: string;
+    username?: string;
+  }>;
 }
 
 /**
