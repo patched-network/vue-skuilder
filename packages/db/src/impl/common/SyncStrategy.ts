@@ -1,6 +1,6 @@
 // packages/db/src/impl/common/SyncStrategy.ts
 
-import type { AccountCreationResult, AuthenticationResult } from './types';
+import type { AccountCreationResult, AdoptSessionResult, AuthenticationResult } from './types';
 
 /**
  * Strategy interface for handling user data synchronization
@@ -89,6 +89,16 @@ export interface SyncStrategy {
    * Log out the current user (if supported)
    */
   logout?(): Promise<AuthenticationResult>;
+
+  /**
+   * Adopt a remote session established outside this client (e.g. a server that
+   * verified a third-party sign-in and set the session cookie), optionally
+   * migrating a guest account's local data into it (if supported).
+   * @param migrateFromGuest Guest username whose local data should be carried
+   *   over. The caller must capture it BEFORE the session switched, since the
+   *   remote now reports the adopted user.
+   */
+  adoptSession?(migrateFromGuest?: string): Promise<AdoptSessionResult>;
 
   /**
    * Get the current logged-in username

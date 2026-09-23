@@ -40,6 +40,7 @@ import {
   removeScheduledCardReviewLocal,
 } from './userDBHelpers';
 import { PouchError } from '../couch/types';
+import type { AdoptSessionResult } from './types';
 import UpdateQueue, { Update } from '../couch/updateQueue';
 import { UsrCrsData } from '../couch/user-course-relDB';
 import { getCredentialledCourseConfig } from '../couch/index';
@@ -248,6 +249,45 @@ Currently logged-in as ${this._username}.`
       await this.init();
     }
     return loginResult;
+  }
+
+  /**
+   * Adopt a remote session that was established outside this client — e.g. a
+   * backend verified a third-party sign-in (Google) and set the session cookie
+   * on its response. Afterwards the user is logged in exactly as after
+   * login(): username switched, guest pointer cleared, init() re-run.
+   *
+   * @param opts.migrateGuestData Carry the current guest account's local data
+   *   into the adopted account. Pass true for a freshly created account (as
+   *   createAccount() does), false for an existing one (as login() does).
+   */
+  public async adoptSession(opts: { migrateGuestData: boolean }): Promise<AdoptSessionResult> {
+    if (!this.syncStrategy.canAuthenticate() || !this.syncStrategy.adoptSession) {
+      throw new Error('Session adoption not supported by current sync strategy');
+    }
+
+    // Captured from memory, not the remote: the remote session already
+    // belongs to the adopted user.
+    const guestUsername = this._username.startsWith(GuestUsername) ? this._username : undefined;
+    if (!guestUsername) {
+      throw new Error(`Cannot adopt a session while logged in.
+      Log out of account ${this.getUsername()} first.`);
+    }
+
+    const result = await this.syncStrategy.adoptSession(
+      opts.migrateGuestData ? guestUsername : undefined
+    );
+    if (result.ok && result.username) {
+      log(`Adopted session for ${result.username}`);
+      this._username = result.username;
+      try {
+        localStorage.removeItem('sk-guest-uuid');
+      } catch (e) {
+        logger.warn('localStorage not available (Node.js environment):', e);
+      }
+      await this.init();
+    }
+    return result;
   }
 
   public async resetUserData(): Promise<{ status: Status; error?: string }> {

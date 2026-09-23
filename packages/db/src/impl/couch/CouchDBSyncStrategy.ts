@@ -5,7 +5,11 @@ import { GuestUsername } from '../../core/types/types-legacy';
 import { logger } from '../../util/logger';
 import { Status } from '@vue-skuilder/common';
 import type { SyncStrategy } from '../common/SyncStrategy';
-import type { AccountCreationResult, AuthenticationResult } from '../common/types';
+import type {
+  AccountCreationResult,
+  AdoptSessionResult,
+  AuthenticationResult,
+} from '../common/types';
 import { getLocalUserDB, hexEncode, updateGuestAccountExpirationDate, accomodateGuest } from '../common';
 import pouch from './pouchdb-setup';
 import { createPouchDBConfig } from './index';
@@ -259,6 +263,26 @@ export class CouchDBSyncStrategy implements SyncStrategy {
         error: error.message || 'Authentication failed',
       };
     }
+  }
+
+  async adoptSession(migrateFromGuest?: string): Promise<AdoptSessionResult> {
+    let username: string;
+    try {
+      username = await getLoggedInUsername();
+    } catch {
+      return { ok: false, error: 'No session to adopt' };
+    }
+
+    if (migrateFromGuest?.startsWith(GuestUsername)) {
+      logger.info(`Migrating data from funnel account ${migrateFromGuest} to ${username}`);
+      const migrationResult = await this.migrateFunnelData(migrateFromGuest, username);
+      if (!migrationResult.success) {
+        logger.warn(`Migration failed: ${migrationResult.error}`);
+        // Continue anyway - don't block the login
+      }
+    }
+
+    return { ok: true, username };
   }
 
   async logout(): Promise<AuthenticationResult> {

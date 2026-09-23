@@ -22,6 +22,11 @@ export interface AuthenticationResult {
   error?: string;
 }
 
+export interface AdoptSessionResult extends AuthenticationResult {
+  /** The adopted session's user, when ok. */
+  username?: string;
+}
+
 /**
  * User session information
  */

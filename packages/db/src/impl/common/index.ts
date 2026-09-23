@@ -4,6 +4,7 @@ export type { SyncStrategy } from './SyncStrategy';
 export { BaseSyncStrategy } from './SyncStrategy';
 export type {
   AccountCreationResult,
+  AdoptSessionResult,
   AuthenticationResult,
   UserSession,
   SyncConfig,
