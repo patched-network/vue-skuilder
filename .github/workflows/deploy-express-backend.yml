@@ -102,11 +102,17 @@ jobs:
           HOST=${{ secrets.DO_USERNAME }}@eduquilt.com
           BEFORE=$(ssh "$HOST" "systemctl show $SVC -p MainPID --value")
           echo "MainPID before restart: $BEFORE"
-          ssh "$HOST" "sudo systemctl restart $SVC"
+          # sudo -n: fail immediately rather than attempting a password prompt.
+          # Explicit branch because steps run under `bash -e`, which would exit
+          # on a bare failure before any diagnostic below could print.
+          if ! ssh "$HOST" "sudo -n systemctl restart $SVC"; then
+            echo "::error::sudo restart of $SVC failed — deploy user needs a NOPASSWD sudoers entry for 'systemctl restart $SVC' on the host"
+            exit 1
+          fi
           AFTER=$(ssh "$HOST" "systemctl show $SVC -p MainPID --value")
           echo "MainPID after restart:  $AFTER"
           if [ "$AFTER" = "$BEFORE" ] || [ "$AFTER" = "0" ]; then
-            echo "::error::$SVC did not restart (MainPID unchanged or service down) — check passwordless sudo for 'systemctl restart $SVC' on the host"
+            echo "::error::$SVC did not restart (MainPID unchanged or service down)"
             ssh "$HOST" "systemctl status $SVC --no-pager || true"
             exit 1
           fi
