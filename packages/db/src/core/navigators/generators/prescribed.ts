@@ -48,6 +48,16 @@ interface PrescribedGroupConfig {
   maxDirectTargetsPerRun?: number;
   maxSupportCardsPerRun?: number;
   hierarchyWalk?: HierarchyWalkConfig;
+  /**
+   * Exposure an intro target needs before it may surface. Each target is held
+   * back — and cards bearing its missing exposure tags are emitted as support —
+   * until every exposure tag it implies (its own `gpc:expose:*` tags, plus
+   * `gpc:expose:X` for each `gpc:intro:X`) reaches this count. Default 3: a
+   * letter is met incidentally inside other words before it is introduced.
+   * Set 0 for targets that must be introduced *before* any exposure — e.g.
+   * irregular words, which only ever appear in their own cards.
+   */
+  introExposeMinCount?: number;
   retireOnEncounter?: boolean;
   /**
    * Tag patterns identifying *practice* skills to drill once unlocked. For each
@@ -220,6 +230,32 @@ function formatAge(ms: number): string {
   const hours = Math.round(minutes / 60);
   if (hours < 24) return `${hours}h`;
   return `${Math.round(hours / 24)}d`;
+}
+
+/**
+ * The exposure tags an intro target still lacks before it may surface: its own
+ * `gpc:expose:*` tags plus `gpc:expose:X` for each `gpc:intro:X`, each needing
+ * `minCount` attempts. A `minCount` of 0 requires nothing — not even an entry
+ * in `userTagElo`.
+ */
+export function unmetIntroExposeTags(
+  tags: string[],
+  userTagElo: Record<string, { count: number }>,
+  minCount: number
+): string[] {
+  if (minCount <= 0) return [];
+
+  const exposeTags = new Set(tags.filter((tag) => tag.startsWith('gpc:expose:')));
+  for (const tag of tags) {
+    if (!tag.startsWith('gpc:intro:')) continue;
+    const suffix = tag.slice('gpc:intro:'.length);
+    if (suffix) exposeTags.add(`gpc:expose:${suffix}`);
+  }
+
+  return [...exposeTags].filter((tag) => {
+    const tagElo = userTagElo[tag];
+    return !tagElo || tagElo.count < minCount;
+  });
 }
 
 function pickTopByScore(cards: WeightedCard[], limit: number): WeightedCard[] {
@@ -609,6 +645,8 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
             typeof raw.maxDirectTargetsPerRun === 'number' ? raw.maxDirectTargetsPerRun : DEFAULT_MAX_DIRECT_PER_RUN,
           maxSupportCardsPerRun:
             typeof raw.maxSupportCardsPerRun === 'number' ? raw.maxSupportCardsPerRun : DEFAULT_MAX_SUPPORT_PER_RUN,
+          introExposeMinCount:
+            typeof raw.introExposeMinCount === 'number' ? raw.introExposeMinCount : DEFAULT_MIN_COUNT,
           hierarchyWalk: {
             enabled: raw.hierarchyWalk?.enabled !== false,
             maxDepth:
@@ -715,20 +753,11 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
         group.hierarchyWalk?.maxDepth ?? DEFAULT_HIERARCHY_DEPTH
       );
 
-      const introTags = tags.filter((tag) => tag.startsWith('gpc:intro:'));
-      const exposeTags = new Set(tags.filter((tag) => tag.startsWith('gpc:expose:')));
-
-      for (const introTag of introTags) {
-        const suffix = introTag.slice('gpc:intro:'.length);
-        if (suffix) {
-          exposeTags.add(`gpc:expose:${suffix}`);
-        }
-      }
-
-      const unmetExposeTags = [...exposeTags].filter((tag) => {
-        const tagElo = userTagElo[tag];
-        return !tagElo || tagElo.count < DEFAULT_MIN_COUNT;
-      });
+      const unmetExposeTags = unmetIntroExposeTags(
+        tags,
+        userTagElo,
+        group.introExposeMinCount ?? DEFAULT_MIN_COUNT
+      );
 
       if (unmetExposeTags.length > 0) {
         unmetExposeTags.forEach((tag) => supportTags.add(tag));
