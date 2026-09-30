@@ -74,6 +74,20 @@ export interface FilterImpact {
   removed: number;
 }
 
+/** One card as retained in a {@link PipelineRunReport}. */
+export interface RunReportCard {
+  cardId: string;
+  courseId: string;
+  origin: 'new' | 'review' | 'unknown';
+  generator?: string;
+  finalScore: number;
+  /** Card's ELO (parsed from ELO generator provenance, if available) */
+  cardElo?: number;
+  provenance: StrategyContribution[];
+  tags?: string[];
+  selected: boolean;
+}
+
 /**
  * Complete record of a single pipeline execution.
  */
@@ -117,18 +131,22 @@ export interface PipelineRunReport {
    * rather than retained verbatim — each retained card carries a multi-KB
    * provenance trail, and the tail is typically hundreds of cards per run.
    */
-  cards: Array<{
-    cardId: string;
-    courseId: string;
-    origin: 'new' | 'review' | 'unknown';
-    generator?: string;
-    finalScore: number;
-    /** Card's ELO (parsed from ELO generator provenance, if available) */
-    cardElo?: number;
-    provenance: StrategyContribution[];
-    tags?: string[];
-    selected: boolean;
-  }>;
+  cards: RunReportCard[];
+
+  /**
+   * The two unselected non-review cards most worth explaining when a run
+   * picks no new content. Non-review means no `reviewID`, so prescribed and
+   * required cards count (their `origin` reads `'unknown'`).
+   *
+   * - `nextInLine`: highest final score. How close new content came.
+   * - `topGenerated`: highest generator score, zero-scored cards included.
+   *   Its provenance shows which filter sank it. Omitted when it is the same
+   *   card as `nextInLine`.
+   */
+  unselectedNew?: {
+    nextInLine?: RunReportCard;
+    topGenerated?: RunReportCard;
+  };
 
   /**
    * Summary of the discarded tail of the candidate pool — cards that were
@@ -273,7 +291,9 @@ export function buildRunReport(
   allCards: WeightedCard[],
   selectedCards: WeightedCard[],
   userElo?: number,
-  hints?: ReplanHints
+  hints?: ReplanHints,
+  /** Post-filter cards before zero-scored ones are dropped. Defaults to `allCards`. */
+  scoredCards?: WeightedCard[]
 ): Omit<PipelineRunReport, 'runId' | 'timestamp'> {
   const selectedIds = new Set(selectedCards.map((c) => c.cardId));
 
@@ -281,7 +301,7 @@ export function buildRunReport(
   // into selected vs not-selected, then retain only the top-N of the
   // non-selected group to bound memory. The remaining low-score tail is
   // summarized rather than kept (see discardedTail).
-  const toReport = (card: WeightedCard) => ({
+  const toReport = (card: WeightedCard): RunReportCard => ({
     cardId: card.cardId,
     courseId: card.courseId,
     origin: getOrigin(card),
@@ -293,8 +313,8 @@ export function buildRunReport(
     selected: selectedIds.has(card.cardId),
   });
 
-  const selectedReported: ReturnType<typeof toReport>[] = [];
-  const nearMissReported: ReturnType<typeof toReport>[] = [];
+  const selectedReported: RunReportCard[] = [];
+  const nearMissReported: RunReportCard[] = [];
   const discardedTailCards: WeightedCard[] = [];
 
   let nonSelectedSeen = 0;
@@ -341,6 +361,33 @@ export function buildRunReport(
     };
   }
 
+  // Unselected non-review candidates. `nextInLine` ranks by final score, so it
+  // comes from `allCards` (post-hints; zero-scored dropped). `topGenerated`
+  // ranks by generator score and must see the zero-scored cards too, but not
+  // cards a hint excluded: exclusion leaves no provenance to explain them.
+  const isUnselectedNew = (c: WeightedCard) => !c.reviewID && !selectedIds.has(c.cardId);
+  const generatorScore = (c: WeightedCard) => c.provenance[0]?.score ?? 0;
+  const keptIds = new Set(allCards.map((c) => c.cardId));
+  const hintExcluded = (c: WeightedCard) => c.score > 0 && !keptIds.has(c.cardId);
+  let nextInLine: WeightedCard | undefined;
+  for (const c of allCards) {
+    if (isUnselectedNew(c) && (!nextInLine || c.score > nextInLine.score)) nextInLine = c;
+  }
+  let topGenerated: WeightedCard | undefined;
+  for (const c of scoredCards ?? allCards) {
+    if (!isUnselectedNew(c) || hintExcluded(c)) continue;
+    if (!topGenerated || generatorScore(c) > generatorScore(topGenerated)) topGenerated = c;
+  }
+  const unselectedNew =
+    nextInLine || topGenerated
+      ? {
+          ...(nextInLine ? { nextInLine: toReport(nextInLine) } : {}),
+          ...(topGenerated && topGenerated.cardId !== nextInLine?.cardId
+            ? { topGenerated: toReport(topGenerated) }
+            : {}),
+        }
+      : undefined;
+
   const reviewsSelected = selectedCards.filter((c) => getOrigin(c) === 'review').length;
   const newSelected = selectedCards.filter((c) => getOrigin(c) === 'new').length;
 
@@ -357,6 +404,7 @@ export function buildRunReport(
     reviewsSelected,
     newSelected,
     cards,
+    unselectedNew,
     discardedTail,
   };
 }

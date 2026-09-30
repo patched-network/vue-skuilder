@@ -21,6 +21,8 @@ import {
   type SessionStateSnapshot,
   type SessionStateSnapshotProvider,
   type StudySessionDoc,
+  type StudySessionRunCard,
+  type StudySessionRunCardTrail,
   type StudySessionRunSummary,
 } from '@db/core/types/studySession';
 import { recordUserOutcome } from '@db/core/orchestration/recording';
@@ -33,6 +35,7 @@ import {
   setDebugSessionId,
   drainCapturedRuns,
 } from '@db/core/navigators';
+import type { PipelineRunReport, RunReportCard } from '@db/core/navigators';
 import { ReplanHints } from '@db/core/navigators/generators/types';
 import { mergeHints } from '@db/core/navigators/Pipeline';
 import { SourceMixer, QuotaRoundRobinMixer, SourceBatch } from './SourceMixer';
@@ -221,6 +224,54 @@ export type OutcomeObserver = (
   outcome: SessionOutcome,
   controls: SessionControls
 ) => void | Promise<void>;
+
+/** Unselected cards persisted per run, after the selected ones. */
+const PERSISTED_RUNNERS_UP = 5;
+
+/** 4 significant figures: keeps 6.4e-7 distinguishable from 0 without 17-digit floats. */
+function sig4(x: number): number {
+  return Number(x.toPrecision(4));
+}
+
+function toRunCard(c: RunReportCard): StudySessionRunCard {
+  return {
+    cardId: c.cardId,
+    origin: c.origin,
+    ...(c.generator ? { generator: c.generator } : {}),
+    score: sig4(c.finalScore),
+    selected: c.selected,
+  };
+}
+
+function toRunCardTrail(c: RunReportCard): StudySessionRunCardTrail {
+  return {
+    ...toRunCard(c),
+    trail: c.provenance
+      .filter((p) => p.action !== 'passed')
+      .map((p) => ({
+        strategyName: p.strategyName,
+        action: p.action,
+        score: sig4(p.score),
+        reason: p.reason,
+      })),
+  };
+}
+
+/** `run.cards` is selected-then-near-misses, each in score order. */
+function persistedRunCards(run: PipelineRunReport): StudySessionRunCard[] {
+  const selected = run.cards.filter((c) => c.selected);
+  const runnersUp = run.cards.filter((c) => !c.selected).slice(0, PERSISTED_RUNNERS_UP);
+  return [...selected, ...runnersUp].map(toRunCard);
+}
+
+function persistedUnselectedNew(
+  u: NonNullable<PipelineRunReport['unselectedNew']>
+): StudySessionRunSummary['unselectedNew'] {
+  return {
+    ...(u.nextInLine ? { nextInLine: toRunCardTrail(u.nextInLine) } : {}),
+    ...(u.topGenerated ? { topGenerated: toRunCardTrail(u.topGenerated) } : {}),
+  };
+}
 
 interface SessionServices {
   response: ResponseProcessor;
@@ -575,13 +626,16 @@ export class SessionController<TView = unknown> extends Loggable {
         newSelected: run.newSelected,
         // Compact detail projected off the full report so a persisted run is
         // self-explanatory once the in-memory ring buffer has rolled over.
-        // Per-card provenance (`run.cards`) is intentionally left out — it's
-        // the dominant memory cost and not worth persisting per run.
+        // Per-card provenance is the dominant cost, so it's kept only for the
+        // (at most two) `unselectedNew` cards, and only its score-changing
+        // entries. Everything else is ids and scores.
         ...(typeof run.userElo === 'number' ? { userElo: run.userElo } : {}),
         ...(run.generators ? { generators: run.generators } : {}),
         ...(run.filters ? { filters: run.filters } : {}),
         ...(run.hints ? { hints: run.hints } : {}),
         ...(run.discardedTail ? { discardedTail: run.discardedTail } : {}),
+        cards: persistedRunCards(run),
+        ...(run.unselectedNew ? { unselectedNew: persistedUnselectedNew(run.unselectedNew) } : {}),
       });
     }
   }
