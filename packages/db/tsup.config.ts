@@ -8,6 +8,7 @@ export default defineConfig({
     'src/impl/couch/index.ts',
     'src/impl/static/index.ts',
     'src/util/packer/index.ts',
+    'src/diagnostics/index.ts',
   ],
   format: ['cjs', 'esm'],
   dts: true,
