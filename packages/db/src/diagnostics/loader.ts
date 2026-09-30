@@ -34,10 +34,17 @@ function base64(s: string): string {
   return btoa(binary);
 }
 
+/** Drop trailing slashes. A loop, not `/\/+$/`, which is quadratic on long runs of '/'. */
+function trimTrailingSlashes(url: string): string {
+  let end = url.length;
+  while (end > 0 && url[end - 1] === '/') end--;
+  return url.slice(0, end);
+}
+
 /** A tiny read-only couch client. No Pouch, no user object, no sync. */
 function couchReader(opts: FetchLearnerDumpOptions) {
   const doFetch = opts.fetchImpl ?? fetch;
-  const base = opts.couchUrl.replace(/\/+$/, '');
+  const base = trimTrailingSlashes(opts.couchUrl);
   const headers: Record<string, string> = { Accept: 'application/json' };
   if (opts.auth.kind === 'basic') {
     headers.Authorization = 'Basic ' + base64(`${opts.auth.username}:${opts.auth.password}`);
