@@ -23,4 +23,5 @@ export { default as LearnerDiagnostics } from './components/LearnerDiagnostics.v
 export { default as LearnerSessionList } from './components/LearnerSessionList.vue';
 export { default as LearnerSessionDetail } from './components/LearnerSessionDetail.vue';
 export { default as LearnerCardHistory } from './components/LearnerCardHistory.vue';
+export { default as CardDossierDetail } from './components/CardDossierDetail.vue';
 export { default as RunDetail } from './components/RunDetail.vue';

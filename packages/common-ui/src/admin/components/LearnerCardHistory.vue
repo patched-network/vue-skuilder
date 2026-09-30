@@ -82,57 +82,7 @@
         </v-expansion-panel-title>
 
         <v-expansion-panel-text>
-          <div v-if="c.card && Object.keys(c.card.data).length" class="text-caption mb-2">
-            <span v-for="(v, k) in c.card.data" :key="k" class="mr-3">
-              <span class="text-medium-emphasis">{{ k }}:</span> {{ fmtAnswer(v, 60) }}
-            </span>
-          </div>
-          <div class="d-flex flex-wrap mb-2 ga-1">
-            <v-chip
-              v-for="t in c.card?.tags ?? []"
-              :key="t"
-              size="x-small"
-              variant="outlined"
-              :color="isSkillTag(interpreters, t) ? 'primary' : undefined"
-            >
-              {{ t }}
-            </v-chip>
-            <span v-if="!c.card" class="text-caption text-disabled">no course data in this dataset</span>
-          </div>
-          <div class="text-caption text-medium-emphasis mb-2">
-            lapses {{ c.lapses }} · streak {{ c.streak }} · best interval {{ fmtInterval(c.bestIntervalSeconds) }} ·
-            <template v-if="c.pendingReview">next review {{ fmtTime(c.pendingReview.reviewTime) }}</template>
-            <template v-else>no review scheduled</template>
-          </div>
-
-          <v-table density="compact" class="sk-record-table">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>When</th>
-                <th>Result</th>
-                <th>Perf</th>
-                <th>Prior att.</th>
-                <th>Time</th>
-                <th>Answer</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(r, i) in c.records" :key="i" :class="r.isCorrect === false ? 'sk-fail-row' : ''">
-                <td>{{ i + 1 }}</td>
-                <td class="text-no-wrap">{{ fmtTime(r.timeStamp) }}</td>
-                <td>
-                  <v-icon v-if="r.isCorrect === true" size="small" color="success">mdi-check</v-icon>
-                  <v-icon v-else-if="r.isCorrect === false" size="small" color="error">mdi-close</v-icon>
-                  <span v-else class="text-disabled">—</span>
-                </td>
-                <td>{{ perf(r) }}</td>
-                <td>{{ r.priorAttemps ?? '—' }}</td>
-                <td>{{ ((r.timeSpent ?? 0) / 1000).toFixed(1) }}s</td>
-                <td class="text-truncate" style="max-width: 200px">{{ fmtAnswer(r.userAnswer) }}</td>
-              </tr>
-            </tbody>
-          </v-table>
+          <card-dossier-detail :dossier="c" :interpreters="interpreters" />
         </v-expansion-panel-text>
       </v-expansion-panel>
     </v-expansion-panels>
@@ -143,16 +93,13 @@
 import { computed, nextTick, ref, watch } from 'vue';
 import {
   cardDossiers,
-  fmtAnswer,
   fmtDuration,
-  isSkillTag,
-  recordPerformance,
   type CardDossier,
-  type DatasetRecord,
   type DiagnosticsInterpreters,
   type LearnerDataset,
 } from '@vue-skuilder/db/diagnostics';
-import { fmtTime, shortId } from '../display';
+import { shortId } from '../display';
+import CardDossierDetail from './CardDossierDetail.vue';
 
 /**
  * Every card the learner has history with. `focus` opens, scrolls to, and
@@ -213,18 +160,6 @@ function headline(c: CardDossier): string {
   return typeof v === 'string' ? v : '';
 }
 
-function perf(r: DatasetRecord): string {
-  const p = recordPerformance(r);
-  return p === null ? '—' : p.toFixed(2);
-}
-
-function fmtInterval(s: number): string {
-  if (!s) return 'none';
-  if (s < 3600) return `${Math.round(s / 60)}m`;
-  if (s < 86400) return `${Math.round(s / 3600)}h`;
-  return `${Math.round(s / 86400)}d`;
-}
-
 async function applyFocus(id: string | undefined): Promise<void> {
   if (!id || !cards.value.some((c) => c.cardId === id)) return;
   filter.value = 'all';
@@ -246,13 +181,6 @@ watch(
 </script>
 
 <style scoped>
-.sk-record-table :deep(td),
-.sk-record-table :deep(th) {
-  font-size: 0.78rem;
-}
-.sk-fail-row {
-  background-color: rgba(var(--v-theme-error), 0.06);
-}
 .sk-card-flash {
   animation: sk-card-flash 2.2s ease-out;
 }

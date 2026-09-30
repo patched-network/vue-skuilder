@@ -1,6 +1,6 @@
 // db/src/core/interfaces.ts
 
-import { UserDBInterface, UserDBReader } from './userDB';
+import { UserDBInterface } from './userDB';
 import { CourseDBInterface, CoursesDBInterface } from './courseDB';
 import { ClassroomDBInterface } from './classroomDB';
 import { AdminDBInterface } from './adminDB';
@@ -14,13 +14,8 @@ export interface DataLayerProvider {
    */
   getUserDB(): UserDBInterface;
 
-  /**
-   * Create a UserDBReader for a specific user (admin access required)
-   * Uses session authentication to verify requesting user is admin
-   * @param targetUsername - The username to create a reader for
-   * @throws Error if requesting user is not 'admin'
-   */
-  createUserReaderForUser(targetUsername: string): Promise<UserDBReader>;
+  // Reading another learner's records (admin): see `@vue-skuilder/db/diagnostics`
+  // (`fetchLearnerDump`). A second UserDB would replace the logged-in one.
 
   /**
    * Get a course database interface

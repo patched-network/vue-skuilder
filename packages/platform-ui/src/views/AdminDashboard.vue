@@ -68,22 +68,60 @@
     </v-row>
 
     <!-- Card History Section -->
-    <card-history-viewer
-      v-if="selectedCard && selectedUserReader"
-      :card-id="selectedCard.cardId"
-      :course-id="selectedCard.courseId"
-      :user-id="selectedUserId"
-      :user-d-b="selectedUserReader"
-    />
+    <v-card v-if="selectedCard && selectedUserId" class="mt-4" variant="outlined">
+      <v-card-title class="d-flex align-center">
+        Card history: {{ selectedUserId }}
+        <v-spacer />
+        <v-btn variant="text" size="small" prepend-icon="mdi-account-search" :to="learnerLink">
+          Learner diagnostics
+        </v-btn>
+      </v-card-title>
+      <v-card-text>
+        <v-progress-linear v-if="dossierLoading" indeterminate />
+        <v-alert v-else-if="dossierError" type="error" variant="tonal" density="compact">{{ dossierError }}</v-alert>
+        <card-dossier-detail v-else-if="cardDossier" :dossier="cardDossier" />
+        <div v-else class="text-caption text-disabled">{{ selectedUserId }} has no history with this card.</div>
+      </v-card-text>
+    </v-card>
   </div>
 </template>
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import { CardSearch, CardSearchResults, CardHistoryViewer, CardLoader, getCurrentUser } from '@vue-skuilder/common-ui';
+import { CardSearch, CardSearchResults, CardLoader, getCurrentUser } from '@vue-skuilder/common-ui';
+import { CardDossierDetail } from '@vue-skuilder/common-ui/admin';
+import '@vue-skuilder/common-ui/admin/style';
 import { getDataLayer, CourseLookup } from '@vue-skuilder/db';
+import {
+  cardDossiers,
+  fetchLearnerDump,
+  fromDump,
+  type CardDossier,
+  type LearnerDump,
+} from '@vue-skuilder/db/diagnostics';
 import { allCourseWare } from '@vue-skuilder/courseware';
-import { UserDBInterface, UserDBReader, DataLayerProvider, AdminDBInterface } from '@vue-skuilder/db';
+import { UserDBInterface, DataLayerProvider, AdminDBInterface } from '@vue-skuilder/db';
+import ENV from '../ENVIRONMENT_VARS';
+
+// A learner's records, per learner and course, fetched once per page load with
+// the admin's couch session cookie. Not through a data-layer UserDB: building
+// another user's UserDB replaces the logged-in one.
+const dumps = new Map<string, Promise<LearnerDump>>();
+
+function learnerDump(username: string, courseId: string): Promise<LearnerDump> {
+  const key = `${courseId}::${username}`;
+  if (!dumps.has(key)) {
+    const pending = fetchLearnerDump({
+      couchUrl: `${ENV.COUCHDB_SERVER_PROTOCOL}://${ENV.COUCHDB_SERVER_URL}`,
+      username,
+      courseId,
+      auth: { kind: 'cookie' },
+    });
+    dumps.set(key, pending);
+    pending.catch(() => dumps.delete(key));
+  }
+  return dumps.get(key)!;
+}
 
 interface UserOption {
   label: string;
@@ -95,7 +133,7 @@ export default defineComponent({
   components: {
     CardSearch,
     CardSearchResults,
-    CardHistoryViewer,
+    CardDossierDetail,
     CardLoader,
   },
   data() {
@@ -107,11 +145,20 @@ export default defineComponent({
       dataLayer: null as DataLayerProvider | null,
       adminDB: null as AdminDBInterface | null,
       selectedUserId: '',
-      selectedUserReader: null as UserDBReader | null,
+      cardDossier: null as CardDossier | null,
+      dossierLoading: false,
+      dossierError: null as string | null,
       selectedCourseId: null as string | null,
       userOptions: [] as UserOption[],
       courseOptions: [] as UserOption[],
     };
+  },
+  computed: {
+    learnerLink(): string {
+      if (!this.selectedCard || !this.selectedUserId) return '/admin/learners';
+      const course = encodeURIComponent(this.selectedCard.courseId);
+      return `/admin/learners/${course}/${encodeURIComponent(this.selectedUserId)}`;
+    },
   },
   async created() {
     this.userDB = await getCurrentUser();
@@ -141,17 +188,26 @@ export default defineComponent({
       }
     },
 
-    async onUserSelected(userId: string) {
-      if (!userId) {
-        this.selectedUserReader = null;
-        return;
-      }
+    onUserSelected() {
+      void this.loadDossier();
+    },
 
+    /** The selected learner's record for the selected card, from their dataset. */
+    async loadDossier() {
+      const card = this.selectedCard;
+      const user = this.selectedUserId;
+      this.cardDossier = null;
+      this.dossierError = null;
+      if (!card || !user) return;
+      this.dossierLoading = true;
       try {
-        this.selectedUserReader = await this.dataLayer!.createUserReaderForUser(userId);
+        const dataset = fromDump(await learnerDump(user, card.courseId), card.courseId);
+        if (card !== this.selectedCard || user !== this.selectedUserId) return;
+        this.cardDossier = cardDossiers(dataset).find((d) => d.cardId === card.cardId) ?? null;
       } catch (error) {
-        console.error('Failed to create user reader:', error);
-        this.selectedUserReader = null;
+        this.dossierError = error instanceof Error ? error.message : String(error);
+      } finally {
+        this.dossierLoading = false;
       }
     },
 
@@ -161,6 +217,7 @@ export default defineComponent({
 
     onCardSelected(card: { cardId: string; courseId: string }) {
       this.selectedCard = card;
+      void this.loadDossier();
     },
 
     async loadCourses() {
