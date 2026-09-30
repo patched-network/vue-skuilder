@@ -1,6 +1,7 @@
 import { DocType, DocTypePrefixes } from './types-legacy';
 import type { ReplanHints } from '../navigators/generators/types';
 import type { GeneratorSummary, FilterImpact } from '../navigators/PipelineDebugger';
+import type { StrategyContribution } from '../navigators';
 
 /**
  * Durable per-sitting record. Join target for `CardRecord.sessionId`.
@@ -104,6 +105,42 @@ export interface StudySessionRunSummary {
     eloRange?: [number, number];
     note: string;
   };
+  /**
+   * The selected cards, then the top few unselected ones, each in score
+   * order. The lowest selected score against the first runner-up is this
+   * run's cutoff.
+   */
+  cards?: StudySessionRunCard[];
+  /**
+   * The unselected non-review cards most worth explaining, with their
+   * score-changing provenance. See `PipelineRunReport.unselectedNew`.
+   */
+  unselectedNew?: {
+    nextInLine?: StudySessionRunCardTrail;
+    topGenerated?: StudySessionRunCardTrail;
+  };
+}
+
+/** A card as persisted on a run. `origin` is as counted in `newSelected`/`reviewsSelected`. */
+export interface StudySessionRunCard {
+  cardId: string;
+  origin: 'new' | 'review' | 'unknown';
+  generator?: string;
+  score: number;
+  selected: boolean;
+}
+
+/**
+ * A card plus the provenance entries that changed its score, in order.
+ * `'passed'` entries are dropped. Strategy ids are dropped (the name is kept).
+ */
+export interface StudySessionRunCardTrail extends StudySessionRunCard {
+  trail: Array<{
+    strategyName: string;
+    action: StrategyContribution['action'];
+    score: number;
+    reason: string;
+  }>;
 }
 
 /**

@@ -11,6 +11,7 @@ import SignUp from './views/SignUp.vue';
 // Lazy: everything else — each becomes its own chunk
 const About = () => import('./views/About.vue');
 const AdminDashboard = () => import('./views/AdminDashboard.vue');
+const AdminLearner = () => import('./views/AdminLearner.vue');
 const Classrooms = () => import('./views/Classrooms.vue');
 const ClassroomCtrlPanel = () => import('./components/Classrooms/ClassroomCtrlPanel.vue');
 const JoinCode = () => import('./components/Classrooms/JoinCode.vue');
@@ -172,6 +173,13 @@ const router = createRouter({
     {
       path: '/admin',
       component: AdminDashboard,
+      meta: { requiresAdmin: true },
+    },
+    {
+      path: '/admin/learners/:courseId?/:username?',
+      name: 'admin-learner',
+      props: true,
+      component: AdminLearner,
       meta: { requiresAdmin: true },
     },
     {

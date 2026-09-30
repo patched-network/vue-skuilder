@@ -501,7 +501,9 @@ export class Pipeline extends ContentNavigator implements PipelineForecaster {
       logger.debug(`[Pipeline] Filter '${filter.name}': ${beforeScores.size} → ${cards.length} cards (↑${boosted} ↓${penalized} =${passed})`);
     }
 
-    // Remove zero-score cards (hard filtered)
+    // Remove zero-score cards (hard filtered). The debug report still wants
+    // them: they're the answer to "which filter sank this card?"
+    const scoredCards = cards;
     cards = cards.filter((c) => c.score > 0);
 
     // Apply ephemeral hints (one-shot, post-filter)
@@ -568,7 +570,8 @@ export class Pipeline extends ContentNavigator implements PipelineForecaster {
         cards,
         result,
         context.userElo,
-        hints?? undefined
+        hints?? undefined,
+        scoredCards
       );
       captureRun(report);
     } catch (e) {

@@ -11,6 +11,19 @@ console.info(`[VITE] shared config loaded in ${isDev ? 'development' : 'producti
  */
 export function createBaseAliases(rootDir = process.cwd()) {
   return {
+    // Subpath entries must precede their package alias, or the package alias
+    // rewrites the prefix first (prod would resolve `db/dist/index.mjs/diagnostics`).
+    '@vue-skuilder/db/diagnostics': isDev
+      ? resolve(rootDir, './packages/db/src/diagnostics')
+      : resolve(rootDir, './packages/db/dist/diagnostics/index.mjs'),
+    '@vue-skuilder/common-ui/admin/style': resolve(
+      rootDir,
+      './packages/common-ui/dist/admin/admin.css'
+    ),
+    '@vue-skuilder/common-ui/admin': isDev
+      ? resolve(rootDir, './packages/common-ui/src/admin')
+      : resolve(rootDir, './packages/common-ui/dist/admin/common-ui-admin.es.js'),
+
     // Inter-package aliases using actual package names from imports
     '@vue-skuilder/db': isDev
       ? resolve(rootDir, './packages/db/src') // Dev: source directory

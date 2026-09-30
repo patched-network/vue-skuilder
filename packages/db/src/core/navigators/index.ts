@@ -24,6 +24,7 @@ export {
   getRunsForSession,
   drainCapturedRuns,
   type PipelineRunReport,
+  type RunReportCard,
   type GeneratorSummary,
   type FilterImpact,
 } from './PipelineDebugger';

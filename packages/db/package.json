@@ -34,6 +34,18 @@
       "types": "./dist/impl/static/index.d.ts",
       "import": "./dist/impl/static/index.mjs",
       "require": "./dist/impl/static/index.js"
+    },
+    "./diagnostics": {
+      "types": "./dist/diagnostics/index.d.ts",
+      "import": "./dist/diagnostics/index.mjs",
+      "require": "./dist/diagnostics/index.js"
+    }
+  },
+  "typesVersions": {
+    "*": {
+      "diagnostics": [
+        "./dist/diagnostics/index.d.ts"
+      ]
     }
   },
   "scripts": {

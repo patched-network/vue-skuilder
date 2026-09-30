@@ -14,8 +14,20 @@
       "import": "./dist/common-ui.es.js",
       "require": "./dist/common-ui.umd.js"
     },
+    "./admin": {
+      "types": "./dist/admin/index.d.ts",
+      "import": "./dist/admin/common-ui-admin.es.js"
+    },
+    "./admin/style": "./dist/admin/admin.css",
     "./style": "./dist/assets/index.css",
     "./styles": "./dist/assets/index.css"
+  },
+  "typesVersions": {
+    "*": {
+      "admin": [
+        "./dist/admin/index.d.ts"
+      ]
+    }
   },
   "files": [
     "dist",
@@ -23,7 +35,8 @@
   ],
   "scripts": {
     "dev": "vite build --watch",
-    "build": "vite build",
+    "dev:admin": "vite build --watch -c vite.config.admin.js",
+    "build": "vite build && vite build -c vite.config.admin.js",
     "lint": "eslint . --fix",
     "lint:check": "eslint .",
     "test:unit": "vitest run",

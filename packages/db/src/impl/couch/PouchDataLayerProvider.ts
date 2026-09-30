@@ -7,12 +7,9 @@ import {
   CourseDBInterface,
   DataLayerProvider,
   UserDBInterface,
-  UserDBReader,
 } from '../../core/interfaces';
 import { logger } from '../../util/logger';
 import { initializeDataDirectory } from '../../util/dataDirectory';
-
-import { getLoggedInUsername } from './auth';
 
 import { AdminDB } from './adminDB';
 import { StudentClassroomDB, TeacherClassroomDB } from './classroomDB';
@@ -113,26 +110,6 @@ export class CouchDataLayerProvider implements DataLayerProvider {
 
   getAdminDB(): AdminDBInterface {
     return new AdminDB();
-  }
-
-  async createUserReaderForUser(targetUsername: string): Promise<UserDBReader> {
-    // Security check: only admin can access other users' data
-    const requestingUsername = await getLoggedInUsername();
-    if (requestingUsername !== 'admin') {
-      throw new Error('Unauthorized: Only admin users can access other users\' data');
-    }
-
-    logger.info(`Admin user '${requestingUsername}' requesting UserDBReader for '${targetUsername}'`);
-
-    // Create a new sync strategy for the target user
-    const syncStrategy = new CouchDBSyncStrategy();
-    
-    // Create a BaseUser instance for the target user
-    // Note: This creates a read-capable user instance without affecting the current session
-    const targetUserDB = await BaseUser.instance(syncStrategy, targetUsername);
-    
-    // Return as UserDBReader (which BaseUser implements since UserDBInterface extends UserDBReader)
-    return targetUserDB as UserDBReader;
   }
 
   isReadOnly(): boolean {
