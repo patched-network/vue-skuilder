@@ -16,6 +16,10 @@ export function createBaseAliases(rootDir = process.cwd()) {
     '@vue-skuilder/db/diagnostics': isDev
       ? resolve(rootDir, './packages/db/src/diagnostics')
       : resolve(rootDir, './packages/db/dist/diagnostics/index.mjs'),
+    '@vue-skuilder/common-ui/admin/style': resolve(
+      rootDir,
+      './packages/common-ui/dist/admin/admin.css'
+    ),
     '@vue-skuilder/common-ui/admin': isDev
       ? resolve(rootDir, './packages/common-ui/src/admin')
       : resolve(rootDir, './packages/common-ui/dist/admin/common-ui-admin.es.js'),

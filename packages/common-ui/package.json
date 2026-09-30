@@ -18,6 +18,7 @@
       "types": "./dist/admin/index.d.ts",
       "import": "./dist/admin/common-ui-admin.es.js"
     },
+    "./admin/style": "./dist/admin/admin.css",
     "./style": "./dist/assets/index.css",
     "./styles": "./dist/assets/index.css"
   },

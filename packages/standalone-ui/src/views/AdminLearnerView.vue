@@ -7,14 +7,17 @@
       :initial-username="username"
       @loaded="onLoaded"
     />
+    <learner-diagnostics v-if="dataset" :dataset="dataset" class="mt-6" />
   </v-container>
 </template>
 
 <script setup lang="ts">
+import { shallowRef } from 'vue';
 import { useRouter } from 'vue-router';
 import { ENV } from '@vue-skuilder/db';
 import type { LearnerDataset } from '@vue-skuilder/db/diagnostics';
-import { LearnerDatasetSource } from '@vue-skuilder/common-ui/admin';
+import { LearnerDatasetSource, LearnerDiagnostics } from '@vue-skuilder/common-ui/admin';
+import '@vue-skuilder/common-ui/admin/style';
 import config from '../../skuilder.config.json';
 
 /**
@@ -30,9 +33,12 @@ const couchUrl =
     ? `${ENV.COUCHDB_SERVER_PROTOCOL}://${ENV.COUCHDB_SERVER_URL}`
     : undefined;
 
-function onLoaded(dataset: LearnerDataset): void {
-  if (dataset.username !== props.username) {
-    void router.replace({ name: 'AdminLearner', params: { username: dataset.username } });
+const dataset = shallowRef<LearnerDataset | null>(null);
+
+function onLoaded(loaded: LearnerDataset): void {
+  dataset.value = loaded;
+  if (loaded.username !== props.username) {
+    void router.replace({ name: 'AdminLearner', params: { username: loaded.username } });
   }
 }
 </script>

@@ -35,15 +35,17 @@
       :autoload="!!selectedUser"
       @loaded="onLoaded"
     />
+    <learner-diagnostics v-if="dataset" :dataset="dataset" class="mt-6" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { onMounted, ref, shallowRef } from 'vue';
 import { useRouter } from 'vue-router';
 import { CourseLookup, getDataLayer } from '@vue-skuilder/db';
 import type { LearnerDataset } from '@vue-skuilder/db/diagnostics';
-import { LearnerDatasetSource } from '@vue-skuilder/common-ui/admin';
+import { LearnerDatasetSource, LearnerDiagnostics } from '@vue-skuilder/common-ui/admin';
+import '@vue-skuilder/common-ui/admin/style';
 import ENV from '../ENVIRONMENT_VARS';
 
 /**
@@ -60,6 +62,7 @@ const userOptions = ref<string[]>([]);
 // Drives the source component's key. The route can follow a learner typed
 // into the component without remounting (and refetching) it.
 const selectedUser = ref(props.username);
+const dataset = shallowRef<LearnerDataset | null>(null);
 
 function syncUrl(courseId?: string, username?: string): void {
   const parts = ['/admin/learners', courseId, courseId ? username : undefined].filter((p): p is string => !!p);
@@ -68,6 +71,7 @@ function syncUrl(courseId?: string, username?: string): void {
 
 function pickCourse(courseId: string | null): void {
   selectedUser.value = undefined;
+  dataset.value = null;
   syncUrl(courseId ?? undefined);
 }
 
@@ -76,8 +80,9 @@ function pickUser(username: string | null): void {
   syncUrl(props.courseId, selectedUser.value);
 }
 
-function onLoaded(dataset: LearnerDataset): void {
-  if (dataset.username !== props.username) syncUrl(props.courseId, dataset.username);
+function onLoaded(loaded: LearnerDataset): void {
+  dataset.value = loaded;
+  if (loaded.username !== props.username) syncUrl(props.courseId, loaded.username);
 }
 
 onMounted(async () => {
