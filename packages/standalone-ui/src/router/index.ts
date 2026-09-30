@@ -64,6 +64,15 @@ const routes: Array<RouteRecordRaw> = [
       requiresAuth: true,
     },
   },
+  {
+    path: '/admin/learners/:username?',
+    name: 'AdminLearner',
+    component: () => import('../views/AdminLearnerView.vue'),
+    props: true,
+    meta: {
+      requiresAdmin: true,
+    },
+  },
 ];
 
 const router = createRouter({
@@ -73,6 +82,17 @@ const router = createRouter({
 
 // Navigation guard for protected routes
 router.beforeEach(async (to, _from, next) => {
+  // Admin routes read other learners' data; couch enforces this too, but a
+  // non-admin shouldn't get the page at all.
+  if (to.meta.requiresAdmin) {
+    const { getCurrentUser } = await import('@vue-skuilder/common-ui');
+    const user = await getCurrentUser();
+    if (user?.getUsername() !== 'admin') {
+      next({ name: 'login', query: { redirect: to.fullPath } });
+      return;
+    }
+  }
+
   // Check if route requires authentication
   if (to.meta.requiresAuth) {
     // Dynamically import auth store to avoid circular dependencies

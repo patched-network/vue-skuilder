@@ -41,6 +41,13 @@
       "require": "./dist/diagnostics/index.js"
     }
   },
+  "typesVersions": {
+    "*": {
+      "diagnostics": [
+        "./dist/diagnostics/index.d.ts"
+      ]
+    }
+  },
   "scripts": {
     "build": "tsup",
     "build:debug": "tsup --sourcemap inline",

@@ -119,6 +119,11 @@ export function toIsoTimestamp(value: unknown): string {
   return Number.isNaN(ms) ? s : new Date(ms).toISOString();
 }
 
+/** `userdb-<username>-2026-09-30T1412Z.json`: sortable and filename-safe. */
+export function dumpFileName(dump: Pick<LearnerDump, 'username' | 'fetchedAt'>): string {
+  return `userdb-${dump.username}-${dump.fetchedAt.slice(0, 16).replace(':', '')}Z.json`;
+}
+
 /** Parse and minimally validate a dump file's text. */
 export function parseLearnerDump(text: string): LearnerDump {
   const dump = JSON.parse(text) as Partial<LearnerDump>;

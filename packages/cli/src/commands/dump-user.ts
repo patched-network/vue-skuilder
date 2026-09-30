@@ -3,7 +3,7 @@ import chalk from 'chalk';
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'fs';
 import { dirname, join, resolve } from 'path';
 import { showUserError, showUserMessage } from '@vue-skuilder/common';
-import { fetchLearnerDump, type LearnerDump } from '@vue-skuilder/db/diagnostics';
+import { dumpFileName, fetchLearnerDump, type LearnerDump } from '@vue-skuilder/db/diagnostics';
 
 export function createDumpUserCommand(): Command {
   return new Command('dump-user')
@@ -45,15 +45,9 @@ function resolvePassword(options: DumpUserOptions): string | undefined {
   return undefined;
 }
 
-/** 2026-09-30T1412Z: sortable and filename-safe. */
-function stamp(iso: string): string {
-  return iso.slice(0, 16).replace(':', '') + 'Z';
-}
-
-function resolveOutPath(out: string, username: string, fetchedAt: string): string {
-  const name = `userdb-${username}-${stamp(fetchedAt)}.json`;
+function resolveOutPath(out: string, dump: LearnerDump): string {
   const isDir = out.endsWith('/') || (existsSync(out) && statSync(out).isDirectory());
-  return resolve(isDir ? join(out, name) : out);
+  return resolve(isDir ? join(out, dumpFileName(dump)) : out);
 }
 
 function countByPrefix(ids: string[]): Array<[string, number]> {
@@ -120,7 +114,7 @@ export async function dumpUser(username: string, options: DumpUserOptions): Prom
       cards: options.cards as 'touched' | 'all' | 'none',
       attachments: options.attachments === true,
     });
-    const outPath = resolveOutPath(options.out, username, dump.fetchedAt);
+    const outPath = resolveOutPath(options.out, dump);
     mkdirSync(dirname(outPath), { recursive: true });
     writeFileSync(outPath, JSON.stringify(dump, null, 2));
     showUserMessage(chalk.green(`Wrote ${outPath}`));
