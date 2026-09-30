@@ -34,6 +34,11 @@ export default defineConfig({
     vue(),
     dts({
       insertTypesEntry: true,
+      // Keep sibling-package imports bare in the emitted .d.ts. Otherwise the
+      // build aliases rewrite them to monorepo-relative dist paths (e.g.
+      // '../../db/dist/diagnostics/index.mjs'), which have no .d.mts and
+      // leave consumers with `any`.
+      aliasesExclude: [/^@vue-skuilder\//],
       // Exclude test files from type generation
       exclude: ['**/*.spec.ts', '**/*.test.ts'],
       // Include only necessary files
