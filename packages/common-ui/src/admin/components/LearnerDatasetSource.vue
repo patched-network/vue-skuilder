@@ -43,7 +43,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import type { LearnerDataset, LearnerDump } from '@vue-skuilder/db/diagnostics';
 import { downloadLearnerDump, useLearnerDataset } from '../composables/useLearnerDataset';
 
@@ -58,6 +58,8 @@ const props = defineProps<{
   courseId?: string;
   /** Prefills the learner field. */
   initialUsername?: string;
+  /** Load `initialUsername` on mount, when live loading is possible. */
+  autoload?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -87,5 +89,9 @@ function onFile(event: Event): void {
 
 watch(dataset, (ds) => {
   if (ds && dump.value) emit('loaded', ds, dump.value);
+});
+
+onMounted(() => {
+  if (props.autoload) loadLive();
 });
 </script>

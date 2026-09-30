@@ -1,6 +1,9 @@
 <template>
   <div class="admin-dashboard">
     <h1>Admin Dashboard</h1>
+    <v-btn class="mb-4" variant="tonal" prepend-icon="mdi-account-search" to="/admin/learners">
+      Learner diagnostics
+    </v-btn>
 
     <!-- User Selection Section -->
     <v-card class="mb-4">
