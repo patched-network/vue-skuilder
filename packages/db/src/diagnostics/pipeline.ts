@@ -1,4 +1,6 @@
 import type { DatasetRecord, LearnerDataset } from './dataset';
+import type { FilterKind } from '../core/navigators/filters/types';
+import type { RegulatorName, RegulatorReading } from '../core/navigators/regulators';
 
 // ============================================================================
 // Pipeline run stats
@@ -41,11 +43,26 @@ export interface GeneratorRunStat {
 /** One filter across persisted runs: candidate counts summed over runs. */
 export interface FilterRunStat {
   name: string;
+  /** As recorded by the most recent run that recorded it (0.2.29+). */
+  kind?: FilterKind;
   runs: number;
   boosted: number;
   penalized: number;
   passed: number;
   removed: number;
+}
+
+/** One regulator across persisted runs (0.2.29+). */
+export interface RegulatorRunStat {
+  name: RegulatorName;
+  class: RegulatorReading['class'];
+  runs: number;
+  meanMultiplier: number;
+  maxMultiplier: number;
+  /** Runs where the multiplier was above 1. */
+  runsActive: number;
+  /** The most recent reading. */
+  last: RegulatorReading;
 }
 
 export interface PipelineRunStats {
@@ -59,6 +76,8 @@ export interface PipelineRunStats {
   generators: GeneratorRunStat[];
   /** By name. */
   filters: FilterRunStat[];
+  /** Empty before 0.2.29. */
+  regulators: RegulatorRunStat[];
   /** Selected cards with no originating generator: cards forced in by `requireCards`. */
   selectedUnattributed: number;
 }
@@ -106,6 +125,7 @@ export function pipelineRunStats(
     return g;
   };
   const filters = new Map<string, FilterRunStat>();
+  const regulators = new Map<RegulatorName, RegulatorRunStat & { sumMultiplier: number }>();
 
   let runs = 0;
   let runsWithSelection = 0;
@@ -142,11 +162,31 @@ export function pipelineRunStats(
           removed: 0,
         };
         acc.runs++;
+        if (f.kind) acc.kind = f.kind;
         acc.boosted += f.boosted;
         acc.penalized += f.penalized;
         acc.passed += f.passed;
         acc.removed += f.removed;
         filters.set(f.name, acc);
+      }
+
+      for (const r of run.regulators ?? []) {
+        const acc = regulators.get(r.name) ?? {
+          name: r.name,
+          class: r.class,
+          runs: 0,
+          meanMultiplier: 0,
+          maxMultiplier: 0,
+          runsActive: 0,
+          last: r,
+          sumMultiplier: 0,
+        };
+        acc.runs++;
+        acc.sumMultiplier += r.multiplier;
+        acc.maxMultiplier = Math.max(acc.maxMultiplier, r.multiplier);
+        if (r.multiplier > 1) acc.runsActive++;
+        acc.last = r;
+        regulators.set(r.name, acc);
       }
 
       if (run.cards) {
@@ -187,6 +227,10 @@ export function pipelineRunStats(
       }))
       .sort((a, b) => b.runs - a.runs || a.name.localeCompare(b.name)),
     filters: [...filters.values()].sort((a, b) => a.name.localeCompare(b.name)),
+    regulators: [...regulators.values()].map(({ sumMultiplier, ...r }) => ({
+      ...r,
+      meanMultiplier: r.runs ? sumMultiplier / r.runs : 0,
+    })),
     selectedUnattributed,
   };
 }

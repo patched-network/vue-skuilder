@@ -93,6 +93,19 @@
                 {{ ORIGIN[f.origin].label }}
               </v-chip>
               <v-chip v-if="f.strategy?.learnable" size="x-small" variant="outlined">learnable weight</v-chip>
+              <v-chip
+                v-if="filterStat(f.name)?.kind"
+                size="x-small"
+                variant="tonal"
+                :color="filterStat(f.name)!.kind === 'gate' ? 'deep-orange' : 'blue-grey'"
+                :title="
+                  filterStat(f.name)!.kind === 'gate'
+                    ? 'Gate: its penalties mean not ready yet; regulators will not lift what it penalized.'
+                    : 'Signal: its penalties express preference.'
+                "
+              >
+                {{ filterStat(f.name)!.kind }}
+              </v-chip>
             </div>
             <div v-if="f.strategy?.description" class="text-caption mt-1">{{ f.strategy.description }}</div>
             <div v-else-if="!f.strategy" class="text-caption mt-1 text-medium-emphasis">
@@ -131,6 +144,24 @@
           </div>
         </template>
 
+        <template v-else-if="stage.key === 'regulate' && stats">
+          <div v-if="stats.regulators.length === 0" class="text-caption text-medium-emphasis">
+            None of these runs recorded regulator readings (recorded from 0.2.29).
+          </div>
+          <div v-for="r in stats.regulators" :key="r.name" class="sk-nav">
+            <div class="d-flex flex-wrap align-center ga-2">
+              <span class="font-weight-medium">{{ REGULATOR_LABEL[r.name] }}</span>
+              <v-chip size="x-small" variant="outlined">on {{ r.class }} cards</v-chip>
+            </div>
+            <div class="text-caption mt-1">
+              active (×&gt;1) in {{ r.runsActive }}/{{ r.runs }} runs · mean ×{{ r.meanMultiplier.toFixed(2) }}, max ×{{
+                r.maxMultiplier.toFixed(2)
+              }}
+            </div>
+            <div class="text-caption">last: {{ regulatorText(r.last) }}</div>
+          </div>
+        </template>
+
         <template v-else-if="stage.key === 'select' && stats && stats.runsWithSelection > 0">
           <div class="text-caption">
             {{ stats.selectedUnattributed }} selected card(s) had no generator: forced in by a hint's
@@ -158,7 +189,13 @@ import {
   type ContentNavigationStrategyData,
   type PlannedNavigatorOrigin,
 } from '@vue-skuilder/db';
-import type { FilterRunStat, GeneratorRunStat, PipelineRunStats } from '@vue-skuilder/db/diagnostics';
+import {
+  regulatorText,
+  type FilterRunStat,
+  type GeneratorRunStat,
+  type PipelineRunStats,
+  type RegulatorName,
+} from '@vue-skuilder/db/diagnostics';
 import { accuracyClass, fmtTime } from '../display';
 
 /**
@@ -179,6 +216,11 @@ const ORIGIN: Record<PlannedNavigatorOrigin, { label: string; color: string }> =
   'strategy-doc': { label: 'strategy doc', color: 'primary' },
   'assembler-default': { label: 'added by the assembler', color: 'secondary' },
   'default-pipeline': { label: 'default pipeline', color: 'warning' },
+};
+
+const REGULATOR_LABEL: Record<RegulatorName, string> = {
+  'review-mass': 'Review mass',
+  intake: 'Intake',
 };
 
 const plan = computed(() => planPipeline(props.strategies, props.courseId));

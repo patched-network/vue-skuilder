@@ -4,6 +4,7 @@
  * text; these are those texts. Also the shared number formatting.
  */
 import type { StudySessionRunCardTrail, StudySessionRunSummary } from '../core/types/studySession';
+import type { RegulatorReading } from '../core/navigators/regulators';
 import {
   shortTag,
   type DiagnosticsInterpreters,
@@ -55,6 +56,22 @@ function trailText(label: string, t: StudySessionRunCardTrail): string[] {
   return lines;
 }
 
+/** One regulator reading as a line: its urgency, inputs, and multiplier. */
+export function regulatorText(r: RegulatorReading): string {
+  const i = r.inputs;
+  if (r.name === 'review-mass') {
+    return (
+      `review mass ${r.urgency.toFixed(1)} over ${i.due ?? r.applied} due` +
+      ` (healthy ${i.healthyMass}) → ×${r.multiplier.toFixed(2)}`
+    );
+  }
+  const frozen = i.frozenHours ? `, ${i.frozenHours.toFixed(1)}h frozen` : '';
+  return (
+    `intake ${r.urgency.toFixed(1)}h since a new card${frozen};` +
+    ` ${i.eligibleNew ?? r.applied}/${i.newCandidates ?? '?'} new eligible → ×${r.multiplier.toFixed(2)}`
+  );
+}
+
 /** One run as a compact text block. */
 export function runText(run: StudySessionRunSummary): string {
   const L: string[] = [];
@@ -78,10 +95,14 @@ export function runText(run: StudySessionRunSummary): string {
     L.push('  filters:');
     for (const f of run.filters) {
       L.push(
-        `    - ${f.name}: +${f.boosted} boosted, -${f.penalized} penalized,` +
-          ` ${f.passed} passed, ${f.removed} removed`
+        `    - ${f.name}${f.kind ? ` (${f.kind})` : ''}: +${f.boosted} boosted,` +
+          ` -${f.penalized} penalized, ${f.passed} passed, ${f.removed} removed`
       );
     }
+  }
+  if (run.regulators?.length) {
+    L.push('  regulators:');
+    for (const r of run.regulators) L.push(`    - ${regulatorText(r)}`);
   }
   if (run.hints) L.push(`  hints: ${JSON.stringify(run.hints)}`);
   if (run.cards?.length) {
@@ -151,7 +172,9 @@ export function sessionText(
   L.push('- RUN "generated N → selected M (a new, b review)": the pipeline produced N');
   L.push('  candidates and chose M. "nothing survived" = generated > 0 but 0 selected.');
   L.push('  Bootstrap runs fire before card #1; replans are interleaved by time.');
-  L.push("- generators: each source's contribution. filters: how each reshaped scores.");
+  L.push("- generators: each source's contribution. filters: how each reshaped scores");
+  L.push('  (gate: not ready yet; signal: preference). regulators: the pressure on each class,');
+  L.push('  review mass (due reviews by value) and intake (hours since a new card).');
   L.push('  hints: the ReplanHints the navigator was told (_label = replan reason).');
   L.push('  selection: the chosen cards and top runners-up. "next new in line" / "top-generated');
   L.push('  new (sunk)": the unselected new cards worth explaining, with each score change.');
