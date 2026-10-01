@@ -3,6 +3,7 @@
     <v-tabs v-model="tab" density="compact" class="mb-4">
       <v-tab value="sessions">Sessions ({{ dataset.sessions.length }})</v-tab>
       <v-tab value="cards">Cards ({{ dataset.cardHistories.length }})</v-tab>
+      <v-tab v-if="dataset.strategies" value="pipeline">Pipeline</v-tab>
     </v-tabs>
 
     <template v-if="tab === 'sessions'">
@@ -25,20 +26,35 @@
       />
     </template>
 
-    <learner-card-history v-else :dataset="dataset" :interpreters="interpreters" :focus="focusCard" />
+    <learner-card-history
+      v-else-if="tab === 'cards'"
+      :dataset="dataset"
+      :interpreters="interpreters"
+      :focus="focusCard"
+    />
+
+    <pipeline-overview
+      v-else-if="tab === 'pipeline' && dataset.strategies"
+      :strategies="dataset.strategies"
+      :course-id="dataset.courseId"
+      :stats="pipelineStats"
+      :stats-label="dataset.username"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
-import type { DiagnosticsInterpreters, LearnerDataset } from '@vue-skuilder/db/diagnostics';
+import { computed, ref, watch } from 'vue';
+import { pipelineRunStats, type DiagnosticsInterpreters, type LearnerDataset } from '@vue-skuilder/db/diagnostics';
 import LearnerCardHistory from './LearnerCardHistory.vue';
 import LearnerSessionDetail from './LearnerSessionDetail.vue';
 import LearnerSessionList from './LearnerSessionList.vue';
+import PipelineOverview from './PipelineOverview.vue';
 
 /**
- * One learner: sessions (list, then a session's detail) and card history,
- * with session timelines linking into card history. Navigation is internal;
+ * One learner: sessions (list, then a session's detail), card history, and,
+ * when the dataset carries the course's strategy docs, the pipeline with this
+ * learner's run stats. Session timelines link into card history. Navigation is internal;
  * hosts that want URLs can compose the three views themselves.
  */
 const props = defineProps<{
@@ -46,9 +62,10 @@ const props = defineProps<{
   interpreters?: DiagnosticsInterpreters;
 }>();
 
-const tab = ref<'sessions' | 'cards'>('sessions');
+const tab = ref<'sessions' | 'cards' | 'pipeline'>('sessions');
 const sessionId = ref<string | null>(null);
 const focusCard = ref<string | undefined>(undefined);
+const pipelineStats = computed(() => pipelineRunStats(props.dataset));
 
 function openCard(cardId: string): void {
   // Re-set through undefined so following the same card twice still refocuses.

@@ -2,6 +2,7 @@ import type { WeightedCard } from '../index';
 import type { CourseDBInterface } from '../../interfaces/courseDB';
 import type { UserDBInterface } from '../../interfaces/userDB';
 import type { OrchestrationContext } from '../../orchestration';
+import type { CourseElo } from '@vue-skuilder/common';
 
 // ============================================================================
 // CARD FILTER INTERFACE
@@ -41,12 +42,14 @@ export interface FilterContext {
   /** User's global ELO score for this course */
   userElo: number;
 
+  /** User's full ELO for this course: global and per tag. Absent if it couldn't be read. */
+  userCourseElo?: CourseElo;
+
   /** Orchestration context for evolutionary weighting */
   orchestration?: OrchestrationContext;
 
   // Future extensions:
   // - hydrated tags for all cards (batch lookup)
-  // - user's tag-level ELO data
   // - course config
 }
 
@@ -97,9 +100,29 @@ export interface FilterContext {
  * };
  * ```
  */
+/**
+ * What a filter's penalties mean. A `gate` says a card isn't ready yet
+ * (prerequisites, lessons, unlocks); a `signal` expresses preference
+ * (priority, interference, ELO distance).
+ */
+export type FilterKind = 'gate' | 'signal';
+
 export interface CardFilter {
   /** Human-readable name for this filter */
   name: string;
+
+  /**
+   * Regulators lift only new cards that no gate penalized, so pressure can't
+   * override "not ready". Undeclared filters count as gates: a penalty of
+   * unknown meaning shouldn't be overridden by pressure.
+   */
+  kind?: FilterKind;
+
+  /**
+   * Applies to live runs only. `forecast` and `diagnoseCardSpace` start every
+   * card at 1.0 without a generator, and skip these filters.
+   */
+  liveOnly?: boolean;
 
   /**
    * Transform a list of weighted cards.

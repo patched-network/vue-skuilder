@@ -185,7 +185,7 @@ describe('PipelineAssembler', () => {
       expect(result.generatorStrategies).toHaveLength(2);
       const strategyNames = result.generatorStrategies.map((s) => s.name).sort();
       expect(strategyNames).toEqual(['ELO (default)', 'SRS (default)']);
-      expect(result.filterStrategies).toEqual([hierarchy]);
+      expect(result.filterStrategies.map((f) => f.name)).toEqual(['ELO Distance (default)', 'hierarchy']);
       expect(result.warnings).toEqual([]);
     });
   });
@@ -199,8 +199,16 @@ describe('PipelineAssembler', () => {
 
       expect(result.pipeline).toBeInstanceOf(Pipeline);
       // expect(result.generatorStrategies).toEqual([elo]); // default pipeline now includes srs+elo
-      expect(result.filterStrategies).toEqual([hierarchy]);
+      expect(result.filterStrategies.map((f) => f.name)).toEqual(['ELO Distance (default)', 'hierarchy']);
       expect(result.warnings).toEqual([]);
+    });
+
+    it('adds the default ELO distance filter only when the course declares none', async () => {
+      const own = createStrategy('own-elo-distance', 'eloDistance', '{"halfLife": 200}');
+      const input = createInput([own]);
+      const result = await assembler.assemble(input);
+
+      expect(result.filterStrategies).toEqual([own]);
     });
 
     it('sorts filters alphabetically for deterministic ordering', async () => {
@@ -230,6 +238,7 @@ describe('PipelineAssembler', () => {
       // Filters should be sorted alphabetically by name
       expect(result.filterStrategies.map((f) => f.name)).toEqual([
         'a-hierarchy',
+        'ELO Distance (default)',
         'm-interference',
         'z-relative-priority',
       ]);
@@ -247,7 +256,7 @@ describe('PipelineAssembler', () => {
 
       expect(result.pipeline).toBeInstanceOf(Pipeline);
       // expect(result.generatorStrategies).toEqual([elo]); // default pipeline now includes srs+elo
-      expect(result.filterStrategies).toEqual([hierarchy]);
+      expect(result.filterStrategies.map((f) => f.name)).toEqual(['ELO Distance (default)', 'hierarchy']);
       expect(result.warnings).toContain(
         "Unknown strategy type 'unknownStrategyType', skipping: unknown"
       );
@@ -266,8 +275,12 @@ describe('PipelineAssembler', () => {
       // Should have both generators
       // expect(result.generatorStrategies).toEqual([elo]);
 
-      // Should have both filters (sorted alphabetically)
-      expect(result.filterStrategies.map((f) => f.name)).toEqual(['hierarchy', 'priority']);
+      // Should have both filters plus the default ELO distance (sorted alphabetically)
+      expect(result.filterStrategies.map((f) => f.name)).toEqual([
+        'ELO Distance (default)',
+        'hierarchy',
+        'priority',
+      ]);
 
       // Should produce a valid pipeline
       expect(result.pipeline).toBeInstanceOf(Pipeline);
@@ -291,11 +304,13 @@ describe('PipelineAssembler', () => {
         'a-filter',
         'b-filter',
         'c-filter',
+        'ELO Distance (default)',
       ]);
       expect(result2.filterStrategies.map((f) => f.name)).toEqual([
         'a-filter',
         'b-filter',
         'c-filter',
+        'ELO Distance (default)',
       ]);
     });
   });

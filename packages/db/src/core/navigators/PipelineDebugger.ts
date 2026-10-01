@@ -10,6 +10,8 @@ import {
 import { logger } from '../../util/logger';
 import type { Pipeline, CardSpaceDiagnosis, PipelineForecaster } from './Pipeline';
 import type { ReplanHints } from './generators/types';
+import type { FilterKind } from './filters/types';
+import type { RegulatorReading } from './regulators';
 
 /**
  * Captured reference to the most recently created Pipeline instance.
@@ -68,6 +70,8 @@ export interface GeneratorSummary {
  */
 export interface FilterImpact {
   name: string;
+  /** Effective kind: undeclared filters count as gates. Absent on runs before 0.2.29. */
+  kind?: FilterKind;
   boosted: number;
   penalized: number;
   passed: number;
@@ -147,6 +151,9 @@ export interface PipelineRunReport {
     nextInLine?: RunReportCard;
     topGenerated?: RunReportCard;
   };
+
+  /** The regulator stage's readings: each class's pressure and the multiplier it got. */
+  regulators?: RegulatorReading[];
 
   /**
    * Summary of the discarded tail of the candidate pool — cards that were
@@ -293,7 +300,8 @@ export function buildRunReport(
   userElo?: number,
   hints?: ReplanHints,
   /** Post-filter cards before zero-scored ones are dropped. Defaults to `allCards`. */
-  scoredCards?: WeightedCard[]
+  scoredCards?: WeightedCard[],
+  regulators?: RegulatorReading[]
 ): Omit<PipelineRunReport, 'runId' | 'timestamp'> {
   const selectedIds = new Set(selectedCards.map((c) => c.cardId));
 
@@ -307,7 +315,7 @@ export function buildRunReport(
     origin: getOrigin(card),
     generator: card.provenance[0]?.strategyName || card.provenance[0]?.strategy,
     finalScore: card.score,
-    cardElo: parseCardElo(card.provenance),
+    cardElo: card.cardElo ?? parseCardElo(card.provenance),
     provenance: card.provenance,
     tags: card.tags,
     selected: selectedIds.has(card.cardId),
@@ -406,6 +414,7 @@ export function buildRunReport(
     cards,
     unselectedNew,
     discardedTail,
+    ...(regulators ? { regulators } : {}),
   };
 }
 

@@ -1,5 +1,5 @@
 import type { ContentNavigationStrategyData } from '../types/contentNavigationStrategy';
-import { ContentNavigator, isGenerator, isFilter, Navigators } from './index';
+import { ContentNavigator } from './index';
 import type { CardFilter } from './filters/types';
 import { WeightedFilter } from './filters/WeightedFilter';
 import type { CardGenerator } from './generators/types';
@@ -8,7 +8,7 @@ import { logger } from '../../util/logger';
 import type { CourseDBInterface } from '../interfaces/courseDB';
 import type { UserDBInterface } from '../interfaces/userDB';
 import CompositeGenerator from './generators/CompositeGenerator';
-import { createDefaultEloStrategy, createDefaultSrsStrategy } from './defaults';
+import { planPipeline } from './pipelinePlan';
 
 // ============================================================================
 // PIPELINE ASSEMBLER
@@ -23,7 +23,7 @@ import { createDefaultEloStrategy, createDefaultSrsStrategy } from './defaults';
 // 3. Easy unit testing without DB mocking
 //
 // Pipeline assembly:
-// 1. Separate strategies into generators and filters by role
+// 1. Plan: classify by role, add defaults, order filters (pipelinePlan.ts)
 // 2. Instantiate generator(s) - wrap multiple in CompositeGenerator
 // 3. Instantiate filters
 // 4. Return Pipeline(generator, filters)
@@ -66,11 +66,11 @@ export class PipelineAssembler {
   /**
    * Assembles a navigation pipeline from strategy documents.
    *
-   * 1. Separates into generators and filters by role
-   * 2. Validates at least one generator exists (or creates default ELO)
-   * 3. Instantiates generators - wraps multiple in CompositeGenerator
-   * 4. Instantiates filters
-   * 5. Returns Pipeline(generator, filters)
+   * 1. Plans: classifies by role, adds default ELO/SRS and ELO distance, orders filters
+   *    (`planPipeline`)
+   * 2. Instantiates generators - wraps multiple in CompositeGenerator
+   * 3. Instantiates filters
+   * 4. Returns Pipeline(generator, filters)
    *
    * @param input - Strategy documents plus user/course interfaces
    * @returns Assembled pipeline and any warnings
@@ -88,35 +88,19 @@ export class PipelineAssembler {
       };
     }
 
-    // Separate generators from filters
-    const generatorStrategies: ContentNavigationStrategyData[] = [];
-    const filterStrategies: ContentNavigationStrategyData[] = [];
-
-    for (const s of strategies) {
-      if (isGenerator(s.implementingClass)) {
-        generatorStrategies.push(s);
-      } else if (isFilter(s.implementingClass)) {
-        filterStrategies.push(s);
-      } else {
-        // Unknown strategy type — skip with warning
-        warnings.push(`Unknown strategy type '${s.implementingClass}', skipping: ${s.name}`);
+    // Classify, add defaults, and order filters: the same plan the admin
+    // pipeline view renders.
+    const plan = planPipeline(strategies, course.getCourseID());
+    warnings.push(...plan.warnings);
+    for (const n of [...plan.generators, ...plan.filters]) {
+      if (n.origin === 'assembler-default') {
+        logger.debug(
+          `[PipelineAssembler] No ${n.implementingClass} ${n.role} configured, adding default`
+        );
       }
     }
-
-    // Always ensure ELO and SRS generators are present.
-    // Custom generators (e.g., prescribed) supplement but don't replace them.
-    const courseId = course.getCourseID();
-    const hasElo = generatorStrategies.some((s) => s.implementingClass === Navigators.ELO);
-    const hasSrs = generatorStrategies.some((s) => s.implementingClass === Navigators.SRS);
-
-    if (!hasElo) {
-      logger.debug('[PipelineAssembler] No ELO generator configured, adding default');
-      generatorStrategies.push(createDefaultEloStrategy(courseId));
-    }
-    if (!hasSrs) {
-      logger.debug('[PipelineAssembler] No SRS generator configured, adding default');
-      generatorStrategies.push(createDefaultSrsStrategy(courseId));
-    }
+    const generatorStrategies = plan.generators.map((g) => g.strategy);
+    const sortedFilterStrategies = plan.filters.map((f) => f.strategy);
 
     if (generatorStrategies.length === 0) {
       warnings.push('No generator strategy found');
@@ -146,11 +130,6 @@ export class PipelineAssembler {
 
     // Instantiate filters
     const filters: CardFilter[] = [];
-
-    // Sort filters alphabetically for deterministic ordering
-    const sortedFilterStrategies = [...filterStrategies].sort((a, b) =>
-      a.name.localeCompare(b.name)
-    );
 
     for (const filterStrategy of sortedFilterStrategies) {
       try {

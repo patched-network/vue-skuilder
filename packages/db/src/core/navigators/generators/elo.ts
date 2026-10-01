@@ -7,21 +7,17 @@ import type { QualifiedCardID } from '../..';
 import type { CardGenerator, GeneratorContext, GeneratorResult } from './types';
 import { logger } from '@db/util/logger';
 
-/**
- * Std-dev (in ELO points) of the Gaussian that converts card↔user ELO distance
- * into a relevance weight. 300 reproduces the legacy linear ramp's half-weight
- * point (distance 250 → ~0.5) while removing its hard zero beyond distance 500.
- */
-const ELO_RELEVANCE_SIGMA = 300;
-
 // ============================================================================
 // ELO NAVIGATOR
 // ============================================================================
 //
-// A generator strategy that selects new cards based on ELO proximity.
+// A generator strategy that retrieves new cards near the learner's ELO.
 //
-// Cards closer to the user's skill level (ELO) receive higher scores.
-// This ensures learners see content matched to their current ability.
+// It retrieves; it doesn't rank by distance. Scores are a flat jitter in
+// [0.5, 1] for session-to-session variety. ELO distance is scored once, for
+// new cards and reviews alike, by the ELO distance filter (filters/eloDistance),
+// which the assembler adds to every pipeline. Scoring it here too counted it
+// twice for new cards and once for reviews.
 //
 // NOTE: This generator only handles NEW cards. Reviews are handled by
 // SRSNavigator. Use CompositeGenerator to combine both.
@@ -29,14 +25,10 @@ const ELO_RELEVANCE_SIGMA = 300;
 // ============================================================================
 
 /**
- * A navigation strategy that scores new cards by ELO proximity.
+ * A navigation strategy that retrieves new cards near the learner's ELO.
  *
  * Implements CardGenerator for use in Pipeline architecture.
  * Also extends ContentNavigator for backward compatibility with legacy code.
- *
- * Higher scores indicate better ELO match:
- * - Cards at user's ELO level score highest
- * - Score decreases with ELO distance
  *
  * Only returns new cards - use SRSNavigator for reviews.
  */
@@ -58,10 +50,8 @@ export default class ELONavigator extends ContentNavigator implements CardGenera
   }
 
   /**
-   * Get new cards with suitability scores based on ELO distance.
-   *
-   * Cards closer to user's ELO get higher scores.
-   * Score formula: max(0, 1 - distance / 500)
+   * Get the new cards nearest the learner's ELO, each scored with a flat
+   * jitter in [0.5, 1]. Carries each card's ELO for the ELO distance filter.
    *
    * NOTE: This generator only handles NEW cards. Reviews are handled by
    * SRSNavigator. Use CompositeGenerator to combine both.
@@ -103,60 +93,40 @@ export default class ELONavigator extends ContentNavigator implements CardGenera
         // `[active=${activeCards.length} candidates=${newCards.length}]`
     // );
 
-    // Score new cards by ELO proximity, then apply bounded multiplicative
-    // jitter for session-to-session variety.
-    //
-    //   relevance = exp(-(distance / SIGMA)^2)   // Gaussian: smooth, always > 0
-    //   score     = relevance * (0.5 + 0.5 * U)  // U ~ Uniform(0, 1)
-    //
-    // This replaces the legacy `rawScore = max(0, 1 - distance/500)` ramp +
-    // Efraimidis-Spirakis key `U^(1/rawScore)`, which introduced two
-    // discontinuities that defeated downstream replan boosts:
-    //   1. The ramp's clamp made every card ≥500 ELO from the user a HARD zero.
-    //      The pipeline DELETES zero-score cards (filter score>0) *before* boosts
-    //      are applied, so no boost could resurface an under-ELO'd target — e.g.
-    //      a freshly-introduced grapheme sitting ~475 below an inflated global
-    //      ELO. (See packages/db/docs/todo-intro-concept-emphasis-and-retrieval.md.)
-    //   2. The A-Res key `U^(1/rawScore)` ALSO manufactured effective zeros: as
-    //      rawScore→0 the exponent explodes and `U^huge` underflows to 0, with
-    //      wild variance just above it — so a downstream boost multiplied a
-    //      lottery ticket rather than a stable relevance.
-    //
-    // Gaussian relevance never hits zero (no cliff, survives the score>0 filter,
-    // so a boost can always lift a low-ELO target), and the [0.5, 1] jitter keeps
-    // ELO ordering up to a 2× factor while still shuffling near-equal cards so the
-    // same cards don't loop every session. SIGMA=300 reproduces the old ramp's
-    // half-weight point (distance 250 → ~0.5), leaving center-of-range difficulty
-    // matching unchanged.
+    // Retrieval is by ELO (the window above); scoring isn't. Each card gets a
+    // jitter in [0.5, 1] so near-equal cards shuffle between sessions instead of
+    // looping. Distance is scored by the ELO distance filter, on the Gaussian
+    // this generator used to apply itself (sigma 300, never zero, so a
+    // downstream boost can always lift a low-ELO target; see filters/eloDistance
+    // and packages/db/docs/todo-intro-concept-emphasis-and-retrieval.md).
     //
     // Card ELO is read from the pooled `.elo` carried on each candidate by
-    // getCardsCenteredAtELO — verified equal to a separate getCardEloData()
-    // fetch (0/500 mismatch on real data), so the redundant fetch is gone.
+    // getCardsCenteredAtELO, and passed on as `cardElo` so the filter needn't
+    // fetch it again.
     const scored: WeightedCard[] = newCards.map((c) => {
       const cardElo = c.elo ?? 1000;
-
       const distance = Math.abs(cardElo - userGlobalElo);
-      const relevance = Math.exp(-((distance / ELO_RELEVANCE_SIGMA) ** 2));
-      const samplingKey = relevance * (0.5 + 0.5 * Math.random());
+      const jitter = 0.5 + 0.5 * Math.random();
 
       return {
         cardId: c.cardID,
         courseId: c.courseID,
-        score: samplingKey,
+        score: jitter,
+        cardElo,
         provenance: [
           {
             strategy: 'elo',
             strategyName: this.strategyName || this.name,
             strategyId: this.strategyId || 'NAVIGATION_STRATEGY-ELO-default',
             action: 'generated',
-            score: samplingKey,
-            reason: `ELO distance ${Math.round(distance)} (card: ${Math.round(cardElo)}, user: ${Math.round(userGlobalElo)}), relevance ${relevance.toFixed(3)}, key ${samplingKey.toFixed(3)}`,
+            score: jitter,
+            reason: `new card near learner ELO: distance ${Math.round(distance)} (card: ${Math.round(cardElo)}, user: ${Math.round(userGlobalElo)}), jitter ${jitter.toFixed(3)}`,
           },
         ],
       };
     });
 
-    // Sort by sampling key descending (weighted sample without replacement)
+    // Sort by jitter descending (a uniform random sample of the window)
     scored.sort((a, b) => b.score - a.score);
 
     const cards = scored.slice(0, limit);

@@ -25,3 +25,4 @@ export { default as LearnerSessionDetail } from './components/LearnerSessionDeta
 export { default as LearnerCardHistory } from './components/LearnerCardHistory.vue';
 export { default as CardDossierDetail } from './components/CardDossierDetail.vue';
 export { default as RunDetail } from './components/RunDetail.vue';
+export { default as PipelineOverview } from './components/PipelineOverview.vue';

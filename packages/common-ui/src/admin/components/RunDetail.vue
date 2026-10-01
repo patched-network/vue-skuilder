@@ -30,6 +30,7 @@
         <thead>
           <tr>
             <th></th>
+            <th>kind</th>
             <th class="text-right">boosted</th>
             <th class="text-right">penalized</th>
             <th class="text-right">passed</th>
@@ -39,6 +40,7 @@
         <tbody>
           <tr v-for="f in run.filters" :key="f.name">
             <td>{{ f.name }}</td>
+            <td>{{ f.kind ?? '—' }}</td>
             <td class="text-right">{{ f.boosted }}</td>
             <td class="text-right">{{ f.penalized }}</td>
             <td class="text-right">{{ f.passed }}</td>
@@ -46,6 +48,16 @@
           </tr>
         </tbody>
       </v-table>
+    </div>
+
+    <div v-if="run.regulators?.length" class="mb-2">
+      <div class="text-caption font-weight-medium">regulators</div>
+      <div v-for="r in run.regulators" :key="r.name" class="sk-mini-line">
+        <span :class="r.multiplier > 1 ? 'text-warning' : 'text-medium-emphasis'">
+          ×{{ r.multiplier.toFixed(2) }}
+        </span>
+        {{ regulatorText(r) }}
+      </div>
     </div>
 
     <div v-if="run.cards?.length" class="mb-2">
@@ -117,7 +129,11 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import type { StudySessionRunCardTrail, StudySessionRunSummary } from '@vue-skuilder/db/diagnostics';
+import {
+  regulatorText,
+  type StudySessionRunCardTrail,
+  type StudySessionRunSummary,
+} from '@vue-skuilder/db/diagnostics';
 
 /** The persisted detail of one pipeline run. */
 const props = defineProps<{ run: StudySessionRunSummary }>();
@@ -145,6 +161,10 @@ function fmtScore(n: number): string {
 .sk-mini-table :deep(td),
 .sk-mini-table :deep(th) {
   font-size: 0.72rem;
+}
+.sk-mini-line {
+  font-size: 0.72rem;
+  padding-left: 8px;
 }
 .sk-hint-block {
   font-size: 0.72rem;

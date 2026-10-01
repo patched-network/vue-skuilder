@@ -4,6 +4,7 @@ import type { CourseDBInterface } from '../../interfaces/courseDB';
 import type { UserDBInterface } from '../../interfaces/userDB';
 import { ContentNavigator } from '../index';
 import { captureSrsBacklog } from '../SrsDebugger';
+import { DEFAULT_REGULATOR_CONFIG } from '../regulators';
 import type { ContentNavigationStrategyData } from '../../types/contentNavigationStrategy';
 import type { CardGenerator, GeneratorContext, GeneratorResult } from './types';
 import { logger } from '@db/util/logger';
@@ -14,10 +15,14 @@ import { logger } from '@db/util/logger';
 //
 // A generator strategy that scores review cards by urgency.
 //
-// Urgency is determined by three factors:
+// Urgency is determined by two factors:
 // 1. Overdueness - how far past the scheduled review time
 // 2. Interval recency - shorter scheduled intervals indicate "novel content in progress"
-// 3. Backlog pressure - when too many reviews pile up, urgency increases globally
+//
+// Backlog pressure (reviews piling up) isn't scored here: the pipeline's
+// regulator stage measures the due backlog's *mass* after filters (so reviews
+// the learner has moved beyond weigh little) and scales all reviews by it.
+// See regulators.ts.
 //
 // A card with a 3-day interval that's 2 days overdue is more urgent than a card
 // with a 6-month interval that's 2 days overdue. The shorter interval represents
@@ -35,43 +40,12 @@ import { logger } from '@db/util/logger';
 // ============================================================================
 
 /**
- * Default healthy backlog size.
- * When due reviews exceed this, backlog pressure kicks in.
- * Can be overridden via strategy config.
- */
-const DEFAULT_HEALTHY_BACKLOG = 20;
-
-/**
- * Growth-rate base for backlog pressure as a *multiplier* on review urgency.
- *
- * Backlog pressure is multiplicative (×1.0 at/below healthy) and exponential
- * in the backlog's excess over healthy, expressed in multiples of
- * `healthyBacklog` (see computeBacklogMultiplier) — deliberately uncapped. It
- * replaces an older additive +0..+0.5 term that was a [0,1]-era modifier —
- * once review scores stopped being clamped to 1.0 and new cards could be
- * boosted well past it (e.g. an intro ×5 → 7+), a flat +0.5 was both too small
- * to compete and mostly eaten by the old 1.0 clamp. A linear-then-capped
- * multiplier came next, but that just moved the problem: other generators
- * (e.g. Prescribed Intro Backpressure) score on a much larger open scale with
- * their own, independently-tuned caps, so a hard review-side ceiling meant
- * reviews could never win out no matter how backlogged they got. Exponential
- * growth has no such ceiling — a sufficiently neglected backlog keeps
- * climbing until it outcompetes anything, which is the intended long-term
- * fallback: other generators can dominate short-term, but SRS is the
- * framework-invariant backstop and should always win eventually. Tunable —
- * verify review vs new ordering in the dbg overlay's "review backpressure"
- * panel.
- */
-const BACKLOG_GROWTH_RATE = 2;
-
-/**
  * Configuration for the SRS strategy.
  */
 export interface SRSConfig {
   /**
-   * Target "healthy" backlog size.
-   * When due reviews exceed this, urgency increases globally.
-   * Default: 20
+   * @deprecated Ignored. Backlog pressure moved to the pipeline's regulator
+   * stage, which measures review mass (see regulators.ts).
    */
   healthyBacklog?: number;
 }
@@ -85,7 +59,6 @@ export interface SRSConfig {
  * Higher scores indicate more urgent reviews:
  * - Cards that are more overdue (relative to their interval) score higher
  * - Cards with shorter intervals (recent learning) score higher
- * - When backlog exceeds "healthy" threshold, all reviews get urgency boost
  *
  * Only returns cards that are actually due (reviewTime has passed).
  * Does not generate new cards - use with CompositeGenerator for mixed content.
@@ -94,9 +67,6 @@ export default class SRSNavigator extends ContentNavigator implements CardGenera
   /** Human-readable name for CardGenerator interface */
   name: string;
 
-  /** Healthy backlog threshold - when exceeded, backlog pressure kicks in */
-  private healthyBacklog: number;
-
   constructor(
     user: UserDBInterface,
     course: CourseDBInterface,
@@ -104,23 +74,6 @@ export default class SRSNavigator extends ContentNavigator implements CardGenera
   ) {
     super(user, course, strategyData as ContentNavigationStrategyData);
     this.name = strategyData?.name || 'SRS';
-
-    // Parse config from serializedData if available
-    const config = this.parseConfig(strategyData?.serializedData);
-    this.healthyBacklog = config.healthyBacklog ?? DEFAULT_HEALTHY_BACKLOG;
-  }
-
-  /**
-   * Parse configuration from serialized JSON.
-   */
-  private parseConfig(serializedData?: string): SRSConfig {
-    if (!serializedData) return {};
-    try {
-      return JSON.parse(serializedData) as SRSConfig;
-    } catch {
-      logger.warn('[SRS] Failed to parse strategy config, using defaults');
-      return {};
-    }
   }
 
   /**
@@ -129,7 +82,6 @@ export default class SRSNavigator extends ContentNavigator implements CardGenera
    * Score formula combines:
    * - Relative overdueness: hoursOverdue / intervalHours
    * - Interval recency: exponential decay favoring shorter intervals
-   * - Backlog pressure: boost when due reviews exceed healthy threshold
    *
    * Cards not yet due are excluded (not scored as 0).
    *
@@ -176,9 +128,6 @@ export default class SRSNavigator extends ContentNavigator implements CardGenera
       }
     }
 
-    // Compute backlog pressure (multiplicative) - applies globally to all reviews
-    const backlogMultiplier = this.computeBacklogMultiplier(dueReviews.length);
-
     // Time until the next not-yet-due review (for the debug overlay): shows
     // reviews are *coming* even when none are due right now.
     const notDue = reviews.filter((r) => !now.isAfter(moment.utc(r.reviewTime)));
@@ -198,12 +147,8 @@ export default class SRSNavigator extends ContentNavigator implements CardGenera
 
     // Log review status for transparency
     if (dueReviews.length > 0) {
-      const pressureNote =
-        backlogMultiplier > 1
-          ? ` [backlog pressure: ×${backlogMultiplier.toFixed(2)}]`
-          : ` [healthy backlog]`;
       logger.info(
-        `[SRS] Course ${courseId}: ${dueReviews.length} reviews due now (of ${reviews.length} scheduled)${pressureNote}`
+        `[SRS] Course ${courseId}: ${dueReviews.length} reviews due now (of ${reviews.length} scheduled)`
       );
     } else if (reviews.length > 0) {
       // Reviews exist but none are due yet - show when next one is due
@@ -227,12 +172,13 @@ export default class SRSNavigator extends ContentNavigator implements CardGenera
     }
 
     const scored = dueReviews.map((review) => {
-      const { score, reason } = this.computeUrgencyScore(review, now, backlogMultiplier);
+      const { score, urgency, reason } = this.computeUrgencyScore(review, now);
 
       return {
         cardId: review.cardId,
         courseId: review.courseId,
         score,
+        reviewUrgency: urgency,
         reviewID: review._id,
         provenance: [
           {
@@ -250,14 +196,16 @@ export default class SRSNavigator extends ContentNavigator implements CardGenera
     // Sort by score descending and limit
     const sorted = scored.sort((a, b) => b.score - a.score);
 
-    // Capture backlog state for the live session overlay (see SrsDebugger).
+    // Capture backlog state for the live session overlay (see SrsDebugger). The
+    // regulator stage patches in review mass and its multiplier after filters.
     captureSrsBacklog({
       courseId,
       scheduledTotal: reviews.length,
       dueNow: dueReviews.length,
-      healthyBacklog: this.healthyBacklog,
-      backlogMultiplier,
-      backlogGrowthRate: BACKLOG_GROWTH_RATE,
+      healthyBacklog: DEFAULT_REGULATOR_CONFIG.reviewMass.healthyMass,
+      reviewMass: null,
+      backlogMultiplier: 1,
+      backlogGrowthRate: DEFAULT_REGULATOR_CONFIG.reviewMass.rate,
       topReviewScore: sorted.length > 0 ? sorted[0].score : null,
       nextDueIn,
       timestamp: Date.now(),
@@ -274,40 +222,9 @@ export default class SRSNavigator extends ContentNavigator implements CardGenera
   }
 
   /**
-   * Compute the multiplicative backlog pressure based on number of due reviews.
-   *
-   * ×1.0 at or below the healthy threshold (no boost); above it, grows as
-   * BACKLOG_GROWTH_RATE raised to the excess expressed in multiples of the
-   * healthy threshold. Uncapped — self-regulating instead: reviews winning
-   * slots depletes dueCount, which drops the ratio and relaxes the multiplier
-   * next run.
-   *
-   * Examples (with default healthyBacklog=20, BACKLOG_GROWTH_RATE=1.5):
-   * - 10 due reviews → ×1.00  (healthy)
-   * - 20 due reviews → ×1.00  (at threshold, ratio 0)
-   * - 40 due reviews → ×1.50  (ratio 1, 2x threshold)
-   * - 60 due reviews → ×2.25  (ratio 2, 3x threshold — old hard cap was ×2.00 here)
-   * - 100 due reviews → ×5.06 (ratio 4, 5x threshold)
-   * - 160 due reviews → ×17.09 (ratio 7, 8x threshold)
-   *
-   * @param dueCount - Number of reviews currently due
-   * @returns Multiplier applied to review urgency (>= 1.0, unbounded)
-   */
-  private computeBacklogMultiplier(dueCount: number): number {
-    if (dueCount <= this.healthyBacklog) {
-      return 1.0;
-    }
-
-    const excess = dueCount - this.healthyBacklog;
-    const ratio = excess / this.healthyBacklog;
-
-    return Math.pow(BACKLOG_GROWTH_RATE, ratio);
-  }
-
-  /**
    * Compute urgency score for a review card.
    *
-   * Three factors:
+   * Two factors:
    * 1. Relative overdueness = hoursOverdue / intervalHours
    *    - 2 days overdue on 3-day interval = 0.67 (urgent)
    *    - 2 days overdue on 180-day interval = 0.01 (not urgent)
@@ -317,24 +234,17 @@ export default class SRSNavigator extends ContentNavigator implements CardGenera
    *    - 30 days (720h) → ~0.56
    *    - 180 days → ~0.30
    *
-   * 3. Backlog pressure = global *multiplier* when review backlog exceeds the
-   *    healthy threshold (×1.0 healthy → exponential growth, uncapped, above it).
-   *
-   * Combined: (base 0.5 + urgency factors * 0.45) × backlog multiplier.
-   * Per-card range before pressure: ~0.57–0.95. NOT clamped to 1.0 — under a
-   * heavy backlog reviews scale onto the open scale to compete with (and exceed)
-   * new cards; there's no ceiling at all now, so a bad enough backlog always
-   * wins eventually — self-regulating because winning slots depletes dueCount.
+   * Combined: base 0.5 + urgency factors * 0.45, so ~0.57–0.95 per card.
+   * Backlog pressure is applied later, by the regulator stage, which can lift
+   * reviews onto the open scale above new cards (see regulators.ts).
    *
    * @param review - The scheduled card to score
    * @param now - Current time
-   * @param backlogMultiplier - Pre-computed backlog multiplier (>= 1.0, unbounded)
    */
   private computeUrgencyScore(
     review: ScheduledCard,
-    now: moment.Moment,
-    backlogMultiplier: number
-  ): { score: number; reason: string } {
+    now: moment.Moment
+  ): { score: number; urgency: number; reason: string } {
     const scheduledAt = moment.utc(review.scheduledAt);
     const due = moment.utc(review.reviewTime);
 
@@ -354,11 +264,8 @@ export default class SRSNavigator extends ContentNavigator implements CardGenera
     const overdueContribution = Math.min(1.0, Math.max(0, relativeOverdue));
     const urgency = overdueContribution * 0.5 + recencyFactor * 0.5;
 
-    // Final score: per-card urgency (base 0.5 + contribution) scaled by the
-    // global backlog multiplier. No 1.0 clamp — reviews compete on the open
-    // scale; the bounded multiplier (not a ceiling) caps the lift.
-    const baseScore = 0.5 + urgency * 0.45;
-    const score = baseScore * backlogMultiplier;
+    // Final score: per-card urgency, base 0.5 + contribution.
+    const score = 0.5 + urgency * 0.45;
 
     // Build reason string with all contributing factors
     const reasonParts = [
@@ -368,14 +275,10 @@ export default class SRSNavigator extends ContentNavigator implements CardGenera
       `recency: ${recencyFactor.toFixed(2)}`,
     ];
 
-    if (backlogMultiplier > 1) {
-      reasonParts.push(`backlog: ×${backlogMultiplier.toFixed(2)}`);
-    }
-
     reasonParts.push('review');
 
     const reason = reasonParts.join(', ');
 
-    return { score, reason };
+    return { score, urgency, reason };
   }
 }

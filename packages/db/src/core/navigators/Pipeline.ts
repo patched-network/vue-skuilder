@@ -1,4 +1,4 @@
-import { toCourseElo } from '@vue-skuilder/common';
+import { toCourseElo, type CourseElo } from '@vue-skuilder/common';
 import type { CourseDBInterface } from '../interfaces/courseDB';
 import type { UserDBInterface } from '../interfaces/userDB';
 import { ContentNavigator } from './index';
@@ -10,6 +10,18 @@ import { logger } from '../../util/logger';
 import { createOrchestrationContext, OrchestrationContext } from '../orchestration';
 import { captureRun, buildRunReport, registerPipelineForDebug, type GeneratorSummary, type FilterImpact } from './PipelineDebugger';
 import { diversityRerank } from './diversityRerank';
+import {
+  applyReading,
+  DEFAULT_REGULATOR_CONFIG,
+  INTAKE_CLOCK_KEY,
+  intakeReading,
+  resetIntakeClock,
+  reviewMassReading,
+  stepIntakeClock,
+  type IntakeClockState,
+  type RegulatorReading,
+} from './regulators';
+import { noteReviewPressure } from './SrsDebugger';
 
 // ============================================================================
 // REPLAN HINTS
@@ -299,6 +311,14 @@ export class Pipeline extends ContentNavigator implements PipelineForecaster {
   private _ephemeralHints: ReplanHints | null = null;
 
   /**
+   * The intake valve's clock (see regulators.ts), loaded from strategy state on
+   * first use and kept in memory. Writes are chained so a presentation and a
+   * run can't race each other's revision.
+   */
+  private _intakeClock: IntakeClockState | null = null;
+  private _intakeClockWrite: Promise<void> = Promise.resolve();
+
+  /**
    * Create a new pipeline.
    *
    * @param generator - The generator (or CompositeGenerator) that produces candidates
@@ -401,13 +421,14 @@ export class Pipeline extends ContentNavigator implements PipelineForecaster {
         }
       }
       generatorSummaries = Array.from(genMap.entries()).map(([name, data]) => {
-        const newCards = data.cards.filter((c) => c.provenance[0]?.reason?.includes('new card'));
-        const reviewCards = data.cards.filter((c) => c.provenance[0]?.reason?.includes('review'));
+        // Reviews carry `reviewID`; everything else a generator emits is unseen.
+        // (Reason text can't tell: the ELO generator's never says "new card".)
+        const reviewCount = data.cards.filter((c) => c.reviewID).length;
         return {
           name,
           cardCount: data.cards.length,
-          newCount: newCards.length,
-          reviewCount: reviewCards.length,
+          newCount: data.cards.length - reviewCount,
+          reviewCount,
           topScore: Math.max(...data.cards.map((c) => c.score), 0),
         };
       });
@@ -459,6 +480,10 @@ export class Pipeline extends ContentNavigator implements PipelineForecaster {
         .map((c) => c.cardId)
     );
     const filterImpacts: FilterImpact[] = [];
+    // Scores as generated, so regulators can read the filters' net effect on each card.
+    const generatedScores = new Map(cards.map((c) => [c.cardId, c.score]));
+    // Cards a gate penalized: not ready, so regulators won't lift them.
+    const gated = new Set<string>();
     // [perf] parked 2026-05 (pipeline-docs-workup) — uncomment to re-measure
     // const filterTimings: string[] = [];
     for (const filter of this.filters) {
@@ -472,13 +497,17 @@ export class Pipeline extends ContentNavigator implements PipelineForecaster {
       let boosted = 0, penalized = 0, passed = 0;
       const removed = beforeCount - cards.length;
 
+      // Undeclared filters count as gates (see CardFilter.kind).
+      const kind = filter.kind ?? 'gate';
       for (const card of cards) {
         const before = beforeScores.get(card.cardId) ?? 0;
         if (card.score > before) boosted++;
-        else if (card.score < before) penalized++;
-        else passed++;
+        else if (card.score < before) {
+          penalized++;
+          if (kind === 'gate') gated.add(card.cardId);
+        } else passed++;
       }
-      filterImpacts.push({ name: filter.name, boosted, penalized, passed, removed });
+      filterImpacts.push({ name: filter.name, kind, boosted, penalized, passed, removed });
 
       // Report prescribed card fate through each filter
       if (prescribedIds.size > 0) {
@@ -505,6 +534,10 @@ export class Pipeline extends ContentNavigator implements PipelineForecaster {
     // them: they're the answer to "which filter sank this card?"
     const scoredCards = cards;
     cards = cards.filter((c) => c.score > 0);
+
+    // Regulators: class-level pressure between reviews and new cards, from the
+    // filtered scores (see regulators.ts). Before hints, so session intent wins.
+    const regulators = await this.regulate(cards, generatedScores, gated);
 
     // Apply ephemeral hints (one-shot, post-filter)
     const hints = this._ephemeralHints;
@@ -571,7 +604,8 @@ export class Pipeline extends ContentNavigator implements PipelineForecaster {
         result,
         context.userElo,
         hints?? undefined,
-        scoredCards
+        scoredCards,
+        regulators
       );
       captureRun(report);
     } catch (e) {
@@ -786,6 +820,93 @@ export class Pipeline extends ContentNavigator implements PipelineForecaster {
   }
 
   /**
+   * The regulator stage: measure each class's pressure and scale it.
+   *
+   * - Review mass: every due review's SRS urgency times the filters' net
+   *   effect on it.
+   * - Intake: servable hours since a new card was presented, applied only to
+   *   eligible new cards (no gate penalized them). With none eligible, the
+   *   clock freezes.
+   *
+   * Mutates `cards` in place; returns the readings for the run report.
+   */
+  private async regulate(
+    cards: WeightedCard[],
+    generatedScores: ReadonlyMap<string, number>,
+    gated: Set<string>
+  ): Promise<RegulatorReading[]> {
+    const config = DEFAULT_REGULATOR_CONFIG;
+    const reviews = cards.filter((c) => c.reviewID);
+    const newCards = cards.filter((c) => !c.reviewID);
+    const eligibleNew = newCards.filter((c) => !gated.has(c.cardId));
+
+    const mass = reviewMassReading(reviews, generatedScores, config.reviewMass);
+    applyReading(reviews, mass);
+    noteReviewPressure(this.course!.getCourseID(), {
+      mass: mass.urgency,
+      healthyMass: config.reviewMass.healthyMass,
+      rate: config.reviewMass.rate,
+      multiplier: mass.multiplier,
+    });
+
+    const now = Date.now();
+    const clock = await this.loadIntakeClock(now);
+    const stepped = stepIntakeClock(clock, now, eligibleNew.length);
+    if (stepped !== clock) this.saveIntakeClock(stepped);
+    const intake = intakeReading(
+      stepped,
+      now,
+      { eligibleNew: eligibleNew.length, newCandidates: newCards.length },
+      config.intake
+    );
+    applyReading(eligibleNew, intake);
+
+    logger.info(
+      `[Pipeline:regulators] review mass ${mass.urgency.toFixed(1)} over ${reviews.length} due → ` +
+        `×${mass.multiplier.toFixed(2)}; intake ${intake.urgency.toFixed(1)}h, ` +
+        `${eligibleNew.length}/${newCards.length} new eligible → ×${intake.multiplier.toFixed(2)}`
+    );
+    return [mass, intake];
+  }
+
+  /**
+   * A card was presented. A new card's first presentation discharges the
+   * intake valve: its clock restarts. Called by the SessionController.
+   */
+  notePresented(card: { cardId: string; courseId: string; status: string }): void {
+    if (card.status !== 'new' || card.courseId !== this.course?.getCourseID()) return;
+    this.saveIntakeClock(resetIntakeClock(Date.now()));
+  }
+
+  private async loadIntakeClock(nowMs: number): Promise<IntakeClockState> {
+    if (this._intakeClock) return this._intakeClock;
+    let stored: IntakeClockState | null = null;
+    try {
+      stored = await this.user!.getStrategyState<IntakeClockState>(
+        this.course!.getCourseID(),
+        INTAKE_CLOCK_KEY
+      );
+    } catch (e) {
+      logger.warn(`[Pipeline:regulators] Could not read the intake clock: ${e}`);
+    }
+    if (stored) {
+      this._intakeClock = stored;
+    } else {
+      // No clock yet: start it now.
+      this.saveIntakeClock(resetIntakeClock(nowMs));
+    }
+    return this._intakeClock!;
+  }
+
+  private saveIntakeClock(state: IntakeClockState): void {
+    this._intakeClock = state;
+    const courseId = this.course!.getCourseID();
+    this._intakeClockWrite = this._intakeClockWrite
+      .then(() => this.user!.putStrategyState(courseId, INTAKE_CLOCK_KEY, state))
+      .catch((e) => logger.warn(`[Pipeline:regulators] Could not save the intake clock: ${e}`));
+  }
+
+  /**
    * Build shared context for generator and filters.
    *
    * Called once per getWeightedCards() invocation.
@@ -795,11 +916,12 @@ export class Pipeline extends ContentNavigator implements PipelineForecaster {
    */
   private async buildContext(): Promise<GeneratorContext & FilterContext> {
     let userElo = 1000; // Default ELO
+    let userCourseElo: CourseElo | undefined;
 
     try {
       const courseReg = await this.user!.getCourseRegDoc(this.course!.getCourseID());
-      const courseElo = toCourseElo(courseReg.elo);
-      userElo = courseElo.global.score;
+      userCourseElo = toCourseElo(courseReg.elo);
+      userElo = userCourseElo.global.score;
     } catch (e) {
       logger.debug(`[Pipeline] Could not get user ELO, using default: ${e}`);
     }
@@ -816,6 +938,7 @@ export class Pipeline extends ContentNavigator implements PipelineForecaster {
       user: this.user!,
       course: this.course!,
       userElo,
+      ...(userCourseElo ? { userCourseElo } : {}),
       orchestration,
     };
   }
@@ -961,7 +1084,7 @@ export class Pipeline extends ContentNavigator implements PipelineForecaster {
     const fullPool = cards.slice();
 
     const context = await this.buildContext();
-    for (const filter of this.filters) {
+    for (const filter of this.forecastFilters()) {
       cards = await filter.transform(cards, context);
     }
 
@@ -983,6 +1106,15 @@ export class Pipeline extends ContentNavigator implements PipelineForecaster {
 
     cards.sort((a, b) => b.score - a.score);
     return opts?.limit ? cards.slice(0, opts.limit) : cards;
+  }
+
+  /**
+   * The filters a forecast or card-space scan applies. Those start every card at
+   * 1.0 without a generator, so they skip `liveOnly` filters (ELO distance),
+   * which only make sense against generator scores.
+   */
+  private forecastFilters(): CardFilter[] {
+    return this.filters.filter((f) => !f.liveOnly);
   }
 
   /**
@@ -1016,7 +1148,7 @@ export class Pipeline extends ContentNavigator implements PipelineForecaster {
     const filterBreakdown: Array<{ name: string; wellIndicated: number }> = [];
 
     // Track cumulative filter effects
-    for (const filter of this.filters) {
+    for (const filter of this.forecastFilters()) {
       cards = await filter.transform(cards, context);
       const wi = cards.filter((c) => c.score >= THRESHOLD).length;
       filterBreakdown.push({ name: filter.name, wellIndicated: wi });

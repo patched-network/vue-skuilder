@@ -403,14 +403,16 @@ function backlogHtml(backlog: SrsBacklogDebug[]): string {
       const multColor = b.backlogMultiplier <= 1 ? '#86efac' : hot ? '#fca5a5' : '#fcd34d';
       const headroom =
         b.backlogMultiplier > 1
-          ? `climbing (×${b.backlogGrowthRate.toFixed(2)} per ${b.healthyBacklog}-review excess, unbounded)`
+          ? `climbing (×${b.backlogGrowthRate.toFixed(2)} per ${b.healthyBacklog} of mass in excess, unbounded)`
           : 'healthy — no pressure';
+      const mass =
+        b.reviewMass !== null ? ` · mass ${b.reviewMass.toFixed(1)}` : '';
       const top = b.topReviewScore !== null ? b.topReviewScore.toFixed(2) : '—';
       const next = b.nextDueIn ? ` <span style="opacity:.6">· next due ${esc(b.nextDueIn)}</span>` : '';
       return (
         `<div style="margin-left:6px">` +
         `<span style="opacity:.7">${esc(b.courseId.slice(0, 8))}</span> ` +
-        `due ${b.dueNow}/${b.scheduledTotal} <span style="opacity:.6">(healthy ${b.healthyBacklog})</span>${next}` +
+        `due ${b.dueNow}/${b.scheduledTotal}${mass} <span style="opacity:.6">(healthy mass ${b.healthyBacklog})</span>${next}` +
         `<div style="margin-left:6px">` +
         `pressure <span style="color:${multColor}">×${b.backlogMultiplier.toFixed(2)}</span> ` +
         `<span style="opacity:.6">${headroom} · top review ${top}</span></div>` +
@@ -651,9 +653,10 @@ function snapshotToText(s: SessionDebugSnapshot | null): string {
       const headroom = b.backlogMultiplier > 1 ? 'climbing' : 'healthy';
       const top = b.topReviewScore !== null ? b.topReviewScore.toFixed(2) : '—';
       const next = b.nextDueIn ? `, next due ${b.nextDueIn}` : '';
+      const mass = b.reviewMass !== null ? `, mass ${b.reviewMass.toFixed(1)}` : '';
       lines.push(
-        `  ${b.courseId.slice(0, 8)}: due ${b.dueNow}/${b.scheduledTotal} ` +
-          `(healthy ${b.healthyBacklog})${next}; pressure ×${b.backlogMultiplier.toFixed(2)} ` +
+        `  ${b.courseId.slice(0, 8)}: due ${b.dueNow}/${b.scheduledTotal}${mass} ` +
+          `(healthy mass ${b.healthyBacklog})${next}; pressure ×${b.backlogMultiplier.toFixed(2)} ` +
           `${headroom}; top review ${top}`
       );
     }

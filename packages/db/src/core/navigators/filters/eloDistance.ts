@@ -1,132 +1,317 @@
+import type { CourseDBInterface } from '../../interfaces/courseDB';
+import type { UserDBInterface } from '../../interfaces/userDB';
+import type { ContentNavigationStrategyData } from '../../types/contentNavigationStrategy';
+import { ContentNavigator } from '../index';
 import type { WeightedCard } from '../index';
-import type { CardFilter, FilterContext } from './types';
+import type { GeneratorResult } from '../generators/types';
+import type { CardFilter, FilterContext, FilterKind } from './types';
+import type { CourseElo } from '@vue-skuilder/common';
 
 // ============================================================================
 // ELO DISTANCE FILTER
 // ============================================================================
 //
-// Penalizes cards that are far from the user's current ELO using a smooth curve.
+// Scales every candidate by how close its ELO is to the learner's, on a smooth
+// Gaussian (no discontinuities, never zero).
 //
-// This filter addresses cross-strategy coordination:
-// - SRS generates reviews based on scheduling
-// - But some scheduled cards may be "below" the user's current level
-// - Or "above" (shouldn't happen often, but possible)
+// The one place ELO distance counts. Generators retrieve (the ELO generator
+// pulls a window of cards near the learner's ELO) and score only on what's
+// specific to their source; a signal that applies to every card lives in one
+// heap-wide filter, so new cards and reviews are weighed on the same terms:
+// - reviews the learner has moved beyond fade, and may never surface over
+//   higher-priority work;
+// - new cards far from the learner's level rank low (this used to live in the
+//   ELO generator's own score, which double-counted alongside this filter).
 //
-// By applying ELO distance penalties, we can:
-// - Deprioritize reviews the user has "moved beyond"
-// - Deprioritize cards that are too hard for current skill level
+// Tag-aware (default): a card's difficulty for this learner is read on the
+// skills they share, not only on global ELO. Card and learner keep paired
+// ratings per tag (each graded response adjusts both), so a tag's gap
+// (card − learner) is as meaningful as the global one, and often more: a card
+// can sit at the learner's global level while testing their weakest skill.
+// See tagAwareGap for the combination.
 //
-// The penalty curve is smooth (no discontinuities) using a Gaussian-like decay.
+// A `signal`, not a gate: it expresses preference, not readiness. `liveOnly`:
+// forecasts and card-space scans start every card at 1.0 without a generator,
+// and never applied ELO distance, so they skip it.
+//
+// The assembler adds this filter (as "ELO Distance (default)") to every
+// pipeline whose strategy docs don't declare one. A course tunes it by
+// declaring its own `eloDistance` strategy doc with an EloDistanceConfig.
 //
 // ============================================================================
 
 /**
- * Configuration for the ELO distance filter.
+ * Configuration for the ELO distance curve:
+ * `minMultiplier + (maxMultiplier − minMultiplier) · exp(−(distance / halfLife)²)`.
  */
 export interface EloDistanceConfig {
   /**
-   * The ELO distance at which the multiplier is ~0.6 (one standard deviation).
-   * Default: 200 ELO points.
+   * The Gaussian's scale in ELO points (despite the name, not a half-life).
+   * Default 300: distance 250 → ~0.5, as the ELO generator scored new cards.
    *
-   * - At distance 0: multiplier ≈ 1.0
-   * - At distance = halfLife: multiplier ≈ 0.6
-   * - At distance = 2 * halfLife: multiplier ≈ 0.37
-   * - At distance = 3 * halfLife: multiplier ≈ 0.22
+   * - distance 0: maxMultiplier
+   * - distance = halfLife: ~0.4 (with the default floor)
+   * - distance = 2 · halfLife: ~0.07
    */
   halfLife?: number;
 
   /**
-   * Minimum multiplier (floor) to prevent scores from going too low.
-   * Default: 0.3
+   * Floor, so far-off cards keep a nonzero score (the pipeline drops zero
+   * scores before hints, and a hint must be able to lift any card). Default 0.05.
    */
   minMultiplier?: number;
 
-  /**
-   * Maximum multiplier (ceiling). Usually 1.0 (no boost for close cards).
-   * Default: 1.0
-   */
+  /** Ceiling. Usually 1.0 (no boost for close cards). Default 1.0. */
   maxMultiplier?: number;
+
+  /**
+   * Measure distance on the tags the card and learner share (see
+   * tagAwareGap), falling back to global ELO where they share none.
+   * Default true.
+   */
+  tagAware?: boolean;
+
+  /**
+   * A learner's tag rating counts once it rests on at least this many graded
+   * responses. Count-only (exposure) tags never count. Default 3.
+   */
+  minTagCount?: number;
 }
 
-const DEFAULT_HALF_LIFE = 200;
-const DEFAULT_MIN_MULTIPLIER = 0.3;
-const DEFAULT_MAX_MULTIPLIER = 1.0;
+/**
+ * The default curve. The default strategy doc carries it as its config, so
+ * the admin pipeline view shows what runs.
+ */
+export const DEFAULT_ELO_DISTANCE_CONFIG: Required<EloDistanceConfig> = {
+  halfLife: 300,
+  minMultiplier: 0.05,
+  maxMultiplier: 1.0,
+  tagAware: true,
+  minTagCount: 3,
+};
 
 /**
- * Compute the multiplier for a given ELO distance using Gaussian decay.
- *
- * Formula: minMultiplier + (maxMultiplier - minMultiplier) * exp(-(distance/halfLife)^2)
- *
- * This produces a smooth bell curve centered at distance=0:
- * - At distance 0: multiplier = maxMultiplier (1.0)
- * - As distance increases: multiplier smoothly decays toward minMultiplier
- * - No discontinuities or sudden jumps
+ * Graded responses at which a tag's gap carries half its full weight. Thin
+ * tag evidence leans on global ELO; well-practised tags dominate.
  */
+const TAG_CONFIDENCE_HALF = 10;
+
+/** Count-only tag ratings (exposure tracking) carry this sentinel score. */
+const COUNT_ONLY_SENTINEL = -1;
+
+/** Fallback card ELO when a card has none recorded. */
+const DEFAULT_CARD_ELO = 1000;
+
 function computeMultiplier(
   distance: number,
   halfLife: number,
   minMultiplier: number,
   maxMultiplier: number
 ): number {
-  // Gaussian decay: exp(-(d/h)^2)
   const normalizedDistance = distance / halfLife;
   const decay = Math.exp(-(normalizedDistance * normalizedDistance));
-
-  // Scale between min and max
   return minMultiplier + (maxMultiplier - minMultiplier) * decay;
 }
 
+function resolveConfig(config?: EloDistanceConfig): Required<EloDistanceConfig> {
+  return { ...DEFAULT_ELO_DISTANCE_CONFIG, ...config };
+}
+
+/** One shared tag's contribution to a card's tag-aware gap. */
+interface TagGap {
+  tag: string;
+  /** Card's tag rating minus the learner's: positive = harder than their level. */
+  gap: number;
+  weight: number;
+}
+
 /**
- * Create an ELO distance filter.
+ * The card's difficulty for this learner, in ELO points (card − learner),
+ * read on the tags they share.
  *
- * Penalizes cards that are far from the user's current ELO level
- * using a smooth Gaussian decay curve. No discontinuities.
+ * - Shared tags: the card's tags on which the learner has a real rating
+ *   (not the count-only sentinel) resting on at least `minTagCount` graded
+ *   responses. A card with no rating of its own on a tag uses its global, as
+ *   the ELO update does when it first grades that tag.
+ * - Each tag's gap is weighted by the learner's evidence on it,
+ *   n / (n + TAG_CONFIDENCE_HALF).
+ * - The weighted mean of the tag gaps is blended with the global gap by the
+ *   total evidence W: λ = W / (W + 1). One thin tag barely moves it; several
+ *   practised tags dominate it.
  *
- * @param config - Optional configuration for the decay curve
- * @returns A CardFilter that applies ELO distance penalties
+ * OPEN (draft, 2026-10-01; uncommitted, to sit on). On one LP learner's
+ * 09-30 dump the effect was modest: every touched card shared a rated tag
+ * (median 4); mean multiplier ×0.70 → ×0.75 over 352 touched cards, ×0.84 →
+ * ×0.88 over 42 due reviews. The biggest movers were old who-said-that cards:
+ * ~400 below the learner globally, ~280 below on their own skills.
+ *
+ * 1. Compensatory or conjunctive. This averages: a weak skill is offset by
+ *    strong ones. For spelling a word, which needs every grapheme, the hardest
+ *    shared skill arguably sets the difficulty: take the largest gap instead.
+ *    The main design question.
+ * 2. Which tags count. Broad tags (`concept:match:simple`, `ui:*`) sit on most
+ *    cards and act like a second global rating. The framework may want the
+ *    course to say which tags are skills (cf. LP's diagnostics interpreter
+ *    `isSkillTag`), e.g. as tag patterns in the strategy config.
+ * 3. New cards matter most, and that dump couldn't show them. An unseen
+ *    card's tag ratings fall back to its global, so for new cards this reads
+ *    "card global vs the learner's rating on that skill". Measuring it needs a
+ *    `--course all` dump.
+ * 4. Cost. Tag-aware fetches full ratings for every candidate (~500 card docs
+ *    per run); global-only fetches only reviews'.
+ * 5. Retrieval stays global. The ELO generator's window is the cards nearest
+ *    the learner's global ELO, so a card that's well matched on its skills but
+ *    far off globally may never be retrieved.
+ * 6. Target. Distance 0 means ~50% expected success. Early learners may do
+ *    better aiming higher: a shift of the curve's centre, independent of this.
+ */
+export function tagAwareGap(
+  cardTags: readonly string[],
+  cardElo: CourseElo,
+  userElo: CourseElo,
+  minTagCount: number
+): { gap: number; globalGap: number; tags: TagGap[] } {
+  const globalGap = cardElo.global.score - userElo.global.score;
+  const tags: TagGap[] = [];
+  for (const tag of cardTags) {
+    const user = userElo.tags[tag];
+    if (!user || user.score === COUNT_ONLY_SENTINEL || user.count < minTagCount) continue;
+    const card = cardElo.tags[tag]?.score ?? cardElo.global.score;
+    tags.push({
+      tag,
+      gap: card - user.score,
+      weight: user.count / (user.count + TAG_CONFIDENCE_HALF),
+    });
+  }
+  if (tags.length === 0) return { gap: globalGap, globalGap, tags };
+
+  const total = tags.reduce((w, t) => w + t.weight, 0);
+  const tagGap = tags.reduce((g, t) => g + t.weight * t.gap, 0) / total;
+  const lambda = total / (total + 1);
+  return { gap: lambda * tagGap + (1 - lambda) * globalGap, globalGap, tags };
+}
+
+function tagReason(tags: TagGap[], globalGap: number): string {
+  const shown = [...tags]
+    .sort((a, b) => Math.abs(b.gap) * b.weight - Math.abs(a.gap) * a.weight)
+    .slice(0, 3)
+    .map((t) => `${t.tag} ${t.gap >= 0 ? '+' : ''}${Math.round(t.gap)}`)
+    .join(', ');
+  const more = tags.length > 3 ? `, +${tags.length - 3} more` : '';
+  return ` on ${tags.length} shared tag(s) [${shown}${more}] (global ${globalGap >= 0 ? '+' : ''}${Math.round(globalGap)})`;
+}
+
+async function applyEloDistance(
+  cards: WeightedCard[],
+  context: FilterContext,
+  config: Required<EloDistanceConfig>,
+  source: { name: string; strategyId: string }
+): Promise<WeightedCard[]> {
+  const { course, userElo, userCourseElo } = context;
+  const { halfLife, minMultiplier, maxMultiplier } = config;
+  const tagAware = config.tagAware && userCourseElo !== undefined;
+
+  // Tag-aware needs every card's full ratings; otherwise only the ELO of cards
+  // that don't carry it (reviews). One batch either way.
+  const missing = cards.filter((c) => tagAware || c.cardElo === undefined).map((c) => c.cardId);
+  const fetched = new Map<string, CourseElo>();
+  if (missing.length > 0) {
+    const elos = await course.getCardEloData(missing);
+    missing.forEach((id, i) => {
+      if (elos[i]) fetched.set(id, elos[i]);
+    });
+  }
+
+  return cards.map((card) => {
+    const full = fetched.get(card.cardId);
+    const cardElo = full?.global?.score ?? card.cardElo ?? DEFAULT_CARD_ELO;
+
+    let distance = Math.abs(cardElo - userElo);
+    let how = '';
+    if (tagAware && full) {
+      const t = tagAwareGap(card.tags ?? [], full, userCourseElo!, config.minTagCount);
+      distance = Math.abs(t.gap);
+      if (t.tags.length > 0) how = tagReason(t.tags, t.globalGap);
+    }
+
+    const multiplier = computeMultiplier(distance, halfLife, minMultiplier, maxMultiplier);
+    const newScore = card.score * multiplier;
+    const action = multiplier < maxMultiplier - 0.01 ? 'penalized' : 'passed';
+
+    return {
+      ...card,
+      cardElo,
+      score: newScore,
+      provenance: [
+        ...card.provenance,
+        {
+          strategy: 'eloDistance',
+          strategyName: source.name,
+          strategyId: source.strategyId,
+          action,
+          score: newScore,
+          reason: `ELO distance ${Math.round(distance)} (card: ${Math.round(cardElo)}, user: ${Math.round(userElo)})${how} → ${multiplier.toFixed(2)}x`,
+        },
+      ],
+    };
+  });
+}
+
+/**
+ * Create an ELO distance filter outside the strategy-doc path.
+ *
+ * @param config - Optional configuration for the curve
  */
 export function createEloDistanceFilter(config?: EloDistanceConfig): CardFilter {
-  const halfLife = config?.halfLife ?? DEFAULT_HALF_LIFE;
-  const minMultiplier = config?.minMultiplier ?? DEFAULT_MIN_MULTIPLIER;
-  const maxMultiplier = config?.maxMultiplier ?? DEFAULT_MAX_MULTIPLIER;
-
+  const resolved = resolveConfig(config);
+  const source = { name: 'ELO Distance Filter', strategyId: 'ELO_DISTANCE_FILTER' };
   return {
-    name: 'ELO Distance Filter',
-
-    async transform(cards: WeightedCard[], context: FilterContext): Promise<WeightedCard[]> {
-      const { course, userElo } = context;
-
-      // Batch fetch ELO data for all cards
-      const cardIds = cards.map((c) => c.cardId);
-      const cardElos = await course.getCardEloData(cardIds);
-
-      return cards.map((card, i) => {
-        const cardElo = cardElos[i]?.global?.score ?? 1000;
-        const distance = Math.abs(cardElo - userElo);
-        const multiplier = computeMultiplier(distance, halfLife, minMultiplier, maxMultiplier);
-        const newScore = card.score * multiplier;
-
-        const action = multiplier < maxMultiplier - 0.01 ? 'penalized' : 'passed';
-
-        return {
-          ...card,
-          score: newScore,
-          provenance: [
-            ...card.provenance,
-            {
-              strategy: 'eloDistance',
-              strategyName: 'ELO Distance Filter',
-              strategyId: 'ELO_DISTANCE_FILTER',
-              action,
-              score: newScore,
-              reason: `ELO distance ${Math.round(distance)} (card: ${Math.round(cardElo)}, user: ${Math.round(userElo)}) → ${multiplier.toFixed(2)}x`,
-            },
-          ],
-        };
-      });
-    },
+    name: source.name,
+    kind: 'signal',
+    liveOnly: true,
+    transform: (cards, context) => applyEloDistance(cards, context, resolved, source),
   };
 }
 
-// Export defaults for testing
-export { DEFAULT_HALF_LIFE, DEFAULT_MIN_MULTIPLIER, DEFAULT_MAX_MULTIPLIER };
+/**
+ * The ELO distance filter as a strategy-doc navigator (`implementingClass:
+ * 'eloDistance'`, serializedData: an EloDistanceConfig as JSON, or empty).
+ */
+export default class EloDistanceFilter extends ContentNavigator implements CardFilter {
+  name: string;
+  /** See CardFilter.kind. Static, so the pipeline plan can read it without an instance. */
+  static readonly kind: FilterKind = 'signal';
+  readonly kind = EloDistanceFilter.kind;
+  readonly liveOnly = true;
+  private config: Required<EloDistanceConfig>;
+
+  constructor(
+    user: UserDBInterface,
+    course: CourseDBInterface,
+    strategyData: ContentNavigationStrategyData
+  ) {
+    super(user, course, strategyData);
+    this.name = strategyData.name || 'ELO Distance';
+    let parsed: EloDistanceConfig | undefined;
+    try {
+      parsed = strategyData.serializedData ? JSON.parse(strategyData.serializedData) : undefined;
+    } catch {
+      parsed = undefined;
+    }
+    this.config = resolveConfig(parsed);
+  }
+
+  transform(cards: WeightedCard[], context: FilterContext): Promise<WeightedCard[]> {
+    return applyEloDistance(cards, context, this.config, {
+      name: this.name,
+      strategyId: this.strategyId || 'NAVIGATION_STRATEGY-eloDistance-default',
+    });
+  }
+
+  async getWeightedCards(_limit: number): Promise<GeneratorResult> {
+    throw new Error(
+      'EloDistanceFilter is a filter and should not be used as a generator. ' +
+        'Use Pipeline with a generator and this filter via transform().'
+    );
+  }
+}

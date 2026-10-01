@@ -38,6 +38,7 @@ import {
 import type { PipelineRunReport, RunReportCard } from '@db/core/navigators';
 import { ReplanHints } from '@db/core/navigators/generators/types';
 import { mergeHints } from '@db/core/navigators/Pipeline';
+import type { RegulatorReading } from '@db/core/navigators/regulators';
 import { SourceMixer, QuotaRoundRobinMixer, SourceBatch } from './SourceMixer';
 import { captureMixerRun } from './MixerDebugger';
 import { startSessionTracking, recordCardPresentation, snapshotQueues, endSessionTracking, clearStaleSessionDebugState } from './SessionDebugger';
@@ -254,6 +255,15 @@ function toRunCardTrail(c: RunReportCard): StudySessionRunCardTrail {
         score: sig4(p.score),
         reason: p.reason,
       })),
+  };
+}
+
+function persistedReading(r: RegulatorReading): RegulatorReading {
+  return {
+    ...r,
+    urgency: sig4(r.urgency),
+    multiplier: sig4(r.multiplier),
+    inputs: Object.fromEntries(Object.entries(r.inputs).map(([k, v]) => [k, sig4(v)])),
   };
 }
 
@@ -636,6 +646,7 @@ export class SessionController<TView = unknown> extends Loggable {
         ...(run.discardedTail ? { discardedTail: run.discardedTail } : {}),
         cards: persistedRunCards(run),
         ...(run.unselectedNew ? { unselectedNew: persistedUnselectedNew(run.unselectedNew) } : {}),
+        ...(run.regulators ? { regulators: run.regulators.map(persistedReading) } : {}),
       });
     }
   }
@@ -1755,6 +1766,15 @@ export class SessionController<TView = unknown> extends Loggable {
           queueSource,
           nextItem.score
         );
+
+        // Tell the sources (a new card discharges a pipeline's intake valve).
+        for (const source of this.sources) {
+          source.notePresented?.({
+            cardId: nextItem.cardID,
+            courseId: nextItem.courseID,
+            status: nextItem.status,
+          });
+        }
 
         // Snapshot queue state
         snapshotQueues(this.supplyQ.length, this.failedQ.length);

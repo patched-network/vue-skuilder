@@ -92,6 +92,13 @@ export interface StudyContentSource {
    * No-op for sources that don't support hints.
    */
   setEphemeralHints?(hints: ReplanHints): void;
+
+  /**
+   * A card was just presented. `status` is the session item's (`'new'`,
+   * `'review'`, `'failed-new'`, ...). Pipelines use a new card's first
+   * presentation to restart their intake valve's clock.
+   */
+  notePresented?(card: { cardId: string; courseId: string; status: string }): void;
 }
 // #endregion docs_StudyContentSource
 

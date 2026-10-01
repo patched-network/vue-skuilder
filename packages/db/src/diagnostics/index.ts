@@ -14,6 +14,7 @@ export * from './dataset';
 export * from './loader';
 export * from './derive';
 export * from './text';
+export * from './pipeline';
 export type {
   SessionEloEvent,
   SessionStateSnapshot,
@@ -22,3 +23,5 @@ export type {
   StudySessionRunCardTrail,
   StudySessionRunSummary,
 } from '../core/types/studySession';
+export type { RegulatorName, RegulatorReading } from '../core/navigators/regulators';
+export type { FilterKind } from '../core/navigators/filters/types';

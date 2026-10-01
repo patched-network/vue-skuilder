@@ -3,7 +3,7 @@ import type { UserDBInterface } from '../../interfaces/userDB';
 import { ContentNavigator } from '../index';
 import type { WeightedCard } from '../index';
 import type { ContentNavigationStrategyData } from '../../types/contentNavigationStrategy';
-import type { CardFilter, FilterContext } from './types';
+import type { CardFilter, FilterContext, FilterKind } from './types';
 import type { GeneratorResult } from '../generators/types';
 
 /**
@@ -87,6 +87,10 @@ export default class RelativePriorityNavigator extends ContentNavigator implemen
 
   /** Human-readable name for CardFilter interface */
   name: string;
+
+  /** See CardFilter.kind. Static, so the pipeline plan can read it without an instance. */
+  static readonly kind: FilterKind = 'signal';
+  readonly kind = RelativePriorityNavigator.kind;
 
   constructor(
     user: UserDBInterface,

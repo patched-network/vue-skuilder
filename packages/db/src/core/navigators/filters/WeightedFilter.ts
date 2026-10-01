@@ -1,4 +1,4 @@
-import { CardFilter, FilterContext } from './types';
+import { CardFilter, FilterContext, FilterKind } from './types';
 import { WeightedCard } from '../index';
 import { LearnableWeight, DEFAULT_LEARNABLE_WEIGHT } from '../../types/contentNavigationStrategy';
 
@@ -18,6 +18,8 @@ import { LearnableWeight, DEFAULT_LEARNABLE_WEIGHT } from '../../types/contentNa
  */
 export class WeightedFilter implements CardFilter {
   public name: string;
+  public kind?: FilterKind;
+  public liveOnly?: boolean;
   private inner: CardFilter;
   private learnable: LearnableWeight;
   private staticWeight: boolean;
@@ -31,6 +33,8 @@ export class WeightedFilter implements CardFilter {
   ) {
     this.inner = inner;
     this.name = inner.name;
+    this.kind = inner.kind;
+    this.liveOnly = inner.liveOnly;
     this.learnable = learnable;
     this.staticWeight = staticWeight;
     this.strategyId = strategyId;
