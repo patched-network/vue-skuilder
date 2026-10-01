@@ -1,4 +1,4 @@
-import { toCourseElo } from '@vue-skuilder/common';
+import { toCourseElo, type CourseElo } from '@vue-skuilder/common';
 import type { CourseDBInterface } from '../interfaces/courseDB';
 import type { UserDBInterface } from '../interfaces/userDB';
 import { ContentNavigator } from './index';
@@ -916,11 +916,12 @@ export class Pipeline extends ContentNavigator implements PipelineForecaster {
    */
   private async buildContext(): Promise<GeneratorContext & FilterContext> {
     let userElo = 1000; // Default ELO
+    let userCourseElo: CourseElo | undefined;
 
     try {
       const courseReg = await this.user!.getCourseRegDoc(this.course!.getCourseID());
-      const courseElo = toCourseElo(courseReg.elo);
-      userElo = courseElo.global.score;
+      userCourseElo = toCourseElo(courseReg.elo);
+      userElo = userCourseElo.global.score;
     } catch (e) {
       logger.debug(`[Pipeline] Could not get user ELO, using default: ${e}`);
     }
@@ -937,6 +938,7 @@ export class Pipeline extends ContentNavigator implements PipelineForecaster {
       user: this.user!,
       course: this.course!,
       userElo,
+      ...(userCourseElo ? { userCourseElo } : {}),
       orchestration,
     };
   }

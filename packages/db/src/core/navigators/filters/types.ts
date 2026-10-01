@@ -2,6 +2,7 @@ import type { WeightedCard } from '../index';
 import type { CourseDBInterface } from '../../interfaces/courseDB';
 import type { UserDBInterface } from '../../interfaces/userDB';
 import type { OrchestrationContext } from '../../orchestration';
+import type { CourseElo } from '@vue-skuilder/common';
 
 // ============================================================================
 // CARD FILTER INTERFACE
@@ -41,12 +42,14 @@ export interface FilterContext {
   /** User's global ELO score for this course */
   userElo: number;
 
+  /** User's full ELO for this course: global and per tag. Absent if it couldn't be read. */
+  userCourseElo?: CourseElo;
+
   /** Orchestration context for evolutionary weighting */
   orchestration?: OrchestrationContext;
 
   // Future extensions:
   // - hydrated tags for all cards (batch lookup)
-  // - user's tag-level ELO data
   // - course config
 }
 

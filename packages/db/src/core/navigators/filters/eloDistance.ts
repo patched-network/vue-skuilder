@@ -5,6 +5,7 @@ import { ContentNavigator } from '../index';
 import type { WeightedCard } from '../index';
 import type { GeneratorResult } from '../generators/types';
 import type { CardFilter, FilterContext, FilterKind } from './types';
+import type { CourseElo } from '@vue-skuilder/common';
 
 // ============================================================================
 // ELO DISTANCE FILTER
@@ -21,6 +22,13 @@ import type { CardFilter, FilterContext, FilterKind } from './types';
 //   higher-priority work;
 // - new cards far from the learner's level rank low (this used to live in the
 //   ELO generator's own score, which double-counted alongside this filter).
+//
+// Tag-aware (default): a card's difficulty for this learner is read on the
+// skills they share, not only on global ELO. Card and learner keep paired
+// ratings per tag (each graded response adjusts both), so a tag's gap
+// (card − learner) is as meaningful as the global one, and often more: a card
+// can sit at the learner's global level while testing their weakest skill.
+// See tagAwareGap for the combination.
 //
 // A `signal`, not a gate: it expresses preference, not readiness. `liveOnly`:
 // forecasts and card-space scans start every card at 1.0 without a generator,
@@ -55,6 +63,19 @@ export interface EloDistanceConfig {
 
   /** Ceiling. Usually 1.0 (no boost for close cards). Default 1.0. */
   maxMultiplier?: number;
+
+  /**
+   * Measure distance on the tags the card and learner share (see
+   * tagAwareGap), falling back to global ELO where they share none.
+   * Default true.
+   */
+  tagAware?: boolean;
+
+  /**
+   * A learner's tag rating counts once it rests on at least this many graded
+   * responses. Count-only (exposure) tags never count. Default 3.
+   */
+  minTagCount?: number;
 }
 
 /**
@@ -65,7 +86,18 @@ export const DEFAULT_ELO_DISTANCE_CONFIG: Required<EloDistanceConfig> = {
   halfLife: 300,
   minMultiplier: 0.05,
   maxMultiplier: 1.0,
+  tagAware: true,
+  minTagCount: 3,
 };
+
+/**
+ * Graded responses at which a tag's gap carries half its full weight. Thin
+ * tag evidence leans on global ELO; well-practised tags dominate.
+ */
+const TAG_CONFIDENCE_HALF = 10;
+
+/** Count-only tag ratings (exposure tracking) carry this sentinel score. */
+const COUNT_ONLY_SENTINEL = -1;
 
 /** Fallback card ELO when a card has none recorded. */
 const DEFAULT_CARD_ELO = 1000;
@@ -85,26 +117,123 @@ function resolveConfig(config?: EloDistanceConfig): Required<EloDistanceConfig> 
   return { ...DEFAULT_ELO_DISTANCE_CONFIG, ...config };
 }
 
+/** One shared tag's contribution to a card's tag-aware gap. */
+interface TagGap {
+  tag: string;
+  /** Card's tag rating minus the learner's: positive = harder than their level. */
+  gap: number;
+  weight: number;
+}
+
+/**
+ * The card's difficulty for this learner, in ELO points (card − learner),
+ * read on the tags they share.
+ *
+ * - Shared tags: the card's tags on which the learner has a real rating
+ *   (not the count-only sentinel) resting on at least `minTagCount` graded
+ *   responses. A card with no rating of its own on a tag uses its global, as
+ *   the ELO update does when it first grades that tag.
+ * - Each tag's gap is weighted by the learner's evidence on it,
+ *   n / (n + TAG_CONFIDENCE_HALF).
+ * - The weighted mean of the tag gaps is blended with the global gap by the
+ *   total evidence W: λ = W / (W + 1). One thin tag barely moves it; several
+ *   practised tags dominate it.
+ *
+ * OPEN (draft, 2026-10-01; uncommitted, to sit on). On one LP learner's
+ * 09-30 dump the effect was modest: every touched card shared a rated tag
+ * (median 4); mean multiplier ×0.70 → ×0.75 over 352 touched cards, ×0.84 →
+ * ×0.88 over 42 due reviews. The biggest movers were old who-said-that cards:
+ * ~400 below the learner globally, ~280 below on their own skills.
+ *
+ * 1. Compensatory or conjunctive. This averages: a weak skill is offset by
+ *    strong ones. For spelling a word, which needs every grapheme, the hardest
+ *    shared skill arguably sets the difficulty: take the largest gap instead.
+ *    The main design question.
+ * 2. Which tags count. Broad tags (`concept:match:simple`, `ui:*`) sit on most
+ *    cards and act like a second global rating. The framework may want the
+ *    course to say which tags are skills (cf. LP's diagnostics interpreter
+ *    `isSkillTag`), e.g. as tag patterns in the strategy config.
+ * 3. New cards matter most, and that dump couldn't show them. An unseen
+ *    card's tag ratings fall back to its global, so for new cards this reads
+ *    "card global vs the learner's rating on that skill". Measuring it needs a
+ *    `--course all` dump.
+ * 4. Cost. Tag-aware fetches full ratings for every candidate (~500 card docs
+ *    per run); global-only fetches only reviews'.
+ * 5. Retrieval stays global. The ELO generator's window is the cards nearest
+ *    the learner's global ELO, so a card that's well matched on its skills but
+ *    far off globally may never be retrieved.
+ * 6. Target. Distance 0 means ~50% expected success. Early learners may do
+ *    better aiming higher: a shift of the curve's centre, independent of this.
+ */
+export function tagAwareGap(
+  cardTags: readonly string[],
+  cardElo: CourseElo,
+  userElo: CourseElo,
+  minTagCount: number
+): { gap: number; globalGap: number; tags: TagGap[] } {
+  const globalGap = cardElo.global.score - userElo.global.score;
+  const tags: TagGap[] = [];
+  for (const tag of cardTags) {
+    const user = userElo.tags[tag];
+    if (!user || user.score === COUNT_ONLY_SENTINEL || user.count < minTagCount) continue;
+    const card = cardElo.tags[tag]?.score ?? cardElo.global.score;
+    tags.push({
+      tag,
+      gap: card - user.score,
+      weight: user.count / (user.count + TAG_CONFIDENCE_HALF),
+    });
+  }
+  if (tags.length === 0) return { gap: globalGap, globalGap, tags };
+
+  const total = tags.reduce((w, t) => w + t.weight, 0);
+  const tagGap = tags.reduce((g, t) => g + t.weight * t.gap, 0) / total;
+  const lambda = total / (total + 1);
+  return { gap: lambda * tagGap + (1 - lambda) * globalGap, globalGap, tags };
+}
+
+function tagReason(tags: TagGap[], globalGap: number): string {
+  const shown = [...tags]
+    .sort((a, b) => Math.abs(b.gap) * b.weight - Math.abs(a.gap) * a.weight)
+    .slice(0, 3)
+    .map((t) => `${t.tag} ${t.gap >= 0 ? '+' : ''}${Math.round(t.gap)}`)
+    .join(', ');
+  const more = tags.length > 3 ? `, +${tags.length - 3} more` : '';
+  return ` on ${tags.length} shared tag(s) [${shown}${more}] (global ${globalGap >= 0 ? '+' : ''}${Math.round(globalGap)})`;
+}
+
 async function applyEloDistance(
   cards: WeightedCard[],
   context: FilterContext,
   config: Required<EloDistanceConfig>,
   source: { name: string; strategyId: string }
 ): Promise<WeightedCard[]> {
-  const { course, userElo } = context;
+  const { course, userElo, userCourseElo } = context;
   const { halfLife, minMultiplier, maxMultiplier } = config;
+  const tagAware = config.tagAware && userCourseElo !== undefined;
 
-  // Generators that know a card's ELO carry it; fetch the rest (reviews) in one batch.
-  const missing = cards.filter((c) => c.cardElo === undefined).map((c) => c.cardId);
-  const fetched = new Map<string, number>();
+  // Tag-aware needs every card's full ratings; otherwise only the ELO of cards
+  // that don't carry it (reviews). One batch either way.
+  const missing = cards.filter((c) => tagAware || c.cardElo === undefined).map((c) => c.cardId);
+  const fetched = new Map<string, CourseElo>();
   if (missing.length > 0) {
     const elos = await course.getCardEloData(missing);
-    missing.forEach((id, i) => fetched.set(id, elos[i]?.global?.score ?? DEFAULT_CARD_ELO));
+    missing.forEach((id, i) => {
+      if (elos[i]) fetched.set(id, elos[i]);
+    });
   }
 
   return cards.map((card) => {
-    const cardElo = card.cardElo ?? fetched.get(card.cardId) ?? DEFAULT_CARD_ELO;
-    const distance = Math.abs(cardElo - userElo);
+    const full = fetched.get(card.cardId);
+    const cardElo = full?.global?.score ?? card.cardElo ?? DEFAULT_CARD_ELO;
+
+    let distance = Math.abs(cardElo - userElo);
+    let how = '';
+    if (tagAware && full) {
+      const t = tagAwareGap(card.tags ?? [], full, userCourseElo!, config.minTagCount);
+      distance = Math.abs(t.gap);
+      if (t.tags.length > 0) how = tagReason(t.tags, t.globalGap);
+    }
+
     const multiplier = computeMultiplier(distance, halfLife, minMultiplier, maxMultiplier);
     const newScore = card.score * multiplier;
     const action = multiplier < maxMultiplier - 0.01 ? 'penalized' : 'passed';
@@ -121,7 +250,7 @@ async function applyEloDistance(
           strategyId: source.strategyId,
           action,
           score: newScore,
-          reason: `ELO distance ${Math.round(distance)} (card: ${Math.round(cardElo)}, user: ${Math.round(userElo)}) → ${multiplier.toFixed(2)}x`,
+          reason: `ELO distance ${Math.round(distance)} (card: ${Math.round(cardElo)}, user: ${Math.round(userElo)})${how} → ${multiplier.toFixed(2)}x`,
         },
       ],
     };
