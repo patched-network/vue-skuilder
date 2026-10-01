@@ -401,13 +401,14 @@ export class Pipeline extends ContentNavigator implements PipelineForecaster {
         }
       }
       generatorSummaries = Array.from(genMap.entries()).map(([name, data]) => {
-        const newCards = data.cards.filter((c) => c.provenance[0]?.reason?.includes('new card'));
-        const reviewCards = data.cards.filter((c) => c.provenance[0]?.reason?.includes('review'));
+        // Reviews carry `reviewID`; everything else a generator emits is unseen.
+        // (Reason text can't tell: the ELO generator's never says "new card".)
+        const reviewCount = data.cards.filter((c) => c.reviewID).length;
         return {
           name,
           cardCount: data.cards.length,
-          newCount: newCards.length,
-          reviewCount: reviewCards.length,
+          newCount: data.cards.length - reviewCount,
+          reviewCount,
           topScore: Math.max(...data.cards.map((c) => c.score), 0),
         };
       });
