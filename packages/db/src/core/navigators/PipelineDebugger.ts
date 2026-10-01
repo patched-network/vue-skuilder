@@ -82,8 +82,12 @@ export interface FilterImpact {
 export interface RunReportCard {
   cardId: string;
   courseId: string;
-  origin: 'new' | 'review' | 'unknown';
+  /** `'review'`: a scheduled review. `'new'`: anything else. */
+  origin: 'new' | 'review';
+  /** The strategy that produced the card (first provenance entry). Absent if a hint injected it. */
   generator?: string;
+  /** The hint that made the card mandatory, if one did. Its source, over `generator`. */
+  required?: string;
   finalScore: number;
   /** Card's ELO (parsed from ELO generator provenance, if available) */
   cardElo?: number;
@@ -140,7 +144,7 @@ export interface PipelineRunReport {
   /**
    * The two unselected non-review cards most worth explaining when a run
    * picks no new content. Non-review means no `reviewID`, so prescribed and
-   * required cards count (their `origin` reads `'unknown'`).
+   * required cards count.
    *
    * - `nextInLine`: highest final score. How close new content came.
    * - `topGenerated`: highest generator score, zero-scored cards included.
@@ -240,17 +244,24 @@ export function clearRunHistory(): void {
 }
 
 /**
- * Determine card origin from provenance trail.
+ * What a card is to the learner's queue: a scheduled review (it carries a
+ * `reviewID`) or new. The same test as the generator counts and
+ * `unselectedNew`. What put it in the queue is {@link RunReportCard.generator}
+ * and {@link RunReportCard.required}.
  */
-function getOrigin(card: WeightedCard): 'new' | 'review' | 'unknown' {
-  const firstEntry = card.provenance[0];
-  if (!firstEntry) return 'unknown';
-  const reason = firstEntry.reason?.toLowerCase() || '';
-  const strategy = firstEntry.strategy?.toLowerCase() || '';
+function getOrigin(card: WeightedCard): 'new' | 'review' {
+  return card.reviewID ? 'review' : 'new';
+}
 
-  if (reason.includes('new card') || strategy.includes('elo')) return 'new';
-  if (reason.includes('review') || strategy.includes('srs')) return 'review';
-  return 'unknown';
+/**
+ * The hint that made a card mandatory (its provenance name), if one did.
+ * applyHints marks a requireCards/requireTags requirement with an infinite
+ * score, and nothing else scores a card infinite.
+ */
+function requiredBy(card: WeightedCard): string | undefined {
+  return card.provenance.find(
+    (p) => p.strategy === 'ephemeralHint' && p.score === Number.POSITIVE_INFINITY
+  )?.strategyName;
 }
 
 /**
@@ -309,17 +320,25 @@ export function buildRunReport(
   // into selected vs not-selected, then retain only the top-N of the
   // non-selected group to bound memory. The remaining low-score tail is
   // summarized rather than kept (see discardedTail).
-  const toReport = (card: WeightedCard): RunReportCard => ({
-    cardId: card.cardId,
-    courseId: card.courseId,
-    origin: getOrigin(card),
-    generator: card.provenance[0]?.strategyName || card.provenance[0]?.strategy,
-    finalScore: card.score,
-    cardElo: card.cardElo ?? parseCardElo(card.provenance),
-    provenance: card.provenance,
-    tags: card.tags,
-    selected: selectedIds.has(card.cardId),
-  });
+  const toReport = (card: WeightedCard): RunReportCard => {
+    const required = requiredBy(card);
+    // A required card no generator produced starts at its hint: no generator.
+    const first = card.provenance[0];
+    const generator =
+      first && first.strategy !== 'ephemeralHint' ? first.strategyName || first.strategy : undefined;
+    return {
+      cardId: card.cardId,
+      courseId: card.courseId,
+      origin: getOrigin(card),
+      ...(generator ? { generator } : {}),
+      ...(required ? { required } : {}),
+      finalScore: card.score,
+      cardElo: card.cardElo ?? parseCardElo(card.provenance),
+      provenance: card.provenance,
+      tags: card.tags,
+      selected: selectedIds.has(card.cardId),
+    };
+  };
 
   const selectedReported: RunReportCard[] = [];
   const nearMissReported: RunReportCard[] = [];

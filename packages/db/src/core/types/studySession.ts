@@ -127,9 +127,20 @@ export interface StudySessionRunSummary {
 /** A card as persisted on a run. `origin` is as counted in `newSelected`/`reviewsSelected`. */
 export interface StudySessionRunCard {
   cardId: string;
+  /**
+   * `'review'`: a scheduled review. `'new'`: anything else. `'unknown'` only on
+   * older runs, which counted prescribed and hint-required cards as neither.
+   */
   origin: 'new' | 'review' | 'unknown';
+  /**
+   * The strategy that produced the card. Absent if a hint injected it (older
+   * runs name the hint here instead).
+   */
   generator?: string;
-  score: number;
+  /** The hint that made the card mandatory, if one did. Its source, over `generator`. */
+  required?: string;
+  /** Final score; null for a mandatory (required) card, whose score is infinite. */
+  score: number | null;
   selected: boolean;
 }
 

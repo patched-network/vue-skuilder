@@ -5,6 +5,7 @@
  */
 import type { StudySessionRunCardTrail, StudySessionRunSummary } from '../core/types/studySession';
 import type { RegulatorReading } from '../core/navigators/regulators';
+import { runCardSource, selectedBySource } from './pipeline';
 import {
   shortTag,
   type DiagnosticsInterpreters,
@@ -42,13 +43,15 @@ export function fmtAnswer(a: unknown, max = 40): string {
   }
 }
 
-function fmtScore(n: number): string {
+/** Two decimals, or one significant figure when tiny; `∞` for a required card's score (persisted as null). */
+export function fmtScore(n: number | null): string {
+  if (n === null || !Number.isFinite(n)) return '∞';
   return Math.abs(n) >= 0.01 || n === 0 ? n.toFixed(2) : n.toExponential(1);
 }
 
 function trailText(label: string, t: StudySessionRunCardTrail): string[] {
   const lines = [
-    `  ${label}: ${t.cardId} (${t.origin}, ${t.generator ?? '?'}) final ${fmtScore(t.score)}`,
+    `  ${label}: ${t.cardId} (${t.origin}, ${runCardSource(t)}) final ${fmtScore(t.score)}`,
   ];
   for (const p of t.trail) {
     lines.push(`      ${p.action} ${p.strategyName} → ${fmtScore(p.score)}: ${p.reason}`);
@@ -106,10 +109,12 @@ export function runText(run: StudySessionRunSummary): string {
   }
   if (run.hints) L.push(`  hints: ${JSON.stringify(run.hints)}`);
   if (run.cards?.length) {
+    const sources = selectedBySource(run).map((s) => `${s.source} ${s.count}`);
+    if (sources.length) L.push(`  selected by source: ${sources.join(' · ')}`);
     L.push('  selection (✓ selected, · runner-up):');
     for (const c of run.cards) {
       L.push(
-        `    ${c.selected ? '✓' : '·'} ${c.cardId} (${c.origin}, ${c.generator ?? '?'}) ${fmtScore(c.score)}`
+        `    ${c.selected ? '✓' : '·'} ${c.cardId} (${c.origin}, ${runCardSource(c)}) ${fmtScore(c.score)}`
       );
     }
   }
@@ -178,7 +183,9 @@ export function sessionText(
   L.push('  hints: the ReplanHints the navigator was told (_label = replan reason).');
   L.push('  selection: the chosen cards and top runners-up. "next new in line" / "top-generated');
   L.push('  new (sunk)": the unselected new cards worth explaining, with each score change.');
-  L.push('  Prescribed and hint-required cards count as origin "unknown" (known miscount).');
+  L.push('  Each card reads (origin, source). origin: review = a scheduled review, new = anything');
+  L.push('  else. source: the generator that produced it, or "required: <hint>" when a hint forced');
+  L.push('  it. Older runs show origin "unknown" for prescribed and hint-required cards.');
   L.push('- RESP "✓/✗ type <cardId> [tags] Ts (attempt k) \'answer\'": one presentation and');
   L.push('  its outcome. A trailing "ELO g:before→after (Δ) | tag:Δ …" is the exchange it');
   L.push('  produced. Only first attempts move ELO.');

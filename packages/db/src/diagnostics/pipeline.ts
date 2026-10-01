@@ -1,6 +1,34 @@
 import type { DatasetRecord, LearnerDataset } from './dataset';
 import type { FilterKind } from '../core/navigators/filters/types';
 import type { RegulatorName, RegulatorReading } from '../core/navigators/regulators';
+import type { StudySessionRunCard, StudySessionRunSummary } from '../core/types/studySession';
+
+/**
+ * What put a run's card in the queue: the hint that required it, else the
+ * generator that produced it. Its `origin` says what it is (review or new).
+ */
+export function runCardSource(card: Pick<StudySessionRunCard, 'generator' | 'required'>): string {
+  if (card.required) return `required: ${card.required}`;
+  return card.generator ?? 'unknown';
+}
+
+/**
+ * A run's selected cards counted by source, most first. Empty for runs that
+ * don't persist their cards (before 0.2.28).
+ */
+export function selectedBySource(
+  run: Pick<StudySessionRunSummary, 'cards'>
+): Array<{ source: string; count: number }> {
+  const counts = new Map<string, number>();
+  for (const c of run.cards ?? []) {
+    if (!c.selected) continue;
+    const source = runCardSource(c);
+    counts.set(source, (counts.get(source) ?? 0) + 1);
+  }
+  return [...counts]
+    .map(([source, count]) => ({ source, count }))
+    .sort((a, b) => b.count - a.count);
+}
 
 // ============================================================================
 // Pipeline run stats
