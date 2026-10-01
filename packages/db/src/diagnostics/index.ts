@@ -14,6 +14,7 @@ export * from './dataset';
 export * from './loader';
 export * from './derive';
 export * from './text';
+export * from './pipeline';
 export type {
   SessionEloEvent,
   SessionStateSnapshot,

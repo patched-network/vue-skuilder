@@ -108,8 +108,9 @@ function touchedCardIds(docs: RawDoc[]): string[] {
 /**
  * Read one learner's records for one course into a {@link LearnerDump}: the
  * whole user DB, its tombstones, and (by default) the course cards the user
- * has touched, with their displayable data and tags. Needs admin rights on
- * the couch, via basic auth or the browser's session cookie.
+ * has touched, with their displayable data and tags, plus the course's strategy
+ * docs. Needs admin rights on the couch, via basic auth or the browser's
+ * session cookie.
  */
 export async function fetchLearnerDump(opts: FetchLearnerDumpOptions): Promise<LearnerDump> {
   const couch = couchReader(opts);
@@ -165,6 +166,7 @@ export async function fetchLearnerDump(opts: FetchLearnerDumpOptions): Promise<L
         };
       })
       .filter((t) => scope === 'all' || t.taggedCards.length > 0);
+    const strategies = await couch.byPrefix(courseDb, 'NAVIGATION_STRATEGY');
 
     course = {
       courseId: opts.courseId,
@@ -173,6 +175,7 @@ export async function fetchLearnerDump(opts: FetchLearnerDumpOptions): Promise<L
       cards,
       displayableData,
       tags,
+      strategies,
     } as unknown as CourseSlice;
   }
 

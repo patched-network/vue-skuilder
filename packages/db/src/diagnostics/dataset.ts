@@ -8,6 +8,7 @@ import type {
 } from '../core/types/types-legacy';
 import type { CourseRegistrationDoc, ScheduledCard } from '../core/types/user';
 import type { StudySessionDoc } from '../core/types/studySession';
+import type { ContentNavigationStrategyData } from '../core/types/contentNavigationStrategy';
 
 // Literal prefixes rather than `DocTypePrefixes`: this entry stays free of
 // runtime imports from `core`, so it loads in the browser, node, and the CLI
@@ -29,7 +30,7 @@ type RawDoc = { _id: string; [key: string]: unknown };
  *
  * - v0 (LP `scripts/dump-user-db.ts` before 2026-09-30): no `formatVersion`,
  *   `courseId`, `tombstones`, or `course`.
- * - v1: adds all four.
+ * - v1: adds all four. Later v1 dumps also carry `course.strategies` (optional).
  */
 export interface LearnerDump {
   formatVersion?: 1;
@@ -64,6 +65,11 @@ export interface CourseSlice {
    * and `taggedCount` keeps the full length.
    */
   tags: Array<Tag & { _id: string; taggedCount: number }>;
+  /**
+   * The course's NAVIGATION_STRATEGY docs, as they stood when the dump was
+   * taken (current state, not as of any session). Absent in older dumps.
+   */
+  strategies?: ContentNavigationStrategyData[];
 }
 
 /** A card-history record with an ISO `timeStamp`. Question fields exist on question records only. */
@@ -105,6 +111,8 @@ export interface LearnerDataset {
   tombstones: Array<{ id: string; seq: number }>;
   /** Absent when the dump carried no course slice. */
   cards?: Map<string, CardSummary>;
+  /** The course's strategy docs at dump time. Absent when the dump didn't carry them. */
+  strategies?: ContentNavigationStrategyData[];
 }
 
 /**
@@ -225,7 +233,10 @@ export function fromDump(dump: LearnerDump, courseId?: string): LearnerDataset {
     strategyState,
     tombstones: (dump.tombstones ?? []).map(({ id, seq }) => ({ id, seq })),
     ...(dump.course && dump.course.courseId === course
-      ? { cards: summarizeCards(dump.course) }
+      ? {
+          cards: summarizeCards(dump.course),
+          ...(dump.course.strategies ? { strategies: dump.course.strategies } : {}),
+        }
       : {}),
   };
 }
