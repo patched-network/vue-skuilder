@@ -239,7 +239,9 @@ function toRunCard(c: RunReportCard): StudySessionRunCard {
     cardId: c.cardId,
     origin: c.origin,
     ...(c.generator ? { generator: c.generator } : {}),
-    score: sig4(c.finalScore),
+    ...(c.required ? { required: c.required } : {}),
+    // A required card's score is infinite, which JSON can't hold: say so with null.
+    score: Number.isFinite(c.finalScore) ? sig4(c.finalScore) : null,
     selected: c.selected,
   };
 }

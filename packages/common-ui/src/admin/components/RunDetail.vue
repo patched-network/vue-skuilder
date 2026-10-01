@@ -61,14 +61,19 @@
     </div>
 
     <div v-if="run.cards?.length" class="mb-2">
-      <div class="text-caption font-weight-medium">selection</div>
+      <div class="text-caption font-weight-medium">
+        selection
+        <span v-if="sourcesLine" class="text-medium-emphasis font-weight-regular">
+          · by source: {{ sourcesLine }}
+        </span>
+      </div>
       <v-table density="compact" class="sk-mini-table">
         <thead>
           <tr>
             <th></th>
             <th>card</th>
             <th>origin</th>
-            <th>generator</th>
+            <th>source</th>
             <th class="text-right">score</th>
           </tr>
         </thead>
@@ -82,7 +87,7 @@
               <a class="sk-card-link" @click="emit('open-card', c.cardId)">{{ c.cardId }}</a>
             </td>
             <td>{{ c.origin }}</td>
-            <td>{{ c.generator ?? '—' }}</td>
+            <td>{{ runCardSource(c) }}</td>
             <td class="text-right">{{ fmtScore(c.score) }}</td>
           </tr>
         </tbody>
@@ -94,7 +99,7 @@
         {{ t.label }}:
         <a class="sk-card-link" @click="emit('open-card', t.card.cardId)">{{ t.card.cardId }}</a>
         <span class="text-medium-emphasis">
-          ({{ t.card.origin }}, {{ t.card.generator ?? '?' }}) final {{ fmtScore(t.card.score) }}
+          ({{ t.card.origin }}, {{ runCardSource(t.card) }}) final {{ fmtScore(t.card.score) }}
         </span>
       </div>
       <v-table density="compact" class="sk-mini-table">
@@ -130,7 +135,10 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import {
+  fmtScore,
   regulatorText,
+  runCardSource,
+  selectedBySource,
   type StudySessionRunCardTrail,
   type StudySessionRunSummary,
 } from '@vue-skuilder/db/diagnostics';
@@ -147,9 +155,11 @@ const trails = computed(() => {
   return out;
 });
 
-function fmtScore(n: number): string {
-  return Math.abs(n) >= 0.01 || n === 0 ? n.toFixed(2) : n.toExponential(1);
-}
+const sourcesLine = computed(() =>
+  selectedBySource(props.run)
+    .map((s) => `${s.source} ${s.count}`)
+    .join(' · ')
+);
 </script>
 
 <style scoped>

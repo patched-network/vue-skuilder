@@ -298,7 +298,10 @@ function toResponseEloDelta(
 
 /**
  * Attach each ELO event to its response. The event carries no record id, so
- * join by card and nearest time, using each response at most once.
+ * join by card and nearest time, using each response at most once. A record
+ * is stamped when the card is shown and an event when the answer is
+ * submitted, so the join is on the response's end (shown + time spent):
+ * joined on the start, a long response's event lands on the next attempt.
  */
 function attachEloEvents(
   responses: TimelineResponse[],
@@ -312,7 +315,7 @@ function attachEloEvents(
     let bestGap = Infinity;
     responses.forEach((r, i) => {
       if (used.has(i) || r.cardId !== ev.cardId) return;
-      const gap = Math.abs(Date.parse(r.at) - evT);
+      const gap = Math.abs(Date.parse(r.at) + r.timeSpentMs - evT);
       if (gap < bestGap) {
         bestGap = gap;
         best = i;
