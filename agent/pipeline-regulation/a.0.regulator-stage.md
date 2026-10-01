@@ -240,6 +240,10 @@ runs.
 
 > **↳ A:** step 2 isn't built. Runs recorded by 0.2.29+ carry `regulators` and `filters[].kind`,
 > which mark the era implicitly; an explicit content and config stamp is still open.
+>
+> **↳ A (10-01, later):** step 2 built, uncommitted (framework and LP branches `version-stamps`).
+> Each run stamps a hash of the strategy docs it was assembled from and the course's
+> `contentVersion`; each session stamps the framework and app versions.
 
 ## 5. As built (branch `pipeline-regulation`, 2026-10-01)
 

@@ -85,6 +85,11 @@ export function runText(run: StudySessionRunSummary): string {
       (run.generatedCount > 0 && run.finalCount === 0 ? '  ⚠ nothing survived' : '')
   );
   if (typeof run.userElo === 'number') L.push(`  userElo: ${Math.round(run.userElo)}`);
+  if (run.versions) {
+    L.push(
+      `  versions: strategies ${run.versions.strategies ?? '—'} · content ${run.versions.content ?? '—'}`
+    );
+  }
   if (run.generators?.length) {
     L.push('  generators:');
     for (const g of run.generators) {
@@ -181,6 +186,8 @@ export function sessionText(
   L.push('  (gate: not ready yet; signal: preference). regulators: the pressure on each class,');
   L.push('  review mass (due reviews by value) and intake (hours since a new card).');
   L.push('  hints: the ReplanHints the navigator was told (_label = replan reason).');
+  L.push("  versions: the strategy docs' hash and the content version the run ran on; the");
+  L.push("  headline's are the framework and app versions. A change between runs marks a deploy.");
   L.push('  selection: the chosen cards and top runners-up. "next new in line" / "top-generated');
   L.push('  new (sunk)": the unselected new cards worth explaining, with each score change.');
   L.push('  Each card reads (origin, source). origin: review = a scheduled review, new = anything');
@@ -194,6 +201,12 @@ export function sessionText(
   L.push('## Headline');
   L.push(`- status: ${doc.status}`);
   L.push(`- start: ${doc.startTime}${doc.endTime ? ` · end: ${doc.endTime}` : ''}`);
+  if (doc.versions) {
+    L.push(
+      `- versions: framework ${doc.versions.framework}` +
+        (doc.versions.app ? ` · app ${doc.versions.app}` : '')
+    );
+  }
   L.push(
     `- clock: ${s.durationSeconds ?? '—'}s of ${doc.plannedSeconds}s planned` +
       (doc.tally ? ` · ${doc.tally.secondsRemaining}s remaining` : '')

@@ -50,6 +50,10 @@
       </v-table>
     </div>
 
+    <div v-if="run.versions" class="mb-2 sk-mini-line text-medium-emphasis">
+      strategies {{ run.versions.strategies ?? '—' }} · content {{ run.versions.content ?? '—' }}
+    </div>
+
     <div v-if="run.regulators?.length" class="mb-2">
       <div class="text-caption font-weight-medium">regulators</div>
       <div v-for="r in run.regulators" :key="r.name" class="sk-mini-line">

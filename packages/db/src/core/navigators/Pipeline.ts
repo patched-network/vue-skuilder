@@ -296,6 +296,12 @@ export class Pipeline extends ContentNavigator implements PipelineForecaster {
   private _cachedOrchestration: OrchestrationContext | null = null;
 
   /**
+   * Hash of the strategy docs this pipeline was assembled from (see
+   * versionStamps.ts), set by whoever builds it. Stamped on every run.
+   */
+  strategyHash?: string;
+
+  /**
    * Persistent tag cache. Maps cardId → tag names.
    *
    * Tags are static within a session (they're set at card generation time),
@@ -586,7 +592,8 @@ export class Pipeline extends ContentNavigator implements PipelineForecaster {
 
     // Capture run for debug API
     try {
-      const courseName = await this.course?.getCourseConfig().then((c) => c.name).catch(() => undefined);
+      const courseConfig = await this.course?.getCourseConfig().catch(() => undefined);
+      const courseName = courseConfig?.name;
       // Pass the full post-filter sorted array; buildRunReport retains all
       // selected cards plus the top-N highest-scoring near-misses and
       // summarizes the discarded tail (see DISCARDED_KEEP_TOP). This keeps
@@ -607,7 +614,11 @@ export class Pipeline extends ContentNavigator implements PipelineForecaster {
         scoredCards,
         regulators
       );
-      captureRun(report);
+      const versions = {
+        ...(this.strategyHash ? { strategies: this.strategyHash } : {}),
+        ...(courseConfig?.contentVersion ? { content: courseConfig.contentVersion } : {}),
+      };
+      captureRun({ ...report, ...(Object.keys(versions).length ? { versions } : {}) });
     } catch (e) {
       logger.debug(`[Pipeline] Failed to capture debug run: ${e}`);
     }

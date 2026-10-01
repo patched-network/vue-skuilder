@@ -1,6 +1,6 @@
 import { DocType, DocTypePrefixes } from './types-legacy';
 import type { ReplanHints } from '../navigators/generators/types';
-import type { GeneratorSummary, FilterImpact } from '../navigators/PipelineDebugger';
+import type { GeneratorSummary, FilterImpact, RunVersions } from '../navigators/PipelineDebugger';
 import type { RegulatorReading } from '../navigators/regulators';
 import type { StrategyContribution } from '../navigators';
 
@@ -37,6 +37,14 @@ export interface StudySessionDoc {
     sourceCount: number;
     initHints?: ReplanHints | null;
   };
+
+  /**
+   * The code this session ran on: the framework's version (`'dev'` when run
+   * from source) and the host app's, if it reported one (`appVersion` in the
+   * data-layer config). Strategy and content versions are stamped per run.
+   * Absent on sessions recorded before this shipped.
+   */
+  versions?: { framework: string; app?: string };
 
   /** Queue depths after the bootstrap run, before the first draw. */
   initialQueues: { supplyQ: number; failedQ: number };
@@ -122,6 +130,8 @@ export interface StudySessionRunSummary {
   };
   /** The regulator stage's readings: review mass and intake, each with its multiplier (0.2.29+). */
   regulators?: RegulatorReading[];
+  /** What the run ran on: the strategy docs' hash and the course's content version. */
+  versions?: RunVersions;
 }
 
 /** A card as persisted on a run. `origin` is as counted in `newSelected`/`reviewsSelected`. */
