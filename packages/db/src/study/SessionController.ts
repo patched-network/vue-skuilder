@@ -39,6 +39,7 @@ import type { PipelineRunReport, RunReportCard } from '@db/core/navigators';
 import { ReplanHints } from '@db/core/navigators/generators/types';
 import { mergeHints } from '@db/core/navigators/Pipeline';
 import type { RegulatorReading } from '@db/core/navigators/regulators';
+import { sessionVersions } from '@db/core/versionStamps';
 import { SourceMixer, QuotaRoundRobinMixer, SourceBatch } from './SourceMixer';
 import { captureMixerRun } from './MixerDebugger';
 import { startSessionTracking, recordCardPresentation, snapshotQueues, endSessionTracking, clearStaleSessionDebugState } from './SessionDebugger';
@@ -649,6 +650,7 @@ export class SessionController<TView = unknown> extends Loggable {
         cards: persistedRunCards(run),
         ...(run.unselectedNew ? { unselectedNew: persistedUnselectedNew(run.unselectedNew) } : {}),
         ...(run.regulators ? { regulators: run.regulators.map(persistedReading) } : {}),
+        ...(run.versions ? { versions: run.versions } : {}),
       });
     }
   }
@@ -689,6 +691,7 @@ export class SessionController<TView = unknown> extends Loggable {
           sourceCount: this.sources.length,
           initHints: this._sessionHints,
         },
+        versions: sessionVersions(),
         initialQueues: { supplyQ: this.supplyQ.length, failedQ: this.failedQ.length },
         runs: [...this._runLog],
         stateAtStart: await this._captureState('start'),

@@ -78,6 +78,12 @@ export interface FilterImpact {
   removed: number;
 }
 
+/** A run's version stamps. Either may be absent: no strategy hash, or no content version set. */
+export interface RunVersions {
+  strategies?: string;
+  content?: string;
+}
+
 /** One card as retained in a {@link PipelineRunReport}. */
 export interface RunReportCard {
   cardId: string;
@@ -158,6 +164,12 @@ export interface PipelineRunReport {
 
   /** The regulator stage's readings: each class's pressure and the multiplier it got. */
   regulators?: RegulatorReading[];
+
+  /**
+   * What this run ran on (see versionStamps.ts): the hash of the strategy docs
+   * the pipeline was assembled from, and the course's content version.
+   */
+  versions?: RunVersions;
 
   /**
    * Summary of the discarded tail of the candidate pool — cards that were

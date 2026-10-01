@@ -83,6 +83,9 @@
         batch limit {{ doc.config?.defaultBatchLimit ?? '?' }} · {{ doc.config?.sourceCount ?? '?' }} source(s) ·
         opening queues supply {{ doc.initialQueues?.supplyQ ?? '?' }} / failed {{ doc.initialQueues?.failedQ ?? '?' }}
         <template v-if="doc.tally"> · ended with {{ doc.tally.failedQRemaining }} still in the failed queue</template>
+        <template v-if="doc.versions">
+          · framework {{ doc.versions.framework }}<template v-if="doc.versions.app"> · app {{ doc.versions.app }}</template>
+        </template>
       </div>
 
       <v-card v-if="tags.length" variant="outlined" class="pa-3 mb-4">

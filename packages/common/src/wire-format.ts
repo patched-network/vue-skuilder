@@ -136,6 +136,13 @@ export interface CourseConfig {
   localSync?: {
     enabled: boolean;
   };
+
+  /**
+   * The course content's version, written by whatever deploys the content
+   * (e.g. a git SHA and date). Opaque to the framework: each pipeline run
+   * records it, so a content change shows up in learners' records.
+   */
+  contentVersion?: string;
 }
 
 export interface CreateCourse extends IServerRequest {

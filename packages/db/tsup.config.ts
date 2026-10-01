@@ -1,4 +1,7 @@
+import { readFileSync } from 'node:fs';
 import { defineConfig } from 'tsup';
+
+const { version } = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf-8'));
 
 export default defineConfig({
   entry: [
@@ -15,6 +18,8 @@ export default defineConfig({
   splitting: false,
   sourcemap: true,
   clean: true,
+  // Session records stamp the framework version (core/versionStamps.ts).
+  define: { __SKUILDER_DB_VERSION__: JSON.stringify(version) },
   outExtension: ({ format }) => ({
     js: format === 'esm' ? '.mjs' : '.js',
   }),

@@ -5,6 +5,7 @@ import { BaseUser } from './impl/common';
 import { logger } from './util/logger';
 import { StaticCourseManifest } from './util/packer/types';
 import { initializeNavigatorRegistry } from './core/navigators';
+import { setAppVersion } from './core/versionStamps';
 
 const NOT_SET = 'NOT_SET' as const;
 
@@ -30,6 +31,8 @@ export interface DataLayerConfig {
   options: {
     staticContentPath?: string; // Path to static content JSON files
     localStoragePrefix?: string; // Prefix for IndexedDB storage names
+    /** The host app's version (e.g. a git SHA), stamped on every study session it records. */
+    appVersion?: string;
     manifests?: Record<string, StaticCourseManifest>; // Course manifests for static mode
     COUCHDB_SERVER_URL?: string;
     COUCHDB_SERVER_PROTOCOL?: string;
@@ -70,6 +73,9 @@ export async function initializeDataLayer(config: DataLayerConfig): Promise<Data
 
   if (config.options.localStoragePrefix) {
     ENV.LOCAL_STORAGE_PREFIX = config.options.localStoragePrefix;
+  }
+  if (config.options.appVersion) {
+    setAppVersion(config.options.appVersion);
   }
 
   if (config.type === 'couch') {

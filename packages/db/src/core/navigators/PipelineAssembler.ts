@@ -9,6 +9,7 @@ import type { CourseDBInterface } from '../interfaces/courseDB';
 import type { UserDBInterface } from '../interfaces/userDB';
 import CompositeGenerator from './generators/CompositeGenerator';
 import { planPipeline } from './pipelinePlan';
+import { strategyHash } from '../versionStamps';
 
 // ============================================================================
 // PIPELINE ASSEMBLER
@@ -162,6 +163,7 @@ export class PipelineAssembler {
 
     // Build pipeline
     const pipeline = new Pipeline(generator, filters, user, course);
+    pipeline.strategyHash = strategyHash(strategies);
 
     logger.debug(
       `[PipelineAssembler] Assembled pipeline with ${generatorStrategies.length} generator(s) and ${filters.length} filter(s)`

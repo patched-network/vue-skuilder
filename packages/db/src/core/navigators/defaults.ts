@@ -6,6 +6,7 @@ import SRSNavigator from './generators/srs';
 import EloDistanceFilter, { DEFAULT_ELO_DISTANCE_CONFIG } from './filters/eloDistance';
 import type { ContentNavigationStrategyData } from '../types/contentNavigationStrategy';
 import { DocType } from '../types/types-legacy';
+import { DEFAULT_STRATEGY_HASH } from '../versionStamps';
 import type { CourseDBInterface, UserDBInterface } from '../interfaces';
 
 /**
@@ -104,5 +105,7 @@ export function createDefaultPipeline(
     createDefaultEloDistanceStrategy(courseId)
   );
 
-  return new Pipeline(compositeGenerator, [eloDistanceFilter], user, course);
+  const pipeline = new Pipeline(compositeGenerator, [eloDistanceFilter], user, course);
+  pipeline.strategyHash = DEFAULT_STRATEGY_HASH;
+  return pipeline;
 }
