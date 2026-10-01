@@ -1,5 +1,8 @@
 export * from './core';
 
+// Not via the navigators barrel: see the note in pipelinePlan.ts.
+export * from './core/navigators/pipelinePlan';
+
 export { default as CourseLookup } from './impl/couch/courseLookupDB';
 
 export * from './courseConfigRegistration';
