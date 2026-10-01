@@ -1,3 +1,4 @@
+import { tagRole, withTagRole } from '@vue-skuilder/common';
 import type { CourseDBInterface } from '../../interfaces/courseDB';
 import type { UserDBInterface } from '../../interfaces/userDB';
 import { ContentNavigator } from '../index';
@@ -234,7 +235,8 @@ function formatAge(ms: number): string {
 
 /**
  * The exposure tags an intro target still lacks before it may surface: its own
- * `gpc:expose:*` tags plus `gpc:expose:X` for each `gpc:intro:X`, each needing
+ * `expose` tags plus the `expose` counterpart of each `intro` tag (tag roles,
+ * see common's tagRoles.ts: `gpc:intro:X` → `gpc:expose:X`), each needing
  * `minCount` attempts. A `minCount` of 0 requires nothing — not even an entry
  * in `userTagElo`.
  */
@@ -245,11 +247,11 @@ export function unmetIntroExposeTags(
 ): string[] {
   if (minCount <= 0) return [];
 
-  const exposeTags = new Set(tags.filter((tag) => tag.startsWith('gpc:expose:')));
+  const exposeTags = new Set(tags.filter((tag) => tagRole(tag) === 'expose'));
   for (const tag of tags) {
-    if (!tag.startsWith('gpc:intro:')) continue;
-    const suffix = tag.slice('gpc:intro:'.length);
-    if (suffix) exposeTags.add(`gpc:expose:${suffix}`);
+    if (tagRole(tag) !== 'intro') continue;
+    const expose = withTagRole(tag, 'expose');
+    if (expose) exposeTags.add(expose);
   }
 
   return [...exposeTags].filter((tag) => {

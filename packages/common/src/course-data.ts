@@ -138,6 +138,8 @@ export type Performance = number | TaggedPerformance;
  * Tags can have scores (for exercise tags) or `null` (for count-only exposure tags).
  * Count-only tags increment their count but maintain a sentinel score of -1,
  * making them easily identifiable and preventing them from polluting real ELO data.
+ * Bookkeeping roles (`expose`, `intro`; see tagRoles.ts) are always count-only:
+ * a number sent for one is counted, not graded.
  *
  * @example
  * // Spelling "cat" as "kat" - got 'a' and 't' right, but 'c' wrong
@@ -170,6 +172,7 @@ export interface TaggedPerformance {
    *
    * - **Number (0-1)**: Tag is exercised; score updates via ELO formula
    * - **null**: Count-only tag (e.g., exposure); increments count, score stays -1 (sentinel)
+   * - Bookkeeping roles (`expose`, `intro`) are count-only whatever is sent
    *
    * Tags not present on the card will be created dynamically.
    * Count-only tags (null) do not update card ELO.

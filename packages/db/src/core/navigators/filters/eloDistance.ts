@@ -5,7 +5,7 @@ import { ContentNavigator } from '../index';
 import type { WeightedCard } from '../index';
 import type { GeneratorResult } from '../generators/types';
 import type { CardFilter, FilterContext, FilterKind } from './types';
-import type { CourseElo } from '@vue-skuilder/common';
+import { COUNT_ONLY_SCORE, isCountOnlyTag, type CourseElo } from '@vue-skuilder/common';
 import { logger } from '../../../util/logger';
 
 // ============================================================================
@@ -99,9 +99,6 @@ export const DEFAULT_ELO_DISTANCE_CONFIG: Required<EloDistanceConfig> = {
  */
 const TAG_CONFIDENCE_HALF = 10;
 
-/** Count-only tag ratings (exposure tracking) carry this sentinel score. */
-const COUNT_ONLY_SENTINEL = -1;
-
 /** Fallback card ELO when a card has none recorded. */
 const DEFAULT_CARD_ELO = 1000;
 
@@ -186,9 +183,9 @@ interface TagGap {
  * read on the tags they share.
  *
  * - Shared tags: the card's tags on which the learner has a real rating
- *   (not the count-only sentinel) resting on at least `minTagCount` graded
- *   responses. A card with no rating of its own on a tag uses its global, as
- *   the ELO update does when it first grades that tag.
+ *   (not a bookkeeping role, nor the count-only sentinel) resting on at least
+ *   `minTagCount` graded responses. A card with no rating of its own on a tag
+ *   uses its global, as the ELO update does when it first grades that tag.
  * - Each tag's gap is weighted by the learner's evidence on it,
  *   n / (n + TAG_CONFIDENCE_HALF).
  * - The weighted mean of the tag gaps is blended with the global gap by the
@@ -232,7 +229,9 @@ export function tagAwareGap(
   const tags: TagGap[] = [];
   for (const tag of cardTags) {
     const user = userElo.tags[tag];
-    if (!user || user.score === COUNT_ONLY_SENTINEL || user.count < minTagCount) continue;
+    if (isCountOnlyTag(tag) || !user || user.score === COUNT_ONLY_SCORE || user.count < minTagCount) {
+      continue;
+    }
     const card = cardElo.tags[tag]?.score ?? cardElo.global.score;
     tags.push({
       tag,

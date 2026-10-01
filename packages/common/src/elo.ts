@@ -1,4 +1,5 @@
 import { TaggedPerformance } from './course-data.js';
+import { isCountOnlyTag } from './tagRoles.js';
 
 export class EloRanker {
   constructor(public k: number = 32) {}
@@ -76,6 +77,21 @@ export function pushTagPresentation(
 }
 
 type Eloish = number | EloRank | CourseElo;
+
+/** Score held by a count-only tag rating: clearly not a real ELO. */
+export const COUNT_ONLY_SCORE = -1;
+
+/**
+ * One count-only touch on a learner's tag rating: the count goes up, no ELO
+ * moves. A bookkeeping-role tag (see tagRoles.ts) holds the sentinel, having
+ * no rating by definition. Any other tag keeps a real score it already has: a
+ * course may send null on a graded tag, and that must not erase its rating.
+ */
+function countOnlyTouch(tag: string, rank: EloRank | undefined): EloRank {
+  if (!rank) return { count: 1, score: COUNT_ONLY_SCORE };
+  const score = isCountOnlyTag(tag) ? COUNT_ONLY_SCORE : rank.score;
+  return { ...rank, count: rank.count + 1, score };
+}
 
 export function blankCourseElo(): CourseElo {
   return {
@@ -177,8 +193,12 @@ export function adjustCourseScores(
   const cardElo: CourseElo = toCourseElo(bElo);
 
   if (options == undefined || !options.globalOnly) {
-    // grade on each tag present for the card
+    // grade on each tag present for the card; bookkeeping roles are only counted
     Object.keys(cardElo.tags).forEach((k) => {
+      if (isCountOnlyTag(k)) {
+        userElo.tags[k] = countOnlyTouch(k, userElo.tags[k]);
+        return;
+      }
       const userTagElo: EloRank = userElo.tags[k]
         ? userElo.tags[k]
         : {
@@ -260,6 +280,8 @@ function adjustScores(
  * Tags can be scored (number 0-1) or count-only (null). Count-only tags are
  * useful for exposure tracking (e.g., gpc:expose:*) where we only care about
  * "how many times has the user seen this?" without measuring performance.
+ * Bookkeeping roles (`expose`, `intro`; see tagRoles.ts) are count-only
+ * whatever score is sent for them.
  *
  * @param aElo - User's current ELO (will be converted to CourseElo)
  * @param bElo - Card's current ELO (will be converted to CourseElo)
@@ -305,15 +327,10 @@ export function adjustCourseScoresPerTag(
   for (const [key, tagScore] of Object.entries(taggedPerformance)) {
     if (key === '_global') continue;
 
-    // Count-only tag (exposure tracking): increment count, use -1 sentinel score
-    if (tagScore === null) {
-      userElo.tags[key] = userElo.tags[key] ?? { count: 0, score: -1 };
-      userElo.tags[key] = {
-        ...userElo.tags[key],
-        count: userElo.tags[key].count + 1,
-        score: -1, // Sentinel: clearly not a real ELO score
-      };
-      // Skip card ELO update for count-only tags
+    // Count-only: sent as null, or a bookkeeping role (whatever was sent).
+    // The count goes up; no ELO moves, the card's included.
+    if (tagScore === null || isCountOnlyTag(key)) {
+      userElo.tags[key] = countOnlyTouch(key, userElo.tags[key]);
       continue;
     }
 
@@ -328,7 +345,7 @@ export function adjustCourseScoresPerTag(
     // fictitiously low prior. Preserve accumulated count so exposure-based
     // count-threshold progress is not discarded.
     const existingUserTagElo = userElo.tags[key];
-    const userTagElo: EloRank = (existingUserTagElo && existingUserTagElo.score !== -1)
+    const userTagElo: EloRank = (existingUserTagElo && existingUserTagElo.score !== COUNT_ONLY_SCORE)
       ? existingUserTagElo
       : {
           ...(existingUserTagElo ?? {}),

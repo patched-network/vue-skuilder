@@ -1,6 +1,7 @@
 import {
   adjustCourseScores,
   adjustCourseScoresPerTag,
+  isCountOnlyTag,
   toCourseElo,
   TaggedPerformance,
 } from '@vue-skuilder/common';
@@ -13,6 +14,28 @@ import {
 import { StudySessionRecord } from '../SessionController';
 import { logger } from '@db/util/logger';
 import { recordTagPresentations } from './tagRecent';
+
+/**
+ * The question's performance with bookkeeping-role tags (`expose`, `intro`;
+ * see common's tagRoles.ts) as count-only. A score sent for one is counted,
+ * not graded, and logged: it's a question-side slip against the convention.
+ */
+function withCountOnlyRoles(perf: TaggedPerformance, cardId: string): TaggedPerformance {
+  const out: TaggedPerformance = { ...perf };
+  const counted: string[] = [];
+  for (const [tag, score] of Object.entries(perf)) {
+    if (tag === '_global' || score === null || !isCountOnlyTag(tag)) continue;
+    out[tag] = null;
+    counted.push(tag);
+  }
+  if (counted.length) {
+    logger.warn(
+      `[EloService] ${cardId} sent scores for bookkeeping tags [${counted.join(', ')}]; ` +
+        `counted, not graded`
+    );
+  }
+  return out;
+}
 
 /**
  * Service responsible for ELO rating calculations and updates.
@@ -77,10 +100,12 @@ export class EloService {
 
       const tags: NonNullable<SessionEloEvent['tags']> = {};
       for (const tag of cardTagKeys) {
+        // Bookkeeping roles are only counted: recorded as count-only, as below.
+        const countOnly = isCountOnlyTag(tag);
         tags[tag] = {
           before: beforeUserTag[tag],
-          after: eloUpdate.userElo.tags[tag].score,
-          score: userScore,
+          after: countOnly ? beforeUserTag[tag] : eloUpdate.userElo.tags[tag].score,
+          score: countOnly ? null : userScore,
         };
       }
       const event: SessionEloEvent = {
@@ -174,13 +199,15 @@ export class EloService {
     // the question's evaluate(). Category tags (concept:*, ui:*, etc.) are not
     // emitted by individual question types; applying the global score as a proxy
     // keeps hierarchy filter ELO thresholds functional without overriding any
-    // fine-grained per-GPC scores the question already provided.
+    // fine-grained per-GPC scores the question already provided. Bookkeeping
+    // roles (expose, intro) are counted instead, whoever supplies them.
     const cardTags = cardTagsMap.get(card_id) ?? [];
-    const enriched: TaggedPerformance = { ...taggedPerformance };
+    const graded = withCountOnlyRoles(taggedPerformance, card_id);
+    const enriched: TaggedPerformance = { ...graded };
     const globalScore = taggedPerformance._global;
     for (const tag of cardTags) {
       if (!(tag in enriched)) {
-        enriched[tag] = globalScore;
+        enriched[tag] = isCountOnlyTag(tag) ? null : globalScore;
       }
     }
 
@@ -207,7 +234,7 @@ export class EloService {
       // enriched with the global score above.
       const recorded = recordTagPresentations(
         eloUpdate.userElo,
-        taggedPerformance,
+        graded,
         currentCard.records,
         card_id,
         at
