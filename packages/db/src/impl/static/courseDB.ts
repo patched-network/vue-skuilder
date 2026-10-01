@@ -5,6 +5,7 @@ import {
   UserDBInterface,
   CourseInfo,
   StudySessionItem,
+  type StudyContentSource,
 } from '../../core/interfaces';
 import type { GeneratorResult, ReplanHints } from '../../core/navigators/generators/types';
 import { StaticDataUnpacker } from './StaticDataUnpacker';
@@ -448,6 +449,14 @@ export class StaticCourseDB implements CourseDBInterface {
 
   setEphemeralHints(hints: ReplanHints): void {
     this._pendingHints = hints;
+  }
+
+  /** Forward a presentation to the navigator (a new card restarts its intake clock). */
+  notePresented(card: { cardId: string; courseId: string; status: string }): void {
+    if (card.status !== 'new') return;
+    void this.createNavigator(this.userDB)
+      .then((navigator) => (navigator as StudyContentSource).notePresented?.(card))
+      .catch((e) => logger.warn(`[static/courseDB] Could not note a presentation: ${e}`));
   }
 
   async getWeightedCards(limit: number): Promise<GeneratorResult> {

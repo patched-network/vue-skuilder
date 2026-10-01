@@ -97,9 +97,29 @@ export interface FilterContext {
  * };
  * ```
  */
+/**
+ * What a filter's penalties mean. A `gate` says a card isn't ready yet
+ * (prerequisites, lessons, unlocks); a `signal` expresses preference
+ * (priority, interference, ELO distance).
+ */
+export type FilterKind = 'gate' | 'signal';
+
 export interface CardFilter {
   /** Human-readable name for this filter */
   name: string;
+
+  /**
+   * Regulators lift only new cards that no gate penalized, so pressure can't
+   * override "not ready". Undeclared filters count as gates: a penalty of
+   * unknown meaning shouldn't be overridden by pressure.
+   */
+  kind?: FilterKind;
+
+  /**
+   * Applies to live runs only. `forecast` and `diagnoseCardSpace` start every
+   * card at 1.0 without a generator, and skip these filters.
+   */
+  liveOnly?: boolean;
 
   /**
    * Transform a list of weighted cards.

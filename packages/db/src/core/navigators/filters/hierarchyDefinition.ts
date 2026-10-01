@@ -78,6 +78,8 @@ export default class HierarchyDefinitionNavigator extends ContentNavigator imple
   /** Human-readable name for CardFilter interface */
   name: string;
 
+  readonly kind = 'gate' as const;
+
   constructor(
     user: UserDBInterface,
     course: CourseDBInterface,

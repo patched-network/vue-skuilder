@@ -1,6 +1,10 @@
 import type { ContentNavigationStrategyData } from '../types/contentNavigationStrategy';
 import { isFilter, isGenerator, NavigatorRole } from './index';
-import { createDefaultEloStrategy, createDefaultSrsStrategy } from './defaults';
+import {
+  createDefaultEloDistanceStrategy,
+  createDefaultEloStrategy,
+  createDefaultSrsStrategy,
+} from './defaults';
 
 // ============================================================================
 // PIPELINE PLAN
@@ -34,8 +38,8 @@ export interface PlannedNavigator {
   /** The name runs report this navigator under (generator summaries, filter impacts). */
   name: string;
   implementingClass: string;
-  /** Absent only for the default pipeline's ELO-distance filter, which has no document. */
-  strategy?: ContentNavigationStrategyData;
+  /** The strategy document: the course's own, or the default the assembler supplies. */
+  strategy: ContentNavigationStrategyData;
 }
 
 export interface SkippedStrategy {
@@ -59,6 +63,7 @@ export type PipelineStageKey =
   | 'generate'
   | 'filter'
   | 'drop-zero'
+  | 'regulate'
   | 'hints'
   | 'diversity'
   | 'select';
@@ -80,20 +85,31 @@ export const PIPELINE_STAGES: readonly PipelineStageInfo[] = [
     key: 'generate',
     title: 'Generate',
     summary:
-      'Each generator proposes scored candidates (up to 500 in all). A card proposed by several ' +
-      'generators keeps their mean score, raised 10% per extra generator.',
+      'Each generator proposes candidates (up to 500 in all), scored on what is specific to its ' +
+      'source. A card proposed by several generators keeps their mean score, raised 10% per extra ' +
+      'generator.',
   },
   {
     key: 'filter',
     title: 'Filter',
     summary:
-      'Each filter multiplies candidate scores, in the order shown. Gates usually penalize rather ' +
-      'than remove, so a gated card stays in the pool at a low score.',
+      'Each filter multiplies candidate scores, in the order shown. A gate says a card is not ready ' +
+      'yet; a signal expresses preference. Gates usually penalize rather than remove, so a gated ' +
+      'card stays in the pool at a low score.',
   },
   {
     key: 'drop-zero',
     title: 'Drop zero scores',
     summary: 'Candidates whose score reached 0 leave the pool.',
+  },
+  {
+    key: 'regulate',
+    title: 'Regulate',
+    summary:
+      'Balances reviews against new cards. Review mass: the due reviews weighed by their filtered ' +
+      'scores; above a healthy level, every review is lifted. Intake: hours since a new card was ' +
+      'last presented; new cards no gate penalized are lifted, and the clock stops while there are ' +
+      'none.',
   },
   {
     key: 'hints',
@@ -118,10 +134,6 @@ export const PIPELINE_STAGES: readonly PipelineStageInfo[] = [
   },
 ];
 
-/** Runtime name and class of the default pipeline's ELO-distance filter (see `createEloDistanceFilter`). */
-export const ELO_DISTANCE_FILTER_NAME = 'ELO Distance Filter';
-export const ELO_DISTANCE_IMPLEMENTING_CLASS = 'eloDistance';
-
 function planned(
   strategy: ContentNavigationStrategyData,
   role: NavigatorRole,
@@ -140,8 +152,8 @@ function planned(
  * Plan the pipeline a course's strategy documents assemble into.
  *
  * Mirrors the assembly rules: generators keep document order, with ELO and SRS
- * added when absent; filters run sorted by name; unknown implementing classes
- * are skipped with a warning. With no documents at all, describes the default
+ * added when absent; an ELO distance filter is added when absent; filters run
+ * sorted by name; unknown implementing classes are skipped with a warning. With no documents at all, describes the default
  * pipeline that `createDefaultPipeline` builds instead.
  */
 export function planPipeline(
@@ -156,12 +168,11 @@ export function planPipeline(
         planned(createDefaultSrsStrategy(courseId), NavigatorRole.GENERATOR, 'default-pipeline'),
       ],
       filters: [
-        {
-          role: NavigatorRole.FILTER,
-          origin: 'default-pipeline',
-          name: ELO_DISTANCE_FILTER_NAME,
-          implementingClass: ELO_DISTANCE_IMPLEMENTING_CLASS,
-        },
+        planned(
+          createDefaultEloDistanceStrategy(courseId),
+          NavigatorRole.FILTER,
+          'default-pipeline'
+        ),
       ],
       skipped: [],
       warnings: [],
@@ -198,16 +209,16 @@ export function planPipeline(
     );
   }
 
+  // ELO distance is the one place distance counts, for reviews and new cards alike
+  // (the ELO generator only retrieves near the learner's ELO). A course tunes it
+  // by declaring its own.
+  const eloDistance = createDefaultEloDistanceStrategy(courseId);
+  if (!filters.some((f) => f.implementingClass === eloDistance.implementingClass)) {
+    filters.push(planned(eloDistance, NavigatorRole.FILTER, 'assembler-default'));
+  }
+
   // Sorted by name for deterministic ordering.
   filters.sort((a, b) => a.name.localeCompare(b.name));
 
-  const notes: string[] = [];
-  if (!filters.some((f) => f.implementingClass === ELO_DISTANCE_IMPLEMENTING_CLASS)) {
-    notes.push(
-      'No ELO-distance filter: review cards get no ELO-proximity signal. New cards get one from ' +
-        'the ELO generator.'
-    );
-  }
-
-  return { kind: 'assembled', generators, filters, skipped, warnings, notes };
+  return { kind: 'assembled', generators, filters, skipped, warnings, notes: [] };
 }

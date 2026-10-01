@@ -63,27 +63,27 @@ describe('ELO Distance Filter', () => {
       expect(result[0].score).toBeCloseTo(1.0, 2);
     });
 
-    it('should return ~0.6 multiplier at halfLife distance (200 ELO)', async () => {
+    it('should return ~0.4 multiplier at halfLife distance (300 ELO)', async () => {
       const filter = createEloDistanceFilter();
       const cards = [createCard('card-1', 1.0)];
-      const context = createMockContext(1000, { 'card-1': 1200 }); // 200 distance
+      const context = createMockContext(1000, { 'card-1': 1300 }); // 300 distance
 
       const result = await filter.transform(cards, context);
 
       // At halfLife: minMultiplier + (maxMultiplier - minMultiplier) * exp(-1)
-      // = 0.3 + 0.7 * 0.368 ≈ 0.56
-      expect(result[0].score).toBeCloseTo(0.56, 1);
+      // = 0.05 + 0.95 * 0.368 ≈ 0.40
+      expect(result[0].score).toBeCloseTo(0.4, 1);
     });
 
     it('should approach minMultiplier for very large distances', async () => {
       const filter = createEloDistanceFilter();
       const cards = [createCard('card-1', 1.0)];
-      const context = createMockContext(1000, { 'card-1': 2000 }); // 1000 distance (5x halfLife)
+      const context = createMockContext(1000, { 'card-1': 2000 }); // 1000 distance (3.3x halfLife)
 
       const result = await filter.transform(cards, context);
 
-      // Should be very close to minMultiplier (0.3)
-      expect(result[0].score).toBeCloseTo(0.3, 1);
+      // Should be very close to minMultiplier (0.05)
+      expect(result[0].score).toBeCloseTo(0.05, 2);
     });
 
     it('should be symmetric - same penalty above and below user ELO', async () => {
@@ -162,14 +162,14 @@ describe('ELO Distance Filter', () => {
 
   describe('custom configuration', () => {
     it('should use custom halfLife when provided', async () => {
-      // With halfLife=100, distance 100 should give ~0.56 multiplier
+      // With halfLife=100, distance 100 should give ~0.4 multiplier
       const filter = createEloDistanceFilter({ halfLife: 100 });
       const cards = [createCard('card-1', 1.0)];
       const context = createMockContext(1000, { 'card-1': 1100 }); // 100 distance
 
       const result = await filter.transform(cards, context);
 
-      expect(result[0].score).toBeCloseTo(0.56, 1);
+      expect(result[0].score).toBeCloseTo(0.4, 1);
     });
 
     it('should use custom min/max multipliers when provided', async () => {

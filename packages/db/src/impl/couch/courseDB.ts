@@ -12,6 +12,7 @@ import {
 
 import { filterAllDocsByPrefix, getCourseDB } from '.';
 import UpdateQueue from './updateQueue';
+import type { StudyContentSource } from '../../core/interfaces/contentSource';
 import { StudySessionItem } from '../../core/interfaces/contentSource';
 import {
   CardData,
@@ -710,6 +711,18 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
 
   public setEphemeralHints(hints: ReplanHints): void {
     this._pendingHints = hints;
+  }
+
+  /**
+   * Forward a presentation to the navigator (a new card restarts its intake
+   * clock). Builds the navigator if the cached one has expired.
+   */
+  public notePresented(card: { cardId: string; courseId: string; status: string }): void {
+    if (card.status !== 'new') return;
+    void this._getCurrentUser()
+      .then((u) => this._getCachedNavigator(u))
+      .then(({ navigator }) => (navigator as StudyContentSource).notePresented?.(card))
+      .catch((e) => logger.warn(`[courseDB] Could not note a presentation: ${e}`));
   }
 
   public async getWeightedCards(limit: number): Promise<GeneratorResult> {

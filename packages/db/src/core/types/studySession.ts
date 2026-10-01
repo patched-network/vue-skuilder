@@ -1,6 +1,7 @@
 import { DocType, DocTypePrefixes } from './types-legacy';
 import type { ReplanHints } from '../navigators/generators/types';
 import type { GeneratorSummary, FilterImpact } from '../navigators/PipelineDebugger';
+import type { RegulatorReading } from '../navigators/regulators';
 import type { StrategyContribution } from '../navigators';
 
 /**
@@ -119,6 +120,8 @@ export interface StudySessionRunSummary {
     nextInLine?: StudySessionRunCardTrail;
     topGenerated?: StudySessionRunCardTrail;
   };
+  /** The regulator stage's readings: review mass and intake, each with its multiplier (0.2.29+). */
+  regulators?: RegulatorReading[];
 }
 
 /** A card as persisted on a run. `origin` is as counted in `newSelected`/`reviewsSelected`. */

@@ -23,7 +23,7 @@ import { planPipeline } from './pipelinePlan';
 // 3. Easy unit testing without DB mocking
 //
 // Pipeline assembly:
-// 1. Plan: classify by role, add default ELO/SRS, order filters (pipelinePlan.ts)
+// 1. Plan: classify by role, add defaults, order filters (pipelinePlan.ts)
 // 2. Instantiate generator(s) - wrap multiple in CompositeGenerator
 // 3. Instantiate filters
 // 4. Return Pipeline(generator, filters)
@@ -66,7 +66,8 @@ export class PipelineAssembler {
   /**
    * Assembles a navigation pipeline from strategy documents.
    *
-   * 1. Plans: classifies by role, adds default ELO/SRS, orders filters (`planPipeline`)
+   * 1. Plans: classifies by role, adds default ELO/SRS and ELO distance, orders filters
+   *    (`planPipeline`)
    * 2. Instantiates generators - wraps multiple in CompositeGenerator
    * 3. Instantiates filters
    * 4. Returns Pipeline(generator, filters)
@@ -87,20 +88,19 @@ export class PipelineAssembler {
       };
     }
 
-    // Classify, add default generators, and order filters: the same plan the
-    // admin pipeline view renders.
+    // Classify, add defaults, and order filters: the same plan the admin
+    // pipeline view renders.
     const plan = planPipeline(strategies, course.getCourseID());
     warnings.push(...plan.warnings);
-    for (const g of plan.generators) {
-      if (g.origin === 'assembler-default') {
+    for (const n of [...plan.generators, ...plan.filters]) {
+      if (n.origin === 'assembler-default') {
         logger.debug(
-          `[PipelineAssembler] No ${g.implementingClass} generator configured, adding default`
+          `[PipelineAssembler] No ${n.implementingClass} ${n.role} configured, adding default`
         );
       }
     }
-    // An assembled plan's navigators all carry their strategy document.
-    const generatorStrategies = plan.generators.map((g) => g.strategy!);
-    const sortedFilterStrategies = plan.filters.map((f) => f.strategy!);
+    const generatorStrategies = plan.generators.map((g) => g.strategy);
+    const sortedFilterStrategies = plan.filters.map((f) => f.strategy);
 
     if (generatorStrategies.length === 0) {
       warnings.push('No generator strategy found');

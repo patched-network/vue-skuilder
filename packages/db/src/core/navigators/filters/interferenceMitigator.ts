@@ -83,6 +83,8 @@ export default class InterferenceMitigatorNavigator extends ContentNavigator imp
   /** Human-readable name for CardFilter interface */
   name: string;
 
+  readonly kind = 'signal' as const;
+
   /** Precomputed map: tag -> set of { partner, decay } it interferes with */
   private interferenceMap: Map<string, Array<{ partner: string; decay: number }>>;
 

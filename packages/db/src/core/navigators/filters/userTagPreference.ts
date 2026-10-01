@@ -81,6 +81,8 @@ export default class UserTagPreferenceFilter extends ContentNavigator implements
   /** Human-readable name for CardFilter interface */
   name: string;
 
+  readonly kind = 'signal' as const;
+
   constructor(
     user: UserDBInterface,
     course: CourseDBInterface,

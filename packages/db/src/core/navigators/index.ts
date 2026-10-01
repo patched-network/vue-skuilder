@@ -1,7 +1,7 @@
 import { StudyContentSource, UserDBInterface, CourseDBInterface } from '..';
 
 // Re-export filter types
-export type { CardFilter, FilterContext, CardFilterFactory } from './filters/types';
+export type { CardFilter, FilterContext, CardFilterFactory, FilterKind } from './filters/types';
 
 // Re-export generator types
 export type { CardGenerator, GeneratorContext, CardGeneratorFactory, GeneratorResult, ReplanHints } from './generators/types';
@@ -185,20 +185,19 @@ export async function initializeNavigatorRegistry(): Promise<void> {
     interferenceModule,
     relativePriorityModule,
     userTagPreferenceModule,
+    eloDistanceModule,
   ] = await Promise.all([
     import('./filters/hierarchyDefinition'),
     import('./filters/interferenceMitigator'),
     import('./filters/relativePriority'),
     import('./filters/userTagPreference'),
+    import('./filters/eloDistance'),
   ]);
   registerNavigator('hierarchyDefinition', hierarchyModule.default);
   registerNavigator('interferenceMitigator', interferenceModule.default);
   registerNavigator('relativePriority', relativePriorityModule.default);
   registerNavigator('userTagPreference', userTagPreferenceModule.default);
-
-  // Note: eloDistance uses a factory pattern (createEloDistanceFilter) rather than
-  // a ContentNavigator class, so it's not registered here. It's used differently
-  // via Pipeline composition.
+  registerNavigator('eloDistance', eloDistanceModule.default);
 
   logger.debug(
     `[NavigatorRegistry] Initialized ${navigatorRegistry.size} navigators: ${getRegisteredNavigatorNames().join(', ')}`
@@ -350,6 +349,17 @@ export interface WeightedCard {
    * Used by SessionController to track review outcomes and maintain review state.
    */
   reviewID?: string;
+  /**
+   * The card's global ELO, when the generator already knows it (the ELO
+   * generator reads it during retrieval). Lets the ELO distance filter skip a
+   * fetch.
+   */
+  cardElo?: number;
+  /**
+   * A review's SRS urgency in [0, 1] (overdueness and interval recency), set by
+   * the SRS generator. The review-mass regulator weighs the backlog by it.
+   */
+  reviewUrgency?: number;
 }
 
 /**
@@ -387,6 +397,7 @@ export enum Navigators {
   INTERFERENCE = 'interferenceMitigator',
   RELATIVE_PRIORITY = 'relativePriority',
   USER_TAG_PREFERENCE = 'userTagPreference',
+  ELO_DISTANCE = 'eloDistance',
 }
 
 // ============================================================================
@@ -426,6 +437,7 @@ export const NavigatorRoles: Record<Navigators, NavigatorRole> = {
   [Navigators.INTERFERENCE]: NavigatorRole.FILTER,
   [Navigators.RELATIVE_PRIORITY]: NavigatorRole.FILTER,
   [Navigators.USER_TAG_PREFERENCE]: NavigatorRole.FILTER,
+  [Navigators.ELO_DISTANCE]: NavigatorRole.FILTER,
 };
 
 /**

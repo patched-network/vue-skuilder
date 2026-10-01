@@ -3,7 +3,7 @@ import { Pipeline } from './Pipeline';
 import CompositeGenerator from './generators/CompositeGenerator';
 import ELONavigator from './generators/elo';
 import SRSNavigator from './generators/srs';
-import { createEloDistanceFilter } from './filters/eloDistance';
+import EloDistanceFilter from './filters/eloDistance';
 import type { ContentNavigationStrategyData } from '../types/contentNavigationStrategy';
 import { DocType } from '../types/types-legacy';
 import type { CourseDBInterface, UserDBInterface } from '../interfaces';
@@ -54,12 +54,31 @@ export function createDefaultSrsStrategy(courseId: string): ContentNavigationStr
 }
 
 /**
+ * Create default ELO distance filter strategy data. The assembler adds it to
+ * any pipeline whose strategy docs declare no `eloDistance` filter.
+ *
+ * @param courseId - The course ID to associate with this strategy
+ * @returns Strategy data for the default ELO distance filter (default curve)
+ */
+export function createDefaultEloDistanceStrategy(courseId: string): ContentNavigationStrategyData {
+  return {
+    _id: 'NAVIGATION_STRATEGY-eloDistance-default',
+    docType: DocType.NAVIGATION_STRATEGY,
+    name: 'ELO Distance (default)',
+    description: 'Scales every candidate, new or review, by its distance from the learner\'s ELO',
+    implementingClass: Navigators.ELO_DISTANCE,
+    course: courseId,
+    serializedData: '',
+  };
+}
+
+/**
  * Creates the default navigation pipeline for courses with no configured strategies.
  *
- * Default: Pipeline(Composite(ELO, SRS), [eloDistanceFilter])
- * - ELO generator: scores new cards by skill proximity
+ * Default: Pipeline(Composite(ELO, SRS), [ELO distance])
+ * - ELO generator: retrieves new cards near the learner's ELO
  * - SRS generator: scores reviews by overdueness and interval recency
- * - ELO distance filter: penalizes cards far from user's current level
+ * - ELO distance filter: scales every card by its distance from the learner's ELO
  *
  * This is the canonical default configuration used when:
  * - No navigation strategy documents exist in the course
@@ -78,7 +97,11 @@ export function createDefaultPipeline(
   const srsNavigator = new SRSNavigator(user, course, createDefaultSrsStrategy(courseId));
 
   const compositeGenerator = new CompositeGenerator([eloNavigator, srsNavigator]);
-  const eloDistanceFilter = createEloDistanceFilter();
+  const eloDistanceFilter = new EloDistanceFilter(
+    user,
+    course,
+    createDefaultEloDistanceStrategy(courseId)
+  );
 
   return new Pipeline(compositeGenerator, [eloDistanceFilter], user, course);
 }
