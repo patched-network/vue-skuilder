@@ -6,6 +6,7 @@ import type { WeightedCard } from '../index';
 import type { GeneratorResult } from '../generators/types';
 import type { CardFilter, FilterContext, FilterKind } from './types';
 import type { CourseElo } from '@vue-skuilder/common';
+import { logger } from '../../../util/logger';
 
 // ============================================================================
 // ELO DISTANCE FILTER
@@ -23,12 +24,14 @@ import type { CourseElo } from '@vue-skuilder/common';
 // - new cards far from the learner's level rank low (this used to live in the
 //   ELO generator's own score, which double-counted alongside this filter).
 //
-// Tag-aware (default): a card's difficulty for this learner is read on the
-// skills they share, not only on global ELO. Card and learner keep paired
-// ratings per tag (each graded response adjusts both), so a tag's gap
+// Tag-aware (opt-in, experimental): a card's difficulty for this learner is
+// read on the skills they share, not only on global ELO. Card and learner keep
+// paired ratings per tag (each graded response adjusts both), so a tag's gap
 // (card − learner) is as meaningful as the global one, and often more: a card
 // can sit at the learner's global level while testing their weakest skill.
-// See tagAwareGap for the combination.
+// See tagAwareGap for the combination. Global distance is the default; a course
+// opts in with `tagAware`, a browser with `window.skuilder.multiDimElo = true`
+// (see the toggle below), for side-by-side testing.
 //
 // A `signal`, not a gate: it expresses preference, not readiness. `liveOnly`:
 // forecasts and card-space scans start every card at 1.0 without a generator,
@@ -67,7 +70,7 @@ export interface EloDistanceConfig {
   /**
    * Measure distance on the tags the card and learner share (see
    * tagAwareGap), falling back to global ELO where they share none.
-   * Default true.
+   * Default false. `window.skuilder.multiDimElo` turns it on in one browser.
    */
   tagAware?: boolean;
 
@@ -86,7 +89,7 @@ export const DEFAULT_ELO_DISTANCE_CONFIG: Required<EloDistanceConfig> = {
   halfLife: 300,
   minMultiplier: 0.05,
   maxMultiplier: 1.0,
-  tagAware: true,
+  tagAware: false,
   minTagCount: 3,
 };
 
@@ -117,6 +120,59 @@ function resolveConfig(config?: EloDistanceConfig): Required<EloDistanceConfig> 
   return { ...DEFAULT_ELO_DISTANCE_CONFIG, ...config };
 }
 
+// ----------------------------------------------------------------------------
+// Live toggle: window.skuilder.multiDimElo
+// ----------------------------------------------------------------------------
+//
+// `window.skuilder.multiDimElo = true` turns tag-aware distance on in this
+// browser, whatever the strategy config says; `false` returns it to the
+// config. Read on every run, so it takes effect at the next replan. Kept in
+// localStorage so it survives reloads across a testing stretch. Runs it shapes
+// say so in every card's ELO distance reason ("tag-aware").
+
+const MULTI_DIM_ELO_KEY = 'skuilder:multiDimElo';
+
+let multiDimElo = readMultiDimElo();
+
+function readMultiDimElo(): boolean {
+  try {
+    return typeof localStorage !== 'undefined' && localStorage.getItem(MULTI_DIM_ELO_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Mount the toggle on window.skuilder.multiDimElo.
+ */
+export function mountMultiDimEloToggle(): void {
+  if (typeof window === 'undefined') return;
+
+  const win = window as any;
+  win.skuilder = win.skuilder || {};
+  Object.defineProperty(win.skuilder, 'multiDimElo', {
+    configurable: true,
+    enumerable: true,
+    get: () => multiDimElo,
+    set: (on: unknown) => {
+      multiDimElo = on === true;
+      try {
+        if (multiDimElo) localStorage.setItem(MULTI_DIM_ELO_KEY, 'true');
+        else localStorage.removeItem(MULTI_DIM_ELO_KEY);
+      } catch (e) {
+        logger.warn(`[EloDistance] multiDimElo not persisted (localStorage unavailable): ${e}`);
+      }
+      logger.info(
+        `[EloDistance] multiDimElo ${multiDimElo ? 'on: tag-aware' : 'off: per strategy config'}` +
+          ' ELO distance from the next replan'
+      );
+    },
+  });
+}
+
+// Auto-mount when module is loaded
+mountMultiDimEloToggle();
+
 /** One shared tag's contribution to a card's tag-aware gap. */
 interface TagGap {
   tag: string;
@@ -139,8 +195,9 @@ interface TagGap {
  *   total evidence W: λ = W / (W + 1). One thin tag barely moves it; several
  *   practised tags dominate it.
  *
- * OPEN (draft, 2026-10-01; uncommitted, to sit on). On one LP learner's
- * 09-30 dump the effect was modest: every touched card shared a rated tag
+ * OPEN (draft, 2026-10-01). Shipped on by default in 0.2.29 by accident (it
+ * rode along in the version-bump commit); off by default since, and live only
+ * behind the toggle. On one LP learner's 09-30 dump the effect was modest: every touched card shared a rated tag
  * (median 4); mean multiplier ×0.70 → ×0.75 over 352 touched cards, ×0.84 →
  * ×0.88 over 42 due reviews. The biggest movers were old who-said-that cards:
  * ~400 below the learner globally, ~280 below on their own skills.
@@ -209,7 +266,7 @@ async function applyEloDistance(
 ): Promise<WeightedCard[]> {
   const { course, userElo, userCourseElo } = context;
   const { halfLife, minMultiplier, maxMultiplier } = config;
-  const tagAware = config.tagAware && userCourseElo !== undefined;
+  const tagAware = (config.tagAware || multiDimElo) && userCourseElo !== undefined;
 
   // Tag-aware needs every card's full ratings; otherwise only the ELO of cards
   // that don't carry it (reviews). One batch either way.
@@ -228,10 +285,12 @@ async function applyEloDistance(
 
     let distance = Math.abs(cardElo - userElo);
     let how = '';
-    if (tagAware && full) {
-      const t = tagAwareGap(card.tags ?? [], full, userCourseElo!, config.minTagCount);
-      distance = Math.abs(t.gap);
-      if (t.tags.length > 0) how = tagReason(t.tags, t.globalGap);
+    if (tagAware) {
+      const t = full ? tagAwareGap(card.tags ?? [], full, userCourseElo!, config.minTagCount) : undefined;
+      if (t) distance = Math.abs(t.gap);
+      how = t?.tags.length
+        ? `, tag-aware${tagReason(t.tags, t.globalGap)}`
+        : ', tag-aware: global (no shared tags)';
     }
 
     const multiplier = computeMultiplier(distance, halfLife, minMultiplier, maxMultiplier);
