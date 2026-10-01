@@ -75,12 +75,18 @@ export default class ELONavigator extends ContentNavigator implements CardGenera
     }
     // const tUser = performance.now(); // [perf] parked
 
-    const activeCards = await this.user.getActiveCards();
+    // Not new: cards with a pending review, and cards seen without one (e.g.
+    // `srs:skip` intros, which must not resurface). As the prescribed generator.
+    const [activeCards, seenCards] = await Promise.all([
+      this.user.getActiveCards(),
+      this.user.getSeenCards(this.course.getCourseID()).catch(() => [] as string[]),
+    ]);
+    const notNew = new Set([...activeCards.map((ac) => ac.cardID), ...seenCards]);
     // const tActive = performance.now(); // [perf] parked
     const newCards = (
       await this.course.getCardsCenteredAtELO(
         { limit, elo: 'user' },
-        (c: QualifiedCardID) => !activeCards.some((ac) => c.cardID === ac.cardID)
+        (c: QualifiedCardID) => !notNew.has(c.cardID)
       )
     ).map((c) => ({ ...c, status: 'new' as const }));
     // const tCentered = performance.now(); // [perf] parked
