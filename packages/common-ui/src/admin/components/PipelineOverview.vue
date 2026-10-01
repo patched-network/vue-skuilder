@@ -94,17 +94,12 @@
               </v-chip>
               <v-chip v-if="f.strategy?.learnable" size="x-small" variant="outlined">learnable weight</v-chip>
               <v-chip
-                v-if="filterStat(f.name)?.kind"
                 size="x-small"
                 variant="tonal"
-                :color="filterStat(f.name)!.kind === 'gate' ? 'deep-orange' : 'blue-grey'"
-                :title="
-                  filterStat(f.name)!.kind === 'gate'
-                    ? 'Gate: its penalties mean not ready yet; regulators will not lift what it penalized.'
-                    : 'Signal: its penalties express preference.'
-                "
+                :color="filterKind(f).kind === 'gate' ? 'deep-orange' : 'blue-grey'"
+                :title="filterKind(f).help"
               >
-                {{ filterStat(f.name)!.kind }}
+                {{ filterKind(f).label }}
               </v-chip>
             </div>
             <div v-if="f.strategy?.description" class="text-caption mt-1">{{ f.strategy.description }}</div>
@@ -144,21 +139,37 @@
           </div>
         </template>
 
-        <template v-else-if="stage.key === 'regulate' && stats">
-          <div v-if="stats.regulators.length === 0" class="text-caption text-medium-emphasis">
-            None of these runs recorded regulator readings (recorded from 0.2.29).
-          </div>
-          <div v-for="r in stats.regulators" :key="r.name" class="sk-nav">
+        <template v-else-if="stage.key === 'regulate'">
+          <div class="sk-nav">
             <div class="d-flex flex-wrap align-center ga-2">
-              <span class="font-weight-medium">{{ REGULATOR_LABEL[r.name] }}</span>
-              <v-chip size="x-small" variant="outlined">on {{ r.class }} cards</v-chip>
+              <span class="font-weight-medium">Review mass</span>
+              <v-chip size="x-small" variant="outlined">on review cards</v-chip>
             </div>
             <div class="text-caption mt-1">
-              active (×&gt;1) in {{ r.runsActive }}/{{ r.runs }} runs · mean ×{{ r.meanMultiplier.toFixed(2) }}, max ×{{
-                r.maxMultiplier.toFixed(2)
+              Each due review weighs its SRS urgency (0–1) times the filters' net effect on it. Above
+              {{ plan.regulators.reviewMass.healthyMass }} card-equivalents, every review is multiplied by ×{{
+                plan.regulators.reviewMass.rate
               }}
+              per {{ plan.regulators.reviewMass.healthyMass }} in excess (uncapped). Reviews without an urgency weigh
+              their score against {{ plan.regulators.reviewMass.referenceScore }}.
             </div>
-            <div class="text-caption">last: {{ regulatorText(r.last) }}</div>
+            <div v-if="regStat('review-mass')" class="text-caption mt-1">
+              {{ regStatText(regStat('review-mass')!) }}
+            </div>
+          </div>
+          <div class="sk-nav">
+            <div class="d-flex flex-wrap align-center ga-2">
+              <span class="font-weight-medium">Intake</span>
+              <v-chip size="x-small" variant="outlined">on new cards no gate penalized</v-chip>
+            </div>
+            <div class="text-caption mt-1">
+              ×{{ plan.regulators.intake.rate }} per {{ plan.regulators.intake.scaleHours }} hours since a new card was
+              last presented (uncapped). The clock stops while no eligible new card exists.
+            </div>
+            <div v-if="regStat('intake')" class="text-caption mt-1">{{ regStatText(regStat('intake')!) }}</div>
+          </div>
+          <div v-if="stats && stats.regulators.length === 0" class="text-caption text-medium-emphasis">
+            None of these runs recorded regulator readings (recorded from 0.2.29).
           </div>
         </template>
 
@@ -187,14 +198,17 @@ import {
   PIPELINE_STAGES,
   planPipeline,
   type ContentNavigationStrategyData,
+  type PlannedNavigator,
   type PlannedNavigatorOrigin,
 } from '@vue-skuilder/db';
 import {
   regulatorText,
+  type FilterKind,
   type FilterRunStat,
   type GeneratorRunStat,
   type PipelineRunStats,
   type RegulatorName,
+  type RegulatorRunStat,
 } from '@vue-skuilder/db/diagnostics';
 import { accuracyClass, fmtTime } from '../display';
 
@@ -218,10 +232,34 @@ const ORIGIN: Record<PlannedNavigatorOrigin, { label: string; color: string }> =
   'default-pipeline': { label: 'default pipeline', color: 'warning' },
 };
 
-const REGULATOR_LABEL: Record<RegulatorName, string> = {
-  'review-mass': 'Review mass',
-  intake: 'Intake',
+const regStat = (name: RegulatorName): RegulatorRunStat | undefined =>
+  props.stats?.regulators.find((r) => r.name === name);
+
+function regStatText(r: RegulatorRunStat): string {
+  return (
+    `In these runs: active (×>1) in ${r.runsActive}/${r.runs}, mean ×${r.meanMultiplier.toFixed(2)}, ` +
+    `max ×${r.maxMultiplier.toFixed(2)}. Last: ${regulatorText(r.last)}.`
+  );
+}
+
+const KIND_HELP: Record<FilterKind, string> = {
+  gate: 'Gate: its penalties mean not ready yet; regulators will not lift what it penalized.',
+  signal: 'Signal: its penalties express preference.',
 };
+
+/**
+ * A filter's kind: as its class declares it (the plan), else as recorded by
+ * runs. Undeclared filters run as gates.
+ */
+function filterKind(f: PlannedNavigator): { kind: FilterKind; label: string; help: string } {
+  const kind = f.kind ?? filterStat(f.name)?.kind;
+  if (kind) return { kind, label: kind, help: KIND_HELP[kind] };
+  return {
+    kind: 'gate',
+    label: 'gate (undeclared)',
+    help: `${KIND_HELP.gate} Its class declares no kind, so it counts as a gate.`,
+  };
+}
 
 const plan = computed(() => planPipeline(props.strategies, props.courseId));
 

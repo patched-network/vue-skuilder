@@ -4,7 +4,7 @@ import type { ContentNavigationStrategyData } from '../../types/contentNavigatio
 import { ContentNavigator } from '../index';
 import type { WeightedCard } from '../index';
 import type { GeneratorResult } from '../generators/types';
-import type { CardFilter, FilterContext } from './types';
+import type { CardFilter, FilterContext, FilterKind } from './types';
 
 // ============================================================================
 // ELO DISTANCE FILTER
@@ -57,9 +57,15 @@ export interface EloDistanceConfig {
   maxMultiplier?: number;
 }
 
-const DEFAULT_HALF_LIFE = 300;
-const DEFAULT_MIN_MULTIPLIER = 0.05;
-const DEFAULT_MAX_MULTIPLIER = 1.0;
+/**
+ * The default curve. The default strategy doc carries it as its config, so
+ * the admin pipeline view shows what runs.
+ */
+export const DEFAULT_ELO_DISTANCE_CONFIG: Required<EloDistanceConfig> = {
+  halfLife: 300,
+  minMultiplier: 0.05,
+  maxMultiplier: 1.0,
+};
 
 /** Fallback card ELO when a card has none recorded. */
 const DEFAULT_CARD_ELO = 1000;
@@ -76,11 +82,7 @@ function computeMultiplier(
 }
 
 function resolveConfig(config?: EloDistanceConfig): Required<EloDistanceConfig> {
-  return {
-    halfLife: config?.halfLife ?? DEFAULT_HALF_LIFE,
-    minMultiplier: config?.minMultiplier ?? DEFAULT_MIN_MULTIPLIER,
-    maxMultiplier: config?.maxMultiplier ?? DEFAULT_MAX_MULTIPLIER,
-  };
+  return { ...DEFAULT_ELO_DISTANCE_CONFIG, ...config };
 }
 
 async function applyEloDistance(
@@ -148,7 +150,9 @@ export function createEloDistanceFilter(config?: EloDistanceConfig): CardFilter 
  */
 export default class EloDistanceFilter extends ContentNavigator implements CardFilter {
   name: string;
-  readonly kind = 'signal' as const;
+  /** See CardFilter.kind. Static, so the pipeline plan can read it without an instance. */
+  static readonly kind: FilterKind = 'signal';
+  readonly kind = EloDistanceFilter.kind;
   readonly liveOnly = true;
   private config: Required<EloDistanceConfig>;
 

@@ -1,4 +1,5 @@
 import { StudyContentSource, UserDBInterface, CourseDBInterface } from '..';
+import type { FilterKind } from './filters/types';
 
 // Re-export filter types
 export type { CardFilter, FilterContext, CardFilterFactory, FilterKind } from './filters/types';
@@ -146,6 +147,19 @@ export function hasRegisteredNavigator(implementingClass: string): boolean {
  */
 export function getRegisteredNavigatorRole(implementingClass: string): NavigatorRole | undefined {
   return navigatorRegistry.get(implementingClass)?.role;
+}
+
+/**
+ * A registered filter's declared kind (see `CardFilter.kind`): the static
+ * `kind` on its class. Undefined if unregistered or undeclared; undeclared
+ * filters count as gates at run time.
+ * @param implementingClass - The class name to look up
+ */
+export function getRegisteredFilterKind(implementingClass: string): FilterKind | undefined {
+  const ctor = navigatorRegistry.get(implementingClass)?.constructor as
+    | { kind?: FilterKind }
+    | undefined;
+  return ctor?.kind;
 }
 
 /**

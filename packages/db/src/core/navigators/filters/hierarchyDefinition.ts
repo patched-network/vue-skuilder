@@ -3,7 +3,7 @@ import type { UserDBInterface } from '../../interfaces/userDB';
 import { ContentNavigator } from '../index';
 import type { WeightedCard } from '../index';
 import type { ContentNavigationStrategyData } from '../../types/contentNavigationStrategy';
-import type { CardFilter, FilterContext } from './types';
+import type { CardFilter, FilterContext, FilterKind } from './types';
 import type { GeneratorResult } from '../generators/types';
 import { toCourseElo } from '@vue-skuilder/common';
 import { logger } from '../../../util/logger';
@@ -78,7 +78,9 @@ export default class HierarchyDefinitionNavigator extends ContentNavigator imple
   /** Human-readable name for CardFilter interface */
   name: string;
 
-  readonly kind = 'gate' as const;
+  /** See CardFilter.kind. Static, so the pipeline plan can read it without an instance. */
+  static readonly kind: FilterKind = 'gate';
+  readonly kind = HierarchyDefinitionNavigator.kind;
 
   constructor(
     user: UserDBInterface,

@@ -3,7 +3,7 @@ import { Pipeline } from './Pipeline';
 import CompositeGenerator from './generators/CompositeGenerator';
 import ELONavigator from './generators/elo';
 import SRSNavigator from './generators/srs';
-import EloDistanceFilter from './filters/eloDistance';
+import EloDistanceFilter, { DEFAULT_ELO_DISTANCE_CONFIG } from './filters/eloDistance';
 import type { ContentNavigationStrategyData } from '../types/contentNavigationStrategy';
 import { DocType } from '../types/types-legacy';
 import type { CourseDBInterface, UserDBInterface } from '../interfaces';
@@ -68,7 +68,8 @@ export function createDefaultEloDistanceStrategy(courseId: string): ContentNavig
     description: 'Scales every candidate, new or review, by its distance from the learner\'s ELO',
     implementingClass: Navigators.ELO_DISTANCE,
     course: courseId,
-    serializedData: '',
+    // Explicit, though the filter would default to it anyway: views show what runs.
+    serializedData: JSON.stringify(DEFAULT_ELO_DISTANCE_CONFIG),
   };
 }
 

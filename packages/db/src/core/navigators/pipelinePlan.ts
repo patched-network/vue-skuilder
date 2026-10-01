@@ -1,5 +1,7 @@
 import type { ContentNavigationStrategyData } from '../types/contentNavigationStrategy';
-import { isFilter, isGenerator, NavigatorRole } from './index';
+import { getRegisteredFilterKind, isFilter, isGenerator, NavigatorRole } from './index';
+import type { FilterKind } from './filters/types';
+import { DEFAULT_REGULATOR_CONFIG, type RegulatorConfig } from './regulators';
 import {
   createDefaultEloDistanceStrategy,
   createDefaultEloStrategy,
@@ -40,6 +42,11 @@ export interface PlannedNavigator {
   implementingClass: string;
   /** The strategy document: the course's own, or the default the assembler supplies. */
   strategy: ContentNavigationStrategyData;
+  /**
+   * Filters only: the kind its class declares (`static kind`), read from the
+   * navigator registry. Undefined if undeclared, which runs as a gate.
+   */
+  kind?: FilterKind;
 }
 
 export interface SkippedStrategy {
@@ -57,6 +64,8 @@ export interface PipelinePlan {
   warnings: string[];
   /** Consequences of the plan worth knowing that aren't errors. */
   notes: string[];
+  /** The regulator stage's settings (see regulators.ts). */
+  regulators: RegulatorConfig;
 }
 
 export type PipelineStageKey =
@@ -139,12 +148,15 @@ function planned(
   role: NavigatorRole,
   origin: PlannedNavigatorOrigin
 ): PlannedNavigator {
+  const kind =
+    role === NavigatorRole.FILTER ? getRegisteredFilterKind(strategy.implementingClass) : undefined;
   return {
     role,
     origin,
     name: strategy.name,
     implementingClass: strategy.implementingClass,
     strategy,
+    ...(kind ? { kind } : {}),
   };
 }
 
@@ -177,6 +189,7 @@ export function planPipeline(
       skipped: [],
       warnings: [],
       notes: [],
+      regulators: DEFAULT_REGULATOR_CONFIG,
     };
   }
 
@@ -220,5 +233,13 @@ export function planPipeline(
   // Sorted by name for deterministic ordering.
   filters.sort((a, b) => a.name.localeCompare(b.name));
 
-  return { kind: 'assembled', generators, filters, skipped, warnings, notes: [] };
+  return {
+    kind: 'assembled',
+    generators,
+    filters,
+    skipped,
+    warnings,
+    notes: [],
+    regulators: DEFAULT_REGULATOR_CONFIG,
+  };
 }
