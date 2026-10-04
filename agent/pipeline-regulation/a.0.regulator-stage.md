@@ -227,8 +227,7 @@ view (framework admin) shows the stage like any other.
 
 ## 4. Rollout
 
-1. Pipeline visibility: the effective pipeline as assembled, with run stats (framework branch
-   `pipeline-visibility`, 2026-10-01).
+1. Pipeline visibility: the effective pipeline as assembled, with run stats (0.2.29).
 2. Content and config version stamps on runs (diagnostics next step 2), so every change below has a
    before/after boundary in the data.
 3. Retrieve/score split: register `eloDistance`, flatten the ELO generator. Together.
@@ -238,14 +237,11 @@ view (framework admin) shows the stage like any other.
 Steps 3–5 change prod selection. Each lands with a version stamp and is judged from the persisted
 runs.
 
-> **↳ A:** step 2 isn't built. Runs recorded by 0.2.29+ carry `regulators` and `filters[].kind`,
-> which mark the era implicitly; an explicit content and config stamp is still open.
->
-> **↳ A (10-01, later):** step 2 built, uncommitted (framework and LP branches `version-stamps`).
-> Each run stamps a hash of the strategy docs it was assembled from and the course's
-> `contentVersion`; each session stamps the framework and app versions.
+> **↳ A:** step 2 built (#1187; LP `1c1d0ba`). Each run stamps a hash of the strategy docs it was
+> assembled from and the course's `contentVersion`; each session stamps the framework and app
+> versions. Earlier runs are marked implicitly: 0.2.29+ carry `regulators` and `filters[].kind`.
 
-## 5. As built (branch `pipeline-regulation`, 2026-10-01)
+## 5. As built (0.2.29, 2026-10-01)
 
 - `filters/eloDistance.ts`: `EloDistanceFilter`, registered as `eloDistance` (a `signal`,
   `liveOnly`). `defaults.ts` `createDefaultEloDistanceStrategy`; the plan and assembler add it when
