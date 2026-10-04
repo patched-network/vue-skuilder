@@ -6,6 +6,7 @@ import {
   TaggedPerformance,
 } from '@vue-skuilder/common';
 import {
+  CourseDBInterface,
   DataLayerProvider,
   UserDBInterface,
   CourseRegistrationDoc,
@@ -43,10 +44,34 @@ function withCountOnlyRoles(perf: TaggedPerformance, cardId: string): TaggedPerf
 export class EloService {
   private dataLayer: DataLayerProvider;
   private user: UserDBInterface;
+  /** Per course ID: its compiled `CourseConfig.qaUsernamePattern`, or null. */
+  private qaPatterns = new Map<string, Promise<RegExp | null>>();
 
   constructor(dataLayer: DataLayerProvider, user: UserDBInterface) {
     this.dataLayer = dataLayer;
     this.user = user;
+  }
+
+  /**
+   * Whether the current user is one of the course's QA accounts
+   * (`CourseConfig.qaUsernamePattern`), whose responses must not move card
+   * ELO. The pattern is read once per course. If the config is unreadable or
+   * the pattern doesn't compile, nobody is a QA account.
+   */
+  private async isQaUser(courseDB: CourseDBInterface): Promise<boolean> {
+    const courseId = courseDB.getCourseID();
+    let pattern = this.qaPatterns.get(courseId);
+    if (!pattern) {
+      pattern = courseDB
+        .getCourseConfig()
+        .then((cfg) => (cfg.qaUsernamePattern ? new RegExp(cfg.qaUsernamePattern, 'i') : null))
+        .catch((e) => {
+          logger.warn(`[EloService] No QA username pattern for ${courseId}: ${e}`);
+          return null;
+        });
+      this.qaPatterns.set(courseId, pattern);
+    }
+    return (await pattern)?.test(this.user.getUsername()) ?? false;
   }
 
   /**
@@ -84,6 +109,10 @@ export class EloService {
     const cardElo = (await courseDB.getCardEloData([currentCard.card.card_id]))[0];
 
     if (cardElo && userElo) {
+      // A QA account's update is computed in full but only the user side is
+      // written; the event records the card as unmoved.
+      const writeCard = !(await this.isQaUser(courseDB));
+
       // Capture before-scores as numbers up front: adjustCourseScores mutates
       // userElo/cardElo in place (and returns the same refs). This path grades
       // every tag already present on the card with the single global score.
@@ -113,13 +142,19 @@ export class EloService {
         at: new Date().toISOString(),
         userScore,
         global: { before: beforeUserGlobal, after: eloUpdate.userElo.global.score },
-        card: { before: beforeCardGlobal, after: eloUpdate.cardElo.global.score },
+        card: {
+          before: beforeCardGlobal,
+          after: writeCard ? eloUpdate.cardElo.global.score : beforeCardGlobal,
+        },
         ...(cardTagKeys.length ? { tags } : {}),
       };
 
+      if (!writeCard) {
+        logger.info(`[EloService] QA account: card ELO for ${card_id} not written`);
+      }
       const results = await Promise.allSettled([
         this.user.updateUserElo(course_id, eloUpdate.userElo),
-        courseDB.updateCardElo(card_id, eloUpdate.cardElo),
+        writeCard ? courseDB.updateCardElo(card_id, eloUpdate.cardElo) : Promise.resolve(null),
       ]);
 
       // Check the results of each operation
@@ -212,6 +247,10 @@ export class EloService {
     }
 
     if (cardElo && userElo) {
+      // A QA account's update is computed in full but only the user side is
+      // written; the event records the card as unmoved.
+      const writeCard = !(await this.isQaUser(courseDB));
+
       // Capture before-scores up front — adjustCourseScoresPerTag mutates the
       // ELO objects in place. Every tag in `enriched` (except _global) is
       // touched; count-only tags (null score) increment count without moving
@@ -259,13 +298,19 @@ export class EloService {
         at,
         userScore: globalScore,
         global: { before: beforeUserGlobal, after: eloUpdate.userElo.global.score },
-        card: { before: beforeCardGlobal, after: eloUpdate.cardElo.global.score },
+        card: {
+          before: beforeCardGlobal,
+          after: writeCard ? eloUpdate.cardElo.global.score : beforeCardGlobal,
+        },
         ...(touchedTags.length ? { tags } : {}),
       };
 
+      if (!writeCard) {
+        logger.info(`[EloService] QA account: card ELO for ${card_id} not written`);
+      }
       const results = await Promise.allSettled([
         this.user.updateUserElo(course_id, eloUpdate.userElo),
-        courseDB.updateCardElo(card_id, eloUpdate.cardElo),
+        writeCard ? courseDB.updateCardElo(card_id, eloUpdate.cardElo) : Promise.resolve(null),
       ]);
 
       // Check the results of each operation

@@ -143,6 +143,16 @@ export interface CourseConfig {
    * records it, so a content change shows up in learners' records.
    */
   contentVersion?: string;
+
+  /**
+   * Regex source (matched case-insensitively) for the usernames of QA / test
+   * accounts, e.g. `@example\.com$` for throwaway signups on a domain the team
+   * owns. A matching user's responses move their own ELO as usual, so a QA run
+   * plays out like a real learner's, but never card ELO: an adult speedrunning
+   * a fresh account through early content would otherwise drag those cards
+   * easier, at the low counts where card K is largest. Unset: no QA accounts.
+   */
+  qaUsernamePattern?: string;
 }
 
 export interface CreateCourse extends IServerRequest {
