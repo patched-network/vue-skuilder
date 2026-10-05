@@ -53,3 +53,6 @@ userdb-Guest
 docs/.vitepress/dist
 docs/.vitepress/.temp
 docs/.vitepress/cache
+
+# Learner data dumps (skuilder dump-user)
+/dbg/
