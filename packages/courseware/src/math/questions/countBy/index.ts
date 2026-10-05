@@ -1,5 +1,6 @@
 import {
   Answer,
+  Evaluation,
   FieldDefinition,
   ViewData,
   DataShapeName,
@@ -53,6 +54,13 @@ const data = function () {
   return ret;
 };
 
+/**
+ * All five entries within this time counts as fluent. A learner who knows the
+ * sequence (by 2s, by 10s) takes about 10–25 s, typing included; one who is
+ * still counting up takes 40 s or more.
+ */
+const FLUENT_MS = 20000;
+
 function asInt(n: number | string): number {
   if (typeof n === 'string') {
     return parseInt(n);
@@ -104,6 +112,15 @@ export class CountBy extends Question {
     }
 
     return true;
+  }
+
+  public evaluate(answer: A, timeSpent: number): Evaluation {
+    const isCorrect = this.isCorrect(answer);
+    return {
+      isCorrect,
+      performance: isCorrect ? Math.min(1, FLUENT_MS / timeSpent) : 0,
+      fluent: isCorrect ? timeSpent <= FLUENT_MS : undefined,
+    };
   }
 
   public dataShapes() {
