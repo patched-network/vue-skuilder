@@ -1,6 +1,9 @@
 // Math course DataShape barrel export
 export { SingleDigitAdditionDataShape } from './questions/addition/shapes.js';
 export { EqualityTestDataShape } from './questions/equalityTest/shapes.js';
+export { NumberBondDataShape } from './questions/numberBond/shapes.js';
+export { BridgeTenDataShape } from './questions/bridgeTen/shapes.js';
+export { DecadeFactDataShape } from './questions/decadeFact/shapes.js';
 
 // TODO: Add other math shapes as they are refactored:
 // export { SingleDigitMultiplicationDataShape } from './questions/multiplication/shapes.js';

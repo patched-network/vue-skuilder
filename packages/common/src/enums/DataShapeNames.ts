@@ -15,6 +15,9 @@ export enum DataShapeName {
   MATH_AngleCategorize = 'AngleCategorize',
   MATH_SupplimentaryAngles = 'SupplimentaryAngles',
   MATH_CountBy = 'CountBy',
+  MATH_NumberBond = 'NumberBond',
+  MATH_BridgeTen = 'BridgeTen',
+  MATH_DecadeFact = 'DecadeFact',
 
   // French
   FRENCH_AudioParse = 'AudioParse',
