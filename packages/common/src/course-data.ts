@@ -104,6 +104,15 @@ export function prepareNote55(
 }
 
 /**
+ * Per-item metadata for a question type's `seedData`: tags and a starting
+ * global ELO for the cards created from that item.
+ */
+export interface SeedMeta {
+  tags?: string[];
+  elo?: number;
+}
+
+/**
  * Question components
  */
 
