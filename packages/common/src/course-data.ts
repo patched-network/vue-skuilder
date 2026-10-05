@@ -121,6 +121,14 @@ export interface Evaluation {
    * can see the updated state) while retaining control of the UI timeline.
    */
   deferAdvance?: boolean;
+
+  /**
+   * Set by question types that hold a speed target. `false` marks a correct
+   * answer that was too slow to count as fluent: SRS caps the next interval
+   * and doesn't let the slow attempt stand as a successful interval.
+   * Undefined means the question doesn't assess fluency.
+   */
+  fluent?: boolean;
 }
 
 /**

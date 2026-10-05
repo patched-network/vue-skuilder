@@ -8,6 +8,12 @@ import { logger } from '../util/logger';
 type Moment = moment.Moment;
 const duration = moment.duration;
 
+/**
+ * Longest interval (seconds) after a correct answer flagged `fluent: false`.
+ * Matches the 20h floor in `lastSuccessfulInterval`: due again next day.
+ */
+const SLOW_CORRECT_MAX_INTERVAL = 20 * 60 * 60;
+
 export interface DocumentUpdater {
   update<T extends PouchDB.Core.Document<object>>(id: string, update: Update<T>): Promise<T>;
 }
@@ -50,6 +56,7 @@ function newQuestionInterval(user: DocumentUpdater, cardHistory: CardHistory<Que
     cardHistory.lapses = getLapses(cardHistory.records);
     cardHistory.streak = getStreak(cardHistory.records);
 
+    let ret = interval;
     if (
       cardHistory.lapses &&
       cardHistory.streak &&
@@ -58,15 +65,21 @@ function newQuestionInterval(user: DocumentUpdater, cardHistory: CardHistory<Que
     ) {
       // weighted average of best-ever performance vs current performance, based
       // on how often the card has been failed, and the current streak of success
-      const ret =
+      ret =
         (cardHistory.lapses * interval + cardHistory.streak * cardHistory.bestInterval) /
         (cardHistory.lapses + cardHistory.streak);
       logger.debug(`Weighted average interval calculation:
 \t(${cardHistory.lapses} * ${interval} + ${cardHistory.streak} * ${cardHistory.bestInterval}) / (${cardHistory.lapses} + ${cardHistory.streak}) = ${ret}`);
-      return ret;
-    } else {
-      return interval;
     }
+
+    if (currentAttempt.fluent === false) {
+      // Correct but too slow: keep it coming back until it's fast on a first presentation.
+      logger.debug(
+        `Correct but not fluent: capping interval ${ret}s at ${SLOW_CORRECT_MAX_INTERVAL}s`
+      );
+      return Math.min(ret, SLOW_CORRECT_MAX_INTERVAL);
+    }
+    return ret;
   } else {
     return 0;
   }
@@ -75,13 +88,17 @@ function newQuestionInterval(user: DocumentUpdater, cardHistory: CardHistory<Que
 /**
  * Returns the amount of time, in seconds, of the most recent successful
  * interval for this card. An interval is successful if the user answers
- * a question correctly on the first attempt.
+ * a question correctly on the first attempt, and not flagged as too slow.
  *
  * @param cardHistory The record of user attempts with the question
  */
 function lastSuccessfulInterval(cardHistory: QuestionRecord[]): number {
   for (let i = cardHistory.length - 1; i >= 1; i--) {
-    if (cardHistory[i].priorAttemps === 0 && cardHistory[i].isCorrect) {
+    if (
+      cardHistory[i].priorAttemps === 0 &&
+      cardHistory[i].isCorrect &&
+      cardHistory[i].fluent !== false
+    ) {
       const lastInterval = secondsBetween(cardHistory[i - 1].timeStamp, cardHistory[i].timeStamp);
       const ret = Math.max(lastInterval, 20 * 60 * 60);
       logger.debug(`Last interval w/ this card was: ${lastInterval}s, returning ${ret}s`);
