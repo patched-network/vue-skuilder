@@ -22,6 +22,7 @@
         <v-btn v-if="!question.registered" size="small" @click="registerQuestionView(question.name)"> Register </v-btn>
         <span v-else class="inset"> (Registered) </span>
         {{ question.name }}
+        <span v-if="question.seedProgress" class="inset">{{ question.seedProgress }}</span>
       </li>
     </ul>
   </div>
@@ -39,6 +40,8 @@ import {
   DataShape55,
   QuestionType55,
   DataShape,
+  Status,
+  toCourseElo,
 } from '@vue-skuilder/common';
 import * as _ from 'lodash';
 import { getCurrentUser } from '@vue-skuilder/common-ui';
@@ -55,6 +58,7 @@ export interface QuestionRegistrationStatus {
   course: string;
   question: typeof Displayable;
   registered: boolean;
+  seedProgress?: string;
 }
 
 export default defineComponent({
@@ -209,9 +213,29 @@ CourseID: ${this.course}
         `);
         if (question.question.seedData) {
           console.log(`[ComponentRegistration] Question has seed data!`);
-          question.question.seedData.forEach((d) => {
-            this.courseDB!.addNote(question.course, question.question.dataShapes[0], d, u.getUsername(), []);
-          });
+          // One note at a time: notes sharing a tag would race on the tag doc, and a lost
+          // tag write aborts the note's remaining cards.
+          const seeds = question.question.seedData;
+          let failed = 0;
+          for (let i = 0; i < seeds.length; i++) {
+            question.seedProgress = `seeding ${i + 1}/${seeds.length}`;
+            const meta = question.question.seedMeta?.(seeds[i]) ?? {};
+            const res = await this.courseDB!.addNote(
+              question.course,
+              question.question.dataShapes[0],
+              seeds[i],
+              u.getUsername(),
+              meta.tags ?? [],
+              undefined,
+              meta.elo !== undefined ? toCourseElo(meta.elo) : undefined
+            );
+            if (res.status !== Status.ok) {
+              failed++;
+              console.error(`[ComponentRegistration] Seed ${i} failed: ${res.message}`);
+            }
+          }
+          question.seedProgress =
+            `seeded ${seeds.length - failed}/${seeds.length}` + (failed ? ` (${failed} failed)` : '');
         } else {
           console.log(`[ComponentRegistration] Question has NO seed data!`);
         }

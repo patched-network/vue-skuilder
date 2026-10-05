@@ -1,5 +1,5 @@
 import { type DefineComponent, defineComponent } from 'vue';
-import { FieldType, DataShape, ViewData, Answer, Evaluation } from '@vue-skuilder/common';
+import { FieldType, DataShape, ViewData, Answer, Evaluation, SeedMeta } from '@vue-skuilder/common';
 
 // [ ] #vue3 - post migration, specify this more precisely (no longer a hodge-podge)
 export type ViewComponent =
@@ -30,6 +30,12 @@ export abstract class Displayable {
    * data, and not want any user input.
    */
   public static acceptsUserData: boolean = true;
+
+  /**
+   * Optional tags and starting ELO for the cards seeded from one seedData
+   * item. Without it, seeded cards start untagged at ~1000.
+   */
+  public static seedMeta?: (item: unknown) => SeedMeta;
 
   /**
    *

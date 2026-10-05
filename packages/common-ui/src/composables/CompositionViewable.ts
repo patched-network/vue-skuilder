@@ -1,7 +1,7 @@
 // src/base-course/CompositionViewable.ts
 
 import moment from 'moment';
-import { computed, ComputedRef, ref, Ref } from 'vue';
+import { customRef, ref, Ref } from 'vue';
 import { CardRecord, QuestionRecord } from '@vue-skuilder/db';
 import { HotKey } from '../utils/SkldrMouseTrap';
 import { Question } from './Displayable';
@@ -11,7 +11,7 @@ import { ViewData, Answer } from '@vue-skuilder/common';
 export interface ViewableUtils {
   startTime: Ref<moment.Moment>;
   hotKeys: Ref<HotKey[]>;
-  timeSpent: ComputedRef<number>;
+  timeSpent: Readonly<Ref<number>>;
   logger: ViewableLogger;
   getURL: (item: string, dataShapeIndex?: number) => string;
   emitResponse: (record: CardRecord) => void;
@@ -63,7 +63,12 @@ export function useViewable(
       console.warn(`[${componentName}]: `, message, ...params),
   };
 
-  const timeSpent = computed(() => Math.abs(moment.utc().diff(startTime.value, 'milliseconds')));
+  // Recomputed on every read. A computed caches its first read (moment.utc() isn't reactive),
+  // so retries were recorded with the first attempt's time.
+  const timeSpent = customRef<number>(() => ({
+    get: () => Math.abs(moment.utc().diff(startTime.value, 'milliseconds')),
+    set: () => {},
+  }));
 
   const getURL = (item: string, dataShapeIndex = 0): string => {
     try {
@@ -111,7 +116,8 @@ export function useQuestionView<Q extends Question>(
 
     priorAnswers.value.push([answer, submittingClass ?? '']);
 
-    const evaluation = question.value.evaluate(answer, viewableUtils.timeSpent.value);
+    const timeSpent = viewableUtils.timeSpent.value;
+    const evaluation = question.value.evaluate(answer, timeSpent);
 
     viewableUtils.logger.log(`evaluation of answer ${answer}:`, evaluation);
 
@@ -120,7 +126,7 @@ export function useQuestionView<Q extends Question>(
       priorAttemps: priorAttempts.value,
       courseID: '',
       cardID: '',
-      timeSpent: viewableUtils.timeSpent.value,
+      timeSpent,
       timeStamp: viewableUtils.startTime.value,
       userAnswer: answer,
     };

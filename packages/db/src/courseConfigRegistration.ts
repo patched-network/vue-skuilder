@@ -1,4 +1,11 @@
-import { CourseConfig, DataShape, NameSpacer, toZodJSON } from '@vue-skuilder/common';
+import {
+  CourseConfig,
+  DataShape,
+  NameSpacer,
+  SeedMeta,
+  toCourseElo,
+  toZodJSON,
+} from '@vue-skuilder/common';
 import { CourseDBInterface } from './core/interfaces/courseDB.js';
 import { logger } from './util/logger.js';
 
@@ -12,6 +19,7 @@ export interface CustomQuestionsData {
     dataShapes?: DataShape[];
     views?: { name?: string }[];
     seedData?: unknown[];
+    seedMeta?: (item: unknown) => SeedMeta;
   }[]; // Question class constructors
   dataShapes: DataShape[]; // DataShape definitions for studio-ui
   views: { name?: string }[]; // Vue components for rendering
@@ -36,6 +44,7 @@ export interface ProcessedQuestionData {
     dataShapes?: DataShape[];
     views?: { name?: string }[];
     seedData?: unknown[];
+    seedMeta?: (item: unknown) => SeedMeta;
   };
   dataShapes: DataShape[];
   views: { name?: string }[];
@@ -388,19 +397,22 @@ export async function registerSeedData(
     logger.info(`Registering seed data for question: ${question.name}`);
 
     try {
-      const seedDataPromises = question.questionClass.seedData
-        .filter(() => question.dataShapes.length > 0)
-        .map((seedDataItem: unknown) =>
-          courseDB.addNote(
+      if (question.dataShapes.length > 0) {
+        // One note at a time: notes sharing a tag would race on the tag doc, and a lost
+        // tag write aborts the note's remaining cards.
+        for (const seedDataItem of question.questionClass.seedData) {
+          const meta = question.questionClass.seedMeta?.(seedDataItem) ?? {};
+          await courseDB.addNote(
             question.course,
             question.dataShapes[0],
             seedDataItem,
             username,
-            []
-          )
-        );
-
-      await Promise.all(seedDataPromises);
+            meta.tags ?? [],
+            undefined,
+            meta.elo !== undefined ? toCourseElo(meta.elo) : undefined
+          );
+        }
+      }
       logger.info(`Seed data registered for question: ${question.name}`);
     } catch (error) {
       logger.warn(

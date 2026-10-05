@@ -5,6 +5,9 @@ import { DataShape } from '@vue-skuilder/common';
 import { 
   SingleDigitAdditionDataShape,
   EqualityTestDataShape,
+  NumberBondDataShape,
+  BridgeTenDataShape,
+  DecadeFactDataShape,
 } from './math/shapes.js';
 
 // Default course shapes  
@@ -14,6 +17,9 @@ import { BlanksCardDataShapes } from './default/questions/fillIn/shapes.js';
 export { 
   SingleDigitAdditionDataShape,
   EqualityTestDataShape,
+  NumberBondDataShape,
+  BridgeTenDataShape,
+  DecadeFactDataShape,
 } from './math/shapes.js';
 
 export { BlanksCardDataShapes } from './default/questions/fillIn/shapes.js';
@@ -31,6 +37,9 @@ export { BlanksCardDataShapes } from './default/questions/fillIn/shapes.js';
 const MATH_SHAPES = [
   SingleDigitAdditionDataShape,
   EqualityTestDataShape,
+  NumberBondDataShape,
+  BridgeTenDataShape,
+  DecadeFactDataShape,
 ];
 
 const DEFAULT_SHAPES = BlanksCardDataShapes; // Already an array
