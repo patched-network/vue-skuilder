@@ -3,7 +3,7 @@
   "publishConfig": {
     "access": "public"
   },
-  "version": "0.2.34",
+  "version": "0.2.35",
   "sideEffects": false,
   "main": "./dist/common-ui.umd.js",
   "module": "./dist/common-ui.es.js",
@@ -49,6 +49,7 @@
     "@vojtechlanka/vue-tags-input": "^3",
     "@vue-skuilder/common": "workspace:*",
     "@vue-skuilder/db": "workspace:*",
+    "echarts": "6.1.0",
     "highlight.js": "^11.0.1",
     "marked": "^15.0.6",
     "moment": "^2.29.4",
@@ -84,5 +85,5 @@
     "vite-plugin-dts": "^4.5.3",
     "vitest": "^4.1.0"
   },
-  "stableVersion": "0.2.34"
+  "stableVersion": "0.2.35"
 }

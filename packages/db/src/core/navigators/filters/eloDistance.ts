@@ -207,6 +207,16 @@ interface TagGap {
  *    cards and act like a second global rating. The framework may want the
  *    course to say which tags are skills (cf. LP's diagnostics interpreter
  *    `isSkillTag`), e.g. as tag patterns in the strategy config.
+ *    The admin ELO viewer (in progress, 2026-10) answers the same question for
+ *    display with its own tag batches (role × namespace). Before tag-aware goes
+ *    on by default, make that one predicate:
+ *    - a serializable selector (roles, prefix patterns), beside `tagRoles.ts`
+ *      in common, so a strategy doc can carry it;
+ *    - an `EloDistanceConfig` field for it, read by `tagAwareGap`;
+ *    - `tagAwareGap` moved to a pure module (this file imports `core`, which
+ *      the diagnostics entry can't), so the viewer can show what the filter
+ *      would compute;
+ *    - the viewer's default batch read from the course's eloDistance config.
  * 3. New cards matter most, and that dump couldn't show them. An unseen
  *    card's tag ratings fall back to its global, so for new cards this reads
  *    "card global vs the learner's rating on that skill". Measuring it needs a

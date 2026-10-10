@@ -13,6 +13,7 @@ import type {
   StudySessionRunSummary,
 } from '../core/types/studySession';
 import type { CardSummary, DatasetRecord, LearnerDataset } from './dataset';
+import type { TagBatch } from './tagElo';
 
 /**
  * Course-supplied meaning for the generic views. Every member is optional and
@@ -30,6 +31,11 @@ export interface DiagnosticsInterpreters {
   snapshotMetrics?(snapshot: SessionStateSnapshot): Record<string, number>;
   /** Which `snapshotMetrics` labels count as progress (for `stalled`). Default: none. */
   progressMetrics?: string[];
+  /**
+   * Named tag batches for the ELO view, offered beside the namespace × role
+   * batches it finds on its own. Default: none.
+   */
+  tagBatches?: TagBatch[];
 }
 
 export const isSkillTag = (i: DiagnosticsInterpreters | undefined, tag: string): boolean =>
