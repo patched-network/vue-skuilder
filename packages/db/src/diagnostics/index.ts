@@ -15,6 +15,7 @@ export * from './loader';
 export * from './derive';
 export * from './text';
 export * from './pipeline';
+export * from './tagElo';
 export type {
   SessionEloEvent,
   SessionStateSnapshot,

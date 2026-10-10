@@ -26,3 +26,4 @@ export { default as LearnerCardHistory } from './components/LearnerCardHistory.v
 export { default as CardDossierDetail } from './components/CardDossierDetail.vue';
 export { default as RunDetail } from './components/RunDetail.vue';
 export { default as PipelineOverview } from './components/PipelineOverview.vue';
+export { default as LearnerTagElo } from './components/LearnerTagElo.vue';

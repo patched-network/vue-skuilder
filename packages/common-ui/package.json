@@ -49,6 +49,7 @@
     "@vojtechlanka/vue-tags-input": "^3",
     "@vue-skuilder/common": "workspace:*",
     "@vue-skuilder/db": "workspace:*",
+    "echarts": "6.1.0",
     "highlight.js": "^11.0.1",
     "marked": "^15.0.6",
     "moment": "^2.29.4",

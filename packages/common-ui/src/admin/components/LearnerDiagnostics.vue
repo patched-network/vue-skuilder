@@ -4,6 +4,7 @@
       <v-tab value="sessions">Sessions ({{ dataset.sessions.length }})</v-tab>
       <v-tab value="cards">Cards ({{ dataset.cardHistories.length }})</v-tab>
       <v-tab v-if="dataset.strategies" value="pipeline">Pipeline</v-tab>
+      <v-tab value="elo">ELO</v-tab>
     </v-tabs>
 
     <template v-if="tab === 'sessions'">
@@ -40,6 +41,8 @@
       :stats="pipelineStats"
       :stats-label="dataset.username"
     />
+
+    <learner-tag-elo v-else-if="tab === 'elo'" :dataset="dataset" :interpreters="interpreters" />
   </div>
 </template>
 
@@ -49,20 +52,21 @@ import { pipelineRunStats, type DiagnosticsInterpreters, type LearnerDataset } f
 import LearnerCardHistory from './LearnerCardHistory.vue';
 import LearnerSessionDetail from './LearnerSessionDetail.vue';
 import LearnerSessionList from './LearnerSessionList.vue';
+import LearnerTagElo from './LearnerTagElo.vue';
 import PipelineOverview from './PipelineOverview.vue';
 
 /**
- * One learner: sessions (list, then a session's detail), card history, and,
+ * One learner: sessions (list, then a session's detail), card history,
  * when the dataset carries the course's strategy docs, the pipeline with this
- * learner's run stats. Session timelines link into card history. Navigation is internal;
- * hosts that want URLs can compose the three views themselves.
+ * learner's run stats, and per-tag ELO. Session timelines link into card history. Navigation is internal;
+ * hosts that want URLs can compose the views themselves.
  */
 const props = defineProps<{
   dataset: LearnerDataset;
   interpreters?: DiagnosticsInterpreters;
 }>();
 
-const tab = ref<'sessions' | 'cards' | 'pipeline'>('sessions');
+const tab = ref<'sessions' | 'cards' | 'pipeline' | 'elo'>('sessions');
 const sessionId = ref<string | null>(null);
 const focusCard = ref<string | undefined>(undefined);
 const pipelineStats = computed(() => pipelineRunStats(props.dataset));
