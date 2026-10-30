@@ -690,8 +690,16 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
   private _eloPoolCache: {
     rows: (QualifiedCardID & { elo?: number })[];
     fetchedAt: number;
+    /** The ELO the pool was fetched around. */
+    centerElo: number;
   } | null = null;
   private readonly _eloPoolTtlMs = 5 * 60 * 1000;
+  /**
+   * How far the target may move from the pool's centre before the pool is
+   * refetched. Well above a learner's in-session roam; a different learner (or
+   * a far-off explicit ELO) on the same CourseDB gets a pool of their own.
+   */
+  private readonly _eloPoolMaxDrift = 200;
 
   /**
    * Cached assembled navigator (Pipeline). createNavigator() reads strategy
@@ -827,14 +835,18 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
     const nowMs = Date.now();
     let cacheStatus: 'hit' | 'miss' | 'refresh' = 'hit';
 
-    if (!this._eloPoolCache || nowMs - this._eloPoolCache.fetchedAt > this._eloPoolTtlMs) {
+    if (
+      !this._eloPoolCache ||
+      nowMs - this._eloPoolCache.fetchedAt > this._eloPoolTtlMs ||
+      Math.abs(targetElo - this._eloPoolCache.centerElo) > this._eloPoolMaxDrift
+    ) {
       // MISS: pay the (reindexing) view query once, then cache the raw pool.
       // Guard: never cache an EMPTY pool. A cold-DB-open or sync-race fetch can
       // transiently return [], and caching it would starve the session for the
       // whole TTL. Leaving the cache untouched lets the next call retry.
       const fetched = await this.getCardsByELO(targetElo, POOL_SIZE);
       if (fetched.length > 0) {
-        this._eloPoolCache = { rows: fetched, fetchedAt: nowMs };
+        this._eloPoolCache = { rows: fetched, fetchedAt: nowMs, centerElo: targetElo };
       }
       cacheStatus = 'miss';
     }
@@ -863,7 +875,7 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
     if (cards.length < options.limit && (cacheStatus === 'hit' || !this._eloPoolCache)) {
       const fetched = await this.getCardsByELO(targetElo, POOL_SIZE);
       if (fetched.length > 0) {
-        this._eloPoolCache = { rows: fetched, fetchedAt: nowMs };
+        this._eloPoolCache = { rows: fetched, fetchedAt: nowMs, centerElo: targetElo };
       }
       cards = rankAgainstCurrentElo();
       cacheStatus = 'refresh';
