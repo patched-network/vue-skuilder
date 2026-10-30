@@ -170,15 +170,15 @@ const expanded: Record<string, boolean> = {
  */
 export function toggleSessionOverlay(): void {
   if (typeof document === 'undefined') {
-    logger.info('[Session Overlay] No DOM available (non-browser host); overlay unavailable.');
+    logger.print('[Session Overlay] No DOM available (non-browser host); overlay unavailable.');
     return;
   }
   if (overlayEl) {
     teardown();
-    logger.info('[Session Overlay] Hidden.');
+    logger.print('[Session Overlay] Hidden.');
   } else {
     mount();
-    logger.info('[Session Overlay] Shown. Toggle off with window.skuilder.session.dbgOverlay().');
+    logger.print('[Session Overlay] Shown. Toggle off with window.skuilder.session.dbgOverlay().');
   }
 }
 
@@ -303,7 +303,7 @@ function copySnapshot(): void {
       logger.warn(`[Session Overlay] Clipboard write failed: ${String(err)}`);
     });
   } else {
-    logger.info(`[Session Overlay] Clipboard unavailable; snapshot follows:\n${text}`);
+    logger.print(`[Session Overlay] Clipboard unavailable; snapshot follows:\n${text}`);
   }
 }
 

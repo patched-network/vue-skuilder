@@ -32,7 +32,7 @@ function getUserDB(): UserDBInterface | null {
     const provider = getDataLayer();
     return provider.getUserDB();
   } catch {
-    logger.info('[UserDB Debug] Data layer not initialized yet.');
+    logger.print('[UserDB Debug] Data layer not initialized yet.');
     return null;
   }
 }
@@ -49,7 +49,7 @@ function getRawDB(): PouchDB.Database | null {
   // This is a bit of a hack but necessary for raw queries
   const rawDB = (userDB as any).localDB;
   if (!rawDB) {
-    logger.info('[UserDB Debug] Unable to access raw database instance.');
+    logger.print('[UserDB Debug] Unable to access raw database instance.');
     return null;
   }
 
@@ -77,16 +77,16 @@ export const userDBDebugAPI = {
 
     // eslint-disable-next-line no-console
     console.group('👤 User Information');
-    logger.info(`Username: ${userDB.getUsername()}`);
-    logger.info(`Logged in: ${userDB.isLoggedIn() ? 'Yes ✅' : 'No (Guest) ❌'}`);
+    logger.print(`Username: ${userDB.getUsername()}`);
+    logger.print(`Logged in: ${userDB.isLoggedIn() ? 'Yes ✅' : 'No (Guest) ❌'}`);
 
     userDB.getConfig()
       .then((config) => {
-        logger.info('Configuration:');
-        logger.info(JSON.stringify(config, null, 2));
+        logger.print('Configuration:');
+        logger.print(JSON.stringify(config, null, 2));
       })
       .catch((err) => {
-        logger.info(`Error loading config: ${err.message}`);
+        logger.print(`Error loading config: ${err.message}`);
       })
       .finally(() => {
         // eslint-disable-next-line no-console
@@ -100,19 +100,19 @@ export const userDBDebugAPI = {
   async showScheduledReviews(courseId?: string): Promise<void> {
     const userDB = getUserDB();
     if (!userDB) {
-      logger.info('[UserDB Debug] Data layer not available');
+      logger.print('[UserDB Debug] Data layer not available');
       return;
     }
 
-    logger.info(`[UserDB Debug] Fetching pending reviews${courseId ? ` for course: ${courseId}` : ''}...`);
+    logger.print(`[UserDB Debug] Fetching pending reviews${courseId ? ` for course: ${courseId}` : ''}...`);
 
     try {
       const reviews = await userDB.getPendingReviews(courseId);
-      logger.info(`[UserDB Debug] Got ${reviews.length} reviews`);
+      logger.print(`[UserDB Debug] Got ${reviews.length} reviews`);
 
       // eslint-disable-next-line no-console
       console.group(`📅 Scheduled Reviews${courseId ? ` (${courseId})` : ''}`);
-      logger.info(`Total: ${reviews.length}`);
+      logger.print(`Total: ${reviews.length}`);
 
       if (reviews.length > 0) {
         // Group by course
@@ -140,14 +140,14 @@ export const userDBDebugAPI = {
             const reviewTimeStr = typeof review.reviewTime === 'string'
               ? review.reviewTime
               : review.reviewTime.toISOString();
-            logger.info(
+            logger.print(
               `  ${review.cardId.slice(0, 12)}... @ ${formatTimestamp(reviewTimeStr)} ` +
               `[${review.scheduledFor}/${review.schedulingAgentId}]`
             );
           }
 
           if (sorted.length > 10) {
-            logger.info(`  ... and ${sorted.length - 10} more`);
+            logger.print(`  ... and ${sorted.length - 10} more`);
           }
 
           // eslint-disable-next-line no-console
@@ -158,7 +158,7 @@ export const userDBDebugAPI = {
       // eslint-disable-next-line no-console
       console.groupEnd();
     } catch (err: any) {
-      logger.info(`Error loading scheduled reviews: ${err.message}`);
+      logger.print(`Error loading scheduled reviews: ${err.message}`);
     }
   },
 
@@ -174,7 +174,7 @@ export const userDBDebugAPI = {
 
       // eslint-disable-next-line no-console
       console.group('📚 Course Registrations');
-      logger.info(`Total: ${registrations.length}`);
+      logger.print(`Total: ${registrations.length}`);
 
       if (registrations.length > 0) {
         // eslint-disable-next-line no-console
@@ -192,7 +192,7 @@ export const userDBDebugAPI = {
       // eslint-disable-next-line no-console
       console.groupEnd();
     } catch (err: any) {
-      logger.info(`Error loading course registrations: ${err.message}`);
+      logger.print(`Error loading course registrations: ${err.message}`);
     }
   },
 
@@ -214,7 +214,7 @@ export const userDBDebugAPI = {
 
       // eslint-disable-next-line no-console
       console.group(`🎴 Card History: ${cardId}`);
-      logger.info(`Total interactions: ${cardHistories.length}`);
+      logger.print(`Total interactions: ${cardHistories.length}`);
 
       if (cardHistories.length > 0) {
         // Sort by timestamp
@@ -234,14 +234,14 @@ export const userDBDebugAPI = {
         );
 
         if (sorted.length > 20) {
-          logger.info(`... and ${sorted.length - 20} more interactions`);
+          logger.print(`... and ${sorted.length - 20} more interactions`);
         }
       }
 
       // eslint-disable-next-line no-console
       console.groupEnd();
     } catch (err: any) {
-      logger.info(`Error loading card history: ${err.message}`);
+      logger.print(`Error loading card history: ${err.message}`);
     }
   },
 
@@ -255,7 +255,7 @@ export const userDBDebugAPI = {
     try {
       const prefix = DocTypePrefixes[DocType[docType]];
       if (!prefix) {
-        logger.info(`Unknown document type: ${docType}`);
+        logger.print(`Unknown document type: ${docType}`);
         return;
       }
 
@@ -263,27 +263,27 @@ export const userDBDebugAPI = {
 
       // eslint-disable-next-line no-console
       console.group(`📄 Documents: ${docType}`);
-      logger.info(`Total: ${result.rows.length}`);
-      logger.info(`Prefix: ${prefix}`);
+      logger.print(`Total: ${result.rows.length}`);
+      logger.print(`Prefix: ${prefix}`);
 
       if (result.rows.length > 0) {
-        logger.info('Sample documents:');
+        logger.print('Sample documents:');
         const samples = result.rows.slice(0, Math.min(limit, result.rows.length));
 
         for (const row of samples) {
-          logger.info(`\n${row.id}:`);
-          logger.info(JSON.stringify(row.doc, null, 2));
+          logger.print(`\n${row.id}:`);
+          logger.print(JSON.stringify(row.doc, null, 2));
         }
 
         if (result.rows.length > limit) {
-          logger.info(`\n... and ${result.rows.length - limit} more documents`);
+          logger.print(`\n... and ${result.rows.length - limit} more documents`);
         }
       }
 
       // eslint-disable-next-line no-console
       console.groupEnd();
     } catch (err: any) {
-      logger.info(`Error querying documents: ${err.message}`);
+      logger.print(`Error querying documents: ${err.message}`);
     }
   },
 
@@ -299,16 +299,16 @@ export const userDBDebugAPI = {
 
       // eslint-disable-next-line no-console
       console.group('ℹ️ Database Information');
-      logger.info(`Database name: ${info.db_name}`);
-      logger.info(`Total documents: ${info.doc_count}`);
-      logger.info(`Update sequence: ${info.update_seq}`);
+      logger.print(`Database name: ${info.db_name}`);
+      logger.print(`Total documents: ${info.doc_count}`);
+      logger.print(`Update sequence: ${info.update_seq}`);
       // disk_size may not be available in all PouchDB implementations
       if ('disk_size' in info) {
-        logger.info(`Disk size: ${((info as any).disk_size || 0) / 1024 / 1024} MB`);
+        logger.print(`Disk size: ${((info as any).disk_size || 0) / 1024 / 1024} MB`);
       }
 
       // Count documents by type
-      logger.info('\nDocument counts by type:');
+      logger.print('\nDocument counts by type:');
       const allDocs = await rawDB.allDocs({ include_docs: false });
       const typeCounts = new Map<string, number>();
 
@@ -334,7 +334,7 @@ export const userDBDebugAPI = {
       // eslint-disable-next-line no-console
       console.groupEnd();
     } catch (err: any) {
-      logger.info(`Error getting database info: ${err.message}`);
+      logger.print(`Error getting database info: ${err.message}`);
     }
   },
 
@@ -344,10 +344,10 @@ export const userDBDebugAPI = {
   listDocTypes(): void {
     // eslint-disable-next-line no-console
     console.group('📋 Available Document Types');
-    logger.info('Use with queryByType(type):');
+    logger.print('Use with queryByType(type):');
 
     for (const [type, prefix] of Object.entries(DocTypePrefixes)) {
-      logger.info(`  ${type.padEnd(30)} → prefix: "${prefix}"`);
+      logger.print(`  ${type.padEnd(30)} → prefix: "${prefix}"`);
     }
 
     // eslint-disable-next-line no-console
@@ -397,14 +397,14 @@ export const userDBDebugAPI = {
       }
 
       const json = JSON.stringify(data, null, 2);
-      logger.info('[UserDB Debug] Database info exported. Copy the returned string or use:');
-      logger.info('  copy(window.skuilder.userdb.export())');
+      logger.print('[UserDB Debug] Database info exported. Copy the returned string or use:');
+      logger.print('  copy(window.skuilder.userdb.export())');
       if (!includeContent) {
-        logger.info('  For full content export: window.skuilder.userdb.export(true)');
+        logger.print('  For full content export: window.skuilder.userdb.export(true)');
       }
       return json;
     } catch (err: any) {
-      logger.info(`Error exporting database: ${err.message}`);
+      logger.print(`Error exporting database: ${err.message}`);
       return '{}';
     }
   },
@@ -418,10 +418,10 @@ export const userDBDebugAPI = {
 
     try {
       const result = await queryFn(rawDB);
-      logger.info('[UserDB Debug] Query result:');
-      logger.info(result);
+      logger.print('[UserDB Debug] Query result:');
+      logger.print(result);
     } catch (err: any) {
-      logger.info(`[UserDB Debug] Query error: ${err.message}`);
+      logger.print(`[UserDB Debug] Query error: ${err.message}`);
     }
   },
 
@@ -429,7 +429,7 @@ export const userDBDebugAPI = {
    * Show help
    */
   help(): void {
-    logger.info(`
+    logger.print(`
 🔧 UserDB Debug API
 
 Commands:

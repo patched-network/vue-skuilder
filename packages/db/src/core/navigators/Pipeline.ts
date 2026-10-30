@@ -183,7 +183,7 @@ function logExecutionSummary(
  * Log all result cards with score, cardId, and key provenance.
  * Toggle: set VERBOSE_RESULTS = true to enable.
  */
-const VERBOSE_RESULTS = true;
+const VERBOSE_RESULTS = false;
 
 function logResultCards(cards: WeightedCard[]): void {
   if (!VERBOSE_RESULTS || cards.length === 0) return;
@@ -1210,20 +1210,20 @@ export class Pipeline extends ContentNavigator implements PipelineForecaster {
     };
 
     // Log to console
-    logger.info(`[Pipeline:diagnose] Card space scan (${result.elapsedMs}ms):`);
-    logger.info(`[Pipeline:diagnose]   Total cards: ${result.totalCards}`);
-    logger.info(`[Pipeline:diagnose]   Well-indicated (score >= ${THRESHOLD}): ${result.wellIndicated}`);
-    logger.info(`[Pipeline:diagnose]   Encountered: ${result.encountered}`);
-    logger.info(`[Pipeline:diagnose]   Well-indicated & new: ${result.wellIndicatedNew}`);
-    logger.info(`[Pipeline:diagnose]   By type:`);
+    logger.print(`[Pipeline:diagnose] Card space scan (${result.elapsedMs}ms):`);
+    logger.print(`[Pipeline:diagnose]   Total cards: ${result.totalCards}`);
+    logger.print(`[Pipeline:diagnose]   Well-indicated (score >= ${THRESHOLD}): ${result.wellIndicated}`);
+    logger.print(`[Pipeline:diagnose]   Encountered: ${result.encountered}`);
+    logger.print(`[Pipeline:diagnose]   Well-indicated & new: ${result.wellIndicatedNew}`);
+    logger.print(`[Pipeline:diagnose]   By type:`);
     for (const [type, counts] of byType) {
-      logger.info(
+      logger.print(
         `[Pipeline:diagnose]     ${type}: ${counts.wellIndicated}/${counts.total} well-indicated, ${counts.new} new`
       );
     }
-    logger.info(`[Pipeline:diagnose]   After each filter:`);
+    logger.print(`[Pipeline:diagnose]   After each filter:`);
     for (const fb of filterBreakdown) {
-      logger.info(`[Pipeline:diagnose]     ${fb.name}: ${fb.wellIndicated} well-indicated`);
+      logger.print(`[Pipeline:diagnose]     ${fb.name}: ${fb.wellIndicated} well-indicated`);
     }
 
     return result;

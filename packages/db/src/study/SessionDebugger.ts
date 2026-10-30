@@ -188,7 +188,7 @@ export function endSessionTracking(): void {
  */
 function showCurrentQueue(): void {
   if (!activeSession) {
-    logger.info('[Session Debug] No active session.');
+    logger.print('[Session Debug] No active session.');
     return;
   }
 
@@ -196,11 +196,11 @@ function showCurrentQueue(): void {
 
   // eslint-disable-next-line no-console
   console.group('📊 Current Queue State');
-  logger.info(`Supply Queue: ${latest.supplyQLength} cards`);
+  logger.print(`Supply Queue: ${latest.supplyQLength} cards`);
   if (latest.supplyQNext3 && latest.supplyQNext3.length > 0) {
-    logger.info(`  Next: ${latest.supplyQNext3.join(', ')}`);
+    logger.print(`  Next: ${latest.supplyQNext3.join(', ')}`);
   }
-  logger.info(`Failed Queue: ${latest.failedQLength} cards`);
+  logger.print(`Failed Queue: ${latest.failedQLength} cards`);
   // eslint-disable-next-line no-console
   console.groupEnd();
 }
@@ -212,17 +212,17 @@ function showPresentationHistory(sessionIndex: number = 0): void {
   const session = sessionIndex === 0 && activeSession ? activeSession : sessionHistory[sessionIndex];
 
   if (!session) {
-    logger.info(`[Session Debug] No session found at index ${sessionIndex}`);
+    logger.print(`[Session Debug] No session found at index ${sessionIndex}`);
     return;
   }
 
   // eslint-disable-next-line no-console
   console.group(`📜 Session History: ${session.sessionId}`);
-  logger.info(`Started: ${session.startTime.toLocaleTimeString()}`);
+  logger.print(`Started: ${session.startTime.toLocaleTimeString()}`);
   if (session.endTime) {
-    logger.info(`Ended: ${session.endTime.toLocaleTimeString()}`);
+    logger.print(`Ended: ${session.endTime.toLocaleTimeString()}`);
   }
-  logger.info(`Cards presented: ${session.presentations.length}`);
+  logger.print(`Cards presented: ${session.presentations.length}`);
 
   if (session.presentations.length > 0) {
     // eslint-disable-next-line no-console
@@ -249,7 +249,7 @@ function showInterleaving(sessionIndex: number = 0): void {
   const session = sessionIndex === 0 && activeSession ? activeSession : sessionHistory[sessionIndex];
 
   if (!session) {
-    logger.info(`[Session Debug] No session found at index ${sessionIndex}`);
+    logger.print(`[Session Debug] No session found at index ${sessionIndex}`);
     return;
   }
 
@@ -271,7 +271,7 @@ function showInterleaving(sessionIndex: number = 0): void {
     origins[p.origin]++;
   });
 
-  logger.info('Course distribution:');
+  logger.print('Course distribution:');
   // eslint-disable-next-line no-console
   console.table(
     Array.from(courseCounts.entries()).map(([course, count]) => {
@@ -289,12 +289,12 @@ function showInterleaving(sessionIndex: number = 0): void {
 
   // Show interleaving pattern (first 20 cards)
   if (session.presentations.length > 0) {
-    logger.info('\nPresentation sequence (first 20):');
+    logger.print('\nPresentation sequence (first 20):');
     const sequence = session.presentations
       .slice(0, 20)
       .map((p, idx) => `${idx + 1}. ${p.courseName || p.courseId.slice(0, 8)} (${p.origin})`)
       .join('\n');
-    logger.info(sequence);
+    logger.print(sequence);
   }
 
   // Detect clustering (same course in a row)
@@ -313,8 +313,8 @@ function showInterleaving(sessionIndex: number = 0): void {
   }
 
   if (maxCluster > 3) {
-    logger.info(`\n⚠️ Detected clustering: max ${maxCluster} cards from same course in a row`);
-    logger.info('This suggests cards are sorted by score rather than round-robin by course.');
+    logger.print(`\n⚠️ Detected clustering: max ${maxCluster} cards from same course in a row`);
+    logger.print('This suggests cards are sorted by score rather than round-robin by course.');
   }
 
   // eslint-disable-next-line no-console
@@ -373,11 +373,11 @@ export const sessionDebugAPI = {
    */
   listSessions(): void {
     if (activeSession) {
-      logger.info(`Active session: ${activeSession.sessionId} (${activeSession.presentations.length} cards presented)`);
+      logger.print(`Active session: ${activeSession.sessionId} (${activeSession.presentations.length} cards presented)`);
     }
 
     if (sessionHistory.length === 0) {
-      logger.info('[Session Debug] No completed sessions in history.');
+      logger.print('[Session Debug] No completed sessions in history.');
       return;
     }
 
@@ -402,8 +402,8 @@ export const sessionDebugAPI = {
       history: sessionHistory,
     };
     const json = JSON.stringify(data, null, 2);
-    logger.info('[Session Debug] Session data exported. Copy the returned string or use:');
-    logger.info('  copy(window.skuilder.session.export())');
+    logger.print('[Session Debug] Session data exported. Copy the returned string or use:');
+    logger.print('  copy(window.skuilder.session.export())');
     return json;
   },
 
@@ -412,14 +412,14 @@ export const sessionDebugAPI = {
    */
   clear(): void {
     sessionHistory.length = 0;
-    logger.info('[Session Debug] Session history cleared.');
+    logger.print('[Session Debug] Session history cleared.');
   },
 
   /**
    * Show help.
    */
   help(): void {
-    logger.info(`
+    logger.print(`
 🎯 Session Debug API
 
 Commands:

@@ -237,19 +237,19 @@ export function captureMixerRun(
 function printMixerSummary(run: MixerRunReport): void {
   // eslint-disable-next-line no-console
   console.group(`🎨 Mixer Run: ${run.mixerType}`);
-  logger.info(`Run ID: ${run.runId}`);
-  logger.info(`Time: ${run.timestamp.toISOString()}`);
-  logger.info(
+  logger.print(`Run ID: ${run.runId}`);
+  logger.print(`Time: ${run.timestamp.toISOString()}`);
+  logger.print(
     `Config: limit=${run.requestedLimit}${run.quotaPerSource ? `, quota/source=${run.quotaPerSource}` : ''}`
   );
 
   // eslint-disable-next-line no-console
   console.group(`📥 Input: ${run.sourceSummaries.length} sources`);
   for (const src of run.sourceSummaries) {
-    logger.info(
+    logger.print(
       `  ${src.sourceName || src.sourceId}: ${src.totalCards} cards (${src.reviewCount} reviews, ${src.newCount} new)`
     );
-    logger.info(`    Score range: [${src.scoreRange[0].toFixed(2)}, ${src.scoreRange[1].toFixed(2)}], avg: ${src.avgScore.toFixed(2)}`);
+    logger.print(`    Score range: [${src.scoreRange[0].toFixed(2)}, ${src.scoreRange[1].toFixed(2)}], avg: ${src.avgScore.toFixed(2)}`);
   }
   // eslint-disable-next-line no-console
   console.groupEnd();
@@ -258,7 +258,7 @@ function printMixerSummary(run: MixerRunReport): void {
   console.group(`📤 Output: ${run.finalCount} cards selected (${run.reviewsSelected} reviews, ${run.newSelected} new)`);
   for (const breakdown of run.sourceBreakdowns) {
     const name = breakdown.sourceName || breakdown.sourceId;
-    logger.info(
+    logger.print(
       `  ${name}: ${breakdown.totalSelected} selected (${breakdown.reviewsSelected} reviews, ${breakdown.newSelected} new) - ${breakdown.selectionRate.toFixed(1)}% selection rate`
     );
   }
@@ -285,7 +285,7 @@ export const mixerDebugAPI = {
    */
   showRun(idOrIndex: string | number = 0): void {
     if (runHistory.length === 0) {
-      logger.info('[Mixer Debug] No runs captured yet.');
+      logger.print('[Mixer Debug] No runs captured yet.');
       return;
     }
 
@@ -294,13 +294,13 @@ export const mixerDebugAPI = {
     if (typeof idOrIndex === 'number') {
       run = runHistory[idOrIndex];
       if (!run) {
-        logger.info(`[Mixer Debug] No run found at index ${idOrIndex}. History length: ${runHistory.length}`);
+        logger.print(`[Mixer Debug] No run found at index ${idOrIndex}. History length: ${runHistory.length}`);
         return;
       }
     } else {
       run = runHistory.find((r) => r.runId.endsWith(idOrIndex));
       if (!run) {
-        logger.info(`[Mixer Debug] No run found matching ID '${idOrIndex}'.`);
+        logger.print(`[Mixer Debug] No run found matching ID '${idOrIndex}'.`);
         return;
       }
     }
@@ -320,7 +320,7 @@ export const mixerDebugAPI = {
    */
   explainSourceBalance(): void {
     if (runHistory.length === 0) {
-      logger.info('[Mixer Debug] No runs captured yet.');
+      logger.print('[Mixer Debug] No runs captured yet.');
       return;
     }
 
@@ -329,19 +329,19 @@ export const mixerDebugAPI = {
     // eslint-disable-next-line no-console
     console.group('⚖️ Source Balance Analysis');
 
-    logger.info(`Mixer: ${run.mixerType}`);
-    logger.info(`Requested limit: ${run.requestedLimit}`);
+    logger.print(`Mixer: ${run.mixerType}`);
+    logger.print(`Requested limit: ${run.requestedLimit}`);
     if (run.quotaPerSource) {
-      logger.info(`Quota per source: ${run.quotaPerSource}`);
+      logger.print(`Quota per source: ${run.quotaPerSource}`);
     }
 
     // eslint-disable-next-line no-console
     console.group('Input Distribution:');
     for (const src of run.sourceSummaries) {
       const name = src.sourceName || src.sourceId;
-      logger.info(`${name}:`);
-      logger.info(`  Provided: ${src.totalCards} cards (${src.reviewCount} reviews, ${src.newCount} new)`);
-      logger.info(`  Score range: [${src.scoreRange[0].toFixed(2)}, ${src.scoreRange[1].toFixed(2)}]`);
+      logger.print(`${name}:`);
+      logger.print(`  Provided: ${src.totalCards} cards (${src.reviewCount} reviews, ${src.newCount} new)`);
+      logger.print(`  Score range: [${src.scoreRange[0].toFixed(2)}, ${src.scoreRange[1].toFixed(2)}]`);
     }
     // eslint-disable-next-line no-console
     console.groupEnd();
@@ -350,19 +350,19 @@ export const mixerDebugAPI = {
     console.group('Selection Results:');
     for (const breakdown of run.sourceBreakdowns) {
       const name = breakdown.sourceName || breakdown.sourceId;
-      logger.info(`${name}:`);
-      logger.info(
+      logger.print(`${name}:`);
+      logger.print(
         `  Selected: ${breakdown.totalSelected}/${breakdown.reviewsProvided + breakdown.newProvided} (${breakdown.selectionRate.toFixed(1)}%)`
       );
-      logger.info(`  Reviews: ${breakdown.reviewsSelected}/${breakdown.reviewsProvided}`);
-      logger.info(`  New: ${breakdown.newSelected}/${breakdown.newProvided}`);
+      logger.print(`  Reviews: ${breakdown.reviewsSelected}/${breakdown.reviewsProvided}`);
+      logger.print(`  New: ${breakdown.newSelected}/${breakdown.newProvided}`);
 
       // Identify potential issues
       if (breakdown.reviewsProvided > 0 && breakdown.reviewsSelected === 0) {
-        logger.info(`  ⚠️ Had reviews but none selected!`);
+        logger.print(`  ⚠️ Had reviews but none selected!`);
       }
       if (breakdown.totalSelected === 0 && breakdown.reviewsProvided + breakdown.newProvided > 0) {
-        logger.info(`  ⚠️ Had cards but none selected!`);
+        logger.print(`  ⚠️ Had cards but none selected!`);
       }
     }
     // eslint-disable-next-line no-console
@@ -374,11 +374,11 @@ export const mixerDebugAPI = {
     const maxDeviation = Math.max(...selectionRates.map((r) => Math.abs(r - avgRate)));
 
     if (maxDeviation > 20) {
-      logger.info(`\n⚠️ Significant imbalance detected (max deviation: ${maxDeviation.toFixed(1)}%)`);
-      logger.info('Possible causes:');
-      logger.info('  - Score range differences between sources');
-      logger.info('  - One source has much better quality cards');
-      logger.info('  - Different card availability (reviews vs new)');
+      logger.print(`\n⚠️ Significant imbalance detected (max deviation: ${maxDeviation.toFixed(1)}%)`);
+      logger.print('Possible causes:');
+      logger.print('  - Score range differences between sources');
+      logger.print('  - One source has much better quality cards');
+      logger.print('  - Different card availability (reviews vs new)');
     }
 
     // eslint-disable-next-line no-console
@@ -390,7 +390,7 @@ export const mixerDebugAPI = {
    */
   compareScores(): void {
     if (runHistory.length === 0) {
-      logger.info('[Mixer Debug] No runs captured yet.');
+      logger.print('[Mixer Debug] No runs captured yet.');
       return;
     }
 
@@ -419,8 +419,8 @@ export const mixerDebugAPI = {
     const avgDiff = Math.max(...avgScores) - Math.min(...avgScores);
 
     if (rangeDiff > 0.3 || avgDiff > 0.2) {
-      logger.info('\n⚠️ Significant score distribution differences detected');
-      logger.info(
+      logger.print('\n⚠️ Significant score distribution differences detected');
+      logger.print(
         'This may cause one source to dominate selection if using global sorting (not quota-based)'
       );
     }
@@ -440,24 +440,24 @@ export const mixerDebugAPI = {
 
         // eslint-disable-next-line no-console
         console.group(`🎴 Card: ${cardId}`);
-        logger.info(`Course: ${card.courseId}`);
-        logger.info(`Source: ${source?.sourceName || source?.sourceId || 'unknown'}`);
-        logger.info(`Origin: ${card.origin}`);
-        logger.info(`Score: ${card.score.toFixed(3)}`);
+        logger.print(`Course: ${card.courseId}`);
+        logger.print(`Source: ${source?.sourceName || source?.sourceId || 'unknown'}`);
+        logger.print(`Origin: ${card.origin}`);
+        logger.print(`Score: ${card.score.toFixed(3)}`);
         if (card.rankInSource) {
-          logger.info(`Rank in source: #${card.rankInSource}`);
+          logger.print(`Rank in source: #${card.rankInSource}`);
         }
         if (card.rankInMix) {
-          logger.info(`Rank in mixed results: #${card.rankInMix}`);
+          logger.print(`Rank in mixed results: #${card.rankInMix}`);
         }
-        logger.info(`Selected: ${card.selected ? 'Yes ✅' : 'No ❌'}`);
+        logger.print(`Selected: ${card.selected ? 'Yes ✅' : 'No ❌'}`);
 
         if (!card.selected && card.rankInSource) {
-          logger.info('\nWhy not selected:');
+          logger.print('\nWhy not selected:');
           if (run.quotaPerSource && card.rankInSource > run.quotaPerSource) {
-            logger.info(`  - Ranked #${card.rankInSource} in source, but quota was ${run.quotaPerSource}`);
+            logger.print(`  - Ranked #${card.rankInSource} in source, but quota was ${run.quotaPerSource}`);
           }
-          logger.info('  - Check score compared to selected cards using .showRun()');
+          logger.print('  - Check score compared to selected cards using .showRun()');
         }
 
         // eslint-disable-next-line no-console
@@ -465,7 +465,7 @@ export const mixerDebugAPI = {
         return;
       }
     }
-    logger.info(`[Mixer Debug] Card '${cardId}' not found in recent runs.`);
+    logger.print(`[Mixer Debug] Card '${cardId}' not found in recent runs.`);
   },
 
   /**
@@ -473,7 +473,7 @@ export const mixerDebugAPI = {
    */
   listRuns(): void {
     if (runHistory.length === 0) {
-      logger.info('[Mixer Debug] No runs captured yet.');
+      logger.print('[Mixer Debug] No runs captured yet.');
       return;
     }
 
@@ -496,8 +496,8 @@ export const mixerDebugAPI = {
    */
   export(): string {
     const json = JSON.stringify(runHistory, null, 2);
-    logger.info('[Mixer Debug] Run history exported. Copy the returned string or use:');
-    logger.info('  copy(window.skuilder.mixer.export())');
+    logger.print('[Mixer Debug] Run history exported. Copy the returned string or use:');
+    logger.print('  copy(window.skuilder.mixer.export())');
     return json;
   },
 
@@ -506,14 +506,14 @@ export const mixerDebugAPI = {
    */
   clear(): void {
     runHistory.length = 0;
-    logger.info('[Mixer Debug] Run history cleared.');
+    logger.print('[Mixer Debug] Run history cleared.');
   },
 
   /**
    * Show help.
    */
   help(): void {
-    logger.info(`
+    logger.print(`
 🎨 Mixer Debug API
 
 Commands:

@@ -478,16 +478,16 @@ function formatProvenance(provenance: StrategyContribution[]): string {
 function printRunSummary(run: PipelineRunReport): void {
   // eslint-disable-next-line no-console
   console.group(`🔍 Pipeline Run: ${run.courseId} (${run.courseName || 'unnamed'})`);
-  logger.info(`Run ID: ${run.runId}`);
-  logger.info(`Time: ${run.timestamp.toISOString()}`);
-  logger.info(`User ELO: ${run.userElo ?? 'unknown'}`);
-  logger.info(`Generator: ${run.generatorName} → ${run.generatedCount} candidates`);
+  logger.print(`Run ID: ${run.runId}`);
+  logger.print(`Time: ${run.timestamp.toISOString()}`);
+  logger.print(`User ELO: ${run.userElo ?? 'unknown'}`);
+  logger.print(`Generator: ${run.generatorName} → ${run.generatedCount} candidates`);
 
   if (run.generators && run.generators.length > 0) {
     // eslint-disable-next-line no-console
     console.group('Generator breakdown:');
     for (const g of run.generators) {
-      logger.info(
+      logger.print(
         `  ${g.name}: ${g.cardCount} cards (${g.newCount} new, ${g.reviewCount} reviews, top: ${g.topScore.toFixed(2)})`
       );
     }
@@ -499,13 +499,13 @@ function printRunSummary(run: PipelineRunReport): void {
     // eslint-disable-next-line no-console
     console.group('Filter impact:');
     for (const f of run.filters) {
-      logger.info(`  ${f.name}: ↑${f.boosted} ↓${f.penalized} =${f.passed} ✕${f.removed}`);
+      logger.print(`  ${f.name}: ↑${f.boosted} ↓${f.penalized} =${f.passed} ✕${f.removed}`);
     }
     // eslint-disable-next-line no-console
     console.groupEnd();
   }
 
-  logger.info(
+  logger.print(
     `Result: ${run.finalCount} cards selected (${run.newSelected} new, ${run.reviewsSelected} reviews)`
   );
   // eslint-disable-next-line no-console
@@ -805,7 +805,7 @@ export const pipelineDebugAPI = {
    */
   showRun(idOrIndex: string | number = 0): void {
     if (runHistory.length === 0) {
-      logger.info('[Pipeline Debug] No runs captured yet.');
+      logger.print('[Pipeline Debug] No runs captured yet.');
       return;
     }
 
@@ -814,7 +814,7 @@ export const pipelineDebugAPI = {
     if (typeof idOrIndex === 'number') {
       run = runHistory[idOrIndex];
       if (!run) {
-        logger.info(
+        logger.print(
           `[Pipeline Debug] No run found at index ${idOrIndex}. History length: ${runHistory.length}`
         );
         return;
@@ -822,7 +822,7 @@ export const pipelineDebugAPI = {
     } else {
       run = runHistory.find((r) => r.runId.endsWith(idOrIndex));
       if (!run) {
-        logger.info(`[Pipeline Debug] No run found matching ID '${idOrIndex}'.`);
+        logger.print(`[Pipeline Debug] No run found matching ID '${idOrIndex}'.`);
         return;
       }
     }
@@ -846,16 +846,16 @@ export const pipelineDebugAPI = {
       if (card) {
         // eslint-disable-next-line no-console
         console.group(`🎴 Card: ${cardId}`);
-        logger.info(`Course: ${card.courseId}`);
-        logger.info(`Origin: ${card.origin}`);
-        logger.info(`Card ELO: ${card.cardElo ?? 'unknown'} | User ELO: ${run.userElo ?? 'unknown'}`);
-        logger.info(`Final score: ${card.finalScore.toFixed(3)}`);
-        logger.info(`Selected: ${card.selected ? 'Yes ✅' : 'No ❌'}`);
+        logger.print(`Course: ${card.courseId}`);
+        logger.print(`Origin: ${card.origin}`);
+        logger.print(`Card ELO: ${card.cardElo ?? 'unknown'} | User ELO: ${run.userElo ?? 'unknown'}`);
+        logger.print(`Final score: ${card.finalScore.toFixed(3)}`);
+        logger.print(`Selected: ${card.selected ? 'Yes ✅' : 'No ❌'}`);
         if (card.tags && card.tags.length > 0) {
-          logger.info(`Tags (${card.tags.length}): ${card.tags.join(', ')}`);
+          logger.print(`Tags (${card.tags.length}): ${card.tags.join(', ')}`);
         }
-        logger.info('Provenance:');
-        logger.info(formatProvenance(card.provenance));
+        logger.print('Provenance:');
+        logger.print(formatProvenance(card.provenance));
         // eslint-disable-next-line no-console
         console.groupEnd();
         return;
@@ -866,13 +866,13 @@ export const pipelineDebugAPI = {
     // breadcrumb rather than a flat "not found".
     const runsWithTails = runHistory.filter((r) => r.discardedTail && r.discardedTail.count > 0);
     if (runsWithTails.length > 0) {
-      logger.info(
+      logger.print(
         `[Pipeline Debug] Card '${cardId}' not found in retained cards. ` +
           `${runsWithTails.length} run(s) have discarded tails that were not retained — ` +
           `the card may have been a low-score candidate. See run.discardedTail for ranges.`
       );
     } else {
-      logger.info(`[Pipeline Debug] Card '${cardId}' not found in recent runs.`);
+      logger.print(`[Pipeline Debug] Card '${cardId}' not found in recent runs.`);
     }
   },
 
@@ -881,7 +881,7 @@ export const pipelineDebugAPI = {
    */
   explainReviews(): void {
     if (runHistory.length === 0) {
-      logger.info('[Pipeline Debug] No runs captured yet.');
+      logger.print('[Pipeline Debug] No runs captured yet.');
       return;
     }
 
@@ -896,10 +896,10 @@ export const pipelineDebugAPI = {
       const selectedReviews = allReviews.filter((c) => c.selected);
 
       if (allReviews.length === 0) {
-        logger.info('❌ No reviews were generated. Check SRS logs for why.');
+        logger.print('❌ No reviews were generated. Check SRS logs for why.');
       } else if (selectedReviews.length === 0) {
-        logger.info(`⚠️ ${allReviews.length} reviews generated but none selected.`);
-        logger.info('Possible reasons:');
+        logger.print(`⚠️ ${allReviews.length} reviews generated but none selected.`);
+        logger.print('Possible reasons:');
 
         // Check if new cards scored higher
         const topNewScore = Math.max(
@@ -909,7 +909,7 @@ export const pipelineDebugAPI = {
         const topReviewScore = Math.max(...allReviews.map((c) => c.finalScore), 0);
 
         if (topReviewScore < topNewScore) {
-          logger.info(
+          logger.print(
             `  - New cards scored higher (top new: ${topNewScore.toFixed(2)}, top review: ${topReviewScore.toFixed(2)})`
           );
         }
@@ -917,15 +917,15 @@ export const pipelineDebugAPI = {
         // Show top review that didn't make it
         const topReview = allReviews.sort((a, b) => b.finalScore - a.finalScore)[0];
         if (topReview) {
-          logger.info(`  - Top review score: ${topReview.finalScore.toFixed(3)}`);
-          logger.info('  - Its provenance:');
-          logger.info(formatProvenance(topReview.provenance));
+          logger.print(`  - Top review score: ${topReview.finalScore.toFixed(3)}`);
+          logger.print('  - Its provenance:');
+          logger.print(formatProvenance(topReview.provenance));
         }
       } else {
-        logger.info(`✅ ${selectedReviews.length}/${allReviews.length} reviews selected.`);
-        logger.info('Top selected review:');
+        logger.print(`✅ ${selectedReviews.length}/${allReviews.length} reviews selected.`);
+        logger.print('Top selected review:');
         const topSelected = selectedReviews.sort((a, b) => b.finalScore - a.finalScore)[0];
-        logger.info(formatProvenance(topSelected.provenance));
+        logger.print(formatProvenance(topSelected.provenance));
       }
 
       // eslint-disable-next-line no-console
@@ -948,7 +948,7 @@ export const pipelineDebugAPI = {
    */
   showPrescribed(groupId?: string): void {
     if (runHistory.length === 0) {
-      logger.info('[Pipeline Debug] No runs captured yet.');
+      logger.print('[Pipeline Debug] No runs captured yet.');
       return;
     }
 
@@ -961,7 +961,7 @@ export const pipelineDebugAPI = {
     console.group(`🧭 Prescribed Debug (${run.courseId})`);
 
     if (prescribedCards.length === 0) {
-      logger.info('No prescribed-generated cards were present in the most recent run.');
+      logger.print('No prescribed-generated cards were present in the most recent run.');
       // eslint-disable-next-line no-console
       console.groupEnd();
       return;
@@ -1003,7 +1003,7 @@ export const pipelineDebugAPI = {
       .sort((a, b) => Number(b.finalScore) - Number(a.finalScore));
 
     if (rows.length === 0) {
-      logger.info(
+      logger.print(
         `[Pipeline Debug] No prescribed cards matched group '${groupId}' in the most recent run.`
       );
       // eslint-disable-next-line no-console
@@ -1042,18 +1042,18 @@ export const pipelineDebugAPI = {
       }
     }
 
-    logger.info(`Prescribed cards in run: ${rows.length}`);
-    logger.info(`Selected prescribed cards: ${selectedRows.length}`);
-    logger.info(
+    logger.print(`Prescribed cards in run: ${rows.length}`);
+    logger.print(`Selected prescribed cards: ${selectedRows.length}`);
+    logger.print(
       `Blocked prescribed targets referenced: ${blockedTargetSet.size > 0 ? [...blockedTargetSet].join(', ') : 'none'}`
     );
-    logger.info(
+    logger.print(
       `Resolved support tags referenced: ${supportTagSet.size > 0 ? [...supportTagSet].join(', ') : 'none'}`
     );
-    logger.info(
+    logger.print(
       `Authored support cards emitted: ${authoredSupportSet.size > 0 ? [...authoredSupportSet].join(', ') : 'none'}`
     );
-    logger.info(
+    logger.print(
       `Discovered support cards emitted: ${discoveredSupportSet.size > 0 ? [...discoveredSupportSet].join(', ') : 'none'}`
     );
 
@@ -1066,7 +1066,7 @@ export const pipelineDebugAPI = {
    */
   listRuns(): void {
     if (runHistory.length === 0) {
-      logger.info('[Pipeline Debug] No runs captured yet.');
+      logger.print('[Pipeline Debug] No runs captured yet.');
       return;
     }
 
@@ -1089,8 +1089,8 @@ export const pipelineDebugAPI = {
    */
   export(): string {
     const json = JSON.stringify(runHistory, null, 2);
-    logger.info('[Pipeline Debug] Run history exported. Copy the returned string or use:');
-    logger.info('  copy(window.skuilder.pipeline.export())');
+    logger.print('[Pipeline Debug] Run history exported. Copy the returned string or use:');
+    logger.print('  copy(window.skuilder.pipeline.export())');
     return json;
   },
 
@@ -1099,7 +1099,7 @@ export const pipelineDebugAPI = {
    */
   clear(): void {
     runHistory.length = 0;
-    logger.info('[Pipeline Debug] Run history cleared.');
+    logger.print('[Pipeline Debug] Run history cleared.');
   },
 
   /**
@@ -1111,7 +1111,7 @@ export const pipelineDebugAPI = {
   showRegistry(): void {
     const names = getRegisteredNavigatorNames();
     if (names.length === 0) {
-      logger.info('[Pipeline Debug] Navigator registry is empty.');
+      logger.print('[Pipeline Debug] Navigator registry is empty.');
       return;
     }
 
@@ -1147,26 +1147,26 @@ export const pipelineDebugAPI = {
     this.showRegistry();
 
     if (runHistory.length === 0) {
-      logger.info('[Pipeline Debug] No pipeline runs captured yet — cannot show strategy doc mapping.');
+      logger.print('[Pipeline Debug] No pipeline runs captured yet — cannot show strategy doc mapping.');
       return;
     }
 
     const run = runHistory[0];
     // eslint-disable-next-line no-console
     console.group('🔌 Pipeline Strategy Mapping (last run)');
-    logger.info(`Generator: ${run.generatorName}`);
+    logger.print(`Generator: ${run.generatorName}`);
     if (run.generators && run.generators.length > 0) {
       for (const g of run.generators) {
-        logger.info(`  📥 ${g.name}: ${g.cardCount} cards (${g.newCount} new, ${g.reviewCount} reviews)`);
+        logger.print(`  📥 ${g.name}: ${g.cardCount} cards (${g.newCount} new, ${g.reviewCount} reviews)`);
       }
     }
     if (run.filters.length > 0) {
-      logger.info('Filters:');
+      logger.print('Filters:');
       for (const f of run.filters) {
-        logger.info(`  🔸 ${f.name}: ↑${f.boosted} ↓${f.penalized} =${f.passed} ✕${f.removed}`);
+        logger.print(`  🔸 ${f.name}: ↑${f.boosted} ↓${f.penalized} =${f.passed} ✕${f.removed}`);
       }
     } else {
-      logger.info('Filters: (none)');
+      logger.print('Filters: (none)');
     }
     // eslint-disable-next-line no-console
     console.groupEnd();
@@ -1182,7 +1182,7 @@ export const pipelineDebugAPI = {
    */
   async diagnoseCardSpace(threshold?: number): Promise<CardSpaceDiagnosis | null> {
     if (!_activePipeline) {
-      logger.info('[Pipeline Debug] No active pipeline. Run a session first.');
+      logger.print('[Pipeline Debug] No active pipeline. Run a session first.');
       return null;
     }
     return _activePipeline.diagnoseCardSpace({ threshold });
@@ -1196,13 +1196,13 @@ export const pipelineDebugAPI = {
    */
   async showTagElo(tagFilter?: string | string[]): Promise<void> {
     if (!_activePipeline) {
-      logger.info('[Pipeline Debug] No active pipeline. Run a session first.');
+      logger.print('[Pipeline Debug] No active pipeline. Run a session first.');
       return;
     }
     const status = await _activePipeline.getTagEloStatus(tagFilter);
     const entries = Object.entries(status).sort(([a], [b]) => a.localeCompare(b));
     if (entries.length === 0) {
-      logger.info(`[Pipeline Debug] No tag ELO data found${tagFilter ? ` for pattern: ${tagFilter}` : ''}.`);
+      logger.print(`[Pipeline Debug] No tag ELO data found${tagFilter ? ` for pattern: ${tagFilter}` : ''}.`);
       return;
     }
     // eslint-disable-next-line no-console
@@ -1304,7 +1304,7 @@ export const pipelineDebugAPI = {
    * Show help.
    */
   help(): void {
-    logger.info(`
+    logger.print(`
 🔧 Pipeline Debug API
 
 Commands:
