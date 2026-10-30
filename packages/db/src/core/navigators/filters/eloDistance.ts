@@ -159,7 +159,7 @@ export function mountMultiDimEloToggle(): void {
       } catch (e) {
         logger.warn(`[EloDistance] multiDimElo not persisted (localStorage unavailable): ${e}`);
       }
-      logger.info(
+      logger.print(
         `[EloDistance] multiDimElo ${multiDimElo ? 'on: tag-aware' : 'off: per strategy config'}` +
           ' ELO distance from the next replan'
       );
