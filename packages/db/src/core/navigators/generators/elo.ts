@@ -83,9 +83,13 @@ export default class ELONavigator extends ContentNavigator implements CardGenera
     ]);
     const notNew = new Set([...activeCards.map((ac) => ac.cardID), ...seenCards]);
     // const tActive = performance.now(); // [perf] parked
+    // Centre the window on this generator's user's ELO, passed explicitly:
+    // `elo: 'user'` would have the course DB resolve its own notion of the
+    // current user, which isn't necessarily the user this pipeline runs for
+    // (e.g. an admin running a learner's pipeline read-only).
     const newCards = (
       await this.course.getCardsCenteredAtELO(
-        { limit, elo: 'user' },
+        { limit, elo: userGlobalElo },
         (c: QualifiedCardID) => !notNew.has(c.cardID)
       )
     ).map((c) => ({ ...c, status: 'new' as const }));
