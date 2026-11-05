@@ -6218,6 +6218,7 @@ __metadata:
     "@vue-skuilder/db": "workspace:*"
     "@vue/eslint-config-typescript": "npm:^14.4.0"
     "@vue/test-utils": "npm:^2.4.6"
+    canvas-confetti: "npm:^1.9.3"
     cypress: "npm:^15.14.0"
     cypress-vite: "npm:^1.6.0"
     echarts: "npm:6.1.0"

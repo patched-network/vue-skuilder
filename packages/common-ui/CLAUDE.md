@@ -12,15 +12,24 @@ Shared Vue 3 component library providing reusable UI components across vue-skuil
 
 ## Build System
 - **Framework**: Vite with shared configuration (`vite.config.base.js`)
-- **Library Mode**: UMD and ES module outputs
-- **CSS Handling**: Separate CSS bundle with code splitting
-- **Types**: Generated via TypeScript compiler
+- **Library Mode**: ES only, one output file per source module
+  (`preserveModules`), so apps load only the modules they import.
+  `"sideEffects": false` lets their bundlers drop the rest; keep modules free
+  of import-time effects that consumers rely on.
+- **Dependencies**: all external (`vite.externals.js`: every `dependencies` and
+  `peerDependencies` entry and its subpaths). Anything imported must be declared
+  there.
+- **CSS**: one stylesheet, `dist/assets/index.css` (`cssCodeSplit: false`),
+  never imported from JS. Apps import `@vue-skuilder/common-ui/style`.
+- **Admin entry**: second build (`vite.config.admin.js`) into `dist/admin`,
+  single file, its own `admin.css`.
+- **Types**: vite-plugin-dts
 
 ### Package Exports
-- **Main**: UMD build (`./dist/common-ui.umd.js`)
-- **Module**: ES build (`./dist/common-ui.es.js`)
-- **Types**: TypeScript definitions (`./dist/index.d.ts`)
-- **Styles**: CSS bundle (`./dist/assets/index.css`)
+- **Import**: `./dist/index.mjs`
+- **Types**: `./dist/index.d.ts`
+- **Styles**: `./dist/assets/index.css` (`./style`)
+- **Admin**: `./dist/admin/common-ui-admin.es.js` (`./admin`), `./dist/admin/admin.css` (`./admin/style`)
 
 ## Testing
 - **Unit Tests**: Vitest with Vue Testing Library and jsdom
@@ -89,4 +98,5 @@ Shared Vue 3 component library providing reusable UI components across vue-skuil
 ## External Dependencies
 The library externalizes framework dependencies to avoid duplication:
 - `vue`, `vue-router`, `vuetify`, `pinia` are peer dependencies
+- Every other dependency is external too (see Build System)
 - Components expect these to be provided by the consuming application

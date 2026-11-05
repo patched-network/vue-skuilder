@@ -130,12 +130,12 @@ Always resolve to source directories for internal package references:
 - **Minification**: Terser with `keep_classnames: true` for dynamic loading
 - **Deduplication**: Shared Vue, Vuetify, Vue Router, Pinia instances
 - **Source Maps**: Enabled for all builds
-- **CSS Code Splitting**: Enabled for component libraries
+- **CSS**: component libraries emit one stylesheet each (`/style` export)
 
 ### Package-Specific Vite Usage
 - **platform-ui**: Application build with PWA, distinct port 5173
 - **standalone-ui**: Application build, distinct port 6173
-- **common-ui**: Library build with UMD/ES formats
+- **common-ui**: Library build, ES only, one file per source module
 - **courses**: Library build with asset handling
 
 ## Package Architecture

@@ -5,14 +5,12 @@
   },
   "version": "0.2.35",
   "sideEffects": false,
-  "main": "./dist/common-ui.umd.js",
-  "module": "./dist/common-ui.es.js",
+  "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/common-ui.es.js",
-      "require": "./dist/common-ui.umd.js"
+      "import": "./dist/index.mjs"
     },
     "./admin": {
       "types": "./dist/admin/index.d.ts",
@@ -49,6 +47,7 @@
     "@vojtechlanka/vue-tags-input": "^3",
     "@vue-skuilder/common": "workspace:*",
     "@vue-skuilder/db": "workspace:*",
+    "canvas-confetti": "^1.9.3",
     "echarts": "6.1.0",
     "highlight.js": "^11.0.1",
     "marked": "^15.0.6",

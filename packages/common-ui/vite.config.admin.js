@@ -12,7 +12,7 @@ import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import { resolve } from 'path';
 import { createBaseResolve } from '../../vite.config.base.js';
-import { external } from './vite.externals.js';
+import { externals } from './vite.externals.js';
 
 export default defineConfig({
   build: {
@@ -27,7 +27,7 @@ export default defineConfig({
       cssFileName: 'admin',
     },
     rolldownOptions: {
-      external: [...external, '@vue-skuilder/common-ui', '@vue-skuilder/db/diagnostics'],
+      external: externals(['@vue-skuilder/common-ui']),
       output: {
         keepNames: true,
       },

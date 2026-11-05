@@ -58,31 +58,41 @@ build: {
 
 That builds in ~3 s to 108 JS files, but as is it has two defects:
 
-- [ ] **The stylesheet disappears.** With `preserveModules` and
+- [x] **The stylesheet disappears.** With `preserveModules` and
   `cssCodeSplit: true` the build writes 26 per-component CSS files and no
   `dist/assets/index.css`; nothing imports them and `./style` points at a file
   that no longer exists. Build one stylesheet at the same path
   (`cssCodeSplit: false`; it's ~10 KB). Keep CSS out of the JS modules: with
   `"sideEffects": false`, a consumer drops `import "./x.css"`.
-- [ ] **Bundled dependencies land in `dist/node_modules/`** (marked,
+- [x] **Bundled dependencies land in `dist/node_modules/`** (marked,
   highlight.js, mousetrap, canvas-confetti, the highlight.js Vue plugin), and
   `yarn npm publish` leaves nested `node_modules` out (`yarn pack --dry-run`
   shows it): the release would ship broken imports. Make every dependency
   external.
-- [ ] Declare `canvas-confetti` in `dependencies`:
+- [x] Declare `canvas-confetti` in `dependencies`:
   `src/components/StudySession.vue:113` imports it, and it only works today
   because it's bundled.
-- [ ] Drop the UMD build (`main`, `exports["."].require`): nothing in the repo
+- [x] Drop the UMD build (`main`, `exports["."].require`): nothing in the repo
   uses it, and it can't preserve modules.
-- [ ] Point `exports["."].import` / `module` at the new entry, and the production
+- [x] Point `exports["."].import` / `module` at the new entry, and the production
   alias in [vite.config.base.js](../../vite.config.base.js) (line 47, currently
   `dist/common-ui.es.js`).
-- [ ] Types as now.
-- [ ] Update [CLAUDE.md](../../CLAUDE.md): it describes common-ui as a "UMD/ES"
+- [x] Types as now.
+- [x] Update [CLAUDE.md](../../CLAUDE.md): it describes common-ui as a "UMD/ES"
   library build with CSS code splitting.
-- [ ] `"sideEffects": false` stays correct: no module does anything on import
+- [x] `"sideEffects": false` stays correct: no module does anything on import
   that a consumer relies on (the one top-level call, `hljs.registerLanguage`,
   matters only to the module making it). Re-check if that changes.
+
+Done as specified, with:
+- Entry and modules are `.mjs`, not `.js`: common-ui has no `"type"`, so a
+  `.js` file is CommonJS to Node (e.g. a consumer's vitest).
+- Externals are derived from `dependencies` + `peerDependencies` (and
+  subpaths) in `vite.externals.js`, shared with the admin build. That drops
+  echarts from the admin bundle (958 → 88 KB). vuedraggable reaches apps via
+  `@vojtechlanka/vue-tags-input` (its dependency), imported only by `TagsInput.vue`.
+- Output: 93 modules, `dist/assets/index.css` ~10 KB, holding what
+  `MarkdownRenderer.css` used to.
 
 **A bug in the published 0.2.35 this also fixes:**
 `dist/assets/MarkdownRenderer.css` (the fill-in input's `UserInputString`
@@ -93,9 +103,10 @@ after: a fill-in-the-blank card and a code block in a production build. (LP
 renders neither, so it's never seen it.)
 
 **Before release:**
-- [ ] `yarn pack --dry-run`: the file list has every module and the stylesheet.
+- [x] `yarn pack --dry-run`: the file list has every module and the stylesheet.
 - [ ] Production builds of platform-ui and standalone-ui, a fill-in card and a
-  code block checked in each.
+  code block checked in each. (Both build; both CSS bundles now contain
+  `.user-input-string` and the `.hljs` theme. The look is still to check.)
 - [ ] LP builds against the release (its side is ready: no
   `await import("@vue-skuilder/common-ui")` of the barrel, which would load all
   of it as one chunk; courseware loaded lazily and destructured in its own

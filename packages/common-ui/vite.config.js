@@ -1,10 +1,19 @@
 // packages/common-ui/vite.config.js
+//
+// ES only, one output file per source module (preserveModules), so an app
+// that imports a few things from common-ui loads only those modules and what
+// they import. "sideEffects": false in package.json lets the app's bundler
+// drop the rest.
+//
+// CSS is one stylesheet, dist/assets/index.css (the `./style` export), never
+// imported from JS: under "sideEffects": false a consumer would drop a
+// module's `import './x.css'`.
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import dts from 'vite-plugin-dts';
 import { resolve } from 'path';
 import { createBaseResolve } from '../../vite.config.base.js';
-import { external, globals } from './vite.externals.js';
+import { externals } from './vite.externals.js';
 
 export default defineConfig({
   build: {
@@ -12,23 +21,20 @@ export default defineConfig({
     sourcemap: true,
     lib: {
       entry: resolve(__dirname, 'src/index.ts'),
-      name: 'VueSkuilderCommonUI',
-      fileName: (format) => `common-ui.${format}.js`,
+      formats: ['es'],
+      cssFileName: 'index',
     },
     rolldownOptions: {
-      // External packages that shouldn't be bundled
-      external,
+      external: externals(),
       output: {
-        globals,
         keepNames: true,
-        // Preserve CSS in the output bundlest
-        assetFileNames: (assetInfo) => {
-          return `assets/[name][extname]`;
-        },
+        preserveModules: true,
+        preserveModulesRoot: 'src',
+        entryFileNames: '[name].mjs',
+        assetFileNames: 'assets/[name][extname]',
       },
     },
-    // This is crucial for component libraries - allow CSS to be in chunks
-    cssCodeSplit: true,
+    cssCodeSplit: false,
   },
   plugins: [
     vue(),
