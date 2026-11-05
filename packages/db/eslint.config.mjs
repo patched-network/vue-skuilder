@@ -3,7 +3,15 @@ import backendConfig from '../../eslint.config.backend.mjs';
 export default [
   ...backendConfig,
   {
-    ignores: ['node_modules/**', 'dist/**', 'eslint.config.mjs', 'tsup.config.ts', 'vitest.config.ts'],
+    ignores: [
+      'node_modules/**',
+      'dist/**',
+      'eslint.config.mjs',
+      'tsup.config.ts',
+      'vitest.config.ts',
+      'rolldown.config.mjs',
+      'build.entries.mjs',
+    ],
   },
   {
     languageOptions: {
