@@ -14,13 +14,6 @@ import { logger } from '@db/util/logger';
 import pouch from './pouchdb-setup';
 
 import { ScheduledCard } from '@db/core/types/user';
-import process from 'process';
-
-const isBrowser = typeof window !== 'undefined';
-
-if (isBrowser) {
-  (window as any).process = process; // required as a fix for pouchdb - see #18
-}
 
 const expiryDocID: string = 'GuestAccountExpirationDate';
 

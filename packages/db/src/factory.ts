@@ -1,7 +1,6 @@
 // db/src/factory.ts
 
 import { DataLayerProvider } from './core/interfaces';
-import { BaseUser } from './impl/common';
 import { logger } from './util/logger';
 import { StaticCourseManifest } from './util/packer/types';
 import { initializeNavigatorRegistry } from './core/navigators';
@@ -103,6 +102,9 @@ export async function initializeDataLayer(config: DataLayerConfig): Promise<Data
       // Create a sync strategy instance and authenticate
       const syncStrategy = new CouchDBSyncStrategy();
 
+      // Lazy, like the imports around it: a static import pulls moment and
+      // PouchDB into every app's boot.
+      const { BaseUser } = await import('./impl/common/BaseUserDB');
       const user = await BaseUser.instance(syncStrategy, config.options.COUCHDB_USERNAME);
       const authResult = await user.login(
         config.options.COUCHDB_USERNAME,

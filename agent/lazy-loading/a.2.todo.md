@@ -41,7 +41,9 @@ Every app on the framework pays the same.
   `require('fs')` and silently wrote nothing from ESM (the CLI's MCP debug
   log); now `process.getBuiltinModule`.
 - [ ] In LP, measure whether zod (~85 KB raw with zod-to-json-schema) leaves the
-  boot; only db's `courseConfigRegistration` uses it.
+  boot; only db's `courseConfigRegistration` uses it. (db side: with §3's
+  per-module build zod is off the `initializeDataLayer`/`getDataLayer` path;
+  confirm nothing else in LP's boot reaches it.)
 
 ## 2. `common-ui`: one output file per source module
 
@@ -117,7 +119,7 @@ renders neither, so it's never seen it.)
 Its payoff for LP depends on LP mounting before the data layer (LP's own
 follow-up), so this can come after 1–2.
 
-- [ ] `src/factory.ts:4` imports `BaseUser` statically; it's used only at line
+- [x] `src/factory.ts:4` imports `BaseUser` statically; it's used only at line
   106, inside the couch branch, where lines 91, 101 and 120 already use
   `await import(...)`. Make it lazy too. The static import pulls moment (via
   BaseUserDB) and PouchDB (via userDBHelpers → pouchdb-setup) back in.
@@ -125,12 +127,27 @@ follow-up), so this can come after 1–2.
   `getDataLayer`), lazy imports as separate chunks: always loaded at boot,
   168 of 220 KB as is (PouchDB ×3, moment, uuid, cross-fetch, common); 32 KB
   with `BaseUser` lazy.
-- [ ] An ESM build that keeps modules. Today's single-file tsup build
+- [x] An ESM build that keeps modules. Today's single-file tsup build
   (`splitting: false`) undoes those lazy imports anyway. tsup's unbundled mode
   leaves the `@db/` path aliases unresolved (31 files use them), so Rolldown
   with `preserveModules`, as for common-ui. The CommonJS build can stay one
   bundle (Node and tests only).
-- [ ] `sideEffects` as a list, **not `false`** (a.1's T2.1 proposed `false`,
+
+  Done: `rolldown.config.mjs` (98 modules; `@db/` aliases via tsconfig `paths`),
+  tsup for CommonJS + types; entries shared in `build.entries.mjs`. Measured as
+  above (esbuild, LP's two boot imports, minified, lazy imports as chunks):
+  boot **606 KB / 185 KB gzip → 31 KB / 12 KB gzip**; zod is no longer on
+  that path. Still fetched right after while LP awaits `initializeDataLayer`
+  before mounting (3b).
+
+  On the way: the navigator registry's fallback
+  (`import(`./generators/${name}${ext}`)`) became a glob over the dist
+  directory, matching `.map`/`.d.ts` files (esbuild fails on it; Vite likely
+  too). Specifiers are now built at runtime. The fallback never matched
+  published `.mjs` files anyway, so it only works from source, as before.
+  Removed dead `study/getCardDataShape.ts` (no importers; the only db →
+  courseware import).
+- [x] `sideEffects` as a list, **not `false`** (a.1's T2.1 proposed `false`,
   which would break things). Modules that act on import:
   - `src/impl/couch/pouchdb-setup.ts` (registers PouchDB plugins)
   - `src/impl/couch/index.ts`: line 22 sets the `window.process` shim PouchDB
@@ -142,8 +159,79 @@ follow-up), so this can come after 1–2.
     `core/navigators/filters/eloDistance.ts:171`, `util/logger.ts:153`.
     Listed only `pouchdb-setup`, these silently vanish from apps that don't
     import them.
-- [ ] **Decision (Colin):** the debug tools: list them in `sideEffects` (today's
-  behaviour, ~40 KB of debugger at boot) or have apps call an explicit mount.
+
+  Done: listed `pouchdb-setup`, the logger, the five debug tools (until the
+  split below), and `**/*.cjs`. Shim moved into `pouchdb-setup.ts`; `process`
+  declared as a dependency (it was imported but undeclared). `localUserDB` is
+  an export, so it is opened only where it's used; `couch/index` isn't listed.
+- [x] **Decided (Colin, 2026-11-05):** the debug tools stop mounting on import.
+  An explicit mount alone saves nothing: each module holds both the
+  *recorders* its importers call (`SessionController` →
+  `startSessionTracking`, `recordCardPresentation`, …; `Pipeline` →
+  `captureRun`, `buildRunReport`, `registerPipelineForDebug`) and the
+  *console API*, and a module whose exports are used stays, mount and all. So:
+  - [ ] Split each tool: recorder (small, static, collects from the start)
+    and console API (formatting, printing, overlay; lazy).
+  - [ ] One always-mounted stub on `window.skuilder.*` (next to the logger's
+    `logLevel`) whose methods `import()` the console API on first call. The
+    existing calls keep working; they return a promise and print a moment
+    later.
+  - [ ] `sideEffects` then lists `pouchdb-setup` and the stub module only.
+  - Expected win: modest; only the console halves move, and only where boot
+    reaches them (`factory.ts` statically imports `initializeNavigatorRegistry`,
+    plausibly → `Pipeline` → `PipelineDebugger`; not traced). Measure, don't
+    assume a.2's "~40 KB".
+
+Order: lazy `BaseUser` and the module-preserving ESM build first, then the
+debug split.
+
+## 3b. Thin session check, so LP can mount before the data layer
+
+Separate item; worth doing only if LP's first render needs nothing beyond
+`loggedIn` / `username` (LP's audit, below).
+
+Today `useAuthStore.init()` → `getDataLayer().getUserDB().isLoggedIn()`,
+which is `!username.startsWith(GuestUsername)`; the username comes from one
+`GET /_session` (cookie auth). No PouchDB is needed for that fact.
+
+- [ ] A small `db` module, no PouchDB: a device-level hint
+  (`localStorage['sk.session'] = { username, at }`, written on login, logout and
+  each session check) for first paint, plus a plain
+  `fetch('/_session', { credentials: 'include' })` to confirm.
+- [ ] The auth store reads the hint, confirms, and hands off to the full data
+  layer when it's up. A stale hint (expired cookie) flips the UI once: fine for
+  a header chip or call-to-action, not for anything that writes.
+
+## Consumer side (LP)
+
+Edits LP needs when it takes these releases. Paths are in the LP repo (checked
+against its `perf-boot` worktree, 2026-11-05).
+
+- [ ] Bump `@vue-skuilder/{common,common-ui,courseware,db,cli}`; drop any
+  scratch alias.
+- [ ] `src/main.ts` (~line 70): the Vuetify list's regeneration recipe greps
+  `node_modules/@vue-skuilder/common-ui/dist/common-ui.es.js`, which no longer
+  exists. Grep the whole tree instead
+  (`grep -rhoE 'V\("v-[a-z-]+' node_modules/@vue-skuilder/common-ui/dist --include='*.mjs'`).
+  The old recipe also missed the `MarkdownRenderer-*.mjs` chunk, so rerun it
+  and diff: LP's list may be short today.
+- [ ] `vite.config.ts`: the `vue` → runtime-build alias comment blames
+  vuedraggable's UMD `require("vue")` "via common-ui". It now arrives only
+  through `TagsInput.vue` (vue-tags-input's dependency). Keep the alias;
+  update the comment. `optimizeDeps.include: ["vuedraggable"]` likewise stays.
+- [ ] Measure the boot after the bump: total JS gzip (prototype: 528 → 423 KB),
+  whether vuedraggable/sortablejs and zod are gone from the entry, and
+  common-ui's share (~15 KB expected).
+- [ ] The production styles fix reaches LP too (fill-in input, code theme). LP
+  renders neither today, so there's nothing to see.
+- [ ] db's per-module build: LP's dev server pre-bundles db differently now
+  (many small modules; `optimizeDeps` may want `@vue-skuilder/db` listed if
+  dev cold start slows). `process` is now db's own dependency, so LP doesn't
+  need to provide it.
+- Later, with 3: the `window.skuilder.*` debug calls become async (they print
+  a moment later). No LP code calls them.
+- Later, with 3b: LP's audit of what its first render needs, then the auth
+  boot change (mount first, data layer after).
 
 ## 4. Release
 
