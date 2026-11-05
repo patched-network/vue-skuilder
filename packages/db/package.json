@@ -6,39 +6,39 @@
   },
   "version": "0.2.35",
   "description": "Database layer for vue-skuilder",
-  "main": "dist/index.js",
+  "main": "dist/index.cjs",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs",
-      "require": "./dist/index.js"
+      "require": "./dist/index.cjs"
     },
     "./core": {
       "types": "./dist/core/index.d.ts",
       "import": "./dist/core/index.mjs",
-      "require": "./dist/core/index.js"
+      "require": "./dist/core/index.cjs"
     },
     "./pouch": {
       "types": "./dist/pouch/index.d.ts",
       "import": "./dist/pouch/index.mjs",
-      "require": "./dist/pouch/index.js"
+      "require": "./dist/pouch/index.cjs"
     },
     "./packer": {
       "types": "./dist/util/packer/index.d.ts",
       "import": "./dist/util/packer/index.mjs",
-      "require": "./dist/util/packer/index.js"
+      "require": "./dist/util/packer/index.cjs"
     },
     "./static": {
       "types": "./dist/impl/static/index.d.ts",
       "import": "./dist/impl/static/index.mjs",
-      "require": "./dist/impl/static/index.js"
+      "require": "./dist/impl/static/index.cjs"
     },
     "./diagnostics": {
       "types": "./dist/diagnostics/index.d.ts",
       "import": "./dist/diagnostics/index.mjs",
-      "require": "./dist/diagnostics/index.js"
+      "require": "./dist/diagnostics/index.cjs"
     }
   },
   "typesVersions": {

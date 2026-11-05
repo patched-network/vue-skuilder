@@ -5,24 +5,25 @@
   },
   "version": "0.2.35",
   "type": "module",
-  "main": "dist/index.js",
+  "sideEffects": false,
+  "main": "dist/index.cjs",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs",
-      "require": "./dist/index.js"
+      "require": "./dist/index.cjs"
     },
     "./docker": {
       "types": "./dist/docker/index.d.ts",
       "import": "./dist/docker/index.mjs",
-      "require": "./dist/docker/index.js"
+      "require": "./dist/docker/index.cjs"
     }
   },
   "scripts": {
-    "build": "rm -rf dist dist-esm && tsc -p tsconfig.cjs.json && tsc -p tsconfig.esm.json && find dist-esm -name '*.js' -exec sed -i \"s/\\.js'/\\.mjs'/g; s/\\.js\\\"/\\.mjs\\\"/g\" {} \\; && find dist-esm -name '*.js' -exec sh -c 'mv \"$1\" \"${1%.js}.mjs\"' _ {} \\; && cp -r dist-esm/* dist/ && rm -rf dist-esm",
-    "dev": "tsc --watch",
+    "build": "node scripts/build.mjs",
+    "dev": "node --watch-path=src scripts/build.mjs",
     "lint": "npx eslint .",
     "lint:fix": "npx eslint . --fix",
     "lint:check": "npx eslint . --max-warnings 0"

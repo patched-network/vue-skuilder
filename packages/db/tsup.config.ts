@@ -21,6 +21,6 @@ export default defineConfig({
   // Session records stamp the framework version (core/versionStamps.ts).
   define: { __SKUILDER_DB_VERSION__: JSON.stringify(version) },
   outExtension: ({ format }) => ({
-    js: format === 'esm' ? '.mjs' : '.js',
+    js: format === 'esm' ? '.mjs' : '.cjs',
   }),
 });

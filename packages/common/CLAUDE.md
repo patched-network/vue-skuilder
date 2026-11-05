@@ -3,28 +3,34 @@
 Shared TypeScript library providing common types, interfaces, and utilities used across all vue-skuilder packages.
 
 ## Commands
-- Build: `yarn workspace @vue-skuilder/common build` (complex dual-format build)
-- Dev: `yarn workspace @vue-skuilder/common dev` (TypeScript watch mode)
+- Build: `yarn workspace @vue-skuilder/common build` (`scripts/build.mjs`)
+- Dev: `yarn workspace @vue-skuilder/common dev` (reruns the build when `src/` changes)
 - Lint: `yarn workspace @vue-skuilder/common lint:fix`
 
 ## Build System
-Complex dual-format build supporting both CommonJS and ESM:
+`scripts/build.mjs` compiles with tsc twice and writes one file per source
+module into `dist/`, both formats side by side:
 
-### Build Process
-1. **CJS Build**: `tsc -p tsconfig.cjs.json` → `dist/`
-2. **ESM Build**: `tsc -p tsconfig.esm.json` → `dist-esm/`  
-3. **File Transformation**: Convert `.js` extensions to `.mjs` for ESM
-4. **File Renaming**: Rename all `.js` files to `.mjs` in ESM build
-5. **Merge**: Copy ESM files to `dist/` alongside CJS files
-6. **Cleanup**: Remove temporary `dist-esm/`
+- `x.mjs` ESM (`tsconfig.esm.json`)
+- `x.cjs` CommonJS (`tsconfig.cjs.json`). Not `.js`: the package is
+  `"type": "module"`, so Node would load a CommonJS `.js` as ESM and fail.
+- `x.d.ts` types, from the ESM pass
+
+It renames what tsc emits and rewrites relative specifiers, sourcemap
+comments and map `file` fields to match.
+
+`"sideEffects": false`: no module does anything on import. Keep it that way, or
+replace it with a list of the modules that do.
 
 ### Package Exports
 - **Types**: `./dist/index.d.ts`
 - **Import (ESM)**: `./dist/index.mjs`
-- **Require (CJS)**: `./dist/index.js`
+- **Require (CJS)**: `./dist/index.cjs`
+- `./docker` subpath likewise (Node only, not in the main index)
 
 ## Dependencies
-- `moment` - Date/time manipulation (only runtime dependency)
+- `moment`: dates
+- `zod`, `zod-to-json-schema`: schemas (db's `courseConfigRegistration`)
 
 ## Package Contents
 
@@ -53,4 +59,4 @@ Complex dual-format build supporting both CommonJS and ESM:
 - **Zero Framework Dependencies**: Pure TypeScript/JavaScript utilities
 - **Universal Compatibility**: Works in Node.js, browsers, and bundlers
 - **Type Safety**: Full TypeScript coverage with strict mode
-- **Minimal Runtime**: Only essential dependencies (moment.js)
+- **Minimal Runtime**: few runtime dependencies (moment, zod)

@@ -97,8 +97,8 @@ Backend packages (`common`, `db`, `express`) follow standardized TypeScript conf
 ### TypeScript Best Practices
 - All backend packages use consistent ES2022 target
 - Strict type checking enabled (noUnusedLocals, noUnusedParameters, etc.)
-- ESM imports use `.mjs` extensions in build outputs
-- CommonJS exports available for Jest testing compatibility
+- Build outputs: ESM as `.mjs`, CommonJS as `.cjs` (packages are `"type": "module"`, so a CommonJS `.js` would be loaded as ESM and break)
+- CommonJS exports serve Node `require` consumers; nothing in the repo uses them
 
 ## Shared Vite Configuration
 Frontend packages use a shared Vite configuration system via `vite.config.base.js`:
