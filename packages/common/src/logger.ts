@@ -150,14 +150,14 @@ export function initializeTuiLogging(): void {
       // eslint-disable-next-line no-console
       warn: console.warn,
       // eslint-disable-next-line no-console
-      info: console.info
+      info: console.info,
     };
 
     const writeToLog = (level: string, args: unknown[]) => {
       const timestamp = new Date().toISOString();
-      const message = args.map(arg =>
-        typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
-      ).join(' ');
+      const message = args
+        .map((arg) => (typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)))
+        .join(' ');
 
       const logEntry = `[${timestamp}] ${level}: ${message}\n`;
 
@@ -182,7 +182,6 @@ export function initializeTuiLogging(): void {
 
     // eslint-disable-next-line no-console
     console.log('TUI logging initialized - logs redirected to', tuiLogFile);
-
   } catch (err) {
     // eslint-disable-next-line no-console
     console.error('Failed to initialize TUI logging:', err);

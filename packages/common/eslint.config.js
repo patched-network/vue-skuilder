@@ -3,7 +3,14 @@ import backendConfig from '../../eslint.config.backend.mjs';
 export default [
   ...backendConfig,
   {
-    ignores: ['node_modules/**', 'dist/**', 'dist-esm/**', 'dist-cjs/**', 'scripts/**', 'eslint.config.js'],
+    ignores: [
+      'node_modules/**',
+      'dist/**',
+      'dist-esm/**',
+      'dist-cjs/**',
+      'scripts/**',
+      'eslint.config.js',
+    ],
   },
   {
     languageOptions: {
