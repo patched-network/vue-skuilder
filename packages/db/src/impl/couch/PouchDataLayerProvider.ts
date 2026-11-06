@@ -28,6 +28,14 @@ export class CouchDataLayerProvider implements DataLayerProvider {
   // or group of courses
   private _courseIDs: string[] = [];
 
+  /**
+   * One CourseDB per course, so its caches (navigator, ELO pool, tags) last
+   * across sessions and card hydration. Rebuilt when the local replica it reads
+   * from changes (becomes ready, or is replaced); a session keeps the instance
+   * it started with.
+   */
+  private _courseDBs = new Map<string, { db: CourseDB; localDB: PouchDB.Database | null }>();
+
   constructor(coursIDs?: string[]) {
     if (coursIDs) {
       this._courseIDs = coursIDs;
@@ -75,7 +83,12 @@ export class CouchDataLayerProvider implements DataLayerProvider {
     // pass it to CourseDB so reads (pipeline, card hydration) run locally.
     // Writes always go to the remote DB (handled inside CourseDB).
     const localDB = CourseSyncService.getInstance().getLocalDB(courseId);
-    return new CourseDB(courseId, async () => this.getUserDB(), localDB ?? undefined);
+    const cached = this._courseDBs.get(courseId);
+    if (cached && cached.localDB === localDB) return cached.db;
+
+    const db = new CourseDB(courseId, async () => this.getUserDB(), localDB ?? undefined);
+    this._courseDBs.set(courseId, { db, localDB });
+    return db;
   }
 
   /**

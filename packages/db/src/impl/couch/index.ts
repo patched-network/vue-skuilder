@@ -69,12 +69,23 @@ function getCouchDB(dbName: string): PouchDB.Database {
   );
 }
 
+const courseDBHandles = new Map<string, PouchDB.Database>();
+
+/**
+ * The remote course DB, one handle per URL for the page's lifetime.
+ *
+ * `skip_setup`: a fresh handle otherwise checks the DB exists (and would try to
+ * create it) before its first request: one extra round trip per handle. Course
+ * DBs are only created server-side (express), never through this handle.
+ */
 export function getCourseDB(courseID: string): PouchDB.Database {
-  // todo: keep a cache of opened courseDBs? need to benchmark this somehow
-  return new pouch(
-    ENV.COUCHDB_SERVER_PROTOCOL + '://' + ENV.COUCHDB_SERVER_URL + 'coursedb-' + courseID,
-    createPouchDBConfig()
-  );
+  const url = ENV.COUCHDB_SERVER_PROTOCOL + '://' + ENV.COUCHDB_SERVER_URL + 'coursedb-' + courseID;
+  let db = courseDBHandles.get(url);
+  if (!db) {
+    db = new pouch(url, { ...createPouchDBConfig(), skip_setup: true });
+    courseDBHandles.set(url, db);
+  }
+  return db;
 }
 
 export async function getLatestVersion() {

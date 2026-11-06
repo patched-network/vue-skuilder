@@ -269,6 +269,12 @@ function pickTopByScore(cards: WeightedCard[], limit: number): WeightedCard[] {
 export default class PrescribedCardsGenerator extends ContentNavigator implements CardGenerator {
   name: string;
   private config: PrescribedConfig;
+  /**
+   * Course-wide reads that don't change within a navigator's lifetime (the
+   * navigator is cached per CourseDB, minutes), loaded once, not per run.
+   */
+  private _cardsByTag: Promise<Map<string, string[]>> | null = null;
+  private _hierarchyConfigs: Promise<HierarchyConfig[]> | null = null;
 
   constructor(
     user: UserDBInterface,
@@ -326,21 +332,7 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
         ? await this.course.getAppliedTagsBatch(allRelevantIds)
         : new Map<string, string[]>();
 
-    const courseTagDocs = await this.course.getCourseTagStubs().catch(
-      () =>
-        ({
-          rows: [],
-          offset: 0,
-          total_rows: 0,
-        }) as unknown as Awaited<ReturnType<CourseDBInterface['getCourseTagStubs']>>
-    );
-    const cardsByTag = new Map<string, string[]>();
-    for (const row of courseTagDocs.rows ?? []) {
-      const tagDoc = row.doc as { name?: string; taggedCards?: string[] } | undefined;
-      if (tagDoc?.name && Array.isArray(tagDoc.taggedCards)) {
-        cardsByTag.set(tagDoc.name, [...tagDoc.taggedCards]);
-      }
-    }
+    const cardsByTag = await this.loadCardsByTag();
 
     const nextState: PrescribedProgressState = {
       updatedAt: isoNow(),
@@ -677,7 +669,39 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
     }
   }
 
-  private async loadHierarchyConfigs(): Promise<HierarchyConfig[]> {
+  /** Tag name → tagged card IDs, from the course's tag docs (once per instance). */
+  private loadCardsByTag(): Promise<Map<string, string[]>> {
+    if (!this._cardsByTag) {
+      this._cardsByTag = this.course
+        .getCourseTagStubs()
+        .then((docs) => {
+          const cardsByTag = new Map<string, string[]>();
+          for (const row of docs.rows ?? []) {
+            const tagDoc = row.doc as { name?: string; taggedCards?: string[] } | undefined;
+            if (tagDoc?.name && Array.isArray(tagDoc.taggedCards)) {
+              cardsByTag.set(tagDoc.name, [...tagDoc.taggedCards]);
+            }
+          }
+          return cardsByTag;
+        })
+        .catch((e) => {
+          // Not cached: the next run retries.
+          this._cardsByTag = null;
+          logger.debug(`[Prescribed] Failed to load tag docs: ${e}`);
+          return new Map<string, string[]>();
+        });
+    }
+    return this._cardsByTag;
+  }
+
+  private loadHierarchyConfigs(): Promise<HierarchyConfig[]> {
+    if (!this._hierarchyConfigs) {
+      this._hierarchyConfigs = this.fetchHierarchyConfigs();
+    }
+    return this._hierarchyConfigs;
+  }
+
+  private async fetchHierarchyConfigs(): Promise<HierarchyConfig[]> {
     try {
       const strategies = await this.course.getAllNavigationStrategies();
       return strategies
@@ -693,6 +717,8 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
           }
         });
     } catch (e) {
+      // Not cached: the next run retries.
+      this._hierarchyConfigs = null;
       logger.debug(`[Prescribed] Failed to load hierarchy configs: ${e}`);
       return [];
     }
