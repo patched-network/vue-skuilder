@@ -6,7 +6,6 @@
     "./dist/util/logger.mjs",
     "./dist/study/SessionDebugger.mjs",
     "./dist/study/MixerDebugger.mjs",
-    "./dist/core/UserDBDebugger.mjs",
     "./dist/core/navigators/PipelineDebugger.mjs",
     "./dist/core/navigators/filters/eloDistance.mjs",
     "**/*.cjs"
