@@ -23,6 +23,15 @@ import type { CourseConfig } from '@vue-skuilder/common';
 // This avoids propagating per-interaction ELO write noise to every syncing
 // client. Each client's local snapshot refreshes on the next page load.
 //
+// A replica that completed a sync on an earlier page load carries a
+// `_local/` marker, and is handed out as ready immediately; its refresh
+// (epoch check, incremental pull, view warming) runs in the background, into
+// the same DB. Sessions may therefore start on the previous visit's data and
+// catch up seconds later. If that refresh finds the remote DB recreated (an
+// epoch change), the replica is NOT destroyed under running readers: the
+// marker is dropped, this page keeps the outdated copy, and the next page
+// load rebuilds it from scratch (the path a device without a replica takes).
+//
 // Live replication is intentionally NOT supported. The remote course DB
 // receives high-frequency ELO updates from all concurrent users — live
 // sync would cause constant re-indexing of local PouchDB views.
@@ -40,6 +49,12 @@ export type CourseSyncState =
   | 'ready'
   | 'disabled'
   | 'error';
+
+/**
+ * Written into the local replica when a sync completes. `_local/` docs don't
+ * replicate, so it describes this device's copy.
+ */
+const SYNC_MARKER_ID = '_local/sk-course-sync-complete';
 
 /**
  * Detailed sync status for observability.
@@ -178,26 +193,11 @@ export class CourseSyncService {
   async ensureSynced(courseId: string, forceEnabled?: boolean): Promise<void> {
     const existing = this.entries.get(courseId);
 
-    // Already synced — but check if the remote DB has been recreated
-    // (e.g., after a dev reseed). The seed script writes a `db-epoch`
-    // doc; if the remote epoch differs from our local copy, the local
-    // replica is stale and must be destroyed before re-syncing.
+    // Ready on this page load. Its epoch was checked on the way (by
+    // performSync, or by the background refresh, which keeps an outdated
+    // replica rather than destroy it under running sessions).
     if (existing?.status.state === 'ready' && existing.localDB) {
-      const stale = await this.isLocalEpochStale(courseId, existing.localDB);
-      if (!stale) {
-        return;
-      }
-      logger.info(
-        `[CourseSyncService] Remote DB epoch changed for course ${courseId} — destroying stale local replica`
-      );
-      try {
-        await existing.localDB.destroy();
-      } catch {
-        // Ignore cleanup errors
-      }
-      existing.localDB = null;
-      existing.readyPromise = null;
-      // Fall through to start a fresh sync
+      return;
     }
 
     // Already disabled
@@ -218,8 +218,116 @@ export class CourseSyncService {
     };
     this.entries.set(courseId, entry);
 
-    entry.readyPromise = this.performSync(courseId, entry, forceEnabled);
+    entry.readyPromise = this.startSync(courseId, entry, forceEnabled);
     return entry.readyPromise;
+  }
+
+  /**
+   * A replica completed on an earlier page load is ready now, refreshed in the
+   * background; anything else goes through a full performSync.
+   */
+  private async startSync(
+    courseId: string,
+    entry: SyncEntry,
+    forceEnabled?: boolean
+  ): Promise<void> {
+    const localDB = new pouch(this.localDBName(courseId));
+    if (await this.hasSyncMarker(localDB)) {
+      entry.localDB = localDB;
+      entry.status = { state: 'ready' };
+      entry.readyPromise = null;
+      logger.info(
+        `[CourseSyncService] Using this device's replica of course ${courseId}; refreshing in the background`
+      );
+      void this.refreshInBackground(courseId, entry, forceEnabled);
+      return;
+    }
+    return this.performSync(courseId, entry, forceEnabled);
+  }
+
+  /**
+   * Bring a ready replica up to date without taking it away from readers.
+   * Failures leave it ready (and outdated).
+   */
+  private async refreshInBackground(
+    courseId: string,
+    entry: SyncEntry,
+    forceEnabled?: boolean
+  ): Promise<void> {
+    const localDB = entry.localDB!;
+    try {
+      if (!forceEnabled && !(await this.checkLocalSyncEnabled(courseId))) {
+        await this.clearSyncMarker(localDB);
+        logger.info(
+          `[CourseSyncService] Local sync no longer enabled for course ${courseId}; replica kept for this page only`
+        );
+        return;
+      }
+
+      if (await this.isLocalEpochStale(courseId, localDB)) {
+        await this.clearSyncMarker(localDB);
+        logger.info(
+          `[CourseSyncService] Remote DB recreated for course ${courseId}: keeping the outdated replica ` +
+            `for this page; it is rebuilt on the next page load`
+        );
+        return;
+      }
+
+      const start = Date.now();
+      const result = await this.replicate(this.getRemoteDB(courseId), localDB);
+      const syncTimeMs = Date.now() - start;
+      const warmStart = Date.now();
+      await this.warmViewIndices(localDB);
+      const viewWarmTimeMs = Date.now() - warmStart;
+      await this.writeSyncMarker(localDB);
+      entry.status = {
+        state: 'ready',
+        docsReplicated: result.docs_written,
+        syncTimeMs,
+        viewWarmTimeMs,
+      };
+      logger.info(
+        `[CourseSyncService] Background refresh of course ${courseId}: ` +
+          `${result.docs_written} docs in ${syncTimeMs}ms, views ${viewWarmTimeMs}ms`
+      );
+    } catch (e) {
+      logger.warn(
+        `[CourseSyncService] Background refresh of course ${courseId} failed; replica kept as is: ${e}`
+      );
+    }
+  }
+
+  private async hasSyncMarker(localDB: PouchDB.Database): Promise<boolean> {
+    try {
+      await localDB.get(SYNC_MARKER_ID);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  private async writeSyncMarker(localDB: PouchDB.Database): Promise<void> {
+    try {
+      let _rev: string | undefined;
+      try {
+        _rev = (await localDB.get(SYNC_MARKER_ID))._rev;
+      } catch {
+        // First completion on this device.
+      }
+      await localDB.put({ _id: SYNC_MARKER_ID, _rev, completedAt: new Date().toISOString() });
+    } catch (e) {
+      // Costs the next page load the full-sync path, not correctness.
+      logger.warn(`[CourseSyncService] Could not write sync marker: ${e}`);
+    }
+  }
+
+  private async clearSyncMarker(localDB: PouchDB.Database): Promise<void> {
+    try {
+      const marker = await localDB.get(SYNC_MARKER_ID);
+      await localDB.remove(marker);
+    } catch {
+      // Absent already.
+    }
   }
 
   /**
@@ -327,6 +435,8 @@ export class CourseSyncService {
       logger.info(
         `[CourseSyncService] View indices warmed for course ${courseId} in ${viewWarmTimeMs}ms`
       );
+
+      await this.writeSyncMarker(localDB);
 
       // Done
       entry.status = {

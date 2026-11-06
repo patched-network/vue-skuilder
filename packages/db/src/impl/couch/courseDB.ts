@@ -25,7 +25,13 @@ import {
 } from '../../core/types/types-legacy';
 import { logger } from '../../util/logger';
 import { GET_CACHED } from './clientCache';
-import { addNote55, addTagToCard, getCredentialledCourseConfig, getTagID } from './courseAPI';
+import {
+  addNote55,
+  addTagToCard,
+  getCredentialledCourseConfig,
+  getTagID,
+  invalidateCourseConfigCache,
+} from './courseAPI';
 import { DataLayerResult } from '@db/core/types/db';
 import { PouchError } from './types';
 import CourseLookup from './courseLookupDB';
@@ -401,12 +407,8 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
   }
 
   async getAppliedTags(cardId: string): Promise<PouchDB.Query.Response<TagStub>> {
-    const ret = await getAppliedTags(this.id, cardId);
-    if (ret) {
-      return ret;
-    } else {
-      throw new Error(`Failed to find tags for card ${this.id}-${cardId}`);
-    }
+    // this.db: the local replica when one is ready (the module function is remote).
+    return this.db.query<TagStub>('getTags', { startkey: cardId, endkey: cardId });
   }
 
   async getAppliedTagsBatch(cardIds: string[]): Promise<Map<string, string[]>> {
@@ -491,7 +493,8 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
   }
 
   async getCourseTagStubs(): Promise<PouchDB.Core.AllDocsResponse<Tag>> {
-    return getCourseTagStubs(this.id);
+    // this.db: the local replica when one is ready (the module function is remote).
+    return filterAllDocsByPrefix<Tag>(this.db, DocType.TAG.valueOf() + '-');
   }
 
   async addNote(
@@ -1161,12 +1164,17 @@ ${JSON.stringify(config)}
 `);
 
   const db = getCourseDB(courseID);
+  invalidateCourseConfigCache(courseID);
   const old = await getCredentialledCourseConfig(courseID);
 
-  return await db.put<CourseConfig>({
-    ...config,
-    _rev: (old as any)._rev,
-  });
+  try {
+    return await db.put<CourseConfig>({
+      ...config,
+      _rev: (old as any)._rev,
+    });
+  } finally {
+    invalidateCourseConfigCache(courseID);
+  }
 }
 
 function isSuccessRow<T>(

@@ -376,6 +376,19 @@ Currently logged-in as ${this._username}.`
     return this.updateQueue.update(id, update);
   }
 
+  /**
+   * Create a default doc after a 404. Concurrent first reads (e.g. two
+   * components on a brand-new user) both see the 404 and both create; the
+   * loser's conflict just means the doc now exists, which is what it wanted.
+   */
+  private async putDefaultUnlessCreated<T extends object>(doc: PouchDB.Core.PutDocument<T>) {
+    try {
+      await this.localDB.put<T>(doc);
+    } catch (e) {
+      if ((e as PouchError).status !== 409) throw e;
+    }
+  }
+
   public async getCourseRegistrationsDoc(): Promise<
     CourseRegistrationDoc & PouchDB.Core.IdMeta & PouchDB.Core.GetMeta
   > {
@@ -399,7 +412,7 @@ Currently logged-in as ${this._username}.`
               `then lose to their real document once sync resumes.`
           );
         }
-        await this.localDB.put<CourseRegistrationDoc>({
+        await this.putDefaultUnlessCreated<CourseRegistrationDoc>({
           _id: BaseUser.DOC_IDS.COURSE_REGISTRATIONS,
           courses: [],
           studyWeight: {},
@@ -705,7 +718,7 @@ Currently logged-in as ${this._username}.`
               `over what may be an existing one.`
           );
         }
-        await this.localDB.put<UserConfig>(defaultConfig);
+        await this.putDefaultUnlessCreated<UserConfig>(defaultConfig);
         return this.getConfig();
       } else {
         logger.error(`Error setting user default config:`, e);

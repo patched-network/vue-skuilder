@@ -1,6 +1,4 @@
-import pouch from './pouchdb-setup';
-import { createPouchDBConfig } from '.';
-import { ENV } from '@db/factory';
+import { getCourseDB } from '.';
 // import { DataShape } from '../..base-course/Interfaces/DataShape';
 import { NameSpacer, ShapeDescriptor } from '@vue-skuilder/common';
 import { CourseConfig, DataShape } from '@vue-skuilder/common';
@@ -171,14 +169,37 @@ async function addCard(
   return card;
 }
 
+/**
+ * CourseConfig reads, cached per course for a few minutes: a study session reads
+ * it several times per pipeline run and per card. An edit made elsewhere shows
+ * up after the TTL (or a reload); writes through this client invalidate.
+ */
+const COURSE_CONFIG_TTL_MS = 5 * 60 * 1000;
+const courseConfigCache = new Map<string, { at: number; config: Promise<CourseConfig> }>();
+
+export function invalidateCourseConfigCache(courseID: string): void {
+  courseConfigCache.delete(courseID);
+}
+
 export async function getCredentialledCourseConfig(courseID: string): Promise<CourseConfig> {
-  try {
+  const hit = courseConfigCache.get(courseID);
+  if (hit && Date.now() - hit.at < COURSE_CONFIG_TTL_MS) {
+    // A copy: callers mutate configs (e.g. before writing them back).
+    return structuredClone(await hit.config);
+  }
+
+  const config = (async () => {
     const db = getCourseDB(courseID);
     const ret = await db.get<CourseConfig>('CourseConfig');
     ret.courseID = courseID;
-    logger.info(`Returning course config: ${JSON.stringify(ret)}`);
+    logger.debug(`Fetched course config for ${courseID}`);
     return ret;
+  })();
+  courseConfigCache.set(courseID, { at: Date.now(), config });
+  try {
+    return structuredClone(await config);
   } catch (e) {
+    courseConfigCache.delete(courseID);
     logger.error(`Error fetching config for ${courseID}:`, e);
     throw e;
   }
@@ -275,10 +296,3 @@ export function getTagID(tagName: string): string {
   }
 }
 
-export function getCourseDB(courseID: string): PouchDB.Database {
-  const dbName = `coursedb-${courseID}`;
-  return new pouch(
-    ENV.COUCHDB_SERVER_PROTOCOL + '://' + ENV.COUCHDB_SERVER_URL + dbName,
-    createPouchDBConfig()
-  );
-}

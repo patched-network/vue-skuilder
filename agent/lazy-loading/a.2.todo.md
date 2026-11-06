@@ -8,19 +8,17 @@
 > of a.1 is the broader picture; this is the slice an app consuming the
 > published packages needs first.
 
-## Status (pinned 2026-11-05)
+## Status (pinned 2026-11-06)
 
-- **Branch** `module-granular-builds`, **PR**
-  [#1195](https://github.com/patched-network/vue-skuilder/pull/1195), not
-  merged. Commits: §1 (`2386c400`), common prettier (`c70624fc`), §2
-  (`f0d034e5`), §3 part 1 (`1f3a97fe`), db lint fix (`0d58064f`).
-- **Done:** §1, §2, §3 through the ESM build and `sideEffects` list.
-- **CI:** green on `0d58064f` (the ffmpeg-static 504 was transient).
-- **Next PR:** branch `db-lazy-helpers` (from `0d58064f`, uncommitted at
-  pin): `userDBHelpers` split + lazy `UserDBDebugger` (§3). Measured in LP:
-  with LP's lazy `userDebugAPI`, entry 290.6 → 208.3 KB gzip; PouchDB and
-  moment off the boot.
-- **Not yet:** 3b, eyeballing the styles fix (§2), the LP side, release. The
+- **Merged:** [#1195](https://github.com/patched-network/vue-skuilder/pull/1195)
+  (§1, §2, §3 ESM build + `sideEffects`) and
+  [#1196](https://github.com/patched-network/vue-skuilder/pull/1196)
+  (`userDBKeys` split, lazy `UserDBDebugger`).
+- **Shipped (2026-11-06):** #1195 and #1196 published as 0.2.36; LP took it
+  (`skup36`: bump, the follow-ons below, and a repair of deps the bump had
+  dropped) and deployed. LP entry 504.5 → 208.4 KB gzip (178.4 KB brotli).
+- **Open:** PageSpeed after the deploy (watch TBT; if mobile Speed Index stays
+  ~3.5 s, look at 3b); eyeballing the styles fix (§2) in production; 3b. The
   debug-tool split is off the table (§3).
 - Locally `yarn workspace @vue-skuilder/cli lint:check` fails only on an
   untracked `packages/cli/testproject-empty/`; CI doesn't see it.
@@ -276,28 +274,39 @@ them into LP's tree as a release would. LP's `package.localdev.json` is stale
 Edits LP needs when it takes these releases. Paths are in the LP repo (checked
 against its `perf-boot` worktree, 2026-11-05).
 
-- [ ] Bump `@vue-skuilder/{common,common-ui,courseware,db,cli}`; drop any
-  scratch alias.
-- [ ] `src/main.ts` (~line 70): the Vuetify list's regeneration recipe greps
+- [x] Bump `@vue-skuilder/{common,common-ui,courseware,db,cli}` (0.2.36, LP
+  `skup36`).
+- [x] `src/main.ts` (~line 70): the Vuetify list's regeneration recipe greps
   `node_modules/@vue-skuilder/common-ui/dist/common-ui.es.js`, which no longer
   exists. Grep the whole tree instead
   (`grep -rhoE 'V\("v-[a-z-]+' node_modules/@vue-skuilder/common-ui/dist --include='*.mjs'`).
   The old recipe also missed the `MarkdownRenderer-*.mjs` chunk, so rerun it
   and diff: LP's list may be short today.
-- [ ] `vite.config.ts`: the `vue` → runtime-build alias comment blames
+- [x] `vite.config.ts`: the `vue` → runtime-build alias comment blames
   vuedraggable's UMD `require("vue")` "via common-ui". It now arrives only
   through `TagsInput.vue` (vue-tags-input's dependency). Keep the alias;
   update the comment. `optimizeDeps.include: ["vuedraggable"]` likewise stays.
-- [ ] `src/main.ts:5`: mount `userDebugAPI` lazily
+- [x] `src/main.ts:5`: mount `userDebugAPI` lazily
   (`import("./services/userDebugAPI").then((m) => m.mountUserDebugAPI())`).
   With `db-lazy-helpers`, takes moment off the boot: 236.3 → 208.3 KB gzip
   (measured).
-- [ ] `package.localdev.json`: resync with `package.json` (stale).
-- [ ] Measure the boot after the bump (`budgets.ts`, or
+- [x] `package.localdev.json`: resync with `package.json` (stale). It wasn't,
+  and the 0.2.36 `skup` commit carried the stale file into `package.json`:
+  lost `@fontsource/*`, `marked`, `subset-font`, `@types/subset-font` and
+  `build:webapp`'s prerender/precompress. Restored in all three
+  (`package.json`, `.localdev`, `.prod`) from the pre-bump `package.json`;
+  the committed lockfile needs regenerating (`yarn skup 0.2.36`).
+- [x] Vuetify list diffed against 0.2.36's dist: only LP's own
+  `<v-fade-transition>` (`ReachableWordsCard.vue`) was unregistered; added to
+  the deferred list. `v-app-bar-nav-icon`, `v-footer`, `v-navigation-drawer`
+  are registered (deferred) but unused.
+- [x] Measure the boot after the bump (`budgets.ts`, or
   [measure-lp.mjs](measure-lp.mjs) from vue-skuilder).
   Pre-release measurement: entry 504.5 → 290.6 KB gzip with #1195; 208.3 KB
   with `db-lazy-helpers` and the lazy `userDebugAPI`. Then lower
   `scripts/perf/budgets.ts`'s entry budget (440 KB brotli) to keep the gain.
+  Done: published 0.2.36, full `build:webapp`: entry 178.4 KB brotli
+  (LP's KB = 1000 B); budget now 186 KB.
 - [ ] The production styles fix reaches LP too (fill-in input, code theme). LP
   renders neither today, so there's nothing to see.
 - [ ] db's per-module build: LP's dev server pre-bundles db differently now
