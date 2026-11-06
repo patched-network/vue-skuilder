@@ -1,7 +1,7 @@
 import { logger } from '../util/logger';
 import { getDataLayer } from '../factory';
 import { DocType, DocTypePrefixes } from './types/types-legacy';
-import { filterAllDocsByPrefix } from '../impl/common/userDBHelpers';
+import { filterAllDocsByPrefix } from '../impl/common/userDBKeys';
 import type { UserDBInterface } from './interfaces/userDB';
 import type { ScheduledCard, CourseRegistration } from './types/user';
 
@@ -468,5 +468,6 @@ export function mountUserDBDebugger(): void {
   win.skuilder.userdb = userDBDebugAPI;
 }
 
-// Auto-mount when module is loaded
-mountUserDBDebugger();
+// Not mounted on import: initializeDataLayer() loads this module and mounts it
+// once the data layer is up (it's useless before). A static mount here would
+// keep it, and moment with it, in every app's boot.

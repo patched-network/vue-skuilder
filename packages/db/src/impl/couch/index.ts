@@ -12,6 +12,7 @@ import moment, { Moment } from 'moment';
 import { logger } from '@db/util/logger';
 
 import pouch from './pouchdb-setup';
+import { hexEncode } from '../common/userDBKeys';
 
 import { ScheduledCard } from '@db/core/types/user';
 
@@ -20,17 +21,7 @@ const expiryDocID: string = 'GuestAccountExpirationDate';
 const GUEST_LOCAL_DB = `userdb-${GuestUsername}`;
 export const localUserDB: PouchDB.Database = new pouch(GUEST_LOCAL_DB);
 
-export function hexEncode(str: string): string {
-  let hex: string;
-  let returnStr: string = '';
-
-  for (let i = 0; i < str.length; i++) {
-    hex = str.charCodeAt(i).toString(16);
-    returnStr += ('000' + hex).slice(3);
-  }
-
-  return returnStr;
-}
+export { hexEncode };
 const pouchDBincludeCredentialsConfig: PouchDB.Configuration.RemoteDatabaseConfiguration = {
   fetch(url: string | Request, opts: RequestInit): Promise<Response> {
     opts.credentials = 'include';

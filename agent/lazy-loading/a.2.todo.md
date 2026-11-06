@@ -8,6 +8,23 @@
 > of a.1 is the broader picture; this is the slice an app consuming the
 > published packages needs first.
 
+## Status (pinned 2026-11-05)
+
+- **Branch** `module-granular-builds`, **PR**
+  [#1195](https://github.com/patched-network/vue-skuilder/pull/1195), not
+  merged. Commits: §1 (`2386c400`), common prettier (`c70624fc`), §2
+  (`f0d034e5`), §3 part 1 (`1f3a97fe`), db lint fix (`0d58064f`).
+- **Done:** §1, §2, §3 through the ESM build and `sideEffects` list.
+- **CI:** green on `0d58064f` (the ffmpeg-static 504 was transient).
+- **Next PR:** branch `db-lazy-helpers` (from `0d58064f`, uncommitted at
+  pin): `userDBHelpers` split + lazy `UserDBDebugger` (§3). Measured in LP:
+  with LP's lazy `userDebugAPI`, entry 290.6 → 208.3 KB gzip; PouchDB and
+  moment off the boot.
+- **Not yet:** 3b, eyeballing the styles fix (§2), the LP side, release. The
+  debug-tool split is off the table (§3).
+- Locally `yarn workspace @vue-skuilder/cli lint:check` fails only on an
+  untracked `packages/cli/testproject-empty/`; CI doesn't see it.
+
 ## Why
 
 An app that takes a handful of things from `@vue-skuilder/common-ui` gets all
@@ -40,10 +57,10 @@ Every app on the framework pays the same.
   pass's maps overwrote the CJS pass's). `createFileLogger` used a bare
   `require('fs')` and silently wrote nothing from ESM (the CLI's MCP debug
   log); now `process.getBuiltinModule`.
-- [ ] In LP, measure whether zod (~85 KB raw with zod-to-json-schema) leaves the
-  boot; only db's `courseConfigRegistration` uses it. (db side: with §3's
-  per-module build zod is off the `initializeDataLayer`/`getDataLayer` path;
-  confirm nothing else in LP's boot reaches it.)
+- [x] In LP, measure whether zod (~85 KB raw with zod-to-json-schema) leaves the
+  boot; only db's `courseConfigRegistration` uses it. Measured (LP built from
+  this branch's tarballs, below): zod and zod-to-json-schema are gone from the
+  entry. Needed §3's per-module db build too.
 
 ## 2. `common-ui`: one output file per source module
 
@@ -164,26 +181,30 @@ follow-up), so this can come after 1–2.
   split below), and `**/*.cjs`. Shim moved into `pouchdb-setup.ts`; `process`
   declared as a dependency (it was imported but undeclared). `localUserDB` is
   an export, so it is opened only where it's used; `couch/index` isn't listed.
-- [x] **Decided (Colin, 2026-11-05):** the debug tools stop mounting on import.
-  An explicit mount alone saves nothing: each module holds both the
-  *recorders* its importers call (`SessionController` →
-  `startSessionTracking`, `recordCardPresentation`, …; `Pipeline` →
-  `captureRun`, `buildRunReport`, `registerPipelineForDebug`) and the
-  *console API*, and a module whose exports are used stays, mount and all. So:
-  - [ ] Split each tool: recorder (small, static, collects from the start)
-    and console API (formatting, printing, overlay; lazy).
-  - [ ] One always-mounted stub on `window.skuilder.*` (next to the logger's
-    `logLevel`) whose methods `import()` the console API on first call. The
-    existing calls keep working; they return a promise and print a moment
-    later.
-  - [ ] `sideEffects` then lists `pouchdb-setup` and the stub module only.
-  - Expected win: modest; only the console halves move, and only where boot
-    reaches them (`factory.ts` statically imports `initializeNavigatorRegistry`,
-    plausibly → `Pipeline` → `PipelineDebugger`; not traced). Measure, don't
-    assume a.2's "~40 KB".
+- **Debug-tool split: off the table (Colin, 2026-11-05).** The plan was to
+  split each self-mounting tool into a recorder (static) and a console API
+  (lazy, behind one `window.skuilder.*` stub). Of the 95 KB gzip measured
+  below, the tools' own code is ~16 KB (~17%); the rest is PouchDB + moment,
+  which the `userDBHelpers` split (PouchDB) and LP's lazy `userDebugAPI` go
+  after without it. Not worth ~3,500 lines of refactor and an async console
+  API while LP already scores 99/100 on PageSpeed. `UserDBDebugger`, the one
+  that mattered (it held moment), went lazy without a split (below). If the
+  rest comes back: move `eloDistance`'s `multiDimElo` toggle out of the
+  filter module; Session, Mixer and Pipeline are the costly splits.
+- [x] Split `impl/common/userDBHelpers.ts` (branch `db-lazy-helpers`): the
+  pure helpers (`makeScheduledCardId`, `REVIEW_TIME_FORMAT`, `hexEncode`,
+  `getStartAndEndKeys`, `filterAllDocsByPrefix`) are in `userDBKeys.ts`, which
+  imports moment and `types-legacy` only (not the `@db/core` barrel). PouchDB
+  helpers stay in `userDBHelpers.ts`; no re-exports between them. `hexEncode`
+  deduped (`impl/couch/index.ts` re-exports `userDBKeys`'s).
+- [x] `UserDBDebugger` lazy (same branch): no recorders, console API only, so
+  no split was needed. It no longer mounts on import and is out of
+  `sideEffects`; `initializeDataLayer()` `import()`s and mounts it once the
+  data layer is up (browser only). `window.skuilder.userdb` stays synchronous;
+  it appears after init instead of at load (before init it only reported
+  "Data layer not initialized yet").
 
-Order: lazy `BaseUser` and the module-preserving ESM build first, then the
-debug split.
+Order: done; the debug split is off the table.
 
 ## 3b. Thin session check, so LP can mount before the data layer
 
@@ -202,6 +223,54 @@ which is `!username.startsWith(GuestUsername)`; the username comes from one
   layer when it's up. A stale hint (expired cookie) flips the UI once: fine for
   a header chip or call-to-action, not for anything that writes.
 
+## LP measured against this branch (2026-11-05)
+
+Scratch copy of LP `perf-boot` (rsync without `node_modules`, `/dist`), packages
+installed from `yarn pack` tarballs (`yarn workspace @vue-skuilder/<p> pack
+--out …`, then `dependencies` and `resolutions` →
+`file:<abs>/<p>.tgz` for common, common-ui, courseware, db, cli), `yarn
+install`, `npx vite build`, then [measure-lp.mjs](measure-lp.mjs) (entry
+script and stylesheet from `dist/index.html`, raw/gzip/brotli, composition by
+package from the sourcemap). The baseline is the same copy on the published
+0.2.35. Rows marked *exp.* are experiments in the scratch copy (LP's
+`main.ts` edited; db's installed `package.json` `sideEffects` trimmed), not
+changes anywhere.
+
+| | entry gzip | entry brotli |
+|---|---|---|
+| published 0.2.35 | 504.5 KB | 407.7 KB |
+| #1195 (§1–§3 ESM build, `sideEffects`) | 290.6 KB | 237.1 KB |
+| *exp.* + LP mounts `userDebugAPI` lazily | 285.1 KB | 232.9 KB |
+| *exp.* + all db debug tools out of `sideEffects` | 274.4 KB | 224.6 KB |
+| *exp.* both | 195.3 KB | 163.2 KB |
+| `db-lazy-helpers` (`userDBHelpers` split + lazy `UserDBDebugger`) | 236.3 KB* | 197.2 KB* |
+| `db-lazy-helpers` + LP mounts `userDebugAPI` lazily | **208.3 KB** | **174.2 KB** |
+
+\* measured with the split only, before `UserDBDebugger` went lazy; that
+alone can't drop moment while LP's static `userDebugAPI` import holds it, so
+expect about the same.
+
+`db-lazy-helpers` + LP's lazy `userDebugAPI`: PouchDB and moment out of the
+entry (each now its own lazy chunk); db ~53 KB min of the entry. What's left:
+app 243 KB min, vuetify 179, Vue ~105, animejs 26, vue-router 24. The
+remaining ~13 KB to the 195.3 experiment is the Session/Mixer/Pipeline
+debug tools (off the table).
+
+Gone with #1195: zod, sortablejs, vuedraggable, vue-tags-input;
+common-ui ~6 KB of the entry. On #1195, PouchDB (~150 KB min with plugins)
+and moment (61 KB) stay until **both** of these are cut, because each pulls
+in `userDBHelpers` (→ `pouchdb-setup`, moment). `db-lazy-helpers` fixes the
+db side:
+- LP: `main.ts` statically imports `mountUserDebugAPI` → `userProfileSnapshot`
+  → db's `makeScheduledCardId`.
+- db: the self-mounting `UserDBDebugger` (listed in `sideEffects`) →
+  `filterAllDocsByPrefix`.
+
+Fidelity: `dev:local` (`link:`) resolves the framework's dependencies from
+vue-skuilder's `node_modules`, so sizes can double-count; tarballs install
+them into LP's tree as a release would. LP's `package.localdev.json` is stale
+(no `@fontsource/*`, `marked`, `subset-font`; different `build:webapp`).
+
 ## Consumer side (LP)
 
 Edits LP needs when it takes these releases. Paths are in the LP repo (checked
@@ -219,21 +288,26 @@ against its `perf-boot` worktree, 2026-11-05).
   vuedraggable's UMD `require("vue")` "via common-ui". It now arrives only
   through `TagsInput.vue` (vue-tags-input's dependency). Keep the alias;
   update the comment. `optimizeDeps.include: ["vuedraggable"]` likewise stays.
-- [ ] Measure the boot after the bump: total JS gzip (prototype: 528 → 423 KB),
-  whether vuedraggable/sortablejs and zod are gone from the entry, and
-  common-ui's share (~15 KB expected).
+- [ ] `src/main.ts:5`: mount `userDebugAPI` lazily
+  (`import("./services/userDebugAPI").then((m) => m.mountUserDebugAPI())`).
+  With `db-lazy-helpers`, takes moment off the boot: 236.3 → 208.3 KB gzip
+  (measured).
+- [ ] `package.localdev.json`: resync with `package.json` (stale).
+- [ ] Measure the boot after the bump (`budgets.ts`, or
+  [measure-lp.mjs](measure-lp.mjs) from vue-skuilder).
+  Pre-release measurement: entry 504.5 → 290.6 KB gzip with #1195; 208.3 KB
+  with `db-lazy-helpers` and the lazy `userDebugAPI`. Then lower
+  `scripts/perf/budgets.ts`'s entry budget (440 KB brotli) to keep the gain.
 - [ ] The production styles fix reaches LP too (fill-in input, code theme). LP
   renders neither today, so there's nothing to see.
 - [ ] db's per-module build: LP's dev server pre-bundles db differently now
   (many small modules; `optimizeDeps` may want `@vue-skuilder/db` listed if
   dev cold start slows). `process` is now db's own dependency, so LP doesn't
   need to provide it.
-- Later, with 3: the `window.skuilder.*` debug calls become async (they print
-  a moment later). No LP code calls them.
 - Later, with 3b: LP's audit of what its first render needs, then the auth
   boot change (mount first, data layer after).
 
 ## 4. Release
 
-- [ ] Release; bump `common`, `common-ui`, `courseware`, `db` in LP; drop LP's
-  scratch alias if one is still around.
+- [ ] Merge #1195 (CI green; §2's styles eyeballed).
+- [ ] Release; then the LP list above.

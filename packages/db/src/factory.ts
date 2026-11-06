@@ -129,6 +129,13 @@ export async function initializeDataLayer(config: DataLayerConfig): Promise<Data
   }
 
   await dataLayerInstance.initialize();
+
+  // Console tool (window.skuilder.userdb). Lazy so it, and moment, stay out of
+  // apps' boot bundles; it needs the data layer anyway.
+  if (typeof window !== 'undefined') {
+    void import('./core/UserDBDebugger').then((m) => m.mountUserDBDebugger());
+  }
+
   return dataLayerInstance;
 }
 

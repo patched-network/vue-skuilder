@@ -16,6 +16,8 @@ export {
   hexEncode,
   filterAllDocsByPrefix,
   getStartAndEndKeys,
+} from './userDBKeys';
+export {
   updateGuestAccountExpirationDate,
   getLocalUserDB,
   scheduleCardReviewLocal,

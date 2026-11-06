@@ -31,10 +31,8 @@ import { CardHistory, CardRecord } from '../../core/types/types-legacy';
 import { UserOutcomeRecord } from '../../core/types/userOutcome';
 import { StudySessionDoc } from '../../core/types/studySession';
 import type { SyncStrategy } from './SyncStrategy';
+import { filterAllDocsByPrefix, getStartAndEndKeys, REVIEW_TIME_FORMAT } from './userDBKeys';
 import {
-  filterAllDocsByPrefix,
-  getStartAndEndKeys,
-  REVIEW_TIME_FORMAT,
   getLocalUserDB,
   scheduleCardReviewLocal,
   removeScheduledCardReviewLocal,
