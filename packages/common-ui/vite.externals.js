@@ -1,28 +1,22 @@
 // Dependencies common-ui's builds leave as bare imports. Shared by the main
 // build (vite.config.js) and the admin entry (vite.config.admin.js).
+//
+// Everything in dependencies and peerDependencies, and their subpaths. Nothing
+// is bundled: a bundled dependency would land in dist/node_modules under
+// preserveModules, which `yarn npm publish` leaves out, and would be a second
+// copy for any app that also uses it.
 
-export const external = [
-  'vue',
-  'vue-router',
-  'vuetify',
-  'pinia',
-  '@vue-skuilder/db',
-  '@vue-skuilder/common',
-  '@vojtechlanka/vue-tags-input',
-  'vuedraggable',
-  'sortablejs',
-  'moment',
+import { readFileSync } from 'node:fs';
+
+const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf-8'));
+
+const packages = [
+  ...Object.keys(pkg.dependencies ?? {}),
+  ...Object.keys(pkg.peerDependencies ?? {}),
 ];
 
-// Global variables to use in UMD build for externalized deps
-export const globals = {
-  vue: 'Vue',
-  'vue-router': 'VueRouter',
-  vuetify: 'Vuetify',
-  pinia: 'Pinia',
-  '@vue-skuilder/db': 'VueSkuilderDb',
-  '@vue-skuilder/common': 'VueSkuilderCommon',
-  '@vojtechlanka/vue-tags-input': 'VueTagsInput',
-  vuedraggable: 'VueDraggable',
-  sortablejs: 'Sortable',
-};
+/** @param {string[]} extra further packages to keep external */
+export function externals(extra = []) {
+  const names = [...packages, ...extra];
+  return (id) => names.some((name) => id === name || id.startsWith(`${name}/`));
+}

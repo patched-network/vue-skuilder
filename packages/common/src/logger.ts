@@ -40,7 +40,9 @@ export const consoleLogger: SkLogger = {
  * Appends logs to a file with timestamps
  */
 export function createFileLogger(filePath: string): SkLogger {
-  // Lazy import fs to avoid bundling issues
+  // Resolve fs lazily, at runtime, so bundlers never see it. A bare `require`
+  // exists only in CommonJS; getBuiltinModule (Node >= 20.16 / 22.3) also
+  // works from the ESM build, which is what the CLI loads.
 
   type FsModule = typeof import('fs');
   let fs: FsModule | null = null;
@@ -48,8 +50,13 @@ export function createFileLogger(filePath: string): SkLogger {
   const writeLog = (level: string, message: string, ...args: unknown[]) => {
     if (!fs) {
       try {
-        // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
-        fs = require('fs') as FsModule;
+        const proc = globalThis.process as
+          | (NodeJS.Process & { getBuiltinModule?: (id: string) => unknown })
+          | undefined;
+        fs = proc?.getBuiltinModule
+          ? (proc.getBuiltinModule('fs') as FsModule)
+          : // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+            (require('fs') as FsModule);
       } catch {
         // File logging not available in this context
         return;
@@ -143,14 +150,14 @@ export function initializeTuiLogging(): void {
       // eslint-disable-next-line no-console
       warn: console.warn,
       // eslint-disable-next-line no-console
-      info: console.info
+      info: console.info,
     };
 
     const writeToLog = (level: string, args: unknown[]) => {
       const timestamp = new Date().toISOString();
-      const message = args.map(arg =>
-        typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
-      ).join(' ');
+      const message = args
+        .map((arg) => (typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)))
+        .join(' ');
 
       const logEntry = `[${timestamp}] ${level}: ${message}\n`;
 
@@ -175,7 +182,6 @@ export function initializeTuiLogging(): void {
 
     // eslint-disable-next-line no-console
     console.log('TUI logging initialized - logs redirected to', tuiLogFile);
-
   } catch (err) {
     // eslint-disable-next-line no-console
     console.error('Failed to initialize TUI logging:', err);

@@ -345,13 +345,14 @@ export function adjustCourseScoresPerTag(
     // fictitiously low prior. Preserve accumulated count so exposure-based
     // count-threshold progress is not discarded.
     const existingUserTagElo = userElo.tags[key];
-    const userTagElo: EloRank = (existingUserTagElo && existingUserTagElo.score !== COUNT_ONLY_SCORE)
-      ? existingUserTagElo
-      : {
-          ...(existingUserTagElo ?? {}),
-          count: existingUserTagElo?.count ?? 0,
-          score: userElo.global.score,
-        };
+    const userTagElo: EloRank =
+      existingUserTagElo && existingUserTagElo.score !== COUNT_ONLY_SCORE
+        ? existingUserTagElo
+        : {
+            ...(existingUserTagElo ?? {}),
+            count: existingUserTagElo?.count ?? 0,
+            score: userElo.global.score,
+          };
 
     // Initialize tag ELO on card if missing (use global score as baseline)
     const cardTagElo: EloRank = cardElo.tags[key] ?? {

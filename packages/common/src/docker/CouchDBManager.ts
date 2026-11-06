@@ -25,7 +25,7 @@ export class CouchDBManager extends EventEmitter {
 
   constructor(config: CouchDBConfig, options: CouchDBManagerOptions = {}) {
     super();
-    
+
     // Set defaults
     this.config = {
       mode: config.mode,
@@ -70,10 +70,11 @@ export class CouchDBManager extends EventEmitter {
    */
   private async containerExists(): Promise<boolean> {
     try {
-      const result = execSync(
-        `docker ps -a -q -f name=^${this.config.containerName}$`,
-        { stdio: 'pipe' }
-      ).toString().trim();
+      const result = execSync(`docker ps -a -q -f name=^${this.config.containerName}$`, {
+        stdio: 'pipe',
+      })
+        .toString()
+        .trim();
       return result.length > 0;
     } catch {
       return false;
@@ -85,10 +86,11 @@ export class CouchDBManager extends EventEmitter {
    */
   private async isContainerRunning(): Promise<boolean> {
     try {
-      const result = execSync(
-        `docker ps -q -f name=^${this.config.containerName}$`,
-        { stdio: 'pipe' }
-      ).toString().trim();
+      const result = execSync(`docker ps -q -f name=^${this.config.containerName}$`, {
+        stdio: 'pipe',
+      })
+        .toString()
+        .trim();
       return result.length > 0;
     } catch {
       return false;
@@ -101,19 +103,21 @@ export class CouchDBManager extends EventEmitter {
   private async cleanupExistingContainer(): Promise<void> {
     if (await this.containerExists()) {
       this.log(`Found existing container '${this.config.containerName}'. Cleaning up...`);
-      
+
       try {
         if (await this.isContainerRunning()) {
           this.log('Stopping container...');
           execSync(`docker stop ${this.config.containerName}`, { stdio: 'pipe' });
           this.log('Container stopped.');
         }
-        
+
         this.log('Removing container...');
         execSync(`docker rm ${this.config.containerName}`, { stdio: 'pipe' });
         this.log('Container removed.');
       } catch (error: unknown) {
-        this.error(`Error during cleanup: ${error instanceof Error ? error.message : String(error)}`);
+        this.error(
+          `Error during cleanup: ${error instanceof Error ? error.message : String(error)}`
+        );
         throw error;
       }
     }
@@ -124,11 +128,16 @@ export class CouchDBManager extends EventEmitter {
    */
   private buildDockerCommand(): string[] {
     const cmd = [
-      'run', '-d',
-      '--name', this.config.containerName,
-      '-p', `${this.config.port}:5984`,
-      '-e', `COUCHDB_USER=${this.config.username}`,
-      '-e', `COUCHDB_PASSWORD=${this.config.password}`,
+      'run',
+      '-d',
+      '--name',
+      this.config.containerName,
+      '-p',
+      `${this.config.port}:5984`,
+      '-e',
+      `COUCHDB_USER=${this.config.username}`,
+      '-e',
+      `COUCHDB_PASSWORD=${this.config.password}`,
     ];
 
     // Add volume mounts based on mode
@@ -171,11 +180,13 @@ export class CouchDBManager extends EventEmitter {
         try {
           // First check basic connectivity
           execSync(`curl -s http://localhost:${this.config.port}/`, { stdio: 'pipe' });
-          
+
           // Then verify admin credentials work by checking _up endpoint
           const auth = `${this.config.username}:${this.config.password}`;
-          const result = execSync(`curl -s http://${auth}@localhost:${this.config.port}/_up`, { stdio: 'pipe' }).toString();
-          
+          const result = execSync(`curl -s http://${auth}@localhost:${this.config.port}/_up`, {
+            stdio: 'pipe',
+          }).toString();
+
           // _up endpoint should return {"status":"ok"} when admin is ready
           if (result.includes('"status":"ok"')) {
             clearInterval(checkInterval);
@@ -186,7 +197,9 @@ export class CouchDBManager extends EventEmitter {
             this.log(`CouchDB responding but admin not ready (attempt ${attempts}/${maxAttempts})`);
             if (attempts >= maxAttempts) {
               clearInterval(checkInterval);
-              reject(new Error('CouchDB admin credentials failed to become ready within timeout period'));
+              reject(
+                new Error('CouchDB admin credentials failed to become ready within timeout period')
+              );
             }
           }
         } catch {
@@ -221,7 +234,7 @@ export class CouchDBManager extends EventEmitter {
       // Build and execute Docker command
       const dockerCmd = this.buildDockerCommand();
       this.log(`Starting CouchDB container: docker ${dockerCmd.join(' ')}`);
-      
+
       execSync(`docker ${dockerCmd.join(' ')}`, { stdio: 'pipe' });
       this.log('Container started successfully');
 
@@ -234,7 +247,9 @@ export class CouchDBManager extends EventEmitter {
 
       this.emit('ready');
     } catch (error: unknown) {
-      this.error(`Failed to start CouchDB: ${error instanceof Error ? error.message : String(error)}`);
+      this.error(
+        `Failed to start CouchDB: ${error instanceof Error ? error.message : String(error)}`
+      );
       this.emit('error', error);
       throw error;
     } finally {
@@ -256,7 +271,9 @@ export class CouchDBManager extends EventEmitter {
         this.log('CouchDB container is not running');
       }
     } catch (error: unknown) {
-      this.error(`Failed to stop CouchDB: ${error instanceof Error ? error.message : String(error)}`);
+      this.error(
+        `Failed to stop CouchDB: ${error instanceof Error ? error.message : String(error)}`
+      );
       throw error;
     }
   }
@@ -267,7 +284,7 @@ export class CouchDBManager extends EventEmitter {
   async remove(): Promise<void> {
     try {
       await this.stop();
-      
+
       if (await this.containerExists()) {
         this.log('Removing CouchDB container...');
         execSync(`docker rm ${this.config.containerName}`, { stdio: 'pipe' });
@@ -275,7 +292,9 @@ export class CouchDBManager extends EventEmitter {
         this.emit('removed');
       }
     } catch (error: unknown) {
-      this.error(`Failed to remove CouchDB: ${error instanceof Error ? error.message : String(error)}`);
+      this.error(
+        `Failed to remove CouchDB: ${error instanceof Error ? error.message : String(error)}`
+      );
       throw error;
     }
   }
@@ -287,11 +306,11 @@ export class CouchDBManager extends EventEmitter {
     if (!(await this.containerExists())) {
       return 'missing';
     }
-    
+
     if (await this.isContainerRunning()) {
       return 'running';
     }
-    
+
     return 'stopped';
   }
 
@@ -322,15 +341,15 @@ export class CouchDBManager extends EventEmitter {
   private async configureCORS(): Promise<void> {
     const maxRetries = 3;
     let attempt = 0;
-    
+
     while (attempt < maxRetries) {
       try {
         attempt++;
         this.log(`Configuring CORS for browser access (attempt ${attempt}/${maxRetries})...`);
-        
+
         const baseUrl = `http://localhost:${this.config.port}`;
         const auth = `${this.config.username}:${this.config.password}`;
-        
+
         // Enable CORS with comprehensive PouchDB-compatible headers
         // Note: CouchDB requires BOTH chttpd/enable_cors AND cors section settings
         const corsCommands = [
@@ -346,12 +365,14 @@ export class CouchDBManager extends EventEmitter {
 
         for (const cmd of corsCommands) {
           const result = execSync(cmd, { stdio: 'pipe' }).toString().trim();
-          
+
           // Check for CouchDB error responses
           if (result.includes('"error":"unauthorized"')) {
             this.error(`CORS command failed with unauthorized: ${cmd}`);
             this.error(`Response: ${result}`);
-            throw new Error(`CORS configuration failed: unauthorized access. Admin credentials may not be ready.`);
+            throw new Error(
+              `CORS configuration failed: unauthorized access. Admin credentials may not be ready.`
+            );
           } else if (result.includes('"error":')) {
             this.error(`CORS command failed with error: ${cmd}`);
             this.error(`Response: ${result}`);
@@ -360,7 +381,7 @@ export class CouchDBManager extends EventEmitter {
             this.log(`CORS command success: ${result || 'OK'}`);
           }
         }
-        
+
         // Verify CORS configuration took effect
         try {
           this.log('Verifying CORS configuration...');
@@ -368,20 +389,23 @@ export class CouchDBManager extends EventEmitter {
           const corsSettings = execSync(verifyCmd, { stdio: 'pipe' }).toString();
           this.log(`CORS verification result: ${corsSettings.trim()}`);
         } catch (error: unknown) {
-          this.log(`Warning: CORS verification failed: ${error instanceof Error ? error.message : String(error)}`);
+          this.log(
+            `Warning: CORS verification failed: ${error instanceof Error ? error.message : String(error)}`
+          );
         }
-        
+
         this.log('CORS configuration completed successfully');
         return; // Success - exit retry loop
-        
       } catch (error: unknown) {
         const errorMessage = error instanceof Error ? error.message : String(error);
-        
+
         if (attempt < maxRetries && errorMessage.includes('unauthorized')) {
           // Retry with exponential backoff for auth issues
           const delay = Math.pow(2, attempt - 1) * 1000; // 1s, 2s, 4s
-          this.log(`CORS configuration failed (attempt ${attempt}/${maxRetries}), retrying in ${delay}ms...`);
-          await new Promise(resolve => setTimeout(resolve, delay));
+          this.log(
+            `CORS configuration failed (attempt ${attempt}/${maxRetries}), retrying in ${delay}ms...`
+          );
+          await new Promise((resolve) => setTimeout(resolve, delay));
           continue;
         } else {
           // Final attempt failed or non-auth error

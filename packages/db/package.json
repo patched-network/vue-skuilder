@@ -1,44 +1,54 @@
 {
   "name": "@vue-skuilder/db",
   "type": "module",
+  "sideEffects": [
+    "./dist/impl/couch/pouchdb-setup.mjs",
+    "./dist/util/logger.mjs",
+    "./dist/study/SessionDebugger.mjs",
+    "./dist/study/MixerDebugger.mjs",
+    "./dist/core/UserDBDebugger.mjs",
+    "./dist/core/navigators/PipelineDebugger.mjs",
+    "./dist/core/navigators/filters/eloDistance.mjs",
+    "**/*.cjs"
+  ],
   "publishConfig": {
     "access": "public"
   },
   "version": "0.2.35",
   "description": "Database layer for vue-skuilder",
-  "main": "dist/index.js",
+  "main": "dist/index.cjs",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs",
-      "require": "./dist/index.js"
+      "require": "./dist/index.cjs"
     },
     "./core": {
       "types": "./dist/core/index.d.ts",
       "import": "./dist/core/index.mjs",
-      "require": "./dist/core/index.js"
+      "require": "./dist/core/index.cjs"
     },
     "./pouch": {
       "types": "./dist/pouch/index.d.ts",
       "import": "./dist/pouch/index.mjs",
-      "require": "./dist/pouch/index.js"
+      "require": "./dist/pouch/index.cjs"
     },
     "./packer": {
       "types": "./dist/util/packer/index.d.ts",
       "import": "./dist/util/packer/index.mjs",
-      "require": "./dist/util/packer/index.js"
+      "require": "./dist/util/packer/index.cjs"
     },
     "./static": {
       "types": "./dist/impl/static/index.d.ts",
       "import": "./dist/impl/static/index.mjs",
-      "require": "./dist/impl/static/index.js"
+      "require": "./dist/impl/static/index.cjs"
     },
     "./diagnostics": {
       "types": "./dist/diagnostics/index.d.ts",
       "import": "./dist/diagnostics/index.mjs",
-      "require": "./dist/diagnostics/index.js"
+      "require": "./dist/diagnostics/index.cjs"
     }
   },
   "typesVersions": {
@@ -49,9 +59,9 @@
     }
   },
   "scripts": {
-    "build": "tsup",
-    "build:debug": "tsup --sourcemap inline",
-    "dev": "tsup --watch",
+    "build": "rm -rf dist && tsup && rolldown -c rolldown.config.mjs",
+    "build:debug": "rm -rf dist && tsup --sourcemap inline && rolldown -c rolldown.config.mjs",
+    "dev": "concurrently -n cjs,esm \"tsup --watch\" \"rolldown -c rolldown.config.mjs --watch\"",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "npx eslint .",
@@ -65,11 +75,14 @@
     "moment": "^2.29.4",
     "pouchdb": "^9.0.0",
     "pouchdb-find": "^9.0.0",
+    "process": "^0.11.10",
     "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@types/uuid": "^10.0.0",
+    "concurrently": "^9.1.2",
     "pouchdb-adapter-memory": "^9.0.0",
+    "rolldown": "1.0.0-rc.9",
     "tsup": "^8.0.2",
     "typescript": "~5.9.3",
     "vite": "^8.0.0",

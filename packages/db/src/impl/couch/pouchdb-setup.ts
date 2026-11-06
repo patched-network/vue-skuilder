@@ -1,6 +1,14 @@
 import PouchDB from 'pouchdb';
 import PouchDBFind from 'pouchdb-find';
 import PouchDBAuth from '@nilock2/pouchdb-authentication';
+import process from 'process';
+
+// PouchDB expects a global `process` in browsers (#18). Set here, beside the
+// plugin registration, so every path to PouchDB gets it. (This module is in
+// package.json's "sideEffects".)
+if (typeof window !== 'undefined') {
+  (window as unknown as { process: unknown }).process = process;
+}
 
 // Register plugins
 PouchDB.plugin(PouchDBFind);

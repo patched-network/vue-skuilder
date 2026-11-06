@@ -619,13 +619,19 @@ export abstract class ContentNavigator implements StudyContentSource {
 
     let NavigatorImpl;
 
+    // Specifiers built at runtime, never template literals: bundlers expand
+    // `import(`./generators/${x}`)` into a glob over the directory, which in a
+    // per-module dist matches .map and .d.ts files and breaks the app's build.
+    // This fallback only resolves from source (no '.mjs' variation).
+    const load = (specifier: string) => import(/* @vite-ignore */ specifier);
+
     // Try different extension variations
     const variations = ['.ts', '.js', ''];
 
     for (const ext of variations) {
       // Try generators directory
       try {
-        const module = await import(`./generators/${implementingClass}${ext}`);
+        const module = await load(`./generators/${implementingClass}${ext}`);
         NavigatorImpl = module.default;
         if (NavigatorImpl) break;
       } catch (e) {
@@ -634,7 +640,7 @@ export abstract class ContentNavigator implements StudyContentSource {
 
       // Try filters directory
       try {
-        const module = await import(`./filters/${implementingClass}${ext}`);
+        const module = await load(`./filters/${implementingClass}${ext}`);
         NavigatorImpl = module.default;
         if (NavigatorImpl) break;
       } catch (e) {
@@ -643,7 +649,7 @@ export abstract class ContentNavigator implements StudyContentSource {
 
       // Try current directory (legacy)
       try {
-        const module = await import(`./${implementingClass}${ext}`);
+        const module = await load(`./${implementingClass}${ext}`);
         NavigatorImpl = module.default;
         if (NavigatorImpl) break;
       } catch (e) {

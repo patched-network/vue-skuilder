@@ -44,7 +44,7 @@ export function createBaseAliases(rootDir = process.cwd()) {
 
     '@vue-skuilder/common-ui': isDev
       ? resolve(rootDir, './packages/common-ui/src') // Dev: source directory
-      : resolve(rootDir, './packages/common-ui/dist/common-ui.es.js'),
+      : resolve(rootDir, './packages/common-ui/dist/index.mjs'),
     '@vue-skuilder/courseware': isDev
       ? resolve(rootDir, './packages/courseware/src') // Dev: source directory
       : resolve(rootDir, './packages/courseware/dist/index.mjs'),
