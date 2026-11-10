@@ -7,6 +7,7 @@ import type { CardFilter, FilterContext } from './filters/types';
 import type { CardGenerator, GeneratorContext } from './generators/types';
 import type { GeneratorResult } from './generators/types';
 import { logger } from '../../util/logger';
+import { perfMeasure } from '../../util/perfMarks';
 import { createOrchestrationContext, OrchestrationContext } from '../orchestration';
 import { captureRun, buildRunReport, registerPipelineForDebug, type GeneratorSummary, type FilterImpact } from './PipelineDebugger';
 import { diversityRerank } from './diversityRerank';
@@ -572,6 +573,13 @@ export class Pipeline extends ContentNavigator implements PipelineForecaster {
       `(context=${(tContext - t0).toFixed(0)} generate=${(tGenerate - tContext).toFixed(0)} ` +
       `hydrate=${(tHydrate - tGenerate).toFixed(0)} filter=${(tFilter - tHydrate).toFixed(0)})`
     );
+    perfMeasure('sk:pipeline-run', t0, tFilter, {
+      context: Math.round(tContext - t0),
+      generate: Math.round(tGenerate - tContext),
+      hydrate: Math.round(tHydrate - tGenerate),
+      filter: Math.round(tFilter - tHydrate),
+      binding: this.course?.readsLocal === undefined ? 'unknown' : this.course.readsLocal ? 'local' : 'remote',
+    });
 
     // Toggle execution summary logging:
     const topScores = result.slice(0, 3).map((c) => c.score);
