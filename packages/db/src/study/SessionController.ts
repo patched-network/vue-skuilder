@@ -27,6 +27,7 @@ import {
 } from '@db/core/types/studySession';
 import { recordUserOutcome } from '@db/core/orchestration/recording';
 import { Loggable } from '@db/util';
+import { perfMark, perfMeasure } from '@db/util/perfMarks';
 import {
   getCardOrigin,
   WeightedCard,
@@ -603,6 +604,7 @@ export class SessionController<TView = unknown> extends Loggable {
     // bootstrap pipeline run fires, so that run's own report isn't wiped out.
     clearStaleSessionDebugState();
 
+    perfMark('sk:session-prepare-start');
     const wellIndicated = await this.getWeightedContent();
     this._recordRuns('bootstrap');
     this._wellIndicatedRemaining = wellIndicated;
@@ -612,6 +614,8 @@ export class SessionController<TView = unknown> extends Loggable {
       );
     }
     await this.hydrationService.ensureHydratedCards();
+    perfMark('sk:session-prepared');
+    perfMeasure('sk:session-prepare', 'sk:session-prepare-start', 'sk:session-prepared');
 
     // Start session tracking for debugging
     startSessionTracking(this.sessionId, this.supplyQ.length, this.failedQ.length);

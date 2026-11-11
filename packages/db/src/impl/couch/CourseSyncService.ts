@@ -1,6 +1,7 @@
 import pouch from './pouchdb-setup';
 import { getCourseDB } from '.';
 import { logger } from '../../util/logger';
+import { perfMark } from '../../util/perfMarks';
 import type { CourseConfig } from '@vue-skuilder/common';
 
 // ============================================================================
@@ -236,6 +237,7 @@ export class CourseSyncService {
       entry.localDB = localDB;
       entry.status = { state: 'ready' };
       entry.readyPromise = null;
+      perfMark('sk:course-sync-ready', { courseId, from: 'marker' });
       logger.info(
         `[CourseSyncService] Using this device's replica of course ${courseId}; refreshing in the background`
       );
@@ -286,6 +288,12 @@ export class CourseSyncService {
         syncTimeMs,
         viewWarmTimeMs,
       };
+      perfMark('sk:course-sync-refreshed', {
+        courseId,
+        docs: result.docs_written,
+        syncTimeMs,
+        viewWarmTimeMs,
+      });
       logger.info(
         `[CourseSyncService] Background refresh of course ${courseId}: ` +
           `${result.docs_written} docs in ${syncTimeMs}ms, views ${viewWarmTimeMs}ms`
@@ -420,6 +428,11 @@ export class CourseSyncService {
 
       const result = await this.replicate(remoteDB, localDB);
       const syncTimeMs = Date.now() - syncStart;
+      perfMark('sk:course-sync-replicated', {
+        courseId,
+        docs: result.docs_written,
+        ms: syncTimeMs,
+      });
 
       logger.info(
         `[CourseSyncService] Replication complete for course ${courseId}: ` +
@@ -445,6 +458,7 @@ export class CourseSyncService {
         syncTimeMs,
         viewWarmTimeMs,
       };
+      perfMark('sk:course-sync-ready', { courseId, from: 'sync', viewWarmTimeMs });
     } catch (e) {
       const errorMsg = e instanceof Error ? e.message : String(e);
       logger.error(
@@ -552,8 +566,11 @@ export class CourseSyncService {
       try {
         localEpoch = await localDB.get<{ epoch: number }>('db-epoch');
       } catch {
-        // Local doesn't have the epoch doc — stale
-        return true;
+        // No epoch doc locally: a DB never written to (this device's first
+        // sync) has nothing to be stale; anything else (e.g. an interrupted
+        // earlier sync) is.
+        const info = await localDB.info();
+        return info.doc_count > 0 || !!info.update_seq;
       }
 
       return remoteEpoch.epoch !== localEpoch.epoch;

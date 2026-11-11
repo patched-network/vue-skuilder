@@ -3,14 +3,26 @@ import { logger } from '../../util/logger';
 
 export type Update<T> = Partial<T> | ((x: T) => T);
 
+type Applied<T> = T & PouchDB.Core.GetMeta & PouchDB.Core.RevisionIdMeta;
+
+/** A queued update and the caller waiting on it. */
+interface Pending {
+  update: Update<unknown>;
+  resolve: (doc: unknown) => void;
+  reject: (e: unknown) => void;
+}
+
+/**
+ * Serialises updates per document. Updates queued while a write is in flight
+ * go out together in the next write; each one settles exactly once, with the
+ * outcome of the write that carried it, and is never applied again.
+ */
 export default class UpdateQueue extends Loggable {
   _className: string = 'UpdateQueue';
-  private pendingUpdates: {
-    [index: string]: Update<unknown>[];
-  } = {};
-  private inprogressUpdates: {
-    [index: string]: boolean;
-  } = {};
+  /** Updates not yet taken by a write, per doc. */
+  private pending: Map<string, Pending[]> = new Map();
+  /** Docs with a drain loop running. */
+  private draining: Set<string> = new Set();
 
   private readDB: PouchDB.Database; // Database for read operations
   private writeDB: PouchDB.Database; // Database for write operations (local-first)
@@ -28,6 +40,9 @@ export default class UpdateQueue extends Loggable {
    * **Error Handling Pattern:**
    * - This method does NOT create documents if they don't exist
    * - Callers are responsible for handling 404 errors and creating documents
+   * - A rejected update is dropped from the queue: a caller that creates the
+   *   doc after a 404 has already applied its change and must not see it
+   *   re-applied by a later update to the same doc
    * - This design maintains separation of concerns (UpdateQueue handles conflicts, callers handle lifecycle)
    *
    * @example
@@ -45,14 +60,18 @@ export default class UpdateQueue extends Loggable {
   public update<T extends PouchDB.Core.Document<object>>(
     id: PouchDB.Core.DocumentId,
     update: Update<T>
-  ) {
+  ): Promise<Applied<T>> {
     logger.debug(`Update requested on doc: ${id}`);
-    if (this.pendingUpdates[id]) {
-      this.pendingUpdates[id].push(update);
-    } else {
-      this.pendingUpdates[id] = [update];
-    }
-    return this.applyUpdates<T>(id);
+    return new Promise<Applied<T>>((resolve, reject) => {
+      const queue = this.pending.get(id) ?? [];
+      queue.push({
+        update: update as Update<unknown>,
+        resolve: resolve as (doc: unknown) => void,
+        reject,
+      });
+      this.pending.set(id, queue);
+      if (!this.draining.has(id)) void this.drain(id);
+    });
   }
 
   constructor(readDB: PouchDB.Database, writeDB?: PouchDB.Database) {
@@ -66,81 +85,66 @@ export default class UpdateQueue extends Loggable {
     });
   }
 
-  private async applyUpdates<T extends PouchDB.Core.Document<object>>(
-    id: string
-  ): Promise<T & PouchDB.Core.GetMeta & PouchDB.Core.RevisionIdMeta> {
-    logger.debug(`Applying updates on doc: ${id}`);
-    if (this.inprogressUpdates[id]) {
-      // Poll instead of recursing to avoid infinite recursion
-      while (this.inprogressUpdates[id]) {
-        await new Promise(resolve => setTimeout(resolve, Math.random() * 50));
-      }
-      return this.applyUpdates<T>(id);
-    } else {
-      if (this.pendingUpdates[id] && this.pendingUpdates[id].length > 0) {
-        this.inprogressUpdates[id] = true;
-
-        const MAX_RETRIES = 5;
-        for (let i = 0; i < MAX_RETRIES; i++) {
-          try {
-            const doc = await this.readDB.get<T>(id);
-
-            // Create a new doc object to apply updates to for this attempt
-            let updatedDoc = { ...doc };
-
-            // Note: This loop is not fully safe if updates are functions that depend on a specific doc state
-            // that might change between retries. But for simple object merges, it's okay.
-            const updatesToApply = [...this.pendingUpdates[id]];
-            for (const update of updatesToApply) {
-              if (typeof update === 'function') {
-                updatedDoc = { ...updatedDoc, ...update(updatedDoc) };
-              } else {
-                updatedDoc = {
-                  ...updatedDoc,
-                  ...update,
-                };
-              }
-            }
-
-            await this.writeDB.put<T>(updatedDoc);
-
-            // Success! Remove the updates we just applied.
-            this.pendingUpdates[id].splice(0, updatesToApply.length);
-
-            if (this.pendingUpdates[id].length === 0) {
-              this.inprogressUpdates[id] = false;
-              delete this.inprogressUpdates[id];
-            } else {
-              // More updates came in, run again.
-              return this.applyUpdates<T>(id);
-            }
-            return updatedDoc as any; // success, exit loop and function
-          } catch (e: any) {
-            if (e.name === 'conflict' && i < MAX_RETRIES - 1) {
-              logger.warn(`Conflict on update for doc ${id}, retry #${i + 1}`);
-              await new Promise((res) => setTimeout(res, 50 * Math.random()));
-              // continue to next iteration of the loop
-            } else if (e.name === 'not_found' && i === 0) {
-              // Document not present - throw to caller for initialization
-              logger.warn(`Update failed for ${id} - does not exist. Throwing to caller.`);
-              delete this.inprogressUpdates[id];
-              throw e; // Let caller handle
-            } else {
-              // Max retries reached or a non-conflict error
-              delete this.inprogressUpdates[id];
-              if (this.pendingUpdates[id]) {
-                delete this.pendingUpdates[id];
-              }
-              logger.error(`Error on attemped update (retry ${i}): ${JSON.stringify(e)}`);
-              throw e; // Let caller handle
-            }
-          }
+  /** Writes the doc's queued updates, batch by batch, until none are left. */
+  private async drain(id: string): Promise<void> {
+    this.draining.add(id);
+    try {
+      let batch: Pending[] | undefined;
+      while ((batch = this.pending.get(id)) && batch.length > 0) {
+        // Take the batch: anything queued from here on goes in the next write.
+        this.pending.delete(id);
+        try {
+          const doc = await this.write(
+            id,
+            batch.map((p) => p.update)
+          );
+          batch.forEach((p) => p.resolve(doc));
+        } catch (e) {
+          batch.forEach((p) => p.reject(e));
         }
-        // This should be unreachable, but it satisfies the compiler that a value is always returned or an error thrown.
-        throw new Error(`UpdateQueue failed for doc ${id} after ${MAX_RETRIES} retries.`);
-      } else {
-        throw new Error(`Empty Updates Queue Triggered`);
+      }
+    } finally {
+      this.draining.delete(id);
+    }
+  }
+
+  /** One read-apply-put of `updates`, retried on conflict against a fresh read. */
+  private async write(id: string, updates: Update<unknown>[]): Promise<unknown> {
+    logger.debug(`Applying ${updates.length} update(s) on doc: ${id}`);
+    const MAX_RETRIES = 5;
+    for (let i = 0; i < MAX_RETRIES; i++) {
+      try {
+        const doc = await this.readDB.get<object>(id);
+
+        // Applied to a fresh copy each attempt, so function updates see the
+        // doc as read on this attempt.
+        let updatedDoc: PouchDB.Core.Document<object> & Partial<PouchDB.Core.RevisionIdMeta> = {
+          ...doc,
+        };
+        for (const update of updates) {
+          updatedDoc =
+            typeof update === 'function'
+              ? { ...updatedDoc, ...(update as (x: unknown) => object)(updatedDoc) }
+              : { ...updatedDoc, ...(update as object) };
+        }
+
+        const res = await this.writeDB.put(updatedDoc);
+        return { ...updatedDoc, _rev: res.rev };
+      } catch (e: any) {
+        if (e.name === 'conflict' && i < MAX_RETRIES - 1) {
+          logger.warn(`Conflict on update for doc ${id}, retry #${i + 1}`);
+          await new Promise((res) => setTimeout(res, 50 * Math.random()));
+        } else if (e.name === 'not_found' && i === 0) {
+          // Document not present - throw to caller for initialization
+          logger.warn(`Update failed for ${id} - does not exist. Throwing to caller.`);
+          throw e;
+        } else {
+          logger.error(`Error on attemped update (retry ${i}): ${JSON.stringify(e)}`);
+          throw e;
+        }
       }
     }
+    // Unreachable: the last attempt returns or throws.
+    throw new Error(`UpdateQueue failed for doc ${id} after ${MAX_RETRIES} retries.`);
   }
 }

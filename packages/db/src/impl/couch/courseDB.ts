@@ -134,6 +134,11 @@ export class CourseDB implements CourseDBInterface {
    *   values may be stale, so read-modify-write cycles must go through
    *   the remote DB to avoid conflicts).
    */
+  /** Reads go to this device's replica (perf marks report it as the session's binding). */
+  public get readsLocal(): boolean {
+    return this.db !== this.remoteDB;
+  }
+
   constructor(id: string, userLookup: () => Promise<UserDBInterface>, localDB?: PouchDB.Database) {
     this.id = id;
     const remote = getCourseDB(this.id);

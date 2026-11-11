@@ -28,6 +28,12 @@ export interface CourseInfo {
 
 export interface CourseDBInterface extends NavigationStrategyManager, StudyContentSource {
   /**
+   * Whether reads go to a local replica rather than the server. Optional: only
+   * implementations with both (couch) report it; perf marks read it.
+   */
+  readonly readsLocal?: boolean;
+
+  /**
    * Get course config
    */
   getCourseConfig(): Promise<CourseConfig>;

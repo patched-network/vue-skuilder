@@ -103,6 +103,7 @@ import {
   HydratedCard,
   isQuestionRecord,
   OutcomeObserver,
+  perfMark,
   ReplanOptions,
   ResponseResult,
   SessionController,
@@ -691,6 +692,8 @@ export default defineComponent({
         cardID: card.item.cardID,
         cardCount: this.cardCount,
       });
+      // cardCount starts at 1; the record pushed above is this session's first.
+      if (this.sessionRecord.length === 1) perfMark('sk:first-card', { cardID: card.item.cardID });
 
       this.loading = false;
     },
