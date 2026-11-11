@@ -692,7 +692,8 @@ export default defineComponent({
         cardID: card.item.cardID,
         cardCount: this.cardCount,
       });
-      if (this.cardCount === 1) perfMark('sk:first-card', { cardID: card.item.cardID });
+      // cardCount starts at 1; the record pushed above is this session's first.
+      if (this.sessionRecord.length === 1) perfMark('sk:first-card', { cardID: card.item.cardID });
 
       this.loading = false;
     },

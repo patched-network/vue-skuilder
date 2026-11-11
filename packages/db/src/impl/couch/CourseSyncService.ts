@@ -566,8 +566,11 @@ export class CourseSyncService {
       try {
         localEpoch = await localDB.get<{ epoch: number }>('db-epoch');
       } catch {
-        // Local doesn't have the epoch doc — stale
-        return true;
+        // No epoch doc locally: a DB never written to (this device's first
+        // sync) has nothing to be stale; anything else (e.g. an interrupted
+        // earlier sync) is.
+        const info = await localDB.info();
+        return info.doc_count > 0 || !!info.update_seq;
       }
 
       return remoteEpoch.epoch !== localEpoch.epoch;
