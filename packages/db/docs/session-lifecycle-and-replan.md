@@ -361,11 +361,15 @@ now visible: `sk:pipeline-run`'s `binding` (below).
 
 ### Open threads
 
-- **User-DB reads.** Each replan scans the user's scheduled cards three times
-  (`getActiveCards` from the ELO and Prescribed generators, `getReviewstoDate`
-  from SRS), through the remote handle, over a range that accumulates
-  tombstones. Fixes: one scan per run shared through `GeneratorContext`; read
-  the local mirror; compaction.
+- **User-DB reads.** A replan's generators used to scan the user's scheduled
+  cards three times (`getActiveCards` from ELO and Prescribed,
+  `getReviewstoDate` from SRS); they now share one in-flight scan
+  (`BaseUserDB.scanScheduledCards`, 2026-11). It still reads the remote handle
+  for a logged-in user: scheduled reviews are written to the server and reach
+  the local mirror by live sync, so a local read could return a review that was
+  just completed. Reading locally would need writes to land locally first. The
+  remote range also accumulates tombstones (one per completed review), which
+  the scan walks until compaction.
 - **Main-thread work during replans** (filters, tag hydration, scoring) on
   slower devices. Yield points between stages are the cheap first step;
   attribute with a real-device trace first.
