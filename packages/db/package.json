@@ -13,7 +13,7 @@
   "publishConfig": {
     "access": "public"
   },
-  "version": "0.2.37",
+  "version": "0.3.0",
   "description": "Database layer for vue-skuilder",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",
@@ -87,5 +87,5 @@
     "vite": "^8.0.0",
     "vitest": "^4.1.0"
   },
-  "stableVersion": "0.2.37"
+  "stableVersion": "0.3.0"
 }
