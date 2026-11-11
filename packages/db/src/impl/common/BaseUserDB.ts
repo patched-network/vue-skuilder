@@ -127,6 +127,9 @@ export class BaseUser implements UserDBInterface, DocumentUpdater {
   private updateQueue!: UpdateQueue;
 
   private _hydration: UserHydrationStatus = { state: 'not-required' };
+  /** See scanScheduledCards. Bumped by every write to scheduled reviews. */
+  private _scheduledScan: { generation: number; scan: Promise<ScheduledCard[]> } | null = null;
+  private _scheduledGeneration = 0;
   /** In-flight hydration, so concurrent callers can wait for a real answer. */
   private _hydrationPromise: Promise<void> | null = null;
   /**
@@ -441,20 +444,42 @@ Currently logged-in as ${this._username}.`
    *
    */
   public async getActiveCards() {
+    return (await this.scanScheduledCards()).map((doc) => ({
+      courseID: doc.courseId,
+      cardID: doc.cardId,
+    }));
+  }
+
+  /**
+   * The user's scheduled reviews (`card_review_*`), all of them: one `allDocs`
+   * scan shared by concurrent readers. A pipeline run's generators start
+   * together (`CompositeGenerator`), and each used to scan the range itself
+   * (`getActiveCards` from ELO and Prescribed, `getReviewstoDate` from SRS).
+   * Sharing only an in-flight scan keeps reads as fresh as before; a schedule
+   * or removal of a review starts a new scan for anyone reading after it.
+   * Docs are shared between callers: copy before mutating.
+   */
+  private scanScheduledCards(): Promise<ScheduledCard[]> {
+    const inFlight = this._scheduledScan;
+    if (inFlight && inFlight.generation === this._scheduledGeneration) return inFlight.scan;
+
     const keys = getStartAndEndKeys(DocTypePrefixes[DocType.SCHEDULED_CARD]);
-
-    const reviews = await this.remoteDB.allDocs<ScheduledCard>({
-      startkey: keys.startkey,
-      endkey: keys.endkey,
-      include_docs: true,
-    });
-
-    return reviews.rows.map((r) => {
-      return {
-        courseID: r.doc!.courseId,
-        cardID: r.doc!.cardId,
-      };
-    });
+    const entry = {
+      generation: this._scheduledGeneration,
+      scan: this.remoteDB
+        .allDocs<ScheduledCard>({
+          startkey: keys.startkey,
+          endkey: keys.endkey,
+          include_docs: true,
+        })
+        .then((res) => res.rows.map((row) => row.doc!)),
+    };
+    this._scheduledScan = entry;
+    const done = () => {
+      if (this._scheduledScan === entry) this._scheduledScan = null;
+    };
+    entry.scan.then(done, done);
+    return entry.scan;
   }
 
   public async getActivityRecords(): Promise<ActivityRecord[]> {
@@ -541,34 +566,28 @@ Currently logged-in as ${this._username}.`
   }
 
   private async getReviewstoDate(targetDate: Moment, course_id?: string) {
-    const keys = getStartAndEndKeys(DocTypePrefixes[DocType.SCHEDULED_CARD]);
-
-    const reviews = await this.remoteDB.allDocs<ScheduledCard>({
-      startkey: keys.startkey,
-      endkey: keys.endkey,
-      include_docs: true,
-    });
+    const reviews = await this.scanScheduledCards();
 
     log(
       `Fetching ${this._username}'s scheduled reviews${
         course_id ? ` for course ${course_id}` : ''
       }.`
     );
-    return reviews.rows
-      .filter((r) => {
-        if (r.id.startsWith(DocTypePrefixes[DocType.SCHEDULED_CARD])) {
+    return reviews
+      .filter((doc) => {
+        if (doc._id.startsWith(DocTypePrefixes[DocType.SCHEDULED_CARD])) {
           const date = moment.utc(
-            r.id.substr(DocTypePrefixes[DocType.SCHEDULED_CARD].length),
+            doc._id.substr(DocTypePrefixes[DocType.SCHEDULED_CARD].length),
             REVIEW_TIME_FORMAT
           );
           if (targetDate.isAfter(date)) {
-            if (course_id === undefined || r.doc!.courseId === course_id) {
+            if (course_id === undefined || doc.courseId === course_id) {
               return true;
             }
           }
         }
       })
-      .map((r) => r.doc!);
+      .map((doc) => ({ ...doc }));
   }
 
   public async getReviewsForcast(daysCount: number, course_id?: string) {
@@ -1180,6 +1199,7 @@ Currently logged-in as ${this._username}.`
         const deletePromises = duplicateDocIds.map(async (docId) => {
           try {
             const doc = await this.remoteDB.get(docId);
+            this._scheduledGeneration++;
             await this.writeDB.remove(doc);
             log(`Successfully removed duplicate review: ${docId}`);
           } catch (error) {
@@ -1357,9 +1377,11 @@ Currently logged-in as ${this._username}.`
     scheduledFor: ScheduledCard['scheduledFor'];
     schedulingAgentId: ScheduledCard['schedulingAgentId'];
   }) {
+    this._scheduledGeneration++;
     return scheduleCardReviewLocal(this.writeDB, review);
   }
   public async removeScheduledCardReview(reviewId: string): Promise<void> {
+    this._scheduledGeneration++;
     return removeScheduledCardReviewLocal(this.writeDB, reviewId);
   }
 
