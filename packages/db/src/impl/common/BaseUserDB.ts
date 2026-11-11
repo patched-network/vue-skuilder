@@ -1063,27 +1063,24 @@ Currently logged-in as ${this._username}.`
     // stringify the current record to make it writable to couchdb
     record.timeStamp = moment.utc(record.timeStamp).toString() as unknown as Moment;
 
-    try {
-      const cardHistory = await this.update<CardHistory<T>>(
-        cardHistoryID,
-        function (h: CardHistory<T>) {
-          h.records.push(record);
-          h.bestInterval = h.bestInterval || 0;
-          // Scheduling (SpacedRepetition.newQuestionInterval) re-derives
-          // lapses/streak from `records` on every call, so these persisted
-          // fields are informational — kept current so the stored doc reads
-          // truthfully when inspected outside a session.
-          if (areQuestionRecords(h)) {
-            h.lapses = getLapses(h.records);
-            h.streak = getStreak(h.records);
-          } else {
-            h.lapses = h.lapses || 0;
-            h.streak = h.streak || 0;
-          }
-          return h;
-        }
-      );
-
+    const append = (h: CardHistory<T>): CardHistory<T> => {
+      h.records.push(record);
+      h.bestInterval = h.bestInterval || 0;
+      // Scheduling (SpacedRepetition.newQuestionInterval) re-derives
+      // lapses/streak from `records` on every call, so these persisted
+      // fields are informational — kept current so the stored doc reads
+      // truthfully when inspected outside a session.
+      if (areQuestionRecords(h)) {
+        h.lapses = getLapses(h.records);
+        h.streak = getStreak(h.records);
+      } else {
+        h.lapses = h.lapses || 0;
+        h.streak = h.streak || 0;
+      }
+      return h;
+    };
+    const appendToExisting = async () => {
+      const cardHistory = await this.update<CardHistory<T>>(cardHistoryID, append);
       // Convert timestamps to moment objects
       cardHistory.records = cardHistory.records.map<T>((record) => {
         const ret: T = {
@@ -1093,6 +1090,10 @@ Currently logged-in as ${this._username}.`
         return ret;
       });
       return cardHistory;
+    };
+
+    try {
+      return await appendToExisting();
     } catch (e) {
       const reason = e as PouchError;
       if (reason.status === 404) {
@@ -1109,6 +1110,11 @@ Currently logged-in as ${this._username}.`
           const putResult = await this.writeDB.put<CardHistory<T>>(initCardHistory);
           return { ...initCardHistory, _rev: putResult.rev };
         } catch (creationError) {
+          // Another record for this card created the doc first (two first
+          // records in flight at once): it exists now, so append to it.
+          if ((creationError as PouchError).name === 'conflict') {
+            return appendToExisting();
+          }
           throw new Error(
             `Failed to create CardHistory for ${cardHistoryID}. Reason: ${creationError}`
           );
