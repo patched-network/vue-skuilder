@@ -7,11 +7,11 @@
 > the former `agent/session-pipeline-perf` assessment and should be trimmed
 > before this ships as public framework documentation.
 >
-> **Perf work is parked (2026-05).** The felt mid-session jank (the synchronous
-> wedge-breaker firing when the queue bottomed out) is resolved by the cache work
-> recorded below. The `[perf]` timing instrumentation is commented out in place
-> (search `[perf] parked` in the source); uncomment to re-measure. Remaining
-> threads (cold spin-up, possibly-remote reads) are documented but not pursued.
+> **Perf status (2026-11).** The 2026-05 mid-session jank is resolved (cache
+> work, below). The 2026-11 runtime-perf work resolved the course-DB side of
+> session start: sessions bind to the local replica when one exists, and far
+> fewer remote calls when one doesn't. Open: user-DB reads and main-thread work
+> during replans (see *Open threads*).
 
 This document maps how `SessionController` drives content selection through the
 navigation `Pipeline` during a study session: what runs at session start, when
@@ -334,51 +334,47 @@ sits on one of two clocks:
 
 The cache work above optimized the *least* time-sensitive stage (background
 replan) — correctly, since that is what keeps us out of the wedge. The *most*
-time-sensitive stage (cold spin-up, dominated by the ELO view reindex) is
-essentially untouched.
+time-sensitive stage, cold spin-up, was the 2026-11 work's target (next
+section); the figures in this table are 2026-05's.
 
-### Open / parked threads (running notes)
+### Course-DB reads: local vs remote (resolved 2026-11)
 
-- **Cold spin-up (~4.6s, blocking)** dominated by the first `elo` view reindex
-  (`getCardsByELO below~2490ms`). Most time-sensitive, least touched. A cheap
-  micro-fix worth trying: fire a throwaway `db.query('elo', {limit:1})` early
-  (e.g. on the study-hub view) to keep the IndexedDB index warm before
-  `/study/practice`.
-- **Reads may be hitting REMOTE CouchDB, not the local replica** — the leading
-  hypothesis for the remaining costs (see next subsection). If true, this is one
-  root cause behind spin-up + per-card hydration + `regDoc`, not three.
-- **Per-card hydration `cardDoc+tags` = 0.8-2.1s each**, a persistent band (not
-  just at startup). Entirely `getCourseDoc` + `getAppliedTagsBatch`. On a *local*
-  PouchDB these should be tens of ms — hence the remote-reads suspicion.
-- **`getPendingReviews` ~ 768ms**, recomputed fresh on every replan (SRSgen).
-  Candidate to incrementalize, but reviews mutate as cards are answered, so
-  correctness needs care.
-- **`regDoc ~ 444ms`** — a single registration-doc read inside
-  `getCardsCenteredAtELO`. Same "reads may be remote" smell.
+The 2026-05 notes suspected session reads were going to remote CouchDB instead of
+the synced replica. Confirmed, and fixed for the course DB (fw #1197, 0.2.37):
 
-### The likely root cause: reads may not be local
+- **Replica ready at load.** `CourseSyncService` writes `_local/sync-complete`
+  when a sync finishes; on later page loads `ensureSynced` hands out the on-disk
+  replica at once from that marker and refreshes it in the background (an
+  epoch mismatch only drops the marker; the next load rebuilds).
+- **Rebinding between sessions.** `PouchDataLayerProvider` keeps one `CourseDB`
+  per course and replaces it when the replica becomes ready, so the *next*
+  session on the same page reads locally. A running session keeps the handle it
+  was built with (`CourseDB` still binds at construction).
+- **Fewer remote calls without a replica:** one memoized remote handle per
+  course with `skip_setup`, `CourseConfig` cached, tag stubs and applied tags
+  read through `CourseDB.db` (local when available), strategy docs fetched once.
+  Cold preparation went from ~21 requests to 10; with a replica, 2.
 
-`CourseDB` picks local-vs-remote **once, at construction**: `this.db = localDB ??
-remoteDB`, where `localDB` is non-null only if `CourseSyncService` sync state is
-exactly `'ready'` at that instant. Miss that window (cold first visit:
-replication + view-warming takes seconds) and the whole session's pipeline reads
-go to the remote handle and **never re-bind** after sync finishes.
+Production (2026-11-06): cold guest preparation 8.7 s → 3.6 s (remote, mobile
+network); returning device 2.5 s, bound local. Whether a session ran local is
+now visible: `sk:pipeline-run`'s `binding` (below).
 
-The "remote" CouchDB in dev is `localhost:5984`, so the cost is *not* network
-latency — it is **per-request work the CouchDB server does**: MapReduce view-index
-maintenance. The log fingerprints it: the same `elo` view queried back-to-back
-reads `below=2490ms` then `above=111ms` — cold reindex then warm, not latency
-(which would tax both equally). What invalidates the index? *This session's own
-ELO writes* — every answered card writes a card-ELO doc, bumping `update_seq`. A
-local sync replica is one-shot, read-only and pre-warmed, so local reads never
-trigger a reindex.
+### Open threads
 
-To confirm: add a one-line `CourseDB` constructor log (`db=local|remote`); split
-the hydration timer into `cardDoc` (`.get`, no view) vs `tags`
-(`getAppliedTagsBatch`, a view query) — if `tags` carries the 1-2s it's the
-reindex story. The fix is then *not* micro-optimizing reads but guaranteeing the
-session runs against a ready local replica (await `'ready'`; re-bind or
-lazy-resolve `this.db`; reuse hydration handles).
+- **User-DB reads.** Each replan scans the user's scheduled cards three times
+  (`getActiveCards` from the ELO and Prescribed generators, `getReviewstoDate`
+  from SRS), through the remote handle, over a range that accumulates
+  tombstones. Fixes: one scan per run shared through `GeneratorContext`; read
+  the local mirror; compaction.
+- **Main-thread work during replans** (filters, tag hydration, scoring) on
+  slower devices. Yield points between stages are the cheap first step;
+  attribute with a real-device trace first.
+- **A session can't start before its first plan.** Preparation (~2.5–4 s)
+  starts when `StudySession.vue` mounts. Consumers with a lead-in (a lesson, a
+  hub) could prepare a `SessionController` earlier and hand it in; no seam for
+  that yet.
+- **First sync on a new device** (download, IndexedDB writes, view warming)
+  runs on the main thread, alongside whatever session starts meanwhile.
 
 ### Still-true structural notes
 
@@ -393,22 +389,35 @@ lazy-resolve `this.db`; reuse hydration handles).
 3. **Initial fetch is inflated to ~220** (`defaultBatchLimit + initialReviewCap`),
    compounding (2) at spin-up.
 
-### Instrumentation (parked)
+### Instrumentation
 
-The `[perf]` timing logs across `Pipeline`, `SessionController`,
+**Timing marks (stable, shipped; fw #1198).** User Timing entries that tools
+read with `performance.getEntriesByType('mark' | 'measure')` or Lighthouse's
+`user-timings`:
+
+| Name | Where | Detail |
+|------|-------|--------|
+| `sk:session-prepare-start`, `sk:session-prepared`, measure `sk:session-prepare` | `SessionController.prepareSession` | — |
+| measure `sk:pipeline-run` (every run) | `Pipeline.getWeightedCards` | stage ms; `binding`: `local` / `remote` / `unknown` (`CourseDBInterface.readsLocal`) |
+| `sk:course-sync-replicated`, `sk:course-sync-ready`, `sk:course-sync-refreshed` | `CourseSyncService` | `ready`'s `from`: `marker` / `sync` |
+| `sk:first-card` | common-ui `StudySession` | card ID |
+
+Helpers: `perfMark` / `perfMeasure` (`db/src/util/perfMarks.ts`), which never
+throw.
+
+**Parked logs.** The `[perf]` timing logs across `Pipeline`, `SessionController`,
 `CardHydrationService`, `elo`/`srs` generators, and `courseDB` are commented out
-in place — search **`[perf] parked`**. Uncomment to re-measure. The pre-existing
-`[Pipeline:timing]` summary line is kept (it predates this effort). Two
-provenance fields added during the dig — `awaitedReplan` and `wedgeRuns` on the
-`nextCard` log — are the instruments to re-enable first if the wedge question is
-revisited.
+in place — search **`[perf] parked`**. Uncomment to re-measure. The
+`[Pipeline:timing]` summary line stays. Two provenance fields on the `nextCard`
+log — `awaitedReplan` and `wedgeRuns` — are the instruments to re-enable first if
+the wedge question is revisited.
 
 ## File reference
 
 | File | Relevant region |
 |------|-----------------|
 | `db/src/study/SessionController.ts` | queues, `requestReplan`, `_runReplan`, `nextCard` triggers, wedge-breaker |
-| `db/src/impl/couch/courseDB.ts` | `getWeightedCards`, `setEphemeralHints`, `createNavigator` (no cache) |
+| `db/src/impl/couch/courseDB.ts` | `getWeightedCards`, `setEphemeralHints`, `createNavigator`, `readsLocal` |
 | `db/src/core/navigators/Pipeline.ts` | `getWeightedCards` (fetchLimit=500), `applyHints`, `hydrateTags`, `buildContext` |
 | `db/src/core/navigators/generators/types.ts` | `ReplanHints`, `GeneratorResult` |
 | `db/src/study/SourceMixer.ts` | `QuotaRoundRobinMixer` |
