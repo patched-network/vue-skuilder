@@ -527,6 +527,9 @@ export class SessionController<TView = unknown> extends Loggable {
     };
 
     this.sources = sources;
+    for (const source of sources) {
+      source.setSessionId?.(this.sessionId);
+    }
     this.startTime = new Date();
     this._secondsRemaining = time;
     this.endTime = new Date(this.startTime.valueOf() + 1000 * this._secondsRemaining);

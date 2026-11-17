@@ -316,6 +316,7 @@ export class Pipeline extends ContentNavigator implements PipelineForecaster {
    * getWeightedCards() call, then cleared.
    */
   private _ephemeralHints: ReplanHints | null = null;
+  private _sessionId: string | undefined;
 
   /**
    * The intake valve's clock (see regulators.ts), loaded from strategy state on
@@ -366,6 +367,11 @@ export class Pipeline extends ContentNavigator implements PipelineForecaster {
    *
    * Overrides ContentNavigator.setEphemeralHints() no-op.
    */
+  /** See StudyContentSource.setSessionId. Carried into every run's context. */
+  override setSessionId(sessionId: string): void {
+    this._sessionId = sessionId;
+  }
+
   override setEphemeralHints(hints: ReplanHints): void {
     this._ephemeralHints = hints;
     logger.info(`[Pipeline] Ephemeral hints set: ${JSON.stringify(hints)}`);
@@ -959,6 +965,7 @@ export class Pipeline extends ContentNavigator implements PipelineForecaster {
       userElo,
       ...(userCourseElo ? { userCourseElo } : {}),
       orchestration,
+      ...(this._sessionId ? { sessionId: this._sessionId } : {}),
     };
   }
 

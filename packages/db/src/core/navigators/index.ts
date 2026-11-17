@@ -702,4 +702,9 @@ export abstract class ContentNavigator implements StudyContentSource {
   setEphemeralHints(_hints: ReplanHints): void {
     // no-op — only Pipeline implements this
   }
+
+  /** See StudyContentSource.setSessionId. No-op for non-Pipeline navigators. */
+  setSessionId(_sessionId: string): void {
+    // no-op — only Pipeline implements this
+  }
 }
