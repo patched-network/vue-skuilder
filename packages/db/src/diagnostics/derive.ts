@@ -13,7 +13,7 @@ import type {
   StudySessionRunSummary,
 } from '../core/types/studySession';
 import type { CardSummary, DatasetRecord, LearnerDataset } from './dataset';
-import type { TagBatch } from './tagElo';
+import type { TagBatch, TagEloViewOptions } from './tagElo';
 
 /**
  * Course-supplied meaning for the generic views. Every member is optional and
@@ -36,6 +36,11 @@ export interface DiagnosticsInterpreters {
    * batches it finds on its own. Default: none.
    */
   tagBatches?: TagBatch[];
+  /**
+   * How the ELO view reads skills: which tags security and need consider, and
+   * their thresholds. Default: exercise-role tags, framework thresholds.
+   */
+  tagEloOptions?: TagEloViewOptions;
 }
 
 export const isSkillTag = (i: DiagnosticsInterpreters | undefined, tag: string): boolean =>

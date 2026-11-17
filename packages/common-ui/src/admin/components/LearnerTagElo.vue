@@ -11,9 +11,15 @@
         count. Bookkeeping tags (<code>intro</code>, <code>expose</code>) are counted, never rated, and are hidden by
         default.
       </p>
+      <p class="text-caption text-medium-emphasis mb-4">
+        <b>Security</b> reads the recent first attempts on each skill, right or wrong on that tag:
+        <i>unproven</i> is too little evidence (few attempts, or right answers on one day only), <i>shaky</i> is right
+        on too few of the last dozen, <i>secure</i> is neither. <b>Need</b> is how far a skill's rating sits below the
+        median of the learner's skills (the dashed line), 0–1: what skill-aware selection leans toward.
+      </p>
 
       <v-row dense class="mb-2">
-        <v-col v-for="tile in tiles" :key="tile.label" cols="6" sm="3">
+        <v-col v-for="tile in tiles" :key="tile.label" cols="6" sm="4" md="">
           <v-card variant="tonal" color="primary" class="pa-2 text-center">
             <div class="text-h6">{{ tile.value }}</div>
             <div class="text-caption">{{ tile.label }}</div>
@@ -39,6 +45,8 @@
       <div class="d-flex align-center flex-wrap mb-4 ga-3">
         <v-btn-toggle v-model="sortBy" mandatory density="compact" color="primary" variant="outlined">
           <v-btn value="score" size="small">ELO</v-btn>
+          <v-btn value="need" size="small">Need</v-btn>
+          <v-btn value="security" size="small">Security</v-btn>
           <v-btn value="count" size="small">Responses</v-btn>
           <v-btn value="lastSeen" size="small">Last seen</v-btn>
           <v-btn value="tag" size="small">Name</v-btn>
@@ -104,6 +112,8 @@
             <th>Batch</th>
             <th class="text-right">ELO</th>
             <th class="text-right">vs global</th>
+            <th>Security</th>
+            <th class="text-right">Need</th>
             <th class="text-right">Responses</th>
             <th>Recent first attempts</th>
             <th>First seen</th>
@@ -133,6 +143,20 @@
               </span>
             </td>
             <td class="text-right" :class="deltaClass(r.vsGlobal)">{{ signed(r.vsGlobal) }}</td>
+            <td>
+              <v-chip
+                v-if="r.security"
+                size="x-small"
+                variant="tonal"
+                :color="SECURITY_COLOR[r.security.status]"
+                :title="securityTitle(r)"
+              >
+                {{ r.security.status }}
+              </v-chip>
+            </td>
+            <td class="text-right" :title="r.deficit !== undefined ? `${Math.round(r.deficit)} below the skill median` : ''">
+              {{ r.need !== undefined ? r.need.toFixed(2) : '' }}
+            </td>
             <td class="text-right">{{ r.count }}</td>
             <td>
               <span v-if="r.recent.length" class="sk-ticks">
@@ -140,8 +164,8 @@
                   v-for="(p, i) in r.recent"
                   :key="i"
                   class="sk-tick"
-                  :class="p.ok ? 'bg-success' : 'bg-error'"
-                  :title="`${fmtTime(p.at)} · ${p.ok ? 'correct' : 'missed'} · ${p.card}`"
+                  :class="presentationOk(p) ? 'bg-success' : 'bg-error'"
+                  :title="`${fmtTime(p.at)} · ${presentationOk(p) ? 'right' : 'missed'} on this tag · card ${p.ok ? 'correct' : 'missed'} · ${p.card}`"
                 />
                 <span class="text-caption ml-1">{{ r.recentOk }}/{{ r.recent.length }}</span>
               </span>
@@ -161,6 +185,7 @@
 import { computed, ref, watch } from 'vue';
 import { useTheme } from 'vuetify';
 import type { ECElementEvent, EChartsCoreOption } from 'echarts/core';
+import { presentationOk, type TagSecurityStatus } from '@vue-skuilder/common';
 import {
   matchesTagBatch,
   shortTag,
@@ -185,7 +210,7 @@ const props = defineProps<{
   interpreters?: DiagnosticsInterpreters;
 }>();
 
-const view = computed(() => tagEloView(props.dataset));
+const view = computed(() => tagEloView(props.dataset, props.interpreters?.tagEloOptions));
 
 // ---------------------------------------------------------------------------
 // Filters
@@ -203,15 +228,30 @@ const batchOptions = computed(() => {
 const isBookkeeping = (b: TagBatch): boolean => b.roles?.some((r) => r === 'intro' || r === 'expose') ?? false;
 
 const selectedBatches = ref<string[]>([]);
-const sortBy = ref<'score' | 'count' | 'lastSeen' | 'tag'>('score');
+const sortBy = ref<'score' | 'need' | 'security' | 'count' | 'lastSeen' | 'tag'>('score');
 const minCount = ref<number>(0);
 const search = ref<string | null>('');
+
+const SECURITY_RANK: Record<TagSecurityStatus | 'none', number> = { shaky: 0, unproven: 1, secure: 2, none: 3 };
+const SECURITY_COLOR: Record<TagSecurityStatus, string> = { secure: 'success', shaky: 'warning', unproven: 'grey' };
+
+function securityTitle(r: TagEloRow): string {
+  const s = r.security;
+  if (!s) return '';
+  const n = Math.min(s.attempts, 12);
+  return `${s.right}/${n} right on this tag (of ${s.attempts} buffered first attempts), right answers on ${s.days} day(s)`;
+}
 
 const byScore = (a: TagEloRow, b: TagEloRow): number =>
   a.score === null || b.score === null ? Number(a.score === null) - Number(b.score === null) : b.score - a.score;
 const byLastSeen = (a: TagEloRow, b: TagEloRow): number => (b.lastSeen ?? '').localeCompare(a.lastSeen ?? '');
 const SORTS: Record<typeof sortBy.value, (a: TagEloRow, b: TagEloRow) => number> = {
   score: byScore,
+  need: (a, b) => (b.need ?? -1) - (a.need ?? -1),
+  // Shaky, then unproven, then secure; within each, lowest accuracy first.
+  security: (a, b) =>
+    SECURITY_RANK[a.security?.status ?? 'none'] - SECURITY_RANK[b.security?.status ?? 'none'] ||
+    (a.security?.accuracy ?? 1) - (b.security?.accuracy ?? 1),
   count: (a, b) => b.count - a.count,
   lastSeen: byLastSeen,
   tag: (a, b) => a.tag.localeCompare(b.tag),
@@ -313,10 +353,15 @@ function escapeHtml(s: string): string {
 }
 
 function rowTooltip(r: TagEloRow): string {
-  const recent = r.recent.length ? `recent ${r.recentOk}/${r.recent.length} correct` : 'no recent buffer';
+  const recent = r.recent.length ? `recent ${r.recentOk}/${r.recent.length} right` : 'no recent buffer';
+  const skill = [
+    r.security ? r.security.status : null,
+    r.need !== undefined ? `need ${r.need.toFixed(2)}` : null,
+  ].filter(Boolean);
   return [
     `<b>${escapeHtml(r.tag)}</b>`,
     `ELO ${r.score} (${signed(r.vsGlobal)} vs global) · ${r.count} responses`,
+    ...(skill.length ? [skill.join(' · ')] : []),
     `${recent} · last seen ${fmtDate(r.lastSeen)}`,
   ].join('<br/>');
 }
@@ -325,7 +370,8 @@ const dotOption = computed<EChartsCoreOption>(() => {
   const rows = plotted.value;
   const c = ink.value;
   const global = view.value?.global.score ?? 0;
-  const scores = [global, ...rows.map((r) => r.score as number)];
+  const reference = view.value?.skillReference ?? null;
+  const scores = [global, ...(reference === null ? [] : [reference]), ...rows.map((r) => r.score as number)];
   const lo = Math.floor((Math.min(...scores) - 20) / 50) * 50;
   const hi = Math.ceil((Math.max(...scores) + 20) / 50) * 50;
   return {
@@ -379,7 +425,18 @@ const dotOption = computed<EChartsCoreOption>(() => {
           symbol: 'none',
           lineStyle: { color: c.primary, type: 'solid', width: 1 },
           label: { formatter: `global ${global}`, color: c.secondary, position: 'end' },
-          data: [{ xAxis: global }],
+          data: [
+            { xAxis: global },
+            ...(reference === null
+              ? []
+              : [
+                  {
+                    xAxis: reference,
+                    lineStyle: { color: c.secondary, type: 'dashed', width: 1 },
+                    label: { formatter: `skill median ${Math.round(reference)}`, color: c.muted, position: 'start' },
+                  },
+                ]),
+          ],
         },
       },
     ],
@@ -528,6 +585,10 @@ const tiles = computed(() => {
     { label: `global ELO (${v?.global.count ?? 0} responses)`, value: v?.global.score ?? '—' },
     { label: 'rated tags in view', value: `${plotted.value.length} / ${rated.length}` },
     { label: 'median vs global, in view', value: signed(median) },
+    {
+      label: 'secure / shaky / unproven',
+      value: v ? `${v.security.secure} / ${v.security.shaky} / ${v.security.unproven}` : '—',
+    },
     { label: 'trajectories from', value: fmtDate(v?.seriesFrom ?? null) },
   ];
 });
