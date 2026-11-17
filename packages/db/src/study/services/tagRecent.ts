@@ -1,6 +1,7 @@
 import {
   CourseElo,
   EloRank,
+  TAG_OK_MIN_PERF,
   TaggedPerformance,
   TagPresentation,
   pushTagPresentation,
@@ -62,7 +63,13 @@ export function recordTagPresentations(
     if (tag === '_global') continue;
     if (typeof score !== 'number') continue; // count-only exposure tag
     const rank: EloRank = userElo.tags[tag] ?? { score: userElo.global.score, count: 0 };
-    const entry: TagPresentation = { at, ok, perf: score, card: cardId };
+    const entry: TagPresentation = {
+      at,
+      ok,
+      tagOk: score > TAG_OK_MIN_PERF,
+      perf: score,
+      card: cardId,
+    };
     userElo.tags[tag] = pushTagPresentation(rank, entry);
     written.push(tag);
   }

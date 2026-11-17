@@ -39,8 +39,14 @@ export type CourseElo = {
 export type TagPresentation = {
   /** ISO timestamp of the presentation */
   at: string;
-  /** First-attempt correct */
+  /** First-attempt correct, for the card as a whole */
   ok: boolean;
+  /**
+   * First-attempt correct on this tag: its performance exceeded
+   * TAG_OK_MIN_PERF (tagSecurity.ts). Absent on entries written before
+   * 2026-11; readers fall back to `perf`.
+   */
+  tagOk?: boolean;
   /** The 0–1 tag performance the record carried */
   perf: number;
   /** cardID, so a reader can tell "one card, twelve times" from breadth */
