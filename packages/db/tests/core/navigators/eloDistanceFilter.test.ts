@@ -144,6 +144,21 @@ describe('ELO Distance Filter', () => {
     });
   });
 
+  describe('intro cards', () => {
+    it('passes an intro-role card through untouched, whatever its distance', async () => {
+      const filter = createEloDistanceFilter();
+      const intro = { ...createCard('intro-1', 2.0), tags: ['gpc:intro:WORD-are', 'srs:skip'] };
+      const graded = { ...createCard('card-1', 2.0), tags: ['gpc:exercise:a-AE'] };
+      const context = createMockContext(1600, { 'intro-1': 1000, 'card-1': 1000 });
+
+      const result = await filter.transform([intro, graded], context);
+
+      expect(result[0].score).toBe(2.0);
+      expect(result[0].provenance.at(-1)?.reason).toContain('intro card');
+      expect(result[1].score).toBeLessThan(0.2);
+    });
+  });
+
   describe('provenance tracking', () => {
     it('should append provenance entry with ELO details', async () => {
       const filter = createEloDistanceFilter();

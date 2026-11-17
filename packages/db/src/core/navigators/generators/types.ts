@@ -62,6 +62,9 @@ export interface GeneratorContext {
   /** Orchestration context for evolutionary weighting */
   orchestration?: OrchestrationContext;
 
+  /** The study session this run belongs to, when the caller set one. */
+  sessionId?: string;
+
   // Future extensions:
   // - user's tag-level ELO data
   // - course config

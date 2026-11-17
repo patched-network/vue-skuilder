@@ -33,6 +33,19 @@ import { logger } from '@db/util/logger';
 // lesson gating, letter gating, interference, and priority filters continue to
 // shape final ordering.
 //
+// KNOWN LATENT BUG (2026-11-17): this generator decides targets, support,
+// boost hints and pressure *before* the gates run, and knows nothing about
+// them. It will target and support cards a gate is certain to block (LP:
+// intro-core's ck-K / wh-W and their doubled-consonant support, behind a
+// deferred lesson, cut to ~x0.002). Harmless while every such card stays
+// gated; but staleness escalates the support boost hint to x4 on those tags,
+// so the day one becomes ungated it gets that boost at once (a pressure
+// mania). Proposed fix: Pipeline offers generators the gate-kind filters
+// (e.g. `context.gate(cardIds)`), and prescribed treats gated candidates as
+// blocked: not emitted, not boosted, not escalating. That would also replace
+// this file's own hierarchy walk. LP tracking: agent/curriculum-log/concerns.md
+// (Watch: "Prescribed targets gated cards").
+//
 // ============================================================================
 
 interface HierarchyWalkConfig {
@@ -102,6 +115,12 @@ interface PrescribedProgressState {
    * map self-prunes and "staleness" is measured from first-owed, not last-seen.
    */
   practiceDebt?: Record<string, string>;
+  /**
+   * The study session of the last run. `sessionsSinceSurfaced` advances once
+   * per new session, not once per run (a session replans several times).
+   * Absent when the caller set no session id; then each run counts.
+   */
+  lastSessionId?: string;
 }
 
 interface TagPrerequisite {
@@ -334,9 +353,15 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
 
     const cardsByTag = await this.loadCardsByTag();
 
+    const sessionId = context?.sessionId;
+    // A run with no session id counts as its own session (the old behaviour).
+    const newSession = sessionId === undefined || sessionId !== progress.lastSessionId;
     const nextState: PrescribedProgressState = {
       updatedAt: isoNow(),
       groups: {},
+      ...(sessionId || progress.lastSessionId
+        ? { lastSessionId: sessionId ?? progress.lastSessionId }
+        : {}),
     };
 
     const emitted: WeightedCard[] = [];
@@ -395,7 +420,11 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
         }
       }
 
-      nextState.groups[group.id] = this.buildNextGroupState(runtime, progress.groups[group.id]);
+      nextState.groups[group.id] = this.buildNextGroupState(
+        runtime,
+        progress.groups[group.id],
+        newSession
+      );
 
       const directCards = this.buildDirectTargetCards(
         runtime,
@@ -490,15 +519,15 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
       surfacedByGroup.get(groupId)![mode].push(card.cardId);
     }
 
+    // Emission is not surfacing. A card emitted here can still lose to the rest
+    // of the heap and never be shown, so it does not reset the staleness clock;
+    // only a target reaching the learner does (buildNextGroupState). Support
+    // emission is still recorded, as bookkeeping.
     for (const group of this.config.groups) {
       const groupState = nextState.groups[group.id];
       const surfaced = surfacedByGroup.get(group.id);
-      if (surfaced && (surfaced.targetIds.length > 0 || surfaced.supportIds.length > 0)) {
-        groupState.lastSurfacedAt = isoNow();
-        groupState.sessionsSinceSurfaced = 0;
-        if (surfaced.supportIds.length > 0) {
-          groupState.lastSupportAt = isoNow();
-        }
+      if (surfaced && surfaced.supportIds.length > 0) {
+        groupState.lastSupportAt = isoNow();
       }
     }
 
@@ -859,15 +888,31 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
     };
   }
 
-  private buildNextGroupState(runtime: GroupRuntimeState, prior?: GroupCardState): GroupCardState {
+  /**
+   * The group's state after this run. The staleness clock resets only when a
+   * target has reached the learner since the last run: it is newly in
+   * `encounteredTargets`, which reads card history and scheduled reviews, so
+   * the card was shown and answered. Emitting a target does not count; it may
+   * lose to the rest of the heap. (Before 2026-11, emission reset the clock,
+   * and a group that emitted every run never escalated.) The clock advances
+   * once per study session, not per run.
+   */
+  private buildNextGroupState(
+    runtime: GroupRuntimeState,
+    prior: GroupCardState | undefined,
+    newSession: boolean
+  ): GroupCardState {
     const carriedSessions = prior?.sessionsSinceSurfaced ?? 0;
-    const surfacedThisRun = false;
+    const previouslyEncountered = new Set(prior?.encounteredCardIds ?? []);
+    const surfacedThisRun =
+      prior !== undefined &&
+      [...runtime.encounteredTargets].some((id) => !previouslyEncountered.has(id));
 
     return {
       encounteredCardIds: [...runtime.encounteredTargets].sort(),
       pendingTargetIds: [...runtime.pendingTargets].sort(),
-      lastSurfacedAt: prior?.lastSurfacedAt ?? null,
-      sessionsSinceSurfaced: surfacedThisRun ? 0 : carriedSessions + 1,
+      lastSurfacedAt: surfacedThisRun ? isoNow() : (prior?.lastSurfacedAt ?? null),
+      sessionsSinceSurfaced: surfacedThisRun ? 0 : carriedSessions + (newSession ? 1 : 0),
       lastSupportAt: prior?.lastSupportAt ?? null,
       blockedTargetIds: [...runtime.blockedTargets].sort(),
       lastResolvedSupportTags: [...runtime.supportTags].sort(),

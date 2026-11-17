@@ -94,6 +94,13 @@ export interface StudyContentSource {
   setEphemeralHints?(hints: ReplanHints): void;
 
   /**
+   * The study session the following runs belong to. Persists until replaced
+   * (unlike hints). Generators read it from their context, e.g. to count
+   * sessions rather than runs.
+   */
+  setSessionId?(sessionId: string): void;
+
+  /**
    * A card was just presented. `status` is the session item's (`'new'`,
    * `'review'`, `'failed-new'`, ...). Pipelines use a new card's first
    * presentation to restart their intake valve's clock.

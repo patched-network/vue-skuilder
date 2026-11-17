@@ -451,6 +451,16 @@ export class StaticCourseDB implements CourseDBInterface {
     this._pendingHints = hints;
   }
 
+
+  private _sessionId: string | null = null;
+
+
+  setSessionId(sessionId: string): void {
+
+    this._sessionId = sessionId;
+
+  }
+
   /** Forward a presentation to the navigator (a new card restarts its intake clock). */
   notePresented(card: { cardId: string; courseId: string; status: string }): void {
     if (card.status !== 'new') return;
@@ -466,6 +476,9 @@ export class StaticCourseDB implements CourseDBInterface {
       if (this._pendingHints) {
         navigator.setEphemeralHints(this._pendingHints);
         this._pendingHints = null;
+      }
+      if (this._sessionId) {
+        navigator.setSessionId(this._sessionId);
       }
       return navigator.getWeightedCards(limit);
     } catch (e) {

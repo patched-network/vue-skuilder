@@ -729,6 +729,16 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
     this._pendingHints = hints;
   }
 
+
+  private _sessionId: string | null = null;
+
+
+  public setSessionId(sessionId: string): void {
+
+    this._sessionId = sessionId;
+
+  }
+
   /**
    * Forward a presentation to the navigator (a new card restarts its intake
    * clock). Builds the navigator if the cached one has expired.
@@ -751,6 +761,9 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
       if (this._pendingHints) {
         navigator.setEphemeralHints(this._pendingHints);
         this._pendingHints = null;
+      }
+      if (this._sessionId) {
+        navigator.setSessionId(this._sessionId);
       }
       const result = await navigator.getWeightedCards(limit);
       // const tRun = performance.now(); // [perf] parked
