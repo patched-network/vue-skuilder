@@ -35,8 +35,8 @@ import { logger } from '../../../util/logger';
 //
 // Intro cards pass through untouched. They carry an `intro`-role tag, grade
 // nothing, and their ELO is a placeholder, so a distance on it means nothing.
-// Penalising them starved established learners of every intro (an LP learner
-// at ~1600 saw sight-word intros at 1000 scored ×0.05 for six weeks).
+// Penalising them starves established learners of intros: a learner rated
+// well above the placeholder sees every intro at the curve's floor.
 //
 // A `signal`, not a gate: it expresses preference, not readiness. `liveOnly`:
 // forecasts and card-space scans start every card at 1.0 without a generator,

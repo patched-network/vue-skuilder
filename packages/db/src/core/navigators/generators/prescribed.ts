@@ -35,16 +35,15 @@ import { logger } from '@db/util/logger';
 //
 // KNOWN LATENT BUG (2026-11-17): this generator decides targets, support,
 // boost hints and pressure *before* the gates run, and knows nothing about
-// them. It will target and support cards a gate is certain to block (LP:
-// intro-core's ck-K / wh-W and their doubled-consonant support, behind a
-// deferred lesson, cut to ~x0.002). Harmless while every such card stays
-// gated; but staleness escalates the support boost hint to x4 on those tags,
+// them. It will target and support cards a gate is certain to block (e.g. a
+// target whose prerequisites sit behind a course gate that never opens), so
+// the group can never complete. Harmless while every such card stays gated;
+// but staleness escalates the support boost hint to its cap on those tags,
 // so the day one becomes ungated it gets that boost at once (a pressure
 // mania). Proposed fix: Pipeline offers generators the gate-kind filters
 // (e.g. `context.gate(cardIds)`), and prescribed treats gated candidates as
 // blocked: not emitted, not boosted, not escalating. That would also replace
-// this file's own hierarchy walk. LP tracking: agent/curriculum-log/concerns.md
-// (Watch: "Prescribed targets gated cards").
+// this file's own hierarchy walk.
 //
 // ============================================================================
 
