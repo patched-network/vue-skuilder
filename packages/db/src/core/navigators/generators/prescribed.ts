@@ -490,15 +490,15 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
       surfacedByGroup.get(groupId)![mode].push(card.cardId);
     }
 
+    // Emission is not surfacing. A card emitted here can still lose to the rest
+    // of the heap and never be shown, so it does not reset the staleness clock;
+    // only a target reaching the learner does (buildNextGroupState). Support
+    // emission is still recorded, as bookkeeping.
     for (const group of this.config.groups) {
       const groupState = nextState.groups[group.id];
       const surfaced = surfacedByGroup.get(group.id);
-      if (surfaced && (surfaced.targetIds.length > 0 || surfaced.supportIds.length > 0)) {
-        groupState.lastSurfacedAt = isoNow();
-        groupState.sessionsSinceSurfaced = 0;
-        if (surfaced.supportIds.length > 0) {
-          groupState.lastSupportAt = isoNow();
-        }
+      if (surfaced && surfaced.supportIds.length > 0) {
+        groupState.lastSupportAt = isoNow();
       }
     }
 
@@ -859,14 +859,25 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
     };
   }
 
+  /**
+   * The group's state after this run. The staleness clock resets only when a
+   * target has reached the learner since the last run: it is newly in
+   * `encounteredTargets`, which reads card history and scheduled reviews, so
+   * the card was shown and answered. Emitting a target does not count; it may
+   * lose to the rest of the heap. (Before 2026-11, emission reset the clock,
+   * and a group that emitted every run never escalated.)
+   */
   private buildNextGroupState(runtime: GroupRuntimeState, prior?: GroupCardState): GroupCardState {
     const carriedSessions = prior?.sessionsSinceSurfaced ?? 0;
-    const surfacedThisRun = false;
+    const previouslyEncountered = new Set(prior?.encounteredCardIds ?? []);
+    const surfacedThisRun =
+      prior !== undefined &&
+      [...runtime.encounteredTargets].some((id) => !previouslyEncountered.has(id));
 
     return {
       encounteredCardIds: [...runtime.encounteredTargets].sort(),
       pendingTargetIds: [...runtime.pendingTargets].sort(),
-      lastSurfacedAt: prior?.lastSurfacedAt ?? null,
+      lastSurfacedAt: surfacedThisRun ? isoNow() : (prior?.lastSurfacedAt ?? null),
       sessionsSinceSurfaced: surfacedThisRun ? 0 : carriedSessions + 1,
       lastSupportAt: prior?.lastSupportAt ?? null,
       blockedTargetIds: [...runtime.blockedTargets].sort(),

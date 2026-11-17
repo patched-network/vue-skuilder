@@ -5,7 +5,7 @@ import { ContentNavigator } from '../index';
 import type { WeightedCard } from '../index';
 import type { GeneratorResult } from '../generators/types';
 import type { CardFilter, FilterContext, FilterKind } from './types';
-import { COUNT_ONLY_SCORE, isCountOnlyTag, type CourseElo } from '@vue-skuilder/common';
+import { COUNT_ONLY_SCORE, isCountOnlyTag, tagRole, type CourseElo } from '@vue-skuilder/common';
 import { logger } from '../../../util/logger';
 
 // ============================================================================
@@ -32,6 +32,11 @@ import { logger } from '../../../util/logger';
 // See tagAwareGap for the combination. Global distance is the default; a course
 // opts in with `tagAware`, a browser with `window.skuilder.multiDimElo = true`
 // (see the toggle below), for side-by-side testing.
+//
+// Intro cards pass through untouched. They carry an `intro`-role tag, grade
+// nothing, and their ELO is a placeholder, so a distance on it means nothing.
+// Penalising them starved established learners of every intro (an LP learner
+// at ~1600 saw sight-word intros at 1000 scored ×0.05 for six weeks).
 //
 // A `signal`, not a gate: it expresses preference, not readiness. `liveOnly`:
 // forecasts and card-space scans start every card at 1.0 without a generator,
@@ -98,6 +103,11 @@ export const DEFAULT_ELO_DISTANCE_CONFIG: Required<EloDistanceConfig> = {
  * tag evidence leans on global ELO; well-practised tags dominate.
  */
 const TAG_CONFIDENCE_HALF = 10;
+
+/** Whether the card is an intro: any `intro`-role tag. Its ELO is a placeholder. */
+function isIntroCard(card: WeightedCard): boolean {
+  return (card.tags ?? []).some((t) => tagRole(t) === 'intro');
+}
 
 /** Fallback card ELO when a card has none recorded. */
 const DEFAULT_CARD_ELO = 1000;
@@ -279,7 +289,9 @@ async function applyEloDistance(
 
   // Tag-aware needs every card's full ratings; otherwise only the ELO of cards
   // that don't carry it (reviews). One batch either way.
-  const missing = cards.filter((c) => tagAware || c.cardElo === undefined).map((c) => c.cardId);
+  const missing = cards
+    .filter((c) => !isIntroCard(c) && (tagAware || c.cardElo === undefined))
+    .map((c) => c.cardId);
   const fetched = new Map<string, CourseElo>();
   if (missing.length > 0) {
     const elos = await course.getCardEloData(missing);
@@ -289,6 +301,23 @@ async function applyEloDistance(
   }
 
   return cards.map((card) => {
+    if (isIntroCard(card)) {
+      return {
+        ...card,
+        provenance: [
+          ...card.provenance,
+          {
+            strategy: 'eloDistance',
+            strategyName: source.name,
+            strategyId: source.strategyId,
+            action: 'passed',
+            score: card.score,
+            reason: 'intro card: ELO is a placeholder, distance not applied → 1.00x',
+          },
+        ],
+      };
+    }
+
     const full = fetched.get(card.cardId);
     const cardElo = full?.global?.score ?? card.cardElo ?? DEFAULT_CARD_ELO;
 
