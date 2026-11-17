@@ -200,18 +200,21 @@ export async function initializeNavigatorRegistry(): Promise<void> {
     relativePriorityModule,
     userTagPreferenceModule,
     eloDistanceModule,
+    skillPressureModule,
   ] = await Promise.all([
     import('./filters/hierarchyDefinition'),
     import('./filters/interferenceMitigator'),
     import('./filters/relativePriority'),
     import('./filters/userTagPreference'),
     import('./filters/eloDistance'),
+    import('./filters/skillPressure'),
   ]);
   registerNavigator('hierarchyDefinition', hierarchyModule.default);
   registerNavigator('interferenceMitigator', interferenceModule.default);
   registerNavigator('relativePriority', relativePriorityModule.default);
   registerNavigator('userTagPreference', userTagPreferenceModule.default);
   registerNavigator('eloDistance', eloDistanceModule.default);
+  registerNavigator('skillPressure', skillPressureModule.default);
 
   logger.debug(
     `[NavigatorRegistry] Initialized ${navigatorRegistry.size} navigators: ${getRegisteredNavigatorNames().join(', ')}`
@@ -412,6 +415,7 @@ export enum Navigators {
   RELATIVE_PRIORITY = 'relativePriority',
   USER_TAG_PREFERENCE = 'userTagPreference',
   ELO_DISTANCE = 'eloDistance',
+  SKILL_PRESSURE = 'skillPressure',
 }
 
 // ============================================================================
@@ -452,6 +456,7 @@ export const NavigatorRoles: Record<Navigators, NavigatorRole> = {
   [Navigators.RELATIVE_PRIORITY]: NavigatorRole.FILTER,
   [Navigators.USER_TAG_PREFERENCE]: NavigatorRole.FILTER,
   [Navigators.ELO_DISTANCE]: NavigatorRole.FILTER,
+  [Navigators.SKILL_PRESSURE]: NavigatorRole.FILTER,
 };
 
 /**
