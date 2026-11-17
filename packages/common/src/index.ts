@@ -2,6 +2,8 @@ export * from './wire-format.js';
 export * from './course-data.js';
 export * from './elo.js';
 export * from './tagRoles.js';
+export * from './tagSecurity.js';
+export * from './skillNeed.js';
 export * from './namespacer.js';
 export * from './logshim.js';
 export * from './validators.js';

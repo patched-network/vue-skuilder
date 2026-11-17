@@ -10,9 +10,17 @@
  */
 import {
   COUNT_ONLY_SCORE,
+  courseSecurity,
   isCountOnlyTag,
+  presentationOk,
+  skillNeed,
   tagRole,
   type CourseElo,
+  type CourseSecurity,
+  type SkillNeedConfig,
+  type TagSecurity,
+  type TagSecurityConfig,
+  type TagSelector,
   type EloRank,
   type TagPresentation,
   type TagRole,
@@ -104,8 +112,14 @@ export interface TagEloRow {
   vsGlobal: number | null;
   /** The rating's ring buffer of recent first attempts, oldest first. */
   recent: TagPresentation[];
-  /** First-attempt correct entries in `recent`. */
+  /** Entries in `recent` right on this tag (per-tag, not the card's ok). */
   recentOk: number;
+  /** Secure / shaky / unproven, for tags the security selector picks (met exercise tags by default). */
+  security?: TagSecurity;
+  /** 0–1 need from skillNeed; absent for tags that don't qualify as skills. */
+  need?: number;
+  /** Skill reference − rating; absent with need. */
+  deficit?: number;
   /** First and last response whose per-tag performance named the tag, or a recent entry. */
   firstSeen: string | null;
   lastSeen: string | null;
@@ -134,6 +148,16 @@ export interface TagEloView {
   series: { global: EloPoint[]; tags: Record<string, EloPoint[]> };
   /** The first ELO event, or null: trajectories start here. */
   seriesFrom: string | null;
+  /** Median rating over the learner's qualifying skills (skillNeed); null if too few. */
+  skillReference: number | null;
+  /** Security totals over the selected tags. */
+  security: Omit<CourseSecurity, 'tags'>;
+}
+
+/** How the view reads skills: a course may pass its own selectors and thresholds. */
+export interface TagEloViewOptions {
+  security?: { selector?: TagSelector; config?: TagSecurityConfig };
+  need?: SkillNeedConfig;
 }
 
 /** The learner's `CourseElo` for the dataset's course, or null if not registered. */
@@ -164,9 +188,14 @@ function step(line: EloPoint[], at: string, before: number, after: number): void
 }
 
 /** The learner's per-tag ELO for display. Null if the dataset has no registration for its course. */
-export function tagEloView(ds: LearnerDataset): TagEloView | null {
+export function tagEloView(ds: LearnerDataset, options: TagEloViewOptions = {}): TagEloView | null {
   const elo = learnerCourseElo(ds);
   if (!elo) return null;
+
+  const security = courseSecurity(elo, options.security);
+  const securityByTag = new Map(security.tags.map((s) => [s.tag, s]));
+  const need = skillNeed(elo, options.need);
+  const needByTag = new Map(need.skills.map((s) => [s.tag, s]));
 
   // When each tag was named by a response, from card history.
   const seen = new Map<string, { first: string | null; last: string | null }>();
@@ -220,7 +249,11 @@ export function tagEloView(ds: LearnerDataset): TagEloView | null {
       count: rank.count,
       vsGlobal: score === null ? null : score - elo.global.score,
       recent,
-      recentOk: recent.filter((p) => p.ok).length,
+      recentOk: recent.filter(presentationOk).length,
+      ...(securityByTag.has(tag) ? { security: securityByTag.get(tag) } : {}),
+      ...(needByTag.has(tag)
+        ? { need: needByTag.get(tag)!.need, deficit: needByTag.get(tag)!.deficit }
+        : {}),
       firstSeen: first,
       lastSeen: last,
       events: eventCounts.get(tag) ?? 0,
@@ -253,5 +286,12 @@ export function tagEloView(ds: LearnerDataset): TagEloView | null {
     ),
     series: { global: globalSeries, tags: tagSeries },
     seriesFrom: events[0]?.at ?? null,
+    skillReference: need.reference,
+    security: {
+      secure: security.secure,
+      shaky: security.shaky,
+      unproven: security.unproven,
+      debt: security.debt,
+    },
   };
 }
