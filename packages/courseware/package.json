@@ -3,7 +3,7 @@
   "publishConfig": {
     "access": "public"
   },
-  "version": "0.3.5",
+  "version": "0.3.6",
   "type": "module",
   "sideEffects": false,
   "main": "./dist/index.cjs.js",
@@ -69,5 +69,5 @@
   "peerDependencies": {
     "vue": "^3.2.0"
   },
-  "stableVersion": "0.3.5"
+  "stableVersion": "0.3.6"
 }
