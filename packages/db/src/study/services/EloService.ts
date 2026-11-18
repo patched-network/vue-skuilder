@@ -1,7 +1,6 @@
 import {
   adjustCourseScores,
   adjustCourseScoresPerTag,
-  EloScoring,
   isCountOnlyTag,
   toCourseElo,
   TaggedPerformance,
@@ -45,11 +44,8 @@ function withCountOnlyRoles(perf: TaggedPerformance, cardId: string): TaggedPerf
 export class EloService {
   private dataLayer: DataLayerProvider;
   private user: UserDBInterface;
-  /** Per course ID: the ELO settings read from its CourseConfig. */
-  private courseSettings = new Map<
-    string,
-    Promise<{ qaPattern: RegExp | null; scoring: EloScoring }>
-  >();
+  /** Per course ID: its compiled `CourseConfig.qaUsernamePattern`, or null. */
+  private qaPatterns = new Map<string, Promise<RegExp | null>>();
 
   constructor(dataLayer: DataLayerProvider, user: UserDBInterface) {
     this.dataLayer = dataLayer;
@@ -57,48 +53,25 @@ export class EloService {
   }
 
   /**
-   * The course's ELO settings, read once per course: its compiled
-   * `qaUsernamePattern` and its `eloScoring`. If the config is unreadable,
-   * nobody is a QA account and scoring is `raw`; a pattern that doesn't
-   * compile matches nobody.
-   */
-  private settingsFor(
-    courseDB: CourseDBInterface
-  ): Promise<{ qaPattern: RegExp | null; scoring: EloScoring }> {
-    const courseId = courseDB.getCourseID();
-    let settings = this.courseSettings.get(courseId);
-    if (!settings) {
-      settings = courseDB
-        .getCourseConfig()
-        .then((cfg) => {
-          let qaPattern: RegExp | null = null;
-          if (cfg.qaUsernamePattern) {
-            try {
-              qaPattern = new RegExp(cfg.qaUsernamePattern, 'i');
-            } catch (e) {
-              logger.warn(`[EloService] Bad QA username pattern for ${courseId}: ${e}`);
-            }
-          }
-          const scoring: EloScoring = cfg.eloScoring === 'gain' ? 'gain' : 'raw';
-          return { qaPattern, scoring };
-        })
-        .catch((e) => {
-          logger.warn(`[EloService] No course config for ${courseId}: ${e}`);
-          return { qaPattern: null, scoring: 'raw' as EloScoring };
-        });
-      this.courseSettings.set(courseId, settings);
-    }
-    return settings;
-  }
-
-  /**
    * Whether the current user is one of the course's QA accounts
    * (`CourseConfig.qaUsernamePattern`), whose responses must not move card
-   * ELO.
+   * ELO. The pattern is read once per course. If the config is unreadable or
+   * the pattern doesn't compile, nobody is a QA account.
    */
   private async isQaUser(courseDB: CourseDBInterface): Promise<boolean> {
-    const { qaPattern } = await this.settingsFor(courseDB);
-    return qaPattern?.test(this.user.getUsername()) ?? false;
+    const courseId = courseDB.getCourseID();
+    let pattern = this.qaPatterns.get(courseId);
+    if (!pattern) {
+      pattern = courseDB
+        .getCourseConfig()
+        .then((cfg) => (cfg.qaUsernamePattern ? new RegExp(cfg.qaUsernamePattern, 'i') : null))
+        .catch((e) => {
+          logger.warn(`[EloService] No QA username pattern for ${courseId}: ${e}`);
+          return null;
+        });
+      this.qaPatterns.set(courseId, pattern);
+    }
+    return (await pattern)?.test(this.user.getUsername()) ?? false;
   }
 
   /**
@@ -151,8 +124,7 @@ export class EloService {
         beforeUserTag[tag] = userElo.tags[tag]?.score ?? userElo.global.score;
       }
 
-      const { scoring } = await this.settingsFor(courseDB);
-      const eloUpdate = adjustCourseScores(userElo, cardElo, userScore, { scoring });
+      const eloUpdate = adjustCourseScores(userElo, cardElo, userScore);
       courseReg.elo = eloUpdate.userElo;
 
       const tags: NonNullable<SessionEloEvent['tags']> = {};
@@ -169,7 +141,6 @@ export class EloService {
         cardId: card_id,
         at: new Date().toISOString(),
         userScore,
-        ...(scoring === 'gain' ? { scoring } : {}),
         global: { before: beforeUserGlobal, after: eloUpdate.userElo.global.score },
         card: {
           before: beforeCardGlobal,
@@ -292,8 +263,7 @@ export class EloService {
         beforeUserTag[tag] = userElo.tags[tag]?.score ?? userElo.global.score;
       }
 
-      const { scoring } = await this.settingsFor(courseDB);
-      const eloUpdate = adjustCourseScoresPerTag(userElo, cardElo, enriched, { scoring });
+      const eloUpdate = adjustCourseScoresPerTag(userElo, cardElo, enriched);
       const at = new Date().toISOString();
 
       // Mastery signal: one ring-buffer entry per scored tag per presentation.
@@ -327,7 +297,6 @@ export class EloService {
         cardId: card_id,
         at,
         userScore: globalScore,
-        ...(scoring === 'gain' ? { scoring } : {}),
         global: { before: beforeUserGlobal, after: eloUpdate.userElo.global.score },
         card: {
           before: beforeCardGlobal,

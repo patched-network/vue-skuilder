@@ -172,48 +172,38 @@ export function isCourseElo(x: unknown): x is CourseElo {
 }
 
 /**
- * How a 0–1 performance score becomes the ELO result ("actual") that is
- * compared with the expectation.
+ * The ELO result ("actual") for a 0–1 performance score against `expected`.
  *
- * - `raw`: the score is the result. A correct answer scored below the
- *   expectation loses rating, so a slow correct answer on an easy card is
- *   a loss (agent/elo-timing-audit in LP).
- * - `gain`: 0 is a miss and scores 0. A positive score `s` is a success of
- *   quality `s`, scoring `expected + s × (1 − expected)`. A success never
- *   lowers the learner (or raises the card), a miss never raises the
- *   learner: the score sets the size of a gain, never its sign. At
- *   equilibrium the rating gap is the true gap plus `400 × log10(s)`, a
- *   constant offset, where `raw` compresses the scale and caps how far
- *   below a learner a card can settle.
+ * 0 is a miss and scores 0. A positive score `s` is a success of quality `s`
+ * (e.g. a timing fraction), giving `expected + s × (1 − expected)`. A success
+ * never lowers the learner or raises the card, and a miss never raises the
+ * learner: the score sets the size of a gain, never its sign.
+ *
+ * So there is no draw: any positive score counts as a success. Feeding the
+ * score in as the result directly made a slow correct answer on an easy card
+ * a loss, which compressed the scale and held learners 100–200 below their
+ * skill (LP agent/elo-timing-audit/a.2.equilibrium.md). Here the rating
+ * settles at the true gap plus `400 × log10(s)`, a constant offset.
  */
-export type EloScoring = 'raw' | 'gain';
-
-/** The ELO result for `score` against `expected` under `scoring`. */
-export function eloActual(score: number, expected: number, scoring: EloScoring = 'raw'): number {
-  if (scoring === 'raw' || score <= 0) return score;
+export function eloActual(score: number, expected: number): number {
+  if (score <= 0) return 0;
   return expected + score * (1 - expected);
 }
-
-export type EloScoringOptions = {
-  /** Default `raw`. */
-  scoring?: EloScoring;
-};
 
 /**
  * Calculates updated ELO scores for users and content after they interact
  *
  * @param userElo current ELO score of the user
  * @param cardElo current ELO score of the card
- * @param userScore user performance against the card in range [0,1]
+ * @param userScore user performance in [0,1]: 0 a miss, positive a success of that quality (see eloActual)
  * @param options.globalOnly skip the card's tags
- * @param options.scoring how the score maps to an ELO result; see EloScoring
  * @returns
  */
 export function adjustCourseScores(
   aElo: Eloish,
   bElo: Eloish,
   userScore: number,
-  options?: EloScoringOptions & {
+  options?: {
     globalOnly?: boolean;
   }
 ): {
@@ -226,8 +216,6 @@ export function adjustCourseScores(
 
   const userElo: CourseElo = toCourseElo(aElo);
   const cardElo: CourseElo = toCourseElo(bElo);
-
-  const scoring = options?.scoring ?? 'raw';
 
   if (!options?.globalOnly) {
     // grade on each tag present for the card; bookkeeping roles are only counted
@@ -242,13 +230,13 @@ export function adjustCourseScores(
             count: 0,
             score: userElo.global.score, // todo: 1000?
           };
-      const adjusted = adjustScores(userTagElo, cardElo.tags[k], userScore, scoring);
+      const adjusted = adjustScores(userTagElo, cardElo.tags[k], userScore);
       userElo.tags[k] = adjusted.userElo;
       cardElo.tags[k] = adjusted.cardElo;
     });
   }
 
-  const adjusted = adjustScores(userElo.global, cardElo.global, userScore, scoring);
+  const adjusted = adjustScores(userElo.global, cardElo.global, userScore);
   userElo.global = adjusted.userElo;
   cardElo.global = adjusted.cardElo;
 
@@ -276,8 +264,7 @@ function kForCount(count: number): number {
 function adjustScores(
   userElo: EloRank,
   cardElo: EloRank,
-  userScore: number,
-  scoring: EloScoring = 'raw'
+  userScore: number
 ): {
   userElo: EloRank;
   cardElo: EloRank;
@@ -290,7 +277,7 @@ function adjustScores(
   const cardRanker = new EloRanker(kForCount(cardElo.count));
 
   const exp = userRanker.getExpected(userElo.score, cardElo.score);
-  const actual = eloActual(userScore, exp, scoring);
+  const actual = eloActual(userScore, exp);
 
   const updatedUserElo = userRanker.updateRating(exp, actual, userElo.score);
   const updatedCardElo = cardRanker.updateRating(1 - exp, 1 - actual, cardElo.score);
@@ -325,7 +312,6 @@ function adjustScores(
  * @param aElo - User's current ELO (will be converted to CourseElo)
  * @param bElo - Card's current ELO (will be converted to CourseElo)
  * @param taggedPerformance - Object with _global score and per-tag scores/null
- * @param options.scoring - how each score maps to an ELO result; see EloScoring
  * @returns Updated user and card ELOs
  *
  * @example
@@ -349,13 +335,11 @@ function adjustScores(
 export function adjustCourseScoresPerTag(
   aElo: Eloish,
   bElo: Eloish,
-  taggedPerformance: TaggedPerformance,
-  options?: EloScoringOptions
+  taggedPerformance: TaggedPerformance
 ): {
   userElo: CourseElo;
   cardElo: CourseElo;
 } {
-  const scoring = options?.scoring ?? 'raw';
   const globalScore = taggedPerformance._global;
 
   if (globalScore < 0 || globalScore > 1) {
@@ -403,13 +387,13 @@ export function adjustCourseScoresPerTag(
     };
 
     // Apply per-tag score
-    const adjusted = adjustScores(userTagElo, cardTagElo, tagScore, scoring);
+    const adjusted = adjustScores(userTagElo, cardTagElo, tagScore);
     userElo.tags[key] = adjusted.userElo;
     cardElo.tags[key] = adjusted.cardElo;
   }
 
   // Apply global score to global ELO
-  const adjustedGlobal = adjustScores(userElo.global, cardElo.global, globalScore, scoring);
+  const adjustedGlobal = adjustScores(userElo.global, cardElo.global, globalScore);
   userElo.global = adjustedGlobal.userElo;
   cardElo.global = adjustedGlobal.cardElo;
 

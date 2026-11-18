@@ -23,12 +23,13 @@ describe('adjustScores', () => {
 
     elos.forEach((a) => {
       elos.forEach((b) => {
-        const adjusted = adjustCourseScores(a, b, 0.5);
+        // Any positive score is a success: the user gains what the card loses.
+        const adjusted = adjustCourseScores(structuredClone(a), structuredClone(b), 0.5);
 
-        expect(adjusted.cardElo.global.score).not.toBeNull();
-        expect(adjusted.userElo.global.score).not.toBeNull();
-        expect(adjusted.cardElo.global.score).toBe(testScore);
-        expect(adjusted.userElo.global.score).toBe(testScore);
+        expect(adjusted.userElo.global.score).toBeGreaterThan(testScore);
+        expect(adjusted.cardElo.global.score).toBe(
+          2 * testScore - adjusted.userElo.global.score
+        );
       });
     });
   });

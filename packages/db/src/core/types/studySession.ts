@@ -187,12 +187,6 @@ export interface SessionEloEvent {
    * less) and a miss to 0; the tagged path uses `_global`.
    */
   userScore: number;
-  /**
-   * `gain` when the course's `eloScoring` turned `userScore` into a result
-   * of `expected + userScore × (1 − expected)` (a miss stays 0). Absent: the
-   * score was the result (`raw`).
-   */
-  scoring?: 'gain';
   /** Learner global ELO before → after this response. */
   global: { before: number; after: number };
   /** Card global ELO before → after (absent if the card ELO was unreadable). */
