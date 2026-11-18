@@ -4,17 +4,18 @@ This guide covers how to create custom navigation strategies for content selecti
 
 ## Overview
 
-Navigation strategies control **which cards** surface during study sessions and **how** they are scored. The system uses a pipeline architecture:
+Navigation strategies control **which cards** surface during study sessions and **how** they are scored. Each planning run goes through these stages:
 
 ```
-Pipeline = Generator(s) + Filter(s)
-         = [Candidate Production] → [Score Transformation]
+Generate → Filter → Drop zeros → Regulate → Hints → Diversity re-rank → Select
 ```
 
 - **Generators** produce candidate cards with initial scores
-- **Filters** transform scores (boost, penalize, or exclude)
+- **Filters** multiply scores: boost, penalize, or exclude (score 0)
 
-All strategies produce `WeightedCard` objects with scores from 0-1 and a provenance trail explaining the scoring.
+The other stages are fixed framework behaviour; [Pedagogy System](../learn/pedagogy) describes them. You extend the pipeline by writing generators and filters.
+
+All strategies produce `WeightedCard` objects, each with a score and a provenance trail explaining it.
 
 ## WeightedCard
 
@@ -24,9 +25,13 @@ The core data type for scored candidates:
 interface WeightedCard {
   cardId: string;
   courseId: string;
-  score: number;              // 0-1 suitability score
+  score: number;              // suitability; usually 0-1 (see Score Semantics)
   provenance: StrategyContribution[];
-  tags?: string[];            // Pre-fetched by Pipeline
+  tags?: string[];            // Pre-fetched by Pipeline before filters run
+  reviewID?: string;          // Set by review generators; makes the card a review
+  cardElo?: number;           // Card's global ELO, if the generator already has it
+  reviewUrgency?: number;     // SRS urgency in [0, 1], read by the review-mass regulator
+  skillFetch?: { tag: string; pressure: number };  // set by the ELO generator's skill fetch
 }
 
 interface StrategyContribution {
@@ -36,8 +41,13 @@ interface StrategyContribution {
   action: 'generated' | 'passed' | 'boosted' | 'penalized';
   score: number;              // Score after this strategy
   reason: string;             // Human-readable explanation
+  effectiveWeight?: number;   // Set when evolutionary orchestration weighted it
+  deviation?: number;
 }
 ```
+
+A card is a **review** if it carries `reviewID`; otherwise it is new. Regulators and session
+summaries use that distinction.
 
 ## Creating a Generator
 
@@ -49,16 +59,21 @@ Generators produce candidate cards. They are responsible for:
 ### Example: Custom Generator
 
 ```typescript
-import { ContentNavigator, WeightedCard, GeneratorContext, CardGenerator } from '@vue-skuilder/db';
+import {
+  ContentNavigator,
+  type CardGenerator,
+  type GeneratorContext,
+  type GeneratorResult,
+} from '@vue-skuilder/db';
 
 export class RecentFailuresGenerator extends ContentNavigator implements CardGenerator {
   name = 'Recent Failures';
 
-  async getWeightedCards(limit: number, context?: GeneratorContext): Promise<WeightedCard[]> {
+  async getWeightedCards(limit: number, context: GeneratorContext): Promise<GeneratorResult> {
     // Find cards the user failed recently
     const recentFailures = await this.findRecentFailures(limit);
-    
-    return recentFailures.map(card => ({
+
+    const cards = recentFailures.map(card => ({
       cardId: card.id,
       courseId: this.course.getCourseID(),
       score: this.computeScore(card),
@@ -68,9 +83,10 @@ export class RecentFailuresGenerator extends ContentNavigator implements CardGen
         strategyId: this.strategyId || 'RECENT_FAILURES_GENERATOR',
         action: 'generated',
         score: this.computeScore(card),
-        reason: `Failed ${card.failureCount}x in last ${card.daysSinceFailure} days, review card`
+        reason: `Failed ${card.failureCount}x in last ${card.daysSinceFailure} days`
       }]
     }));
+    return { cards: cards.sort((a, b) => b.score - a.score) };
   }
 
   private async findRecentFailures(limit: number) {
@@ -86,6 +102,12 @@ export class RecentFailuresGenerator extends ContentNavigator implements CardGen
   }
 }
 ```
+
+`GeneratorContext` carries `user`, `course`, `userElo` (global), `userCourseElo` (global and
+per-tag ratings with evidence buffers, when readable), `orchestration` and `sessionId`. A
+generator may also return `hints` (`ReplanHints`: boost, require or exclude cards or tags) to
+shape the rest of the run without listing every affected card itself. The Composite generator
+merges every generator's cards and keeps the top 500.
 
 ### Registering a Generator
 
@@ -120,29 +142,51 @@ A corresponding `NAVIGATION_STRATEGY` document must exist in CouchDB:
 
 ## Creating a Filter
 
-Filters transform scores from upstream. They are pure functions (no side effects) that receive cards with pre-hydrated data (tags, etc.) and return modified cards.
+Filters transform scores from upstream. They are pure transforms (no side effects beyond provenance) that receive cards with pre-hydrated data (tags, etc.) and return modified cards.
 
 ### Score Semantics
 
 | Score | Meaning |
 |-------|---------|
+| > 1.0 | Boosted (allowed: a curriculum generator or a boost may lift a card above 1) |
 | 1.0 | Fully suitable |
-| 0.5 | Neutral |
-| 0.0 | Exclude (hard filter) |
 | 0.x | Proportional suitability |
+| 0.0 | Exclude: dropped after the filter stage, with provenance saying why |
 
 **All filters are multipliers.** This means:
 - Filter order doesn't affect final scores (multiplication is commutative)
 - Score 0 from any filter excludes the card
-- Filters are applied alphabetically for determinism
+- Filters run sorted by name, for deterministic provenance order
+
+### Filter kind
+
+Declare what your penalties mean with `kind`:
+
+- **`gate`**: the card isn't ready yet (prerequisites, lessons, unlocks).
+- **`signal`**: a preference (priority, interference, difficulty, pressure).
+
+The intake regulator lifts only new cards that no gate penalized, so pressure for new content
+never overrides "not ready". A filter that declares no kind counts as a gate. Declare it
+statically too (`static readonly kind`), so the pipeline plan can read it without an instance.
+
+Set `liveOnly = true` if the filter only makes sense on a real run. Forecasts and card-space scans
+start every card at 1.0 without a generator, and skip such filters (ELO distance is one).
 
 ### Example: Custom Filter
 
 ```typescript
-import { ContentNavigator, WeightedCard, FilterContext, CardFilter } from '@vue-skuilder/db';
+import {
+  ContentNavigator,
+  type CardFilter,
+  type FilterContext,
+  type FilterKind,
+  type WeightedCard,
+} from '@vue-skuilder/db';
 
 export class TimeSinceTagFilter extends ContentNavigator implements CardFilter {
   name = 'Time Since Tag';
+  static readonly kind: FilterKind = 'signal';
+  readonly kind = TimeSinceTagFilter.kind;
 
   async transform(cards: WeightedCard[], context: FilterContext): Promise<WeightedCard[]> {
     const tagLastSeen = await this.getTagLastSeenTimes();
@@ -215,11 +259,13 @@ Strategies are stored as documents and can be configured via JSON:
 
 ```typescript
 interface ContentNavigationStrategyData {
-  strategyType: string;       // Maps to NavigatorRoles key
-  name: string;               // Human-readable name
-  description?: string;
-  serializedData?: string;    // JSON config for strategy-specific settings
-  
+  _id: `NAVIGATION_STRATEGY-${string}`;
+  docType: DocType.NAVIGATION_STRATEGY;
+  implementingClass: string;  // The name the class was registered under
+  name: string;               // Human-readable name (shown in provenance)
+  description: string;
+  serializedData: string;     // JSON config for strategy-specific settings ('' or '{}' for defaults)
+
   // Evolutionary orchestration (optional)
   learnable?: LearnableWeight;
   staticWeight?: boolean;     // If true, not subject to automatic tuning
@@ -228,36 +274,40 @@ interface ContentNavigationStrategyData {
 
 ### Custom Configuration
 
-Define a config interface and parse it in your strategy:
+Define a config interface and parse it from `strategyData.serializedData` in your constructor,
+as the built-in strategies do:
 
 ```typescript
 interface TimeSinceTagConfig {
   recentPenalty: number;      // Multiplier for recently-seen tags
-  staleBooost: number;        // Multiplier for stale tags
+  staleBoost: number;         // Multiplier for stale tags
   staleThresholdDays: number; // Days before "stale"
 }
 
 export class TimeSinceTagFilter extends ContentNavigator implements CardFilter {
   private config: TimeSinceTagConfig;
 
-  constructor(/* ... */) {
-    super(/* ... */);
-    this.config = this.parseConfig();
+  constructor(
+    user: UserDBInterface,
+    course: CourseDBInterface,
+    strategyData: ContentNavigationStrategyData
+  ) {
+    super(user, course, strategyData);
+    this.config = parseConfig(strategyData.serializedData);
   }
+}
 
-  private parseConfig(): TimeSinceTagConfig {
-    const defaults: TimeSinceTagConfig = {
-      recentPenalty: 0.5,
-      staleBoost: 1.2,
-      staleThresholdDays: 7,
-    };
-    
-    if (!this.serializedData) return defaults;
-    try {
-      return { ...defaults, ...JSON.parse(this.serializedData) };
-    } catch {
-      return defaults;
-    }
+function parseConfig(serializedData: string | undefined): TimeSinceTagConfig {
+  const defaults: TimeSinceTagConfig = {
+    recentPenalty: 0.5,
+    staleBoost: 1.2,
+    staleThresholdDays: 7,
+  };
+  if (!serializedData) return defaults;
+  try {
+    return { ...defaults, ...JSON.parse(serializedData) };
+  } catch {
+    return defaults;
   }
 }
 ```
@@ -347,52 +397,50 @@ const { pipeline, warnings } = await assembler.assemble({
 const cards = await pipeline.getWeightedCards(10);
 ```
 
-Assembly logic:
-1. Separate strategies by `NavigatorRole` (generator vs filter)
-2. Wrap multiple generators in `CompositeGenerator`
-3. Sort filters alphabetically for determinism
-4. Return `Pipeline(generator, filters)`
+Assembly logic (`pipelinePlan.ts` computes the same plan as data, which the admin pipeline view renders):
+1. Separate strategies by `NavigatorRole` (generator vs filter); skip unknown implementing classes with a warning
+2. Add an ELO and an SRS generator if absent (custom generators supplement them, never replace them), and an ELO distance filter if absent
+3. Wrap the generators in `CompositeGenerator`
+4. Sort filters by name
+5. Return `Pipeline(generator, filters)`
+
+The course DB caches the assembled pipeline for five minutes, or until a strategy doc is written.
 
 ## Built-In Strategies Reference
 
 ### Generators
 
-| Strategy | Purpose | Config |
+| Strategy (`implementingClass`) | Purpose | Config (`serializedData`) |
 |----------|---------|--------|
-| `ELONavigator` | New cards by skill proximity | Window size, target offset |
-| `SRSNavigator` | Review cards by schedule + backlog pressure | `healthyBacklog` (default: 20) |
-| `HardcodedOrderNavigator` | Fixed sequence | Card ID list |
+| `elo` | New cards from a window around the learner's global ELO, jitter-scored; plus a **skill fetch** of unseen cards for the most pressured skills, aimed below their ratings | `{ skillFetch: { enabled, maxSkills, perSkill, targetOffset, maxScan, ...SkillPressureConfig } }`; default on (3 skills × 4 cards, 250 below) |
+| `srs` | Due reviews, scored by urgency: overdueness weighed by interval length | none (`healthyBacklog` is deprecated and ignored) |
+| `prescribed` | Authored curriculum targets that must eventually surface, with escalating pressure on stale ones and support cards for blocked targets | target groups; see `generators/prescribed.ts` |
 
-#### SRS Backlog Pressure
-
-The SRS generator implements **backlog pressure** to prevent review pile-up. When the number of due reviews exceeds a "healthy" threshold (default: 20), all review scores receive a global boost:
-
-- At healthy backlog (≤20): no boost, scores 0.5-0.95
-- At 2× healthy (40): +0.25 boost, scores 0.75-1.0
-- At 3×+ healthy (60+): +0.50 boost (max), scores 0.95-1.0
-
-This allows high-urgency reviews to compete with new cards (which score up to 1.0 from ELO). The system is self-regulating: as users work through reviews, backlog drops, pressure decreases, and new content reappears.
-
-Configure via `serializedData`:
-
-```typescript
-// In strategy document
-{
-  strategyType: 'srs',
-  name: 'SRS',
-  serializedData: JSON.stringify({ healthyBacklog: 30 })  // Override default
-}
-```
+The ELO generator only retrieves. Distance from the learner is scored once, for new cards and
+reviews alike, by the ELO distance filter.
 
 ### Filters
 
-| Strategy | Purpose | Config |
-|----------|---------|--------|
-| `HierarchyDefinitionNavigator` | Prerequisite gating | Tag prerequisites, thresholds |
-| `InterferenceMitigatorNavigator` | Confusable concept separation | Interference sets, decay |
-| `RelativePriorityNavigator` | Priority ordering | Tag priorities, combine mode |
-| `UserTagPreferenceFilter` | User-configured preferences | (Reads from strategy state) |
-| `EloDistanceFilter` | Penalize far-from-skill cards | Distance penalty curve |
+| Strategy (`implementingClass`) | Kind | Purpose |
+|----------|------|---------|
+| `eloDistance` | signal | Gaussian on card-vs-learner ELO gap, never zero; intro cards pass. Added by default. Optional tag-aware mode (experimental) |
+| `hierarchyDefinition` | gate | Prerequisite gating on tag mastery (`minElo`, `minCount`) |
+| `interferenceMitigator` | signal | Spaces confusable tags apart until mature |
+| `relativePriority` | signal | Tag priorities, combine mode |
+| `skillPressure` | signal | Up to ×(1 + gain) on a card's most pressured skill (need below the learner's skill median, or shaky/unproven). Opt-in |
+| `userTagPreference` | signal | The learner's own tag boosts/penalties (reads strategy state) |
+
+### Regulators (not strategies)
+
+Backlog pressure used to live in the SRS generator. It is now a pipeline stage after the
+filters, and it can't be configured per course yet:
+
+- **Review mass** weighs the due backlog by urgency × filtered score. Above a healthy mass of 20
+  card-equivalents, it lifts every review by `2^(excess / 20)`.
+- **Intake** counts hours since a new card was last shown (only while one was available). It lifts
+  new cards no gate penalized by `2^(hours / 24)`.
+
+Readings are persisted on session run summaries. See `packages/db/src/core/navigators/regulators.ts`.
 
 ## File Reference
 
@@ -401,11 +449,15 @@ Configure via `serializedData`:
 | `packages/db/src/core/navigators/index.ts` | `ContentNavigator`, roles, types |
 | `packages/db/src/core/navigators/generators/types.ts` | `CardGenerator`, `GeneratorContext` |
 | `packages/db/src/core/navigators/filters/types.ts` | `CardFilter`, `FilterContext` |
-| `packages/db/src/core/navigators/Pipeline.ts` | Pipeline orchestration |
+| `packages/db/src/core/navigators/Pipeline.ts` | Pipeline orchestration (all stages) |
 | `packages/db/src/core/navigators/PipelineAssembler.ts` | Assembly from strategy docs |
-| `packages/db/src/core/navigators/CompositeGenerator.ts` | Merge multiple generators |
+| `packages/db/src/core/navigators/pipelinePlan.ts` | The plan as data; stage descriptions |
+| `packages/db/src/core/navigators/generators/CompositeGenerator.ts` | Merge multiple generators |
+| `packages/db/src/core/navigators/regulators.ts` | Review-mass and intake regulators |
+| `packages/db/src/core/navigators/diversityRerank.ts` | Diversity re-rank stage |
 
 ## Related Documentation
 
 - [Pedagogy System](../learn/pedagogy) — Overall adaptive learning system
+- `packages/db/docs/navigators-architecture.md`, `multi-tag-elo-search.md` — framework internals
 - [Custom Cards](./custom-cards) — Creating new card types
