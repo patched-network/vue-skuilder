@@ -172,12 +172,31 @@ export function isCourseElo(x: unknown): x is CourseElo {
 }
 
 /**
+ * The ELO result ("actual") for a 0–1 performance score against `expected`.
+ *
+ * 0 is a miss and scores 0. A positive score `s` is a success of quality `s`
+ * (e.g. a timing fraction), giving `expected + s × (1 − expected)`. A success
+ * never lowers the learner or raises the card, and a miss never raises the
+ * learner: the score sets the size of a gain, never its sign.
+ *
+ * So there is no draw: any positive score counts as a success. Feeding the
+ * score in as the result directly made a slow correct answer on an easy card
+ * a loss, which compressed the scale and held learners 100–200 below their
+ * skill (LP agent/elo-timing-audit/a.2.equilibrium.md). Here the rating
+ * settles at the true gap plus `400 × log10(s)`, a constant offset.
+ */
+export function eloActual(score: number, expected: number): number {
+  if (score <= 0) return 0;
+  return expected + score * (1 - expected);
+}
+
+/**
  * Calculates updated ELO scores for users and content after they interact
  *
  * @param userElo current ELO score of the user
  * @param cardElo current ELO score of the card
- * @param userScore user performance against the card in range [0,1]
- * @param k optional scaling factor. Higher values -> larger score adjustments. Default 32.
+ * @param userScore user performance in [0,1]: 0 a miss, positive a success of that quality (see eloActual)
+ * @param options.globalOnly skip the card's tags
  * @returns
  */
 export function adjustCourseScores(
@@ -185,7 +204,7 @@ export function adjustCourseScores(
   bElo: Eloish,
   userScore: number,
   options?: {
-    globalOnly: boolean;
+    globalOnly?: boolean;
   }
 ): {
   userElo: CourseElo;
@@ -198,7 +217,7 @@ export function adjustCourseScores(
   const userElo: CourseElo = toCourseElo(aElo);
   const cardElo: CourseElo = toCourseElo(bElo);
 
-  if (options == undefined || !options.globalOnly) {
+  if (!options?.globalOnly) {
     // grade on each tag present for the card; bookkeeping roles are only counted
     Object.keys(cardElo.tags).forEach((k) => {
       if (isCountOnlyTag(k)) {
@@ -258,9 +277,10 @@ function adjustScores(
   const cardRanker = new EloRanker(kForCount(cardElo.count));
 
   const exp = userRanker.getExpected(userElo.score, cardElo.score);
+  const actual = eloActual(userScore, exp);
 
-  const updatedUserElo = userRanker.updateRating(exp, userScore, userElo.score);
-  const updatedCardElo = cardRanker.updateRating(1 - exp, 1 - userScore, cardElo.score);
+  const updatedUserElo = userRanker.updateRating(exp, actual, userElo.score);
+  const updatedCardElo = cardRanker.updateRating(1 - exp, 1 - actual, cardElo.score);
 
   // Spread first so sibling fields (e.g. `recent`) survive the adjustment.
   return {
