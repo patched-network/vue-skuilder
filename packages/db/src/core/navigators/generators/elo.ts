@@ -2,10 +2,12 @@ import type { CourseDBInterface } from '../../interfaces/courseDB';
 import type { UserDBInterface } from '../../interfaces/userDB';
 import { ContentNavigator } from '../index';
 import type { WeightedCard } from '../index';
-import { toCourseElo } from '@vue-skuilder/common';
+import { COUNT_ONLY_SCORE, skillNeed, toCourseElo, type CourseElo } from '@vue-skuilder/common';
 import type { QualifiedCardID } from '../..';
 import type { CardGenerator, GeneratorContext, GeneratorResult } from './types';
 import { logger } from '@db/util/logger';
+import { skillPressures, type SkillPressureConfig } from '../filters/skillPressure';
+import { loadCardsByTag } from './cardsByTag';
 
 // ============================================================================
 // ELO NAVIGATOR
@@ -22,7 +24,61 @@ import { logger } from '@db/util/logger';
 // NOTE: This generator only handles NEW cards. Reviews are handled by
 // SRSNavigator. Use CompositeGenerator to combine both.
 //
+// SKILL FETCH. The global window can't reach the easier cards a weak skill
+// needs: it is centred on the learner's global rating, and a skill behind the
+// others wants cards well below it. So, besides the window, the generator
+// fetches a few unseen cards for the learner's most pressured skills, by tag,
+// aimed below that skill's rating, and appends them to the window's cards.
+//
+// - Which skills: the same pressure the skill pressure filter reads
+//   (filters/skillPressure: the larger of need below the learner's skill
+//   median and insecurity), top `maxSkills` among those with unseen cards. Insecurity is what reaches a
+//   thin skill with too few responses to rate.
+// - Which cards: the skill's card ids, minus cards not new and cards already
+//   in the window; the `perSkill` nearest `target = skill rating −
+//   targetOffset`, a card's rating being its rating on that tag, else global.
+// - Scored like the window (jitter), new, `cardElo` the card's global so the
+//   ELO distance filter scores them as usual. Each carries `skillFetch`.
+//
+// On by default and inert without pressured skills (no exercise-role tags, a
+// fresh learner, no userCourseElo in context). A course turns it off, or
+// tunes it, with an ELO strategy doc whose serializedData is an
+// EloGeneratorConfig as JSON.
+//
 // ============================================================================
+
+export interface SkillFetchConfig extends SkillPressureConfig {
+  /** Default true. */
+  enabled?: boolean;
+  /** Most pressured skills to fetch for. Default 3. */
+  maxSkills?: number;
+  /** Cards per skill. Default 4. */
+  perSkill?: number;
+  /** ELO points below the skill's rating to aim at. Default 250. */
+  targetOffset?: number;
+  /** Most unseen card ids per skill to rate (a random sample beyond it). Default 300. */
+  maxScan?: number;
+}
+
+export interface EloGeneratorConfig {
+  skillFetch?: SkillFetchConfig;
+}
+
+const SKILL_FETCH_DEFAULTS = { maxSkills: 3, perSkill: 4, targetOffset: 250, maxScan: 300 };
+
+function usableScore(score: number | undefined): score is number {
+  return typeof score === 'number' && Number.isFinite(score) && score !== COUNT_ONLY_SCORE;
+}
+
+function sample<T>(xs: T[], n: number): T[] {
+  if (xs.length <= n) return xs;
+  const a = [...xs];
+  for (let i = 0; i < n; i++) {
+    const j = i + Math.floor(Math.random() * (a.length - i));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a.slice(0, n);
+}
 
 /**
  * A navigation strategy that retrieves new cards near the learner's ELO.
@@ -35,18 +91,29 @@ import { logger } from '@db/util/logger';
 export default class ELONavigator extends ContentNavigator implements CardGenerator {
   /** Human-readable name for CardGenerator interface */
   name: string;
+  private config: EloGeneratorConfig;
+  /**
+   * Card ELO read for the skill fetch, by card id. Lives as long as this
+   * navigator (cached per course DB, minutes), so replans don't re-read it.
+   */
+  private _cardEloCache = new Map<string, CourseElo>();
 
   constructor(
     user: UserDBInterface,
     course: CourseDBInterface,
-    strategyData?: { name: string; _id: string }
-    // The ELO strategy is non-parameterized.
-    //
-    // It instead relies on existing meta data from the course and user with respect to
-    // ELO scores - it uses those to select cards matched to user skill level.
+    strategyData?: { name: string; _id: string; serializedData?: string }
+    // The window needs no parameters: it reads the course's and the learner's
+    // ELO. serializedData, optional, configures the skill fetch.
   ) {
     super(user, course, strategyData as any);
     this.name = strategyData?.name || 'ELO';
+    let parsed: EloGeneratorConfig = {};
+    try {
+      parsed = strategyData?.serializedData ? JSON.parse(strategyData.serializedData) : {};
+    } catch {
+      logger.warn(`[ELO] Unparseable serializedData on ${strategyData?._id}; using defaults`);
+    }
+    this.config = parsed && typeof parsed === 'object' ? parsed : {};
   }
 
   /**
@@ -141,6 +208,16 @@ export default class ELONavigator extends ContentNavigator implements CardGenera
 
     const cards = scored.slice(0, limit);
 
+    if (context?.userCourseElo) {
+      try {
+        const windowIds = new Set(newCards.map((c) => c.cardID));
+        const fetched = await this.skillFetch(context.userCourseElo, notNew, windowIds);
+        cards.push(...fetched);
+      } catch (e) {
+        logger.warn(`[ELO] Skill fetch failed, window only: ${e}`);
+      }
+    }
+
     // Log summary for transparency
     if (cards.length > 0) {
       const topScores = cards.slice(0, 3).map((c) => c.score.toFixed(2)).join(', ');
@@ -152,5 +229,99 @@ export default class ELONavigator extends ContentNavigator implements CardGenera
     }
 
     return { cards };
+  }
+
+  /** Unseen cards for the learner's most pressured skills. See SKILL FETCH above. */
+  private async skillFetch(
+    elo: CourseElo,
+    notNew: Set<string>,
+    windowIds: Set<string>
+  ): Promise<WeightedCard[]> {
+    const config = this.config.skillFetch ?? {};
+    if (config.enabled === false) return [];
+    const { maxSkills, perSkill, targetOffset, maxScan } = { ...SKILL_FETCH_DEFAULTS, ...config };
+
+    const pressured = [...skillPressures(elo, config).entries()].sort(
+      (a, b) => b[1].pressure - a[1].pressure || a[0].localeCompare(b[0])
+    );
+    if (pressured.length === 0) return [];
+
+    // The most pressured skills that still have unseen cards outside the
+    // window: a skill whose cards are all seen doesn't take a slot.
+    const cardsByTag = await loadCardsByTag(this.course);
+    const taken = new Set<string>();
+    const candidates: { tag: string; entry: (typeof pressured)[number][1]; ids: string[] }[] = [];
+    for (const [tag, entry] of pressured) {
+      if (candidates.length >= maxSkills) break;
+      const unseen = (cardsByTag.get(tag) ?? []).filter(
+        (id) => !notNew.has(id) && !windowIds.has(id)
+      );
+      if (unseen.length > 0) candidates.push({ tag, entry, ids: sample(unseen, maxScan) });
+    }
+    if (candidates.length === 0) return [];
+
+    const toRead = [
+      ...new Set(candidates.flatMap((c) => c.ids).filter((id) => !this._cardEloCache.has(id))),
+    ];
+    if (toRead.length > 0) {
+      const read = await this.course.getCardEloData(toRead);
+      toRead.forEach((id, i) => {
+        if (read[i]) this._cardEloCache.set(id, read[i]);
+      });
+    }
+
+    const reference = skillNeed(elo, config).reference;
+    const global = elo.global.score;
+    const out: WeightedCard[] = [];
+    for (const { tag, entry, ids } of candidates) {
+      const tagScore = elo.tags[tag]?.score;
+      const rating = usableScore(tagScore) ? tagScore : global;
+      const target = rating - targetOffset;
+      const picks = ids
+        .filter((id) => !taken.has(id) && this._cardEloCache.has(id))
+        .map((id) => {
+          const celo = this._cardEloCache.get(id)!;
+          const onTag = celo.tags[tag]?.score;
+          return {
+            id,
+            cardRating: usableScore(onTag) ? onTag : celo.global.score,
+            cardGlobal: celo.global.score,
+          };
+        })
+        .sort((a, b) => Math.abs(a.cardRating - target) - Math.abs(b.cardRating - target))
+        .slice(0, perSkill);
+
+      for (const p of picks) {
+        taken.add(p.id);
+        const jitter = 0.5 + 0.5 * Math.random();
+        const median = reference === null ? '' : `, median ${Math.round(reference)}`;
+        out.push({
+          cardId: p.id,
+          courseId: this.course.getCourseID(),
+          score: jitter,
+          cardElo: p.cardGlobal,
+          skillFetch: { tag, pressure: entry.pressure },
+          provenance: [
+            {
+              strategy: 'elo',
+              strategyName: this.strategyName || this.name,
+              strategyId: this.strategyId || 'NAVIGATION_STRATEGY-ELO-default',
+              action: 'generated',
+              score: jitter,
+              reason:
+                `new card, skill fetch: ${tag} ${entry.why} (rating ${Math.round(rating)}${median}), ` +
+                `target ${Math.round(target)}, card ${Math.round(p.cardRating)}, jitter ${jitter.toFixed(3)}`,
+            },
+          ],
+        });
+      }
+    }
+
+    if (out.length > 0) {
+      logger.info(
+        `[ELO] Skill fetch: ${out.length} cards for ${candidates.map((c) => c.tag).join(', ')}`
+      );
+    }
+    return out;
   }
 }

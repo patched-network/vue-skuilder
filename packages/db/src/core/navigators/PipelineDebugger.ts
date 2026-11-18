@@ -100,6 +100,8 @@ export interface RunReportCard {
   provenance: StrategyContribution[];
   tags?: string[];
   selected: boolean;
+  /** Set when the ELO generator's skill fetch produced the card. */
+  skillFetch?: { tag: string; pressure: number };
 }
 
 /**
@@ -349,6 +351,7 @@ export function buildRunReport(
       provenance: card.provenance,
       tags: card.tags,
       selected: selectedIds.has(card.cardId),
+      ...(card.skillFetch ? { skillFetch: card.skillFetch } : {}),
     };
   };
 
