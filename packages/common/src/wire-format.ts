@@ -153,6 +153,16 @@ export interface CourseConfig {
    * easier, at the low counts where card K is largest. Unset: no QA accounts.
    */
   qaUsernamePattern?: string;
+
+  /**
+   * How a response's 0–1 score becomes an ELO result; see `EloScoring` in
+   * elo.ts. `gain` makes every positive score a success whose size the score
+   * scales, so a slow correct answer on an easy card still gains a little
+   * instead of losing. Switching it on raises ratings over the following
+   * sessions, so anything compared with a fixed rating shifts meaning.
+   * Unset: `raw`.
+   */
+  eloScoring?: 'raw' | 'gain';
 }
 
 export interface CreateCourse extends IServerRequest {
