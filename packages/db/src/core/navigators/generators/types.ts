@@ -1,6 +1,7 @@
 import type { WeightedCard } from '../index';
 import type { CourseDBInterface } from '../../interfaces/courseDB';
 import type { UserDBInterface } from '../../interfaces/userDB';
+import type { CourseElo } from '@vue-skuilder/common';
 import type { OrchestrationContext } from '../../orchestration';
 
 /**
@@ -59,6 +60,13 @@ export interface GeneratorContext {
   /** User's global ELO score for this course */
   userElo: number;
 
+  /**
+   * The learner's full course ELO (global, per-tag ratings and evidence
+   * buffers), when the registration could be read. The ELO generator's skill
+   * fetch reads it.
+   */
+  userCourseElo?: CourseElo;
+
   /** Orchestration context for evolutionary weighting */
   orchestration?: OrchestrationContext;
 
@@ -66,7 +74,6 @@ export interface GeneratorContext {
   sessionId?: string;
 
   // Future extensions:
-  // - user's tag-level ELO data
   // - course config
   // - session state (cards already seen this session)
 }

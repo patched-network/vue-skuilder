@@ -245,6 +245,9 @@ function toRunCard(c: RunReportCard): StudySessionRunCard {
     // A required card's score is infinite, which JSON can't hold: say so with null.
     score: Number.isFinite(c.finalScore) ? sig4(c.finalScore) : null,
     selected: c.selected,
+    ...(c.skillFetch
+      ? { skillFetch: { tag: c.skillFetch.tag, pressure: sig4(c.skillFetch.pressure) } }
+      : {}),
   };
 }
 

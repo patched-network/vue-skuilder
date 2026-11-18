@@ -1,11 +1,11 @@
 # Session Lifecycle & Replanning (as-built)
 
 > **Status:** Descriptive map of current behavior, for theory-building and review.
-> The core sections (Cast → Consumer extension points) are consumer-agnostic and
-> framework-doc-ready. The final **Performance notes** section is living,
-> internal/diagnostic commentary on the *current* implementation — it folds in
-> the former `agent/session-pipeline-perf` assessment and should be trimmed
-> before this ships as public framework documentation.
+> Updated 2026-11-18 for the single supply queue (landed 2026-06, `4b93b754`). The core sections (Cast →
+> Consumer extension points) are consumer-agnostic and framework-doc-ready. The
+> final **Performance notes** section is living, internal/diagnostic commentary
+> on the *current* implementation and should be trimmed before this ships as
+> public framework documentation.
 >
 > **Perf status (2026-11).** The 2026-05 mid-session jank is resolved (cache
 > work, below). The 2026-11 runtime-perf work resolved the course-DB side of
@@ -14,9 +14,9 @@
 > during replans (see *Open threads*).
 
 This document maps how `SessionController` drives content selection through the
-navigation `Pipeline` during a study session: what runs at session start, when
-the pipeline re-runs ("replans"), how concurrent replans are reconciled, and
-where consumer applications hook in.
+navigation `Pipeline` during a study session: what runs at session start, how
+the next card is chosen, when the pipeline re-runs ("replans"), how concurrent
+replans are reconciled, and where consumer applications hook in.
 
 It is a companion to `navigators-architecture.md` (which describes the
 generator/filter pipeline itself). This doc describes the *driver* around it.
@@ -27,20 +27,26 @@ generator/filter pipeline itself). This doc describes the *driver* around it.
 
 | Component | Role | Layer |
 |-----------|------|-------|
-| `SessionController` | Owns the session clock + three queues; decides what card is next; triggers replans | framework |
+| `SessionController` | Owns the session clock and two queues; decides what card is next; triggers replans | framework |
 | `StudyContentSource` | A content source. Production impl is `CourseDB` (one per course in the session) | framework |
-| `CourseDB.getWeightedCards()` | Builds a navigator and runs it | framework |
-| `CourseDB.createNavigator()` | Reads strategy docs, assembles a `Pipeline` | framework |
-| `Pipeline` | generator → tag hydration → filters → hints → sort → top-N | framework |
-| `SourceMixer` | Interleaves candidates from multiple sources | framework |
+| `CourseDB.getWeightedCards()` | Runs the course's (cached) navigator | framework |
+| `CourseDB.createNavigator()` | Reads strategy docs, assembles a `Pipeline`; cached ~5 min per user | framework |
+| `Pipeline` | generate → hydrate tags → filters → drop zeros → regulators → hints → diversity re-rank → top N | framework |
+| `SourceMixer` (`QuotaRoundRobinMixer`) | Interleaves candidates from multiple sources | framework |
 | `CardHydrationService` | Turns selected items into render-ready cards (view component + data) | framework |
 | Consumer card views | May call `requestReplan()` with hints (e.g. pedagogical intros) | **consumer** |
 
-The three queues live on `SessionController`:
+The two queues live on `SessionController`:
 
-- **reviewQ** — SRS-due cards. Filled once at start, drained by consumption, **never refilled** mid-session.
-- **newQ** — new content. Refilled by replans.
-- **failedQ** — cards failed this session, for end-of-session cleanup.
+- **supplyQ**: new cards *and* reviews, in pipeline rank order. Reviews and new
+  cards compete on one scale (the pipeline's regulator stage sets the balance),
+  so there is no second new-vs-review mix in the controller. Drawn
+  front-to-back; replaced, or merged into from the front, by replans.
+- **failedQ**: cards missed this session, served as remediation (below).
+
+(Before 2026-06 there were three queues: a reviewQ filled once at start and
+never refilled, a newQ refilled by replans, and the failedQ. Older docs and
+comments may still say so.)
 
 ---
 
@@ -49,11 +55,11 @@ The three queues live on `SessionController`:
 Everything expensive happens inside `Pipeline.getWeightedCards()`. It is reached
 two ways:
 
-1. **Initial planning** — `prepareSession()` → `getWeightedContent()` once.
-2. **Replan** — `requestReplan()` → `_executeReplan()` → `getWeightedContent({replan:true})`, any number of times mid-session.
+1. **Initial planning**: `prepareSession()` → `getWeightedContent()` once.
+2. **Replan**: `requestReplan()` → `_runReplan()` → `getWeightedContent({replan:true})`, any number of times mid-session.
 
 Both call `source.getWeightedCards(limit)` on every source. **There is no
-separate "cheap" path** — a replan runs the same machinery as initial planning.
+separate "cheap" path**: a replan runs the same machinery as initial planning.
 
 ---
 
@@ -64,87 +70,84 @@ sequenceDiagram
     participant App as Consumer (Study view)
     participant SC as SessionController
     participant Src as CourseDB (source)
-    participant Nav as createNavigator
-    participant Pipe as Pipeline
+    participant Pipe as Pipeline (cached navigator)
     participant Mix as SourceMixer
     participant Hyd as CardHydrationService
 
     App->>SC: prepareSession()
-    SC->>SC: getWeightedContent()  (fetchLimit = newLimit + initialReviewCap)
+    SC->>SC: getWeightedContent()  (supplyLimit = defaultBatchLimit)
     loop per source
-        SC->>Src: getWeightedCards(fetchLimit)
-        Src->>Nav: createNavigator(user)
-        Nav->>Nav: getAllNavigationStrategies()  (DB query)
-        Nav->>Nav: PipelineAssembler.assemble(...)
-        Nav-->>Src: new Pipeline (empty caches)
-        Src->>Pipe: getWeightedCards(fetchLimit)
-        Pipe->>Pipe: buildContext()  (user ELO + orchestration ctx)
+        SC->>Src: setEphemeralHints(session hints), getWeightedCards(supplyLimit)
+        Src->>Pipe: getWeightedCards(supplyLimit)
+        Pipe->>Pipe: buildContext()  (user ELO incl. per-tag + orchestration ctx)
         Pipe->>Pipe: generator.getWeightedCards(500)
-        Pipe->>Pipe: hydrateTags(~500 cards)  (batch DB query)
-        Pipe->>Pipe: filters.transform() x N
-        Pipe->>Pipe: applyHints() (if any) → sort → slice(limit)
-        Pipe-->>Src: WeightedCard[]
-        Src-->>SC: GeneratorResult
+        Pipe->>Pipe: hydrateTags, filters, drop zeros
+        Pipe->>Pipe: regulators, applyHints, diversity re-rank, sort, slice
+        Pipe-->>Src: GeneratorResult
+        Src-->>SC: cards
     end
     SC->>Mix: mix(batches)
     Mix-->>SC: interleaved candidates
-    SC->>SC: split by origin → reviewQ (≤cap), newQ (≤newLimit)
-    SC->>Hyd: ensureHydratedCards()  (top N of each queue)
+    SC->>SC: +INF (required) cards to the front, then top supplyLimit → supplyQ
+    SC->>Hyd: ensureHydratedCards()  (head of the queue)
     Hyd-->>SC: render-ready cards cached
     SC-->>App: ready (timer starts)
 ```
 
-Key parameters (`SessionController` constructor options):
+Key parameters:
 
-- `defaultBatchLimit` (default **20**) — newQ target size.
-- `initialReviewCap` (default **200**) — max reviews loaded at start.
-- On init, `fetchLimit = defaultBatchLimit + initialReviewCap` (e.g. **220**) is
-  passed to each source so reviews and new cards can both fill from one fetch.
+- `defaultBatchLimit` (constructor option, default **20**): the supply working
+  set. Each source is asked for this many; the mixed result is capped at it,
+  plus any required (`+INF`) cards, which are exempt from the cap.
+- There is no separate review budget any more (the old `initialReviewCap` of
+  200 is gone): reviews are ranked with new cards inside the working set.
 
 ---
 
 ## Sequence: serving a card (`nextCard`) and its replan triggers
 
-`nextCard()` dismisses the current card, then runs **three** replan triggers
-before drawing the next card. The framework comments classify them precisely:
+`nextCard()` dismisses the current card, then runs the replan triggers before
+drawing the next card:
 
 ```mermaid
 flowchart TD
     A[nextCard called] --> B[dismiss current card]
-    B --> C{queues all empty<br/>AND replan in flight?}
+    B --> C{supplyQ and failedQ empty<br/>AND replan in flight?}
     C -- yes --> C1[await in-flight replan]
     C -- no --> D
     C1 --> D
 
-    D{newQ length ≤ 3<br/>AND time left<br/>AND no replan in flight?} 
-    D -- yes --> D1[["(a) OPPORTUNISTIC depletion<br/>void requestReplan() — background"]]
+    D{supplyQ ≤ 3<br/>AND time left<br/>AND no replan in flight?}
+    D -- yes --> D1[["(a) OPPORTUNISTIC depletion<br/>void requestReplan(mode: merge): background"]]
     D -- no --> E
     D1 --> E
 
-    E{wellIndicated ≤ 3<br/>AND newQ > 0<br/>AND not suppressed<br/>AND no replan in flight?}
-    E -- yes --> E1[["(a) OPPORTUNISTIC quality<br/>void requestReplan() — background"]]
+    E{wellIndicated ≤ 3<br/>AND supplyQ > 0<br/>AND not suppressed<br/>AND no replan in flight?}
+    E -- yes --> E1[["(a) OPPORTUNISTIC quality<br/>void requestReplan(): background"]]
     E -- no --> F
     E1 --> F
 
     F{time up AND<br/>failedQ empty AND<br/>no guarantee?}
-    F -- yes --> F1[return null — session ends]
+    F -- yes --> F1[return null: session ends]
     F -- no --> G
 
-    G{all queues empty<br/>AND time left?}
-    G -- yes --> G1[["(b) LOAD-BEARING wedge-breaker<br/>await _replanUncoalesced — SYNCHRONOUS<br/>bounded retry, then give up"]]
+    G{supplyQ and failedQ empty<br/>AND time left?}
+    G -- yes --> G1[["(b) LOAD-BEARING wedge-breaker<br/>await _replanUncoalesced: SYNCHRONOUS<br/>up to 3 empty attempts, then give up"]]
     G -- no --> H
     G1 --> G
 
-    H[select next item from a queue] --> I[hydrate if needed, draw, return card]
+    H[select next item: see below] --> I[hydrate if needed, draw, return card]
 ```
 
 ### The trigger taxonomy (from the source comments)
 
-- **(a) Opportunistic prefetch** — `depletion` (newQ ≤ `DEPLETION_PREFETCH_THRESHOLD` = 3)
-  and `quality` (`_wellIndicatedRemaining` ≤ buffer). Fire-and-forget (`void`),
-  may coalesce, may no-op. Their job is to make replans happen *early*. **A
-  missed opportunistic replan is acceptable** — it's a perf optimization.
-- **(b) Load-bearing wedge-breaker** — if the clock is ticking and we'd serve
+- **(a) Opportunistic prefetch**: `depletion` (supplyQ ≤ `DEPLETION_PREFETCH_THRESHOLD`
+  = 3; runs in `merge` mode so already-queued cards, e.g. an undrawn required
+  follow-up, survive) and `quality` (`_wellIndicatedRemaining` ≤ 3, where
+  well-indicated means a final score ≥ `WELL_INDICATED_SCORE` = 0.10).
+  Fire-and-forget (`void`). Their job is to make replans happen *early*. **A
+  missed opportunistic replan is acceptable**: it's a perf optimization.
+- **(b) Load-bearing wedge-breaker**: if the clock is ticking and we'd serve
   `null`, the pipeline runs **synchronously** in the draw path. Bypasses
   coalescing. This is the only *correctness* guarantee. **A missed wedge-breaker
   is a stall/wedge.**
@@ -153,16 +156,35 @@ flowchart TD
 > pipeline run is a correctness bug. Bias toward the cheaper failure."*
 
 The user-perceptible **in-session pause** is the wedge-breaker firing
-synchronously — i.e. the opportunistic prefetch already lost the race to the
+synchronously, i.e. the opportunistic prefetch already lost the race to the
 user emptying the queue.
+
+### Choosing the next item
+
+`_selectNextItemToHydrate()`, in order:
+
+1. Both queues empty: nothing (session over).
+2. Under 2 s left, no failed cards, no guarantee: nothing (don't start a card
+   that can't finish).
+3. Timer expired, no guarantee: failed cards only, then end.
+4. A card guarantee (`_minCardsGuarantee`) is active: the head of supplyQ, so
+   remediation doesn't eat the guaranteed follow-ups.
+5. **Failed interleave**: a failed card if either the remaining time minus the
+   estimated cleanup time is ≤ 20 s (endgame), or 4 supply draws have passed
+   since the last failed-queue event. A just-failed card resets that counter, so
+   it gets spacing rather than an instant retry.
+6. Otherwise the head of supplyQ; if supplyQ is empty, failedQ.
+
+**Guarantee:** failed cards are cleared before the session ends. Past the timer
+only remediation (and guaranteed follow-ups) are served.
 
 ---
 
 ## Replan lifecycle (concurrency state machine)
 
 `requestReplan()` reconciles concurrent replans. The distinction that drives the
-machine is **intent**: a bare auto-replan (no label/limit/hints/guarantee) has
-no intent and may coalesce; anything carrying caller intent must not be dropped.
+machine is **intent**: a bare auto-replan has no intent and may coalesce;
+anything carrying scheduling-relevant options must not be dropped.
 
 ```mermaid
 stateDiagram-v2
@@ -183,23 +205,26 @@ stateDiagram-v2
     end note
 ```
 
-Has-intent test (`_replanHasIntent`): true if any of `label`, `limit`,
-`minFollowUpCards`, non-`replace` `mode`, or non-empty `hints`.
+Has-intent test (`_replanHasIntent`): true if any of `limit`,
+`minFollowUpCards`, a non-`replace` `mode`, non-empty `hints`, `sessionHints`
+or `mergeSessionHints`. **`label` is not intent**: it is observability only
+(overlay spinner, logs), so labelled auto-replans still coalesce.
 
 ### Side-effects a replan can set
 
 | Flag / counter | Set by | Effect |
 |----------------|--------|--------|
-| `_suppressQualityReplan` | burst replan (`limit < defaultBatchLimit`) | mutes the (a)-quality trigger so a small hinted queue isn't clobbered before consumption; cleared by depletion trigger |
-| `_minCardsGuarantee` | replan with `minFollowUpCards` | timer cannot end session until this many more cards served; lets an intro card surface near session end with guaranteed follow-up |
-| `_wellIndicatedRemaining` | every plan/replan | count of cards scoring ≥ `WELL_INDICATED_SCORE` (0.10); drives (a)-quality |
+| `_suppressQualityReplan` | burst replan (`limit < defaultBatchLimit`) | mutes the (a)-quality trigger so a small hinted queue isn't clobbered before consumption; cleared by the depletion trigger |
+| `_minCardsGuarantee` | replan with `minFollowUpCards` | timer cannot end the session until this many more cards are served; lets an intro near session end still get its follow-up |
+| `_wellIndicatedRemaining` | every plan/replan | count of cards scoring ≥ 0.10; drives (a)-quality |
+| session-durable hints | `sessionHints` (replace) / `mergeSessionHints` (merge) | merged into *every* later pipeline run this session, auto-replans and the wedge-breaker included |
 
 ### Auto-exclude on every replan
 
 `_runReplan()` always excludes, via `hints.excludeCards`: the current card, every
-card already in `_sessionRecord`, and `newQ.peek(0)` (the imminent draw). This
+card already in `_sessionRecord`, and `supplyQ.peek(0)` (the imminent draw). This
 prevents the just-drawn / about-to-draw card from being re-seated at the head of
-a freshly-replaced newQ and shown twice.
+a freshly-replaced supplyQ and shown twice.
 
 ---
 
@@ -208,77 +233,83 @@ a freshly-replaced newQ and shown twice.
 This is where applications (e.g. LettersPractice) shape the session. The
 framework surface is small:
 
-1. **`SessionController.requestReplan(options)`** — request a mid-session replan.
-   `ReplanOptions`: `hints`, `limit`, `mode` (`replace`|`merge`),
+1. **`SessionController.requestReplan(options)`**: request a mid-session replan.
+   `ReplanOptions`: `hints` (one-shot), `sessionHints` / `mergeSessionHints`
+   (session-durable), `limit`, `mode` (`replace` | `merge`),
    `minFollowUpCards`, `label`.
-2. **`ReplanHints`** (forwarded to the pipeline, applied *after* the filter
-   chain, one-shot): `boostTags`, `boostCards`, `requireTags`, `requireCards`,
-   `excludeTags`, `excludeCards`. Tag/card patterns support `*` globs.
-3. **`source.setEphemeralHints()`** — how the controller threads hints to each
+2. **`ReplanHints`** (forwarded to the pipeline, applied after filters and
+   regulators): `boostTags`, `boostCards`, `requireTags`, `requireCards`,
+   `excludeTags`, `excludeCards`. Tag/card patterns support `*` globs. When
+   hints are merged, boosts multiply and lists concatenate.
+3. **`source.setEphemeralHints()`**: how the controller threads hints to each
    source for the next run. `CourseDB` stashes them; `Pipeline` consumes and
    clears them after one run.
 
 Hint application order in the pipeline (`applyHints`): **exclude → boost →
-require**. `requireCards` is a hard guarantee — required cards are injected into
-the result with `+Infinity` score even if a filter zeroed them, and are
-pre-fetched into the pool if the generator never produced them.
+require**. `requireCards` is a hard guarantee: required cards are injected into
+the result with `+Infinity` score even if a filter zeroed them, are pre-fetched
+into the pool if the generator never produced them, and are floated to the
+front of supplyQ exempt from its cap.
 
-### Worked example: LettersPractice GPC-intro (a "burst + follow-up" replan)
+### Worked example: LettersPractice GPC intro
 
-When a phonics intro card completes, the consumer view fires a replan that
-*reshapes* the immediate future of the session:
+When a phonics intro card completes, the consumer view fires a replan
+(`buildIntroReplanRequest`, LP `src/services/sessionManagement/introReplan.ts`):
 
 ```ts
-// GpcIntroView.vue, on intro completion
-emit('request-replan', {
-  label: `gpc-intro-${letter}-complete`,
-  hints: {
-    boostTags:    { [exerciseTag]: 10.0 },   // push the matching exercise
-    requireCards: [followUpCardId],           // guarantee the "who said that?" follow-up
-    excludeTags:  ['gpc:intro:*'],            // don't surface another intro right now
+{
+  label,
+  mergeSessionHints: {
+    boostTags: {
+      [practiceTag]: INTRO_EXERCISE_BOOST,       // push the matching exercise
+      'gpc:intro:*': INTRO_DISCOURAGE_FACTOR,    // discourage another intro, durably
+    },
+    requireCards: followUpCards,                 // guarantee the follow-up cards
   },
-  limit: 3,            // BURST: tiny queue
-  mode: 'replace',
-  minFollowUpCards: 2, // guarantee 2 cards even if the timer is nearly up
-});
+  hints: { excludeTags: ['gpc:intro:*'] },       // no intro in this very run
+  minFollowUpCards: 2,  // guarantee 2 cards even if the timer is nearly up
+}
 ```
 
-This composes several framework mechanisms at once:
+What each part does:
 
-- `limit: 3` → burst replan → sets `_suppressQualityReplan` so the background
-  quality trigger won't immediately clobber these 3 hinted cards.
-- `requireCards` → the follow-up card is force-injected even if filters/ELO
+- `mergeSessionHints` → the boost and the requirement survive the depletion and
+  quality auto-replans that follow, and accumulate with an earlier intro's
+  emphasis in the same session instead of replacing it.
+- `requireCards` → the follow-up is force-injected even if filters or ELO
   wouldn't have ranked it.
 - `minFollowUpCards: 2` → sets `_minCardsGuarantee`, so the intro's practice
-  actually gets shown rather than the session ending on the intro.
-- `excludeTags: ['gpc:intro:*']` → prevents back-to-back intros.
+  is shown rather than the session ending on the intro.
+- No `limit` / `mode`: a full re-rank in `replace` mode. An earlier version
+  used a `limit: 3` burst, which with a single supply queue would cut the
+  whole queue, reviews included, to 3 cards.
 
-It is submitted *before* the intro animation plays out ("submit + replan early
-so the planner works while the words play") — an explicit attempt to hide
-pipeline latency behind animation time.
+It is submitted *before* the intro animation plays out, to hide pipeline
+latency behind animation time.
 
 ### Best practices for consumers
 
 - **Submit and replan _early_, behind cover.** Fire `requestReplan()` as soon as
   intent is known (e.g. on card submit, before an animation finishes) so the
-  pipeline runs during otherwise-idle time. The GPC-intro example does this
-  deliberately — the planner is latency-bound, so give it slack.
+  pipeline runs during otherwise-idle time.
 - **Treat opportunistic replans as best-effort.** A missed `(a)` prefetch is a
   perf hiccup, not a bug. Never encode correctness ("this card _must_ appear") in
-  a bare auto-replan — it can be silently coalesced. Carry **intent** (`label`,
-  `limit`, `hints`, `minFollowUpCards`) so the request is preserved.
+  a bare auto-replan: it can be silently coalesced. Carry **intent** (`limit`,
+  `hints`, session hints, `minFollowUpCards`; not just a `label`).
+- **Use session hints for emphasis that should outlive one run.** A one-shot
+  `hints` boost is gone by the next auto-replan. `mergeSessionHints` accumulates
+  (boosts multiply, so clamp if you may re-boost the same tag);
+  `sessionHints` replaces.
 - **Use `requireCards` for hard guarantees, not `boostTags`.** Boosts only bias
   ranking; `requireCards` force-injects with `+Infinity` even past a zeroing
-  filter, and pre-fetches the card if the generator never produced it.
+  filter.
 - **Guard end-of-session intros with `minFollowUpCards`.** A late intro card
   without a follow-up guarantee can end the session on the intro itself.
-- **Small `limit` shrinks the queue, not the work.** A `limit: 3` burst still
-  fetches ~500 candidates and runs every filter (see the fetchLimit note below).
-  Use bursts to _shape_ the near-future queue, not as a speed optimization — and
-  note a burst sets `_suppressQualityReplan`, so it temporarily mutes the
-  quality trigger.
+- **Don't burst with a small `limit` lightly.** The supply queue holds reviews
+  too, so a `replace` replan with `limit: 3` shrinks the whole working set. It
+  also doesn't save work: the pipeline still scores ~500 candidates.
 - **Don't replan per keystroke/answer.** Replans coalesce but aren't free; lean
-  on the controller's built-in depletion/quality triggers for routine refills.
+  on the built-in depletion/quality triggers for routine refills.
 
 ---
 
@@ -390,8 +421,9 @@ now visible: `sk:pipeline-run`'s `binding` (below).
    `Pipeline.getWeightedCards(limit)` always pulls ~500 candidates, hydrates
    their tags, and runs every filter over all 500, slicing to `limit` only at the
    end. A `limit: 3` burst does the same heavy work as a full plan.
-3. **Initial fetch is inflated to ~220** (`defaultBatchLimit + initialReviewCap`),
-   compounding (2) at spin-up.
+3. **Initial fetch inflation (RESOLVED).** The initial plan used to ask each
+   source for ~220 (`defaultBatchLimit + initialReviewCap`) to fill a separate
+   review queue. With the single supply queue it asks for `defaultBatchLimit`.
 
 ### Instrumentation
 
@@ -420,12 +452,12 @@ the wedge question is revisited.
 
 | File | Relevant region |
 |------|-----------------|
-| `db/src/study/SessionController.ts` | queues, `requestReplan`, `_runReplan`, `nextCard` triggers, wedge-breaker |
+| `db/src/study/SessionController.ts` | supplyQ / failedQ, `getWeightedContent`, `requestReplan`, `_runReplan`, `nextCard` triggers, `_selectNextItemToHydrate`, wedge-breaker |
 | `db/src/impl/couch/courseDB.ts` | `getWeightedCards`, `setEphemeralHints`, `createNavigator`, `readsLocal` |
-| `db/src/core/navigators/Pipeline.ts` | `getWeightedCards` (fetchLimit=500), `applyHints`, `hydrateTags`, `buildContext` |
+| `db/src/core/navigators/Pipeline.ts` | `getWeightedCards` (fetchLimit=500), `regulate`, `applyHints`, `hydrateTags`, `buildContext` |
 | `db/src/core/navigators/generators/types.ts` | `ReplanHints`, `GeneratorResult` |
 | `db/src/study/SourceMixer.ts` | `QuotaRoundRobinMixer` |
 | `db/src/study/services/CardHydrationService.ts` | render-ready card cache |
 | `db/src/study/SessionDebugger.ts` | per-draw / per-replan queue snapshots |
-| consumer: `letterspractice/src/questions/GpcIntroView.vue` | burst + follow-up replan example |
-| consumer: `letterspractice/src/services/lessons.ts` | `getPostLessonHints()` |
+| consumer (LP): `src/services/sessionManagement/introReplan.ts` | intro replan example (`buildIntroReplanRequest`) |
+| consumer (LP): `src/services/lessons.ts` | `getPostLessonHints()` |

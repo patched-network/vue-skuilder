@@ -152,6 +152,11 @@ export interface StudySessionRunCard {
   /** Final score; null for a mandatory (required) card, whose score is infinite. */
   score: number | null;
   selected: boolean;
+  /**
+   * The skill a card was fetched for, when the ELO generator's skill fetch
+   * produced it (pressure 0–1). Absent otherwise, and on runs before it existed.
+   */
+  skillFetch?: { tag: string; pressure: number };
 }
 
 /**

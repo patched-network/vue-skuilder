@@ -377,6 +377,12 @@ export interface WeightedCard {
    * the SRS generator. The review-mass regulator weighs the backlog by it.
    */
   reviewUrgency?: number;
+  /**
+   * Set on a new card the ELO generator fetched for a pressured skill rather
+   * than from its global window: the skill and its pressure (0–1). Persisted
+   * on the session's run cards so a read-back can find these cards.
+   */
+  skillFetch?: { tag: string; pressure: number };
 }
 
 /**

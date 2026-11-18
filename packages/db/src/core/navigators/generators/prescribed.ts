@@ -5,6 +5,7 @@ import { ContentNavigator } from '../index';
 import type { WeightedCard } from '../index';
 import type { ContentNavigationStrategyData } from '../../types/contentNavigationStrategy';
 import type { CardGenerator, GeneratorContext, GeneratorResult, ReplanHints } from './types';
+import { loadCardsByTag } from './cardsByTag';
 import {
   captureStrategyPressure,
   type PressureGaugeDebug,
@@ -291,7 +292,6 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
    * Course-wide reads that don't change within a navigator's lifetime (the
    * navigator is cached per CourseDB, minutes), loaded once, not per run.
    */
-  private _cardsByTag: Promise<Map<string, string[]>> | null = null;
   private _hierarchyConfigs: Promise<HierarchyConfig[]> | null = null;
 
   constructor(
@@ -697,29 +697,9 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
     }
   }
 
-  /** Tag name → tagged card IDs, from the course's tag docs (once per instance). */
+  /** Tag name → tagged card IDs, from the course's tag docs (shared, cached per course DB). */
   private loadCardsByTag(): Promise<Map<string, string[]>> {
-    if (!this._cardsByTag) {
-      this._cardsByTag = this.course
-        .getCourseTagStubs()
-        .then((docs) => {
-          const cardsByTag = new Map<string, string[]>();
-          for (const row of docs.rows ?? []) {
-            const tagDoc = row.doc as { name?: string; taggedCards?: string[] } | undefined;
-            if (tagDoc?.name && Array.isArray(tagDoc.taggedCards)) {
-              cardsByTag.set(tagDoc.name, [...tagDoc.taggedCards]);
-            }
-          }
-          return cardsByTag;
-        })
-        .catch((e) => {
-          // Not cached: the next run retries.
-          this._cardsByTag = null;
-          logger.debug(`[Prescribed] Failed to load tag docs: ${e}`);
-          return new Map<string, string[]>();
-        });
-    }
-    return this._cardsByTag;
+    return loadCardsByTag(this.course);
   }
 
   private loadHierarchyConfigs(): Promise<HierarchyConfig[]> {
