@@ -1,0 +1,1008 @@
+{
+  "type": "couchdb-view",
+  "viewName": "getTags",
+  "designDoc": "_design/getTags",
+  "results": [
+    {
+      "key": "c-skdocs-ag-elo",
+      "id": "TAG-docs:exercise:agents",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:agents",
+        "snippit": "Questions: Agents (MCP)",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-ag-review",
+      "id": "TAG-docs:exercise:agents",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:agents",
+        "snippit": "Questions: Agents (MCP)",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-ag-schema",
+      "id": "TAG-docs:exercise:agents",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:agents",
+        "snippit": "Questions: Agents (MCP)",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-ag-scope",
+      "id": "TAG-docs:exercise:agents",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:agents",
+        "snippit": "Questions: Agents (MCP)",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-ag-strategy",
+      "id": "TAG-docs:exercise:agents",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:agents",
+        "snippit": "Questions: Agents (MCP)",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-agents-intro",
+      "id": "TAG-docs:intro:agents",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:intro:agents",
+        "snippit": "Introduction: Agents (MCP)",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-arch-content-source",
+      "id": "TAG-docs:exercise:architecture",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:architecture",
+        "snippit": "Questions: The big picture",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-arch-failed",
+      "id": "TAG-docs:exercise:architecture",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:architecture",
+        "snippit": "Questions: The big picture",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-arch-first-attempt",
+      "id": "TAG-docs:exercise:architecture",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:architecture",
+        "snippit": "Questions: The big picture",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-arch-hydration",
+      "id": "TAG-docs:exercise:architecture",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:architecture",
+        "snippit": "Questions: The big picture",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-arch-no-vue",
+      "id": "TAG-docs:exercise:architecture",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:architecture",
+        "snippit": "Questions: The big picture",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-arch-replan",
+      "id": "TAG-docs:exercise:architecture",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:architecture",
+        "snippit": "Questions: The big picture",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-arch-supply",
+      "id": "TAG-docs:exercise:architecture",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:architecture",
+        "snippit": "Questions: The big picture",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-architecture-intro",
+      "id": "TAG-docs:intro:architecture",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:intro:architecture",
+        "snippit": "Introduction: The big picture",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-cards-intro",
+      "id": "TAG-docs:intro:cards",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:intro:cards",
+        "snippit": "Introduction: Cards",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-cc-boundary",
+      "id": "TAG-docs:exercise:custom-cards",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:custom-cards",
+        "snippit": "Questions: Custom cards",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-cc-defer",
+      "id": "TAG-docs:exercise:custom-cards",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:custom-cards",
+        "snippit": "Questions: Custom cards",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-cc-inline",
+      "id": "TAG-docs:exercise:custom-cards",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:custom-cards",
+        "snippit": "Questions: Custom cards",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-cc-name",
+      "id": "TAG-docs:exercise:custom-cards",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:custom-cards",
+        "snippit": "Questions: Custom cards",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-cc-register",
+      "id": "TAG-docs:exercise:custom-cards",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:custom-cards",
+        "snippit": "Questions: Custom cards",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-cc-submit",
+      "id": "TAG-docs:exercise:custom-cards",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:custom-cards",
+        "snippit": "Questions: Custom cards",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-cm-double-bar",
+      "id": "TAG-docs:exercise:cards",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:cards",
+        "snippit": "Questions: Cards",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-cm-fluent",
+      "id": "TAG-docs:exercise:cards",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:cards",
+        "snippit": "Questions: Cards",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-cm-iscorrect",
+      "id": "TAG-docs:exercise:cards",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:cards",
+        "snippit": "Questions: Cards",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-cm-multi-view",
+      "id": "TAG-docs:exercise:cards",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:cards",
+        "snippit": "Questions: Cards",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-cm-seed",
+      "id": "TAG-docs:exercise:cards",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:cards",
+        "snippit": "Questions: Cards",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-cm-tagged",
+      "id": "TAG-docs:exercise:cards",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:cards",
+        "snippit": "Questions: Cards",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-cm-trio",
+      "id": "TAG-docs:exercise:cards",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:cards",
+        "snippit": "Questions: Cards",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-cm-viewid",
+      "id": "TAG-docs:exercise:cards",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:cards",
+        "snippit": "Questions: Cards",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-custom-cards-intro",
+      "id": "TAG-docs:intro:custom-cards",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:intro:custom-cards",
+        "snippit": "Introduction: Custom cards",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-data-layer-intro",
+      "id": "TAG-docs:intro:data-layer",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:intro:data-layer",
+        "snippit": "Introduction: Data layer",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-dl-localsync",
+      "id": "TAG-docs:exercise:data-layer",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:data-layer",
+        "snippit": "Questions: Data layer",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-dl-root-manifest",
+      "id": "TAG-docs:exercise:data-layer",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:data-layer",
+        "snippit": "Questions: Data layer",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-dl-static-elo",
+      "id": "TAG-docs:exercise:data-layer",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:data-layer",
+        "snippit": "Questions: Data layer",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-dl-static-pipeline",
+      "id": "TAG-docs:exercise:data-layer",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:data-layer",
+        "snippit": "Questions: Data layer",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-dl-static-user",
+      "id": "TAG-docs:exercise:data-layer",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:data-layer",
+        "snippit": "Questions: Data layer",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-dl-strategy-docs",
+      "id": "TAG-docs:exercise:data-layer",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:data-layer",
+        "snippit": "Questions: Data layer",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-dl-two",
+      "id": "TAG-docs:exercise:data-layer",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:data-layer",
+        "snippit": "Questions: Data layer",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-ns-meta",
+      "id": "TAG-docs:exercise:strategies",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:strategies",
+        "snippit": "Questions: Navigation strategies",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-ns-multiplier",
+      "id": "TAG-docs:exercise:strategies",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:strategies",
+        "snippit": "Questions: Navigation strategies",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-ns-register",
+      "id": "TAG-docs:exercise:strategies",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:strategies",
+        "snippit": "Questions: Navigation strategies",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-ns-state",
+      "id": "TAG-docs:exercise:strategies",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:strategies",
+        "snippit": "Questions: Navigation strategies",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-ns-unknown",
+      "id": "TAG-docs:exercise:strategies",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:strategies",
+        "snippit": "Questions: Navigation strategies",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-ns-zero",
+      "id": "TAG-docs:exercise:strategies",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:strategies",
+        "snippit": "Questions: Navigation strategies",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-ped-diversity",
+      "id": "TAG-docs:exercise:pedagogy",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:pedagogy",
+        "snippit": "Questions: Pedagogy",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-ped-eligible",
+      "id": "TAG-docs:exercise:pedagogy",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:pedagogy",
+        "snippit": "Questions: Pedagogy",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-ped-gain",
+      "id": "TAG-docs:exercise:pedagogy",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:pedagogy",
+        "snippit": "Questions: Pedagogy",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-ped-gate",
+      "id": "TAG-docs:exercise:pedagogy",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:pedagogy",
+        "snippit": "Questions: Pedagogy",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-ped-generators",
+      "id": "TAG-docs:exercise:pedagogy",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:pedagogy",
+        "snippit": "Questions: Pedagogy",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-ped-intake",
+      "id": "TAG-docs:exercise:pedagogy",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:pedagogy",
+        "snippit": "Questions: Pedagogy",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-ped-orchestration",
+      "id": "TAG-docs:exercise:pedagogy",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:pedagogy",
+        "snippit": "Questions: Pedagogy",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-ped-provenance",
+      "id": "TAG-docs:exercise:pedagogy",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:pedagogy",
+        "snippit": "Questions: Pedagogy",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-ped-skill-pressure",
+      "id": "TAG-docs:exercise:pedagogy",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:pedagogy",
+        "snippit": "Questions: Pedagogy",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-pedagogy-intro",
+      "id": "TAG-docs:intro:pedagogy",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:intro:pedagogy",
+        "snippit": "Introduction: Pedagogy",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-start-card-type",
+      "id": "TAG-docs:exercise:start",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:start",
+        "snippit": "Questions: Start here",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-start-license",
+      "id": "TAG-docs:exercise:start",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:start",
+        "snippit": "Questions: Start here",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-start-review-correct",
+      "id": "TAG-docs:exercise:start",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:start",
+        "snippit": "Questions: Start here",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-start-same-scale",
+      "id": "TAG-docs:exercise:start",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:start",
+        "snippit": "Questions: Start here",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-start-static",
+      "id": "TAG-docs:exercise:start",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:start",
+        "snippit": "Questions: Start here",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-start-timebox",
+      "id": "TAG-docs:exercise:start",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:start",
+        "snippit": "Questions: Start here",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-start-unit",
+      "id": "TAG-docs:exercise:start",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:start",
+        "snippit": "Questions: Start here",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-start-welcome",
+      "id": "TAG-docs:intro:start",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:intro:start",
+        "snippit": "Introduction: Start here",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-strategies-intro",
+      "id": "TAG-docs:intro:strategies",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:intro:strategies",
+        "snippit": "Introduction: Navigation strategies",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-wf-commit",
+      "id": "TAG-docs:exercise:workflow",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:workflow",
+        "snippit": "Questions: Building a course",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-wf-custom-in-studio",
+      "id": "TAG-docs:exercise:workflow",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:workflow",
+        "snippit": "Questions: Building a course",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-wf-flush",
+      "id": "TAG-docs:exercise:workflow",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:workflow",
+        "snippit": "Questions: Building a course",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-wf-init",
+      "id": "TAG-docs:exercise:workflow",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:workflow",
+        "snippit": "Questions: Building a course",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-wf-pack",
+      "id": "TAG-docs:exercise:workflow",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:workflow",
+        "snippit": "Questions: Building a course",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-wf-platform",
+      "id": "TAG-docs:exercise:workflow",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:workflow",
+        "snippit": "Questions: Building a course",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-wf-why-studio",
+      "id": "TAG-docs:exercise:workflow",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:exercise:workflow",
+        "snippit": "Questions: Building a course",
+        "wiki": "",
+        "taggedCards": []
+      }
+    },
+    {
+      "key": "c-skdocs-workflow-intro",
+      "id": "TAG-docs:intro:workflow",
+      "value": {
+        "docType": "TAG",
+        "name": "docs:intro:workflow",
+        "snippit": "Introduction: Building a course",
+        "wiki": "",
+        "taggedCards": []
+      }
+    }
+  ],
+  "metadata": {
+    "resultCount": 71,
+    "generatedAt": "2026-11-20T19:11:42.416Z"
+  },
+  "byTag": {
+    "c-skdocs-ag-elo": [
+      "TAG-docs:exercise:agents"
+    ],
+    "c-skdocs-ag-review": [
+      "TAG-docs:exercise:agents"
+    ],
+    "c-skdocs-ag-schema": [
+      "TAG-docs:exercise:agents"
+    ],
+    "c-skdocs-ag-scope": [
+      "TAG-docs:exercise:agents"
+    ],
+    "c-skdocs-ag-strategy": [
+      "TAG-docs:exercise:agents"
+    ],
+    "c-skdocs-agents-intro": [
+      "TAG-docs:intro:agents"
+    ],
+    "c-skdocs-arch-content-source": [
+      "TAG-docs:exercise:architecture"
+    ],
+    "c-skdocs-arch-failed": [
+      "TAG-docs:exercise:architecture"
+    ],
+    "c-skdocs-arch-first-attempt": [
+      "TAG-docs:exercise:architecture"
+    ],
+    "c-skdocs-arch-hydration": [
+      "TAG-docs:exercise:architecture"
+    ],
+    "c-skdocs-arch-no-vue": [
+      "TAG-docs:exercise:architecture"
+    ],
+    "c-skdocs-arch-replan": [
+      "TAG-docs:exercise:architecture"
+    ],
+    "c-skdocs-arch-supply": [
+      "TAG-docs:exercise:architecture"
+    ],
+    "c-skdocs-architecture-intro": [
+      "TAG-docs:intro:architecture"
+    ],
+    "c-skdocs-cards-intro": [
+      "TAG-docs:intro:cards"
+    ],
+    "c-skdocs-cc-boundary": [
+      "TAG-docs:exercise:custom-cards"
+    ],
+    "c-skdocs-cc-defer": [
+      "TAG-docs:exercise:custom-cards"
+    ],
+    "c-skdocs-cc-inline": [
+      "TAG-docs:exercise:custom-cards"
+    ],
+    "c-skdocs-cc-name": [
+      "TAG-docs:exercise:custom-cards"
+    ],
+    "c-skdocs-cc-register": [
+      "TAG-docs:exercise:custom-cards"
+    ],
+    "c-skdocs-cc-submit": [
+      "TAG-docs:exercise:custom-cards"
+    ],
+    "c-skdocs-cm-double-bar": [
+      "TAG-docs:exercise:cards"
+    ],
+    "c-skdocs-cm-fluent": [
+      "TAG-docs:exercise:cards"
+    ],
+    "c-skdocs-cm-iscorrect": [
+      "TAG-docs:exercise:cards"
+    ],
+    "c-skdocs-cm-multi-view": [
+      "TAG-docs:exercise:cards"
+    ],
+    "c-skdocs-cm-seed": [
+      "TAG-docs:exercise:cards"
+    ],
+    "c-skdocs-cm-tagged": [
+      "TAG-docs:exercise:cards"
+    ],
+    "c-skdocs-cm-trio": [
+      "TAG-docs:exercise:cards"
+    ],
+    "c-skdocs-cm-viewid": [
+      "TAG-docs:exercise:cards"
+    ],
+    "c-skdocs-custom-cards-intro": [
+      "TAG-docs:intro:custom-cards"
+    ],
+    "c-skdocs-data-layer-intro": [
+      "TAG-docs:intro:data-layer"
+    ],
+    "c-skdocs-dl-localsync": [
+      "TAG-docs:exercise:data-layer"
+    ],
+    "c-skdocs-dl-root-manifest": [
+      "TAG-docs:exercise:data-layer"
+    ],
+    "c-skdocs-dl-static-elo": [
+      "TAG-docs:exercise:data-layer"
+    ],
+    "c-skdocs-dl-static-pipeline": [
+      "TAG-docs:exercise:data-layer"
+    ],
+    "c-skdocs-dl-static-user": [
+      "TAG-docs:exercise:data-layer"
+    ],
+    "c-skdocs-dl-strategy-docs": [
+      "TAG-docs:exercise:data-layer"
+    ],
+    "c-skdocs-dl-two": [
+      "TAG-docs:exercise:data-layer"
+    ],
+    "c-skdocs-ns-meta": [
+      "TAG-docs:exercise:strategies"
+    ],
+    "c-skdocs-ns-multiplier": [
+      "TAG-docs:exercise:strategies"
+    ],
+    "c-skdocs-ns-register": [
+      "TAG-docs:exercise:strategies"
+    ],
+    "c-skdocs-ns-state": [
+      "TAG-docs:exercise:strategies"
+    ],
+    "c-skdocs-ns-unknown": [
+      "TAG-docs:exercise:strategies"
+    ],
+    "c-skdocs-ns-zero": [
+      "TAG-docs:exercise:strategies"
+    ],
+    "c-skdocs-ped-diversity": [
+      "TAG-docs:exercise:pedagogy"
+    ],
+    "c-skdocs-ped-eligible": [
+      "TAG-docs:exercise:pedagogy"
+    ],
+    "c-skdocs-ped-gain": [
+      "TAG-docs:exercise:pedagogy"
+    ],
+    "c-skdocs-ped-gate": [
+      "TAG-docs:exercise:pedagogy"
+    ],
+    "c-skdocs-ped-generators": [
+      "TAG-docs:exercise:pedagogy"
+    ],
+    "c-skdocs-ped-intake": [
+      "TAG-docs:exercise:pedagogy"
+    ],
+    "c-skdocs-ped-orchestration": [
+      "TAG-docs:exercise:pedagogy"
+    ],
+    "c-skdocs-ped-provenance": [
+      "TAG-docs:exercise:pedagogy"
+    ],
+    "c-skdocs-ped-skill-pressure": [
+      "TAG-docs:exercise:pedagogy"
+    ],
+    "c-skdocs-pedagogy-intro": [
+      "TAG-docs:intro:pedagogy"
+    ],
+    "c-skdocs-start-card-type": [
+      "TAG-docs:exercise:start"
+    ],
+    "c-skdocs-start-license": [
+      "TAG-docs:exercise:start"
+    ],
+    "c-skdocs-start-review-correct": [
+      "TAG-docs:exercise:start"
+    ],
+    "c-skdocs-start-same-scale": [
+      "TAG-docs:exercise:start"
+    ],
+    "c-skdocs-start-static": [
+      "TAG-docs:exercise:start"
+    ],
+    "c-skdocs-start-timebox": [
+      "TAG-docs:exercise:start"
+    ],
+    "c-skdocs-start-unit": [
+      "TAG-docs:exercise:start"
+    ],
+    "c-skdocs-start-welcome": [
+      "TAG-docs:intro:start"
+    ],
+    "c-skdocs-strategies-intro": [
+      "TAG-docs:intro:strategies"
+    ],
+    "c-skdocs-wf-commit": [
+      "TAG-docs:exercise:workflow"
+    ],
+    "c-skdocs-wf-custom-in-studio": [
+      "TAG-docs:exercise:workflow"
+    ],
+    "c-skdocs-wf-flush": [
+      "TAG-docs:exercise:workflow"
+    ],
+    "c-skdocs-wf-init": [
+      "TAG-docs:exercise:workflow"
+    ],
+    "c-skdocs-wf-pack": [
+      "TAG-docs:exercise:workflow"
+    ],
+    "c-skdocs-wf-platform": [
+      "TAG-docs:exercise:workflow"
+    ],
+    "c-skdocs-wf-why-studio": [
+      "TAG-docs:exercise:workflow"
+    ],
+    "c-skdocs-workflow-intro": [
+      "TAG-docs:intro:workflow"
+    ]
+  },
+  "tagCount": 71
+}

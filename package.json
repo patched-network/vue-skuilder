@@ -24,6 +24,7 @@
     "bump:minor": "yarn workspaces foreach --all --exclude vue-skuilder version minor --immediate",
     "bump:alpha": "yarn workspaces foreach --all --exclude vue-skuilder version prerelease --immediate",
     "vtag": "node scripts/vtag.js",
+    "docs:course": "node docs/course-src/build.mjs",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs",

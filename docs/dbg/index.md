@@ -6,3 +6,5 @@
 [remote embedded-course-test](./remote-crs-embedding)
 
 [embedded fill-in editor test](./embedded-fill-in-editor-test)
+
+[docs course (prototype)](./docs-course)

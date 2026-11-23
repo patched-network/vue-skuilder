@@ -1,0 +1,728 @@
+{
+  "type": "couchdb-view",
+  "viewName": "elo",
+  "designDoc": "_design/elo",
+  "results": [
+    {
+      "key": 900,
+      "id": "c-skdocs-start-unit",
+      "value": "c-skdocs-start-unit"
+    },
+    {
+      "key": 930,
+      "id": "c-skdocs-start-review-correct",
+      "value": "c-skdocs-start-review-correct"
+    },
+    {
+      "key": 940,
+      "id": "c-skdocs-start-card-type",
+      "value": "c-skdocs-start-card-type"
+    },
+    {
+      "key": 950,
+      "id": "c-skdocs-start-static",
+      "value": "c-skdocs-start-static"
+    },
+    {
+      "key": 960,
+      "id": "c-skdocs-start-timebox",
+      "value": "c-skdocs-start-timebox"
+    },
+    {
+      "key": 980,
+      "id": "c-skdocs-start-same-scale",
+      "value": "c-skdocs-start-same-scale"
+    },
+    {
+      "key": 1000,
+      "id": "c-skdocs-ag-scope",
+      "value": "c-skdocs-ag-scope"
+    },
+    {
+      "key": 1000,
+      "id": "c-skdocs-agents-intro",
+      "value": "c-skdocs-agents-intro"
+    },
+    {
+      "key": 1000,
+      "id": "c-skdocs-arch-failed",
+      "value": "c-skdocs-arch-failed"
+    },
+    {
+      "key": 1000,
+      "id": "c-skdocs-architecture-intro",
+      "value": "c-skdocs-architecture-intro"
+    },
+    {
+      "key": 1000,
+      "id": "c-skdocs-cards-intro",
+      "value": "c-skdocs-cards-intro"
+    },
+    {
+      "key": 1000,
+      "id": "c-skdocs-cc-inline",
+      "value": "c-skdocs-cc-inline"
+    },
+    {
+      "key": 1000,
+      "id": "c-skdocs-cm-trio",
+      "value": "c-skdocs-cm-trio"
+    },
+    {
+      "key": 1000,
+      "id": "c-skdocs-custom-cards-intro",
+      "value": "c-skdocs-custom-cards-intro"
+    },
+    {
+      "key": 1000,
+      "id": "c-skdocs-data-layer-intro",
+      "value": "c-skdocs-data-layer-intro"
+    },
+    {
+      "key": 1000,
+      "id": "c-skdocs-dl-two",
+      "value": "c-skdocs-dl-two"
+    },
+    {
+      "key": 1000,
+      "id": "c-skdocs-ped-generators",
+      "value": "c-skdocs-ped-generators"
+    },
+    {
+      "key": 1000,
+      "id": "c-skdocs-pedagogy-intro",
+      "value": "c-skdocs-pedagogy-intro"
+    },
+    {
+      "key": 1000,
+      "id": "c-skdocs-start-license",
+      "value": "c-skdocs-start-license"
+    },
+    {
+      "key": 1000,
+      "id": "c-skdocs-start-welcome",
+      "value": "c-skdocs-start-welcome"
+    },
+    {
+      "key": 1000,
+      "id": "c-skdocs-strategies-intro",
+      "value": "c-skdocs-strategies-intro"
+    },
+    {
+      "key": 1000,
+      "id": "c-skdocs-wf-init",
+      "value": "c-skdocs-wf-init"
+    },
+    {
+      "key": 1000,
+      "id": "c-skdocs-workflow-intro",
+      "value": "c-skdocs-workflow-intro"
+    },
+    {
+      "key": 1020,
+      "id": "c-skdocs-arch-no-vue",
+      "value": "c-skdocs-arch-no-vue"
+    },
+    {
+      "key": 1020,
+      "id": "c-skdocs-cc-boundary",
+      "value": "c-skdocs-cc-boundary"
+    },
+    {
+      "key": 1020,
+      "id": "c-skdocs-cm-double-bar",
+      "value": "c-skdocs-cm-double-bar"
+    },
+    {
+      "key": 1020,
+      "id": "c-skdocs-ns-zero",
+      "value": "c-skdocs-ns-zero"
+    },
+    {
+      "key": 1020,
+      "id": "c-skdocs-ped-provenance",
+      "value": "c-skdocs-ped-provenance"
+    },
+    {
+      "key": 1020,
+      "id": "c-skdocs-wf-commit",
+      "value": "c-skdocs-wf-commit"
+    },
+    {
+      "key": 1040,
+      "id": "c-skdocs-ag-review",
+      "value": "c-skdocs-ag-review"
+    },
+    {
+      "key": 1040,
+      "id": "c-skdocs-arch-hydration",
+      "value": "c-skdocs-arch-hydration"
+    },
+    {
+      "key": 1040,
+      "id": "c-skdocs-dl-static-user",
+      "value": "c-skdocs-dl-static-user"
+    },
+    {
+      "key": 1040,
+      "id": "c-skdocs-ns-register",
+      "value": "c-skdocs-ns-register"
+    },
+    {
+      "key": 1040,
+      "id": "c-skdocs-ped-gate",
+      "value": "c-skdocs-ped-gate"
+    },
+    {
+      "key": 1040,
+      "id": "c-skdocs-wf-why-studio",
+      "value": "c-skdocs-wf-why-studio"
+    },
+    {
+      "key": 1060,
+      "id": "c-skdocs-ag-schema",
+      "value": "c-skdocs-ag-schema"
+    },
+    {
+      "key": 1060,
+      "id": "c-skdocs-arch-supply",
+      "value": "c-skdocs-arch-supply"
+    },
+    {
+      "key": 1060,
+      "id": "c-skdocs-cc-register",
+      "value": "c-skdocs-cc-register"
+    },
+    {
+      "key": 1060,
+      "id": "c-skdocs-cm-iscorrect",
+      "value": "c-skdocs-cm-iscorrect"
+    },
+    {
+      "key": 1060,
+      "id": "c-skdocs-dl-strategy-docs",
+      "value": "c-skdocs-dl-strategy-docs"
+    },
+    {
+      "key": 1060,
+      "id": "c-skdocs-ns-meta",
+      "value": "c-skdocs-ns-meta"
+    },
+    {
+      "key": 1060,
+      "id": "c-skdocs-ped-eligible",
+      "value": "c-skdocs-ped-eligible"
+    },
+    {
+      "key": 1060,
+      "id": "c-skdocs-wf-flush",
+      "value": "c-skdocs-wf-flush"
+    },
+    {
+      "key": 1080,
+      "id": "c-skdocs-arch-replan",
+      "value": "c-skdocs-arch-replan"
+    },
+    {
+      "key": 1080,
+      "id": "c-skdocs-cc-submit",
+      "value": "c-skdocs-cc-submit"
+    },
+    {
+      "key": 1080,
+      "id": "c-skdocs-cm-multi-view",
+      "value": "c-skdocs-cm-multi-view"
+    },
+    {
+      "key": 1080,
+      "id": "c-skdocs-dl-static-elo",
+      "value": "c-skdocs-dl-static-elo"
+    },
+    {
+      "key": 1080,
+      "id": "c-skdocs-ns-multiplier",
+      "value": "c-skdocs-ns-multiplier"
+    },
+    {
+      "key": 1080,
+      "id": "c-skdocs-ped-skill-pressure",
+      "value": "c-skdocs-ped-skill-pressure"
+    },
+    {
+      "key": 1080,
+      "id": "c-skdocs-wf-platform",
+      "value": "c-skdocs-wf-platform"
+    },
+    {
+      "key": 1100,
+      "id": "c-skdocs-ag-elo",
+      "value": "c-skdocs-ag-elo"
+    },
+    {
+      "key": 1100,
+      "id": "c-skdocs-arch-content-source",
+      "value": "c-skdocs-arch-content-source"
+    },
+    {
+      "key": 1100,
+      "id": "c-skdocs-cm-viewid",
+      "value": "c-skdocs-cm-viewid"
+    },
+    {
+      "key": 1100,
+      "id": "c-skdocs-dl-static-pipeline",
+      "value": "c-skdocs-dl-static-pipeline"
+    },
+    {
+      "key": 1100,
+      "id": "c-skdocs-ns-state",
+      "value": "c-skdocs-ns-state"
+    },
+    {
+      "key": 1100,
+      "id": "c-skdocs-ped-gain",
+      "value": "c-skdocs-ped-gain"
+    },
+    {
+      "key": 1100,
+      "id": "c-skdocs-wf-custom-in-studio",
+      "value": "c-skdocs-wf-custom-in-studio"
+    },
+    {
+      "key": 1120,
+      "id": "c-skdocs-ag-strategy",
+      "value": "c-skdocs-ag-strategy"
+    },
+    {
+      "key": 1120,
+      "id": "c-skdocs-arch-first-attempt",
+      "value": "c-skdocs-arch-first-attempt"
+    },
+    {
+      "key": 1120,
+      "id": "c-skdocs-cc-name",
+      "value": "c-skdocs-cc-name"
+    },
+    {
+      "key": 1120,
+      "id": "c-skdocs-cm-tagged",
+      "value": "c-skdocs-cm-tagged"
+    },
+    {
+      "key": 1120,
+      "id": "c-skdocs-dl-root-manifest",
+      "value": "c-skdocs-dl-root-manifest"
+    },
+    {
+      "key": 1120,
+      "id": "c-skdocs-wf-pack",
+      "value": "c-skdocs-wf-pack"
+    },
+    {
+      "key": 1140,
+      "id": "c-skdocs-cc-defer",
+      "value": "c-skdocs-cc-defer"
+    },
+    {
+      "key": 1140,
+      "id": "c-skdocs-cm-seed",
+      "value": "c-skdocs-cm-seed"
+    },
+    {
+      "key": 1140,
+      "id": "c-skdocs-dl-localsync",
+      "value": "c-skdocs-dl-localsync"
+    },
+    {
+      "key": 1140,
+      "id": "c-skdocs-ns-unknown",
+      "value": "c-skdocs-ns-unknown"
+    },
+    {
+      "key": 1140,
+      "id": "c-skdocs-ped-intake",
+      "value": "c-skdocs-ped-intake"
+    },
+    {
+      "key": 1150,
+      "id": "c-skdocs-cm-fluent",
+      "value": "c-skdocs-cm-fluent"
+    },
+    {
+      "key": 1150,
+      "id": "c-skdocs-ped-diversity",
+      "value": "c-skdocs-ped-diversity"
+    },
+    {
+      "key": 1160,
+      "id": "c-skdocs-ped-orchestration",
+      "value": "c-skdocs-ped-orchestration"
+    }
+  ],
+  "metadata": {
+    "resultCount": 71,
+    "generatedAt": "2026-11-20T19:11:42.011Z"
+  },
+  "sorted": [
+    {
+      "key": 900,
+      "id": "c-skdocs-start-unit",
+      "value": "c-skdocs-start-unit"
+    },
+    {
+      "key": 930,
+      "id": "c-skdocs-start-review-correct",
+      "value": "c-skdocs-start-review-correct"
+    },
+    {
+      "key": 940,
+      "id": "c-skdocs-start-card-type",
+      "value": "c-skdocs-start-card-type"
+    },
+    {
+      "key": 950,
+      "id": "c-skdocs-start-static",
+      "value": "c-skdocs-start-static"
+    },
+    {
+      "key": 960,
+      "id": "c-skdocs-start-timebox",
+      "value": "c-skdocs-start-timebox"
+    },
+    {
+      "key": 980,
+      "id": "c-skdocs-start-same-scale",
+      "value": "c-skdocs-start-same-scale"
+    },
+    {
+      "key": 1000,
+      "id": "c-skdocs-ag-scope",
+      "value": "c-skdocs-ag-scope"
+    },
+    {
+      "key": 1000,
+      "id": "c-skdocs-agents-intro",
+      "value": "c-skdocs-agents-intro"
+    },
+    {
+      "key": 1000,
+      "id": "c-skdocs-arch-failed",
+      "value": "c-skdocs-arch-failed"
+    },
+    {
+      "key": 1000,
+      "id": "c-skdocs-architecture-intro",
+      "value": "c-skdocs-architecture-intro"
+    },
+    {
+      "key": 1000,
+      "id": "c-skdocs-cards-intro",
+      "value": "c-skdocs-cards-intro"
+    },
+    {
+      "key": 1000,
+      "id": "c-skdocs-cc-inline",
+      "value": "c-skdocs-cc-inline"
+    },
+    {
+      "key": 1000,
+      "id": "c-skdocs-cm-trio",
+      "value": "c-skdocs-cm-trio"
+    },
+    {
+      "key": 1000,
+      "id": "c-skdocs-custom-cards-intro",
+      "value": "c-skdocs-custom-cards-intro"
+    },
+    {
+      "key": 1000,
+      "id": "c-skdocs-data-layer-intro",
+      "value": "c-skdocs-data-layer-intro"
+    },
+    {
+      "key": 1000,
+      "id": "c-skdocs-dl-two",
+      "value": "c-skdocs-dl-two"
+    },
+    {
+      "key": 1000,
+      "id": "c-skdocs-ped-generators",
+      "value": "c-skdocs-ped-generators"
+    },
+    {
+      "key": 1000,
+      "id": "c-skdocs-pedagogy-intro",
+      "value": "c-skdocs-pedagogy-intro"
+    },
+    {
+      "key": 1000,
+      "id": "c-skdocs-start-license",
+      "value": "c-skdocs-start-license"
+    },
+    {
+      "key": 1000,
+      "id": "c-skdocs-start-welcome",
+      "value": "c-skdocs-start-welcome"
+    },
+    {
+      "key": 1000,
+      "id": "c-skdocs-strategies-intro",
+      "value": "c-skdocs-strategies-intro"
+    },
+    {
+      "key": 1000,
+      "id": "c-skdocs-wf-init",
+      "value": "c-skdocs-wf-init"
+    },
+    {
+      "key": 1000,
+      "id": "c-skdocs-workflow-intro",
+      "value": "c-skdocs-workflow-intro"
+    },
+    {
+      "key": 1020,
+      "id": "c-skdocs-arch-no-vue",
+      "value": "c-skdocs-arch-no-vue"
+    },
+    {
+      "key": 1020,
+      "id": "c-skdocs-cc-boundary",
+      "value": "c-skdocs-cc-boundary"
+    },
+    {
+      "key": 1020,
+      "id": "c-skdocs-cm-double-bar",
+      "value": "c-skdocs-cm-double-bar"
+    },
+    {
+      "key": 1020,
+      "id": "c-skdocs-ns-zero",
+      "value": "c-skdocs-ns-zero"
+    },
+    {
+      "key": 1020,
+      "id": "c-skdocs-ped-provenance",
+      "value": "c-skdocs-ped-provenance"
+    },
+    {
+      "key": 1020,
+      "id": "c-skdocs-wf-commit",
+      "value": "c-skdocs-wf-commit"
+    },
+    {
+      "key": 1040,
+      "id": "c-skdocs-ag-review",
+      "value": "c-skdocs-ag-review"
+    },
+    {
+      "key": 1040,
+      "id": "c-skdocs-arch-hydration",
+      "value": "c-skdocs-arch-hydration"
+    },
+    {
+      "key": 1040,
+      "id": "c-skdocs-dl-static-user",
+      "value": "c-skdocs-dl-static-user"
+    },
+    {
+      "key": 1040,
+      "id": "c-skdocs-ns-register",
+      "value": "c-skdocs-ns-register"
+    },
+    {
+      "key": 1040,
+      "id": "c-skdocs-ped-gate",
+      "value": "c-skdocs-ped-gate"
+    },
+    {
+      "key": 1040,
+      "id": "c-skdocs-wf-why-studio",
+      "value": "c-skdocs-wf-why-studio"
+    },
+    {
+      "key": 1060,
+      "id": "c-skdocs-ag-schema",
+      "value": "c-skdocs-ag-schema"
+    },
+    {
+      "key": 1060,
+      "id": "c-skdocs-arch-supply",
+      "value": "c-skdocs-arch-supply"
+    },
+    {
+      "key": 1060,
+      "id": "c-skdocs-cc-register",
+      "value": "c-skdocs-cc-register"
+    },
+    {
+      "key": 1060,
+      "id": "c-skdocs-cm-iscorrect",
+      "value": "c-skdocs-cm-iscorrect"
+    },
+    {
+      "key": 1060,
+      "id": "c-skdocs-dl-strategy-docs",
+      "value": "c-skdocs-dl-strategy-docs"
+    },
+    {
+      "key": 1060,
+      "id": "c-skdocs-ns-meta",
+      "value": "c-skdocs-ns-meta"
+    },
+    {
+      "key": 1060,
+      "id": "c-skdocs-ped-eligible",
+      "value": "c-skdocs-ped-eligible"
+    },
+    {
+      "key": 1060,
+      "id": "c-skdocs-wf-flush",
+      "value": "c-skdocs-wf-flush"
+    },
+    {
+      "key": 1080,
+      "id": "c-skdocs-arch-replan",
+      "value": "c-skdocs-arch-replan"
+    },
+    {
+      "key": 1080,
+      "id": "c-skdocs-cc-submit",
+      "value": "c-skdocs-cc-submit"
+    },
+    {
+      "key": 1080,
+      "id": "c-skdocs-cm-multi-view",
+      "value": "c-skdocs-cm-multi-view"
+    },
+    {
+      "key": 1080,
+      "id": "c-skdocs-dl-static-elo",
+      "value": "c-skdocs-dl-static-elo"
+    },
+    {
+      "key": 1080,
+      "id": "c-skdocs-ns-multiplier",
+      "value": "c-skdocs-ns-multiplier"
+    },
+    {
+      "key": 1080,
+      "id": "c-skdocs-ped-skill-pressure",
+      "value": "c-skdocs-ped-skill-pressure"
+    },
+    {
+      "key": 1080,
+      "id": "c-skdocs-wf-platform",
+      "value": "c-skdocs-wf-platform"
+    },
+    {
+      "key": 1100,
+      "id": "c-skdocs-ag-elo",
+      "value": "c-skdocs-ag-elo"
+    },
+    {
+      "key": 1100,
+      "id": "c-skdocs-arch-content-source",
+      "value": "c-skdocs-arch-content-source"
+    },
+    {
+      "key": 1100,
+      "id": "c-skdocs-cm-viewid",
+      "value": "c-skdocs-cm-viewid"
+    },
+    {
+      "key": 1100,
+      "id": "c-skdocs-dl-static-pipeline",
+      "value": "c-skdocs-dl-static-pipeline"
+    },
+    {
+      "key": 1100,
+      "id": "c-skdocs-ns-state",
+      "value": "c-skdocs-ns-state"
+    },
+    {
+      "key": 1100,
+      "id": "c-skdocs-ped-gain",
+      "value": "c-skdocs-ped-gain"
+    },
+    {
+      "key": 1100,
+      "id": "c-skdocs-wf-custom-in-studio",
+      "value": "c-skdocs-wf-custom-in-studio"
+    },
+    {
+      "key": 1120,
+      "id": "c-skdocs-ag-strategy",
+      "value": "c-skdocs-ag-strategy"
+    },
+    {
+      "key": 1120,
+      "id": "c-skdocs-arch-first-attempt",
+      "value": "c-skdocs-arch-first-attempt"
+    },
+    {
+      "key": 1120,
+      "id": "c-skdocs-cc-name",
+      "value": "c-skdocs-cc-name"
+    },
+    {
+      "key": 1120,
+      "id": "c-skdocs-cm-tagged",
+      "value": "c-skdocs-cm-tagged"
+    },
+    {
+      "key": 1120,
+      "id": "c-skdocs-dl-root-manifest",
+      "value": "c-skdocs-dl-root-manifest"
+    },
+    {
+      "key": 1120,
+      "id": "c-skdocs-wf-pack",
+      "value": "c-skdocs-wf-pack"
+    },
+    {
+      "key": 1140,
+      "id": "c-skdocs-cc-defer",
+      "value": "c-skdocs-cc-defer"
+    },
+    {
+      "key": 1140,
+      "id": "c-skdocs-cm-seed",
+      "value": "c-skdocs-cm-seed"
+    },
+    {
+      "key": 1140,
+      "id": "c-skdocs-dl-localsync",
+      "value": "c-skdocs-dl-localsync"
+    },
+    {
+      "key": 1140,
+      "id": "c-skdocs-ns-unknown",
+      "value": "c-skdocs-ns-unknown"
+    },
+    {
+      "key": 1140,
+      "id": "c-skdocs-ped-intake",
+      "value": "c-skdocs-ped-intake"
+    },
+    {
+      "key": 1150,
+      "id": "c-skdocs-cm-fluent",
+      "value": "c-skdocs-cm-fluent"
+    },
+    {
+      "key": 1150,
+      "id": "c-skdocs-ped-diversity",
+      "value": "c-skdocs-ped-diversity"
+    },
+    {
+      "key": 1160,
+      "id": "c-skdocs-ped-orchestration",
+      "value": "c-skdocs-ped-orchestration"
+    }
+  ],
+  "stats": {
+    "min": 900,
+    "max": 1160,
+    "count": 71
+  }
+}

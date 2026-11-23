@@ -1,0 +1,398 @@
+{
+  "byTag": {
+    "docs:exercise:agents": {
+      "cardIds": [
+        "c-skdocs-ag-scope",
+        "c-skdocs-ag-schema",
+        "c-skdocs-ag-elo",
+        "c-skdocs-ag-review",
+        "c-skdocs-ag-strategy"
+      ],
+      "snippet": "Questions: Agents (MCP)",
+      "count": 5
+    },
+    "docs:exercise:architecture": {
+      "cardIds": [
+        "c-skdocs-arch-no-vue",
+        "c-skdocs-arch-supply",
+        "c-skdocs-arch-failed",
+        "c-skdocs-arch-replan",
+        "c-skdocs-arch-first-attempt",
+        "c-skdocs-arch-content-source",
+        "c-skdocs-arch-hydration"
+      ],
+      "snippet": "Questions: The big picture",
+      "count": 7
+    },
+    "docs:exercise:cards": {
+      "cardIds": [
+        "c-skdocs-cm-trio",
+        "c-skdocs-cm-viewid",
+        "c-skdocs-cm-iscorrect",
+        "c-skdocs-cm-tagged",
+        "c-skdocs-cm-multi-view",
+        "c-skdocs-cm-double-bar",
+        "c-skdocs-cm-seed",
+        "c-skdocs-cm-fluent"
+      ],
+      "snippet": "Questions: Cards",
+      "count": 8
+    },
+    "docs:exercise:custom-cards": {
+      "cardIds": [
+        "c-skdocs-cc-boundary",
+        "c-skdocs-cc-submit",
+        "c-skdocs-cc-register",
+        "c-skdocs-cc-name",
+        "c-skdocs-cc-inline",
+        "c-skdocs-cc-defer"
+      ],
+      "snippet": "Questions: Custom cards",
+      "count": 6
+    },
+    "docs:exercise:data-layer": {
+      "cardIds": [
+        "c-skdocs-dl-two",
+        "c-skdocs-dl-static-elo",
+        "c-skdocs-dl-static-user",
+        "c-skdocs-dl-static-pipeline",
+        "c-skdocs-dl-strategy-docs",
+        "c-skdocs-dl-localsync",
+        "c-skdocs-dl-root-manifest"
+      ],
+      "snippet": "Questions: Data layer",
+      "count": 7
+    },
+    "docs:exercise:pedagogy": {
+      "cardIds": [
+        "c-skdocs-ped-generators",
+        "c-skdocs-ped-gate",
+        "c-skdocs-ped-intake",
+        "c-skdocs-ped-provenance",
+        "c-skdocs-ped-eligible",
+        "c-skdocs-ped-gain",
+        "c-skdocs-ped-skill-pressure",
+        "c-skdocs-ped-diversity",
+        "c-skdocs-ped-orchestration"
+      ],
+      "snippet": "Questions: Pedagogy",
+      "count": 9
+    },
+    "docs:exercise:start": {
+      "cardIds": [
+        "c-skdocs-start-unit",
+        "c-skdocs-start-card-type",
+        "c-skdocs-start-static",
+        "c-skdocs-start-same-scale",
+        "c-skdocs-start-timebox",
+        "c-skdocs-start-review-correct",
+        "c-skdocs-start-license"
+      ],
+      "snippet": "Questions: Start here",
+      "count": 7
+    },
+    "docs:exercise:strategies": {
+      "cardIds": [
+        "c-skdocs-ns-register",
+        "c-skdocs-ns-multiplier",
+        "c-skdocs-ns-zero",
+        "c-skdocs-ns-state",
+        "c-skdocs-ns-meta",
+        "c-skdocs-ns-unknown"
+      ],
+      "snippet": "Questions: Navigation strategies",
+      "count": 6
+    },
+    "docs:exercise:workflow": {
+      "cardIds": [
+        "c-skdocs-wf-init",
+        "c-skdocs-wf-why-studio",
+        "c-skdocs-wf-flush",
+        "c-skdocs-wf-commit",
+        "c-skdocs-wf-custom-in-studio",
+        "c-skdocs-wf-platform",
+        "c-skdocs-wf-pack"
+      ],
+      "snippet": "Questions: Building a course",
+      "count": 7
+    },
+    "docs:intro:agents": {
+      "cardIds": [
+        "c-skdocs-agents-intro"
+      ],
+      "snippet": "Introduction: Agents (MCP)",
+      "count": 1
+    },
+    "docs:intro:architecture": {
+      "cardIds": [
+        "c-skdocs-architecture-intro"
+      ],
+      "snippet": "Introduction: The big picture",
+      "count": 1
+    },
+    "docs:intro:cards": {
+      "cardIds": [
+        "c-skdocs-cards-intro"
+      ],
+      "snippet": "Introduction: Cards",
+      "count": 1
+    },
+    "docs:intro:custom-cards": {
+      "cardIds": [
+        "c-skdocs-custom-cards-intro"
+      ],
+      "snippet": "Introduction: Custom cards",
+      "count": 1
+    },
+    "docs:intro:data-layer": {
+      "cardIds": [
+        "c-skdocs-data-layer-intro"
+      ],
+      "snippet": "Introduction: Data layer",
+      "count": 1
+    },
+    "docs:intro:pedagogy": {
+      "cardIds": [
+        "c-skdocs-pedagogy-intro"
+      ],
+      "snippet": "Introduction: Pedagogy",
+      "count": 1
+    },
+    "docs:intro:start": {
+      "cardIds": [
+        "c-skdocs-start-welcome"
+      ],
+      "snippet": "Introduction: Start here",
+      "count": 1
+    },
+    "docs:intro:strategies": {
+      "cardIds": [
+        "c-skdocs-strategies-intro"
+      ],
+      "snippet": "Introduction: Navigation strategies",
+      "count": 1
+    },
+    "docs:intro:workflow": {
+      "cardIds": [
+        "c-skdocs-workflow-intro"
+      ],
+      "snippet": "Introduction: Building a course",
+      "count": 1
+    }
+  },
+  "byCard": {
+    "c-skdocs-ag-scope": [
+      "docs:exercise:agents"
+    ],
+    "c-skdocs-ag-schema": [
+      "docs:exercise:agents"
+    ],
+    "c-skdocs-ag-elo": [
+      "docs:exercise:agents"
+    ],
+    "c-skdocs-ag-review": [
+      "docs:exercise:agents"
+    ],
+    "c-skdocs-ag-strategy": [
+      "docs:exercise:agents"
+    ],
+    "c-skdocs-arch-no-vue": [
+      "docs:exercise:architecture"
+    ],
+    "c-skdocs-arch-supply": [
+      "docs:exercise:architecture"
+    ],
+    "c-skdocs-arch-failed": [
+      "docs:exercise:architecture"
+    ],
+    "c-skdocs-arch-replan": [
+      "docs:exercise:architecture"
+    ],
+    "c-skdocs-arch-first-attempt": [
+      "docs:exercise:architecture"
+    ],
+    "c-skdocs-arch-content-source": [
+      "docs:exercise:architecture"
+    ],
+    "c-skdocs-arch-hydration": [
+      "docs:exercise:architecture"
+    ],
+    "c-skdocs-cm-trio": [
+      "docs:exercise:cards"
+    ],
+    "c-skdocs-cm-viewid": [
+      "docs:exercise:cards"
+    ],
+    "c-skdocs-cm-iscorrect": [
+      "docs:exercise:cards"
+    ],
+    "c-skdocs-cm-tagged": [
+      "docs:exercise:cards"
+    ],
+    "c-skdocs-cm-multi-view": [
+      "docs:exercise:cards"
+    ],
+    "c-skdocs-cm-double-bar": [
+      "docs:exercise:cards"
+    ],
+    "c-skdocs-cm-seed": [
+      "docs:exercise:cards"
+    ],
+    "c-skdocs-cm-fluent": [
+      "docs:exercise:cards"
+    ],
+    "c-skdocs-cc-boundary": [
+      "docs:exercise:custom-cards"
+    ],
+    "c-skdocs-cc-submit": [
+      "docs:exercise:custom-cards"
+    ],
+    "c-skdocs-cc-register": [
+      "docs:exercise:custom-cards"
+    ],
+    "c-skdocs-cc-name": [
+      "docs:exercise:custom-cards"
+    ],
+    "c-skdocs-cc-inline": [
+      "docs:exercise:custom-cards"
+    ],
+    "c-skdocs-cc-defer": [
+      "docs:exercise:custom-cards"
+    ],
+    "c-skdocs-dl-two": [
+      "docs:exercise:data-layer"
+    ],
+    "c-skdocs-dl-static-elo": [
+      "docs:exercise:data-layer"
+    ],
+    "c-skdocs-dl-static-user": [
+      "docs:exercise:data-layer"
+    ],
+    "c-skdocs-dl-static-pipeline": [
+      "docs:exercise:data-layer"
+    ],
+    "c-skdocs-dl-strategy-docs": [
+      "docs:exercise:data-layer"
+    ],
+    "c-skdocs-dl-localsync": [
+      "docs:exercise:data-layer"
+    ],
+    "c-skdocs-dl-root-manifest": [
+      "docs:exercise:data-layer"
+    ],
+    "c-skdocs-ped-generators": [
+      "docs:exercise:pedagogy"
+    ],
+    "c-skdocs-ped-gate": [
+      "docs:exercise:pedagogy"
+    ],
+    "c-skdocs-ped-intake": [
+      "docs:exercise:pedagogy"
+    ],
+    "c-skdocs-ped-provenance": [
+      "docs:exercise:pedagogy"
+    ],
+    "c-skdocs-ped-eligible": [
+      "docs:exercise:pedagogy"
+    ],
+    "c-skdocs-ped-gain": [
+      "docs:exercise:pedagogy"
+    ],
+    "c-skdocs-ped-skill-pressure": [
+      "docs:exercise:pedagogy"
+    ],
+    "c-skdocs-ped-diversity": [
+      "docs:exercise:pedagogy"
+    ],
+    "c-skdocs-ped-orchestration": [
+      "docs:exercise:pedagogy"
+    ],
+    "c-skdocs-start-unit": [
+      "docs:exercise:start"
+    ],
+    "c-skdocs-start-card-type": [
+      "docs:exercise:start"
+    ],
+    "c-skdocs-start-static": [
+      "docs:exercise:start"
+    ],
+    "c-skdocs-start-same-scale": [
+      "docs:exercise:start"
+    ],
+    "c-skdocs-start-timebox": [
+      "docs:exercise:start"
+    ],
+    "c-skdocs-start-review-correct": [
+      "docs:exercise:start"
+    ],
+    "c-skdocs-start-license": [
+      "docs:exercise:start"
+    ],
+    "c-skdocs-ns-register": [
+      "docs:exercise:strategies"
+    ],
+    "c-skdocs-ns-multiplier": [
+      "docs:exercise:strategies"
+    ],
+    "c-skdocs-ns-zero": [
+      "docs:exercise:strategies"
+    ],
+    "c-skdocs-ns-state": [
+      "docs:exercise:strategies"
+    ],
+    "c-skdocs-ns-meta": [
+      "docs:exercise:strategies"
+    ],
+    "c-skdocs-ns-unknown": [
+      "docs:exercise:strategies"
+    ],
+    "c-skdocs-wf-init": [
+      "docs:exercise:workflow"
+    ],
+    "c-skdocs-wf-why-studio": [
+      "docs:exercise:workflow"
+    ],
+    "c-skdocs-wf-flush": [
+      "docs:exercise:workflow"
+    ],
+    "c-skdocs-wf-commit": [
+      "docs:exercise:workflow"
+    ],
+    "c-skdocs-wf-custom-in-studio": [
+      "docs:exercise:workflow"
+    ],
+    "c-skdocs-wf-platform": [
+      "docs:exercise:workflow"
+    ],
+    "c-skdocs-wf-pack": [
+      "docs:exercise:workflow"
+    ],
+    "c-skdocs-agents-intro": [
+      "docs:intro:agents"
+    ],
+    "c-skdocs-architecture-intro": [
+      "docs:intro:architecture"
+    ],
+    "c-skdocs-cards-intro": [
+      "docs:intro:cards"
+    ],
+    "c-skdocs-custom-cards-intro": [
+      "docs:intro:custom-cards"
+    ],
+    "c-skdocs-data-layer-intro": [
+      "docs:intro:data-layer"
+    ],
+    "c-skdocs-pedagogy-intro": [
+      "docs:intro:pedagogy"
+    ],
+    "c-skdocs-start-welcome": [
+      "docs:intro:start"
+    ],
+    "c-skdocs-strategies-intro": [
+      "docs:intro:strategies"
+    ],
+    "c-skdocs-workflow-intro": [
+      "docs:intro:workflow"
+    ]
+  }
+}

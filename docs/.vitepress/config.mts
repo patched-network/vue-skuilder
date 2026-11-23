@@ -7,7 +7,7 @@ import llmstxt from 'vitepress-plugin-llms';
 export default defineConfig({
   base: '/vue-skuilder/',
   // Working notes kept beside the docs but not published.
-  srcExclude: ['curriculum-authoring-workflows.md', 'do/custom-cards-meta.md'],
+  srcExclude: ['curriculum-authoring-workflows.md', 'do/custom-cards-meta.md', 'course-src/**'],
   vite: {
     plugins: [
       // @ts-expect-error See: https://github.com/okineadev/vitepress-plugin-llms/issues/75#issuecomment-3299422144
