@@ -87,7 +87,7 @@ onUnmounted(() => {
           <!-- Real StudySession Integration -->
           <div class="study-wrapper" :class="{ fullscreen: isFullscreen }">
             <div class="study-header">
-              <h3>Try it out!</h3>
+              <h3>A five-minute course on skuilder</h3>
               <button
                 class="fullscreen-toggle"
                 @click="toggleFullscreen"

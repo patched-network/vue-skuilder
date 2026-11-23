@@ -1,17 +1,13 @@
-<!-- HeroStudySession.vue - Wrapper for hero section integration -->
+<!-- HeroStudySession.vue - the frontpage demo: the docs course (a course about skuilder).
+     The Go course that used to be here is on dbg/embedded-course-test. -->
 <template>
   <div class="hero-study-session">
-    <EmbeddedCourse
-      course-id="@skuilder/hero-course"
-      :session-time-limit="5"
-      :session-config="{ likesConfetti: true }"
-    />
+    <DocsCourse :session-time-limit="5" :show-progress="false" />
   </div>
 </template>
 
 <script setup lang="ts">
-// This is a simple wrapper around EmbeddedCourse for hero section use
-// All the logic is in EmbeddedCourse component
+import DocsCourse from './DocsCourse.vue';
 </script>
 
 <style scoped>
