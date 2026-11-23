@@ -1,5 +1,4 @@
 <template>
-  <!-- Template remains largely the same -->
   <div data-viewable="PuzzleView">
     <p class="text-h5">
       Make the best move for {{ playerColor === 'cg-white' ? 'White ♖♘♗♕♔♗♘♖' : 'Black ♜♞♝♚♛♝♞♜' }}:

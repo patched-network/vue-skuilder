@@ -1,5 +1,4 @@
 <template>
-  <!-- Frameless mode: direct render -->
   <component
     v-if="frameless"
     :is="view"
@@ -13,7 +12,6 @@
     @ready-to-advance="$emit('readyToAdvance')"
   />
 
-  <!-- Traditional mode: v-card wrapper -->
   <v-card v-else elevation="12">
     <component
       :is="view"
@@ -83,6 +81,13 @@ export default defineComponent({
       type: Number,
       default: 1000,
     },
+    /**
+     * Render the card view directly instead of inside a v-card.
+     *
+     * Keep HTML comments out of this template's root level: dev builds keep them, which makes
+     * the root a fragment, and StudySession's <transition> can't animate a fragment. The
+     * out-in leave never finishes and the session stalls after its first card.
+     */
     frameless: {
       type: Boolean,
       default: false,
