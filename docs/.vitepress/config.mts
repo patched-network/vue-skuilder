@@ -172,7 +172,6 @@ export default defineConfig({
         collapsed: true,
         items: [
           { text: 'LettersPractice', link: 'https://letterspractice.com' },
-          { text: 'Chess (static course)', link: 'https://patched-network.github.io/demo-chess/' },
         ],
       },
     ],
