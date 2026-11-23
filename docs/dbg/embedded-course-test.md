@@ -8,4 +8,4 @@ import EmbeddedCourse from '../.vitepress/theme/components/EmbeddedCourse.vue'
 
 ## Embedded "local" course
 
-<EmbeddedCourse course-id="@skuilder/hero-course" :session-time-limit="5" />
+<EmbeddedCourse course-id="@skuilder/hero-course" :session-time-limit="5" :debug="true" />

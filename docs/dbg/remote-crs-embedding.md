@@ -10,4 +10,4 @@ import EmbeddedCourse from '../.vitepress/theme/components/EmbeddedCourse.vue'
 
 This is loaded from a static deployed course from another repo at https://patched-network.github.io/demo-chess
 
-<EmbeddedCourse course-id="@skuilder/demo-chess" :session-time-limit="5" />
+<EmbeddedCourse course-id="@skuilder/demo-chess" :session-time-limit="5" :debug="true" />

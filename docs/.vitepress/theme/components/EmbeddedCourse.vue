@@ -16,7 +16,7 @@
     
     <!-- Study session active -->
     <div v-else-if="sessionPrepared && dataLayer && user && !isLoading" class="study-container">
-      <div class="debug-info">
+      <div v-if="debug" class="debug-info">
         <p><small>Debug: dataLayer={{!!dataLayer}}, user={{!!user}}, sessionPrepared={{sessionPrepared}}</small></p>
       </div>
       <StudySession
@@ -42,7 +42,7 @@
         <p v-else-if="!dataLayer">Initializing study session...</p>
         <p v-else>Ready to start study session!</p>
         <p v-if="!hasInitialized"><small>Scroll down to activate</small></p>
-        <p v-else><small>Debug: dataLayer={{!!dataLayer}}, user={{!!user}}, loading={{isLoading}}, error={{!!error}}</small></p>
+        <p v-else-if="debug"><small>Debug: dataLayer={{!!dataLayer}}, user={{!!user}}, loading={{isLoading}}, error={{!!error}}</small></p>
         <button 
           v-if="dataLayer && user && !isLoading" 
           @click="startSession" 
@@ -75,24 +75,36 @@
 import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { StudySession, type StudySessionConfig } from '@vue-skuilder/common-ui';
 import { allCourseWare } from '@vue-skuilder/courseware';
-import { type ContentSourceID } from '@vue-skuilder/db';
+import { type ContentSourceID, type DataLayerProvider } from '@vue-skuilder/db';
 import { useStaticDataLayer } from '../composables/useStaticDataLayer';
 
 // Props
 interface Props {
+  /** A course ID, or a dependency name from the root skuilder.json (resolved to its course ID). */
   courseId?: string;
   sessionTimeLimit?: number;
   sessionConfig?: StudySessionConfig;
+  /** Runs just before each session starts, e.g. to sync app state into strategy state. */
+  beforeSession?: (dataLayer: DataLayerProvider, courseId: string) => Promise<void>;
+  /** Show internal state lines (dbg pages). */
+  debug?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   courseId: '@skuilder/hero-course',
   sessionTimeLimit: 10,
-  sessionConfig: () => ({ likesConfetti: true })
+  sessionConfig: () => ({ likesConfetti: true }),
+  debug: false,
 });
 
 // Create a cleaned, trimmed version of the courseId prop
 const cleanedCourseId = computed(() => (props.courseId || '').trim());
+
+// The course's own ID. A dependency name (e.g. '@skuilder/hero-course') loads the right content,
+// but card records, ratings and the learner's registration are keyed by the real course ID, so
+// the session must use that: registered under the name, rating updates find no registration.
+const resolvedCourseId = ref<string | null>(null);
+const sessionCourseId = computed(() => resolvedCourseId.value ?? cleanedCourseId.value);
 
 // Data layer composable
 const { dataLayer, error: dataLayerError, isLoading: dataLayerLoading, initialize } = useStaticDataLayer();
@@ -108,7 +120,7 @@ const containerRef = ref<HTMLElement | null>(null);
 const contentSources = computed<ContentSourceID[]>(() => [
   {
     type: 'course',
-    id: cleanedCourseId.value,
+    id: sessionCourseId.value,
   }
 ]);
 
@@ -177,15 +189,18 @@ const handleTimeChanged = (timeRemaining: number) => {
   // Could emit to parent for time display (removed noisy console.log)
 };
 
-// Initialize session lazily
-const initializeSession = async () => {
-  if (hasInitialized.value) {
-    console.log('[EmbeddedCourse] Already initialized, skipping');
-    return;
+// Initialize session lazily. The promise is kept so that starting a session waits for the
+// learner's registration: StudySession reads the registration doc once, when it is created.
+let initPromise: Promise<void> | null = null;
+const initializeSession = (): Promise<void> => {
+  if (!initPromise) {
+    hasInitialized.value = true;
+    initPromise = runInitialization();
   }
-  
-  hasInitialized.value = true;
-  
+  return initPromise;
+};
+
+const runInitialization = async () => {
   try {
     console.log('[EmbeddedCourse] Starting lazy initialization for course:', cleanedCourseId.value);
     
@@ -199,25 +214,28 @@ const initializeSession = async () => {
       throw new Error('Data layer failed to initialize');
     }
 
+    // Resolve a dependency name to the course's own ID
+    const courseDB = dataLayer.value.getCourseDB(cleanedCourseId.value);
+    resolvedCourseId.value = courseDB.getCourseID();
+
     // Auto-register for the course if not already registered
     const userDB = dataLayer.value.getUserDB();
     if (userDB) {
       const regDoc = await userDB.getCourseRegistrationsDoc();
-      const isRegistered = regDoc.courses.some(c => c.courseID === cleanedCourseId.value && c.status === 'active');
+      const isRegistered = regDoc.courses.some(c => c.courseID === sessionCourseId.value && c.status === 'active');
       if (!isRegistered) {
-        console.log(`[EmbeddedCourse] Auto-registering user for course: ${cleanedCourseId.value}`);
-        await userDB.registerForCourse(cleanedCourseId.value);
+        console.log(`[EmbeddedCourse] Auto-registering user for course: ${sessionCourseId.value}`);
+        await userDB.registerForCourse(sessionCourseId.value);
       }
     }
-    
+
     // Verify course access
-    const courseDB = dataLayer.value.getCourseDB(cleanedCourseId.value);
     const coursesDB = dataLayer.value.getCoursesDB();
     
     console.log('[EmbeddedCourse] CourseDB:', courseDB);
     console.log('[EmbeddedCourse] CoursesDB:', coursesDB);
     
-    const courseConfig = await coursesDB.getCourseConfig(cleanedCourseId.value);
+    const courseConfig = await coursesDB.getCourseConfig(sessionCourseId.value);
     
     console.log('[EmbeddedCourse] Course config raw:', courseConfig);
     console.log('[EmbeddedCourse] Course name:', courseConfig?.name);
@@ -235,8 +253,16 @@ const initializeSession = async () => {
 };
 
 // Method to start the actual study session
-const startSession = () => {
+const startSession = async () => {
   console.log('[EmbeddedCourse] User clicked Start Session');
+  await initializeSession();
+  if (props.beforeSession && dataLayer.value) {
+    try {
+      await props.beforeSession(dataLayer.value, sessionCourseId.value);
+    } catch (e) {
+      console.error('[EmbeddedCourse] beforeSession failed; starting anyway:', e);
+    }
+  }
   sessionPrepared.value = true;
 };
 

@@ -17652,6 +17652,20 @@ __metadata:
   languageName: node
   linkType: hard
 
+"terser@npm:^5.38.2":
+  version: 5.51.4
+  resolution: "terser@npm:5.51.4"
+  dependencies:
+    "@jridgewell/source-map": "npm:^0.3.3"
+    acorn: "npm:^8.15.0"
+    commander: "npm:^2.20.0"
+    source-map-support: "npm:~0.5.20"
+  bin:
+    terser: bin/terser
+  checksum: 10c0/eae8fe3d3c7f3f214df468141ce85f6e9be99d34ce21500e335bb48e432f323b15058be9142f04f030c749e6f3db159d6c05e060f88a164e057887716df47785
+  languageName: node
+  linkType: hard
+
 "text-hex@npm:1.0.x":
   version: 1.0.0
   resolution: "text-hex@npm:1.0.0"
@@ -19088,6 +19102,7 @@ __metadata:
     eslint-plugin-vue: "npm:^9.32.0"
     eslint-plugin-vuetify: "npm:^2.5.1"
     globals: "npm:^15.14.0"
+    terser: "npm:^5.38.2"
     typescript: "npm:~5.9.3"
     typescript-eslint: "npm:^8.48.1"
     vitepress: "npm:^2.0.0-alpha.12"

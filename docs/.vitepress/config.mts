@@ -9,6 +9,14 @@ export default defineConfig({
   vite: {
     // @ts-expect-error See: https://github.com/okineadev/vitepress-plugin-llms/issues/75#issuecomment-3299422144
     plugins: [llmstxt()],
+    // Courseware resolves question classes by `class.name` (a card's view ID names its class), so
+    // minification must keep class names, as the packages' own builds do. Without this the
+    // embedded courses fail to hydrate any card in the production build. (Not esbuild's
+    // keepNames: its __name() helper breaks code that is stringified into workers, e.g. confetti.)
+    build: {
+      minify: 'terser',
+      terserOptions: { keep_classnames: true },
+    },
     resolve: {
       alias: [
         // Override VitePress default VPHero component with our custom one
