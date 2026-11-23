@@ -4,7 +4,7 @@ import FallingLetters from '@vue-skuilder/courseware/typing/questions/falling-le
 
 const showCard = ref(false)
 const gameData = ref([
-  { gameLength: 15, initialSpeed: 1, acceleration: 0.2, spawnInterval: 0.25 }
+  { gameLength: 15, initialSpeed: 1, acceleration: 0.2, spawnInterval: 0.5 }
 ])
 const lastResult = ref(null)
 
