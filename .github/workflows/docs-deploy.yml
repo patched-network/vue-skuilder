@@ -60,10 +60,17 @@ jobs:
         with:
           path: docs/.vitepress/dist
 
-  # Test Job
+  # Test Job: the Cypress suite against both the dev server and the built site.
+  # dev keeps template comments and resolves packages from source, as contributors run it;
+  # prod is minified and static-served, as deployed. Each has broken alone: production-only
+  # class-name minification, and a dev-only CardViewer transition stall.
   test:
-    name: Test
+    name: Test (${{ matrix.target }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [dev, prod]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -76,12 +83,19 @@ jobs:
         run: yarn install
       - name: Build skuilder libraries
         run: yarn build:lib
-      - name: Start dev server and run tests
+      - name: Start dev server
+        if: matrix.target == 'dev'
         run: |
           yarn docs:dev &
           npx wait-on --timeout 120000 http://localhost:5173
-          yarn docs:test
-          pkill -f "vitepress dev" || true
+      - name: Build and serve the production site
+        if: matrix.target == 'prod'
+        run: |
+          yarn docs:build
+          yarn docs:preview --port 5173 &
+          npx wait-on --timeout 120000 http://localhost:5173/vue-skuilder/
+      - name: Run tests
+        run: yarn docs:test
 
   # Deployment job
   deploy:
