@@ -26,6 +26,7 @@
         :data-layer="dataLayer"
         :session-config="sessionConfig"
         :get-view-component="getViewComponent"
+        :hide-footer="true"
         @session-finished="handleSessionFinished"
         @session-prepared="handleSessionPrepared"
         @session-error="handleSessionError"
@@ -177,8 +178,14 @@ const handleSessionError = (errorData: any) => {
   sessionPrepared.value = false;
 };
 
+const emit = defineEmits<{
+  /** A new card is showing (e.g. so a scrolling container can return to its top). */
+  (e: 'card-loaded', cardId: string): void;
+}>();
+
 const handleCardLoaded = (cardData: any) => {
   console.log('[EmbeddedCourse] Card loaded:', cardData.cardID);
+  emit('card-loaded', cardData.cardID);
 };
 
 const handleCardResponse = (response: any) => {

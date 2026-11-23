@@ -8,6 +8,7 @@
       :session-time-limit="sessionTimeLimit"
       :session-config="sessionConfig"
       :before-session="beforeSession"
+      @card-loaded="$emit('card-loaded', $event)"
     />
 
     <details v-if="showProgress" class="docs-course-progress" :open="progressOpen">
@@ -71,6 +72,8 @@ interface Props {
   showProgress?: boolean;
   progressOpen?: boolean;
 }
+
+defineEmits<{ (e: 'card-loaded', cardId: string): void }>();
 
 const props = withDefaults(defineProps<Props>(), {
   sessionTimeLimit: 5,
