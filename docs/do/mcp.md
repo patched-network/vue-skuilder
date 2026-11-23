@@ -141,6 +141,16 @@ Extraction from a source (a textbook, a codebase's API), card generation in seve
 variants, review by a second agent, and publication, each step scoped by the same course-level
 tools. Multi-modal cards (audio, images) would need attachment support in `create_card`.
 
+### A map for AI tutors
+
+The directions above have agents authoring a course. The other direction is an LLM tutor using
+one. A course holds an authored structure (cards, tags, prerequisite and hierarchy strategies) and
+a learned one (card ratings; a learner's history and per-skill ratings; the provenance of each
+card picked for them). Together they form a structured map of a domain and of one learner's place
+in it, which a tutor could query as part of its retrieval and goal-setting: what this learner has
+mastered, what comes next and why, which cards practise the step it is about to explain. Today the
+MCP server exposes course content only, not learner state.
+
 ### Across courses
 
 Recognising reusable content across courses, and adapting it per course. This depends on the
