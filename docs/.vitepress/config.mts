@@ -167,6 +167,14 @@ export default defineConfig({
           { text: 'Glossary', link: '/glossary' },
         ],
       },
+      {
+        text: 'Examples',
+        collapsed: true,
+        items: [
+          { text: 'LettersPractice', link: 'https://letterspractice.com' },
+          { text: 'Chess (static course)', link: 'https://patched-network.github.io/demo-chess/' },
+        ],
+      },
     ],
 
     socialLinks: [
