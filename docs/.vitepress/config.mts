@@ -160,7 +160,7 @@ export default defineConfig({
       },
       {
         text: 'Examples',
-        collapsed: true,
+        collapsed: false,
         items: [
           { text: 'LettersPractice', link: 'https://letterspractice.com' },
         ],
