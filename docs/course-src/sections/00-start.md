@@ -7,13 +7,9 @@ open: true
 
 ## intro start-welcome
 
-**This is a skuilder study session**, running inside the docs site.
+**This is a skuilder study session**, running in the docs site. Your answers and review schedule stay in this browser.
 
-The course is static JSON served with these pages. Your answers, ratings and review schedule are
-kept in this browser, and nothing is sent anywhere.
-
-Questions about a docs page unlock once you've read that page, or once you've met its
-introduction card here. Read a page, come back, and its questions are in play.
+Questions about a docs page unlock once you've read that page, or met its intro card here.
 
 ## card start-unit elo=900
 

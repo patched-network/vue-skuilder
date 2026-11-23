@@ -6,15 +6,9 @@ pages: extend/navigation-strategies
 
 ## intro strategies-intro
 
-**Extending the pipeline.** Write a generator (`getWeightedCards`) or a filter (`transform`),
-register it at app start with `registerNavigator(name, Class, role)`, and enable it for a course
-with a strategy document naming it.
+**Extending the pipeline:** write a generator or a filter, register it at app start, and enable it with a strategy document in the course.
 
-Filters multiply scores, so their order doesn't matter, and a 0 excludes a card. A filter and the
-app can share state through a strategy-state document.
-
-*This course does exactly that.* The docs site registers a filter that reads which pages you've
-read, from strategy state, and holds back questions on pages you haven't.
+*This course does exactly that*: a filter that holds back questions on pages you haven't read.
 
 [Read: Navigation Strategies](/vue-skuilder/extend/navigation-strategies.html)
 

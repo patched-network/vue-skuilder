@@ -30,11 +30,11 @@
         ]
       }
     ],
-    "contentVersion": "a6c591685512",
+    "contentVersion": "ff252c47b87e",
     "_id": "CourseConfig",
-    "_rev": "1-940adc1fa156964fab0c6f17bda16239"
+    "_rev": "1-e06f6cb5bda298651e5d3f51d617fd75"
   },
-  "lastUpdated": "2026-11-20T19:11:40.858Z",
+  "lastUpdated": "2026-11-23T18:42:15.027Z",
   "documentCount": 161,
   "chunks": [
     {

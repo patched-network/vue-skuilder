@@ -6,13 +6,9 @@ pages: do/mcp
 
 ## intro agents-intro
 
-**Skuilder speaks MCP.** An MCP server exposes one course to an agent: cards, data shapes and
-their JSON schemas, tags and tag set operations, and navigation strategies, with tools to create,
-tag and delete cards and to add strategies.
+**Skuilder speaks MCP.** Studio writes a `.mcp.json`, so an agent in your project can read and edit the course you have open.
 
-`npm run studio` writes a `.mcp.json`, so an agent started in your project can work on the course
-you have open. Its edits reach your files only when you flush, so they arrive as a reviewable
-diff.
+Its edits reach your files only when you flush, as a reviewable diff.
 
 [Read: Connect Agents](/vue-skuilder/do/mcp.html)
 

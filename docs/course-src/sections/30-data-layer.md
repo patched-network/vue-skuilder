@@ -6,16 +6,10 @@ pages: learn/data-layer, skuilder.json
 
 ## intro data-layer-intro
 
-**Everything reads and writes through data-layer interfaces** (`UserDBInterface`,
-`CourseDBInterface`, ...), with two implementations:
+**Everything goes through data-layer interfaces**, with two implementations:
 
-- **couch**: CouchDB on the server, PouchDB in the browser. Accounts, sync, live card ratings,
-  classrooms. A course can opt in to a local replica for fast reads.
-- **static**: course content packed as JSON and served from any host; learner data in the browser
-  with no sync; card ratings frozen at pack time.
-
-Navigation strategies are documents in the course, so a static course runs the same pipeline as a
-live one. This course is a static one.
+- **couch**: CouchDB + PouchDB. Accounts, sync, live card ratings.
+- **static**: JSON from any host; learner data in the browser. This course is static.
 
 [Read: Data Layer](/vue-skuilder/learn/data-layer.html)
 

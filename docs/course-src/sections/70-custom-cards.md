@@ -6,15 +6,7 @@ pages: extend/custom-cards, extend/inline-components
 
 ## intro custom-cards-intro
 
-**A custom card is a Vue component that can do anything**: a game loop, a chess board, a MIDI
-keyboard. The platform cares about two moments: the view receives data, and the view submits an
-answer.
-
-`useViewable` and `useQuestionView` bridge the two: `submitAnswer(answer)` grades the answer with
-your `Question` class and hands the record to the session. Register question classes in a
-`CourseWare`, and add it to `allCourseWare`.
-
-For a widget inside otherwise-markdown cards, an inline component is lighter.
+**A custom card is a Vue component that can do anything**: a game, a chess board, a keyboard. The platform cares about two moments: it receives data, and it submits an answer (`submitAnswer`), which your `Question` class grades.
 
 [Read: Creating Custom Cards](/vue-skuilder/extend/custom-cards.html)
 

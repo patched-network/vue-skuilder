@@ -6,15 +6,7 @@ pages: do/quickstart, do/studio-mode, do/theming, cli, learn/apps
 
 ## intro workflow-intro
 
-**The static-course workflow:**
-
-1. `npx @vue-skuilder/cli init mycourse --data-layer static`: a standalone app for one course.
-2. `npm run studio`: a scratch CouchDB, an editor, and an MCP server, on your machine.
-3. **Flush** in the editor: the course is written back to your project's static files.
-4. Commit, `npm run build`, deploy anywhere static.
-
-Custom card types in `src/questions/` are built into the studio editor too. For many courses
-with shared accounts, there is `platform-ui` with the `express` backend.
+**The static-course workflow:** `cli init` a course, `npm run studio` to edit it locally, **flush** to write it back to your files, then build and deploy anywhere static.
 
 [Read: Quickstart](/vue-skuilder/do/quickstart.html)
 

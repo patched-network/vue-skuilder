@@ -6,15 +6,9 @@ pages: learn/card-data-model, learn/cards, default-cards
 
 ## intro cards-intro
 
-**A card type has three parts:**
+**A card type has three parts:** a **DataShape** (its fields), a **Question** class (grades a response), and **views** (Vue components that render it).
 
-- a **DataShape**: the schema of its data (named, typed fields);
-- a **Question**: a class that grades a response, as correct or not (for scheduling) and how well
-  (for ratings, optionally per skill);
-- one or more **views**: Vue components that render it.
-
-Each card stores a view ID, `{courseware}.question.{QuestionClass}.{ViewName}`, which is how a
-session finds the right class and component.
+Each card names its view: `{courseware}.question.{Question}.{View}`.
 
 [Read: Card Data Model](/vue-skuilder/learn/card-data-model.html)
 

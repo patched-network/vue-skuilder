@@ -8,12 +8,7 @@ pages: learn/architecture, glossary
 
 **The study loop**: show a card, take a response, update the learner model, choose the next card.
 
-- `StudySession` (Vue, in `@vue-skuilder/common-ui`) renders it.
-- `SessionController` (in `@vue-skuilder/db`, no Vue) drives it.
-- Each course is a *content source*: asked for cards, it runs its navigation pipeline and returns
-  scored candidates.
-- The controller keeps two queues: a **supply** queue (new cards and reviews, in rank order) and a
-  **failed** queue (cards missed this session, cleared before the session ends).
+`StudySession` (Vue) renders it; `SessionController` (no Vue) drives it. Cards come from one **supply** queue, in pipeline rank order; misses go to a **failed** queue.
 
 [Read: The Big Picture](/vue-skuilder/learn/architecture.html)
 

@@ -6,16 +6,9 @@ pages: learn/pedagogy
 
 ## intro pedagogy-intro
 
-**How the next card is chosen.** Every plan runs the course's pipeline:
+**How the next card is chosen:** a pipeline. **Generators** propose candidates; **filters** multiply their scores (a *gate* says "not yet", a *signal* says "prefer"); the best are selected.
 
-`Generate → Filter → Drop zeros → Regulate → Hints → Diversity re-rank → Select`
-
-- **Generators** propose candidates: new cards near your rating, due reviews, authored targets.
-- **Filters** multiply scores. A *gate* says "not ready yet"; a *signal* expresses preference.
-- **Regulators** balance reviews against new material.
-
-Every card carries **provenance**: what each stage did to its score, and why. Ratings are kept
-globally and per skill (tag), and practice leans toward your weakest skills.
+Each card carries **provenance**: what every stage did, and why.
 
 [Read: Pedagogy](/vue-skuilder/learn/pedagogy.html)
 
