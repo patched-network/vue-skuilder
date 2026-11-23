@@ -159,19 +159,19 @@ export default defineConfig({
         ],
       },
       {
+        text: 'Examples',
+        collapsed: true,
+        items: [
+          { text: 'LettersPractice', link: 'https://letterspractice.com' },
+        ],
+      },
+      {
         text: 'Reference',
         items: [
           { text: 'CLI', link: '/cli' },
           { text: 'Default Cards', link: '/default-cards' },
           { text: 'skuilder.json', link: '/skuilder.json.md' },
           { text: 'Glossary', link: '/glossary' },
-        ],
-      },
-      {
-        text: 'Examples',
-        collapsed: true,
-        items: [
-          { text: 'LettersPractice', link: 'https://letterspractice.com' },
         ],
       },
     ],
