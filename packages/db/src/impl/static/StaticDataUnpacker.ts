@@ -59,7 +59,10 @@ export class StaticDataUnpacker {
 
   constructor(manifest: StaticCourseManifest, basePath: string) {
     this.manifest = manifest;
-    this.basePath = basePath;
+    // File URLs are built as `${basePath}/${path}`, and callers pass a directory URL that already
+    // ends in '/' (`new URL('.', manifestUrl).href`). Without this, every request has '//', which
+    // some static servers (e.g. sirv, behind `vitepress preview`) answer with 404.
+    this.basePath = basePath.replace(/\/+$/, '');
   }
 
   /**
