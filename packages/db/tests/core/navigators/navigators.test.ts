@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { ContentNavigator, WeightedCard, getCardOrigin } from '../../../src/core/navigators/index';
+import {
+  ContentNavigator,
+  WeightedCard,
+  getCardOrigin,
+  type GeneratorResult,
+} from '../../../src/core/navigators/index';
 
 // Mock implementation of ContentNavigator for testing base class behavior
 class MockNavigator extends ContentNavigator {
@@ -16,8 +21,8 @@ class ProperMockNavigator extends ContentNavigator {
     this.cards = cards;
   }
 
-  async getWeightedCards(limit: number): Promise<WeightedCard[]> {
-    return this.cards.slice(0, limit);
+  async getWeightedCards(limit: number): Promise<GeneratorResult> {
+    return { cards: this.cards.slice(0, limit) };
   }
 }
 
@@ -110,7 +115,7 @@ describe('ContentNavigator.getWeightedCards with proper implementation', () => {
       },
     ]);
 
-    const result = await navigator.getWeightedCards(10);
+    const { cards: result } = await navigator.getWeightedCards(10);
 
     expect(result).toHaveLength(1);
     expect(result[0].cardId).toBe('card-1');
@@ -167,7 +172,7 @@ describe('ContentNavigator.getWeightedCards with proper implementation', () => {
       },
     ]);
 
-    const result = await navigator.getWeightedCards(2);
+    const { cards: result } = await navigator.getWeightedCards(2);
 
     expect(result).toHaveLength(2);
   });
