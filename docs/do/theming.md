@@ -39,7 +39,9 @@ The basic structure is:
 
 ## Configuration Location
 
-In a scaffolded course, the theme is defined in your `skuilder.config.json` file at the root of your course directory (the same location where you have your `package.json`).
+In a scaffolded course, the theme is defined in your `skuilder.config.json` file at the root of your course directory (the same location where you have your `package.json`). Changes apply on the next `npm run dev` or build.
+
+`skuilder init` offers four starting presets (`default`, `medical`, `educational`, `corporate`, also selectable with `--theme`). Each writes a full light and dark palette into `skuilder.config.json`, which you can then edit freely. Any [Vuetify semantic color](https://vuetifyjs.com/en/features/theme/) can be set, including `background`, `surface`, and the `on-*` text colors.
 
 ## User Theme Switching
 

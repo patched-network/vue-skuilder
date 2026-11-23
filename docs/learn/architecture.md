@@ -2,68 +2,83 @@
 
 ![Architecture Diagram](../assets/sk-architecture.excalidraw.svg)
 
-The focal point of `skuilder` is the main learning loop housed in the `StudySession.vue` component. If you ran the inline demo on the docs [frontpage](../index), you've encountered this loop first-hand. Here we will step through the lifecycle of a *Study Session* and describe the major components along the way.
+The focal point of `skuilder` is the study loop: show a card, take a response, update what we know
+about the learner, choose the next card. The `StudySession.vue` component (in
+`@vue-skuilder/common-ui`) renders it, and a `SessionController` (in `@vue-skuilder/db`) drives
+it. If you ran the inline demo on the docs [frontpage](../index), you've seen this loop first-hand.
+
+This page walks through the lifecycle of one session and names the major parts along the way. The
+[Pedagogy](./pedagogy) page covers how cards are chosen in more depth.
 
 ::: warning !!!
-This diagram is not *strictly* accurate in terms of named entities or functions, but is right in spirit.
+The diagrams on this page are right in spirit but not *strictly* accurate in their named entities
+or functions. In particular they predate the single supply queue described below.
 :::
+
+## The layers
+
+| Layer | Package | Holds |
+|---|---|---|
+| Shared types | `@vue-skuilder/common` | Data shapes, field types, `Evaluation`, ELO math, tag-filter types |
+| Data and logic | `@vue-skuilder/db` | Data-layer interfaces and their CouchDB and static implementations, the navigation pipeline, `SessionController`, SRS and ELO services. No Vue |
+| Components | `@vue-skuilder/common-ui` | `StudySession`, card rendering, the `Question` base class, view composables |
+| Card types | `@vue-skuilder/courseware` | The `CourseWare` registry and built-in card types (fill-in, math, chess, piano, typing, ...) |
+| Apps | `standalone-ui`, `platform-ui`, `studio-ui` | Application shells (see [Application Types](./apps)) |
+| Tools | `cli`, `express`, `mcp` | Scaffolding and course packing, the backend API, the agent interface |
+
+`@vue-skuilder/db` runs in Node as well as the browser. Scheduling and card selection do not depend
+on Vue.
 
 ## Session Startup
 
 ### Configuration
 
-Before the loop begins, a few objects are created to parameterise the session:
+Before the loop begins, the app hands `StudySession` a few things:
 
-- A list of `StudyContentSource`s (the courses/curricula to draw from)
-- A time limit for the session
-- User preferences (e.g., confetti on success)
+- a list of content sources: the courses (or classrooms) to draw from, as `ContentSourceID`s;
+- a time limit, in minutes;
+- the user, the data layer, and a `getViewComponent` function that turns a card's view ID into a
+  Vue component (usually `allCourseWare.getView`);
+- an optional `StudySessionConfig`: confetti, batch size, session-wide hints, outcome observers.
 
-In the frontpage demo, the `StudyContentSource` is hard-coded. In an application with a single standalone course, that course would be hardcoded. In more general contexts, the content sources may come from a user's registrations or selections from a menu.
+In the frontpage demo the content source is hard-coded. An app with a single standalone course
+would hard-code its course too. In more general contexts the sources come from a learner's
+registrations or a menu.
 
-The `StudyContentSource` at this point is passed by reference — just an ID string.
+```ts
+interface ContentSourceID {
+  type: 'course' | 'classroom';
+  id: string;
+  tagFilter?: TagFilter; // study only cards carrying some tags (CouchDB data layer only, for now)
+}
+```
 
 ### Initialization
 
-`StudyContentSource` is a small interface:
+Each `ContentSourceID` is resolved to a `StudyContentSource` with `getStudySource(source, user)`.
+For a course, the source is the course database itself. Its whole job is to return scored
+candidates:
 
 <<< @../../packages/db/src/core/interfaces/contentSource.ts#docs_StudyContentSource
-
-The behaviour of a course depends (in obvious ways!) on both the course content and the current user. To instantiate the working content sources, a helper from the `dataLayerProvider` is used, which combines each curriculum store with a user's running records to produce the personalized content source for the session:
-
-```ts
-getStudySource(source: ContentSourceID, user: UserDBInterface): StudyContentSource
-```
 
 We're here:
 
 ![Initialization](../assets/sk-architecture-init.excalidraw.svg)
 
-### Session Planning & Data Hydration
+### Session Planning
 
-With the content sources initialized, the `SessionController` now populates its queues for the session.
+To plan, the `SessionController` asks each source for weighted cards. Behind
+`getWeightedCards()`, the course runs its **navigation pipeline**: generators propose candidates
+(new cards near the learner's level, due reviews, authored targets), filters gate or reweight them,
+and regulators balance new material against review backlog. Each result is a `WeightedCard`: a card
+ID, a score, and a provenance trail saying how the score was reached.
 
-The default behaviour is to prefer surfacing at least *something* new for each session, but otherwise to make a tradeoff between session duration and review backlog. Skuilder maintains a buffer of cards that are *eligible* for review but not yet *overdue*, enabling graceful handling of variations in study routine.
+New cards and reviews come back on one scale and in one ranking. The controller puts them, in rank
+order, into a single **supply queue**. When there are several sources, a mixer interleaves them.
 
-The content source provides two types of items:
-
-```ts
-interface StudySessionNewItem {
-  // A card the user has never seen
-  cardId: string;
-  courseId: string;
-  // ... hydration data
-}
-
-interface StudySessionReviewItem {
-  // A card due for review based on SRS scheduling
-  cardId: string;
-  courseId: string;
-  scheduledFor: Date;
-  // ... history data
-}
-```
-
-With `newCards` and `reviewCards` in the pipe, the session is ready to begin.
+The default behaviour keeps some new material flowing every session while trading off session
+length against review backlog. Review due dates mean *eligible*, not *overdue*: the system keeps a
+buffer of eligible reviews so that a missed day doesn't snowball.
 
 ![Planning](../assets/sk-architecture-plan.excalidraw.svg)
 
@@ -73,117 +88,119 @@ The session enters its main loop: present a card, capture the response, update s
 
 ### Card Presentation
 
-The `SessionController` selects the next card from one of three queues:
+The controller holds two queues:
 
-| Queue | Contents | When Selected |
-|-------|----------|---------------|
-| **New** | Never-seen cards | Early in session, when time permits |
-| **Review** | Scheduled reviews | Throughout session |
-| **Failed** | Cards failed this session | Prioritized as time runs short |
+| Queue | Contents | Refilled by |
+|-------|----------|-------------|
+| **Supply** | New cards and reviews, in pipeline rank order | Replans: re-runs of the pipeline mid-session |
+| **Failed** | Cards missed this session | Wrong answers |
 
-The selected card is **hydrated** — its data fetched, its `Question` instantiated, its Vue component rendered.
+Normally the next card is the head of the supply queue. A failed card is interleaved every few
+draws, so remediation is spaced out rather than piled up at the end. Near the end of the session,
+failed cards take priority.
+
+The chosen card is **hydrated**: its data documents are fetched, its `Question` class is
+instantiated with that data, and its Vue view is rendered.
 
 ### Response Capture
 
-The rendered card emits events as the user interacts:
-
-```ts
-interface CardResponse {
-  answer: unknown;        // The user's response (type depends on card)
-  timeSpent: number;      // Milliseconds from presentation to submission
-}
-```
-
-The `Question` instance evaluates this response:
+The view collects the learner's answer and submits it. The card's `Question` evaluates it:
 
 ```ts
 interface Evaluation {
-  isCorrect: boolean;     // Did the user succeed?
-  performance: number;    // How well? (0-1 scale)
+  isCorrect: boolean;       // SRS: extend or reset the interval
+  performance: Performance; // ELO: how well, 0-1, optionally per tag
+  fluent?: boolean;         // false: correct but too slow
+  deferAdvance?: boolean;   // record now, advance when the view says so
 }
 ```
 
+The evaluation, the answer, and the time spent become a `CardRecord`.
+
 ### State Updates
 
-Based on the evaluation, several things happen:
+The record is written to the learner's history, then processed:
 
-1. **ELO Update**: Both user and card ratings adjust based on the outcome
-2. **SRS Scheduling**: 
-   - Success → schedule next review at an extended interval
-   - Failure → card enters the failed queue for retry this session
-3. **History Recording**: The interaction is logged for analytics and future reference
-4. **Queue Management**: The controller updates its internal state and selects the next card
+1. **ELO**: on the first attempt at a card in a presentation, both the learner's and the card's
+   ratings move, globally and on each graded tag.
+2. **SRS**: a correct first attempt schedules the next review. Cards tagged `srs:skip` (for example,
+   one-time introductions) are never scheduled.
+3. **Retries and remediation**: a wrong answer can be retried in place, up to a limit. After that
+   the card goes to the failed queue for later in the session.
+4. **Replanning**: when the supply queue runs low, or holds few well-indicated cards, the controller
+   re-runs the pipeline in the background. Card views can also request a replan with hints (for
+   example, "boost practice on the concept just introduced").
 
 ### Loop Continuation
 
-The loop continues until one of:
-- The configured time limit is reached
-- The user manually ends the session
-- All queues are exhausted (rare — reviews regenerate)
+The loop continues until the time limit is reached and the failed queue is empty, or the learner
+ends the session.
 
 ## Cleanup
 
-As the session approaches its configured time limit, the controller enters **cleanup phase**.
+As the session approaches its time limit, the controller shifts toward finishing cleanly.
 
-### Time-Aware Queue Selection
-
-The selection algorithm shifts priority:
-
-- **Plenty of time**: Favor new content
-- **Time running short**: Clear pending reviews
-- **Final minutes**: Focus exclusively on failed cards
+- With under two seconds left and nothing failed, it won't start a new card.
+- Once time is up, only failed cards are served, and the session ends when they're cleared.
+- A replan can ask for a minimum number of follow-up cards. That holds the session open past the
+  timer, so an introduction near the end still gets its practice.
 
 ### The Failed-Card Guarantee
 
 A core invariant: **failed cards must be cleared before session end.**
 
-If a card was failed during the session, the user must successfully complete it before leaving. This ensures:
-- The user doesn't exit with unresolved confusion
-- Failed concepts get immediate reinforcement
-- The SRS schedule reflects actual mastery, not abandonment
+If a card was failed during the session, the learner must complete it before leaving. This ensures:
+- the learner doesn't exit with unresolved confusion;
+- failed concepts get immediate reinforcement;
+- the SRS schedule reflects actual mastery, not abandonment.
 
 ### Session Completion
 
 When the session ends:
 
-1. **Final sync**: All pending writes flush to the database
-2. **Summary generation**: Statistics compiled (cards seen, accuracy, time spent)
-3. **UI transition**: The session view yields to a summary or navigation
+1. A `StudySessionDoc` is saved to the learner's database: what was shown, a summary of each
+   pipeline run (selected cards, near misses, regulator readings), the ELO changes, and app and
+   content version stamps.
+2. The view yields to a summary (or whatever the app puts in the `session-finished` slot).
 
-The user's progress is persisted, ELO ratings are updated, and the next session will pick up where this one left off — with the SRS schedule reflecting everything that happened.
+The learner's progress is persisted. The next session picks up where this one left off, with the
+SRS schedule and ratings reflecting everything that happened.
 
 ## Key Interfaces
 
-The architecture is held together by a few core interfaces:
+The architecture is held together by a few contracts:
 
 ```ts
-// What a content source provides to the session
-interface StudyContentSource {
-  // Legacy methods (still supported)
-  getNewCards(n?: number): Promise<StudySessionNewItem[]>;
-  getPendingReviews(): Promise<StudySessionReviewItem[]>;
-
-  // Primary API going forward: unified scored candidates
-  getWeightedCards?(limit: number): Promise<WeightedCard[]>;
-}
-
-// Scored card candidate with audit trail
+// A scored candidate, with an audit trail
 interface WeightedCard {
   cardId: string;
   courseId: string;
-  score: number;              // 0-1 suitability score
-  provenance: StrategyContribution[];  // How this score was computed
+  score: number;                       // suitability, usually 0-1
+  provenance: StrategyContribution[];  // what each pipeline stage did to it
+  reviewID?: string;                   // present for reviews
 }
 
-// What a question evaluates
-interface Evaluation {
-  isCorrect: boolean;
-  performance: number;
+// What a question's grading produces
+type Performance = number | TaggedPerformance;
+interface TaggedPerformance {
+  _global: number;                     // [0, 1]
+  [tag: string]: number | null;        // per-tag score, or null for count-only
 }
 ```
 
-::: info Migration in Progress
-The `StudyContentSource` interface is transitioning from separate `getNewCards()` / `getPendingReviews()` methods to a unified `getWeightedCards()` API. The new approach returns scored candidates that express both new-card suitability and review urgency on the same scale, enabling more sophisticated card selection.
-:::
+- **Card types** plug in through `Question` subclasses and Vue views
+  ([Creating Custom Cards](../extend/custom-cards)).
+- **Pedagogy** plugs in through generators and filters
+  ([Navigation Strategies](../extend/navigation-strategies)).
+- **Storage** plugs in through the data-layer interfaces ([Data Layer](./data-layer)).
+- **Apps** steer a session through `StudySessionConfig`: session-wide hints, outcome observers
+  that react to each response, and replans requested from card views.
 
-The session controller orchestrates, but the interfaces define the contracts between components. Custom card types, custom content sources, and custom pedagogical strategies all plug in through these abstractions.
+## Going deeper
+
+The framework's internal docs describe the same machinery at source level:
+
+- [session-lifecycle-and-replan.md](https://github.com/patched-network/vue-skuilder/blob/master/packages/db/docs/session-lifecycle-and-replan.md):
+  how `SessionController` plans, draws, replans, and where apps hook in
+- [navigators-architecture.md](https://github.com/patched-network/vue-skuilder/blob/master/packages/db/docs/navigators-architecture.md):
+  the pipeline itself

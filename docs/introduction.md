@@ -1,79 +1,118 @@
-
 # What is Skuilder?
 
 Briefly, `skuilder` is a set of [npm packages](https://npmjs.org/org/vue-skuilder) that provide:
-- a modular and extensible architecture for interactive tutoring systems
-- skeleton implementations suitable for a variety of contexts (eg: community platform, SaaS, static deployments)
-- a CLI to help tie things together and scaffold applications
+
+- a modular, extensible architecture for interactive tutoring systems;
+- application shells for a few contexts (a single static course, a multi-course platform, a
+  local authoring studio);
+- a CLI that scaffolds a course, runs the authoring studio, and moves course data between
+  CouchDB and static files.
 
 ## ... *Why* is Skuilder?
 
-To boldly go where no heirarchical SRS++ dev stack has gone before!
+To boldly go where no hierarchical SRS++ dev stack has gone before!
 
-The overall vision is to simplify the production of top-tier interactive educational tech. To this end, we have some broad goals:
+The overall vision is to simplify the production of top-tier interactive educational tech. To
+this end, we have some broad goals.
 
 ### Improve accessibility and user onboarding
 
-... to SRS applications by replacing complex config and [canonical death spirals](https://www.lesswrong.com/posts/7Q7DPSk4iGFJd8DRk/an-opinionated-guide-to-using-anki-correctly) with simpler *goals* + *time commitment* configuration. We want our apps to immediately maximize time-on-task for learners.
+... to SRS applications by replacing complex config and
+[canonical death spirals](https://www.lesswrong.com/posts/7Q7DPSk4iGFJd8DRk/an-opinionated-guide-to-using-anki-correctly)
+with a simpler *goals* + *time commitment* configuration. We want our apps to immediately
+maximize time-on-task for learners.
 
-**Status**: ✅ Core session management and time-based study flow implemented.
+**Status**: ✅ Sessions are time-boxed. The learner says how long; the system decides what to
+show, keeps a healthy backlog of reviews rather than racing it to zero, and clears missed cards
+before the session ends.
 
 ### Encourage richer interaction
 
-Second, we'd like to apply the paradigm to a __broader set of skills__ than has traditionally been targeted. SRS is a proven paradigm for knowledge building, but we expect it can be taken from 'mere' retrieval into contexts with procedural and even creative aspects. The move is from a knowledge-builder to a **sk**ill-b**uilder**.
+Second, we'd like to apply the paradigm to a __broader set of skills__ than has traditionally
+been targeted. SRS is a proven paradigm for knowledge building, but we expect it can be taken from
+'mere' retrieval into contexts with procedural and even creative aspects. The move is from a
+knowledge-builder to a **sk**ill-b**uilder**.
 
-**Status**: ✅ Extensible card system supports custom question types, multi-dimensional performance evaluation, and compositional skill hierarchies.
+**Status**: ✅ Card types are arbitrary Vue components. A card can grade a response on several
+skills at once (for example, each letter of a spelled word), and can report speed separately from
+correctness.
 
 ### Discover blended pedagogical models
 
-We'd like to intelligently blend SRS with hierarchical knowledge graphs, dynamic difficulty matching, and other tutoring interventions. This blending should be responsive to revealed deficiencies in learner progress, and learning bottlenecks should surface automatically.
+We'd like to intelligently blend SRS with hierarchical knowledge graphs, dynamic difficulty
+matching, and other tutoring interventions. This blending should be responsive to revealed
+deficiencies in learner progress, and learning bottlenecks should surface automatically.
 
-**Status**: ✅ Core implementation complete.
-- ✅ Dual-dynamic ELO system (user + card ratings co-evolve)
-- ✅ Configurable navigation strategies (prerequisites, interference avoidance, priority ordering)
-- ✅ Visual authoring UI for strategy configuration
-- ✅ Pipeline architecture for strategy composition
-- ✅ Evolutionary orchestration (strategies automatically tune toward effectiveness)
-- 🔜 Per-tag skill targeting, self-healing content, barrier detection
+**Status**: core built, outer loop experimental.
+- ✅ Dual-dynamic ELO: learner and card ratings co-evolve, globally and per skill (tag)
+- ✅ A navigation pipeline: generators propose cards, filters gate or reweight them, and every
+  card carries a record of why it was chosen
+- ✅ Built-in strategies: prerequisites, interference avoidance, tag priority, skill pressure
+  toward weak skills, prescribed curriculum targets
+- ✅ Per-skill targeting: practice leans toward a learner's weakest and least settled skills
+- 🟡 Evolutionary orchestration: strategy weights can be varied across learners, but the loop
+  that records outcomes and tunes the weights is not yet wired into production sessions
+- 🔜 Self-healing content, barrier detection
 
-See the [Pedagogy System](./learn/pedagogy) doc for details.
+See [Pedagogy](./learn/pedagogy) for details.
 
 ### Create an open-source Curriculum Package Manager
 
 We aim to specify a format to declare, package, and re-use educational content.
 
-**Status**: 🟡 Design phase. Static course bundling works today; package management semantics are in development.
+**Status**: 🟡 Design phase. A course can be packed to static files and loaded from any URL,
+including another site's. A [`skuilder.json`](./skuilder.json.md) manifest names the courses an app
+loads. Versions, dependency semantics, and cross-course prerequisites are not built.
 
 ## Tech Stack
 
 Skuilder uses the following major dependencies:
 
-- __vue@3.x__ + __vite__ - for SPA frontend, reusable component libraries, and build process
-- __vuetify@3.x__ - material-ui component library and theming engine
-- __Apache CouchDB__ as server-side database, and `pouchdb` as a client interface
-- __express__ as backend in
-- __yarn workspaces__ - for monorepo management
+- __TypeScript__ throughout
+- __vue@3.x__ + __vite__: SPA frontends, reusable component libraries, and the build process
+- __vuetify@3.x__: material-ui component library and theming engine
+- __Apache CouchDB__ as the server-side database, and `pouchdb` as the client interface (also used
+  for browser-local learner data)
+- __express__: the backend API for platform and studio deployments
+- __yarn workspaces__: monorepo management
 
 ## This site
 
-This is developer documentation, mainly intended for persons interested in building their own SRS / adaptive tutoring system.
+This is developer documentation, mainly intended for people interested in building their own SRS
+or adaptive tutoring system. We assume you may be working alongside a coding agent, so the pages
+favour the shape of the system and where its seams are over exhaustive API listings. The source is
+the final reference; where a page links to a file, that file is worth reading.
 
 ### Organization
 
-The __Learn__ section provides conceptual background on the architecture and its components.
+The __Learn__ section explains the architecture and its parts.
 
-The __Do__ section is a guided tutorial. Open it side-by-side with your terminal, IDE, or claude-code.
+The __Do__ section is a guided tutorial. Open it side-by-side with your terminal, IDE, or
+claude-code.
+
+The __Extend__ section covers the main extension points: inline components, custom card types,
+and navigation strategies.
+
+The __Reference__ section has the CLI, the default card syntax, the `skuilder.json` manifest, and
+a glossary.
 
 ### Caveat and Working Assumption
 
 This documentation is both *in-progress* and not intended to be fully comprehensive.
 
-The project's modular components require a little cajoling to work together in different contexts (eg, static-site vs live backend, standalone course vs course development platform). This site focuses on **standalone** courses built for **static deployment** and browser-local user data, as described in the [quickstart](./do/quickstart) document.
+The project's modular components require a little cajoling to work together in different contexts
+(eg, static-site vs live backend, standalone course vs course development platform). The tutorial
+focuses on **standalone** courses built for **static deployment** with browser-local user data, as
+described in the [quickstart](./do/quickstart).
 
-General information should be reliable, but specifics like "`foo` must be exported from `bar`" may apply only to the assumed context.
+General information should be reliable, but specifics like "`foo` must be exported from `bar`" may
+apply only to the assumed context.
 
 ## Contributing
 
-External collaboration welcome. First and foremost, run the [quickstart](./do/quickstart) and raise [issues](https://github.com/patched-network/vue-skuilder/issues) wherever you stub your toes.
+External collaboration welcome. First and foremost, run the [quickstart](./do/quickstart) and raise
+[issues](https://github.com/patched-network/vue-skuilder/issues) wherever you stub your toes.
 
-Small PRs that present as unambiguous wins are always welcome. Before working on a major PR, consider raising the work as a github issue or being in touch through [this contact form](https://patched.network/contact/).
+Small PRs that present as unambiguous wins are always welcome. Before working on a major PR,
+consider raising the work as a github issue or being in touch through
+[this contact form](https://patched.network/contact/).

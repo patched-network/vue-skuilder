@@ -6,9 +6,13 @@ import llmstxt from 'vitepress-plugin-llms';
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
   base: '/vue-skuilder/',
+  // Working notes kept beside the docs but not published.
+  srcExclude: ['curriculum-authoring-workflows.md', 'do/custom-cards-meta.md'],
   vite: {
-    // @ts-expect-error See: https://github.com/okineadev/vitepress-plugin-llms/issues/75#issuecomment-3299422144
-    plugins: [llmstxt()],
+    plugins: [
+      // @ts-expect-error See: https://github.com/okineadev/vitepress-plugin-llms/issues/75#issuecomment-3299422144
+      llmstxt({ ignoreFiles: ['dbg/**/*'] }),
+    ],
     // Courseware resolves question classes by `class.name` (a card's view ID names its class), so
     // minification must keep class names, as the packages' own builds do. Without this the
     // embedded courses fail to hydrate any card in the production build. (Not esbuild's
@@ -103,13 +107,10 @@ export default defineConfig({
   },
   title: 'skuilder',
   description: 'modern tooling for adaptive tutoring systems and SRS++',
-  head: [['link', { rel: 'icon', type: 'image/svg+xml', href: './logo.svg' }]],
+  head: [['link', { rel: 'icon', type: 'image/svg+xml', href: '/vue-skuilder/logo.svg' }]],
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
-    nav: [
-      // { text: 'Home', link: '/' },
-      // { text: 'Examples', link: '/markdown-examples' }
-    ],
+    nav: [],
     editLink: {
       pattern: 'https://github.com/patched-network/vue-skuilder/edit/master/docs/:path',
     },
@@ -128,13 +129,12 @@ export default defineConfig({
             text: 'Learn',
             collapsed: false,
             items: [
-              // { text: 'Main Study Loop', link: '/study-loop' },
               { text: 'System Overview', link: '/learn/architecture' },
               { text: 'Card Data Model', link: '/learn/card-data-model' },
               { text: 'Default Card Type', link: '/learn/cards' },
               { text: 'Data Layer', link: '/learn/data-layer' },
               { text: 'Application Layer', link: '/learn/apps' },
-              { text: 'Pedagogy Defaults', link: '/learn/pedagogy' },
+              { text: 'Pedagogy', link: '/learn/pedagogy' },
             ],
           },
           {
@@ -142,9 +142,9 @@ export default defineConfig({
             collapsed: false,
             items: [
               { text: 'Quickstart', link: '/do/quickstart' },
-              { text: 'Adding Content', link: '/do/studio-mode' },
+              { text: 'Adding Content (Studio)', link: '/do/studio-mode' },
               { text: 'Themes', link: '/do/theming' },
-              { text: 'Connect Agents [wip]', link: '/do/mcp' },
+              { text: 'Connect Agents (MCP)', link: '/do/mcp' },
             ],
           },
           {
@@ -153,15 +153,18 @@ export default defineConfig({
             items: [
               { text: 'Inline Components', link: '/extend/inline-components' },
               { text: 'Creating Custom Cards', link: '/extend/custom-cards' },
-              // { text: 'Navigation Strategies', link: '/extend/navigation-strategies' },
+              { text: 'Navigation Strategies', link: '/extend/navigation-strategies' },
             ],
           },
         ],
       },
       {
+        text: 'Reference',
         items: [
-          { text: 'CLI Reference', link: '/cli' },
-          { text: 'Default Cards References', link: '/default-cards' },
+          { text: 'CLI', link: '/cli' },
+          { text: 'Default Cards', link: '/default-cards' },
+          { text: 'skuilder.json', link: '/skuilder.json.md' },
+          { text: 'Glossary', link: '/glossary' },
         ],
       },
     ],

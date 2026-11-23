@@ -1,19 +1,22 @@
-
 # `skuilder.json` Manifest (WIP)
 
-The `skuilder.json` file is a declarative manifest used to define a Skuilder project or a composable content package (a "quilt"). It is inspired by `package.json` from the Node.js ecosystem, allowing content to be managed as packages with their own metadata and dependencies.
+The `skuilder.json` file is a declarative manifest for a Skuilder app or a course package. It is
+modeled on `package.json`, with the intent that courses can eventually be managed as packages with
+their own metadata and dependencies. Today it does one job: it tells a static deployment which
+courses to load, and where from.
 
-## Current Usage (MVP)
+## Current Usage
 
-In the current implementation, `skuilder.json` enables the documentation site to load multiple courses from different locations using a runtime resolution strategy.
+The static data layer reads a root `skuilder.json`, then fetches each course it lists. A scaffolded
+static project (`skuilder init --data-layer static`) and this docs site both work this way.
 
-There are two primary ways this file is used:
+### 1. Root manifest (the app)
 
-### 1. Root Manifest (Aggregator)
+The app's root `skuilder.json` declares its content dependencies. `dependencies` maps a package
+name to the URL of that course's own `skuilder.json`. URLs may be relative to the root manifest or
+absolute, including another origin.
 
-An application (like this docs site) has a root `skuilder.json` file that declares its content dependencies. The `dependencies` field maps a package name to the URL of its own `skuilder.json`.
-
-**Example: `/public/skuilder.json`**
+**Example: this site's `/public/skuilder.json`**
 
 ```json
 {
@@ -22,16 +25,15 @@ An application (like this docs site) has a root `skuilder.json` file that declar
   "description": "The root manifest for the vue-skuilder documentation site.",
   "dependencies": {
     "@skuilder/hero-course": "/vue-skuilder/static-courses/2aeb8315ef78f3e89ca386992d00825b/skuilder.json",
-    "@skuilder/example-course-1": "https://patched-network.github.io/example-course-1/skuilder.json"
+    "@skuilder/demo-chess": "https://patched-network.github.io/demo-chess/static-courses/demo-chess/skuilder.json"
   }
 }
 ```
 
-### 2. Leaf Manifest (Content Package)
+### 2. Leaf manifest (a course)
 
-A self-contained course (a "leaf" package) has its own `skuilder.json` that defines its metadata and points to its content manifest.
-
-**Example: A `skuilder.json` within a course directory**
+A course has its own `skuilder.json` that names it and points to its content manifest (the
+`manifest.json` that `skuilder pack` writes).
 
 ```json
 {
@@ -45,14 +47,30 @@ A self-contained course (a "leaf" package) has its own `skuilder.json` that defi
 }
 ```
 
-At runtime, the data layer starts by fetching the root manifest, then recursively fetches the manifest for each dependency to discover the location of the actual course content.
+### Resolution
+
+At startup the static data layer:
+
+1. reads the root manifest's `dependencies`;
+2. fetches each course's `skuilder.json`, then its content manifest;
+3. registers the course under its course ID, and also under its dependency name. Either can be
+   used as a content source ID, so `StudySession` can be given `@skuilder/hero-course`.
+
+Resolution is **one level deep**. A course's own `dependencies` are not followed, versions are not
+interpreted, and a course that fails to load is logged and skipped.
 
 ## Roadmap
 
-This runtime resolution is the first step. The long-term vision is to create a more robust system analogous to modern package managers.
+The runtime resolution is a first step. The longer-term direction:
 
--   **Build-Time Dependency Resolution:** A CLI command (e.g., `skuilder install`) will be introduced. This tool will read the root `skuilder.json` and resolve the entire dependency graph ahead of time.
-
--   **Lock File Generation:** The resolution step will produce a `skuilder.lock.json` file. This file will contain a flat, deterministic list of all required course manifests and their absolute URLs. The runtime data layer will consume this simple lock file directly, resulting in faster and more reliable startup.
-
--   **Registry Support:** Eventually, the system will support version-based dependencies (e.g., `"@skuilder/math-basics": "^1.2.0"`) which will be resolved against a central or private Skuilder package registry.
+- **Build-time resolution**: a CLI command (e.g., `skuilder install`) resolves the whole dependency
+  graph ahead of time into a lock file (`skuilder.lock.json`): a flat, deterministic list of course
+  manifests and their URLs, which the runtime reads directly.
+- **Versioned dependencies**: ranges like `"@skuilder/math-basics": "^1.2.0"`, likely resolved
+  through npm itself rather than a new registry.
+- **Dependencies with meaning**: today a dependency means "also load this course". The intent is
+  for a course to depend on an *outcome* another course provides ("this learner can do single-digit
+  addition"), so that one course can gate on, or send a learner to, another. This needs a stable
+  identity for courses and their skills across versions, which is the hard part: a learner's
+  history is keyed to a course version's cards and tags, so upgrading a course is a migration of
+  learner state, not just a file swap.
