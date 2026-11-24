@@ -13,6 +13,11 @@ export enum DocType {
   CARDRECORD = 'CARDRECORD',
   SCHEDULED_CARD = 'SCHEDULED_CARD',
   TAG = 'TAG',
+  NAVIGATION_STRATEGY = 'NAVIGATION_STRATEGY',
+  STRATEGY_STATE = 'STRATEGY_STATE',
+  USER_OUTCOME = 'USER_OUTCOME',
+  STRATEGY_LEARNING_STATE = 'STRATEGY_LEARNING_STATE',
+  STUDY_SESSION = 'STUDY_SESSION',
 }
 
 /**
@@ -161,6 +166,12 @@ export interface CardRecord {
    * time of user submission.
    */
   timeStamp: Moment;
+  /**
+   * The study session this response was produced in. Absent on records
+   * predating session stamping, and on responses made outside a
+   * SessionController.
+   */
+  sessionId?: string;
 }
 
 export interface QuestionRecord extends CardRecord, Evaluation {
