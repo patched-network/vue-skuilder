@@ -3,6 +3,8 @@ import path from 'path';
 import { fileURLToPath, URL } from 'node:url';
 import llmstxt from 'vitepress-plugin-llms';
 
+const CANONICAL_ORIGIN = 'https://patched.network';
+
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
   base: '/vue-skuilder/',
@@ -108,6 +110,18 @@ export default defineConfig({
   title: 'skuilder',
   description: 'modern tooling for adaptive tutoring systems and SRS++',
   head: [['link', { rel: 'icon', type: 'image/svg+xml', href: '/vue-skuilder/logo.svg' }]],
+  // The same build is served at patched-network.github.io/vue-skuilder/ and, through a
+  // Netlify proxy, at patched.network/vue-skuilder/. Name the latter canonical so crawlers
+  // don't split the two copies, and publish a sitemap for it.
+  sitemap: {
+    hostname: `${CANONICAL_ORIGIN}/vue-skuilder/`,
+    transformItems: (items) => items.filter((i) => !i.url.startsWith('dbg/')),
+  },
+  transformHead({ pageData }) {
+    if (pageData.isNotFound) return [];
+    const route = pageData.relativePath.replace(/(^|\/)index\.md$/, '$1').replace(/\.md$/, '.html');
+    return [['link', { rel: 'canonical', href: `${CANONICAL_ORIGIN}/vue-skuilder/${route}` }]];
+  },
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
     nav: [],
