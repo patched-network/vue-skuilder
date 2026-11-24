@@ -3,7 +3,8 @@
     "compilerOptions": {
         "module": "ESNext",
         "moduleResolution": "bundler",
-        "noEmit": true
+        "noEmit": true,
+        "types": ["node", "pouchdb"]
     },
     "include": ["src", "tests"]
 }

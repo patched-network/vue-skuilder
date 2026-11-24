@@ -16,6 +16,7 @@
 
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -25,7 +26,13 @@ const scratch = { esm: join(root, 'dist-esm'), cjs: join(root, 'dist-cjs') };
 
 for (const dir of [dist, scratch.esm, scratch.cjs]) rmSync(dir, { recursive: true, force: true });
 
-const tsc = (...args) => execFileSync('npx', ['tsc', ...args], { cwd: root, stdio: 'inherit' });
+// Compiled with TypeScript 7 (native, ~10x faster than 5.x), installed under
+// the `typescript-7` alias so the rest of the workspace stays on 5.x for the
+// Vue tooling. Called by path: `tsc` on PATH is still 5.x.
+const require = createRequire(import.meta.url);
+const tsc7 = join(dirname(require.resolve('typescript-7/package.json')), 'bin', 'tsc');
+const tsc = (...args) =>
+  execFileSync(process.execPath, [tsc7, ...args], { cwd: root, stdio: 'inherit' });
 // SKUILDER_SKIP_DTS=1 skips .d.ts output (the e2e CI jobs never read types).
 const skipDts = process.env.SKUILDER_SKIP_DTS
   ? ['--declaration', 'false', '--declarationMap', 'false']

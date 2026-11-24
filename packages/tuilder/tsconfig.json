@@ -4,7 +4,8 @@
     "outDir": "./dist",
     "module": "nodenext",
     "jsx": "react-jsx",
-    "moduleResolution": "nodenext"
+    "moduleResolution": "nodenext",
+    "types": ["node"]
   },
   "include": ["src"],
   "exclude": ["node_modules", "dist"]

@@ -4,7 +4,8 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "outDir": "dist-esm",
-    "rootDir": "src"
+    "rootDir": "src",
+    "types": ["node", "pouchdb"]
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "dist-esm"]
