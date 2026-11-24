@@ -4,7 +4,8 @@ export default defineConfig({
   entry: ['src/index.ts'],
 
   format: ['cjs', 'esm'],
-  dts: true,
+  // tsup's d.ts pass sets a baseUrl itself, deprecated in TS 6.
+  dts: { compilerOptions: { ignoreDeprecations: '6.0' } },
   sourcemap: true,
   clean: true,
   target: 'es2022',

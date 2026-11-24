@@ -32,8 +32,9 @@ export default defineConfig([
             only: true,
             // tsup's d.ts bundler resolves the @db/* path alias only with a
             // baseUrl, which TS 7 removed from tsconfig.base.json. tsup runs on
-            // TS 5.x, so the option stays valid here.
-            compilerOptions: { baseUrl: '../..' },
+            // the JS compiler (TS 6), where it is deprecated but still works.
+            // Goes away when this pass moves to tsgo.
+            compilerOptions: { baseUrl: '../..', ignoreDeprecations: '6.0' },
           },
         },
       ]),

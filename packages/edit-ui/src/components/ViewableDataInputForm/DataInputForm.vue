@@ -84,7 +84,7 @@ import { defineComponent, PropType } from 'vue';
 import { DataShape } from '@vue-skuilder/common';
 import { CardBrowser } from '@vue-skuilder/common-ui';
 import { TagsInput } from '@vue-skuilder/common-ui';
-import type { TagsInputInstance } from '@vue-skuilder/common-ui/src/components/TagsInput.vue';
+import type { TagsInputInstance } from '@vue-skuilder/common-ui';
 import { FieldInputInstance, isFieldInput } from './FieldInput.types';
 import { alertUser } from '@vue-skuilder/common-ui';
 import { allCourseWare, AllCourseWare } from '@vue-skuilder/courseware';
