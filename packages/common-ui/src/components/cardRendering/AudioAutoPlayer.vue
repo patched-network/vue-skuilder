@@ -13,7 +13,7 @@ const props = defineProps<{
 }>();
 
 const audioElems = ref<HTMLAudioElement[]>([]);
-const playTimeouts = ref<NodeJS.Timer[]>([]);
+const playTimeouts = ref<ReturnType<typeof setTimeout>[]>([]);
 const playing = ref(false);
 
 let staticLOCK: any = null;
@@ -40,7 +40,7 @@ const downloadFinished = (i: number): boolean => {
   try {
     return !isNaN(audioElems.value[i].duration);
   } catch (e) {
-    throw new Error('AudioPlayer does not have an element at this index:', e);
+    throw new Error('AudioPlayer does not have an element at this index', { cause: e });
   }
 };
 

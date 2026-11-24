@@ -101,7 +101,7 @@ import {
   DataLayerProvider,
   getStudySource,
   HydratedCard,
-  isQuestionRecord,
+  SessionAction,
   OutcomeObserver,
   perfMark,
   ReplanOptions,
@@ -214,8 +214,8 @@ export default defineComponent({
       timeRemaining: 300, // 5 minutes * 60 seconds
       replanPending: false,
       replanOptions: null as ReplanOptions | null,
-      deferredNextCardAction: null as string | null,
-      intervalHandler: null as NodeJS.Timeout | null,
+      deferredNextCardAction: null as SessionAction | null,
+      intervalHandler: null as ReturnType<typeof setInterval> | null,
       cardType: '',
       debugMode: (window as any).debugMode === true,
     };
@@ -394,7 +394,7 @@ export default defineComponent({
                 }
               })
             )
-          ).filter((s: unknown) => s !== null)
+          ).filter((s): s is StudyContentSource => s !== null)
         );
 
         this.timeRemaining = this.sessionTimeLimit * 60;
@@ -597,9 +597,10 @@ export default defineComponent({
         // Handle correct response UI
         if (!this.frameless) {
           try {
-            if (this.$refs.shadowWrapper && result.performanceScore !== undefined) {
-              this.$refs.shadowWrapper.setAttribute('style', `--r: ${255 * (1 - result.performanceScore)}; --g:${255}`);
-              this.$refs.shadowWrapper.classList.add('correct');
+            const shadowWrapper = this.$refs.shadowWrapper as HTMLDivElement | undefined;
+            if (shadowWrapper && result.performanceScore !== undefined) {
+              shadowWrapper.setAttribute('style', `--r: ${255 * (1 - result.performanceScore)}; --g:${255}`);
+              shadowWrapper.classList.add('correct');
             }
           } catch (e) {
             console.warn(`[StudySession] Error setting shadowWrapper style: ${e}`);
@@ -621,8 +622,9 @@ export default defineComponent({
         // Handle incorrect response UI
         if (!this.frameless) {
           try {
-            if (this.$refs.shadowWrapper) {
-              this.$refs.shadowWrapper.classList.add('incorrect');
+            const shadowWrapper = this.$refs.shadowWrapper as HTMLDivElement | undefined;
+            if (shadowWrapper) {
+              shadowWrapper.classList.add('incorrect');
             }
           } catch (e) {
             console.warn(`[StudySession] Error setting shadowWrapper style: ${e}`);
@@ -671,7 +673,7 @@ export default defineComponent({
 
       this.cardCount++;
       this.data = card.data;
-      this.view = markRaw(card.view);
+      this.view = markRaw(card.view as ViewComponent);
       this.cardID = card.item.cardID;
       this.courseID = card.item.courseID;
       this.card_elo = card.item.elo || 1000;

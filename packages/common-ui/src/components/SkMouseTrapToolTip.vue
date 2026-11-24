@@ -26,7 +26,7 @@
 
 <script lang="ts">
 import { defineComponent, PropType, ref, onMounted, onBeforeUnmount, computed, watch } from 'vue';
-import { SkldrMouseTrap, HotKeyMetaData } from '../utils/SkldrMouseTrap';
+import { SkldrMouseTrap } from '../utils/SkldrMouseTrap';
 
 export default defineComponent({
   name: 'SkMouseTrapToolTip',
@@ -63,7 +63,6 @@ export default defineComponent({
   setup(props, { emit }) {
     const wrapperElement = ref<HTMLElement | null>(null);
     const isControlKeyPressed = ref(false);
-    const hotkeyId = ref(`hotkey-${Math.random().toString(36).substring(2, 15)}`);
 
     // Format hotkey for display
     const formattedHotkey = computed(() => {

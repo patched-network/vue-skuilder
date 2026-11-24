@@ -134,12 +134,18 @@
 
 <script lang="ts">
 import { defineComponent, PropType } from 'vue';
-import { displayableDataToViewData, Status, CourseElo } from '@vue-skuilder/common';
+import {
+  displayableDataToViewData,
+  Status,
+  CourseElo,
+  // common's, not db's legacy copies: getCourseDocs<T> is constrained on common's SkuilderCourseData
+  CardData,
+  DisplayableData,
+  type ViewDescriptor,
+} from '@vue-skuilder/common';
 import {
   getDataLayer,
   CourseDBInterface,
-  CardData,
-  DisplayableData,
   Tag,
   TagStub,
   QualifiedCardID,
@@ -173,7 +179,7 @@ export default defineComponent({
       default: '',
     },
     viewLookupFunction: {
-      type: Function,
+      type: Function as PropType<(viewDescription: string | ViewDescriptor) => ViewComponent>,
       required: true,
       default: () => {
         console.warn('No viewLookupFunction provided to CourseCardBrowser');
@@ -342,20 +348,18 @@ export default defineComponent({
             include_docs: true,
           }
         )
-      ).rows
-        .filter((r) => {
-          if (r.doc) {
-            return true;
-          } else {
-            console.error(`Card ${r.id}.doc not found.\ncard: ${JSON.stringify(r)}`);
-            // toRemove.push(r.id);
-            // if (this.tagId) {
-            //   this.courseDB!.removeTagFromCard(r.id, this.tagId);
-            // }
-            return false;
-          }
-        })
-        .map((r) => r.doc!);
+      ).rows.flatMap((r) => {
+        // rows for missing ids are { key, error: 'not_found' }
+        if ('doc' in r && r.doc) {
+          return [r.doc];
+        }
+        console.error(`Card ${r.key}.doc not found.\ncard: ${JSON.stringify(r)}`);
+        // toRemove.push(r.key);
+        // if (this.tagId) {
+        //   this.courseDB!.removeTagFromCard(r.key, this.tagId);
+        // }
+        return [];
+      });
 
       this.cards = this.cards.filter((c) => !toRemove.includes(c.card.cardID));
 

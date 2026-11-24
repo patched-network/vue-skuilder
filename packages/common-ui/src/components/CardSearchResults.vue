@@ -24,6 +24,7 @@ import { defineComponent, PropType } from 'vue';
 import { DataLayerProvider, CardData } from '@vue-skuilder/db';
 
 interface CardWithCourse extends CardData {
+  _id: string;
   courseId: string;
 }
 

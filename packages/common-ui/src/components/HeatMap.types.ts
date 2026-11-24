@@ -1,3 +1,5 @@
+import type { Moment } from 'moment';
+
 export interface DayData {
   date: string;
   count: number;
@@ -10,6 +12,7 @@ export interface Color {
 }
 
 export interface ActivityRecord {
-  timeStamp: number | string;
+  // number | ISO string, but stored records may carry a Moment or Date
+  timeStamp: number | string | Date | Moment;
   [key: string]: unknown;
 }
