@@ -401,7 +401,7 @@ export default defineComponent({
 
       // Get the code course from the dataShape descriptor
       const descriptor = NameSpacer.getDataShapeDescriptor(configDataShape.name);
-      const course = allCourseWare.getCourse(descriptor.course);
+      const course = allCourseWare.getCourseWare(descriptor.course);
 
       if (course) {
         // Get view components for this dataShape
@@ -518,6 +518,7 @@ export default defineComponent({
       this.results = []; // Clear results from parsing stage or previous attempts
 
       const currentUser = await getCurrentUser();
+      if (!currentUser) throw new Error('[BulkImportView] No current user');
       const userName = currentUser.getUsername();
 
       const dataShapeToUse: DataShape = BlanksCardDataShapes[0];

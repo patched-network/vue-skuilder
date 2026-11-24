@@ -12,7 +12,7 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import FieldInput from './OptionsFieldInput';
+import FieldInput, { type FieldInputSetupReturn } from './OptionsFieldInput';
 import { CourseElo } from '@vue-skuilder/common';
 // import { FieldDefinition } from '../../../../base-course/Interfaces/FieldDefinition';
 
@@ -22,7 +22,7 @@ export default defineComponent({
 
   setup(props, ctx) {
     // Get all the setup logic from parent
-    const parentSetup = FieldInput.setup?.(props, ctx);
+    const parentSetup = FieldInput.setup?.(props, ctx) as FieldInputSetupReturn | undefined;
 
     const generateELO = () => {
       if (!parentSetup) {

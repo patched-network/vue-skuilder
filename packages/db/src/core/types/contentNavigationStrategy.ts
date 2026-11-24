@@ -34,6 +34,8 @@ export interface ContentNavigationStrategyData extends SkuilderCourseData {
   docType: DocType.NAVIGATION_STRATEGY;
   name: string;
   description: string;
+  /** Who created the strategy (edit-ui records it). */
+  author?: string;
   /**
    The name of the class that implements the navigation strategy at runtime.
    */

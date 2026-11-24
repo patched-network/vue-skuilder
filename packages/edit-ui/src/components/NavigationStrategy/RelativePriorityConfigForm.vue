@@ -99,7 +99,7 @@
             >
               <v-slider
                 :model-value="getTagPriority(tag)"
-                @update:model-value="(val) => updateTagPriority(tag, val)"
+                @update:model-value="(val: string | number) => updateTagPriority(tag, val)"
                 :label="tag"
                 :min="0"
                 :max="1"
@@ -110,7 +110,7 @@
                 <template #append>
                   <v-text-field
                     :model-value="getTagPriority(tag)"
-                    @update:model-value="(val) => updateTagPriority(tag, val)"
+                    @update:model-value="(val: string | number) => updateTagPriority(tag, val)"
                     type="number"
                     style="width: 80px"
                     density="compact"

@@ -36,25 +36,10 @@
     "packages/common-ui/src/components/StudySession.vue TS6133": 1
   },
   "edit-ui": {
-    "packages/edit-ui/src/components/BulkImportView.vue TS18048": 1,
-    "packages/edit-ui/src/components/BulkImportView.vue TS2339": 1,
-    "packages/edit-ui/src/components/BulkImportView.vue TS7006": 1,
-    "packages/edit-ui/src/components/ComponentRegistration.vue TS18048": 1,
     "packages/edit-ui/src/components/ComponentRegistration.vue TS2339": 1,
-    "packages/edit-ui/src/components/ComponentRegistration.vue TS7016": 1,
-    "packages/edit-ui/src/components/NavigationStrategy/HierarchyConfigForm.vue TS6133": 1,
-    "packages/edit-ui/src/components/NavigationStrategy/HierarchyConfigForm.vue TS7006": 4,
-    "packages/edit-ui/src/components/NavigationStrategy/InterferenceConfigForm.vue TS7006": 3,
     "packages/edit-ui/src/components/NavigationStrategy/NavigationStrategyEditor.vue TS2339": 2,
-    "packages/edit-ui/src/components/NavigationStrategy/NavigationStrategyEditor.vue TS2353": 2,
-    "packages/edit-ui/src/components/NavigationStrategy/RelativePriorityConfigForm.vue TS7006": 2,
-    "packages/edit-ui/src/components/ViewableDataInputForm/DataInputForm.vue TS2322": 7,
-    "packages/edit-ui/src/components/ViewableDataInputForm/DataInputForm.vue TS2532": 1,
-    "packages/edit-ui/src/components/ViewableDataInputForm/DataInputForm.vue TS2694": 1,
-    "packages/edit-ui/src/components/ViewableDataInputForm/FieldInputs/ChessPuzzleInput.vue TS2339": 3,
     "packages/edit-ui/src/components/ViewableDataInputForm/FieldInputs/MidiInput.vue TS18047": 1,
     "packages/edit-ui/src/components/ViewableDataInputForm/FieldInputs/MidiInput.vue TS2322": 1,
-    "packages/edit-ui/src/components/ViewableDataInputForm/FieldInputs/MidiInput.vue TS2339": 5,
-    "packages/edit-ui/src/components/ViewableDataInputForm/FieldInputs/StringInput.vue TS2307": 1
+    "packages/edit-ui/src/components/ViewableDataInputForm/FieldInputs/MidiInput.vue TS2339": 5
   }
 }
