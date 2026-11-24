@@ -115,12 +115,16 @@ Please do:
 Probably don't:
 - open large PRs without prior discussion
 
+Contributions are accepted on the terms in [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ## 📄 License
 
-This project is licensed under:
-
-- **AGPL-3.0** for the core platform: [License](https://opensource.org/licenses/AGPL-3.0)
-- **MIT** for materials in the `courses` package: [License](https://opensource.org/licenses/MIT)
+- **AGPL-3.0-or-later** for the framework ([`LICENSE`](LICENSE)), with an
+  [exception](LICENSE-EXCEPTION.md): you may build closed question types,
+  courses and apps on its exported interfaces. Changes to vue-skuilder itself
+  stay AGPL.
+- **MIT** for `packages/courseware` (the example question types) and
+  `packages/client`.
 
 ## Nightlies
 
