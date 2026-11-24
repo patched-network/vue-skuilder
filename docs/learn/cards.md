@@ -167,6 +167,9 @@ A moustache blank (or inline component) that is the very last text of the card d
 Until that's fixed, add *something* after it: punctuation, a space, or a newline.
 :::
 
+The bug only bites when the card's final paragraph is plain text. Any inline markdown in that
+paragraph (emphasis, code, a link) happens to sidestep it.
+
 The editor below shows the problem. Add a full stop after the closing braces to fix it.
 
-<EmbeddedFillInEditor initial-value="The *render* fillin blank does not {{ render }}" />
+<EmbeddedFillInEditor initial-value="The capital of France is {{ Paris }}" />

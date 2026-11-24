@@ -78,20 +78,16 @@ Skuilder uses the following major dependencies:
 
 ## This site
 
-This is developer documentation, mainly intended for people interested in building their own SRS
-or adaptive tutoring system. We assume you may be working alongside a coding agent, so the pages
-favour the shape of the system and where its seams are over exhaustive API listings. The source is
-the final reference; where a page links to a file, that file is worth reading.
+This is developer documentation, mainly intended for persons interested in building their own SRS / adaptive tutoring system.
 
 ### Organization
 
 The __Learn__ section explains the architecture and its parts.
 
-The __Do__ section is a guided tutorial. Open it side-by-side with your terminal, IDE, or
-claude-code.
+The __Do__ section is a guided tutorial. Open it side-by-side with your terminal, IDE, or point an agent at it.
 
 The __Extend__ section covers the main extension points: inline components, custom card types,
-and navigation strategies.
+and navigation strategies (consumer defined pedagogy / learning protocols).
 
 The __Reference__ section has the CLI, the default card syntax, the `skuilder.json` manifest, and
 a glossary.

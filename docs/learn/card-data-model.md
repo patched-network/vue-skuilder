@@ -154,9 +154,15 @@ pitch and rhythm separately. Each tagged skill keeps its own rating for the lear
 card, and selection can then lean toward a learner's weakest skills
 (see [Pedagogy](./pedagogy#per-skill-selection)).
 
-## Compositional Questions (direction)
+## Compositional Questions
 
-The longer-term aim is for questions to compose. For example, the stacked addition question
+Questions can:
+- **Inherit** from base implementations (override `isCorrect()`, reuse `displayedSkill()`)
+- **Compose** multiple sub-questions into compound assessments
+
+The architecture supports cards containing instances of several questions, enabling compound assessments where failure in subcomponents can be analyzed independently.
+
+For example, the stacked addition question
 
 <pre>
   123
@@ -164,11 +170,10 @@ The longer-term aim is for questions to compose. For example, the stacked additi
 -----
 </pre>
 
-could execute as a sequence of `SingleDigitAdditionQuestion` instances, each evaluated on its own
-merits. Prerequisites and credit would then follow from the structure of the questions ("by the
-compiler") rather than being hand-built by a curriculum author: completing the stacked question
-counts as practice on its single-digit parts, and mastery of those parts can gate the three-digit
-question.
+Can, at runtime, execute as a sequence of `SingleDigitAdditionQuestion` instances evaluated on their own merits, leading to...
 
-Today, per-tag grading carries the credit part of this by hand (the card author names the tags it
-grades), and the hierarchy filter carries the gating part. Automatic composition is not built.
+## Strongly Typed Curriculum
+
+With compositional questions, aspects of prerequisite structure and inferred competence can be handled **by the *compiler*** rather than hand-rolled by a curriculum author.
+
+EG, the successful completion of the stacked addition question above can explicitly count as practice on the SingleDigitAddition skills as well, and mastery of the SingleDigitAddition can serve as prerequisite for the 3-digit addition.
