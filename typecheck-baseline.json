@@ -1,11 +1,4 @@
 {
-  "common-ui": {
-    "packages/common-ui/src/components/cardRendering/MarkdownRenderer.vue TS2322": 1,
-    "packages/common-ui/src/components/cardRendering/MarkdownRenderer.vue TS2339": 2,
-    "packages/common-ui/src/components/cardRendering/MdTokenRenderer.vue TS2322": 14,
-    "packages/common-ui/src/components/cardRendering/MdTokenRenderer.vue TS2339": 6,
-    "packages/common-ui/src/components/cardRendering/MdTokenRenderer.vue TS2345": 10
-  },
   "edit-ui": {
     "packages/edit-ui/src/components/ViewableDataInputForm/FieldInputs/MidiInput.vue TS18047": 1,
     "packages/edit-ui/src/components/ViewableDataInputForm/FieldInputs/MidiInput.vue TS2322": 1,

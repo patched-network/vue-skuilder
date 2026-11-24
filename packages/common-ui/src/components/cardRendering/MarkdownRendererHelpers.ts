@@ -63,7 +63,11 @@ export function splitTextToken(token: Tokens.Text): Tokens.Text[] {
   }
 }
 
-export type TokenOrComponent = MarkedToken | { type: 'component'; raw: string };
+/**
+ * A token the renderer handles. Inline components ({{ ... }}) are text tokens
+ * recognised by isComponent(), not a separate token kind.
+ */
+export type TokenOrComponent = MarkedToken;
 
 export function splitParagraphToken(token: Tokens.Paragraph): TokenOrComponent[] {
   let ret: MarkedToken[] = [];

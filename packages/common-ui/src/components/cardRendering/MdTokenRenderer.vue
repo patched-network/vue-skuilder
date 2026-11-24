@@ -25,33 +25,33 @@
       <span v-else>{{ decodeBasicEntities(token.text) }}</span>
     </span>
     <span v-else-if="token.tokens && token.tokens.length !== 0">
-      <md-token-renderer v-for="(subTok, j) in token.tokens" :key="j" :token="subTok" />
+      <md-token-renderer v-for="(subTok, j) in children(token)" :key="j" :token="subTok" />
     </span>
   </span>
 
   <span v-else-if="token.type === 'heading'">
     <h1 v-if="token.depth === 1" class="text-h2">
-      <md-token-renderer v-for="(subTok, j) in token.tokens" :key="j" :token="subTok" />
+      <md-token-renderer v-for="(subTok, j) in children(token)" :key="j" :token="subTok" />
     </h1>
     <h2 v-else-if="token.depth === 2" class="text-h3">
-      <md-token-renderer v-for="(subTok, j) in token.tokens" :key="j" :token="subTok" />
+      <md-token-renderer v-for="(subTok, j) in children(token)" :key="j" :token="subTok" />
     </h2>
     <h3 v-else-if="token.depth === 3" class="text-h4">
-      <md-token-renderer v-for="(subTok, j) in token.tokens" :key="j" :token="subTok" />
+      <md-token-renderer v-for="(subTok, j) in children(token)" :key="j" :token="subTok" />
     </h3>
     <h4 v-else-if="token.depth === 4">
-      <md-token-renderer v-for="(subTok, j) in token.tokens" :key="j" :token="subTok" />
+      <md-token-renderer v-for="(subTok, j) in children(token)" :key="j" :token="subTok" />
     </h4>
     <h5 v-else-if="token.depth === 5">
-      <md-token-renderer v-for="(subTok, j) in token.tokens" :key="j" :token="subTok" />
+      <md-token-renderer v-for="(subTok, j) in children(token)" :key="j" :token="subTok" />
     </h5>
     <h6 v-else-if="token.depth === 6">
-      <md-token-renderer v-for="(subTok, j) in token.tokens" :key="j" :token="subTok" />
+      <md-token-renderer v-for="(subTok, j) in children(token)" :key="j" :token="subTok" />
     </h6>
   </span>
 
   <strong v-else-if="token.type === 'strong'">
-    <md-token-renderer v-for="(subTok, j) in token.tokens" :key="j" :token="subTok" />
+    <md-token-renderer v-for="(subTok, j) in children(token)" :key="j" :token="subTok" />
   </strong>
 
   <p v-else-if="token.type === 'paragraph'" class="text-h5">
@@ -65,7 +65,7 @@
     </span>
     <template v-else>
       <md-token-renderer
-        v-for="(subTok, j) in token.tokens"
+        v-for="(subTok, j) in children(token)"
         :key="j"
         :token="subTok"
         :last="last && token.tokens.length === 1"
@@ -73,8 +73,8 @@
     </template>
   </p>
 
-  <a v-else-if="token.type === 'link'" :href="token.href" :title="token.title">
-    <md-token-renderer v-for="(subTok, j) in token.tokens" :key="j" :token="subTok" />
+  <a v-else-if="token.type === 'link'" :href="token.href" :title="token.title ?? undefined">
+    <md-token-renderer v-for="(subTok, j) in children(token)" :key="j" :token="subTok" />
   </a>
 
   <ul v-else-if="token.type === 'list' && token.ordered === false">
@@ -86,10 +86,10 @@
   </ol>
 
   <li v-else-if="token.type === 'list_item'">
-    <md-token-renderer v-for="(subTok, j) in token.tokens" :key="j" :token="subTok" />
+    <md-token-renderer v-for="(subTok, j) in children(token)" :key="j" :token="subTok" />
   </li>
 
-  <img v-else-if="token.type === 'image'" :src="token.href" :alt="token.title" />
+  <img v-else-if="token.type === 'image'" :src="token.href" :alt="token.text" :title="token.title ?? undefined" />
   <hr v-else-if="token.type === 'hr'" />
   <br v-else-if="token.type === 'br'" />
   <del v-else-if="token.type === 'del'" />
@@ -113,13 +113,13 @@
   <code v-else-if="token.type === 'codespan'" class="codespan" v-html="token.text"></code>
 
   <blockquote v-else-if="token.type === 'blockquote'">
-    <md-token-renderer v-for="(subTok, j) in token.tokens" :key="j" :token="subTok" />
+    <md-token-renderer v-for="(subTok, j) in children(token)" :key="j" :token="subTok" />
   </blockquote>
 
   <span v-else-if="token.type === 'escape'">{{ token.text }}</span>
 
   <em v-else-if="token.type === 'em'">
-    <md-token-renderer v-for="(subTok, j) in token.tokens" :key="j" :token="subTok" />
+    <md-token-renderer v-for="(subTok, j) in children(token)" :key="j" :token="subTok" />
   </em>
 </template>
 
@@ -134,7 +134,7 @@ import {
 } from './MarkdownRendererHelpers';
 import CodeBlockRenderer from './CodeBlockRenderer.vue';
 import FillInInput from '../../components/studentInputs/fillInInput.vue';
-import { MarkedToken, Tokens } from 'marked';
+import { MarkedToken, Token, Tokens } from 'marked';
 import { markRaw, inject } from 'vue';
 import { PropType } from 'vue';
 
@@ -171,7 +171,7 @@ function containsComponent(token: MarkedToken): boolean {
   return _containsComponent(token);
 }
 
-function splitTextToken(token: MarkedToken): Tokens.Text[] {
+function splitTextToken(token: Tokens.Text): Tokens.Text[] {
   return _splitTextToken(token);
 }
 
@@ -239,8 +239,16 @@ function decodeBasicEntities(text: string): string {
     .replace(/&gt;/g, '>');
 }
 
-function isText(tok: TokenOrComponent): boolean {
-  return (tok as any).inLink === undefined && tok.type === 'text';
+function isText(tok: MarkedToken): tok is Tokens.Text {
+  return (tok as { inLink?: unknown }).inLink === undefined && tok.type === 'text';
+}
+
+/**
+ * Child tokens. marked types them as Token (MarkedToken | Tokens.Generic);
+ * Generic only comes from marked extensions, and none are registered.
+ */
+function children(tok: { tokens?: Token[] }): MarkedToken[] {
+  return (tok.tokens ?? []) as MarkedToken[];
 }
 
 // Make these functions and objects available to the template
@@ -253,6 +261,7 @@ defineExpose({
   isAnswerLineChoice,
   decodeBasicEntities,
   isText,
+  children,
   components,
   getComponent,
 });
