@@ -261,7 +261,7 @@ tuning. A strategy without `learnable` runs at weight 1.
 | SessionController | Time budget, queues, replans, remediation |
 | Orchestration | Tuning strategy weights from outcomes |
 
-## Where this is going
+<!--## Where this is going
 
 - **Centring the difficulty curve.** At a gap of 0, learners fail roughly one card in three to
   five. Higher success may need the curve aimed below the learner.
@@ -271,4 +271,4 @@ tuning. A strategy without `learnable` runs at weight 1.
   block.
 - **Cohort-aware cold start**: better first ratings for a learner's new skill than their global
   rating.
-- **Cross-course strategy sharing.**
+- **Cross-course strategy sharing.**-->
