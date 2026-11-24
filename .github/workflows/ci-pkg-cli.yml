@@ -23,6 +23,9 @@ on:
       - 'yarn.lock'
 
 jobs:
+  # Two independent jobs, run in parallel: the scaffolded-app e2e and the
+  # custom-questions (studio + dev mode) workflow. Each repeats setup and build
+  # (~1.7 min), which is cheaper than running them one after the other.
   cli-try-init-e2e:
     runs-on: ubuntu-latest
 
@@ -94,7 +97,64 @@ jobs:
           # Clean up CouchDB
           yarn couchdb:stop
 
-      # Custom Questions Workflow Test
+      - name: Upload screenshots on failure
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: cypress-screenshots-scaffold
+          path: packages/cli/cypress/screenshots
+          retention-days: 7
+
+      - name: Upload videos
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cypress-videos-scaffold
+          path: packages/cli/cypress/videos
+          retention-days: 7
+
+  cli-custom-questions-e2e:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+
+      - name: Display submodule information
+        run: |
+          echo "Submodule information:"
+          git submodule status
+          echo "CouchDB snapshot details:"
+          cd test-couch && git log -1 --pretty=format:'%h - %s (%cr) <%an>'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'yarn'
+
+      - name: Setup Docker
+        uses: docker/setup-buildx-action@v2
+
+      - name: Install Yarn
+        run: corepack enable
+
+      - name: Install dependencies
+        run: yarn install
+
+      - name: Build library packages
+        run: |
+          yarn build:lib
+          yarn workspace @vue-skuilder/mcp build
+          yarn workspace @vue-skuilder/express build
+          yarn workspace @vue-skuilder/cli build
+
+
+      - name: Install Cypress
+        run: yarn workspace @vue-skuilder/cli cypress install
+
       - name: Create empty project for custom questions test
         working-directory: packages/cli
         run: yarn try:init:empty
@@ -184,7 +244,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: cypress-screenshots
+          name: cypress-screenshots-custom-questions
           path: packages/cli/cypress/screenshots
           retention-days: 7
 
@@ -192,6 +252,6 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: cypress-videos
+          name: cypress-videos-custom-questions
           path: packages/cli/cypress/videos
           retention-days: 7
