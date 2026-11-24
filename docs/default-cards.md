@@ -44,8 +44,6 @@ allCourseWare.courses.push(defaultCourse);
 - Options may contain markdown, including code blocks.
 - Without `||`, the whole content is a single typed answer: <code v-pre>{{Paris|paris}}</code> expects the
   literal text `Paris|paris`. Alternative typed answers are not supported yet.
-- A blank (or inline component) must not be the very last text of the card; add punctuation or a
-  newline after it.
 - Media: images and audio attached through the `Uploads` field render in the card. Arbitrary HTML
   embeds (for example, a video iframe) are passed through.
 

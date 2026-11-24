@@ -73,8 +73,8 @@ export function splitParagraphToken(token: Tokens.Paragraph): TokenOrComponent[]
     // When a blank/component is the last token, that asymmetry gives raw an extra
     // trailing chunk, tripping the length check below and throwing. Strip trailing
     // newlines (only) from both so the splits stay parallel. We must NOT strip
-    // trailing spaces: a trailing-space chunk is the documented workaround that
-    // keeps a final component from being treated as `last` (see MdTokenRenderer).
+    // trailing spaces: a trailing-space chunk keeps a final component from being
+    // treated as `last` (see MdTokenRenderer's answer-line multiple choice).
     const textChunks = splitByDelimiters(stripTrailingNewlines(token.text), '{{', '}}');
     const rawChunks = splitByDelimiters(stripTrailingNewlines(token.raw), '{{', '}}');
     if (textChunks.length === rawChunks.length) {
