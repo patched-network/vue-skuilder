@@ -9,6 +9,7 @@
 import { defineComponent } from 'vue';
 import { CourseCardBrowser } from '@vue-skuilder/common-ui';
 import { allCourseWare } from '@vue-skuilder/courseware';
+import type { ViewDescriptor } from '@vue-skuilder/common';
 
 export default defineComponent({
   name: 'TagEditorView',
@@ -29,7 +30,7 @@ export default defineComponent({
   },
 
   methods: {
-    viewLookup(x: unknown) {
+    viewLookup(x: string | ViewDescriptor) {
       return allCourseWare.getView(x);
     },
   },

@@ -117,12 +117,5 @@
     "packages/standalone-ui/src/views/UserSettingsView.vue TS2322": 3,
     "packages/standalone-ui/src/views/UserStatsView.vue TS2322": 1,
     "packages/standalone-ui/src/views/UserStatsView.vue TS6133": 2
-  },
-  "studio-ui": {
-    "packages/studio-ui/src/config/development.ts TS2339": 5,
-    "packages/studio-ui/src/main.ts TS2882": 5,
-    "packages/studio-ui/src/main.ts TS7006": 2,
-    "packages/studio-ui/src/views/TagEditorView.vue TS2345": 1,
-    "packages/studio-ui/vite.config.ts TS7016": 1
   }
 }

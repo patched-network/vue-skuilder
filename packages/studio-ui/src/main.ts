@@ -15,6 +15,8 @@ import '@vue-skuilder/edit-ui/style';
 
 // Data layer initialization
 import { initializeDataLayer } from '@vue-skuilder/db';
+import type { CustomQuestionsData } from '@vue-skuilder/db';
+import type { CourseWare } from '@vue-skuilder/courseware';
 
 import App from './App.vue';
 import router from './router';
@@ -64,7 +66,14 @@ const vuetify = createVuetify({
 
   // Check for custom questions configuration and import if available
   console.log('🎨 Studio Mode: Checking for custom questions configuration');
-  let customQuestions = null;
+  // What the course project's allCustomQuestions() returns (see standalone-ui
+  // src/questions/index.ts); loaded at runtime from the project's build.
+  let customQuestions:
+    | (Omit<CustomQuestionsData, 'courses'> & {
+        courses: CourseWare[];
+        inlineComponents?: Record<string, unknown>;
+      })
+    | null = null;
   const customQuestionsStatus: {
     configFetched: boolean;
     configStatus?: number;
