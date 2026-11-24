@@ -26,7 +26,11 @@ const scratch = { esm: join(root, 'dist-esm'), cjs: join(root, 'dist-cjs') };
 for (const dir of [dist, scratch.esm, scratch.cjs]) rmSync(dir, { recursive: true, force: true });
 
 const tsc = (...args) => execFileSync('npx', ['tsc', ...args], { cwd: root, stdio: 'inherit' });
-tsc('-p', 'tsconfig.esm.json', '--outDir', scratch.esm);
+// SKUILDER_SKIP_DTS=1 skips .d.ts output (the e2e CI jobs never read types).
+const skipDts = process.env.SKUILDER_SKIP_DTS
+  ? ['--declaration', 'false', '--declarationMap', 'false']
+  : [];
+tsc('-p', 'tsconfig.esm.json', '--outDir', scratch.esm, ...skipDts);
 tsc(
   '-p',
   'tsconfig.cjs.json',

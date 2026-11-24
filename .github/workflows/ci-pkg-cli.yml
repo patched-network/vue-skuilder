@@ -101,33 +101,40 @@ jobs:
 
       - name: Wait for studio server to be ready
         working-directory: packages/cli/testproject-empty
+        # 127.0.0.1, not localhost: studio binds 0.0.0.0 (IPv4 only) and the
+        # runner resolves localhost to ::1. On Node 18 (CI until 2025-11-12) there
+        # was no IPv4 fallback, so wait-on never connected; that is why this step
+        # used to be a fixed `sleep 180`. Node 22 falls back, but don't rely on it.
+        run: npx wait-on http-get://127.0.0.1:7174/custom-questions-config.json --timeout 180000
+
+      - name: Studio diagnostics
+        if: failure()
+        working-directory: packages/cli/testproject-empty
         run: |
-          echo "Giving studio 3 minutes to build and start..."
-          sleep 180
           echo "==== studio.log (full) ===="
           cat studio.log || echo "No log file"
           echo "==== .skuilder/studio-builds contents ===="
           ls -laR .skuilder/studio-builds 2>/dev/null || echo "No studio-builds dir"
           echo "==== custom-questions-config.json (if served by studio) ===="
-          curl -sf http://localhost:7174/custom-questions-config.json | head -c 2000 || echo "(not reachable)"
+          curl -sf http://127.0.0.1:7174/custom-questions-config.json | head -c 2000 || echo "(not reachable)"
           echo
           echo "==== HEAD /assets/questions.mjs ===="
-          curl -sI http://localhost:7174/assets/questions.mjs || echo "(curl failed)"
+          curl -sI http://127.0.0.1:7174/assets/questions.mjs || echo "(curl failed)"
           echo "==== all relative imports in questions.mjs ===="
-          curl -s http://localhost:7174/assets/questions.mjs \
+          curl -s http://127.0.0.1:7174/assets/questions.mjs \
             | grep -oE 'from"\.[^"]*"' \
             | sort -u
           echo "==== HEAD each referenced chunk ===="
-          curl -s http://localhost:7174/assets/questions.mjs \
+          curl -s http://127.0.0.1:7174/assets/questions.mjs \
             | grep -oE 'from"\./[^"]+"' \
             | sed -E 's|from"\./||; s|"$||' \
             | sort -u \
             | while read chunk; do
                 echo "--- /assets/$chunk"
-                curl -sI "http://localhost:7174/assets/$chunk" | head -3
+                curl -sI "http://127.0.0.1:7174/assets/$chunk" | head -3
               done
           echo "==== sibling: HEAD on a known-good asset ===="
-          curl -sI http://localhost:7174/ | head -20 || true
+          curl -sI http://127.0.0.1:7174/ | head -20 || true
 
       - name: Run custom questions studio mode tests
         working-directory: packages/cli

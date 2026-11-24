@@ -15,11 +15,25 @@ on:
       - 'packages/common-ui/**'
       - 'packages/courseware/**'
       - 'packages/edit-ui/**'
-      - '.github/workflows/build-platform-ui.yml'
+      - '.github/workflows/ci-e2e-platform-ui.yml'
 
 jobs:
   e2e-tests:
     runs-on: ubuntu-latest
+    name: e2e-tests (${{ matrix.shard.name }})
+
+    # Specs run in parallel shards, balanced by runtime (content-authoring alone
+    # is ~90s). Each spec registers its own users, so they don't share state.
+    strategy:
+      fail-fast: false
+      matrix:
+        shard:
+          - name: authoring
+            specs: cypress/e2e/content-authoring.cy.js
+          - name: courses
+            specs: cypress/e2e/course-registration.cy.js,cypress/e2e/course-creation.cy.js
+          - name: users
+            specs: cypress/e2e/user-registration.cy.js,cypress/e2e/study-display-cards.cy.js,cypress/e2e/smoke.cy.js
 
     steps:
       - uses: actions/checkout@v3
@@ -49,6 +63,9 @@ jobs:
         run: yarn workspace @vue-skuilder/platform-ui cypress install
 
       - name: Build prereqs
+        # The dev servers run the libs from source; only dist JS/CSS is read.
+        env:
+          SKUILDER_SKIP_DTS: '1'
         run: yarn build:lib
 
       - name: Setup and wait for services
@@ -65,7 +82,7 @@ jobs:
       - name: Run E2E tests
         run: |
           # Run Cypress tests
-          yarn workspace @vue-skuilder/platform-ui cypress run
+          yarn workspace @vue-skuilder/platform-ui cypress run --spec '${{ matrix.shard.specs }}'
 
       - name: Cleanup services
         if: always()
@@ -79,7 +96,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: cypress-screenshots
+          name: cypress-screenshots-${{ matrix.shard.name }}
           path: packages/platform-ui/cypress/screenshots
           retention-days: 7 # Optional: set retention period
 
@@ -87,6 +104,6 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: cypress-videos
+          name: cypress-videos-${{ matrix.shard.name }}
           path: packages/platform-ui/cypress/videos
           retention-days: 7 # Optional: set retention period
