@@ -18,9 +18,10 @@ hero:
 
 features:
   - title: Fully <a href="extend/custom-cards">Extensible</a> Flash Cards
-    details: A card is a Vue component plus a small class that grades it. Build <strong><em>whatever</em></strong> you like. MIDI keyboards, chess boards, typing games.
+    details: <strong><em>Whatever</em></strong> you like. MIDI keyboards, chess boards, typing games. Sky's the limit.<br><br/>Custom cards are vue components + a grading implementation.
   - title: Adaptive and Pluggable <a href="learn/pedagogy">Pedagogy</a>
-    details: "ELO ratings for learners and cards, globally and per skill. Spaced repetition. A pipeline of generators and filters you can extend, which explains every card it picks."
+    # details: "ELO ratings for learners and cards, globally and per skill. Spaced repetition. A pipeline of generators and filters you can extend, which explains every card it picks."
+    details: "Flexible content pipeline that runs <strong>either</strong> a chosen learning protocol (eg, <em>SRS</em> or <em>Elo dynamic difficulty sorting</em>), or a competitive mixture of several. Define and inject course-specific protocols as well."
   - title: Local First, Platform <a href="learn/data-layer">Capable</a>
     details: Run against CouchDB with accounts and sync, or ship a course as static files with learner data kept in the browser.
   - title: Agents <a href="do/mcp">Welcome</a> <small>(but not required!)</small>
