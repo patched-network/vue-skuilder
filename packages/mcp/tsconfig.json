@@ -5,9 +5,10 @@
     "rootDir": "./src",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
+    "types": ["node", "pouchdb"],
     "paths": {
-      "@db/*": ["./packages/db/src/*"],
-      "@common/*": ["./packages/common/src/*"],
+      "@db/*": ["../db/src/*"],
+      "@common/*": ["../common/src/*"],
       "@mcp/*": ["./src/*"]
     }
   },

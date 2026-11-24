@@ -4,7 +4,8 @@
         "outDir": "dist",
         "rootDir": "src",
         "module": "NodeNext",
-        "moduleResolution": "NodeNext"
+        "moduleResolution": "NodeNext",
+        "types": ["node", "pouchdb"]
     },
     "include": ["src/**/*"],
     "exclude": ["node_modules", "dist"]

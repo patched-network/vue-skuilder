@@ -3,7 +3,7 @@
     "target": "es2018",
     "module": "esnext", // Changed from "commonjs" to "esnext"
     "lib": ["es2018"],
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "sourceMap": true,
     "declaration": true,
     "esModuleInterop": true,
@@ -17,6 +17,7 @@
     "outDir": "dist",
     "declarationDir": "dist",
     "resolveJsonModule": true,
+    "types": ["node"],
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true
   },
