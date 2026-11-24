@@ -55,6 +55,7 @@ Current repo has access to submodule with a test database with live courses, man
 - Lint cli: `yarn workspace @vue-skuilder/cli lint:fix`
 - Type check express: `yarn workspace @vue-skuilder/express type-check`
 - Type check courses: `yarn workspace @vue-skuilder/courseware type-check`
+- Type check everything: `yarn typecheck` (needs libs built). CI runs it against `typecheck-baseline.json`: new type errors fail, and so do fixed ones until `yarn typecheck --update` is committed. `--only <pkg>[,<pkg>]` narrows it.
 
 ## Testing Strategy
 

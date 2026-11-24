@@ -17,9 +17,6 @@ on:
       - '.github/workflows/ci-pkg-cli.yml'
       - 'package.json'
       - 'tsconfig.base.json'
-      - 'packages/tuilder/**'
-      - 'packages/client/**'
-      - 'scripts/typecheck-ts7.mjs'
       - 'yarn.lock'
 
 jobs:
@@ -63,9 +60,6 @@ jobs:
           yarn workspace @vue-skuilder/mcp build
           yarn workspace @vue-skuilder/express build
           yarn workspace @vue-skuilder/cli build
-
-      - name: Type-check non-Vue packages with TypeScript 7
-        run: yarn typecheck:ts7
 
       - name: Install Cypress
         run: yarn workspace @vue-skuilder/cli cypress install
