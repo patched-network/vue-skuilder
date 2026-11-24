@@ -10,7 +10,6 @@
         "isolatedModules": true,
         "lib": ["ESNext", "DOM"],
         "noEmit": true,
-        "baseUrl": ".",
         "types": ["vite/client"]
     },
     "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.tsx", "src/**/*.vue"]

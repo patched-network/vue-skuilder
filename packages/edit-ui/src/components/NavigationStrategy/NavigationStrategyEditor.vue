@@ -130,7 +130,7 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import type { ContentNavigationStrategyData } from '@vue-skuilder/db/src/core/types/contentNavigationStrategy';
+import type { ContentNavigationStrategyData } from '@vue-skuilder/db';
 import NavigationStrategyList from './NavigationStrategyList.vue';
 import HierarchyConfigForm from './HierarchyConfigForm.vue';
 import InterferenceConfigForm from './InterferenceConfigForm.vue';

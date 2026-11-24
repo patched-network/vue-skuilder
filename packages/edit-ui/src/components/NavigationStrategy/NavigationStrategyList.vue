@@ -51,7 +51,7 @@
 
 <script lang="ts">
 import { defineComponent, PropType } from 'vue';
-import type { ContentNavigationStrategyData } from '@vue-skuilder/db/src/core/types/contentNavigationStrategy';
+import type { ContentNavigationStrategyData } from '@vue-skuilder/db';
 
 export default defineComponent({
   name: 'NavigationStrategyList',

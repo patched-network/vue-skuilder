@@ -19,6 +19,9 @@ export default defineConfig({
             include: ['src/questions/**/*.ts', 'src/questions/**/*.vue'],
             exclude: ['**/*.spec.ts', '**/*.test.ts'],
             outDir: 'dist-lib',
+            // TS 6 roots declaration output at the tsconfig dir by default;
+            // keep dist-lib flat (dist-lib/index.d.ts) as before.
+            compilerOptions: { rootDir: resolve(__dirname, 'src/questions') },
           }),
         ]
       : []),
