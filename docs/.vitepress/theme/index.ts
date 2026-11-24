@@ -41,16 +41,26 @@ if (!allCourseWare.courses.find((c) => c.name === defaultCourse.name)) {
 // is sync-friendly; avoid blocking initial page render with `await` here.
 void loadAllSubcourses();
 
+// The docs course's gate: a consumer-defined filter, registered the way any app registers one.
+// Its strategy document ships in the docs course (docs/course-src/build.mjs).
+import { registerNavigator, NavigatorRole } from '@vue-skuilder/db';
+import { DocsReadingGate } from './docsCourse/DocsReadingGate';
+registerNavigator('docsReadingGate', DocsReadingGate, NavigatorRole.FILTER);
+
 // Import components to register globally
 import EmbeddedCourse from './components/EmbeddedCourse.vue';
 import HeroStudySession from './components/HeroStudySession.vue';
 import EmbeddedFillInEditor from './components/EmbeddedFillInEditor.vue';
+import DocsCourse from './components/DocsCourse.vue';
+import DocsReadTracker from './docsCourse/DocsReadTracker.vue';
 
 export default {
   extends: DefaultTheme,
   Layout: () => {
     return h(DefaultTheme.Layout, null, {
       // https://vitepress.dev/guide/extending-default-theme#layout-slots
+      // Notes which docs pages have been read, for the docs course's gate.
+      'doc-after': () => h(DocsReadTracker),
     });
   },
   enhanceApp({ app, router, siteData }) {
@@ -142,5 +152,6 @@ export default {
     app.component('EmbeddedCourse', EmbeddedCourse);
     app.component('HeroStudySession', HeroStudySession);
     app.component('EmbeddedFillInEditor', EmbeddedFillInEditor);
+    app.component('DocsCourse', DocsCourse);
   },
 } satisfies Theme;

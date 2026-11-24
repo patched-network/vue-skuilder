@@ -1,0 +1,2432 @@
+{
+  "type": "couchdb-view",
+  "viewName": "cardsByInexperience",
+  "designDoc": "_design/cardsByInexperience",
+  "results": [
+    {
+      "key": 0,
+      "id": "c-skdocs-ag-elo",
+      "value": {
+        "global": {
+          "score": 1100,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:agents": {
+            "score": 1100,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-ag-review",
+      "value": {
+        "global": {
+          "score": 1040,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:agents": {
+            "score": 1040,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-ag-schema",
+      "value": {
+        "global": {
+          "score": 1060,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:agents": {
+            "score": 1060,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-ag-scope",
+      "value": {
+        "global": {
+          "score": 1000,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:agents": {
+            "score": 1000,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-ag-strategy",
+      "value": {
+        "global": {
+          "score": 1120,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:agents": {
+            "score": 1120,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-agents-intro",
+      "value": {
+        "global": {
+          "score": 1000,
+          "count": 0
+        },
+        "tags": {
+          "docs:intro:agents": {
+            "score": 1000,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-arch-content-source",
+      "value": {
+        "global": {
+          "score": 1100,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:architecture": {
+            "score": 1100,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-arch-failed",
+      "value": {
+        "global": {
+          "score": 1000,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:architecture": {
+            "score": 1000,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-arch-first-attempt",
+      "value": {
+        "global": {
+          "score": 1120,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:architecture": {
+            "score": 1120,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-arch-hydration",
+      "value": {
+        "global": {
+          "score": 1040,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:architecture": {
+            "score": 1040,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-arch-no-vue",
+      "value": {
+        "global": {
+          "score": 1020,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:architecture": {
+            "score": 1020,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-arch-replan",
+      "value": {
+        "global": {
+          "score": 1080,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:architecture": {
+            "score": 1080,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-arch-supply",
+      "value": {
+        "global": {
+          "score": 1060,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:architecture": {
+            "score": 1060,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-architecture-intro",
+      "value": {
+        "global": {
+          "score": 1000,
+          "count": 0
+        },
+        "tags": {
+          "docs:intro:architecture": {
+            "score": 1000,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-cards-intro",
+      "value": {
+        "global": {
+          "score": 1000,
+          "count": 0
+        },
+        "tags": {
+          "docs:intro:cards": {
+            "score": 1000,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-cc-boundary",
+      "value": {
+        "global": {
+          "score": 1020,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:custom-cards": {
+            "score": 1020,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-cc-defer",
+      "value": {
+        "global": {
+          "score": 1140,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:custom-cards": {
+            "score": 1140,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-cc-inline",
+      "value": {
+        "global": {
+          "score": 1000,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:custom-cards": {
+            "score": 1000,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-cc-name",
+      "value": {
+        "global": {
+          "score": 1120,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:custom-cards": {
+            "score": 1120,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-cc-register",
+      "value": {
+        "global": {
+          "score": 1060,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:custom-cards": {
+            "score": 1060,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-cc-submit",
+      "value": {
+        "global": {
+          "score": 1080,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:custom-cards": {
+            "score": 1080,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-cm-double-bar",
+      "value": {
+        "global": {
+          "score": 1020,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:cards": {
+            "score": 1020,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-cm-fluent",
+      "value": {
+        "global": {
+          "score": 1150,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:cards": {
+            "score": 1150,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-cm-iscorrect",
+      "value": {
+        "global": {
+          "score": 1060,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:cards": {
+            "score": 1060,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-cm-multi-view",
+      "value": {
+        "global": {
+          "score": 1080,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:cards": {
+            "score": 1080,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-cm-seed",
+      "value": {
+        "global": {
+          "score": 1140,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:cards": {
+            "score": 1140,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-cm-tagged",
+      "value": {
+        "global": {
+          "score": 1120,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:cards": {
+            "score": 1120,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-cm-trio",
+      "value": {
+        "global": {
+          "score": 1000,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:cards": {
+            "score": 1000,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-cm-viewid",
+      "value": {
+        "global": {
+          "score": 1100,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:cards": {
+            "score": 1100,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-custom-cards-intro",
+      "value": {
+        "global": {
+          "score": 1000,
+          "count": 0
+        },
+        "tags": {
+          "docs:intro:custom-cards": {
+            "score": 1000,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-data-layer-intro",
+      "value": {
+        "global": {
+          "score": 1000,
+          "count": 0
+        },
+        "tags": {
+          "docs:intro:data-layer": {
+            "score": 1000,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-dl-localsync",
+      "value": {
+        "global": {
+          "score": 1140,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:data-layer": {
+            "score": 1140,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-dl-root-manifest",
+      "value": {
+        "global": {
+          "score": 1120,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:data-layer": {
+            "score": 1120,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-dl-static-elo",
+      "value": {
+        "global": {
+          "score": 1080,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:data-layer": {
+            "score": 1080,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-dl-static-pipeline",
+      "value": {
+        "global": {
+          "score": 1100,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:data-layer": {
+            "score": 1100,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-dl-static-user",
+      "value": {
+        "global": {
+          "score": 1040,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:data-layer": {
+            "score": 1040,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-dl-strategy-docs",
+      "value": {
+        "global": {
+          "score": 1060,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:data-layer": {
+            "score": 1060,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-dl-two",
+      "value": {
+        "global": {
+          "score": 1000,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:data-layer": {
+            "score": 1000,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-ns-meta",
+      "value": {
+        "global": {
+          "score": 1060,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:strategies": {
+            "score": 1060,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-ns-multiplier",
+      "value": {
+        "global": {
+          "score": 1080,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:strategies": {
+            "score": 1080,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-ns-register",
+      "value": {
+        "global": {
+          "score": 1040,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:strategies": {
+            "score": 1040,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-ns-state",
+      "value": {
+        "global": {
+          "score": 1100,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:strategies": {
+            "score": 1100,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-ns-unknown",
+      "value": {
+        "global": {
+          "score": 1140,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:strategies": {
+            "score": 1140,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-ns-zero",
+      "value": {
+        "global": {
+          "score": 1020,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:strategies": {
+            "score": 1020,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-ped-diversity",
+      "value": {
+        "global": {
+          "score": 1150,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:pedagogy": {
+            "score": 1150,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-ped-eligible",
+      "value": {
+        "global": {
+          "score": 1060,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:pedagogy": {
+            "score": 1060,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-ped-gain",
+      "value": {
+        "global": {
+          "score": 1100,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:pedagogy": {
+            "score": 1100,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-ped-gate",
+      "value": {
+        "global": {
+          "score": 1040,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:pedagogy": {
+            "score": 1040,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-ped-generators",
+      "value": {
+        "global": {
+          "score": 1000,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:pedagogy": {
+            "score": 1000,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-ped-intake",
+      "value": {
+        "global": {
+          "score": 1140,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:pedagogy": {
+            "score": 1140,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-ped-orchestration",
+      "value": {
+        "global": {
+          "score": 1160,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:pedagogy": {
+            "score": 1160,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-ped-provenance",
+      "value": {
+        "global": {
+          "score": 1020,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:pedagogy": {
+            "score": 1020,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-ped-skill-pressure",
+      "value": {
+        "global": {
+          "score": 1080,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:pedagogy": {
+            "score": 1080,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-pedagogy-intro",
+      "value": {
+        "global": {
+          "score": 1000,
+          "count": 0
+        },
+        "tags": {
+          "docs:intro:pedagogy": {
+            "score": 1000,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-start-card-type",
+      "value": {
+        "global": {
+          "score": 940,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:start": {
+            "score": 940,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-start-license",
+      "value": {
+        "global": {
+          "score": 1000,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:start": {
+            "score": 1000,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-start-review-correct",
+      "value": {
+        "global": {
+          "score": 930,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:start": {
+            "score": 930,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-start-same-scale",
+      "value": {
+        "global": {
+          "score": 980,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:start": {
+            "score": 980,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-start-static",
+      "value": {
+        "global": {
+          "score": 950,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:start": {
+            "score": 950,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-start-timebox",
+      "value": {
+        "global": {
+          "score": 960,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:start": {
+            "score": 960,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-start-unit",
+      "value": {
+        "global": {
+          "score": 900,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:start": {
+            "score": 900,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-start-welcome",
+      "value": {
+        "global": {
+          "score": 1000,
+          "count": 0
+        },
+        "tags": {
+          "docs:intro:start": {
+            "score": 1000,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-strategies-intro",
+      "value": {
+        "global": {
+          "score": 1000,
+          "count": 0
+        },
+        "tags": {
+          "docs:intro:strategies": {
+            "score": 1000,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-wf-commit",
+      "value": {
+        "global": {
+          "score": 1020,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:workflow": {
+            "score": 1020,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-wf-custom-in-studio",
+      "value": {
+        "global": {
+          "score": 1100,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:workflow": {
+            "score": 1100,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-wf-flush",
+      "value": {
+        "global": {
+          "score": 1060,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:workflow": {
+            "score": 1060,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-wf-init",
+      "value": {
+        "global": {
+          "score": 1000,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:workflow": {
+            "score": 1000,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-wf-pack",
+      "value": {
+        "global": {
+          "score": 1120,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:workflow": {
+            "score": 1120,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-wf-platform",
+      "value": {
+        "global": {
+          "score": 1080,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:workflow": {
+            "score": 1080,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-wf-why-studio",
+      "value": {
+        "global": {
+          "score": 1040,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:workflow": {
+            "score": 1040,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-workflow-intro",
+      "value": {
+        "global": {
+          "score": 1000,
+          "count": 0
+        },
+        "tags": {
+          "docs:intro:workflow": {
+            "score": 1000,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    }
+  ],
+  "metadata": {
+    "resultCount": 71,
+    "generatedAt": "2026-11-23T18:42:16.774Z"
+  },
+  "sorted": [
+    {
+      "key": 0,
+      "id": "c-skdocs-ag-elo",
+      "value": {
+        "global": {
+          "score": 1100,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:agents": {
+            "score": 1100,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-ag-review",
+      "value": {
+        "global": {
+          "score": 1040,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:agents": {
+            "score": 1040,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-ag-schema",
+      "value": {
+        "global": {
+          "score": 1060,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:agents": {
+            "score": 1060,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-ag-scope",
+      "value": {
+        "global": {
+          "score": 1000,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:agents": {
+            "score": 1000,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-ag-strategy",
+      "value": {
+        "global": {
+          "score": 1120,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:agents": {
+            "score": 1120,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-agents-intro",
+      "value": {
+        "global": {
+          "score": 1000,
+          "count": 0
+        },
+        "tags": {
+          "docs:intro:agents": {
+            "score": 1000,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-arch-content-source",
+      "value": {
+        "global": {
+          "score": 1100,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:architecture": {
+            "score": 1100,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-arch-failed",
+      "value": {
+        "global": {
+          "score": 1000,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:architecture": {
+            "score": 1000,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-arch-first-attempt",
+      "value": {
+        "global": {
+          "score": 1120,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:architecture": {
+            "score": 1120,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-arch-hydration",
+      "value": {
+        "global": {
+          "score": 1040,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:architecture": {
+            "score": 1040,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-arch-no-vue",
+      "value": {
+        "global": {
+          "score": 1020,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:architecture": {
+            "score": 1020,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-arch-replan",
+      "value": {
+        "global": {
+          "score": 1080,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:architecture": {
+            "score": 1080,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-arch-supply",
+      "value": {
+        "global": {
+          "score": 1060,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:architecture": {
+            "score": 1060,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-architecture-intro",
+      "value": {
+        "global": {
+          "score": 1000,
+          "count": 0
+        },
+        "tags": {
+          "docs:intro:architecture": {
+            "score": 1000,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-cards-intro",
+      "value": {
+        "global": {
+          "score": 1000,
+          "count": 0
+        },
+        "tags": {
+          "docs:intro:cards": {
+            "score": 1000,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-cc-boundary",
+      "value": {
+        "global": {
+          "score": 1020,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:custom-cards": {
+            "score": 1020,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-cc-defer",
+      "value": {
+        "global": {
+          "score": 1140,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:custom-cards": {
+            "score": 1140,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-cc-inline",
+      "value": {
+        "global": {
+          "score": 1000,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:custom-cards": {
+            "score": 1000,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-cc-name",
+      "value": {
+        "global": {
+          "score": 1120,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:custom-cards": {
+            "score": 1120,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-cc-register",
+      "value": {
+        "global": {
+          "score": 1060,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:custom-cards": {
+            "score": 1060,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-cc-submit",
+      "value": {
+        "global": {
+          "score": 1080,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:custom-cards": {
+            "score": 1080,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-cm-double-bar",
+      "value": {
+        "global": {
+          "score": 1020,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:cards": {
+            "score": 1020,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-cm-fluent",
+      "value": {
+        "global": {
+          "score": 1150,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:cards": {
+            "score": 1150,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-cm-iscorrect",
+      "value": {
+        "global": {
+          "score": 1060,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:cards": {
+            "score": 1060,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-cm-multi-view",
+      "value": {
+        "global": {
+          "score": 1080,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:cards": {
+            "score": 1080,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-cm-seed",
+      "value": {
+        "global": {
+          "score": 1140,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:cards": {
+            "score": 1140,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-cm-tagged",
+      "value": {
+        "global": {
+          "score": 1120,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:cards": {
+            "score": 1120,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-cm-trio",
+      "value": {
+        "global": {
+          "score": 1000,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:cards": {
+            "score": 1000,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-cm-viewid",
+      "value": {
+        "global": {
+          "score": 1100,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:cards": {
+            "score": 1100,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-custom-cards-intro",
+      "value": {
+        "global": {
+          "score": 1000,
+          "count": 0
+        },
+        "tags": {
+          "docs:intro:custom-cards": {
+            "score": 1000,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-data-layer-intro",
+      "value": {
+        "global": {
+          "score": 1000,
+          "count": 0
+        },
+        "tags": {
+          "docs:intro:data-layer": {
+            "score": 1000,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-dl-localsync",
+      "value": {
+        "global": {
+          "score": 1140,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:data-layer": {
+            "score": 1140,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-dl-root-manifest",
+      "value": {
+        "global": {
+          "score": 1120,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:data-layer": {
+            "score": 1120,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-dl-static-elo",
+      "value": {
+        "global": {
+          "score": 1080,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:data-layer": {
+            "score": 1080,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-dl-static-pipeline",
+      "value": {
+        "global": {
+          "score": 1100,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:data-layer": {
+            "score": 1100,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-dl-static-user",
+      "value": {
+        "global": {
+          "score": 1040,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:data-layer": {
+            "score": 1040,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-dl-strategy-docs",
+      "value": {
+        "global": {
+          "score": 1060,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:data-layer": {
+            "score": 1060,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-dl-two",
+      "value": {
+        "global": {
+          "score": 1000,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:data-layer": {
+            "score": 1000,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-ns-meta",
+      "value": {
+        "global": {
+          "score": 1060,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:strategies": {
+            "score": 1060,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-ns-multiplier",
+      "value": {
+        "global": {
+          "score": 1080,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:strategies": {
+            "score": 1080,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-ns-register",
+      "value": {
+        "global": {
+          "score": 1040,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:strategies": {
+            "score": 1040,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-ns-state",
+      "value": {
+        "global": {
+          "score": 1100,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:strategies": {
+            "score": 1100,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-ns-unknown",
+      "value": {
+        "global": {
+          "score": 1140,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:strategies": {
+            "score": 1140,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-ns-zero",
+      "value": {
+        "global": {
+          "score": 1020,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:strategies": {
+            "score": 1020,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-ped-diversity",
+      "value": {
+        "global": {
+          "score": 1150,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:pedagogy": {
+            "score": 1150,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-ped-eligible",
+      "value": {
+        "global": {
+          "score": 1060,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:pedagogy": {
+            "score": 1060,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-ped-gain",
+      "value": {
+        "global": {
+          "score": 1100,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:pedagogy": {
+            "score": 1100,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-ped-gate",
+      "value": {
+        "global": {
+          "score": 1040,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:pedagogy": {
+            "score": 1040,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-ped-generators",
+      "value": {
+        "global": {
+          "score": 1000,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:pedagogy": {
+            "score": 1000,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-ped-intake",
+      "value": {
+        "global": {
+          "score": 1140,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:pedagogy": {
+            "score": 1140,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-ped-orchestration",
+      "value": {
+        "global": {
+          "score": 1160,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:pedagogy": {
+            "score": 1160,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-ped-provenance",
+      "value": {
+        "global": {
+          "score": 1020,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:pedagogy": {
+            "score": 1020,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-ped-skill-pressure",
+      "value": {
+        "global": {
+          "score": 1080,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:pedagogy": {
+            "score": 1080,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-pedagogy-intro",
+      "value": {
+        "global": {
+          "score": 1000,
+          "count": 0
+        },
+        "tags": {
+          "docs:intro:pedagogy": {
+            "score": 1000,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-start-card-type",
+      "value": {
+        "global": {
+          "score": 940,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:start": {
+            "score": 940,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-start-license",
+      "value": {
+        "global": {
+          "score": 1000,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:start": {
+            "score": 1000,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-start-review-correct",
+      "value": {
+        "global": {
+          "score": 930,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:start": {
+            "score": 930,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-start-same-scale",
+      "value": {
+        "global": {
+          "score": 980,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:start": {
+            "score": 980,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-start-static",
+      "value": {
+        "global": {
+          "score": 950,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:start": {
+            "score": 950,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-start-timebox",
+      "value": {
+        "global": {
+          "score": 960,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:start": {
+            "score": 960,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-start-unit",
+      "value": {
+        "global": {
+          "score": 900,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:start": {
+            "score": 900,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-start-welcome",
+      "value": {
+        "global": {
+          "score": 1000,
+          "count": 0
+        },
+        "tags": {
+          "docs:intro:start": {
+            "score": 1000,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-strategies-intro",
+      "value": {
+        "global": {
+          "score": 1000,
+          "count": 0
+        },
+        "tags": {
+          "docs:intro:strategies": {
+            "score": 1000,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-wf-commit",
+      "value": {
+        "global": {
+          "score": 1020,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:workflow": {
+            "score": 1020,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-wf-custom-in-studio",
+      "value": {
+        "global": {
+          "score": 1100,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:workflow": {
+            "score": 1100,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-wf-flush",
+      "value": {
+        "global": {
+          "score": 1060,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:workflow": {
+            "score": 1060,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-wf-init",
+      "value": {
+        "global": {
+          "score": 1000,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:workflow": {
+            "score": 1000,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-wf-pack",
+      "value": {
+        "global": {
+          "score": 1120,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:workflow": {
+            "score": 1120,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-wf-platform",
+      "value": {
+        "global": {
+          "score": 1080,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:workflow": {
+            "score": 1080,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-wf-why-studio",
+      "value": {
+        "global": {
+          "score": 1040,
+          "count": 0
+        },
+        "tags": {
+          "docs:exercise:workflow": {
+            "score": 1040,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    },
+    {
+      "key": 0,
+      "id": "c-skdocs-workflow-intro",
+      "value": {
+        "global": {
+          "score": 1000,
+          "count": 0
+        },
+        "tags": {
+          "docs:intro:workflow": {
+            "score": 1000,
+            "count": 0
+          }
+        },
+        "misc": {}
+      }
+    }
+  ],
+  "stats": {
+    "minInexperience": 0,
+    "maxInexperience": 0,
+    "count": 71
+  }
+}

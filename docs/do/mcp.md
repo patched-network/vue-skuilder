@@ -1,576 +1,157 @@
-# Model Context Protocol (MCP) Server
+# Connect Agents (MCP)
 
-Vue-Skuilder provides an MCP server that exposes course content and authoring capabilities to AI agents. This enables **agentic content authoring** and **intelligent curriculum management** at scale.
+Vue-Skuilder provides a [Model Context Protocol](https://modelcontextprotocol.io) server that
+exposes one course to an AI agent: its configuration, cards, data shapes, tags, and navigation
+strategies, plus tools to author cards and strategies. The aim is **agent-assisted content
+authoring** and **curriculum inspection**, with the human reviewing what the agent did.
 
-## Current Architecture
+::: info Status
+The server and the tools below work today, against a CouchDB-backed course. Sections marked
+*direction* describe where this is going and are not built.
+:::
 
-The MCP server is **course-scoped**, accepting a `CourseDBInterface` injection to provide isolated access to a specific course's content.
+## Connecting
+
+### Through studio mode
+
+The easy path. `npm run studio` (see [Adding Content](./studio-mode)) starts a scratch CouchDB for
+your course, prints the MCP command, and writes a `.mcp.json` to the directory you ran it from:
+
+```json
+{
+  "mcpServers": {
+    "vue-skuilder-studio": {
+      "command": "./node_modules/@vue-skuilder/cli/dist/mcp-server.js",
+      "args": ["<course-id>", "5985"],
+      "env": {
+        "COUCHDB_SERVER_URL": "localhost:5985",
+        "COUCHDB_SERVER_PROTOCOL": "http",
+        "COUCHDB_USERNAME": "admin",
+        "COUCHDB_PASSWORD": "password"
+      }
+    }
+  }
+}
+```
+
+Start your agent (for example, Claude Code) in that directory and it can work on the open course.
+Its changes go into the studio database, so they reach your static files only when you flush, and
+show up in your diff.
+
+### Against any CouchDB course
+
+The same entry point works against any CouchDB course database; set the `COUCHDB_*` variables to
+point at it. To embed the server in your own process, construct it from a course DB:
 
 ```typescript
 import { MCPServer } from '@vue-skuilder/mcp';
-import { getDataLayer } from '@vue-skuilder/db';
+import { initializeDataLayer, getDataLayer } from '@vue-skuilder/db';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 
+await initializeDataLayer({ type: 'couch', options: { /* COUCHDB_* settings */ } });
 const courseDB = getDataLayer().getCourseDB('course-id');
-const server = new MCPServer(courseDB, {
-  enableSourceLinking: true,
-  maxCardsPerQuery: 100,
-  eloCalibrationMode: 'adaptive'
-});
+
+const server = new MCPServer(courseDB, { maxCardsPerQuery: 50 });
+await server.start(new StdioServerTransport());
 ```
 
-### Capabilities Overview
+## What the server offers
 
-**19 Resources** (read-only data access):
-- Course configuration and statistics
-- Card querying with rich filtering (tags, DataShapes, ELO ranges)
-- DataShape introspection and JSON schema generation
-- Tag analytics and set operations (union/intersect/exclusive)
-- Navigation strategy discovery, role filtering, and configuration schemas
+The server is **course-scoped**: one server, one course.
 
-**5 Tools** (content management):
-- `create_card` - Generate new cards with DataShape validation
-- `update_card` - Modify existing cards (tags, ELO, data, sourceRef)
-- `tag_card` - Bulk tag operations with ELO recalibration
-- `delete_card` - Safe deletion with confirmation
-- `create_strategy` - Configure new navigation strategies (generators/filters)
+### Resources (read-only)
 
-**2 Prompts** (guided authoring):
-- `fill-in-card-authoring` - Comprehensive guide for fill-in-the-blank cards
-- `elo-scoring-guidance` - ELO calibration best practices
+| URI | Returns |
+|---|---|
+| `course://config` | Course configuration and statistics |
+| `cards://all` | Cards, paginated |
+| `cards://tag/{tagName}` | Cards carrying a tag |
+| `cards://shape/{shapeName}` | Cards of one data shape |
+| `cards://elo/{min}-{max}` | Cards in an ELO range, e.g. `cards://elo/1000-1400` |
+| `shapes://all`, `shapes://{shapeName}` | Data shapes and their fields |
+| `schema://{dataShapeName}` | A data shape as JSON schema, for validating generated content |
+| `tags://all`, `tags://stats`, `tags://distribution` | Tags, usage statistics, distribution |
+| `tags://{tagName}` | One tag |
+| `tags://union/{a}+{b}` | Cards with either tag |
+| `tags://intersect/{a}+{b}` | Cards with both tags |
+| `tags://exclusive/{a}-{b}` | Cards with the first tag but not the second |
+| `strategies://all`, `strategies://{strategyId}` | Navigation strategy documents |
+| `strategies://roles`, `strategies://role/{generator\|filter}` | Strategies by pipeline role |
+| `strategies://schema/{implementingClass}` | The config schema for a strategy type |
 
-### Key Design Principles
+### Tools
 
-**1. ELO-Aware Authoring**
+| Tool | Does |
+|---|---|
+| `create_card` | Create a card of a given data shape, with tags and a starting ELO; data is validated against the shape |
+| `update_card` | Change a card's tags or ELO (data edits are not yet supported) |
+| `tag_card` | Add or remove tags on a card, optionally adjusting its ELO |
+| `delete_card` | Delete a card; requires `confirm: true` |
+| `create_strategy` | Add a navigation strategy document (a generator or filter with its config) |
 
-The system guides agents to assign initial ELO ratings that provide "rough, sane sorting" (packages/mcp/src/prompts/elo-scoring-guidance.ts:21):
+### Prompts
 
-```typescript
-// Agent queries existing course to establish baseline
-const existingCards = await mcp.readResource('cards://elo/1000-1500');
-const avgElo = existingCards.cards.reduce((sum, c) => sum + c.elo, 0) / existingCards.cards.length;
+- `fill-in-card-authoring`: how to write cards in the default fill-in syntax (see
+  [The Default Card Type](../learn/cards)).
+- `elo-scoring-guidance`: how to choose starting ELO ratings.
 
-// Creates new cards relative to existing difficulty
-await mcp.callTool('create_card', {
-  datashape: 'fillIn',
-  data: '...',
-  elo: avgElo + 50  // Slightly harder than average
-});
-```
+## Design principles
 
-The platform then refines these ratings through **automated realtime adjustment** based on actual user performance (dual-dynamic ELO).
+**ELO-aware authoring.** An agent can't know a card's true difficulty, but it can place it sensibly
+relative to the course. The guidance prompt asks for "rough, sane sorting": look at existing cards
+in a range, then rate new ones relative to them. Learners' responses then refine card ratings
+(on a CouchDB deployment; static courses freeze ratings at pack time).
 
-**2. DataShape-Aware Generation**
+**Shape-aware generation.** The agent reads a data shape's JSON schema before writing content, and
+`create_card` validates against it, so generated cards are well-formed for their card type.
 
-Agents query available DataShapes and their schemas:
+**Tags as the curriculum vocabulary.** Tags are how a course names its skills, and they are what
+navigation strategies act on (prerequisites, interference, priority, skill pressure). Tag set
+operations let an agent find gaps and overlaps; `create_strategy` lets it express structure, such
+as a prerequisite graph over tags, as a strategy document the pipeline will run.
 
-```typescript
-// Discover available question types
-const shapes = await mcp.readResource('shapes://all');
+**Reviewable by a human.** Every operation is logged, and in studio mode every change lands in the
+course files you commit, so agent work can be reviewed as a diff before it ships.
 
-// Get JSON schema for validation
-const schema = await mcp.readResource('schema://Blanks');
+## Directions (not built)
 
-// Generate compliant content
-await mcp.callTool('create_card', {
-  datashape: 'course.Blanks',
-  data: { Input: '...' }  // Validated against schema
-});
-```
+These describe the intended path. None of the URIs or calls below exist yet.
 
-**3. Tag-Based Organization**
+### Source-linked content
 
-Rich tag operations enable sophisticated content discovery:
+`create_card` and `update_card` accept a `sourceRef` (for example,
+`github.com/org/repo/blob/main/docs/api.md#L42-L58`), but it is not yet stored. The intent is to
+peg cards to the source material they teach, so that when that source changes (a new API version,
+a revised textbook section), an agent can find the affected cards from the diff, propose updates,
+and flag stale ones.
 
-```typescript
-// Find cards teaching BOTH concepts
-const prereqCards = await mcp.readResource('tags://intersect/addition+subtraction');
+### Feedback from learners
 
-// Find cards teaching EITHER concept
-const relatedCards = await mcp.readResource('tags://union/multiplication+division');
+The MCP server reads course content but not learner outcomes. With read access to aggregate
+performance (per-card success rates, common wrong answers, difficulty jumps between neighbouring
+cards, tags where many learners stall), an agent could:
 
-// Find cards teaching X but NOT Y
-const isolatedCards = await mcp.readResource('tags://exclusive/functions-recursion');
-```
+- write bridge cards where the difficulty curve has a gap;
+- add scaffolding for skills where learners stall;
+- propose prerequisite edges suggested by failure patterns.
 
-## Git-Based Content Provenance
+### Larger authoring pipelines
 
-The `sourceRef` field enables **real-time curriculum updates** tied to external source materials.
+Extraction from a source (a textbook, a codebase's API), card generation in several difficulty
+variants, review by a second agent, and publication, each step scoped by the same course-level
+tools. Multi-modal cards (audio, images) would need attachment support in `create_card`.
 
-### Current State
+### A map for AI tutors
 
-`sourceRef` is defined in the tool schemas (packages/mcp/src/types/tools.ts:11) but **not yet fully implemented** in `update_card`. The infrastructure is in place for:
+The directions above have agents authoring a course. The other direction is an LLM tutor using
+one. A course holds an authored structure (cards, tags, prerequisite and hierarchy strategies) and
+a learned one (card ratings; a learner's history and per-skill ratings; the provenance of each
+card picked for them). Together they form a structured map of a domain and of one learner's place
+in it, which a tutor could query as part of its retrieval and goal-setting: what this learner has
+mastered, what comes next and why, which cards practise the step it is about to explain. Today the
+MCP server exposes course content only, not learner state.
 
-```typescript
-await mcp.callTool('create_card', {
-  datashape: 'fillIn',
-  data: '...',
-  sourceRef: 'github.com/org/repo/blob/main/docs/api.md#L42-L58'
-});
-```
+### Across courses
 
-### Planned Capabilities
-
-**1. Source Line Tracking**
-
-Cards "pegged" to specific lines in external repositories:
-
-```typescript
-{
-  cardId: 'card-abc',
-  sourceRef: {
-    repo: 'github.com/kubernetes/kubernetes',
-    path: 'docs/concepts/workloads/pods.md',
-    lines: '15-30',
-    commitHash: 'a1b2c3d4'
-  }
-}
-```
-
-**2. Git Diff-Based Updates**
-
-When source material changes, agents identify affected cards:
-
-```typescript
-// Fetch git diff
-const diff = await fetchGitDiff('kubernetes/kubernetes', 'main', 'v1.29.0');
-
-// Find affected cards via sourceRef
-const affectedCards = await findCardsBySourceRef(diff.changedFiles);
-
-// Agent reviews changes and updates cards
-for (const card of affectedCards) {
-  const updatedContent = await agent.adaptToSourceChange(
-    card.data,
-    diff.getChangesForFile(card.sourceRef.path)
-  );
-
-  await mcp.callTool('update_card', {
-    cardId: card.id,
-    data: updatedContent,
-    sourceRef: updateCommitHash(card.sourceRef, diff.newCommit)
-  });
-}
-```
-
-**3. Curriculum Staleness Detection**
-
-Agents monitor source repositories and flag outdated content:
-
-```typescript
-// Daily scan
-const staleCards = await courseDB.getCardsWhere(
-  card => isSourceRefStale(card.sourceRef, maxDaysOld = 90)
-);
-
-// Notify maintainers or auto-update
-await agent.reviewAndUpdateStaleCards(staleCards);
-```
-
-## Agentic Content Authoring
-
-The MCP server enables **retrieval-augmented curriculum development** at scale.
-
-### Use Case: Textbook → Interactive Course
-
-**Phase 1: Content Extraction**
-
-Agent parses source material and identifies pedagogical units:
-
-```typescript
-// Extract chapters, sections, concepts from PDF/markdown
-const textbook = await parseSource('linear-algebra-textbook.pdf');
-
-for (const chapter of textbook.chapters) {
-  // Identify key concepts
-  const concepts = await agent.extractConcepts(chapter);
-
-  // Generate tags for concept graph
-  const tags = concepts.map(c => c.name.toLowerCase().replace(/\s/g, '-'));
-
-  // Create tag documents with descriptions
-  for (const concept of concepts) {
-    await courseDB.createTag(concept.name, 'agent');
-    await courseDB.updateTag({
-      name: concept.name,
-      snippet: concept.definition,
-      wiki: concept.detailedExplanation
-    });
-  }
-}
-```
-
-**Phase 2: Card Generation**
-
-Agent creates cards using `fill-in-card-authoring` prompt guidance:
-
-```typescript
-for (const concept of concepts) {
-  // Query for relative ELO based on existing cards
-  const similarCards = await mcp.readResource(`tags://all/${concept.name}`);
-  const baseElo = similarCards.avgElo || 1000;
-
-  // Generate multiple difficulty variants
-  const variants = await agent.generateCardVariants(concept, [
-    { type: 'definition', elo: baseElo - 200 },
-    { type: 'application', elo: baseElo },
-    { type: 'problem-solving', elo: baseElo + 300 }
-  ]);
-
-  for (const variant of variants) {
-    await mcp.callTool('create_card', {
-      datashape: 'fillIn',
-      data: variant.content,
-      tags: [concept.name, ...variant.additionalTags],
-      elo: variant.elo,
-      sourceRef: `textbook.pdf#page-${concept.pageNumber}`
-    });
-  }
-}
-```
-
-**Phase 3: Concept Dependency Mapping**
-
-Agent builds prerequisite graph for custom `ContentNavigator`:
-
-```typescript
-// Analyze concept relationships
-const dependencies = await agent.inferPrerequisites(concepts);
-
-// Create navigation strategy document
-await mcp.callTool('create_strategy', {
-  name: 'LinearAlgebraDependencies',
-  description: 'Prerequisite graph for Linear Algebra concepts',
-  implementingClass: 'conceptDependency',
-  serializedData: JSON.stringify({
-    graph: dependencies,
-    unlockThreshold: 0.8  // 80% mastery to unlock dependents
-  })
-});
-```
-
-### Use Case: Codebase Documentation → API Course
-
-**Ingest Phase**
-
-```typescript
-// Parse TypeScript project
-const project = await parseTypeScriptProject('path/to/repo');
-
-for (const classDecl of project.classes) {
-  // Extract methods and their documentation
-  for (const method of classDecl.methods) {
-    const jsdoc = extractJSDoc(method);
-
-    await mcp.callTool('create_card', {
-      datashape: 'fillIn',
-      data: generateAPICard(classDecl.name, method, jsdoc),
-      tags: ['api', classDecl.name.toLowerCase(), method.name],
-      elo: inferEloFromComplexity(method),
-      sourceRef: `${classDecl.file}#L${method.startLine}-L${method.endLine}`
-    });
-  }
-}
-```
-
-**Update Phase** (when API changes)
-
-```typescript
-// Watch for commits
-const latestCommit = await fetchLatestCommit('org/repo');
-
-// Find affected API methods via git diff
-const apiChanges = await parseAPIDiff(latestCommit.diff);
-
-for (const change of apiChanges) {
-  // Find cards referencing this API
-  const affectedCards = await findCardsBySourceRef(change.file, change.lines);
-
-  for (const card of affectedCards) {
-    if (change.type === 'removed') {
-      // Archive deprecated API cards
-      await mcp.callTool('tag_card', {
-        cardId: card.id,
-        action: 'add',
-        tags: ['deprecated', `removed-in-${latestCommit.version}`]
-      });
-    } else if (change.type === 'modified') {
-      // Update card content
-      const updatedCard = await agent.adaptCardToAPIChange(card, change);
-      await mcp.callTool('update_card', {
-        cardId: card.id,
-        data: updatedCard,
-        sourceRef: updateLineNumbers(card.sourceRef, change.lineDelta)
-      });
-    }
-  }
-}
-```
-
-## Pedagogical Integration
-
-The MCP server provides **read-only access to student data** for curriculum analysis and intervention (planned).
-
-### Student Flow Analysis
-
-**Aggregate Performance Metrics**
-
-```typescript
-// Resource: `analytics://cards/{cardId}/performance`
-{
-  cardId: 'card-123',
-  attempts: 1523,
-  successRate: 0.67,
-  avgTimeSpent: 8.2,  // seconds
-  eloConvergence: {
-    initial: 1200,
-    current: 1450,
-    stdDev: 120
-  },
-  commonErrors: [
-    { userAnswer: 'O(n²)', count: 234 },
-    { userAnswer: 'O(n)', count: 89 }
-  ]
-}
-```
-
-**Gap Detection**
-
-Agent identifies difficulty spikes in card sequences:
-
-```typescript
-const cardsByElo = await mcp.readResource('cards://all?sort=elo');
-
-const gaps = [];
-for (let i = 1; i < cardsByElo.cards.length; i++) {
-  const eloDelta = cardsByElo.cards[i].elo - cardsByElo.cards[i-1].elo;
-  if (eloDelta > 300) {  // Large jump
-    gaps.push({
-      before: cardsByElo.cards[i-1],
-      after: cardsByElo.cards[i],
-      delta: eloDelta,
-      tags: intersection(cardsByElo.cards[i-1].tags, cardsByElo.cards[i].tags)
-    });
-  }
-}
-
-// Generate intermediate cards to fill gaps
-for (const gap of gaps) {
-  const bridgeCards = await agent.generateBridgeContent(
-    gap.before,
-    gap.after,
-    targetElo = (gap.before.elo + gap.after.elo) / 2
-  );
-
-  for (const card of bridgeCards) {
-    await mcp.callTool('create_card', card);
-  }
-}
-```
-
-### Personalized Interventions
-
-**Tag-Specific Scaffolding**
-
-When users struggle with specific concepts, agents inject targeted support:
-
-```typescript
-// Resource: `analytics://users/{userId}/weak-tags`
-{
-  userId: 'user-42',
-  weakTags: [
-    { tag: 'pointers', eloGap: -250, failureRate: 0.45 },
-    { tag: 'recursion', eloGap: -180, failureRate: 0.38 }
-  ]
-}
-
-// Agent creates custom intervention cards
-for (const weakness of weakTags) {
-  // Find easier cards on the same topic
-  const scaffoldCards = await mcp.readResource(
-    `cards://tag/${weakness.tag}?elo=${userElo - 200}-${userElo - 100}`
-  );
-
-  if (scaffoldCards.cards.length < 5) {
-    // Generate additional scaffolding
-    const newCards = await agent.generateScaffoldContent(
-      weakness.tag,
-      targetElo = userElo - 150,
-      count = 5
-    );
-
-    for (const card of newCards) {
-      await mcp.callTool('create_card', {
-        ...card,
-        tags: [...card.tags, `scaffold-${userId}`, 'auto-generated']
-      });
-    }
-  }
-
-  // Inject into user's custom ContentNavigator
-  await userDB.updateNavigationStrategy(userId, {
-    type: 'intervention',
-    target: weakness.tag,
-    cards: scaffoldCards.cards.map(c => c.id)
-  });
-}
-```
-
-**Concept Prerequisite Enforcement**
-
-Agent analyzes failure patterns to identify missing prerequisites:
-
-```typescript
-// User fails cards tagged "binary-search-trees"
-const failures = await fetchFailures(userId, 'binary-search-trees');
-
-// Agent checks if user has mastered prerequisites
-const prerequisites = ['recursion', 'linked-lists', 'tree-traversal'];
-const userMastery = await checkTagMastery(userId, prerequisites);
-
-const unmetPrereqs = userMastery.filter(p => p.eloGap < -100);
-
-if (unmetPrereqs.length > 0) {
-  // Create custom navigation strategy
-  await userDB.setNavigationStrategy(userId, {
-    name: 'PrerequisiteRemediation',
-    implementingClass: 'prerequisiteEnforcement',
-    serializedData: JSON.stringify({
-      targetConcept: 'binary-search-trees',
-      requiredTags: unmetPrereqs.map(p => p.tag),
-      minMasteryThreshold: 0.75
-    })
-  });
-}
-```
-
-## Architecture Benefits
-
-### 1. Declarative Content Generation
-
-Agents describe desired content; MCP handles storage, validation, and ELO integration:
-
-```typescript
-// Agent focuses on pedagogy, not database operations
-await mcp.callTool('create_card', {
-  datashape: 'fillIn',
-  data: generateQuestion(concept),
-  tags: inferTags(concept),
-  elo: estimateDifficulty(concept)
-});
-```
-
-### 2. Course-Level Isolation
-
-MCP servers are scoped to individual courses, enabling:
-- Multi-tenant agent deployments
-- Course-specific authoring styles
-- Independent curriculum evolution
-
-### 3. Feedback Loop Integration
-
-MCP connects authoring with pedagogy (planned):
-
-```typescript
-// Agent creates cards
-await agent.generateCurriculum(sourceContent);
-
-// Users study cards
-await studySession.run();
-
-// Agent observes outcomes
-const analytics = await mcp.readResource('analytics://cards/recent');
-
-// Agent refines curriculum
-await agent.patchCurriculumBasedOnData(analytics);
-```
-
-### 4. Human-in-the-Loop
-
-MCP operations are **logged and auditable** (packages/mcp/src/server.ts:84):
-
-```typescript
-this.logger.info(`MCP Server: Creating card with datashape '${input.datashape}'`);
-```
-
-Enabling humans to:
-- Review agent-generated content
-- Override ELO assignments
-- Flag problematic cards
-- Approve bulk operations
-
-## Future Directions
-
-### 1. Streaming Card Generation
-
-Real-time curriculum authoring with progress feedback:
-
-```typescript
-const stream = agent.generateCurriculumStream(textbook);
-
-for await (const card of stream) {
-  await mcp.callTool('create_card', card);
-  console.log(`Created ${stream.completed}/${stream.total} cards`);
-}
-```
-
-### 2. Multi-Modal Content
-
-Extend MCP to support image, audio, and video attachments:
-
-```typescript
-await mcp.callTool('create_card', {
-  datashape: 'Piano_Echo',
-  data: { melody: [60, 62, 64, 65] },
-  attachments: {
-    'reference.mp3': await fetchAudio(url)
-  },
-  sourceRef: 'music-theory-book.pdf#page-42'
-});
-```
-
-### 3. Collaborative Authoring
-
-Multiple agents with specialized roles:
-
-```typescript
-// Content extraction agent
-const concepts = await extractorAgent.parse(textbook);
-
-// Card generation agent
-const draftCards = await authorAgent.generateCards(concepts);
-
-// Review agent
-const approvedCards = await reviewAgent.validate(draftCards);
-
-// Publishing agent
-for (const card of approvedCards) {
-  await mcp.callTool('create_card', card);
-}
-```
-
-### 4. Cross-Course Knowledge Transfer
-
-Agents identify reusable content across courses:
-
-```typescript
-// Agent recognizes "sorting algorithms" appears in multiple courses
-const sortingCards = await mcp.readResource('tags://all/sorting');
-
-// Generates course-specific variants
-await agent.adaptCardsForCourse(sortingCards, 'intro-cs');
-await agent.adaptCardsForCourse(sortingCards, 'algorithms-advanced');
-```
-
----
-
-## Summary
-
-The MCP server transforms Vue-Skuilder into a **platform for intelligent curriculum development**:
-
-**Today**: Agents author content with DataShape validation, ELO guidance, and tag-based organization.
-
-**Tomorrow**: Agents maintain living curricula that evolve with source materials, adapt to student performance, and provide personalized interventions.
-
-**The Vision**: A future where educational content is **dynamically generated**, **continuously refined**, and **individually optimized** through human-agent collaboration.
-
-The MCP server provides the foundation for this vision by exposing Vue-Skuilder's rich pedagogical infrastructure to AI systems while maintaining the platform's commitment to data-driven, research-friendly adaptive learning.
+Recognising reusable content across courses, and adapting it per course. This depends on the
+package and cross-course identity work described in [`skuilder.json`](../skuilder.json.md).

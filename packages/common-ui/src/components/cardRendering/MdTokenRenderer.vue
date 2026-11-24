@@ -3,22 +3,21 @@
     <span v-if="!token.tokens || token.tokens.length === 0">
       <span v-if="isComponent(token)">
         <!--
-          KNOWN LIMITATION: Components cannot be the final token of the entire markdown document
-          The v-if="!last" check prevents rendering when this is the last token overall
-          Components CAN be the last token in a paragraph (just not the whole document)
-          Reason unclear but necessary historically - Chesterton's Fence applies
-          Workaround: Add trailing whitespace, punctuation, or newline after component
-          See: "MarkdownRenderer - Known Limitations" test group
+          A multiple-choice blank that is the final token of the document is the card's
+          "answer line": the options render below the markdown (RadioMultipleChoice), so the
+          inline underline is suppressed. Every other component renders, last or not.
         -->
-        <component
-          v-if="!last && getComponent(parsedComponent(token).is)"
-          :is="getComponent(parsedComponent(token).is)"
-          :text="parsedComponent(token).text"
-          v-bind="parsedComponent(token).props"
-        />
-        <span v-else-if="!last && !getComponent(parsedComponent(token).is)" class="error--text">
-          [Unknown component: {{ parsedComponent(token).is }}]
-        </span>
+        <template v-if="!(last && isAnswerLineChoice(token))">
+          <component
+            v-if="getComponent(parsedComponent(token).is)"
+            :is="getComponent(parsedComponent(token).is)"
+            :text="parsedComponent(token).text"
+            v-bind="parsedComponent(token).props"
+          />
+          <span v-else class="error--text">
+            [Unknown component: {{ parsedComponent(token).is }}]
+          </span>
+        </template>
       </span>
       <span v-else-if="containsComponent(token)">
         <md-token-renderer v-for="(subTok, j) in splitTextToken(token)" :key="j" :token="subTok" />
@@ -212,6 +211,12 @@ function parsedComponent(token: MarkedToken): {
   };
 }
 
+/** A legacy multiple-choice blank, e.g. `{{ || }}` (rendered as an underline by FillInInput). */
+function isAnswerLineChoice(token: MarkedToken): boolean {
+  const parsed = parsedComponent(token);
+  return parsed.is === 'fillIn' && parsed.text.split('||').length > 1;
+}
+
 function getComponent(componentName: string) {
   const component = components[componentName as keyof typeof components];
 
@@ -245,6 +250,7 @@ defineExpose({
   splitTextToken,
   splitParagraphToken,
   parsedComponent,
+  isAnswerLineChoice,
   decodeBasicEntities,
   isText,
   components,

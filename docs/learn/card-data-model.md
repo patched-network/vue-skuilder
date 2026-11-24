@@ -1,11 +1,13 @@
-**Note 1:** This background info is not *required* unless you're intersted creating either customized cards, or customized pedagogical logic for you course. On first read, it may be suitable to skip ahead to the [Default Card Type](./cards) doc.
+# Cards: The Unit of Study
 
-**Note 2:** See [Extend: Creating Custom Cards](../extend/custom-cards) for a more hands-on treatment of this info.
+::: tip Reading order
+You need this background if you want to build custom card types or custom pedagogical logic. On a
+first read, you may prefer to skip ahead to the [Default Card Type](./cards). For a hands-on
+treatment, see [Creating Custom Cards](../extend/custom-cards).
+:::
 
-
-# Cards - The Unit of Study
-
-**Cards are the atomic unit of learning content.** Each card represents a single pedagogical interaction - a question to answer, a passage to read, a skill to practice.
+**Cards are the atomic unit of learning content.** Each card represents a single pedagogical
+interaction: a question to answer, a passage to read, a skill to practice.
 
 In particular, a single card is typically **the rendered thing** with which a user interacts.
 
@@ -13,32 +15,35 @@ In the database, a card is metadata that references its constituent parts:
 
 ```typescript
 interface CardData {
-  id_displayable_data: DocumentId[];  // One or more data instances
-  id_view: DocumentId;                // The view component ID
-  elo: CourseElo;                     // Difficulty rating
+  docType: DocType.CARD;
+  id_displayable_data: DocumentId[]; // one or more data documents
+  id_view: DocumentId;               // which view renders it, e.g. "default.question.BlanksCard.FillInView"
+  elo: CourseElo;                    // difficulty, globally and per tag
   author: string;
-  // ... (course, tags, etc.)
 }
 ```
 
+Tags are separate documents that list the cards they apply to. A view ID names the courseware, the
+question class, and the view component:
+`{courseware}.question.{QuestionClass}.{ViewName}`.
+
 ## The Card Lifecycle
 
-When a user encounters a card, the system performs **card hydration**:
+When a learner encounters a card, the system performs **card hydration**, then grading:
 
-1. **Fetch Data**: Retrieves the referenced `DisplayableData` documents from the database
-2. **Convert Format**: Transforms database documents into `ViewData` (plain objects with typed field values)
-3. **Instantiate Question**: Creates the appropriate `Question` subclass with the data
-4. **Render View**: Displays the Vue component associated with this question type
-5. **Capture Response**: Records user interaction (answer, time spent)
-6. **Evaluate Performance**: Runs the question's `evaluate()` method
-7. **Update Pedagogy**: Adjusts ELO ratings and schedules next review
-
+1. **Fetch data**: retrieve the referenced data documents.
+2. **Convert format**: turn them into `ViewData` (plain objects with typed field values).
+3. **Instantiate question**: create the `Question` subclass named by the view ID, with that data.
+4. **Render view**: display the Vue component named by the view ID.
+5. **Capture response**: the view submits the learner's answer and the time spent.
+6. **Evaluate**: the question's `evaluate()` produces an `Evaluation`.
+7. **Update pedagogy**: ELO ratings move, and the next review is scheduled.
 
 # Core Components
 
-## 1. **DataShapes** - Schema Definitions
+## 1. DataShapes: schema definitions
 
-A `DataShape` defines the structure of data that can populate a card:
+A `DataShape` defines the structure of the data that can populate a card:
 
 ```typescript
 interface DataShape {
@@ -47,12 +52,14 @@ interface DataShape {
 }
 ```
 
-Each field has a `name`, `type` (from the `FieldType` enum), and optional validators/taggers. Available field types include:
+Each field has a `name`, a `type` (from the `FieldType` enum), and optional validators and
+taggers. Field types:
 - Primitives: `STRING`, `NUMBER`, `INT`
 - Content: `MARKDOWN`, `IMAGE`, `AUDIO`, `MIDI`
 - Specialized: `CHESS_PUZZLE`, `MEDIA_UPLOADS`
 
-**Example**: Single-digit addition
+**Example**: single-digit addition
+
 ```typescript
 {
   name: DataShapeName.MATH_SingleDigitAddition,
@@ -63,43 +70,91 @@ Each field has a `name`, `type` (from the `FieldType` enum), and optional valida
 }
 ```
 
-## 2. **Questions** - Strongly-Typed Pedagogy Layer
+Data shapes are registered in the course's configuration, which also stores each one as a JSON
+schema. Authoring tools (the studio editor, the MCP server) use that schema to validate new cards.
 
-The abstract `Question` class (extends `Displayable`) defines how to:
-1. **Interpret** data into an interactive experience
-2. **Validate** user responses
-3. **Evaluate** demonstrated skill
+## 2. Questions: the grading layer
+
+The abstract `Question` class (which extends `Displayable`) defines how to:
+1. **interpret** data into an interactive experience;
+2. **judge** a response as correct or not;
+3. **score** the demonstrated skill.
 
 ```typescript
-abstract class Question {
+abstract class Question extends Displayable {
   static dataShapes: DataShape[];
   static views: ViewComponent[];
 
   protected abstract isCorrect(answer: Answer): boolean;
-  protected displayedSkill(answer: Answer, timeSpent: number): number;
+  protected displayedSkill(answer: Answer, timeSpent: number): number; // default: correctness × a speed penalty
   public evaluate(answer: Answer, timeSpent: number): Evaluation;
+}
+
+interface Evaluation {
+  isCorrect: boolean;       // SRS: extend or reset the interval
+  performance: Performance; // ELO: a number in [0, 1], or per-tag scores
+  fluent?: boolean;         // false: correct but too slow; SRS caps the next interval
+  deferAdvance?: boolean;   // record now, advance when the view emits ready-to-advance
 }
 ```
 
 Questions declare:
-- Which `DataShapes` they consume
-- Which Vue components can render them
-- How to assess correctness
-- (Optionally) Custome performance metrics
+- which `DataShape`s they consume;
+- which Vue components can render them;
+- how to judge correctness;
+- (optionally) how to score performance, including per-tag scores. Override `evaluate()` to
+  return a `TaggedPerformance` such as
+  `{ _global: 0.67, 'letter-c': 0, 'letter-a': 1, 'letter-t': 1 }`, and each tag's rating moves
+  on its own.
 
-**Example**: The `SingleDigitAdditionQuestion` consumes data matching `SingleDigitAdditionDataShape` and can render via `HorizontalAddition.vue` or `VerbalAddition.vue` components.
+**Example**: `SingleDigitAdditionQuestion` consumes data matching the single-digit-addition shape
+and can render via `HorizontalAddition` or `VerbalAddition` (see
+`packages/courseware/src/math/questions/addition/`).
 
-## 3. **Views** - The Presentation Layer
+A question type can also ship its own content. `static seedData` supplies data items (for example,
+every pair from 0+0 to 9+9), `static seedMeta` gives each item tags and a starting ELO, and
+`acceptsUserData = false` marks the seed set as complete. Seeded cards are created when the question
+type is registered with a course.
 
-Vue components that receive:
-- A `Question` instance (with populated data)
-- Props/events for user interaction
+## 3. Views: the presentation layer
 
-In practice, a view is used to render a specific `Displayable` or `Question` type.
+Views are Vue components. A view receives the card's data, builds its `Question`, renders whatever
+it likes, and submits the learner's answer through the `useViewable` / `useQuestionView`
+composables. A `Displayable` that isn't a `Question` (an information card) is simply dismissed.
 
 # Design Goals
 
-## **Compositional Questions**
+## Flexible Rendering
+
+A single `DataShape` can have multiple views:
+- `SingleDigitAddition`::`HorizontalAddition` (symbolic: "7 + 4 = ?")
+- `SingleDigitAddition`::`VerbalAddition` (natural language: "What is seven plus four?")
+
+Different views of the same content:
+- give a more robust signal of competence;
+- avoid 'overfitting' a skill to one presentation;
+- permit some kinds of explicit scaffolding.
+
+For example, a canned sequence of renderings of a basic multiplication fact can reinforce the
+relationship between multiplication and the area of a rectangle.
+
+The 'normal' view:
+
+`4 x 7 = __`
+
+Followed directly by:
+
+![Rectangle Area](../assets/rectangle-area-demo.svg)
+
+## Skills Graded by the Card
+
+A card can report how a response went on each skill it exercises, rather than one number for the
+whole card. A spelling card can mark one letter wrong and the rest right; a chord card can grade
+pitch and rhythm separately. Each tagged skill keeps its own rating for the learner and for the
+card, and selection can then lean toward a learner's weakest skills
+(see [Pedagogy](./pedagogy#per-skill-selection)).
+
+## Compositional Questions
 
 Questions can:
 - **Inherit** from base implementations (override `isCorrect()`, reuse `displayedSkill()`)
@@ -117,29 +172,8 @@ For example, the stacked addition question
 
 Can, at runtime, execute as a sequence of `SingleDigitAdditionQuestion` instances evaluated on their own merits, leading to...
 
-## **Strongly Typed Pedagogy**
+## Strongly Typed Curriculum
 
-With compositional questions, aspects of prerequsite structure and inferred competence can be handled **by the 'compiler'** rather than hand-rolled by a curriculum author.
+With compositional questions, aspects of prerequisite structure and inferred competence can be handled **by the *compiler*** rather than hand-rolled by a curriculum author.
 
 EG, the successful completion of the stacked addition question above can explicitly count as practice on the SingleDigitAddition skills as well, and mastery of the SingleDigitAddition can serve as prerequisite for the 3-digit addition.
-
-## **Flexible Rendering**
-
-A single `DataShape` can have multiple views:
-- `SingleDigitAddition`::`HorizontalAddition.vue` (symbolic: "7 + 4 = ?")
-- `SingleDigitAddition`::`VerbalAddition.vue` (natural language: "What is seven plus four?", "Seven and four make ___")
-
-Different views of the same content
-- provide more robust signal of competence
-- avoids 'overfitting' developed skill to a specific presentation
-- permits some types of explicit scaffolding
-
-For example, a canned sequence of renderings of a basic multiplication fact can enforce the relationship between multiplication and the area of a rectangle.
-
-The 'normal' view:
-
-`4 x 7 = __`
-
-Followed directly by:
-
-![Rectangle Area](../assets/rectangle-area-demo.svg)

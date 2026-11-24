@@ -1,0 +1,9 @@
+{
+  "name": "@skuilder/docs-course",
+  "version": "0.1.0",
+  "description": "A short course on vue-skuilder, embedded in its documentation.",
+  "content": {
+    "type": "static",
+    "manifest": "./manifest.json"
+  }
+}

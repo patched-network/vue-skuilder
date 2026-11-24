@@ -1,7 +1,7 @@
 # Multi-tag ELO: per-skill selection
 
 **Status (2026-11-18):** reference. Describes what is built. Design history and the evidence behind
-each constant live in `agent/per-tag-elo/` (a.1 design, a.2 evidence, a.3 plan), which is a
+each constant live in `agent/per-tag-elo/` (a.2 evidence, a.3 plan), which is a
 working record and may lag. Where they disagree with the code, the code wins; fix this page.
 
 **Audience:** framework maintainers and course authors. The mechanism is course-agnostic.

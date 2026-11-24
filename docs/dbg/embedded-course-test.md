@@ -8,4 +8,6 @@ import EmbeddedCourse from '../.vitepress/theme/components/EmbeddedCourse.vue'
 
 ## Embedded "local" course
 
-<EmbeddedCourse course-id="@skuilder/hero-course" :session-time-limit="5" />
+The Go course, the frontpage demo until 2026-11 (now the docs course).
+
+<EmbeddedCourse course-id="@skuilder/hero-course" :session-time-limit="5" :debug="true" />

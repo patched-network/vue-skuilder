@@ -1,72 +1,81 @@
 # CLI Reference
 
-Course development and management command-line interface.
+The `skuilder` command scaffolds course projects, runs the authoring studio, and moves course data
+between CouchDB and static files.
 
 ## Installation
 
 ```bash
 npm install -g @vue-skuilder/cli
+# or run without installing:
+npx @vue-skuilder/cli <command>
 ```
+
+Scaffolded static projects also list the CLI as a dev dependency, so `npm run studio` works there
+without a global install.
 
 ## Commands
 
 ### `init`
 
-Scaffold new course project with Vue-Skuilder structure.
+Scaffold a new course project (a copy of `standalone-ui`, configured).
 
 ```bash
 skuilder init <project-name> [options]
 ```
 
 **Arguments:**
-- `project-name` - Name of the project to create (required)
+- `project-name`: directory to create (required)
 
 **Options:**
-- `--data-layer <type>` - Data layer type: static or dynamic (default: dynamic)
-- `--theme <name>` - Theme: default, medical, educational, or corporate (default: default)
-- `--no-interactive` - Skip interactive prompts
-- `--couchdb-url <url>` - CouchDB server URL (for dynamic data layer)
-- `--course-id <id>` - Course ID to import (for dynamic data layer)
-- `--import-course-data` - Import course data from CouchDB (for static data layer)
-- `--import-server-url <url>` - CouchDB server URL for course import
-- `--import-username <username>` - Username for course import server
-- `--import-password <password>` - Password for course import server
+- `--data-layer <type>`: `static` or `dynamic` (default: `dynamic`)
+- `--theme <name>`: `default`, `medical`, `educational`, or `corporate` (default: `default`)
+- `--no-interactive`: skip the prompts and use the options given
+- `--couchdb-url <url>`: CouchDB server URL (dynamic data layer)
+- `--course-id <id>`: course to serve (dynamic data layer)
+- `--import-course-data`: import course data from CouchDB into the project (static data layer)
+- `--import-server-url <url>`: CouchDB server to import from
+- `--import-username <username>`, `--import-password <password>`: credentials for that server
+- `--import-course-ids <ids>`: comma-separated course IDs to import
+- `--dangerously-clobber`: overwrite an existing directory
 
 **Output:**
-- Creates course directory structure
-- Generates configuration files (package.json, vite.config.ts, tsconfig.json)
-- Installs dependencies
-- Optionally imports course data from CouchDB
+- A project directory with `package.json`, `vite.config.ts`, `tsconfig.json`, and
+  `skuilder.config.json`
+- For static projects: `public/skuilder.json` and a course under `public/static-courses/`, either
+  imported or empty, plus a `studio` script
+- Example custom card types in `src/questions/`
 
 ### `studio`
 
-Launch complete course editing environment with CouchDB, Express API, and web interface.
+Launch a local course-editing environment: CouchDB, the Express API, the studio web editor, and an
+MCP server for agents. See [Adding Content](./do/studio-mode).
 
 ```bash
 skuilder studio [coursePath] [options]
 ```
 
 **Arguments:**
-- `coursePath` - Path to course directory or manifest.json file (default: '.')
+- `coursePath`: a scaffolded project directory, or a course's `manifest.json` (default: `.`)
 
 **Options:**
-- `-p, --port <port>` - CouchDB port (default: 5985)
-- `--no-browser` - Skip automatic browser launch
+- `-p, --port <port>`: CouchDB port (default: `5985`)
+- `--no-browser`: don't open a browser
 
 **Services:**
-- CouchDB instance (Docker) for temporary editing
-- Express API server for backend operations
-- Studio web interface for visual editing
-- MCP server for Claude Code integration
+- CouchDB in Docker (port 5985 by default) holding a scratch copy of the course
+- Express API (from port 3001)
+- Studio web interface (from port 7174)
+- An MCP server command, and a `.mcp.json` written to the current directory
 
-**Input Types:**
-- **Course directory:** Scaffolded project with package.json and static-data/
-- **Manifest file:** Direct path to manifest.json with chunks/ and indices/
+**Input types:**
+- **Project directory**: a scaffolded project, with course data in `public/static-courses/`
+- **Manifest file**: a course's `manifest.json`, next to its `chunks/` and `indices/`
 
 **Workflow:**
-1. Loads course data into CouchDB
-2. Opens web editor for content editing
-3. Use "Flush to Static" to save changes back to source files
+1. Loads the course into CouchDB
+2. Opens the web editor
+3. The editor's save ("flush") writes the course back to the static files, replacing them
 
 ### `pack`
 
@@ -77,96 +86,109 @@ skuilder pack <courseId> [options]
 ```
 
 **Arguments:**
-- `courseId` - Course ID to pack from CouchDB (required)
+- `courseId`: course to pack (required)
 
 **Options:**
-- `-s, --server <url>` - CouchDB server URL (default: `http://localhost:5984`)
-- `-u, --username <username>` - CouchDB username
-- `-p, --password <password>` - CouchDB password
-- `-o, --output <dir>` - Output directory (default: ./static-courses)
-- `-c, --chunk-size <size>` - Documents per chunk (default: 1000)
-- `--no-attachments` - Exclude attachments from pack
+- `-s, --server <url>`: CouchDB server URL (default: `http://localhost:5984`)
+- `-u, --username <username>`, `-p, --password <password>`: CouchDB credentials
+- `-o, --output <dir>`: output directory (default: `./static-courses`)
+- `-c, --chunk-size <size>`: documents per chunk (default: `1000`)
+- `--no-attachments`: leave out attachments (media)
 
 **Output:**
-- Static course bundle with manifest.json
-- Chunks/ directory with paginated course data
-- Indices/ directory with database views and indexes
-- Asset files and media content
+- `manifest.json`: course config, chunk list, index list
+- `chunks/`: course documents, grouped by type
+- `indices/`: precomputed lookups (cards by ELO, tags by card, and the course's views)
+- Media files, unless `--no-attachments`
 
 ### `unpack`
 
-Unpack a static course directory into CouchDB for editing.
+Load a static course directory into CouchDB for editing.
 
 ```bash
 skuilder unpack <coursePath> [options]
 ```
 
 **Arguments:**
-- `coursePath` - Path to static course directory (required)
+- `coursePath`: static course directory (required)
 
 **Options:**
-- `-s, --server <url>` - CouchDB server URL (default: `http://localhost:5984`)
-- `-u, --username <username>` - CouchDB username
-- `-p, --password <password>` - CouchDB password
-- `-d, --database <name>` - Target database name (auto-generated if not provided)
-- `--as <name>` - Set custom name for the unpacked course
-- `--chunk-size <size>` - Documents per batch (default: 100)
-- `--validate` - Run migration validation
-- `--cleanup-on-error` - Clean up database if migration fails
+- `-s, --server <url>`: CouchDB server URL (default: `http://localhost:5984`)
+- `-u, --username <username>`, `-p, --password <password>`: CouchDB credentials
+- `-d, --database <name>`: target database name (generated if not given)
+- `--as <name>`: a new name for the unpacked course
+- `--chunk-size <size>`: documents per batch (default: `100`)
+- `--validate`: validate the migration
+- `--cleanup-on-error`: delete the database if the migration fails
 
-**Operation:**
-- Imports static course files into CouchDB
-- Creates database with course documents
-- Sets up indices and views for querying
-- Enables dynamic editing in studio mode
+### `dump-user`
+
+Write one learner's records for one course to a JSON file, for offline diagnosis (history,
+scheduled reviews, ratings, session records, strategy state, and optionally the course cards they
+touched). Requires CouchDB admin access.
+
+```bash
+skuilder dump-user <username> --course <courseId> [options]
+```
+
+**Arguments:**
+- `username`: the learner whose user database to read (required)
+
+**Options:**
+- `-c, --course <courseId>`: course ID (required)
+- `-s, --server <url>`: CouchDB base URL (default: `http://localhost:5984`)
+- `--admin-user <name>`: CouchDB admin username (default: `admin`)
+- `-p, --password <password>`: admin password (else `$COUCHDB_PASSWORD`, else `--password-file`)
+- `--password-file <path>`: read the admin password from a file
+- `--cards <scope>`: course cards to include: `touched`, `all`, or `none` (default: `touched`)
+- `-o, --out <path>`: output file, or a directory for the default name (default: `.`)
+- `--attachments`: inline user-DB attachments as base64
 
 ## Global Options
 
-- `-h, --help` - Display help information
-- `-V, --version` - Display version number
+- `-h, --help`: display help
+- `-V, --version`: display the version
 
 ## Requirements
 
-- **Node.js:** >= 22.0.0
-- **Docker:** Required for studio mode (CouchDB)
-- **Git:** Recommended for version control
+- **Node.js** 22 (the build tooling needs at least 20.19)
+- **Docker**, for studio mode
+- **Git**, recommended: studio flushes overwrite course files, so commit before editing
 
 ## Examples
 
 ```bash
-# Create new course project
-skuilder init my-anatomy-course --theme medical
+# Create a static course project
+skuilder init my-anatomy-course --data-layer static --theme medical
 
-# Launch studio for course directory
+# Launch studio for a project
 skuilder studio ./my-course
 
-# Launch studio for deployed course
-skuilder studio ./docs/static-courses/course-id/manifest.json
+# Launch studio for a course deployed inside another site
+skuilder studio ./docs/public/static-courses/<course-id>/manifest.json
 
-# Pack course from CouchDB to static files
+# Pack a course from CouchDB to static files
 skuilder pack biology-101 --server http://localhost:5984 --username admin
 
-# Unpack static course into CouchDB for editing
+# Unpack a static course into CouchDB for editing
 skuilder unpack ./static-courses/biology-101 --validate
 
-# Studio with custom port, no browser
+# Studio on a custom port, without a browser
 skuilder studio . --port 6000 --no-browser
 ```
 
 ## Workflows
 
-### Development Workflow
-1. `skuilder init my-course` - Create project
-2. `skuilder studio` - Launch editing environment
-3. Edit content in studio web interface
-4. Use "Flush to Static" to save changes
+### Static course
+1. `skuilder init my-course --data-layer static`
+2. `npm run studio` (from the project): edit, then flush
+3. Commit the changed course files; `npm run build`; deploy
 
-### Deployment Workflow
-1. `skuilder pack course-id` - Export from CouchDB to static files
-2. Deploy static files to web server
-3. `skuilder studio manifest.json` - Edit deployed course directly
+### From a CouchDB course to static
+1. `skuilder pack course-id`, or `skuilder init --import-course-data ...`
+2. Deploy the static files with your app
 
-### Migration Workflow
-1. `skuilder unpack ./static-course` - Import to CouchDB
-2. `skuilder studio` - Edit in dynamic environment
-3. `skuilder pack course-id` - Export back to static
+### Static course back into CouchDB
+1. `skuilder unpack ./static-course`
+2. Edit on the CouchDB deployment
+3. `skuilder pack course-id` to export again

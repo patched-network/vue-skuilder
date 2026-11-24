@@ -56,9 +56,13 @@ const mcAsAnswer = `Is *skuilder* neat?
 
 </script>
 
+# The Default Card Type
+
 Skuilder's default card type uses **markdown** enhanced with a **moustache** syntax to define its interactivity. The features are described by example in the editors below. The editors are live - play with the contents.
 
-**Note** that the rendering context here - outside of the assumed environment of a skuilder StudySession, with many cards rendered at once - may result in some slightly wonky behaviour.
+**Note** that the rendering context here (outside a skuilder study session, with many cards on one page) may produce some slightly wonky behaviour.
+
+The type is `BlanksCard` in the built-in `default` courseware. Its data shape has a markdown `Input` field and an optional `Uploads` field for media. See [Default Cards](../default-cards) for a compact reference.
 
 ## Information Cards
 
@@ -94,7 +98,7 @@ Here, the double-bar `||` separates the correct answer from distractors, and the
 
 The order of rendered options is randomized, and a maximum of 6 options will be rendered, no matter the number of distractors supplied.
 
-If an item exists as both an `answer` and a `distractor`, it will be interprted only as an answer.
+If an item exists as both an `answer` and a `distractor`, it will be interpreted only as an answer.
 
 Multiple correct answers can be supplied as well. Exactly one correct answer will be rendered as an option.
 
@@ -108,7 +112,7 @@ If the multiple-choice moustache occupies its own **final, line-break separated*
 
 ## On Whitespace
 
-Whitespace inside of moustache notation is trimmed, which can help to write readible card source. The following texts all render the same card:
+Whitespace inside of moustache notation is trimmed, which can help to write readable card source. The following texts all render the same card:
 
 Dense:
 <pre class='whitespace-exmaple'>
@@ -155,11 +159,3 @@ If it's markdown, it mostly just works. For example, this youtube embed.
 Note: if you're reading this and haven't watched this talk, treat yourself.
 
 <EmbeddedFillInEditor :initial-value="embeddingExample" />
-
-# BUG!
-
-A known wart: cards will fail to render moustache syntax componenets if they are the very last text of the card.
-
-For the moment, a fix is more expensive than the workaround of adding *something* to the end (punctuation, a space, a newline via `\n\n`).
-
-<EmbeddedFillInEditor initial-value="The *render* fillin blank does not {{ render }}" />

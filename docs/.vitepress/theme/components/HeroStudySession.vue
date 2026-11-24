@@ -1,23 +1,24 @@
-<!-- HeroStudySession.vue - Wrapper for hero section integration -->
+<!-- HeroStudySession.vue - the frontpage demo: the docs course (a course about skuilder).
+     The Go course that used to be here is on dbg/embedded-course-test. -->
 <template>
-  <div class="hero-study-session">
-    <EmbeddedCourse
-      course-id="@skuilder/hero-course"
-      :session-time-limit="5"
-      :session-config="{ likesConfetti: true }"
-    />
+  <div ref="root" class="hero-study-session">
+    <DocsCourse :session-time-limit="5" :show-progress="false" @card-loaded="toTop" />
   </div>
 </template>
 
 <script setup lang="ts">
-// This is a simple wrapper around EmbeddedCourse for hero section use
-// All the logic is in EmbeddedCourse component
+import { ref } from 'vue';
+import DocsCourse from './DocsCourse.vue';
+
+// This element is the hero box's scrolling card area; each new card starts at its top.
+const root = ref<HTMLElement | null>(null);
+const toTop = () => root.value?.scrollTo({ top: 0 });
 </script>
 
 <style scoped>
 .hero-study-session {
   width: 100%;
-  height: 100%;
+  /* Height and scrolling come from the hero box (CustomVPHero .study-wrapper). */
 }
 
 /* Override EmbeddedCourse styles for hero context */

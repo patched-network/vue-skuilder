@@ -18,6 +18,25 @@ interface UseStaticDataLayerReturn {
 // Cache the dataLayer promise to prevent re-initialization across components
 let dataLayerPromise: Promise<DataLayerProvider> | null = null;
 
+/** Fetch the root skuilder.json and initialize the static data layer from it. */
+async function createDataLayer(): Promise<DataLayerProvider> {
+  const rootManifestUrl = withBase('/skuilder.json');
+  const rootManifestResponse = await fetch(rootManifestUrl);
+  if (!rootManifestResponse.ok) {
+    throw new Error(`Failed to fetch root manifest: ${rootManifestUrl}`);
+  }
+  const rootManifest = await rootManifestResponse.json();
+
+  const config: DataLayerConfig = {
+    type: 'static',
+    options: {
+      rootManifest,
+      rootManifestUrl: new URL(rootManifestUrl, window.location.href).href,
+    },
+  };
+  return initializeDataLayer(config);
+}
+
 /**
  * Composable for initializing a static data layer in VitePress.
  * It fetches the root skuilder.json manifest and passes it to the DataLayerProvider.
@@ -29,60 +48,26 @@ export function useStaticDataLayer(): UseStaticDataLayerReturn {
 
   const initialize = async (): Promise<void> => {
     if (dataLayer.value) {
-      console.log('[useStaticDataLayer] Data layer already available, skipping initialization.');
       return;
     }
 
-    // If another component is already initializing, just wait for its promise
-    if (dataLayerPromise) {
-      console.log('[useStaticDataLayer] Initialization already in progress, awaiting result...');
-      isLoading.value = true;
-      try {
-        dataLayer.value = await dataLayerPromise;
-      } catch (e) {
-        error.value = e as Error;
-      } finally {
-        isLoading.value = false;
-      }
-      return;
+    // Claim the shared promise synchronously, before any await, so that components initializing
+    // at the same time share one initialization. (Otherwise a second caller can be handed the
+    // data-layer singleton before its courses have been resolved.)
+    if (!dataLayerPromise) {
+      dataLayerPromise = createDataLayer();
+      dataLayerPromise.catch(() => {
+        dataLayerPromise = null; // allow a retry after failure
+      });
     }
 
+    isLoading.value = true;
+    error.value = null;
     try {
-      isLoading.value = true;
-      error.value = null;
-      
-      console.log('[useStaticDataLayer] Starting data layer initialization...');
-
-      // 1. Fetch the root application manifest
-      const rootManifestUrl = withBase('/skuilder.json');
-      const rootManifestResponse = await fetch(rootManifestUrl);
-      if (!rootManifestResponse.ok) {
-        throw new Error(`Failed to fetch root manifest: ${rootManifestUrl}`);
-      }
-      const rootManifest = await rootManifestResponse.json();
-
-      // 2. Prepare the simplified config for the DataLayerProvider
-      const config: DataLayerConfig = {
-        type: 'static',
-        options: {
-          rootManifest,
-          rootManifestUrl: new URL(rootManifestUrl, window.location.href).href
-        }
-      };
-
-      console.log('[useStaticDataLayer] Initializing data layer with root manifest.');
-      
-      // 3. Initialize the data layer and cache the promise
-      dataLayerPromise = initializeDataLayer(config);
       dataLayer.value = await dataLayerPromise;
-      
-      console.log('[useStaticDataLayer] Data layer initialized successfully');
-      
     } catch (e) {
-      const err = e as Error;
-      error.value = err;
-      dataLayerPromise = null; // Clear promise on failure
-      console.error('[useStaticDataLayer] Failed to initialize data layer:', err);
+      error.value = e as Error;
+      console.error('[useStaticDataLayer] Failed to initialize data layer:', e);
     } finally {
       isLoading.value = false;
     }

@@ -13,7 +13,6 @@ import {
   StudioBuildErrorType,
   withStudioBuildErrorHandling,
 } from '../utils/error-reporting.js';
-import { createExpressApp, initializeServices } from '@vue-skuilder/express';
 import type { ExpressServerConfig } from '@vue-skuilder/express';
 import {
   ensureBuildDirectory,
@@ -672,6 +671,10 @@ async function startExpressBackend(
     // Set NODE_ENV for studio mode authentication bypass
     process.env.NODE_ENV = 'studio';
 
+    // Loaded here, not at module top: cli.ts imports every command, and express (with PouchDB
+    // and the audio pipeline) is only needed once studio actually starts its backend.
+    const { createExpressApp, initializeServices } = await import('@vue-skuilder/express');
+
     // Create Express app using factory
     const app = createExpressApp(config);
 
@@ -1237,15 +1240,11 @@ async function buildStudioUIWithCustomQuestions(
         }
       }
 
-      console.log(
-        chalk.gray(`   Copied ${copied} questions-library file(s) to dist/assets/`)
-      );
+      console.log(chalk.gray(`   Copied ${copied} questions-library file(s) to dist/assets/`));
 
       if (!fs.existsSync(path.join(distAssetsPath, 'questions.mjs'))) {
         console.log(
-          chalk.yellow(
-            `   Warning: questions.mjs not found among copied files in ${libRoot}`
-          )
+          chalk.yellow(`   Warning: questions.mjs not found among copied files in ${libRoot}`)
         );
       }
     } else {

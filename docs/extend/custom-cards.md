@@ -4,7 +4,7 @@ import FallingLetters from '@vue-skuilder/courseware/typing/questions/falling-le
 
 const showCard = ref(false)
 const gameData = ref([
-  { gameLength: 15, initialSpeed: 1, acceleration: 0.2, spawnInterval: 0.25 }
+  { gameLength: 15, initialSpeed: 1, acceleration: 0.2, spawnInterval: 0.5 }
 ])
 const lastResult = ref(null)
 
@@ -27,9 +27,9 @@ const toggleCard = () => {
 
 # Creating Custom Cards
 
-This document will show you how to add a custom card type to your app. Card types must adhere to some defined interfaces and exhibit some specific lifecycle behaviour, but otherwise face very little constraint. Whatever might be in a `vue` component can be rendered as a card.
+This page shows how to add a custom card type to your app. Card types must adhere to a few interfaces and some lifecycle behaviour, but otherwise face very little constraint. Whatever might be in a Vue component can be rendered as a card.
 
-## Illustrating Example: Saving the world from letter-asteriods
+## Illustrating Example: Saving the world from letter-asteroids
 
 Here is a card implemented as a for-fun exercise in a typing course. Run the card, but consider cracking your knuckles first, or else taming the difficulty via playing with the parameters.
 
@@ -151,68 +151,156 @@ Here is a card implemented as a for-fun exercise in a typing course. Run the car
 
 ## How It Works: The Core Concepts
 
-The game you just played is a standard Vue component, hosted within the platform's card system. This is made possible by three core concepts:
+The game you just played is a standard Vue component, hosted within the platform's card system. Three pieces make that possible:
 
--   **The `View`**: The interactive component itself (e.g., `SimpleFallingLetters.vue`). This is where you build your UI and user experience.
+-   **The `DataShape`**: a schema for the card's data. For the game above, it declares `gameLength`, `initialSpeed`, `acceleration` and `spawnInterval`. Every card of this type is one set of those values.
 
--   **The `Question`**: A TypeScript class that acts as the "brain" for the card. It defines the card's logic, how to evaluate answers, and what data it needs.
+-   **The `Question`**: a TypeScript class that holds the card's data and decides how a response is graded: whether it counts as correct (for scheduling) and how well it went (for ratings).
 
--   **The `DataShape`**: A schema that defines the data structure for your card. For the game above, its `DataShape` defines properties like `gameLength` and `initialSpeed`.
+-   **The `View`**: the Vue component itself (`FallingLetters.vue`). It renders, runs its own game loop, and submits an answer when it's done.
 
-## Building the "Falling Letters" Card: A High-Level Look
+The source is in `packages/courseware/src/typing/questions/falling-letters/`.
 
-Here’s a brief overview of how the card you just saw is put together. You'll follow these same steps when creating your own cards in the project you scaffolded with the CLI.
+> The platform does not care what happens inside the view. It cares about two moments: the view
+> receives data, and the view submits an answer. Everything between is yours.
 
-### 1. Defining the Data (`src/questions/simple-falling-letters/shapes.ts`)
+## The Falling Letters Card, Piece by Piece
 
-First, you define the configurable parameters for your card.
+### 1. The data
 
 ```typescript
-// This would go in your scaffolded project
-import { DataShape, FieldType, DataShapeName } from '@vue-skuilder/common';
-
-export const FallingLettersShape: DataShape = {
-  name: DataShapeName.TYPING_fallingLetters, // A unique name
-  fields: [
-    { name: 'gameLength', type: FieldType.NUMBER },
-    { name: 'initialSpeed', type: FieldType.NUMBER },
-    { name: 'spawnInterval', type: FieldType.NUMBER },
-  ],
-};
+export class FallingLettersQuestion extends Question {
+  public static dataShapes: DataShape[] = [
+    {
+      name: DataShapeName.TYPING_fallingLetters,
+      fields: [
+        { name: 'gameLength', type: FieldType.NUMBER },
+        { name: 'initialSpeed', type: FieldType.NUMBER },
+        { name: 'acceleration', type: FieldType.NUMBER },
+        { name: 'spawnInterval', type: FieldType.NUMBER /* validator: must be > 0 */ },
+      ],
+    },
+  ];
 ```
 
-### 2. Creating the Logic (`src/questions/simple-falling-letters/index.ts`)
+Fields can carry validators, which authoring tools use to check input. The shape is registered in
+the course configuration, where it also becomes a JSON schema (the MCP server hands that schema to
+agents).
 
-Next, you create the `Question` class that ties everything together.
+### 2. The grading
 
 ```typescript
-import { Question } from '@vue-skuilder/common-ui';
-// ... other imports
+  constructor(data: ViewData[]) {
+    super(data);
+    this.gameLength = data[0].gameLength as number;
+    // ...
+  }
 
-export class FallingLettersQuestion extends Question {
-  // ... implementation ...
+  isCorrect(a: Score) {
+    return a.win;                          // SRS: survived the whole game?
+  }
+
+  displayedSkill(a: Score) {
+    return a.win ? 1 : a.percentage;       // ELO: how far you got
+  }
 }
 ```
 
-### 3. Building the View (`src/questions/simple-falling-letters/view.vue`)
+`isCorrect` drives spaced repetition (extend or reset the interval). `displayedSkill` drives
+ratings, on a 0-1 scale. For richer grading, override `evaluate()` and return:
 
-This is the Vue component with the game's UI and logic, just like the one embedded at the top of this page.
+- a **per-tag** performance, such as `{ _global: 0.8, 'letters:home-row': 1, 'letters:top-row': 0.4 }`,
+  so each skill the card exercises is rated on its own;
+- `fluent: false` for an answer that was right but too slow, so the card comes back sooner;
+- `deferAdvance: true` to record the answer now but stay on the card (say, for an animation) until
+  the view emits `ready-to-advance`.
 
-### 4. Registering Your Card (`src/questions/index.ts`)
+### 3. The view
 
-Finally, you make your new card type available to the application by adding it to your course's main question list.
+```vue
+<script lang="ts">
+import { useViewable, useQuestionView } from '@vue-skuilder/common-ui';
 
-```typescript
-// In your scaffolded src/questions/index.ts
-import { CourseWare } from '@vue-skuilder/courseware';
-import { FallingLettersQuestion } from './falling-letters';
+export default defineComponent({
+  name: 'FallingLettersView',
+  props: { data: { type: Array as PropType<ViewData[]>, required: true } },
+  emits: ['emitResponse'],
+  setup(props, { emit }) {
+    const viewableUtils = useViewable(props, emit, 'FallingLettersView');
+    const questionUtils = useQuestionView<FallingLettersQuestion>(viewableUtils);
+    questionUtils.question.value = new FallingLettersQuestion(props.data);
 
-// Add your new question to the list
-const myCourse = new CourseWare('my-course', [FallingLettersQuestion]);
+    // ... game loop, rendering, keyboard handling ...
 
-export default myCourse;
+    const win = () => questionUtils.submitAnswer({ win: true, lettersTyped: score.value, percentage: 1 });
+  },
+});
+</script>
 ```
 
-## Next Steps
+`useViewable` times the card and wires the response event. `useQuestionView` holds the question
+instance; `submitAnswer` evaluates the answer, packages it as a record, and hands it to the session.
+The session then writes history, updates ratings, schedules a review, and moves on.
 
-You're now ready to build your own custom cards. The key takeaway is that a card's `View` is a standard Vue component, giving you complete creative control. The `Question` class is the bridge that integrates your component into the platform's learning and evaluation lifecycle.
+The component's `name` matters: it is part of the view ID stored on each card
+(`{courseware}.question.{QuestionClass}.{ViewName}`), so keep it stable once cards exist.
+
+## Adding a Card Type to Your Project
+
+A project from `skuilder init` already contains three example card types in `src/questions/`
+(`SimpleTextQuestion`, `MultipleChoiceQuestion`, `NumberRangeQuestion`). Copy one as a starting point.
+
+```
+src/questions/
+├── MyCardQuestion.ts          # DataShape + Question
+├── MyCardQuestionView.vue     # the view
+├── exampleCourse.ts           # groups your question types into a CourseWare
+└── index.ts                   # library entry: exports everything for studio mode
+```
+
+**1. Write the question and view**, following the pattern above. Register the view on the class:
+
+```typescript
+public static views = [markRaw(MyCardQuestionView)];
+```
+
+**2. Add the question to your courseware** in `exampleCourse.ts`:
+
+```typescript
+import { CourseWare } from '@vue-skuilder/courseware';
+
+export const exampleCourse = new CourseWare('ExampleCourse', [
+  SimpleTextQuestion,
+  MultipleChoiceQuestion,
+  NumberRangeQuestion,
+  MyCardQuestion,
+]);
+```
+
+`src/main.ts` adds this courseware to the `allCourseWare` registry at startup, which is how the
+study session finds your views.
+
+**3. Export it for studio** in `src/questions/index.ts`: add the class to `allCustomQuestions()`
+and re-export the class and view. `npm run studio` then builds your card types into the editor, so
+you can create cards of the new type there.
+
+::: tip Name your courseware
+The scaffold names its courseware `ExampleCourse`, and that name becomes part of every card's view
+ID. Rename it to something unique to your project before you author real content; renaming later
+means rewriting the view IDs on existing cards.
+:::
+
+## Where to Go Next
+
+- A card type can bring its own content: `static seedData` (and `seedMeta` for tags and starting
+  ELO) creates cards when the type is registered with a course. The math card types in
+  `packages/courseware/src/math/` do this.
+- If you only need a custom widget inside otherwise-markdown cards, an
+  [inline component](./inline-components) is lighter than a full card type.
+- If your card type should influence *which* cards come next (for example, an introduction that
+  should be followed by practice), see [Navigation Strategies](./navigation-strategies) and session
+  hints.
+
+The key takeaway: a card's view is a standard Vue component, giving you complete creative control.
+The `Question` class is the bridge that integrates your component into the platform's learning and
+evaluation lifecycle.

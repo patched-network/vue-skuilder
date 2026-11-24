@@ -8,8 +8,10 @@ Vue-Skuilder decides what a learner sees next. It combines three things:
   reviews together on one scale and records why each card ranked where it did.
 
 This page is the overview. For depth, see [Extending Navigation Strategies](../extend/navigation-strategies)
-and the framework docs in `packages/db/docs/`. `navigators-architecture.md` covers the pipeline,
-and `multi-tag-elo-search.md` covers per-skill selection.
+and the framework docs in `packages/db/docs/`: [navigators-architecture.md](https://github.com/patched-network/vue-skuilder/blob/master/packages/db/docs/navigators-architecture.md)
+covers the pipeline, [multi-tag-elo-search.md](https://github.com/patched-network/vue-skuilder/blob/master/packages/db/docs/multi-tag-elo-search.md) covers per-skill
+selection, and [session-lifecycle-and-replan.md](https://github.com/patched-network/vue-skuilder/blob/master/packages/db/docs/session-lifecycle-and-replan.md) covers the
+session driver.
 
 ## Ratings
 
@@ -210,7 +212,15 @@ session open past the timer, so an intro's practice is still served.
 
 ## Evolutionary orchestration
 
-Strategies can carry a **learnable weight** that is tuned from outcomes across learners:
+::: warning Partly wired
+The per-learner weight variation below is built and applies when a strategy carries `learnable`.
+The loop that records outcomes and tunes weights is not yet wired into sessions: the session
+controller looks for an orchestration context on its content sources, and the course databases it
+is handed don't provide one, so no outcomes are recorded. The weight update itself exists as a
+backend route that nothing schedules.
+:::
+
+Strategies can carry a **learnable weight**, meant to be tuned from outcomes across learners:
 
 ```typescript
 interface LearnableWeight {
@@ -251,7 +261,7 @@ tuning. A strategy without `learnable` runs at weight 1.
 | SessionController | Time budget, queues, replans, remediation |
 | Orchestration | Tuning strategy weights from outcomes |
 
-## Where this is going
+<!--## Where this is going
 
 - **Centring the difficulty curve.** At a gap of 0, learners fail roughly one card in three to
   five. Higher success may need the curve aimed below the learner.
@@ -261,4 +271,4 @@ tuning. A strategy without `learnable` runs at weight 1.
   block.
 - **Cohort-aware cold start**: better first ratings for a learner's new skill than their global
   rating.
-- **Cross-course strategy sharing.**
+- **Cross-course strategy sharing.**-->

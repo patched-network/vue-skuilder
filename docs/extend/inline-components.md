@@ -161,7 +161,7 @@ export default {
 1. Component calls `this.submit(answer)` with user's response
 2. BaseUserInput walks up the component tree to find QuestionView ancestor
 3. QuestionView calls `Question.evaluate(answer, timeSpent)`
-4. Returns `Evaluation: { isCorrect: boolean, performance: number (0-1) }`
+4. The resulting `Evaluation` (`isCorrect`, plus a `performance` score in 0-1) is recorded by the session
 
 See the fill-in implementation for a complete example:
 - Component: `packages/common-ui/src/components/studentInputs/fillInInput.vue`
@@ -169,7 +169,7 @@ See the fill-in implementation for a complete example:
 
 **Key types** (from `@vue-skuilder/common`):
 - `Answer` - Base interface for user responses
-- `Evaluation` - `{ isCorrect: boolean, performance: number }`
+- `Evaluation` - `{ isCorrect, performance, fluent?, deferAdvance? }` (see [Card Data Model](../learn/card-data-model))
 
 **Key classes** (from `@vue-skuilder/common-ui`):
 - `BaseUserInput` - Base component with `submit()` method

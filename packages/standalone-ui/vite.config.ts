@@ -99,10 +99,15 @@ export default defineConfig({
           // Standard webapp output directory
           outDir: 'dist',
         },
-  // Add define block if standalone-ui needs process polyfills (like platform-ui did)
+  // Only allowlisted keys reach the browser bundle. Defining 'process.env' as the build's whole
+  // process.env inlines every variable on the build machine (paths, tokens, cloud keys) into
+  // any chunk whose code touches process.env.
   define: {
     global: 'window',
-    'process.env': process.env,
+    'process.env': {
+      NODE_ENV: process.env.NODE_ENV,
+      SK_LOG_LEVEL: process.env.SK_LOG_LEVEL,
+    },
     'process.browser': true,
     'process.version': JSON.stringify(process.version),
   },

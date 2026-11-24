@@ -244,41 +244,23 @@ describe('MarkdownRenderer - Edge Cases', () => {
   });
 });
 
-describe('MarkdownRenderer - Known Limitations', () => {
-  it('DOES NOT render component as final token of document (known bug)', () => {
+describe('MarkdownRenderer - Final token', () => {
+  it('renders a text blank as the final token of the document', () => {
     cy.mount(MarkdownRenderer, {
       props: { md: 'The capital of France is {{ Paris }}' },
     });
 
-    // BUG: Component at end of document does not render due to v-if="!last" check
-    cy.contains('The capital of France is').should('exist');
-    cy.get('input[type="text"]').should('not.exist');
-
-    // This test documents current behavior - if this test fails, the limitation is fixed!
-  });
-
-  it('DOES render component when followed by more content', () => {
-    cy.mount(MarkdownRenderer, {
-      props: { md: 'The capital of France is {{ Paris }}.' },
-    });
-
-    // Works fine when component is not the final token
     cy.contains('The capital of France is').should('exist');
     cy.get('input[type="text"]').should('exist');
   });
 
-  it('DOES render component as last in paragraph (but not document)', () => {
+  it('suppresses a multiple-choice blank on the final line (options render below)', () => {
     cy.mount(MarkdownRenderer, {
-      props: {
-        md: `First paragraph ends with {{ component }}.
-
-Second paragraph here.`,
-      },
+      props: { md: 'Is skuilder neat?\n\n{{ || }}' },
     });
 
-    // Component renders fine when it's last in paragraph but not last in document
-    cy.get('input[type="text"]').should('exist');
-    cy.contains('Second paragraph here.').should('exist');
+    cy.contains('Is skuilder neat?').should('exist');
+    cy.get('.underline').should('not.exist');
   });
 });
 

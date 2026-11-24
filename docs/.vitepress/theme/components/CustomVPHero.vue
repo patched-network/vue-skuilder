@@ -87,7 +87,7 @@ onUnmounted(() => {
           <!-- Real StudySession Integration -->
           <div class="study-wrapper" :class="{ fullscreen: isFullscreen }">
             <div class="study-header">
-              <h3>Try it out!</h3>
+              <h3>A five-minute course on skuilder</h3>
               <button
                 class="fullscreen-toggle"
                 @click="toggleFullscreen"
@@ -417,6 +417,11 @@ onUnmounted(() => {
   padding: 1rem;
   width: 100%;
   max-width: 400px; /* Limit on mobile */
+  /* A fixed height: cards vary from ~340px to ~790px tall, and a box sized to each card resized
+     (and, centred in the hero row, moved its header) on every card. Long cards scroll inside. */
+  height: 460px;
+  display: flex;
+  flex-direction: column;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
   /* Diffuse brand color shadows */
@@ -448,11 +453,21 @@ onUnmounted(() => {
     max-width: none; /* Remove width limit on desktop */
     width: 100%; /* Take full available space */
     padding: 1.5rem;
+    height: 520px;
   }
+}
+
+/* The card area: fills the box below the header and scrolls when a card is taller. */
+.study-wrapper > :deep(.hero-study-session) {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 /* Study Header with Toggle Button */
 .study-header {
+  flex: none;
   display: flex;
   align-items: center;
   justify-content: space-between;
