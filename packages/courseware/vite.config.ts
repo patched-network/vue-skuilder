@@ -14,15 +14,18 @@ export default defineConfig({
     // load — the chess board renders unstyled in prod. See
     // packages/courseware/src/index.ts for the dynamic subcourse loaders.
     libInjectCss(),
-    dts({
-      insertTypesEntry: true,
-      // Exclude test files from type generation
-      exclude: ['**/*.spec.ts', '**/*.test.ts'],
-      // Include only necessary files
-      include: ['src/**/*.ts', 'src/**/*.d.ts', 'src/**/*.vue'],
-      // Keep external imports as package names instead of resolving to relative paths
-      aliasesExclude: [/@vue-skuilder\/.*/],
-    }),
+    // SKUILDER_SKIP_DTS=1 skips .d.ts output (the e2e CI jobs run from source
+    // and never read types).
+    !process.env.SKUILDER_SKIP_DTS &&
+      dts({
+        insertTypesEntry: true,
+        // Exclude test files from type generation
+        exclude: ['**/*.spec.ts', '**/*.test.ts'],
+        // Include only necessary files
+        include: ['src/**/*.ts', 'src/**/*.d.ts', 'src/**/*.vue'],
+        // Keep external imports as package names instead of resolving to relative paths
+        aliasesExclude: [/@vue-skuilder\/.*/],
+      }),
   ],
   resolve: createBaseResolve(resolve(__dirname, '../..'), {
     '@courseware': resolve(__dirname, 'src'), // Override for self-imports during build

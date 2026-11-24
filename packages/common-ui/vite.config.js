@@ -38,18 +38,21 @@ export default defineConfig({
   },
   plugins: [
     vue(),
-    dts({
-      insertTypesEntry: true,
-      // Keep sibling-package imports bare in the emitted .d.ts. Otherwise the
-      // build aliases rewrite them to monorepo-relative dist paths (e.g.
-      // '../../db/dist/diagnostics/index.mjs'), which have no .d.mts and
-      // leave consumers with `any`.
-      aliasesExclude: [/^@vue-skuilder\//],
-      // Exclude test files from type generation
-      exclude: ['**/*.spec.ts', '**/*.test.ts'],
-      // Include only necessary files
-      include: ['src/**/*.ts', 'src/**/*.d.ts', 'src/**/*.vue'],
-    }),
+    // SKUILDER_SKIP_DTS=1 skips .d.ts output (the e2e CI jobs run from source
+    // and never read types).
+    !process.env.SKUILDER_SKIP_DTS &&
+      dts({
+        insertTypesEntry: true,
+        // Keep sibling-package imports bare in the emitted .d.ts. Otherwise the
+        // build aliases rewrite them to monorepo-relative dist paths (e.g.
+        // '../../db/dist/diagnostics/index.mjs'), which have no .d.mts and
+        // leave consumers with `any`.
+        aliasesExclude: [/^@vue-skuilder\//],
+        // Exclude test files from type generation
+        exclude: ['**/*.spec.ts', '**/*.test.ts'],
+        // Include only necessary files
+        include: ['src/**/*.ts', 'src/**/*.d.ts', 'src/**/*.vue'],
+      }),
   ],
   resolve: createBaseResolve(resolve(__dirname, '../..'), {
     '@cui': resolve(__dirname, 'src'), // Override for self-imports during build

@@ -20,10 +20,15 @@ export default defineConfig([
     define: { __SKUILDER_DB_VERSION__: JSON.stringify(version) },
     outExtension: () => ({ js: '.cjs' }),
   },
-  {
-    // ESM-flavoured .d.ts, for both conditions (as before).
-    entry: entries,
-    format: ['esm'],
-    dts: { only: true },
-  },
+  // ESM-flavoured .d.ts, for both conditions (as before). SKUILDER_SKIP_DTS=1
+  // skips it (the e2e CI jobs never read types).
+  ...(process.env.SKUILDER_SKIP_DTS
+    ? []
+    : [
+        {
+          entry: entries,
+          format: ['esm' as const],
+          dts: { only: true },
+        },
+      ]),
 ]);

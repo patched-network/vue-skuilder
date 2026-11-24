@@ -22,7 +22,7 @@
   ],
   "scripts": {
     "dev": "vite build --watch",
-    "build": "vite build && yarn build-types",
+    "build": "vite build && node ../../scripts/unless-skip-dts.mjs yarn build-types",
     "build-types": "tsc --project tsconfig.types.json",
     "lint": "eslint . --fix",
     "lint:check": "eslint .",
