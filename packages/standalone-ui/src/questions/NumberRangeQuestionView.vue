@@ -28,7 +28,7 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(['emit-response']);
+const emit = defineEmits(['emitResponse']);
 
 const userAnswer = ref<number | null>(null);
 

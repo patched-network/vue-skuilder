@@ -35,8 +35,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { getDataLayer } from '@vue-skuilder/db';
-import { getCurrentUser } from '@vue-skuilder/common-ui';
-import { CourseElo } from '@vue-skuilder/common';
+import { CourseElo, toCourseElo } from '@vue-skuilder/common';
 import config from '../../skuilder.config.json';
 
 const loading = ref(true);
@@ -52,16 +51,14 @@ onMounted(async () => {
       return;
     }
 
-    const user = await getCurrentUser();
     const dataLayer = getDataLayer();
-    const courseDB = dataLayer.getCourseDB(courseId);
     
     // Try to get user's ELO profile for this course
     const userDB = dataLayer.getUserDB();
     const courseReg = await userDB.getCourseRegDoc(courseId);
     
     if (courseReg && courseReg.elo) {
-      userElo.value = courseReg.elo;
+      userElo.value = toCourseElo(courseReg.elo);
     } else {
       // No ELO data yet
       userElo.value = null;

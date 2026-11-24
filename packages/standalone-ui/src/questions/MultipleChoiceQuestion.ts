@@ -39,7 +39,8 @@ export class MultipleChoiceQuestion extends Question {
     return MultipleChoiceQuestion.views;
   }
 
-  protected isCorrect(answer: Answer): boolean {
-    return (answer.response as string) === this.correctAnswer;
+  // The view submits { response }.
+  protected isCorrect(answer: Answer & { response: string }): boolean {
+    return (answer.response) === this.correctAnswer;
   }
 }

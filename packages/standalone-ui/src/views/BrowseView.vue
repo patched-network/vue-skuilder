@@ -28,13 +28,14 @@ import { ref, onMounted } from 'vue';
 import { CourseInformation } from '@vue-skuilder/common-ui';
 import { allCourseWare } from '@vue-skuilder/courseware';
 import { getDataLayer } from '@vue-skuilder/db';
+import type { ViewDescriptor } from '@vue-skuilder/common';
 import config from '../../skuilder.config.json';
 
 const courseId = ref<string>('');
 const editMode = ref<'none' | 'readonly' | 'full'>('full');
 
 // Full view lookup using courses package (same as platform-ui)
-const viewLookup = (x: unknown) => {
+const viewLookup = (x: string | ViewDescriptor) => {
   return allCourseWare.getView(x);
 };
 

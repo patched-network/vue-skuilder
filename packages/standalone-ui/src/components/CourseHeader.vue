@@ -11,7 +11,7 @@
       <v-spacer></v-spacer>
 
       <div v-if="!isMobile" class="d-flex">
-        <v-btn v-for="item in menuItems" :key="item.text" :to="item.path" text>
+        <v-btn v-for="item in menuItems" :key="item.text" :to="item.path">
           {{ item.text }}
         </v-btn>
       </div>

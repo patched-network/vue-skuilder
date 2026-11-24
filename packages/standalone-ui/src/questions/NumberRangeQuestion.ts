@@ -38,8 +38,9 @@ export class NumberRangeQuestion extends Question {
     return NumberRangeQuestion.views;
   }
 
-  protected isCorrect(answer: Answer): boolean {
-    const userAnswer = answer.response as number;
+  // The view submits { response }.
+  protected isCorrect(answer: Answer & { response: number }): boolean {
+    const userAnswer = answer.response;
     return userAnswer >= this.min && userAnswer <= this.max;
   }
 }

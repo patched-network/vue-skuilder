@@ -8,7 +8,6 @@
               v-for="link in links"
               :key="link.text"
               :href="link.url"
-              text
               variant="plain"
               size="small"
               class="mx-1"

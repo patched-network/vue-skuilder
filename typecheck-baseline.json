@@ -90,27 +90,5 @@
     "packages/platform-ui/src/views/Study.vue TS2531": 1,
     "packages/platform-ui/src/views/Study.vue TS7031": 2,
     "packages/platform-ui/src/views/User.vue TS2322": 1
-  },
-  "standalone-ui": {
-    "packages/standalone-ui/src/App.vue TS6133": 1,
-    "packages/standalone-ui/src/components/CourseFooter.vue TS2322": 1,
-    "packages/standalone-ui/src/components/CourseHeader.vue TS2322": 1,
-    "packages/standalone-ui/src/main.ts TS2339": 4,
-    "packages/standalone-ui/src/main.ts TS2882": 3,
-    "packages/standalone-ui/src/main.ts TS6133": 1,
-    "packages/standalone-ui/src/questions/MultipleChoiceQuestion.ts TS2339": 1,
-    "packages/standalone-ui/src/questions/MultipleChoiceQuestionView.vue TS2345": 1,
-    "packages/standalone-ui/src/questions/NumberRangeQuestion.ts TS2339": 1,
-    "packages/standalone-ui/src/questions/NumberRangeQuestionView.vue TS2345": 1,
-    "packages/standalone-ui/src/questions/SimpleTextQuestion.ts TS2339": 1,
-    "packages/standalone-ui/src/questions/SimpleTextQuestionView.vue TS2345": 1,
-    "packages/standalone-ui/src/views/AdminLearnerView.vue TS2882": 1,
-    "packages/standalone-ui/src/views/AdminRegisterQuestionsView.vue TS2339": 1,
-    "packages/standalone-ui/src/views/BrowseView.vue TS2345": 1,
-    "packages/standalone-ui/src/views/HomeView.vue TS6133": 2,
-    "packages/standalone-ui/src/views/TagViewer.vue TS2345": 1,
-    "packages/standalone-ui/src/views/UserSettingsView.vue TS2322": 3,
-    "packages/standalone-ui/src/views/UserStatsView.vue TS2322": 1,
-    "packages/standalone-ui/src/views/UserStatsView.vue TS6133": 2
   }
 }
