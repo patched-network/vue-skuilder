@@ -35,11 +35,6 @@
     "packages/common-ui/src/components/StudySession.vue TS2694": 1,
     "packages/common-ui/src/components/StudySession.vue TS6133": 1
   },
-  "e2e-testing": {
-    "packages/e2e-testing/src/harness/real-db.ts TS2693": 1,
-    "packages/e2e-testing/tests/pipeline/hierarchy-filter-e2e.test.ts TS2591": 1,
-    "packages/e2e-testing/tests/vitest-setup.ts TS2591": 2
-  },
   "edit-ui": {
     "packages/edit-ui/src/components/BulkImportView.vue TS18048": 1,
     "packages/edit-ui/src/components/BulkImportView.vue TS2339": 1,
