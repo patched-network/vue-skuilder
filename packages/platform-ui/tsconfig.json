@@ -10,8 +10,9 @@
         "experimentalDecorators": true,
         "emitDecoratorMetadata": true,
         "allowJs": true,
-        "composite": true,
-        "types": ["node", "vitest/globals", "vuetify", "vite/client"],
+        "declaration": false,
+        "declarationMap": false,
+        "types": ["node", "vitest/globals", "vuetify", "vite/client", "pouchdb"],
         "lib": ["esnext", "dom", "dom.iterable", "scripthost"]
     },
     "include": [

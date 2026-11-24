@@ -228,7 +228,7 @@ export default defineComponent({
   },
 
   async created() {
-    this.user = await getCurrentUser();
+    this.user = (await getCurrentUser()) ?? null;
     this.timeLimit = this.initialTimeLimit;
 
     this.setHotkeys();
@@ -342,7 +342,9 @@ export default defineComponent({
     },
 
     async getActiveClassrooms() {
-      const classes = await (await getCurrentUser()).getActiveClasses();
+      const u = await getCurrentUser();
+      if (!u) throw new Error('[SessionConfiguration] No current user');
+      const classes = await u.getActiveClasses();
       const activeClasses: ({ classID: string } & SessionConfigMetaData)[] = [];
 
       console.log(`Active classes: ${JSON.stringify(classes)}`);

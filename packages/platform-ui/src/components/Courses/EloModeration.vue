@@ -11,7 +11,7 @@
         <v-btn color="success" class="ma-5" @click="vote('a')">
           <v-icon>mdi-check</v-icon>
         </v-btn>
-        <card-loader class="ma-2" :qualified_id="id1" :view-lookup="viewLookup" />
+        <card-loader v-if="id1" class="ma-2" :qualified_id="id1" :view-lookup="viewLookup" />
       </v-col>
     </v-row>
 
@@ -20,7 +20,7 @@
         <v-btn color="success" class="ma-5" @click="vote('b')">
           <v-icon>mdi-check</v-icon>
         </v-btn>
-        <card-loader class="ma-2" :qualified_id="id2" :view-lookup="viewLookup" />
+        <card-loader v-if="id2" class="ma-2" :qualified_id="id2" :view-lookup="viewLookup" />
       </v-col>
     </v-row>
   </v-container>

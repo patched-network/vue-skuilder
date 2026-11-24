@@ -64,7 +64,7 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 import { DocType, Tag, getDataLayer, CourseDBInterface } from '@vue-skuilder/db';
-import { Status, CourseConfig } from '@vue-skuilder/common';
+import { Status, CourseConfig, type ViewDescriptor } from '@vue-skuilder/common';
 import { CourseCardBrowser } from '@vue-skuilder/common-ui';
 import { alertUser } from '@vue-skuilder/common-ui';
 import { allCourseWare } from '@vue-skuilder/courseware';
@@ -106,6 +106,7 @@ export default defineComponent({
         wiki: '',
         taggedCards: [],
         docType: DocType.TAG,
+        author: '',
       } as Tag,
 
       course: {
@@ -132,7 +133,7 @@ export default defineComponent({
   },
 
   methods: {
-    viewLookup(x: unknown) {
+    viewLookup(x: string | ViewDescriptor) {
       return allCourseWare.getView(x);
     },
 

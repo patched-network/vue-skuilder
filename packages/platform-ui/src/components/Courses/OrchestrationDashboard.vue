@@ -111,7 +111,7 @@
                         </v-col>
                         <v-col cols="3">
                           <div class="text-caption text-medium-emphasis">Confidence</div>
-                          <div class="text-h6">{{ (selectedStrategyState?.currentWeight?.confidence * 100).toFixed(1) || '—' }}%</div>
+                          <div class="text-h6">{{ selectedStrategyState?.currentWeight?.confidence != null ? (selectedStrategyState.currentWeight.confidence * 100).toFixed(1) + '%' : '—' }}</div>
                         </v-col>
                         <v-col cols="3">
                           <div class="text-caption text-medium-emphasis">Samples</div>

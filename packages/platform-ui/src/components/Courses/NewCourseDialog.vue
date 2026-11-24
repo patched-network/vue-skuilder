@@ -113,6 +113,7 @@ export default defineComponent({
       this.updatePending = true;
 
       const u = await getCurrentUser();
+      if (!u) throw new Error('[NewCourseDialog] No current user');
 
       const config: CourseConfig = {
         name: this.courseName,
