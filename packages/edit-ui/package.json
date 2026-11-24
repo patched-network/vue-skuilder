@@ -3,7 +3,7 @@
   "publishConfig": {
     "access": "public"
   },
-  "version": "0.3.7",
+  "version": "0.3.8",
   "license": "AGPL-3.0-or-later",
   "main": "./dist/edit-ui.umd.js",
   "module": "./dist/edit-ui.es.js",
@@ -66,5 +66,5 @@
     "vite": "^8.0.0",
     "vitest": "^4.1.0"
   },
-  "stableVersion": "0.3.7"
+  "stableVersion": "0.3.8"
 }

@@ -3,7 +3,7 @@
   "publishConfig": {
     "access": "public"
   },
-  "version": "0.3.7",
+  "version": "0.3.8",
   "license": "MIT",
   "type": "module",
   "sideEffects": false,
@@ -70,5 +70,5 @@
   "peerDependencies": {
     "vue": "^3.2.0"
   },
-  "stableVersion": "0.3.7"
+  "stableVersion": "0.3.8"
 }

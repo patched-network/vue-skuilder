@@ -3,7 +3,7 @@
   "publishConfig": {
     "access": "public"
   },
-  "version": "0.3.7",
+  "version": "0.3.8",
   "license": "AGPL-3.0-or-later",
   "type": "module",
   "description": "CLI scaffolding tool for vue-skuilder projects",
@@ -82,5 +82,5 @@
     "node": ">=18.0.0"
   },
   "packageManager": "yarn@4.12.0",
-  "stableVersion": "0.3.7"
+  "stableVersion": "0.3.8"
 }
