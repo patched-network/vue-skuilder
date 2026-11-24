@@ -4,6 +4,7 @@
     "access": "public"
   },
   "version": "0.3.6",
+  "license": "AGPL-3.0-or-later",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
