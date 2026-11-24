@@ -34,7 +34,7 @@
             <div class="d-flex align-center mb-2">
               <v-select
                 :model-value="tagId"
-                @update:model-value="(newTag) => renamePrerequisiteTag(tagId, newTag)"
+                @update:model-value="(newTag: string) => renamePrerequisiteTag(tagId, newTag)"
                 :items="availableTags"
                 :loading="loadingTags"
                 :disabled="loadingTags"
@@ -62,7 +62,7 @@
             >
               <v-select
                 :model-value="prereq.tag"
-                @update:model-value="(newTag) => updatePrerequisiteTag(tagId, idx, newTag)"
+                @update:model-value="(newTag: string) => updatePrerequisiteTag(tagId, idx, newTag)"
                 :items="availableTags"
                 :loading="loadingTags"
                 :disabled="loadingTags"
@@ -73,7 +73,7 @@
 
               <v-text-field
                 :model-value="prereq.masteryThreshold?.minCount"
-                @update:model-value="(val) => updateMinCount(tagId, idx, val)"
+                @update:model-value="(val: string | number) => updateMinCount(tagId, idx, val)"
                 label="Min Count"
                 type="number"
                 density="compact"
@@ -84,7 +84,7 @@
 
               <v-text-field
                 :model-value="prereq.masteryThreshold?.minElo"
-                @update:model-value="(val) => updateMinElo(tagId, idx, val)"
+                @update:model-value="(val: string | number) => updateMinElo(tagId, idx, val)"
                 label="Min ELO"
                 type="number"
                 density="compact"
@@ -362,7 +362,6 @@ export default defineComponent({
         }
 
         // Check for circular dependencies (basic check)
-        const allTags = new Set(Object.keys(config.value.prerequisites));
         for (const [tagId, prereqs] of Object.entries(config.value.prerequisites)) {
           for (const prereq of prereqs) {
             if (prereq.tag === tagId) {

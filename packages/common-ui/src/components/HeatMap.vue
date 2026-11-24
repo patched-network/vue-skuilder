@@ -194,7 +194,7 @@ export default defineComponent({
             normalizedDate = moment(new Date(record.timeStamp)).format('YYYY-MM-DD');
           } else if (typeof record.timeStamp === 'object') {
             // For objects (like Moment), try toString() or direct parsing
-            if (typeof record.timeStamp.format === 'function') {
+            if ('format' in record.timeStamp && typeof record.timeStamp.format === 'function') {
               // It's likely a Moment object
               normalizedDate = record.timeStamp.format('YYYY-MM-DD');
             } else if (record.timeStamp instanceof Date) {

@@ -48,7 +48,7 @@ export interface QuestionViewUtils<Q extends Question> {
 // Base composable for viewable functionality
 export function useViewable(
   props: { data: ViewData[] },
-  emit: (event: string, ...args: unknown[]) => void,
+  emit: (event: 'emitResponse', ...args: unknown[]) => void,
   componentName: string
 ): ViewableUtils {
   const startTime = ref(moment.utc());

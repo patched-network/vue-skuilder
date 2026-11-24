@@ -108,7 +108,7 @@
 
             <v-select
               :model-value="group.tags"
-              @update:model-value="(tags) => updateGroupTags(idx, tags)"
+              @update:model-value="(tags: string[]) => updateGroupTags(idx, tags)"
               :items="availableTags"
               :loading="loadingTags"
               :disabled="loadingTags"
@@ -124,7 +124,7 @@
 
             <v-slider
               :model-value="group.decay !== undefined ? group.decay : config.defaultDecay || 0.8"
-              @update:model-value="(val) => updateGroupDecay(idx, val)"
+              @update:model-value="(val: string | number) => updateGroupDecay(idx, val)"
               label="Decay Strength"
               :min="0"
               :max="1"
@@ -136,7 +136,7 @@
               <template #append>
                 <v-text-field
                   :model-value="group.decay !== undefined ? group.decay : config.defaultDecay || 0.8"
-                  @update:model-value="(val) => updateGroupDecay(idx, val)"
+                  @update:model-value="(val: string | number) => updateGroupDecay(idx, val)"
                   type="number"
                   style="width: 80px"
                   density="compact"

@@ -25,7 +25,6 @@ import { computed, onMounted, watch } from 'vue';
 import { useTheme } from 'vuetify';
 import { useCourseConfig } from './composables/useCourseConfig';
 import CourseHeader from './components/CourseHeader.vue';
-import CourseFooter from './components/CourseFooter.vue';
 import { SkMouseTrap, SkldrMouseTrap, useConfigStore } from '@vue-skuilder/common-ui';
 
 const { courseConfig } = useCourseConfig();

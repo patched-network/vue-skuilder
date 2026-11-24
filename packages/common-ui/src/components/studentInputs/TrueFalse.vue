@@ -1,6 +1,6 @@
 <template>
   <div data-viewable="TrueFalse">
-    <RadioMultipleChoice :choice-list="['True', 'False']" :MouseTrap="MouseTrap" :submit="submit" />
+    <RadioMultipleChoice :choice-list="['True', 'False']" :submit="submit" />
   </div>
 </template>
 
@@ -14,10 +14,6 @@ export default defineComponent({
     RadioMultipleChoice,
   },
   props: {
-    MouseTrap: {
-      type: Object as PropType<any>,
-      required: true,
-    },
     submit: {
       type: Function as PropType<(selection: number) => void>,
       required: true,

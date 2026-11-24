@@ -38,7 +38,6 @@
 
 <script lang="ts">
 import { defineComponent, PropType } from 'vue';
-import type { PaginatingToolbarProps, PaginatingToolbarEvents } from './PaginatingToolbar.types';
 
 export default defineComponent({
   name: 'PaginatingToolbar',

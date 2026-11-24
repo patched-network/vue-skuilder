@@ -35,7 +35,8 @@ export class SimpleTextQuestion extends Question {
     return SimpleTextQuestion.views;
   }
 
-  protected isCorrect(answer: Answer): boolean {
-    return (answer.response as string).toLowerCase() === this.correctAnswer.toLowerCase();
+  // The view submits { response }.
+  protected isCorrect(answer: Answer & { response: string }): boolean {
+    return (answer.response).toLowerCase() === this.correctAnswer.toLowerCase();
   }
 }

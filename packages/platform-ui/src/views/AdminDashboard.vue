@@ -51,7 +51,7 @@
     <v-row>
       <v-col cols="6">
         <card-search-results
-          v-if="query"
+          v-if="query && dataLayer"
           :query="query"
           :data-layer="dataLayer"
           :course-filter="selectedCourseId"
@@ -100,6 +100,7 @@ import {
   type LearnerDump,
 } from '@vue-skuilder/db/diagnostics';
 import { allCourseWare } from '@vue-skuilder/courseware';
+import type { ViewDescriptor } from '@vue-skuilder/common';
 import { UserDBInterface, DataLayerProvider, AdminDBInterface } from '@vue-skuilder/db';
 import ENV from '../ENVIRONMENT_VARS';
 
@@ -161,8 +162,8 @@ export default defineComponent({
     },
   },
   async created() {
-    this.userDB = await getCurrentUser();
-    this.userId = this.userDB.getUsername();
+    this.userDB = (await getCurrentUser()) ?? null;
+    this.userId = this.userDB?.getUsername() ?? '';
     this.dataLayer = await getDataLayer();
     this.adminDB = this.dataLayer.getAdminDB();
 
@@ -175,7 +176,8 @@ export default defineComponent({
   methods: {
     async loadUsers() {
       try {
-        const users = await this.adminDB!.getUsers();
+        // _users docs: { name, ... }
+        const users = (await this.adminDB!.getUsers()) as { name?: string }[];
         this.userOptions = users
           .filter((user) => user.name && !user.name.startsWith('Guest_'))
           .map((user) => ({
@@ -336,7 +338,7 @@ export default defineComponent({
       return `ID: ${this.selectedCourseId}`;
     },
 
-    viewLookup(viewDescriptor: unknown) {
+    viewLookup(viewDescriptor: string | ViewDescriptor) {
       return allCourseWare.getView(viewDescriptor);
     },
   },

@@ -13,6 +13,7 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "preserve",
+    "types": ["vite/client"],
 
     /* Linting */
     "strict": true,
@@ -21,7 +22,6 @@
     "noFallthroughCasesInSwitch": true,
     
     /* Node config (for vite.config.ts) */
-    "composite": true,
     "allowSyntheticDefaultImports": true
   },
   "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.tsx", "src/**/*.vue", "vite.config.ts"]

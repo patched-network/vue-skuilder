@@ -1,4 +1,6 @@
 export * from './SessionController';
+// what SessionController.nextCard() resolves to
+export type { HydratedCard } from './services/CardHydrationService';
 export * from './SourceMixer';
 export * from './SpacedRepetition';
 export * from './TagFilteredContentSource';

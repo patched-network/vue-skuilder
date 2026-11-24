@@ -11,14 +11,14 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { User } from '@vue-skuilder/db';
+import type { UserDBInterface } from '@vue-skuilder/db';
 import { getCurrentUser } from '@vue-skuilder/common-ui';
 
-const user = ref<User | null>(null);
+const user = ref<UserDBInterface | null>(null);
 const scheduledReviews = ref<number[]>([]);
 
 onMounted(async () => {
-  user.value = await getCurrentUser();
+  user.value = (await getCurrentUser()) ?? null;
 
   // Using Promise.all to handle all forecasts concurrently
   const days = [1, 7, 30];

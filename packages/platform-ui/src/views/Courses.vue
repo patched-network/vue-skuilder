@@ -159,7 +159,7 @@ export default defineComponent({
   },
 
   async created() {
-    this.user = await getCurrentUser();
+    this.user = (await getCurrentUser()) ?? null;
     this.refreshData();
   },
 

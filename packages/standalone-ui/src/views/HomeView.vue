@@ -22,10 +22,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, computed } from 'vue';
 import { useCourseConfig } from '../composables/useCourseConfig';
 import { UserLoginAndRegistrationContainer, useAuthStore } from '@vue-skuilder/common-ui';
-import { getDataLayer } from '@vue-skuilder/db';
 
 const { courseConfig } = useCourseConfig();
 const authStore = useAuthStore();

@@ -374,7 +374,7 @@ async function registerQuestions() {
     successMessage.value = null;
 
     const authStore = useAuthStore();
-    const username = authStore.currentUser?.username || 'admin';
+    const username = (await authStore.currentUser)?.getUsername() || 'admin';
 
     const courseId = config.course;
     if (!courseId) {

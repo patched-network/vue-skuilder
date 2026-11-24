@@ -36,7 +36,13 @@ if (!allCourseWare.courses.find((c) => c.name === defaultCourse.name)) {
 allCourseWare.courses.push(exampleCourse);
 
 // theme configuration
-import config from '../skuilder.config.json';
+import rawConfig from '../skuilder.config.json';
+import type { ThemeDefinition } from 'vuetify';
+
+// skuilder.config.json; `theme` is optional (scaffolded projects set one).
+const config: typeof rawConfig & {
+  theme?: { defaultMode?: 'light' | 'dark'; light: ThemeDefinition; dark: ThemeDefinition };
+} = rawConfig;
 
 (async () => {
   // For static data layer, load manifest
@@ -182,7 +188,6 @@ import config from '../skuilder.config.json';
   // Auto-register user for the course in standalone mode
   if (config.course) {
     try {
-      const authStore = useAuthStore();
       const user = getDataLayer().getUserDB();
       
       // Check if user is already registered for the course

@@ -50,7 +50,7 @@
       </template>
 
       <template #additional-content>
-        <midi-config v-if="isPianoCourse" :_id="courseId" :user="user" class="my-3" />
+        <midi-config v-if="isPianoCourse && user" :_id="courseId" :user="user" class="my-3" />
 
         <!-- Orchestration Dashboard for admin users -->
         <orchestration-dashboard :course-id="courseId" :is-admin="isAdmin" />
@@ -77,7 +77,7 @@ import { defineComponent, PropType } from 'vue';
 import { CourseInformation, getCurrentUser, UserTagPreferences } from '@vue-skuilder/common-ui';
 import { MidiConfig, allCourseWare } from '@vue-skuilder/courseware';
 import { UserDBInterface, getDataLayer } from '@vue-skuilder/db';
-import { CourseConfig } from '@vue-skuilder/common';
+import { CourseConfig, type ViewDescriptor } from '@vue-skuilder/common';
 import OrchestrationDashboard from './OrchestrationDashboard.vue';
 
 export default defineComponent({
@@ -120,7 +120,7 @@ export default defineComponent({
     const dataLayer = getDataLayer();
     const courseDB = dataLayer.getCourseDB(this.courseId);
     this.courseConfig = await courseDB.getCourseConfig();
-    this.user = await getCurrentUser();
+    this.user = (await getCurrentUser()) ?? null;
 
     // Check if user is registered
     if (this.user) {
@@ -137,7 +137,7 @@ export default defineComponent({
   },
 
   methods: {
-    viewLookup(x: unknown) {
+    viewLookup(x: string | ViewDescriptor) {
       return allCourseWare.getView(x);
     },
   },

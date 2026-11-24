@@ -53,7 +53,11 @@ export default defineComponent({
     
     redirectContext(): AuthRedirectContext | null {
       // Try history state first (primary method)
-      const historyState = this.$route.meta.state || (history.state as Record<string, unknown>);
+      const historyState = (this.$route.meta.state || history.state) as {
+        redirect?: string;
+        reason?: AuthRedirectContext['reason'];
+        timestamp?: number;
+      } | null;
       if (historyState?.redirect && historyState?.reason) {
         // Check if state is fresh (not stale)
         const age = Date.now() - (historyState.timestamp || 0);
@@ -62,7 +66,7 @@ export default defineComponent({
           return {
             path: historyState.redirect,
             reason: historyState.reason,
-            timestamp: historyState.timestamp
+            timestamp: historyState.timestamp ?? 0,
           };
         }
       }
@@ -91,7 +95,7 @@ export default defineComponent({
   created() {
     if (this.isUserLoggedIn) {
       getCurrentUser().then((u) => {
-        this.username = u.getUsername();
+        if (u) this.username = u.getUsername();
       });
     }
   },

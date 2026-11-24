@@ -151,7 +151,8 @@ export default defineComponent({
   },
 
   async created() {
-    this.user = await getCurrentUser();
+    this.user = (await getCurrentUser()) ?? null;
+    if (!this.user) throw new Error('[Study] No current user');
     this.studySessionConfig = {
       likesConfetti: useConfigStore().config.likesConfetti,
     };
@@ -247,7 +248,7 @@ export default defineComponent({
       this.errorMessage = '';
     },
 
-    handleSessionError({ message, error }) {
+    handleSessionError({ message, error }: { message: string; error: unknown }) {
       console.error('[Study] Session error:', message, error);
       this.sessionError = true;
       this.errorMessage = message || 'An error occurred while preparing your study session.';

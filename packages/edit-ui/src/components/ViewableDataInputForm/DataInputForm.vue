@@ -7,49 +7,49 @@
             <!-- image and audio inputs are semi deprecated - not in use right now -
                  superceded by the generic fillIn type that allows images and audio from the
                  general mediaDragDropUploader -->
-            <!-- <audio-input v-else-if="field.type === audio" :ref="(el: FieldInputInstance) => setFieldInputRef(el, i)" :field="field" :autofocus="i == 0" /> -->
-            <!-- <image-input v-else-if="field.type === img" :ref="(el: FieldInputInstance) => setFieldInputRef(el, i)" :field="field" :autofocus="i == 0" /> -->
+            <!-- <audio-input v-else-if="field.type === audio" :ref="(el) => setFieldInputRef(el, i)" :field="field" :autofocus="i == 0" /> -->
+            <!-- <image-input v-else-if="field.type === img" :ref="(el) => setFieldInputRef(el, i)" :field="field" :autofocus="i == 0" /> -->
 
             <string-input
               v-if="field.type === ftString"
-              :ref="(el: FieldInputInstance) => setFieldInputRef(el, i)"
+              :ref="(el) => setFieldInputRef(el, i)"
               :field="field"
               :autofocus="i == 0"
             />
             <chess-puzzle-input
               v-else-if="field.type === chessPuzzle"
-              :ref="(el: FieldInputInstance) => setFieldInputRef(el, i)"
+              :ref="(el) => setFieldInputRef(el, i)"
               :field="field"
               :autofocus="i == 0"
             />
             <number-input
               v-else-if="field.type === num"
-              :ref="(el: FieldInputInstance) => setFieldInputRef(el, i)"
+              :ref="(el) => setFieldInputRef(el, i)"
               :field="field"
               :autofocus="i == 0"
             />
             <integer-input
               v-else-if="field.type === int"
-              :ref="(el: FieldInputInstance) => setFieldInputRef(el, i)"
+              :ref="(el) => setFieldInputRef(el, i)"
               :field="field"
               :autofocus="i == 0"
             />
             <markdown-input
               v-else-if="field.type === mkd"
-              :ref="(el: FieldInputInstance) => setFieldInputRef(el, i)"
+              :ref="(el) => setFieldInputRef(el, i)"
               :field="field"
               :autofocus="i == 0"
               data-cy="markdown-input"
             />
             <midi-input
               v-else-if="field.type === midi"
-              :ref="(el: FieldInputInstance) => setFieldInputRef(el, i)"
+              :ref="(el) => setFieldInputRef(el, i)"
               :field="field"
               :autofocus="i == 0"
             />
             <media-drag-drop-uploader
               v-else-if="field.type === uploader"
-              :ref="(el: FieldInputInstance) => setFieldInputRef(el, i)"
+              :ref="(el) => setFieldInputRef(el, i)"
               :field="field"
               :autofocus="i == 0"
             />
@@ -111,7 +111,7 @@ export interface ComponentData {
   tag: string;
   tags: string[];
   autoCompleteSuggestions: string[];
-  timer?: NodeJS.Timeout;
+  timer?: ReturnType<typeof setTimeout>;
   dataInputFormStore: ReturnType<typeof useDataInputFormStore>;
   fieldInputRefs: (FieldInputInstance | null)[];
   courseDB: CourseDBInterface | null;
@@ -311,7 +311,8 @@ export default defineComponent({
       this.tags = newTags;
     },
 
-    setFieldInputRef(el: FieldInputInstance, index: number) {
+    setFieldInputRef(ref: unknown, index: number) {
+      const el = ref as FieldInputInstance;
       console.log(`[DataInputForm].setFieldInputRef: index: ${index}`);
       // Ensure array is large enough
       if (index >= this.fieldInputRefs.length) {
@@ -439,13 +440,15 @@ export default defineComponent({
           inputs = [this.convertedInput];
         }
 
+        const u = await getCurrentUser();
+        if (!u) throw new Error('[DataInputForm] No current user');
         const result = await Promise.all(
           inputs.map(async (input) => {
             return await this.courseDB!.addNote(
               this.datashapeDescriptor.course,
               this.dataShape,
               input,
-              (await getCurrentUser()).getUsername(),
+              u.getUsername(),
               this.getTags(),
               undefined,
               this.getElo()

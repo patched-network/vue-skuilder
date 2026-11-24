@@ -160,6 +160,7 @@ export default defineComponent({
     async assignContent() {
       if (!this.classroomDB) return;
       const u = await getCurrentUser();
+      if (!u) throw new Error('[ClassroomCtrlPanel] No current user');
 
       if (this.selectedTags.length === 0) {
         await this.classroomDB.assignContent?.({

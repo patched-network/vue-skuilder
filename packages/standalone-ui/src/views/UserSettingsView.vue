@@ -33,7 +33,7 @@
                   >
                     <template #append>
                       <v-text-field
-                        v-model="sessionTimeLimit"
+                        v-model.number="sessionTimeLimit"
                         type="number"
                         style="width: 80px"
                         density="compact"
@@ -41,7 +41,7 @@
                         variant="outlined"
                         :min="1"
                         :max="30"
-                        @update:model-value="updateSessionTimeLimit"
+                        @update:model-value="(v: string) => updateSessionTimeLimit(Number(v))"
                       />
                     </template>
                   </v-slider>
@@ -135,14 +135,14 @@ const updateSessionTimeLimit = async (value: number) => {
   await configStore.updateSessionTimeLimit(value);
 };
 
-const updateDarkMode = async (value: boolean) => {
-  darkMode.value = value;
-  await configStore.updateDarkMode(value);
+const updateDarkMode = async (value: boolean | null) => {
+  darkMode.value = !!value;
+  await configStore.updateDarkMode(!!value);
 };
 
-const updateConfetti = async (value: boolean) => {
-  likesConfetti.value = value;
-  await configStore.updateLikesConfetti(value);
+const updateConfetti = async (value: boolean | null) => {
+  likesConfetti.value = !!value;
+  await configStore.updateLikesConfetti(!!value);
 };
 
 const resetToDefaults = async () => {

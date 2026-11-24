@@ -117,7 +117,8 @@ export default defineComponent({
   },
 
   async created() {
-    this.u = await getCurrentUser();
+    const u = await getCurrentUser();
+    if (u) this.u = u;
     this.configLanguages.forEach((l) => {
       console.log(`afweatifvwzeatfvwzeta` + l.name);
     });

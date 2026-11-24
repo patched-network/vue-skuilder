@@ -109,6 +109,7 @@ export default defineComponent({
     async submit() {
       this.updatePending = true;
       const u = await getCurrentUser();
+      if (!u) throw new Error('[CreateClassroom] No current user');
 
       const config: ClassroomConfig = {
         name: this.name,

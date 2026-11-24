@@ -78,8 +78,8 @@ export default defineComponent({
           questionUtils.question.value = new BlanksCard(props.data);
         }
 
-        if (questionUtils.question.value.options) {
-          const truncatedList = getTruncatedList();
+        const truncatedList = getTruncatedList();
+        if (truncatedList) {
           shuffledOptions.value = shuffle(truncatedList);
         }
       } catch (error) {
@@ -215,8 +215,8 @@ export default defineComponent({
         try {
           questionUtils.question.value = new BlanksCard(newdata);
           // Update shuffled options whenever question changes
-          if (questionUtils.question.value?.options) {
-            const truncatedList = getTruncatedList();
+          const truncatedList = getTruncatedList();
+          if (truncatedList) {
             shuffledOptions.value = shuffle(truncatedList);
           }
         } catch (error) {

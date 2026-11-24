@@ -15,7 +15,7 @@
 <script lang="ts">
 import { defineComponent, computed } from 'vue';
 import FieldInput from './OptionsFieldInput';
-import { ValidatingFunction } from '../../../../base-course/Interfaces/ValidatingFunction';
+import type { ValidatingFunction } from '@vue-skuilder/common';
 
 export default defineComponent({
   name: 'StringInput',

@@ -79,7 +79,8 @@ import { defineComponent, PropType } from 'vue';
 import CourseCardBrowser from './CourseCardBrowser.vue';
 import { log } from '@vue-skuilder/common';
 import { CourseDBInterface, Tag, UserDBInterface, getDataLayer } from '@vue-skuilder/db';
-import { CourseConfig } from '@vue-skuilder/common';
+import { CourseConfig, type ViewDescriptor } from '@vue-skuilder/common';
+import type { ViewComponent } from '../composables/Displayable';
 import { getCurrentUser } from '../stores/useAuthStore';
 
 export default defineComponent({
@@ -96,9 +97,9 @@ export default defineComponent({
       required: true,
     },
     viewLookupFunction: {
-      type: Function,
+      type: Function as PropType<(viewDescription: string | ViewDescriptor) => ViewComponent>,
       required: false,
-      default: (x: unknown) => {
+      default: () => {
         console.warn('No viewLookupFunction provided to CourseInformation');
         return null;
       },
@@ -133,7 +134,8 @@ export default defineComponent({
 
   async created() {
     this.courseDB = getDataLayer().getCourseDB(this.courseId);
-    this.user = await getCurrentUser();
+    this.user = (await getCurrentUser()) ?? null;
+    if (!this.user) throw new Error('[CourseInformation] No current user');
 
     const userCourses = await this.user.getCourseRegistrationsDoc();
 

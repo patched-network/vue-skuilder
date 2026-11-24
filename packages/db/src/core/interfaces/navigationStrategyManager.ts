@@ -33,6 +33,12 @@ export interface NavigationStrategyManager {
    */
   updateNavigationStrategy(id: string, data: ContentNavigationStrategyData): Promise<void>;
 
+  /**
+   * Delete a navigation strategy
+   * @param id The ID of the navigation strategy to delete
+   */
+  deleteNavigationStrategy(id: string): Promise<void>;
+
   // [ ] addons here like:
   //     - determining Navigation Strategy from context of current user
   //     - determining weighted averages of navigation strategies

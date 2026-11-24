@@ -64,7 +64,9 @@ export default defineComponent({
     async registerForCourse() {
       this.addingCourse = true;
       log(`Attempting to register for ${this.courseId}.`);
-      await (await getCurrentUser()).registerForCourse(this.courseId);
+      const u = await getCurrentUser();
+      if (!u) throw new Error('[CourseStubCard] No current user');
+      await u.registerForCourse(this.courseId);
       this.$emit('refresh');
     },
     navigateToInfo() {

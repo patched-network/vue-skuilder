@@ -1,0 +1,51 @@
+name: ci-typecheck
+permissions:
+  contents: read
+
+# Type-checks every package against typecheck-baseline.json (see
+# scripts/typecheck.mjs): fails on new type errors, and on fixed ones until the
+# baseline is updated with `yarn typecheck --update`.
+on:
+  pull_request:
+    paths:
+      - 'packages/**'
+      - 'tsconfig*.json'
+      - 'package.json'
+      - 'yarn.lock'
+      - 'typecheck-baseline.json'
+      - 'scripts/typecheck.mjs'
+      - '.github/workflows/ci-typecheck.yml'
+  push:
+    branches:
+      - master
+
+jobs:
+  typecheck:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'yarn'
+
+      - name: Install Yarn
+        run: corepack enable
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      # Packages resolve each other's types from dist, so build them with types.
+      - name: Build library packages
+        run: |
+          yarn build:lib
+          yarn workspace @vue-skuilder/mcp build
+          yarn workspace @vue-skuilder/express build
+          yarn workspace @vue-skuilder/standalone-ui build:lib
+
+      - name: Type-check all packages
+        run: yarn typecheck

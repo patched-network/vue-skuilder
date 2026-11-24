@@ -64,7 +64,7 @@ import { useRouter, useRoute } from 'vue-router';
 import { alertUser } from '../SnackbarService';
 import { log } from '@vue-skuilder/common';
 import { Status } from '@vue-skuilder/common';
-import { User } from '@vue-skuilder/db';
+import type { UserDBInterface } from '@vue-skuilder/db';
 import { getCurrentUser, useAuthStore } from '../../stores/useAuthStore';
 import { useConfigStore } from '../../stores/useConfigStore';
 import { resolveLoginIdentifier } from '../../services/authAPI';
@@ -106,7 +106,7 @@ const errorMessage = ref('Username or password was incorrect.');
 const BAD_CREDENTIALS_MSG = 'Username or password was incorrect.';
 const LOGIN_UNAVAILABLE_MSG =
   'Login is temporarily unavailable. Please try again in a moment.';
-const user = ref<User | undefined>(undefined);
+const user = ref<UserDBInterface | undefined>(undefined);
 
 const loginRoute = computed(() => route.name === 'login');
 
@@ -164,6 +164,7 @@ const login = async () => {
       loginName = resolved.username;
     }
 
+    if (!user.value) throw new Error('[UserLogin] No current user');
     await user.value.login(loginName, password.value);
     log('Login successful');
 

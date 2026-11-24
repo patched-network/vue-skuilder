@@ -20,7 +20,10 @@ import {
   DocTypePrefixes,
 } from '../../core/types/types-legacy';
 import { DataLayerResult } from '../../core/types/db';
-import { ContentNavigationStrategyData } from '../../core/types/contentNavigationStrategy';
+import {
+  ContentNavigationStrategyData,
+  isStrategyEnabled,
+} from '../../core/types/contentNavigationStrategy';
 
 import { ContentNavigator } from '../../core/navigators';
 import { logger } from '../../util/logger';
@@ -397,6 +400,10 @@ export class StaticCourseDB implements CourseDBInterface {
     throw new Error('Cannot update navigation strategies in static mode');
   }
 
+  async deleteNavigationStrategy(_id: string): Promise<void> {
+    throw new Error('Cannot delete navigation strategies in static mode');
+  }
+
   /**
    * Create a ContentNavigator for this course.
    *
@@ -405,7 +412,7 @@ export class StaticCourseDB implements CourseDBInterface {
    */
   async createNavigator(user: UserDBInterface): Promise<ContentNavigator> {
     try {
-      const allStrategies = await this.getAllNavigationStrategies();
+      const allStrategies = (await this.getAllNavigationStrategies()).filter(isStrategyEnabled);
 
       if (allStrategies.length === 0) {
         logger.debug(

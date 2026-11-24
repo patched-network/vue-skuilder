@@ -35,7 +35,10 @@ import {
 import { DataLayerResult } from '@db/core/types/db';
 import { PouchError } from './types';
 import CourseLookup from './courseLookupDB';
-import { ContentNavigationStrategyData } from '@db/core/types/contentNavigationStrategy';
+import {
+  ContentNavigationStrategyData,
+  isStrategyEnabled,
+} from '@db/core/types/contentNavigationStrategy';
 import { ContentNavigator, Navigators } from '@db/core/navigators';
 import { PipelineAssembler } from '@db/core/navigators/PipelineAssembler';
 import { createDefaultPipeline } from '@db/core/navigators/defaults';
@@ -610,11 +613,19 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
     // Admin write operation — use remote DB.
     return this.remoteDB.put(data).then(() => {});
   }
-  updateNavigationStrategy(id: string, data: ContentNavigationStrategyData): Promise<void> {
+  async updateNavigationStrategy(id: string, data: ContentNavigationStrategyData): Promise<void> {
     logger.debug(`[courseDB] Updating navigation strategy: ${id}`);
-    // For now, just log the data and return success
-    logger.debug(JSON.stringify(data));
-    return Promise.resolve();
+    this.invalidateNavigatorCache();
+    // Admin write operation — use remote DB; carry the current _rev.
+    const existing = await this.remoteDB.get<ContentNavigationStrategyData>(id);
+    await this.remoteDB.put({ ...data, _id: id, _rev: existing._rev });
+  }
+
+  async deleteNavigationStrategy(id: string): Promise<void> {
+    logger.debug(`[courseDB] Deleting navigation strategy: ${id}`);
+    this.invalidateNavigatorCache();
+    const existing = await this.remoteDB.get(id);
+    await this.remoteDB.remove(existing);
   }
 
   /**
@@ -628,7 +639,7 @@ above:\n${above.rows.map((r) => `\t${r.id}-${r.key}\n`)}`;
    */
   async createNavigator(user: UserDBInterface): Promise<ContentNavigator> {
     try {
-      const allStrategies = await this.getAllNavigationStrategies();
+      const allStrategies = (await this.getAllNavigationStrategies()).filter(isStrategyEnabled);
 
       if (allStrategies.length === 0) {
         // No strategies configured: use default Pipeline(Composite(ELO, SRS), [eloDistanceFilter])

@@ -81,18 +81,17 @@
             </div>
             <div class="debug-stats">
               <span class="text-caption">Cached: {{ debugInfo.hydratedCache.count }}</span>
-              <span class="text-caption ml-2">Failed Cache: {{ debugInfo.hydratedCache.failedCacheSize }}</span>
             </div>
-            <div v-if="debugInfo.hydratedCache.items.length > 0" class="debug-items">
+            <div v-if="debugInfo.hydratedCache.cardIds.length > 0" class="debug-items">
               <div
-                v-for="(item, idx) in debugInfo.hydratedCache.items.slice(0, 8)"
+                v-for="(cardId, idx) in debugInfo.hydratedCache.cardIds.slice(0, 8)"
                 :key="idx"
                 class="debug-item d-inline-block mr-3"
               >
-                <span class="text-caption">{{ item.courseID }}::{{ item.cardID }}</span>
+                <span class="text-caption">{{ cardId }}</span>
               </div>
-              <div v-if="debugInfo.hydratedCache.items.length > 8" class="text-caption text-grey">
-                ... +{{ debugInfo.hydratedCache.items.length - 8 }} more
+              <div v-if="debugInfo.hydratedCache.cardIds.length > 8" class="text-caption text-grey">
+                ... +{{ debugInfo.hydratedCache.cardIds.length - 8 }} more
               </div>
             </div>
             <div v-else class="text-caption text-grey">
@@ -115,10 +114,10 @@ interface QueueDebugInfo {
   items: Array<{ courseID: string; cardID: string; status: string; score?: number }>;
 }
 
+// Matches SessionController.getDebugInfo().hydratedCache.
 interface HydratedCacheInfo {
   count: number;
-  failedCacheSize: number;
-  items: Array<{ courseID: string; cardID: string }>;
+  cardIds: string[];
 }
 
 export interface SessionDebugInfo {
@@ -132,14 +131,15 @@ export default defineComponent({
 
   props: {
     sessionController: {
-      type: Object as PropType<SessionController<any> | null>,
+      // only getDebugInfo() is used; a class type would reject the reactive (unwrapped) controller
+      type: Object as PropType<Pick<SessionController<any>, 'getDebugInfo'> | null>,
       required: true,
     },
   },
 
   setup(props) {
     const refreshTrigger = ref(0);
-    let pollInterval: NodeJS.Timeout | null = null;
+    let pollInterval: ReturnType<typeof setInterval> | null = null;
 
     onMounted(() => {
       // Poll every 500ms to update debug display
@@ -162,7 +162,7 @@ export default defineComponent({
         return {
           supplyQueue: { length: 0, dequeueCount: 0, items: [] },
           failedQueue: { length: 0, dequeueCount: 0, items: [] },
-          hydratedCache: { count: 0, failedCacheSize: 0, items: [] },
+          hydratedCache: { count: 0, cardIds: [] },
         };
       }
 

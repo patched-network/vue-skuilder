@@ -7,7 +7,7 @@
         <span v-else class="inset"> (Registered) </span>
         {{ dataShape.name }}
         <ul>
-          <div v-for="view in dataShape.dataShape.views" :key="view.name">
+          <div v-for="view in dataShape.displayable.views" :key="view.name">
             <li v-if="view">
               {{ view.name }}
             </li>
@@ -43,7 +43,6 @@ import {
   Status,
   toCourseElo,
 } from '@vue-skuilder/common';
-import * as _ from 'lodash';
 import { getCurrentUser } from '@vue-skuilder/common-ui';
 
 export interface DataShapeRegistrationStatus {
@@ -108,7 +107,10 @@ export default defineComponent({
       });
     });
 
-    this.dataShapes = _.sortBy(this.dataShapes, ['registered', 'name']);
+    // unregistered first, then by name (was lodash sortBy)
+    this.dataShapes = [...this.dataShapes].sort(
+      (a, b) => Number(a.registered) - Number(b.registered) || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0)
+    );
 
     const courseNameList = allCourseWare.courses.map((course) => course.name);
     const questionData: Array<[QuestionDescriptor, typeof Displayable]> = [];
@@ -204,6 +206,7 @@ export default defineComponent({
 
       const update = await this.courseDB!.updateCourseConfig(this.courseConfig!);
       const u = await getCurrentUser();
+      if (!u) throw new Error('[ComponentRegistration] No current user');
 
       if (update.ok) {
         question.registered = true;

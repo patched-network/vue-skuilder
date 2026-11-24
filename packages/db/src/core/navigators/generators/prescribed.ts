@@ -4,6 +4,7 @@ import type { UserDBInterface } from '../../interfaces/userDB';
 import { ContentNavigator } from '../index';
 import type { WeightedCard } from '../index';
 import type { ContentNavigationStrategyData } from '../../types/contentNavigationStrategy';
+import { isStrategyEnabled } from '../../types/contentNavigationStrategy';
 import type { CardGenerator, GeneratorContext, GeneratorResult, ReplanHints } from './types';
 import { loadCardsByTag } from './cardsByTag';
 import {
@@ -713,7 +714,10 @@ export default class PrescribedCardsGenerator extends ContentNavigator implement
     try {
       const strategies = await this.course.getAllNavigationStrategies();
       return strategies
-        .filter((s: ContentNavigationStrategyData) => s.implementingClass === 'hierarchyDefinition')
+        .filter(
+          (s: ContentNavigationStrategyData) =>
+            isStrategyEnabled(s) && s.implementingClass === 'hierarchyDefinition'
+        )
         .map((s: ContentNavigationStrategyData) => {
           try {
             const parsed = JSON.parse(s.serializedData) as { prerequisites?: Record<string, TagPrerequisite[]> };

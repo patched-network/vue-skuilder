@@ -77,7 +77,7 @@
       
       <v-card-actions>
         <v-spacer />
-        <v-btn text @click="resetDialogState">Cancel</v-btn>
+        <v-btn @click="resetDialogState">Cancel</v-btn>
         <v-btn 
           color="error" 
           :disabled="!isConfirmationValid"
@@ -139,18 +139,20 @@ const authUIConfig = computed(() => {
 
 onMounted(async () => {
   const user = await getCurrentUser();
-  username.value = user.getUsername();
+  username.value = user?.getUsername() ?? '';
   
   // Detect sync strategy for conditional UI
   await authUI.detectSyncStrategy();
 });
 
 const gotoSettings = async () => {
-  router.push(`/u/${(await getCurrentUser()).getUsername()}`);
+  const user = await getCurrentUser();
+  if (user) router.push(`/u/${user.getUsername()}`);
 };
 
 const gotoStats = async () => {
-  router.push(`/u/${(await getCurrentUser()).getUsername()}/stats`);
+  const user = await getCurrentUser();
+  if (user) router.push(`/u/${user.getUsername()}/stats`);
 };
 
 const dismiss = (item: string) => {

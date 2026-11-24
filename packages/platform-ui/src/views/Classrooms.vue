@@ -115,7 +115,7 @@ export default defineComponent({
     ClassroomEditor,
   },
 
-  beforeRouteEnter(to, from, next) {
+  beforeRouteEnter(_to, _from, next) {
     // todo ?
     // See https://router.vuejs.org/guide/advanced/data-fetching.html#fetching-before-navigation
     // this.refreshData().then(() => {
@@ -142,7 +142,7 @@ export default defineComponent({
 
   methods: {
     async refreshData() {
-      this.$data.user = await getCurrentUser();
+      this.$data.user = (await getCurrentUser()) ?? null;
       const registrations = (await this.user!.getUserClassrooms()).registrations;
       const studentClasses: CourseReg[] = [];
       const teacherClasses: CourseReg[] = [];
@@ -228,7 +228,7 @@ export default defineComponent({
       if (result.response && result.response.ok) {
         console.log(`Adding registration to userDB...`);
         if (this.user) {
-          await registerUserForClassroom(this.user.getUsername(), result.response!.id_course, 'student');
+          await this.user.registerForClassroom(result.response!.id_course, 'student');
           alertUser({
             text: `Successfully joined class: ${result.response.course_name}.`,
             status: Status.ok,

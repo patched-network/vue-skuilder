@@ -4,6 +4,7 @@
         "module": "ESNext",
         "moduleResolution": "bundler",
         "noEmit": true,
+        "types": ["node"],
         "paths": {
             "@harness/*": ["./src/harness/*"],
             "@fixtures/*": ["./src/fixtures/*"],

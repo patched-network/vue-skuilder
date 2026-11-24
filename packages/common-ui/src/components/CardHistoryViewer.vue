@@ -34,10 +34,15 @@
 
 <script lang="ts">
 import { defineComponent, PropType } from 'vue';
-import { UserDBInterface, UserDBReader, CardHistory, CardRecord, getCardHistoryID } from '@vue-skuilder/db';
-import moment, { Moment } from 'moment';
+import { UserDBReader, CardHistory, CardRecord, getCardHistoryID } from '@vue-skuilder/db';
+import moment from 'moment';
 
 interface FormattedRecord extends CardRecord {
+  // present on question records
+  isCorrect?: boolean;
+  performance?: unknown;
+  priorAttemps?: number;
+  userAnswer?: unknown;
   formattedTimeStamp: string;
   intervalFromPrevious?: number;
   userFriendlyInterval?: string;
