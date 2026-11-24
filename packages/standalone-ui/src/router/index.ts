@@ -99,7 +99,8 @@ router.beforeEach(async (to, _from, next) => {
     const { useAuthStore } = await import('@vue-skuilder/common-ui');
     const authStore = useAuthStore();
 
-    if (!authStore.currentUser) {
+    // currentUser is an async getter: unawaited, it is a Promise (always truthy).
+    if (!(await authStore.currentUser)) {
       // Redirect to login with return path
       next({
         name: 'login',
