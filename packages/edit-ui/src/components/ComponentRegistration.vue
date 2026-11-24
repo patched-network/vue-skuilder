@@ -7,7 +7,7 @@
         <span v-else class="inset"> (Registered) </span>
         {{ dataShape.name }}
         <ul>
-          <div v-for="view in dataShape.dataShape.views" :key="view.name">
+          <div v-for="view in dataShape.displayable.views" :key="view.name">
             <li v-if="view">
               {{ view.name }}
             </li>
