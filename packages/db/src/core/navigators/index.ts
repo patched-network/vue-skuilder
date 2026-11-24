@@ -52,6 +52,7 @@ export {
 
 import { LearnableWeight } from '../types/contentNavigationStrategy';
 export type { ContentNavigationStrategyData, LearnableWeight } from '../types/contentNavigationStrategy';
+export { isStrategyEnabled } from '../types/contentNavigationStrategy';
 import type { ContentNavigationStrategyData } from '../types/contentNavigationStrategy';
 import { logger } from '../../util/logger';
 

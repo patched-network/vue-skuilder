@@ -37,6 +37,12 @@ export interface ContentNavigationStrategyData extends SkuilderCourseData {
   /** Who created the strategy (edit-ui records it). */
   author?: string;
   /**
+   * Whether the pipeline uses this strategy. A course runs all of its enabled
+   * strategies together (generators composed, filters chained); disabled ones
+   * are kept but skipped. Absent means enabled.
+   */
+  enabled?: boolean;
+  /**
    The name of the class that implements the navigation strategy at runtime.
    */
   implementingClass: string;
@@ -59,4 +65,9 @@ export interface ContentNavigationStrategyData extends SkuilderCourseData {
    * per-user deviation. Used for manual tuning or A/B testing.
    */
   staticWeight?: boolean;
+}
+
+/** Strategies the pipeline should use: all but those explicitly disabled. */
+export function isStrategyEnabled(s: Pick<ContentNavigationStrategyData, 'enabled'>): boolean {
+  return s.enabled !== false;
 }

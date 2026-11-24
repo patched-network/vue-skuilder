@@ -1,14 +1,22 @@
 <template>
   <div class="navigation-strategy-list">
-    <v-radio-group :model-value="defaultStrategyId" @update:modelValue="$emit('update:defaultStrategy', $event)" density="compact">
-      <v-list density="compact">
+    <!-- All enabled strategies run together (generators composed, filters chained). -->
+    <v-list density="compact">
         <v-list-item
           v-for="strategy in strategies"
           :key="strategy._id"
           lines="two"
         >
           <template #prepend>
-            <v-radio :value="strategy._id"></v-radio>
+            <v-switch
+              :model-value="strategy.enabled !== false"
+              color="primary"
+              density="compact"
+              hide-details
+              :title="strategy.enabled !== false ? 'Enabled' : 'Disabled'"
+              class="mr-2"
+              @update:model-value="$emit('toggle', strategy, !!$event)"
+            />
           </template>
 
           <v-list-item-title class="text-subtitle-2">
@@ -44,8 +52,7 @@
             </div>
           </template>
         </v-list-item>
-      </v-list>
-    </v-radio-group>
+    </v-list>
   </div>
 </template>
 
@@ -61,13 +68,9 @@ export default defineComponent({
       type: Array as PropType<ContentNavigationStrategyData[]>,
       required: true,
     },
-    defaultStrategyId: {
-      type: String as PropType<string | null>,
-      default: null,
-    },
   },
 
-  emits: ['edit', 'delete', 'update:defaultStrategy'],
+  emits: ['edit', 'delete', 'toggle'],
 
   methods: {
     getDisplayConfig(strategy: ContentNavigationStrategyData): string {

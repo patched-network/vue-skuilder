@@ -22,8 +22,7 @@
         <navigation-strategy-list
           v-else
           :strategies="strategies"
-          :default-strategy-id="defaultStrategyId"
-          @update:default-strategy="setDefaultStrategy"
+          @toggle="toggleStrategy"
           @edit="editStrategy"
           @delete="confirmDeleteStrategy"
         />
@@ -172,7 +171,6 @@ export default defineComponent({
         config: { cardIds: [] } as any,
       },
       editingStrategy: null as ContentNavigationStrategyData | null,
-      defaultStrategyId: null as string | null,
     };
   },
 
@@ -245,14 +243,7 @@ export default defineComponent({
         const dataLayer = getDataLayer();
         const courseDB = dataLayer.getCourseDB(this.courseId);
 
-        // Get all navigation strategies and the course config in parallel
-        const [strategies, courseConfig] = await Promise.all([
-          courseDB.getAllNavigationStrategies(),
-          courseDB.getCourseConfig(),
-        ]);
-
-        this.strategies = strategies;
-        this.defaultStrategyId = courseConfig.defaultNavigationStrategyId || null;
+        this.strategies = await courseDB.getAllNavigationStrategies();
       } catch (error) {
         console.error('Failed to load navigation strategies:', error);
         // In case of error, use a placeholder
@@ -272,24 +263,17 @@ export default defineComponent({
       this.loading = false;
     },
 
-    async setDefaultStrategy(strategyId: string) {
+    async toggleStrategy(strategy: ContentNavigationStrategyData, enabled: boolean) {
       try {
         this.loading = true;
-        const dataLayer = getDataLayer();
-        const courseDB = dataLayer.getCourseDB(this.courseId);
-        const config = await courseDB.getCourseConfig();
-
-        config.defaultNavigationStrategyId = strategyId;
-
-        await courseDB.updateCourseConfig(config);
-        this.defaultStrategyId = strategyId;
-        alert('Default strategy updated!');
+        const courseDB = getDataLayer().getCourseDB(this.courseId);
+        await courseDB.updateNavigationStrategy(strategy._id, { ...strategy, enabled });
+        await this.loadStrategies();
       } catch (error) {
-        console.error('Failed to set default strategy:', error);
-        alert('Error updating default strategy. See console for details.');
-      } finally {
-        this.loading = false;
+        console.error('Failed to toggle strategy:', error);
+        alert('Error updating strategy. See console for details.');
       }
+      this.loading = false;
     },
 
     startNewStrategy() {
@@ -420,22 +404,7 @@ export default defineComponent({
         const dataLayer = getDataLayer();
         const courseDB = dataLayer.getCourseDB(this.courseId);
 
-        // Since deleteNavigationStrategy doesn't exist in the interface yet,
-        // we'll use updateNavigationStrategy with an empty/invalid strategy that
-        // will be ignored by the system
-        const emptyStrategy: ContentNavigationStrategyData = {
-          _id: this.strategyToDelete!._id,
-          docType: DocType.NAVIGATION_STRATEGY,
-          name: 'DELETED',
-          description: 'This strategy has been deleted',
-          implementingClass: '',
-          course: this.courseId,
-          serializedData: '',
-        };
-
-        // Update with empty strategy
-        await courseDB.updateNavigationStrategy(this.strategyToDelete!._id, emptyStrategy);
-        console.log(`Strategy ${this.strategyToDelete!._id} marked as deleted`);
+        await courseDB.deleteNavigationStrategy(this.strategyToDelete!._id);
 
         // Remove from our local array
         this.strategies = this.strategies.filter((s) => s._id !== this.strategyToDelete?._id);

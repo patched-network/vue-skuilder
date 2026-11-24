@@ -7,7 +7,6 @@
     "packages/common-ui/src/components/cardRendering/MdTokenRenderer.vue TS2345": 10
   },
   "edit-ui": {
-    "packages/edit-ui/src/components/NavigationStrategy/NavigationStrategyEditor.vue TS2339": 2,
     "packages/edit-ui/src/components/ViewableDataInputForm/FieldInputs/MidiInput.vue TS18047": 1,
     "packages/edit-ui/src/components/ViewableDataInputForm/FieldInputs/MidiInput.vue TS2322": 1,
     "packages/edit-ui/src/components/ViewableDataInputForm/FieldInputs/MidiInput.vue TS2339": 5
