@@ -61,7 +61,7 @@ const routes: Array<RouteRecordRaw> = [
     name: 'AdminRegisterQuestions',
     component: AdminRegisterQuestionsView,
     meta: {
-      requiresAuth: true,
+      requiresAdmin: true,
     },
   },
   {
