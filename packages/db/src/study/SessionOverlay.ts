@@ -51,8 +51,8 @@ export interface SessionDrawnCardDebug {
   status: string;
   /** Number of CardRecords logged for this card this session (≥1). */
   attempts: number;
-  /** Latest record's correctness; null for non-question (info) records. */
-  correct: boolean | null;
+  /** Per-record correctness in presentation order; null for non-question (info) records. */
+  outcomes: (boolean | null)[];
   /** Total time spent across all of this card's records, in ms. */
   timeSpentMs: number;
 }
@@ -593,11 +593,10 @@ function drawnHtml(key: string, drawn: SessionDrawnCardDebug[]): string {
 
   const rows = shown
     .map((d) => {
-      const retries = d.attempts > 1 ? `<span style="opacity:.5"> ×${d.attempts}</span>` : '';
       const time = `<span style="opacity:.45"> ${Math.round(d.timeSpentMs / 100) / 10}s</span>`;
       return (
-        `<li style="white-space:nowrap">${outcomeGlyph(d.correct)} ${esc(d.cardID)}` +
-        `<span style="opacity:.5"> [${esc(d.status)}]</span>${retries}${time}</li>`
+        `<li style="white-space:nowrap">${d.outcomes.map(outcomeGlyph).join('')} ${esc(d.cardID)}` +
+        `<span style="opacity:.5"> [${esc(d.status)}]</span>${time}</li>`
       );
     })
     .join('');
@@ -696,7 +695,7 @@ function snapshotToText(s: SessionDebugSnapshot | null): string {
   lines.push('');
   lines.push(`drawn: ${s.drawnCards.length}`);
   s.drawnCards.forEach((d, i) => {
-    const mark = d.correct === true ? '✓' : d.correct === false ? '✗' : '·';
+    const mark = d.outcomes.map((c) => (c === true ? '✓' : c === false ? '✗' : '·')).join('');
     const time = `${Math.round(d.timeSpentMs / 100) / 10}s`;
     lines.push(`  ${i + 1}. ${mark} ${d.cardID} [${d.status}] ×${d.attempts} ${time}`);
   });
