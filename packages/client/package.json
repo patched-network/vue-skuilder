@@ -3,7 +3,7 @@
   "publishConfig": {
     "access": "public"
   },
-  "version": "0.3.8",
+  "version": "0.3.9",
   "license": "MIT",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
@@ -47,5 +47,5 @@
     "typescript": "~6.0.3",
     "vitest": "^4.1.0"
   },
-  "stableVersion": "0.3.8"
+  "stableVersion": "0.3.9"
 }

@@ -49,6 +49,7 @@ ignore
 
 # node pouchdb userdbs that get popped by `db` package sometimes. nuisance.
 userdb-Guest
+userdb-sk*
 
 # vitepress docs build/dev output
 
@@ -58,3 +59,6 @@ docs/.vitepress/cache
 
 # Learner data dumps (skuilder dump-user)
 /dbg/
+
+# local log output
+/logs/

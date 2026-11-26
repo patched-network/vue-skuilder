@@ -3,7 +3,7 @@
   "publishConfig": {
     "access": "public"
   },
-  "version": "0.3.8",
+  "version": "0.3.9",
   "license": "AGPL-3.0-or-later",
   "type": "module",
   "sideEffects": false,
@@ -38,5 +38,5 @@
     "zod": "^3.23.8",
     "zod-to-json-schema": "^3.23.5"
   },
-  "stableVersion": "0.3.8"
+  "stableVersion": "0.3.9"
 }
