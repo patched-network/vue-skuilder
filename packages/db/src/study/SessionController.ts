@@ -960,12 +960,11 @@ export class SessionController<TView = unknown> extends Loggable {
       return { length: q.length, dequeueCount: q.dequeueCount, cards };
     };
     const drawnCards: SessionDrawnCardDebug[] = this._sessionRecord.map((r) => {
-      const last = r.records[r.records.length - 1];
       return {
         cardID: r.item.cardID,
         status: r.item.status,
         attempts: r.records.length,
-        correct: last && isQuestionRecord(last) ? last.isCorrect : null,
+        outcomes: r.records.map((rec) => (isQuestionRecord(rec) ? rec.isCorrect : null)),
         timeSpentMs: r.records.reduce((sum, rec) => sum + rec.timeSpent, 0),
       };
     });
