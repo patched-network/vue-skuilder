@@ -3,7 +3,7 @@
   "publishConfig": {
     "access": "public"
   },
-  "version": "0.3.8",
+  "version": "0.3.9",
   "license": "AGPL-3.0-or-later",
   "scripts": {
     "dev": "vite",
@@ -93,5 +93,5 @@
   "engines": {
     "node": ">=18"
   },
-  "stableVersion": "0.3.8"
+  "stableVersion": "0.3.9"
 }
