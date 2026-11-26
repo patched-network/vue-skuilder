@@ -24,7 +24,8 @@
   },
   "files": [
     "dist/",
-    "dist-lib/"
+    "dist-lib/",
+    "LICENSE-EXCEPTION.md"
   ],
   "scripts": {
     "dev": "vite",

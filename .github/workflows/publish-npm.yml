@@ -132,6 +132,44 @@ jobs:
             echo "✓ @vue-skuilder/$package build output verified"
           done
 
+      # The root LICENSE (AGPL) and LICENSE-EXCEPTION.md are the single source of
+      # truth. Copy them into each AGPL package so they ship in the tarball.
+      # MIT packages (courseware, client) keep their own LICENSE and get neither.
+      - name: Stage license files into packages
+        run: |
+          set -e
+          for package in common db common-ui courseware edit-ui client platform-ui standalone-ui express mcp cli; do
+            dir="packages/$package"
+            LICENSE_ID=$(node -p "require('./$dir/package.json').license")
+            if [[ "$LICENSE_ID" == AGPL-* ]]; then
+              cp LICENSE LICENSE-EXCEPTION.md "$dir/"
+              echo "✓ $package ($LICENSE_ID): staged LICENSE + LICENSE-EXCEPTION.md"
+            else
+              echo "• $package ($LICENSE_ID): left alone"
+            fi
+          done
+
+      - name: Verify license files in tarballs
+        run: |
+          set -e
+          for package in common db common-ui courseware edit-ui client platform-ui standalone-ui express mcp cli; do
+            dir="packages/$package"
+            LICENSE_ID=$(node -p "require('./$dir/package.json').license")
+            CONTENTS=$(cd "$dir" && yarn pack --dry-run)
+            if ! grep -qE 'YN0000: LICENSE$' <<< "$CONTENTS"; then
+              echo "❌ $package: LICENSE missing from tarball"; exit 1
+            fi
+            if [[ "$LICENSE_ID" == AGPL-* ]]; then
+              if ! grep -qE 'YN0000: LICENSE-EXCEPTION.md$' <<< "$CONTENTS"; then
+                echo "❌ $package: LICENSE-EXCEPTION.md missing from tarball (add it to \"files\"?)"; exit 1
+              fi
+              if ! cmp -s LICENSE "$dir/LICENSE"; then
+                echo "❌ $package: LICENSE differs from root"; exit 1
+              fi
+            fi
+            echo "✓ $package ($LICENSE_ID) tarball license files OK"
+          done
+
       - name: Configure Yarn for OIDC publishing
         run: |
           yarn config set npmAlwaysAuth true

@@ -21,7 +21,8 @@
   },
   "files": [
     "dist",
-    "src"
+    "src",
+    "LICENSE-EXCEPTION.md"
   ],
   "dependencies": {
     "@mdi/font": "^7.3.67",

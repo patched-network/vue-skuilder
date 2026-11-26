@@ -19,7 +19,8 @@
   },
   "files": [
     "dist",
-    "src"
+    "src",
+    "LICENSE-EXCEPTION.md"
   ],
   "scripts": {
     "dev": "vite build --watch",
